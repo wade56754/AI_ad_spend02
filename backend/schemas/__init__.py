@@ -136,7 +136,7 @@ class AdSpendDailyBase(BaseModel):
     spend: Decimal = Decimal("0")
     leads_count: int = 0
     cost_per_lead: Decimal = Decimal("0")
-    anomaly_flag: bool = False
+    is_anomaly: bool = False
     anomaly_reason: Optional[str] = None
     note: Optional[str] = None
     created_by: Optional[UUID] = None
@@ -154,7 +154,7 @@ class AdSpendDailyUpdate(BaseModel):
     spend: Optional[Decimal] = None
     leads_count: Optional[int] = None
     cost_per_lead: Optional[Decimal] = None
-    anomaly_flag: Optional[bool] = None
+    is_anomaly: Optional[bool] = None
     anomaly_reason: Optional[str] = None
     note: Optional[str] = None
     created_by: Optional[UUID] = None

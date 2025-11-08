@@ -13,18 +13,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.sql import func
 
-from core.db import Base
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    email = Column(Text, unique=True)
-    name = Column(Text)
-    role = Column(Text, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+from backend.core.db import Base
+from backend.models.ad_spend_daily import AdSpendDaily
+from backend.models.reconciliation import Reconciliation, ReconciliationLog
+from backend.models.topup import Topup
+from backend.models.users import Role, User
 
 
 class Project(Base):
@@ -71,28 +64,6 @@ class AdAccount(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
-class AdSpendDaily(Base):
-    __tablename__ = "ad_spend_daily"
-    __table_args__ = (
-        UniqueConstraint("ad_account_id", "date", name="ad_spend_daily_unique_account_date"),
-    )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    ad_account_id = Column(UUID(as_uuid=True), ForeignKey("ad_accounts.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    date = Column(Date, nullable=False)
-    spend = Column(Numeric(18, 2), nullable=False, server_default="0")
-    leads_count = Column(Integer, nullable=False, server_default="0")
-    cost_per_lead = Column(Numeric(18, 2), nullable=False, server_default="0")
-    anomaly_flag = Column(Boolean, nullable=False, server_default="false")
-    anomaly_reason = Column(Text)
-    note = Column(Text)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-
-
 class Ledger(Base):
     __tablename__ = "ledgers"
 
@@ -104,39 +75,6 @@ class Ledger(Base):
     amount = Column(Numeric(18, 2), nullable=False)
     currency = Column(Text, nullable=False, server_default="USD")
     occurred_at = Column(DateTime(timezone=True), nullable=False)
-    remark = Column(Text)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-
-
-class Topup(Base):
-    __tablename__ = "topups"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    ad_account_id = Column(UUID(as_uuid=True), ForeignKey("ad_accounts.id"), nullable=False)
-    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
-    channel_id = Column(UUID(as_uuid=True), ForeignKey("channels.id"), nullable=False)
-    requested_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    amount = Column(Numeric(18, 2), nullable=False)
-    service_fee_amount = Column(Numeric(18, 2))
-    status = Column(Text, nullable=False, server_default="pending")
-    remark = Column(Text)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-
-
-class Reconciliation(Base):
-    __tablename__ = "reconciliations"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    ledger_id = Column(UUID(as_uuid=True), ForeignKey("ledgers.id"), nullable=False)
-    ad_spend_id = Column(UUID(as_uuid=True), ForeignKey("ad_spend_daily.id"), nullable=False)
-    match_score = Column(Numeric(5, 2), nullable=False, server_default="1")
-    matched_by = Column(Text, nullable=False)
     remark = Column(Text)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     updated_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))

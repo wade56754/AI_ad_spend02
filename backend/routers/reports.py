@@ -1,217 +1,256 @@
-from datetime import datetime, timezone
+from datetime import date
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from models import AdAccount, AdSpendDaily, Channel, Ledger, Project, Topup
+from backend.core.db import get_db
+from backend.core.error_codes import ErrorCode
+from backend.core.response import fail, ok
+from backend.core.security import AuthenticatedUser, get_current_user
+from backend.models import AdAccount, AdSpendDaily, Ledger, Project, Reconciliation
+from backend.services.log_service import LogService
 
-router = APIRouter(prefix="/api/reports", tags=["reports"])
-
-
-def build_response(data: Any, error: Optional[str] = None) -> Dict[str, Any]:
-    return {
-        "data": data,
-        "error": error,
-        "meta": {"timestamp": datetime.now(tz=timezone.utc).isoformat()},
-    }
+router = APIRouter(prefix="/reports", tags=["reports"])
 
 
-@router.get("/performers", response_model=dict)
-def performers_report(
-    start: datetime = Query(..., description="ISO datetime for report start (inclusive)"),
-    end: datetime = Query(..., description="ISO datetime for report end (inclusive)"),
-    db: Session = Depends(get_db),
-) -> Dict[str, Any]:
-    if end < start:
-        raise HTTPException(status_code=422, detail="end must be greater than start")
+def _date_filter(query, column, start: Optional[date], end: Optional[date]):
+    if start:
+        query = query.filter(column >= start)
+    if end:
+        query = query.filter(column <= end)
+    return query
 
-    results = (
+
+class ReportRequestPayload(BaseModel):
+    start: Optional[date] = None
+    end: Optional[date] = None
+    project_id: Optional[UUID] = None
+
+
+def _collect_performance(
+    db: Session, start: Optional[date], end: Optional[date], project_id: Optional[UUID] = None
+):
+    query = (
         db.query(
-            AdSpendDaily.user_id.label("user_id"),
-            func.sum(AdSpendDaily.spend).label("total_spend"),
-            func.sum(AdSpendDaily.leads_count).label("total_leads"),
-            func.count(AdSpendDaily.id).label("report_days"),
-            func.sum(
-                func.case(
-                    ((AdSpendDaily.anomaly_flag == True), 1),  # noqa: E712
-                    else_=0,
-                )
-            ).label("anomaly_days"),
+            Project.id.label("project_id"),
+            Project.name.label("project_name"),
+            func.coalesce(func.sum(AdSpendDaily.spend), 0).label("total_spend"),
+            func.coalesce(func.sum(AdSpendDaily.leads_count), 0).label("total_leads"),
         )
-        .filter(AdSpendDaily.date >= start.date(), AdSpendDaily.date <= end.date())
-        .group_by(AdSpendDaily.user_id)
-        .all()
+        .join(AdAccount, AdAccount.project_id == Project.id)
+        .join(AdSpendDaily, AdSpendDaily.ad_account_id == AdAccount.id)
+        .group_by(Project.id, Project.name)
     )
+    if project_id:
+        query = query.filter(Project.id == project_id)
+    query = _date_filter(query, AdSpendDaily.date, start, end)
+    return query.all()
 
-    data = []
-    for row in results:
-        leads = row.total_leads or 0
-        spend = Decimal(row.total_spend or 0)
-        cpl = spend / leads if leads else None
-        data.append(
+
+def _collect_profit(
+    db: Session, start: Optional[date], end: Optional[date], project_id: Optional[UUID] = None
+):
+    query = (
+        db.query(
+            Project.id.label("project_id"),
+            Project.name.label("project_name"),
+            func.coalesce(func.sum(Ledger.amount), 0).label("ledger_amount"),
+            func.coalesce(func.sum(AdSpendDaily.spend), 0).label("spend_amount"),
+        )
+        .join(AdAccount, AdAccount.project_id == Project.id)
+        .join(AdSpendDaily, AdSpendDaily.ad_account_id == AdAccount.id)
+        .join(Reconciliation, Reconciliation.daily_spend_id == AdSpendDaily.id)
+        .join(Ledger, Ledger.id == Reconciliation.finance_txn_id)
+        .filter(Reconciliation.status == "matched")
+        .group_by(Project.id, Project.name)
+    )
+    if project_id:
+        query = query.filter(Project.id == project_id)
+    query = _date_filter(query, AdSpendDaily.date, start, end)
+    return query.all()
+
+
+def _merge_report_rows(perf_rows, profit_rows):
+    summary: Dict[UUID, Dict[str, Any]] = {}
+
+    for row in perf_rows:
+        summary[row.project_id] = {
+            "project_id": row.project_id,
+            "project_name": row.project_name,
+            "total_spend": Decimal(row.total_spend or 0),
+            "matched_spend": Decimal("0"),
+            "leads": int(row.total_leads or 0),
+            "finance": Decimal("0"),
+        }
+
+    for row in profit_rows:
+        entry = summary.get(row.project_id)
+        if entry is None:
+            entry = {
+                "project_id": row.project_id,
+                "project_name": row.project_name,
+                "total_spend": Decimal(row.spend_amount or 0),
+                "matched_spend": Decimal(row.spend_amount or 0),
+                "leads": 0,
+                "finance": Decimal("0"),
+            }
+            summary[row.project_id] = entry
+        entry["finance"] = Decimal(row.ledger_amount or 0)
+        entry["matched_spend"] = Decimal(row.spend_amount or 0)
+        if "total_spend" not in entry or entry["total_spend"] == Decimal("0"):
+            entry["total_spend"] = Decimal(row.spend_amount or 0)
+
+    results = []
+    for entry in summary.values():
+        total_spend = entry["total_spend"]
+        matched_spend = entry["matched_spend"]
+        finance = entry["finance"]
+        profit = finance - matched_spend
+        results.append(
             {
-                "user_id": str(row.user_id),
-                "total_spend": str(spend.quantize(Decimal("0.01"))),
-                "total_leads": int(leads),
-                "report_days": int(row.report_days or 0),
-                "anomaly_days": int(row.anomaly_days or 0),
-                "cost_per_lead": str(cpl.quantize(Decimal("0.01"))) if cpl is not None else None,
+                "project_id": str(entry["project_id"]),
+                "project_name": entry["project_name"],
+                "total_spend": str(total_spend.quantize(Decimal("0.01"))),
+                "total_leads": entry["leads"],
+                "finance_amount": str(finance.quantize(Decimal("0.01"))),
+                "profit": str(profit.quantize(Decimal("0.01"))),
             }
         )
+    results.sort(key=lambda item: item["project_name"])
+    return results
 
-    return build_response(data=data)
 
-
-@router.get("/projects", response_model=dict)
-def projects_report(
-    month: str = Query(..., regex=r"^\d{4}-\d{2}$", description="YYYY-MM for report scope"),
+@router.get("", response_model=dict)
+def report_summary(
+    start: Optional[date] = Query(None, description="起始日期（包含）"),
+    end: Optional[date] = Query(None, description="结束日期（包含）"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
-    try:
-        year, month_value = map(int, month.split("-"))
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail="Invalid month format") from exc
+    perf_rows = _collect_performance(db, start, end)
+    profit_rows = _collect_profit(db, start, end)
+    data = _merge_report_rows(perf_rows, profit_rows)
+    return ok(data=data)
 
-    spend_subquery = (
+
+@router.post("", response_model=dict, status_code=200)
+def create_report_snapshot(
+    payload: ReportRequestPayload,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    perf_rows = _collect_performance(db, payload.start, payload.end, payload.project_id)
+    profit_rows = _collect_profit(db, payload.start, payload.end, payload.project_id)
+    data = _merge_report_rows(perf_rows, profit_rows)
+    LogService.write(
+        db,
+        action="generate_report_snapshot",
+        operator_id=current_user.id,
+        target="reports",
+        target_id=None,
+        detail={
+            "project_id": str(payload.project_id) if payload.project_id else None,
+            "start": payload.start.isoformat() if payload.start else None,
+            "end": payload.end.isoformat() if payload.end else None,
+            "records": len(data),
+        },
+    )
+    return ok(data=data)
+
+
+@router.get("/performance", response_model=dict)
+def report_performance(
+    start: Optional[date] = Query(None, description="起始日期（包含）"),
+    end: Optional[date] = Query(None, description="结束日期（包含）"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    query = (
         db.query(
-            AdAccount.project_id.label("project_id"),
-            func.sum(AdSpendDaily.spend).label("total_spend"),
-            func.sum(AdSpendDaily.leads_count).label("total_leads"),
+            Project.id.label("project_id"),
+            Project.name.label("project_name"),
+            func.coalesce(func.sum(AdSpendDaily.spend), 0).label("total_spend"),
+            func.coalesce(func.sum(AdSpendDaily.leads_count), 0).label("total_leads"),
         )
-        .join(AdAccount, AdAccount.id == AdSpendDaily.ad_account_id)
-        .filter(
-            func.extract("year", AdSpendDaily.date) == year,
-            func.extract("month", AdSpendDaily.date) == month_value,
+        .join(AdAccount, AdAccount.project_id == Project.id)
+        .join(AdSpendDaily, AdSpendDaily.ad_account_id == AdAccount.id)
+        .group_by(Project.id, Project.name)
+    )
+    query = _date_filter(query, AdSpendDaily.date, start, end)
+
+    results = query.all()
+    data = [
+        {
+            "project_id": str(row.project_id),
+            "project_name": row.project_name,
+            "total_spend": str(Decimal(row.total_spend or 0).quantize(Decimal("0.01"))),
+            "total_leads": int(row.total_leads or 0),
+        }
+        for row in results
+    ]
+
+    return ok(data=data)
+
+
+@router.get("/profit", response_model=dict)
+def report_profit(
+    start: Optional[date] = Query(None, description="起始日期（包含）"),
+    end: Optional[date] = Query(None, description="结束日期（包含）"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    query = (
+        db.query(
+            Project.id.label("project_id"),
+            Project.name.label("project_name"),
+            func.coalesce(func.sum(Ledger.amount), 0).label("ledger_amount"),
+            func.coalesce(func.sum(AdSpendDaily.spend), 0).label("spend_amount"),
         )
-        .group_by(AdAccount.project_id)
-        .subquery()
+        .join(AdAccount, AdAccount.project_id == Project.id)
+        .join(AdSpendDaily, AdSpendDaily.ad_account_id == AdAccount.id)
+        .join(Reconciliation, Reconciliation.daily_spend_id == AdSpendDaily.id)
+        .join(Ledger, Ledger.id == Reconciliation.finance_txn_id)
+        .filter(Reconciliation.status == "matched")
+        .group_by(Project.id, Project.name)
     )
 
-    ledger_subquery = (
-        db.query(
-            Ledger.project_id.label("project_id"),
-            func.sum(
-                func.case(
-                    ((Ledger.type == "income"), Ledger.amount),
-                    else_=-Ledger.amount,
-                )
-            ).label("net_amount"),
-        )
-        .filter(
-            func.extract("year", Ledger.occurred_at) == year,
-            func.extract("month", Ledger.occurred_at) == month_value,
-        )
-        .group_by(Ledger.project_id)
-        .subquery()
-    )
+    query = _date_filter(query, AdSpendDaily.date, start, end)
 
-    project_rows = (
-        db.query(
-            Project.id,
-            Project.name,
-            func.coalesce(spend_subquery.c.total_spend, 0).label("total_spend"),
-            func.coalesce(spend_subquery.c.total_leads, 0).label("total_leads"),
-            func.coalesce(ledger_subquery.c.net_amount, 0).label("net_amount"),
-        )
-        .outerjoin(spend_subquery, spend_subquery.c.project_id == Project.id)
-        .outerjoin(ledger_subquery, ledger_subquery.c.project_id == Project.id)
-        .all()
-    )
-
+    results = query.all()
     data = []
-    for row in project_rows:
-        spend = Decimal(row.total_spend or 0)
-        net_amount = Decimal(row.net_amount or 0)
-        profit = net_amount - spend
-        leads = int(row.total_leads or 0)
+    for row in results:
+        spend = Decimal(row.spend_amount or 0)
+        ledger_value = Decimal(row.ledger_amount or 0)
+        profit = ledger_value - spend
         data.append(
             {
-                "project_id": str(row.id),
-                "project_name": row.name,
-                "total_spend": str(spend.quantize(Decimal("0.01"))),
-                "total_leads": leads,
-                "net_amount": str(net_amount.quantize(Decimal("0.01"))),
+                "project_id": str(row.project_id),
+                "project_name": row.project_name,
+                "spend": str(spend.quantize(Decimal("0.01"))),
+                "finance_amount": str(ledger_value.quantize(Decimal("0.01"))),
                 "profit": str(profit.quantize(Decimal("0.01"))),
             }
         )
 
-    return build_response(data=data)
+    return ok(data=data)
 
 
-@router.get("/channels", response_model=dict)
-def channels_report(
-    month: str = Query(..., regex=r"^\d{4}-\d{2}$", description="YYYY-MM for channel report"),
+@router.get("/{project_id}", response_model=dict)
+def report_detail(
+    project_id: UUID,
+    start: Optional[date] = Query(None, description="起始日期（包含）"),
+    end: Optional[date] = Query(None, description="结束日期（包含）"),
+    current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
-    try:
-        year, month_value = map(int, month.split("-"))
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail="Invalid month format") from exc
-
-    spend_subquery = (
-        db.query(
-            AdAccount.channel_id.label("channel_id"),
-            func.sum(AdSpendDaily.spend).label("total_spend"),
-            func.count(func.distinct(AdSpendDaily.ad_account_id)).label("account_count"),
-        )
-        .join(AdAccount, AdAccount.id == AdSpendDaily.ad_account_id)
-        .filter(
-            func.extract("year", AdSpendDaily.date) == year,
-            func.extract("month", AdSpendDaily.date) == month_value,
-        )
-        .group_by(AdAccount.channel_id)
-        .subquery()
-    )
-
-    topup_subquery = (
-        db.query(
-            Topup.channel_id.label("channel_id"),
-            func.sum(Topup.amount).label("total_topup"),
-            func.sum(func.coalesce(Topup.service_fee_amount, 0)).label("total_fee"),
-        )
-        .filter(
-            func.extract("year", Topup.created_at) == year,
-            func.extract("month", Topup.created_at) == month_value,
-            Topup.status.in_(["approved", "paid", "done"]),
-        )
-        .group_by(Topup.channel_id)
-        .subquery()
-    )
-
-    channel_rows = (
-        db.query(
-            Channel.id,
-            Channel.name,
-            func.coalesce(spend_subquery.c.total_spend, 0).label("total_spend"),
-            func.coalesce(spend_subquery.c.account_count, 0).label("account_count"),
-            func.coalesce(topup_subquery.c.total_topup, 0).label("total_topup"),
-            func.coalesce(topup_subquery.c.total_fee, 0).label("total_fee"),
-        )
-        .outerjoin(spend_subquery, spend_subquery.c.channel_id == Channel.id)
-        .outerjoin(topup_subquery, topup_subquery.c.channel_id == Channel.id)
-        .all()
-    )
-
-    data = []
-    for row in channel_rows:
-        spend = Decimal(row.total_spend or 0)
-        topup_amount = Decimal(row.total_topup or 0)
-        service_fee = Decimal(row.total_fee or 0)
-        data.append(
-            {
-                "channel_id": str(row.id),
-                "channel_name": row.name,
-                "total_spend": str(spend.quantize(Decimal("0.01"))),
-                "account_count": int(row.account_count or 0),
-                "total_topup": str(topup_amount.quantize(Decimal("0.01"))),
-                "service_fee_amount": str(service_fee.quantize(Decimal("0.01"))),
-            }
-        )
-
-    return build_response(data=data)
-
-
+    perf_rows = _collect_performance(db, start, end, project_id)
+    profit_rows = _collect_profit(db, start, end, project_id)
+    data = _merge_report_rows(perf_rows, profit_rows)
+    if not data:
+        return fail(code=ErrorCode.INVALID_PARAM, message="指定项目暂无报表数据", status_code=404)
+    return ok(data=data[0])

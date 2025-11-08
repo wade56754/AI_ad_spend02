@@ -1,221 +1,229 @@
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
+from math import ceil
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.encoders import jsonable_encoder
+from fastapi import APIRouter, Depends, Query, status
+from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from models import Channel, Log, Topup
-from schemas import (
-    TopupApprove,
-    TopupCreate,
-    TopupConfirm,
-    TopupPay,
-    TopupRead,
-    TopupReject,
-)
+from backend.core.db import get_db
+from backend.core.error_codes import ErrorCode
+from backend.core.permissions import require_roles
+from backend.core.response import fail, ok
+from backend.core.security import AuthenticatedUser, get_current_user
+from backend.models import Topup
+from backend.services.log_service import LogService
 
-router = APIRouter(prefix="/api/topups", tags=["topups"])
+router = APIRouter(prefix="/topups", tags=["topups"])
 
 ALLOWED_TRANSITIONS = {
-    "pending": {"approved", "rejected"},
-    "approved": {"paid", "rejected"},
-    "paid": {"done", "rejected"},
+    "pending": {"approved"},
+    "approved": {"paid"},
+    "paid": {"done"},
     "done": set(),
-    "rejected": set(),
 }
 
 
-def build_response(data, error=None):
+class TopupCreatePayload(BaseModel):
+    project_id: UUID
+    ad_account_id: UUID
+    amount: Decimal
+
+    @validator("amount")
+    def validate_amount(cls, value: Decimal) -> Decimal:
+        if value <= 0:
+            raise ValueError("amount must be positive")
+        return value.quantize(Decimal("0.01"))
+
+
+def _serialize_topup(topup: Topup) -> dict:
     return {
-        "data": data,
-        "error": error,
-        "meta": {"timestamp": datetime.now(tz=timezone.utc).isoformat()},
+        "id": str(topup.id),
+        "project_id": str(topup.project_id),
+        "ad_account_id": str(topup.ad_account_id),
+        "amount": format(topup.amount, "f"),
+        "status": topup.status,
+        "created_by": str(topup.created_by) if topup.created_by else None,
+        "created_at": topup.created_at.isoformat() if topup.created_at else None,
+        "updated_at": topup.updated_at.isoformat() if topup.updated_at else None,
     }
 
 
-def calculate_service_fee(amount: Decimal, fee_type: str, fee_value: Decimal) -> Decimal:
-    if fee_type == "percent":
-        fee = amount * (fee_value / Decimal("100"))
-    else:
-        fee = fee_value
-    return fee.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+def _load_topup(db: Session, topup_id: UUID) -> Optional[Topup]:
+    return db.query(Topup).filter(Topup.id == topup_id).first()
 
 
-def ensure_transition(current_status: str, target_status: str) -> None:
-    allowed = ALLOWED_TRANSITIONS.get(current_status, set())
+def _transition_or_fail(topup: Topup, target_status: str) -> Optional[str]:
+    allowed = ALLOWED_TRANSITIONS.get(topup.status, set())
     if target_status not in allowed:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Status transition from {current_status} to {target_status} is not allowed",
-        )
+        return "当前状态不允许此操作"
+    topup.status = target_status
+    topup.updated_at = datetime.now(timezone.utc)
+    return None
 
 
-def log_change(
-    db: Session,
-    actor_id: Optional[UUID],
-    target_id: UUID,
-    action: str,
-    before: Optional[dict],
-    after: Optional[dict],
-) -> None:
-    log_entry = Log(
-        actor_id=actor_id,
-        action=action,
-        target_table="topups",
-        target_id=target_id,
-        before_data=before,
-        after_data=after,
+@router.get("", response_model=dict)
+def list_topups(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status_filter: Optional[str] = Query(None, alias="status"),
+    project_id: Optional[UUID] = Query(None),
+    ad_account_id: Optional[UUID] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    query = db.query(Topup)
+
+    if status_filter:
+        query = query.filter(Topup.status == status_filter)
+    if project_id:
+        query = query.filter(Topup.project_id == project_id)
+    if ad_account_id:
+        query = query.filter(Topup.ad_account_id == ad_account_id)
+
+    total = query.count()
+    records: List[Topup] = (
+        query.order_by(Topup.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
     )
-    db.add(log_entry)
-
-
-@router.get("/", response_model=dict)
-def list_topups(db: Session = Depends(get_db)) -> dict:
-    topups: List[Topup] = db.query(Topup).all()
-    data = [TopupRead.from_orm(topup).dict() for topup in topups]
-    return build_response(data=data)
+    pagination = {
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": ceil(total / page_size) if page_size else 0,
+    }
+    data = [_serialize_topup(record) for record in records]
+    return ok(data=data, meta={"pagination": pagination})
 
 
 @router.get("/{topup_id}", response_model=dict)
-def get_topup(topup_id: UUID, db: Session = Depends(get_db)) -> dict:
-    topup = db.query(Topup).filter(Topup.id == topup_id).first()
-    if not topup:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topup not found")
-    return build_response(data=TopupRead.from_orm(topup).dict())
+def get_topup(
+    topup_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    topup = _load_topup(db, topup_id)
+    if topup is None:
+        return fail(ErrorCode.INVALID_PARAM, "充值记录不存在", status_code=status.HTTP_404_NOT_FOUND)
+    return ok(data=_serialize_topup(topup))
 
 
-@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-def create_topup(payload: TopupCreate, db: Session = Depends(get_db)) -> dict:
-    topup = Topup(**payload.dict())
+@router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
+def create_topup(
+    payload: TopupCreatePayload,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    actor_id = UUID(str(current_user.id))
+
+    topup = Topup(
+        project_id=payload.project_id,
+        ad_account_id=payload.ad_account_id,
+        amount=payload.amount,
+        status="pending",
+        created_by=actor_id,
+    )
     db.add(topup)
-    db.flush()
-    db.refresh(topup)
-
-    after_state = jsonable_encoder(TopupRead.from_orm(topup))
-    log_change(db, payload.created_by, topup.id, "create_topup", before=None, after=after_state)
-
     db.commit()
     db.refresh(topup)
 
-    return build_response(data=after_state)
+    LogService.write(
+        db,
+        action="create_topup",
+        operator_id=current_user.id,
+        target="topups",
+        target_id=topup.id,
+        detail=_serialize_topup(topup),
+    )
+
+    return ok(data=_serialize_topup(topup), status_code=status.HTTP_201_CREATED)
 
 
 @router.post("/{topup_id}/approve", response_model=dict)
-def approve_topup(topup_id: UUID, payload: TopupApprove, db: Session = Depends(get_db)) -> dict:
-    topup = db.query(Topup).filter(Topup.id == topup_id).first()
-    if not topup:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topup not found")
+@require_roles("manager", "admin")
+def approve_topup(
+    topup_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    topup = _load_topup(db, topup_id)
+    if topup is None:
+        return fail(ErrorCode.INVALID_PARAM, "充值记录不存在", status_code=status.HTTP_404_NOT_FOUND)
 
-    ensure_transition(topup.status, "approved")
-
-    before_state = jsonable_encoder(TopupRead.from_orm(topup))
-
-    channel = db.query(Channel).filter(Channel.id == topup.channel_id).first()
-    if not channel:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Channel not found")
-
-    service_fee_amount = calculate_service_fee(topup.amount, channel.service_fee_type, channel.service_fee_value)
-
-    topup.status = "approved"
-    topup.service_fee_amount = service_fee_amount
-    topup.updated_by = payload.actor_id
-    if payload.remark is not None:
-        topup.remark = payload.remark
-
-    db.flush()
-    db.refresh(topup)
-
-    after_state = jsonable_encoder(TopupRead.from_orm(topup))
-    log_change(db, payload.actor_id, topup.id, "approve_topup", before_state, after_state)
+    error_message = _transition_or_fail(topup, "approved")
+    if error_message:
+        return fail(ErrorCode.INVALID_STATUS, error_message, status_code=status.HTTP_400_BAD_REQUEST)
 
     db.commit()
     db.refresh(topup)
-
-    return build_response(data=after_state)
+    LogService.write(
+        db,
+        action="approve_topup",
+        operator_id=current_user.id,
+        target="topups",
+        target_id=topup.id,
+        detail=_serialize_topup(topup),
+    )
+    return ok(data=_serialize_topup(topup))
 
 
 @router.post("/{topup_id}/pay", response_model=dict)
-def pay_topup(topup_id: UUID, payload: TopupPay, db: Session = Depends(get_db)) -> dict:
-    topup = db.query(Topup).filter(Topup.id == topup_id).first()
-    if not topup:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topup not found")
+@require_roles("finance", "admin")
+def pay_topup(
+    topup_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    topup = _load_topup(db, topup_id)
+    if topup is None:
+        return fail(ErrorCode.INVALID_PARAM, "充值记录不存在", status_code=status.HTTP_404_NOT_FOUND)
 
-    ensure_transition(topup.status, "paid")
-
-    before_state = jsonable_encoder(TopupRead.from_orm(topup))
-
-    topup.status = "paid"
-    topup.updated_by = payload.actor_id
-    if payload.remark is not None:
-        topup.remark = payload.remark
-
-    db.flush()
-    db.refresh(topup)
-
-    after_state = jsonable_encoder(TopupRead.from_orm(topup))
-    log_change(db, payload.actor_id, topup.id, "pay_topup", before_state, after_state)
+    error_message = _transition_or_fail(topup, "paid")
+    if error_message:
+        return fail(ErrorCode.INVALID_STATUS, error_message, status_code=status.HTTP_400_BAD_REQUEST)
 
     db.commit()
     db.refresh(topup)
-
-    return build_response(data=after_state)
+    LogService.write(
+        db,
+        action="pay_topup",
+        operator_id=current_user.id,
+        target="topups",
+        target_id=topup.id,
+        detail=_serialize_topup(topup),
+    )
+    return ok(data=_serialize_topup(topup))
 
 
 @router.post("/{topup_id}/confirm", response_model=dict)
-def confirm_topup(topup_id: UUID, payload: TopupConfirm, db: Session = Depends(get_db)) -> dict:
-    topup = db.query(Topup).filter(Topup.id == topup_id).first()
-    if not topup:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topup not found")
+@require_roles("manager", "admin")
+def confirm_topup(
+    topup_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+):
+    topup = _load_topup(db, topup_id)
+    if topup is None:
+        return fail(ErrorCode.INVALID_PARAM, "充值记录不存在", status_code=status.HTTP_404_NOT_FOUND)
 
-    ensure_transition(topup.status, "done")
-
-    before_state = jsonable_encoder(TopupRead.from_orm(topup))
-
-    topup.status = "done"
-    topup.updated_by = payload.actor_id
-    if payload.remark is not None:
-        topup.remark = payload.remark
-
-    db.flush()
-    db.refresh(topup)
-
-    after_state = jsonable_encoder(TopupRead.from_orm(topup))
-    log_change(db, payload.actor_id, topup.id, "confirm_topup", before_state, after_state)
+    error_message = _transition_or_fail(topup, "done")
+    if error_message:
+        return fail(ErrorCode.INVALID_STATUS, error_message, status_code=status.HTTP_400_BAD_REQUEST)
 
     db.commit()
     db.refresh(topup)
-
-    return build_response(data=after_state)
-
-
-@router.post("/{topup_id}/reject", response_model=dict)
-def reject_topup(topup_id: UUID, payload: TopupReject, db: Session = Depends(get_db)) -> dict:
-    topup = db.query(Topup).filter(Topup.id == topup_id).first()
-    if not topup:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topup not found")
-
-    ensure_transition(topup.status, "rejected")
-
-    before_state = jsonable_encoder(TopupRead.from_orm(topup))
-
-    topup.status = "rejected"
-    topup.updated_by = payload.actor_id
-    if payload.remark is not None:
-        topup.remark = payload.remark
-
-    db.flush()
-    db.refresh(topup)
-
-    after_state = jsonable_encoder(TopupRead.from_orm(topup))
-    log_change(db, payload.actor_id, topup.id, "reject_topup", before_state, after_state)
-
-    db.commit()
-    db.refresh(topup)
-
-    return build_response(data=after_state)
+    LogService.write(
+        db,
+        action="confirm_topup",
+        operator_id=current_user.id,
+        target="topups",
+        target_id=topup.id,
+        detail=_serialize_topup(topup),
+    )
+    return ok(data=_serialize_topup(topup))
 
 

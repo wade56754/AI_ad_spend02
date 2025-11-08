@@ -1,44 +1,74 @@
-from datetime import datetime, timezone
-from typing import List
+from math import ceil
+from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from models import Log, Project
-from schemas import ProjectCreate, ProjectRead, ProjectUpdate
+from backend.core.db import get_db
+from backend.core.response import ok
+from backend.core.security import AuthenticatedUser, get_current_user
+from backend.models import Log, Project
+from backend.schemas import ProjectCreate, ProjectRead, ProjectUpdate
 
-router = APIRouter(prefix="/api/projects", tags=["projects"])
-
-
-def build_response(data, error=None):
-    return {
-        "data": data,
-        "error": error,
-        "meta": {"timestamp": datetime.now(tz=timezone.utc).isoformat()},
-    }
+router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.get("/", response_model=dict)
-def list_projects(db: Session = Depends(get_db)) -> dict:
-    projects: List[Project] = db.query(Project).all()
-    data = [ProjectRead.from_orm(project).dict() for project in projects]
-    return build_response(data=data)
+def list_projects(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status_filter: Optional[str] = Query(None, alias="status"),
+    search: Optional[str] = Query(None),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    query = db.query(Project)
+
+    if status_filter:
+        query = query.filter(Project.status == status_filter)
+
+    if search:
+        like_pattern = f"%{search}%"
+        query = query.filter(Project.name.ilike(like_pattern))
+
+    total = query.count()
+    items: List[Project] = (
+        query.order_by(Project.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    data = [ProjectRead.from_orm(project).dict() for project in items]
+    pagination = {
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": ceil(total / page_size) if page_size else 0,
+    }
+    return ok(data=data, meta={"pagination": pagination})
 
 
 @router.get("/{project_id}", response_model=dict)
-def get_project(project_id: UUID, db: Session = Depends(get_db)) -> dict:
+def get_project(
+    project_id: UUID,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     data = ProjectRead.from_orm(project).dict()
-    return build_response(data=data)
+    return ok(data=data, status_code=status.HTTP_201_CREATED)
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> dict:
+def create_project(
+    payload: ProjectCreate,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
     project = Project(**payload.dict())
     db.add(project)
     db.flush()
@@ -56,11 +86,16 @@ def create_project(payload: ProjectCreate, db: Session = Depends(get_db)) -> dic
     db.commit()
     db.refresh(project)
     data = ProjectRead.from_orm(project).dict()
-    return build_response(data=data)
+    return ok(data=data)
 
 
 @router.put("/{project_id}", response_model=dict)
-def update_project(project_id: UUID, payload: ProjectUpdate, db: Session = Depends(get_db)) -> dict:
+def update_project(
+    project_id: UUID,
+    payload: ProjectUpdate,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
@@ -89,6 +124,6 @@ def update_project(project_id: UUID, payload: ProjectUpdate, db: Session = Depen
     db.refresh(project)
 
     data = ProjectRead.from_orm(project).dict()
-    return build_response(data=data)
+    return ok(data=data)
 
 

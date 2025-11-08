@@ -1,0 +1,6 @@
+class ErrorCode:
+    PERMISSION_DENIED = "4001"
+    INVALID_STATUS = "4002"
+    INVALID_PARAM = "4003"
+    UNKNOWN_ERROR = "5000"
+
