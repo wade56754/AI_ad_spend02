@@ -1,0 +1,215 @@
+# Cursor 项目开发规则 v2.0
+
+> 本文件基于 AI_Finance_System 项目的实际开发情况与 Codex 优化清单更新，
+> 旨在通过规则层面对 Cursor 进行约束，防止重复性错误并确保接口一致性、数据安全和系统稳定性。
+
+---
+
+## 一、项目架构与技术约束
+
+**后端技术栈：** FastAPI + SQLAlchemy + PostgreSQL (Supabase)  
+**前端技术栈：** Next.js (Supabase Starter / bolt.new)  
+**部署环境：** 宝塔 + Nginx + Supabase Cloud
+
+### 目录结构约定
+
+```
+/backend
+  /models
+  /schemas
+  /routers
+  /core
+  main.py
+
+/frontend
+  /app
+  /lib
+  /components
+```
+
+---
+
+## 二、Cursor 代码生成核心规则
+
+### 1. 统一响应结构（防止多样返回格式）
+
+所有接口必须使用统一响应函数：
+
+```python
+from fastapi.responses import JSONResponse
+from datetime import datetime
+
+def ok(data=None, meta=None):
+    return JSONResponse({"data": data, "error": None, "meta": meta or {"timestamp": datetime.utcnow()}})
+
+def fail(message, code="E9999", status=400):
+    return JSONResponse({"data": None, "error": {"code": code, "message": message}, "meta": {"timestamp": datetime.utcnow()}}, status_code=status)
+```
+
+Cursor 禁止：
+- 直接 `return {...}`。
+- 直接 `raise HTTPException(...)`。
+- 自定义返回结构。
+
+---
+
+### 2. RESTful 路由与路径规则
+
+- 路径格式：`/api/<资源>`，如 `/api/projects`。
+- **禁止出现重复路径**：如 `/api/api/...`。
+- Cursor 必须通过统一前端封装的 `apiFetch` 调用，不允许在组件里直接拼 `process.env.API_URL`。
+
+---
+
+### 3. ORM 与 Schema 对齐规则
+
+- 所有表字段必须与数据库一致，包含 `created_at`, `updated_at`。
+- 所有金额字段类型为 `Decimal`，禁止 `float`。
+- 必须定义 `json_encoders = {Decimal: str}`。
+- 每个表需具备：`BaseModel`, `CreateModel`, `ReadModel` 三个 Schema。
+
+---
+
+### 4. 状态机与业务流约束
+
+#### AdAccount 状态机：
+```
+new → testing → active → suspended → dead → archived
+```
+非法流转返回 422。
+
+#### Topup 状态流：
+```
+pending → approved → paid → confirmed → rejected
+```
+非法调用直接报错并记录日志。
+
+#### Ledger 对账匹配逻辑：
+匹配条件：账户相同、金额误差 ≤5%、日期差 ≤1天。
+
+---
+
+### 5. 跨实体一致性校验
+
+所有包含外键的接口（如 Topup、AdSpendDaily、Ledger）必须：  
+- 验证 `ad_account.project_id == payload.project_id`。  
+- 验证 `ad_account.channel_id == payload.channel_id`。  
+- 不匹配时返回 422 并写日志。
+
+模板：
+```python
+account = db.query(AdAccount).filter_by(id=payload.ad_account_id).first()
+if not account:
+    return fail("Ad account not found", "E404", 404)
+if account.project_id != payload.project_id:
+    return fail("Account-Project mismatch", "E422", 422)
+```
+
+---
+
+### 6. 日志与审计要求
+
+任何写操作必须写入 `logs` 表：
+
+```python
+log_action(
+  actor_id=current_user.id,
+  action="update_project",
+  target_table="projects",
+  target_id=project.id,
+  before_data=old_data,
+  after_data=new_data
+)
+```
+
+Cursor **禁止** 输出未写日志的写接口。
+
+---
+
+### 7. 安全与访问边界
+
+- 前端禁止 `supabase.from('table').insert/update/delete` 操作。  
+- 所有数据写入必须通过后端 API 进行。  
+- 前端仅允许调用只读接口（如查询日志、渠道、项目）。  
+- Cursor 生成的前端请求必须走 `/lib/apiFetch.ts`。
+
+---
+
+## 三、统一接口规范
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| data | object/list | 成功返回内容 |
+| error | object/null | 错误描述 |
+| meta | object | 附加信息（时间戳、分页等） |
+
+### 状态码规范
+
+| 状态码 | 含义 |
+|--------|------|
+| 200 | 成功 |
+| 201 | 新建成功 |
+| 400 | 参数错误 |
+| 401 | 未授权 |
+| 403 | 权限不足 |
+| 404 | 资源不存在 |
+| 409 | 唯一冲突 |
+| 422 | 状态非法流转 |
+| 500 | 服务错误 |
+
+---
+
+## 四、Codex 优化反馈落地规则
+
+### 1. API 一致性问题
+
+- 所有路由必须注册在 `routers/__init__.py` 中，禁止散乱模块。  
+- 禁止使用全局变量作为 DB 连接，必须依赖 `Depends(get_db)`。  
+- 所有 CRUD 方法要显式导入模型和 Schema，禁止模糊导入。
+
+### 2. 统一金额序列化
+
+- 在 Schema 中添加：
+```python
+class Config:
+    json_encoders = {Decimal: lambda v: str(v)}
+```
+- 禁止路由中使用 `str(model.amount)`。
+
+### 3. 依赖管理
+
+- `requirements.txt` 中所有包必须带固定版本号。  
+- 禁止使用 `latest`、`>=`、`*`。
+
+### 4. 分页与查询优化
+
+- 列表接口必须带分页参数：`?page=1&size=20`。  
+- 返回结构需包含：`meta.pagination = { "page": 1, "size": 20, "total": xxx }`。
+
+### 5. 环境隔离与配置
+
+- `.env` 文件必须由系统加载，不得硬编码 Supabase 密钥。  
+- Cursor 不得修改 `.gitignore` 或 `.env.*`。
+
+---
+
+## 五、Cursor 自检清单（执行前必须验证）
+
+Cursor 在生成代码前必须自检以下项目：
+
+1. ✅ 返回结构是否 `{data, error, meta}`？  
+2. ✅ 是否包含跨表一致性校验？  
+3. ✅ 是否记录写操作日志？  
+4. ✅ 是否使用统一金额序列化规则？  
+5. ✅ 是否避免 `/api/api` 路径重复？  
+6. ✅ 是否在分页接口中返回 meta.pagination？  
+7. ✅ 是否遵守状态机流转？  
+8. ✅ 是否依赖 `ok()` 和 `fail()` 函数？  
+9. ✅ 是否禁用直接 Supabase 写操作？  
+10. ✅ 是否锁定依赖版本？
+
+如果任意一项未通过，应返回错误说明，不得继续输出代码。
+
+---
+
+> 本文件命名为 `Cursor_项目开发规则_v2.0.md`，必须放置于项目根目录，供 Cursor、Codex 和人类开发者同时遵循。

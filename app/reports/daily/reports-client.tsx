@@ -29,6 +29,7 @@ interface DailyReportsClientProps {
   accounts: AccountOption[];
   initialReports: ReportRow[];
   currentUserId: string;
+  accessToken: string | null;
 }
 
 type FormState = {
@@ -51,6 +52,7 @@ export default function DailyReportsClient({
   accounts,
   initialReports,
   currentUserId,
+  accessToken,
 }: DailyReportsClientProps) {
   const router = useRouter();
   const [reports, setReports] = useState<ReportRow[]>(initialReports);
@@ -104,13 +106,23 @@ export default function DailyReportsClient({
     }
 
     try {
+      if (!accessToken) {
+        setErrorMessage("缺少访问令牌，请重新登录");
+        setIsSubmitting(false);
+        return;
+      }
+
       const response = await apiFetch<ReportRow>("/api/ad-spend", {
         method: "POST",
         body: JSON.stringify(payload),
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
-      if (response.error) {
-        setErrorMessage(response.error);
+      const apiError = response.error?.message;
+      if (apiError) {
+        setErrorMessage(apiError);
         return;
       }
 

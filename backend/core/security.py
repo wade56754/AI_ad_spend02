@@ -3,12 +3,15 @@ from __future__ import annotations
 import base64
 import hmac
 import json
-from dataclasses import dataclass
+import secrets
+from dataclasses import dataclass, asdict
+from datetime import datetime, timedelta
 from hashlib import sha256
 from time import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from uuid import UUID
 
+import jwt
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -72,11 +75,163 @@ def _verify_signature(token: str, secret: str) -> Dict[str, Any]:
 
 
 @dataclass
+class TokenInfo:
+    """Token信息"""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int = 0
+    expires_at: Optional[datetime] = None
+
+
+@dataclass
 class AuthenticatedUser:
     id: str
     role: Optional[str]
     email: Optional[str]
     raw_claims: Dict[str, Any]
+    permissions: List[str] = None
+    is_active: bool = True
+    last_login: Optional[datetime] = None
+
+    def __post_init__(self):
+        if self.permissions is None:
+            self.permissions = []
+
+
+class JWTManager:
+    """JWT令牌管理器"""
+
+    def __init__(self):
+        self.settings = get_settings()
+        self.algorithm = "HS256"
+        self.access_token_expire_minutes = self.settings.jwt_access_token_expire_minutes
+        self.refresh_token_expire_days = self.settings.jwt_refresh_token_expire_days
+
+    def create_access_token(
+        self,
+        data: Dict[str, Any],
+        expires_delta: Optional[timedelta] = None
+    ) -> str:
+        """创建访问令牌"""
+        to_encode = data.copy()
+
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
+
+        to_encode.update({
+            "exp": expire,
+            "type": "access",
+            "iat": datetime.utcnow(),
+            "jti": secrets.token_urlsafe(16)  # JWT ID，用于防止重放攻击
+        })
+
+        return jwt.encode(to_encode, self.settings.jwt_secret, algorithm=self.algorithm)
+
+    def create_refresh_token(self, data: Dict[str, Any]) -> str:
+        """创建刷新令牌"""
+        to_encode = data.copy()
+        expire = datetime.utcnow() + timedelta(days=self.refresh_token_expire_days)
+
+        to_encode.update({
+            "exp": expire,
+            "type": "refresh",
+            "iat": datetime.utcnow(),
+            "jti": secrets.token_urlsafe(16)
+        })
+
+        return jwt.encode(to_encode, self.settings.jwt_secret, algorithm=self.algorithm)
+
+    def create_token_pair(self, user_data: Dict[str, Any]) -> TokenInfo:
+        """创建令牌对"""
+        access_token = self.create_access_token(user_data)
+        refresh_token = self.create_refresh_token(user_data)
+
+        expires_at = datetime.utcnow() + timedelta(minutes=self.access_token_expire_minutes)
+
+        return TokenInfo(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_in=self.access_token_expire_minutes * 60,
+            expires_at=expires_at
+        )
+
+    def verify_token(self, token: str, token_type: str = "access") -> Dict[str, Any]:
+        """验证令牌"""
+        try:
+            payload = jwt.decode(
+                token,
+                self.settings.jwt_secret,
+                algorithms=[self.algorithm]
+            )
+
+            # 检查令牌类型
+            if payload.get("type") != token_type:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={"code": "AUTH_INVALID_TOKEN_TYPE", "message": "令牌类型错误"}
+                )
+
+            return payload
+
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "AUTH_EXPIRED", "message": "令牌已过期"}
+            )
+        except jwt.InvalidTokenError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "AUTH_INVALID_TOKEN", "message": "令牌无效"}
+            )
+
+    def refresh_access_token(self, refresh_token: str) -> str:
+        """使用刷新令牌获取新的访问令牌"""
+        payload = self.verify_token(refresh_token, "refresh")
+
+        # 移除时间相关的声明，重新生成访问令牌
+        user_data = {
+            "sub": payload.get("sub"),
+            "role": payload.get("role"),
+            "email": payload.get("email"),
+            "permissions": payload.get("permissions", [])
+        }
+
+        return self.create_access_token(user_data)
+
+    def revoke_token(self, token: str) -> bool:
+        """撤销令牌（示例实现，实际应该使用黑名单）"""
+        # 这里可以实现令牌黑名单功能
+        # 实际项目中应该使用Redis或数据库存储黑名单
+        return True
+
+
+class TokenBlacklist:
+    """令牌黑名单管理"""
+
+    def __init__(self):
+        # 实际项目中应该使用Redis或数据库
+        self._blacklisted_jtis: set = set()
+
+    def add_to_blacklist(self, jti: str) -> None:
+        """将令牌添加到黑名单"""
+        self._blacklisted_jtis.add(jti)
+
+    def is_blacklisted(self, jti: str) -> bool:
+        """检查令牌是否在黑名单中"""
+        return jti in self._blacklisted_jtis
+
+    def cleanup_expired(self) -> None:
+        """清理过期的黑名单令牌（简化实现）"""
+        # 实际实现应该根据过期时间清理
+        pass
+
+
+# 全局实例
+jwt_manager = JWTManager()
+token_blacklist = TokenBlacklist()
 
 
 def _extract_user(payload: Dict[str, Any]) -> AuthenticatedUser:
@@ -108,6 +263,7 @@ def get_current_user(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ) -> AuthenticatedUser:
+    """获取当前认证用户"""
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -127,21 +283,76 @@ def get_current_user(
             detail={"code": "AUTH_INVALID_TOKEN", "message": "Token 为空"},
         )
 
-    settings = get_settings()
-    secret = getattr(settings, "jwt_secret", None)
-    if not secret:
+    try:
+        # 使用新的JWT管理器验证令牌
+        payload = jwt_manager.verify_token(token, "access")
+
+        # 检查令牌是否在黑名单中
+        jti = payload.get("jti")
+        if jti and token_blacklist.is_blacklisted(jti):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "AUTH_TOKEN_REVOKED", "message": "令牌已被撤销"}
+            )
+
+        user = _extract_user(payload)
+        user.role = _resolve_role(db, user.id, user.role)
+
+        # 更新最后登录时间
+        user.last_login = datetime.utcnow()
+
+        return user
+
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "AUTH_CONFIG_ERROR", "message": "JWT_SECRET 未配置"},
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "AUTH_INVALID_TOKEN", "message": "令牌验证失败"}
         )
 
-    payload = _verify_signature(token, secret)
-    user = _extract_user(payload)
-    user.role = _resolve_role(db, user.id, user.role)
-    return user
+
+def get_current_active_user(
+    current_user: AuthenticatedUser = Depends(get_current_user),
+) -> AuthenticatedUser:
+    """获取当前活跃用户"""
+    if not current_user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "AUTH_INACTIVE_USER", "message": "用户已被禁用"}
+        )
+    return current_user
 
 
 def authenticated_user_dependency(user: AuthenticatedUser = Depends(get_current_user)) -> AuthenticatedUser:
+    """认证用户依赖（兼容性）"""
     return user
+
+
+def require_roles(*roles: str):
+    """角色权限装饰器"""
+    def role_dependency(current_user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+        if current_user.role not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "AUTH_PERMISSION_DENIED", "message": "权限不足"}
+            )
+        return current_user
+    return role_dependency
+
+
+def require_permissions(*permissions: str):
+    """权限检查装饰器"""
+    def permission_dependency(current_user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+        user_permissions = set(current_user.permissions)
+        required_permissions = set(permissions)
+
+        if not required_permissions.issubset(user_permissions):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "AUTH_PERMISSION_DENIED", "message": "权限不足"}
+            )
+        return current_user
+    return permission_dependency
 
 

@@ -1,6 +1,7 @@
 import ReportsClient from "./reports-client";
 
 import { apiFetch } from "@/lib/api";
+import { createClient } from "@/lib/supabase/server";
 
 type ProjectReportRow = {
   project_id: string;
@@ -21,19 +22,35 @@ type ChannelReportRow = {
 };
 
 export default async function ReportsPage() {
+  const supabase = await createClient();
+  const [{ data: sessionData }] = await Promise.all([supabase.auth.getSession()]);
+  const accessToken = sessionData.session?.access_token ?? null;
+
   const month = new Date().toISOString().slice(0, 7);
 
+  const authHeaders = accessToken
+    ? {
+        Authorization: `Bearer ${accessToken}`,
+      }
+    : undefined;
+
   const [projectsResponse, channelsResponse] = await Promise.all([
-    apiFetch<ProjectReportRow[]>(`/api/reports/projects?month=${month}`),
-    apiFetch<ChannelReportRow[]>(`/api/reports/channels?month=${month}`),
+    apiFetch<ProjectReportRow[]>(`/api/reports/projects?month=${month}`, {
+      headers: authHeaders,
+    }),
+    apiFetch<ChannelReportRow[]>(`/api/reports/channels?month=${month}`, {
+      headers: authHeaders,
+    }),
   ]);
 
-  if (projectsResponse.error) {
-    throw new Error(projectsResponse.error);
+  const projectsError = projectsResponse.error?.message;
+  if (projectsError) {
+    throw new Error(projectsError);
   }
 
-  if (channelsResponse.error) {
-    throw new Error(channelsResponse.error);
+  const channelsError = channelsResponse.error?.message;
+  if (channelsError) {
+    throw new Error(channelsError);
   }
 
   return (
@@ -44,5 +61,3 @@ export default async function ReportsPage() {
     />
   );
 }
-
-

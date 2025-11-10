@@ -38,6 +38,7 @@ interface TopupsClientProps {
   projectOptions: OptionRow[];
   channelOptions: OptionRow[];
   currentUserId: string;
+  accessToken: string | null;
 }
 
 type Action =
@@ -83,6 +84,7 @@ export default function TopupsClient({
   projectOptions,
   channelOptions,
   currentUserId,
+  accessToken,
 }: TopupsClientProps) {
   const router = useRouter();
   const [topups, setTopups] = useState<TopupRow[]>([]);
@@ -116,11 +118,24 @@ export default function TopupsClient({
     let ignore = false;
 
     async function fetchTopups() {
+      if (!accessToken) {
+        setErrorMessage("缺少访问令牌，请重新登录");
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
-      const response = await apiFetch<TopupRow[]>("/api/topups");
+      const response = await apiFetch<TopupRow[]>("/api/topups", {
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : undefined,
+      });
       if (!ignore) {
-        if (response.error) {
-          setErrorMessage(response.error);
+        const apiError = response.error?.message;
+        if (apiError) {
+          setErrorMessage(apiError);
         } else {
           setTopups(response.data ?? []);
           setErrorMessage(null);
@@ -134,7 +149,7 @@ export default function TopupsClient({
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [accessToken]);
 
   const handleFormChange =
     (field: keyof FormState) =>
@@ -147,6 +162,11 @@ export default function TopupsClient({
     setErrorMessage(null);
 
     try {
+      if (!accessToken) {
+        setErrorMessage("缺少访问令牌，请重新登录");
+        return;
+      }
+
       let response;
       switch (action.type) {
         case "create": {
@@ -160,6 +180,11 @@ export default function TopupsClient({
               requested_by: currentUserId,
               created_by: currentUserId,
             }),
+            headers: accessToken
+              ? {
+                  Authorization: `Bearer ${accessToken}`,
+                }
+              : undefined,
           });
           break;
         }
@@ -173,6 +198,11 @@ export default function TopupsClient({
               actor_id: currentUserId,
               remark: action.remark ?? null,
             }),
+            headers: accessToken
+              ? {
+                  Authorization: `Bearer ${accessToken}`,
+                }
+              : undefined,
           });
           break;
         }
@@ -180,8 +210,9 @@ export default function TopupsClient({
           return;
       }
 
-      if (response.error) {
-        setErrorMessage(response.error);
+      const apiError = response.error?.message;
+      if (apiError) {
+        setErrorMessage(apiError);
         return;
       }
 

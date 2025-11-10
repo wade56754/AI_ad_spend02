@@ -1,46 +1,73 @@
 import { redirect } from "next/navigation";
 
+import { apiFetch } from "@/lib/api";
 import { createClient } from "@/lib/supabase/server";
 
 import DailyReportsClient from "./reports-client";
 
+type AccountRow = {
+  id: string;
+  name: string;
+};
+
+type ReportRow = {
+  id: string;
+  ad_account_id: string;
+  date: string;
+  spend: string;
+  leads_count: number;
+  note: string | null;
+  created_at: string;
+};
+
 export default async function DailyReportsPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const [{ data: userData, error: userError }, { data: sessionData }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.auth.getSession(),
+  ]);
+
+  const user = userData.user;
 
   if (userError || !user) {
     redirect("/auth/login");
   }
 
-  const [{ data: accounts }, { data: reports, error: reportsError }] = await Promise.all([
-    supabase
-      .from("ad_accounts")
-      .select("id, name")
-      .eq("assigned_user_id", user.id)
-      .order("name", { ascending: true }),
-    supabase
-      .from("ad_spend_daily")
-      .select("id, ad_account_id, date, spend, leads_count, note, created_at")
-      .eq("user_id", user.id)
-      .order("date", { ascending: false })
-      .limit(50),
+  const accessToken = sessionData.session?.access_token ?? null;
+  const headers = accessToken
+    ? {
+        Authorization: `Bearer ${accessToken}`,
+      }
+    : undefined;
+
+  const [accountsResponse, reportsResponse] = await Promise.all([
+    apiFetch<AccountRow[]>("/api/ad-accounts?page=1&page_size=200", {
+      headers,
+    }),
+    apiFetch<ReportRow[]>(`/api/ad-spend?page=1&page_size=50&user_id=${encodeURIComponent(user.id)}`, {
+      headers,
+    }),
   ]);
 
-  if (reportsError) {
-    throw reportsError;
+  if (accountsResponse.error?.message || reportsResponse.error?.message) {
+    redirect("/protected");
   }
+
+  const accounts =
+    accountsResponse.data?.map((item) => ({
+      id: item.id,
+      name: item.name,
+    })) ?? [];
+
+  const reports = reportsResponse.data ?? [];
 
   return (
     <DailyReportsClient
-      accounts={accounts ?? []}
-      initialReports={reports ?? []}
+      accounts={accounts}
+      initialReports={reports}
       currentUserId={user.id}
+      accessToken={accessToken}
     />
   );
 }
-
-

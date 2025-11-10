@@ -1,0 +1,60 @@
+# Cursor Rules for AI_ad_spend02
+
+Goal
+- Keep system-wide consistency: one data boundary (BFF), unified API envelope, auth, money rounding, time policy, pagination, concurrency, error codes, and documentation.
+
+Architecture Baseline (MUST)
+- Pattern: Backend-for-Frontend (BFF). All business reads/writes go through FastAPI. Do not add new direct DB/Supabase reads from the frontend.
+- Versioning: All HTTP routes live under `/api/v1` for new endpoints. Existing `/api/...` can stay but should migrate.
+
+Contract Baseline (MUST)
+- Response envelope: every API returns
+  `{ "data": T | null, "error": { "code": string|null, "message": string|null }, "meta": { "timestamp": string, "pagination"?: any } }`.
+- Errors: never return `{ "detail": ... }`. Always return `error.code` and `error.message` using `core.response.fail`.
+- Use `core.response.ok/fail` for all responses. Do not invent new wrappers.
+- Monetary values: backend stores Decimal, response serializes to string with 2 decimals, rounding = ROUND_HALF_UP. Do not hand-roll decimal JSON.
+- Time: backend stores UTC; frontends respect the business timezone rules. Do not mix local time silently.
+- Pagination: all list endpoints accept `?page` (1-based), `?size` (<=100 by default) and optional sort/filter. Do not return unbounded datasets.
+- Concurrency & Idempotency: state transitions must use conditional update or optimistic lock; important creations should support idempotency or return 409 with resource info.
+
+Auth & Security (MUST)
+- All protected routes depend on `get_current_user` from `backend/core/security.py`.
+- Frontend requests must provide `Authorization: Bearer <access_token>` through `lib/api.ts` `apiFetch`.
+- CORS: in production, use explicit whitelist from `ALLOWED_ORIGINS`. Never use `*` in prod.
+- Add security headers via Next.js config/middleware when touching headers (CSP/HSTS/XFO/Referrer-Policy/Permissions-Policy).
+
+Frontend Rules (MUST)
+- Use `lib/api.ts::apiFetch` for all backend calls; do not call `fetch()` directly in components to hit the API.
+- `NEXT_PUBLIC_API_URL` must be host origin only (no trailing `/api`); normalization already exists in `lib/api.ts`.
+- Handle errors via `response.error.message`; do not assume `{detail}`.
+
+Backend Rules (MUST)
+- Return via `core.response.ok/fail`. Let global exception handlers convert `HTTPException` to the standard envelope.
+- Validate entity consistency (e.g., Topup account-project-channel) and legal state transitions.
+- Prefer SQLAlchemy 2.0 style and add pagination/filters for list endpoints.
+
+Dependencies & Versions (MUST)
+- Do not use "latest". Pin compatible versions and keep only a single lockfile.
+
+Docs & Contracts (MUST)
+- Update `/openapi.yaml` (or FastAPI auto-export) for any API changes. Keep responses conforming to the envelope. Run OpenAPI lint in CI.
+
+Testing & CI (MUST)
+- Add/maintain tests for: response envelope, auth, money rounding, pagination, concurrency rules.
+- CI should run: lint + typecheck + unit/integration + OpenAPI lint. Prefer Postgres docker in CI to avoid SQLite dialect drift.
+
+Forbidden (REJECT changes that)
+- Bypass BFF: introduce new direct reads/writes in frontend to DB/Supabase for business data.
+- Return raw `{detail}` or any structure that deviates from the envelope.
+- Introduce new response wrappers instead of `core.response.ok/fail`.
+- Skip auth dependency on protected routes.
+- Expose `*` CORS in production.
+
+PR DoD Checklist (ALL must be YES)
+- Contract updated (OpenAPI, examples) and matches the envelope.
+- Auth applied on protected endpoints; error codes/messages standardized.
+- Money rounding (2 decimals, HALF_UP) and UTC time policy respected.
+- Pagination/filtering on list endpoints; no unbounded responses.
+- Concurrency/idempotency considered where applicable.
+- Tests updated/passing; CI green; migrations/indices included if needed.
+

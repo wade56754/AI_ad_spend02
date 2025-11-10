@@ -25,6 +25,7 @@ type ProjectRow = {
 interface ProjectsClientProps {
   initialProjects: ProjectRow[];
   currentUserId: string | null;
+  accessToken: string | null;
 }
 
 type FormState = {
@@ -41,7 +42,7 @@ const defaultFormState: FormState = {
   status: "active",
 };
 
-export default function ProjectsClient({ initialProjects, currentUserId }: ProjectsClientProps) {
+export default function ProjectsClient({ initialProjects, currentUserId, accessToken }: ProjectsClientProps) {
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectRow[]>(initialProjects);
   const [modalOpen, setModalOpen] = useState(false);
@@ -105,23 +106,36 @@ export default function ProjectsClient({ initialProjects, currentUserId }: Proje
     }
 
     try {
+      if (!accessToken) {
+        setErrorMessage("缺少访问令牌，请重新登录");
+        setIsSubmitting(false);
+        return;
+      }
+
       let response;
       if (editingId) {
         payload.updated_by = currentUserId;
         response = await apiFetch<ProjectRow>(`/api/projects/${editingId}`, {
           method: "PUT",
           body: JSON.stringify(payload),
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         });
       } else {
         payload.created_by = currentUserId;
         response = await apiFetch<ProjectRow>("/api/projects", {
           method: "POST",
           body: JSON.stringify(payload),
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         });
       }
 
-      if (response.error) {
-        setErrorMessage(response.error);
+      const apiError = response.error?.message;
+      if (apiError) {
+        setErrorMessage(apiError);
         return;
       }
 

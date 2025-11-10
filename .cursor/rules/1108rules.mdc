@@ -1,0 +1,236 @@
+# Cursor 项目开发规则.md
+
+> 版本：v2.1  
+> 适用项目：AI_Finance_System（FastAPI + Supabase + Next.js）  
+> 目的：约束 Cursor 在自动开发时遵守项目统一规范，防止破坏接口结构、状态机逻辑和日志体系。
+
+---
+
+## 一、总体原则
+
+1. **禁止改动接口路径**  
+   所有 API 必须遵循 `/api/...` 命名规范，与后端 FastAPI 路由保持一致。
+
+2. **禁止绕过后端逻辑**  
+   所有业务写操作必须调用后端接口，**不允许直接操作 Supabase 表**（insert、update、delete）。
+
+3. **禁止修改数据库表结构**  
+   Supabase 数据结构由产品方维护，Cursor 不得修改字段名、类型、约束。
+
+4. **返回结构必须统一**  
+   所有接口返回 `{data, error, meta}` 格式。  
+   ```json
+   {
+     "data": {...},
+     "error": null,
+     "meta": {
+       "timestamp": "2025-11-08T12:00:00Z",
+       "pagination": null
+     }
+   }
+   ```
+
+5. **日志必须写入**  
+   每个写操作（POST、PATCH、DELETE）都要写入 `logs` 表，包含 `actor_id`, `action`, `target_table`, `target_id`。
+
+6. **前后端分层清晰**  
+   - FastAPI 负责业务逻辑、校验、日志、状态流转。  
+   - Next.js（bolt.new 生成）负责展示与交互，不包含业务判断。
+
+7. **禁止 Cursor 自动改动依赖版本或目录结构**。
+
+---
+
+## 二、代码结构约束
+
+### 1. 后端结构（FastAPI）
+
+```
+backend/
+  ├── main.py
+  ├── core/
+  │    ├── config.py
+  │    ├── db.py
+  │    └── security.py
+  ├── models/       # SQLAlchemy ORM
+  ├── schemas/      # Pydantic Schema
+  ├── routers/      # API 路由
+  ├── services/     # 业务逻辑（非必须）
+  ├── utils/
+  └── tests/
+```
+
+- 所有模型字段必须与 Supabase 表字段一致（numeric → Decimal）。
+- 时间字段 `created_at`, `updated_at` 必须自动更新。
+
+### 2. 前端结构（Next.js + Supabase）
+
+```
+frontend/
+  ├── app/
+  │    ├── dashboard/
+  │    ├── projects/
+  │    ├── channels/
+  │    ├── accounts/
+  │    ├── reports/
+  │    ├── finance/
+  │    ├── logs/
+  │    └── users/
+  ├── lib/
+  │    ├── api.ts        # 统一请求封装
+  │    └── supabase/     # Supabase client
+  └── components/
+```
+
+- 所有 API 调用通过 `/lib/api.ts` 封装的 `apiFetch()` 实现。  
+- 返回结构必须解构 `{data, error}`。
+
+---
+
+## 三、接口规范
+
+### 1. 命名规则
+- GET：查询资源（`/api/projects`）  
+- POST：创建资源（`/api/projects`）  
+- PATCH：修改资源（`/api/projects/{id}`）  
+- DELETE：逻辑删除（视业务而定）  
+
+### 2. 返回结构
+统一为：
+
+```json
+{
+  "data": {...},
+  "error": {
+    "code": null,
+    "message": null
+  },
+  "meta": {
+    "timestamp": "...",
+    "pagination": {...}
+  }
+}
+```
+
+### 3. 状态码规范
+
+| 场景 | 状态码 | 说明 |
+|------|--------|------|
+| 成功 | 200 / 201 | 操作成功 |
+| 参数错误 | 400 | 缺少字段或类型不匹配 |
+| 权限错误 | 403 | 无访问权限 |
+| 资源不存在 | 404 | id 不存在 |
+| 唯一冲突 | 409 | 重复数据（如重复日报） |
+| 状态流转错误 | 422 | 不允许的状态变化 |
+| 服务器异常 | 500 | 系统错误 |
+
+### 4. 日志记录规范
+
+- 表：`logs`
+- 触发时机：每个 POST / PATCH / DELETE
+- 示例：
+  ```python
+  log_action(
+      actor_id=current_user.id,
+      action="update_project",
+      target_table="projects",
+      target_id=project.id,
+      before_data=old_project.dict(),
+      after_data=project.dict()
+  )
+  ```
+
+### 5. 状态机规则示例（广告账户）
+
+```
+new → testing → active → suspended → dead → archived
+```
+非法流转一律返回 HTTP 422。
+
+### 6. 异常结构
+```json
+{
+  "data": null,
+  "error": {
+    "code": "ACCOUNT_INVALID_TRANSITION",
+    "message": "广告账户无法从 dead 变为 active"
+  },
+  "meta": null
+}
+```
+
+---
+
+## 四、Cursor 禁止行为清单
+
+- ❌ 直接 `supabase.from(...).update()` 写表  
+- ❌ 改接口路径或删除接口  
+- ❌ 输出非 `{data,error,meta}` JSON  
+- ❌ 修改日志结构或删除日志逻辑  
+- ❌ 跳过业务校验或状态流转检查  
+- ❌ 直接使用 float 替代 Decimal  
+- ❌ 新建表 / 字段名与 Supabase 不一致  
+
+---
+
+## 五、Cursor 提示语模板
+
+### 1. 生成后端接口
+> “根据 Supabase 表结构为模块 projects / channels / ad_accounts / ad_spend_daily / topups / ledgers / reconciliations 生成 FastAPI 路由文件。每个接口必须返回 `{data,error,meta}`，写操作要自动写 logs。禁止绕过 ORM 或跳过状态机校验。”
+
+### 2. 生成前端页面
+> “在 Next.js Supabase Starter 框架下，为 `/app/projects/page.tsx` 生成页面。数据读 Supabase，写操作通过后端 `/api/projects`。禁止直接修改数据库。”
+
+### 3. 生成测试代码
+> “为 FastAPI 项目生成 pytest 接口测试：1）healthz 返回 200；2）创建项目成功；3）重复日报返回 409；4）充值审批状态按顺序流转。接口结构必须 `{data,error,meta}`。”
+
+### 4. 生成接口文档
+> “输出所有 `/api/...` 路由的接口文档，列出：请求方法、路径、参数示例、返回示例（包含 data/error/meta）。禁止使用 Swagger 默认风格，必须自定义描述。”
+
+---
+
+## 六、扩展约定
+
+1. **用户权限**  
+   - 四种角色：`media_buyer`, `account_mgr`, `finance`, `admin`。  
+   - 后端依赖 `Depends(get_current_user)` 控制访问权限。
+
+2. **异常捕获**  
+   - 使用统一异常类 `AppException`。  
+   - 捕获后返回 `error.code` 和 `error.message`。
+
+3. **分页规范**  
+   - Query 参数：`page`, `page_size`。  
+   - 返回在 `meta.pagination` 内。
+
+4. **日期时间格式**  
+   - 统一 `ISO8601`，带时区。  
+   - 如：`2025-11-08T12:34:56Z`。
+
+---
+
+## 七、质量检查标准
+
+| 检查项 | 说明 |
+|--------|------|
+| ✅ 接口返回结构正确 | 含 data / error / meta |
+| ✅ 每次写操作都有日志 | logs 表同步更新 |
+| ✅ 状态流转正确 | 无非法状态跳转 |
+| ✅ Decimal 精度正常 | 金额计算无误差 |
+| ✅ API 路径统一 | /api/... |
+| ✅ CORS 启用 | 前端可跨域访问 |
+| ✅ 错误码含义清晰 | 便于排查 |
+
+---
+
+## 八、部署后验收要求
+
+- 所有接口在 Postman 或 curl 下返回 200。  
+- `/api/ad-spend` 重复提交返回 409。  
+- `/api/topups/{id}/approve` 状态机严格生效。  
+- 日志表 `logs` 自动落数据。  
+- `/api/reconcile/auto` 正确匹配金额与日期。
+
+---
+alwaysApply: true
+---
