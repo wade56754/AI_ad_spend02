@@ -342,6 +342,92 @@ docker-compose -f docker-compose.dev.yml down   # 停止服务
 
 ---
 
+## 🤖 AI助手开发规范
+
+### 项目规则记忆
+为了确保代码的一致性和质量，AI助手必须遵循存储在 [`.project-rules.md`](./.project-rules.md) 中的所有项目规范。
+
+### 核心开发原则
+
+1. **严格遵循技术栈规范**
+   - 后端：FastAPI + Pydantic v2 + SQLAlchemy (同步版)
+   - 前端：Next.js 15 + TypeScript + Tailwind + shadcn/ui
+   - 数据库：PostgreSQL + RLS权限控制
+   - 缓存：Redis + RQ异步队列
+
+2. **代码规范要求**
+   - Python必须使用类型注解和文档字符串
+   - TypeScript必须有严格的类型定义
+   - 遵循统一的代码格式化（Black/isort/Prettier）
+   - 所有API必须有适当的错误处理和日志
+
+3. **安全要求**
+   - 所有API端点都需要JWT认证
+   - 实现基于角色的权限控制（5个角色）
+   - 敏感数据必须加密存储
+   - 遵循RLS数据隔离原则
+
+4. **API响应格式**
+   ```python
+   # 成功响应（必须格式）
+   {
+     "success": true,
+     "data": {...},
+     "message": "操作成功",
+     "code": "SUCCESS",
+     "request_id": "uuid",
+     "timestamp": "2025-11-11T10:30:00Z"
+   }
+   ```
+
+5. **数据库设计原则**
+   - 表名使用复数形式（users, projects）
+   - 必须包含created_at和updated_at字段
+   - 外键必须创建索引
+   - 大表必须考虑分区
+
+6. **测试要求**
+   - 单元测试覆盖率 > 80%
+   - 所有API必须有集成测试
+   - 关键业务流程需要E2E测试
+
+7. **Git提交规范**
+   ```
+   <type>(<scope>): <subject>
+
+   type: feat, fix, docs, style, refactor, perf, test, chore
+   ```
+
+### 开发检查清单
+在编写或修改代码前，AI助手必须：
+- [ ] 查阅 [`.project-rules.md`](./.project-rules.md) 确认规范
+- [ ] 检查是否遵循统一的命名规范
+- [ ] 确认是否包含适当的错误处理
+- [ ] 验证是否实现了必要的权限控制
+- [ ] 检查是否添加了必要的日志记录
+
+### 重要提醒
+- **禁止**硬编码敏感信息（使用环境变量）
+- **必须**使用依赖注入而非直接实例化
+- **必须**处理所有可能的异常情况
+- **禁止**在生产环境输出调试信息
+- **必须**遵循项目的目录结构和文件命名规范
+
+### 常见问题
+1. **Q**: 如何处理权限验证？
+   **A**: 使用 `require_role` 装饰器，传入允许的角色列表
+
+2. **Q**: 如何实现分页？
+   **A**: 使用 `page` 和 `size` 参数，返回 `PaginatedResponse`
+
+3. **Q**: 如何处理数据库事务？
+   **A**: 使用 `db.begin()` 上下文管理器
+
+4. **Q**: 如何添加审计日志？
+   **A**: 使用 `audit_log` 服务记录关键操作
+
+---
+
 **文档版本**: v2.1
 **最后更新**: 2025-11-11
 **下次审查**: 功能重大变更时
