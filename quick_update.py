@@ -20,7 +20,7 @@ def main():
     print("="*50)
 
     # 1. 添加所有文件
-    print("添加文件到Git...")
+    print("Adding files to Git...")
     if not run_cmd("git add ."):
         print("添加文件失败")
         return 1
