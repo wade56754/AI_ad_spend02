@@ -1,0 +1,49 @@
+{
+  "name": "AI广告代投系统",
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "sqltools.connections": [
+      {
+        "name": "Supabase Production",
+        "driver": "PostgreSQL",
+        "server": "db.jzmcoivxhiyidizncyaq.supabase.co",
+        "port": 5432,
+        "database": "postgres",
+        "username": "postgres",
+        "password": "xMw3Hx6suGGu2URV",
+        "ssl": true,
+        "previewLimit": 50
+      }
+    ],
+    "python.defaultInterpreterPath": "./venv/Scripts/python.exe",
+    "files.associations": {
+      "*.sql": "sql"
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "supabase.supabase",
+      "mtxr.sqltools",
+      "mtxr.sqltools-driver-pg",
+      "ms-python.python",
+      "ms-python.black-formatter",
+      "ms-python.flake8"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Python: Database Test",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/scripts/database/test_connection.py",
+        "console": "integratedTerminal"
+      }
+    ]
+  }
+}

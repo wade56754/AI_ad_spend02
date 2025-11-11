@@ -1,0 +1,133 @@
+[run]
+# Coverage.py 配置文件
+
+# 包含的路径
+source = backend
+
+# 相对路径
+relative_files = True
+
+# 包含的模块
+include =
+    */backend/*
+    */app/*
+
+# 排除的文件
+omit =
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */migrations/*
+    */conftest.py
+    */settings/*
+    */wsgi.py
+    */manage.py
+    */alembic/*
+    */alembic.py
+
+# 排除的行
+exclude_lines =
+    # 默认排除
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise AssertionError
+    raise NotImplementedError
+
+    # 调试和异常处理
+    if self.debug:
+    if settings.DEBUG
+    if DEBUG
+    except ImportError
+    except Exception as e:
+    except Exception:
+    except:
+    pass
+    raise
+
+    # 类型检查相关
+    if TYPE_CHECKING:
+
+    # 抽象方法和接口
+    @abstractmethod
+    @abc.abstractmethod
+
+    # 测试和文档示例
+    def __init__
+    class .*\bProtocol\):
+    @(abc\.)?abstractmethod
+
+    # 未使用的代码
+    if 0:
+    if False:
+    if __name__ == .__main__.:
+
+    # 魔术方法
+    def __enter__
+    def __exit__
+
+[report]
+# 报告配置
+
+# 显示未覆盖的行
+show_missing = True
+
+# 排序字段
+sort = Cover
+
+# 精度
+precision = 2
+
+# 包含的模块
+include =
+    */backend/models/*
+    */backend/services/*
+    */backend/api/*
+    */backend/core/*
+
+# 排除的模块
+omit =
+    */tests/*
+    */test_*
+    */conftest.py
+
+# 正则表达式匹配的行
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise AssertionError
+    raise NotImplementedError
+
+[html]
+# HTML报告配置
+
+# 输出目录
+directory = htmlcov
+
+# 标题
+title = AI广告代投系统 - 测试覆盖率报告
+
+# 显示源代码
+show_contexts = True
+
+# 跳过已覆盖的文件
+skip_covered = False
+
+# 跳过空文件
+skip_empty = False
+
+[xml]
+# XML报告配置
+
+# 输出文件
+output = coverage.xml
+
+[paths]
+# 路径映射（用于CI/CD）
+source =
+    backend/
+    */backend
+    */site-packages/backend

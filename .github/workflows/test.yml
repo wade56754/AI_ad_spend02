@@ -1,0 +1,347 @@
+name: 🧪 测试流水线
+
+on:
+  push:
+    branches: [ main, develop, test-* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 每天凌晨2点运行
+    - cron: '0 2 * * *'
+
+# 环境变量
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  POETRY_VERSION: '1.8.3'
+
+jobs:
+  # 代码质量检查
+  lint:
+    name: 🔍 代码质量检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 📦 安装Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+
+      - name: 📥 安装依赖
+        run: |
+          poetry install --with dev
+          pip install flake8 black isort mypy
+
+      - name: 🔍 Flake8检查
+        run: |
+          flake8 backend/ tests/ \
+            --count --select=E9,F63,F7,F82 \
+            --show-source --statistics \
+            --exclude=__pycache__,migrations,.venv,venv
+
+      - name: ⚫ Black代码格式检查
+        run: black --check backend/ tests/
+
+      - name: 📚 isort导入排序检查
+        run: isort --check-only backend/ tests/
+
+      - name: 🔎 MyPy类型检查
+        run: mypy backend/ --ignore-missing-imports
+
+  # 单元测试
+  test-unit:
+    name: 🧪 单元测试
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_ai_ad_spend
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: ⬇️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'poetry'
+
+      - name: 📦 安装Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+
+      - name: 📥 安装依赖
+        run: |
+          poetry install --with dev,test
+          pip install -r requirements-test.txt
+
+      - name: 🗄️ 设置测试数据库
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_ai_ad_spend
+          REDIS_URL: redis://localhost:6379/1
+        run: |
+          # 创建数据库
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE test_ai_ad_spend;"
+
+          # 运行数据库迁移
+          alembic upgrade head
+
+      - name: 🧪 运行单元测试
+        env:
+          TESTING: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_ai_ad_spend
+          REDIS_URL: redis://localhost:6379/1
+          JWT_SECRET: test_secret_key_for_ci_32_characters
+        run: |
+          python run_tests.py --type unit --verbose --coverage
+
+      - name: 📊 上传覆盖率报告
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+      - name: 📤 上传覆盖率到Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: htmlcov/
+          retention-days: 30
+
+  # 集成测试
+  test-integration:
+    name: 🔗 集成测试
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_ai_ad_spend_integration
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: ⬇️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'poetry'
+
+      - name: 📦 安装Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+
+      - name: 📥 安装依赖
+        run: |
+          poetry install --with dev,test
+          pip install -r requirements-test.txt
+
+      - name: 🗄️ 设置测试数据库
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_ai_ad_spend_integration
+          REDIS_URL: redis://localhost:6379/2
+        run: |
+          # 创建数据库
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE test_ai_ad_spend_integration;"
+
+          # 运行数据库迁移
+          alembic upgrade head
+
+      - name: 🔗 运行集成测试
+        env:
+          TESTING: true
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_ai_ad_spend_integration
+          REDIS_URL: redis://localhost:6379/2
+          JWT_SECRET: test_secret_key_for_ci_integration_32_chars
+        run: |
+          python run_tests.py --type integration --verbose
+
+  # 安全测试
+  test-security:
+    name: 🔒 安全测试
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: ⬇️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'poetry'
+
+      - name: 📦 安装Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+
+      - name: 📥 安装依赖
+        run: |
+          poetry install --with dev,test
+          pip install -r requirements-test.txt
+          pip install bandit safety
+
+      - name: 🔒 Bandit安全扫描
+        run: |
+          bandit -r backend/ -f json -o bandit-report.json || true
+
+      - name: 🛡️ Safety依赖检查
+        run: |
+          safety check --json --output safety-report.json || true
+
+      - name: 🧪 运行安全测试
+        env:
+          TESTING: true
+          JWT_SECRET: test_secret_for_security_tests_32_chars
+        run: |
+          python run_tests.py --type security --verbose
+
+      - name: 📤 上传安全报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+          retention-days: 30
+
+  # 性能测试
+  test-performance:
+    name: ⚡ 性能测试
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: ⬇️ 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🐍 设置Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'poetry'
+
+      - name: 📦 安装Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+
+      - name: 📥 安装依赖
+        run: |
+          poetry install --with dev,test
+          pip install -r requirements-test.txt
+          pip install locust
+
+      - name: ⚡ 运行性能测试
+        env:
+          TESTING: true
+          JWT_SECRET: test_secret_for_performance_tests_32_chars
+        run: |
+          python run_tests.py --type performance --verbose
+
+      - name: 📊 上传性能报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-reports
+          path: performance_reports/
+          retention-days: 30
+
+  # 部署就绪检查
+  deploy-ready:
+    name: ✅ 部署就绪检查
+    runs-on: ubuntu-latest
+    needs: [test-unit, test-integration, test-security]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: ✅ 所有测试通过
+        run: |
+          echo "✅ 所有测试通过，准备部署"
+
+  # 测试总结
+  test-summary:
+    name: 📋 测试总结
+    runs-on: ubuntu-latest
+    needs: [lint, test-unit, test-integration, test-security]
+    if: always()
+
+    steps:
+      - name: 📋 生成测试报告
+        run: |
+          echo "## 🧪 测试流水线报告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 任务 | 状态 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔍 代码质量检查 | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 单元测试 | ${{ needs.test-unit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 集成测试 | ${{ needs.test-integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔒 安全测试 | ${{ needs.test-security.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ needs.lint.result }}" == "success" && "${{ needs.test-unit.result }}" == "success" && "${{ needs.test-integration.result }}" == "success" && "${{ needs.test-security.result }}" == "success" ]]; then
+            echo "### ✅ 所有测试通过！ 🎉" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ 部分测试失败" >> $GITHUB_STEP_SUMMARY
+          fi

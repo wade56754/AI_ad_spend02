@@ -1,0 +1,37 @@
+# 测试依赖包
+# 核心测试框架
+pytest==8.3.3                # 测试框架
+pytest-cov==6.0.0           # 覆盖率测试
+pytest-html==4.1.1          # HTML测试报告
+pytest-xdist==3.6.1         # 并行测试
+pytest-mock==3.14.0         # Mock支持
+pytest-asyncio==0.24.0      # 异步测试支持
+pytest-timeout==2.3.1       # 超时控制
+pytest-benchmark==4.0.0     # 性能基准测试
+factory-boy==3.3.1          # 测试数据工厂
+faker==30.8.1               # 伪造数据生成
+
+# 数据库测试
+pytest-postgresql==6.1.1    # PostgreSQL测试
+pytest-redis==3.1.2         # Redis测试
+
+# HTTP测试
+httpx==0.28.0               # 异步HTTP客户端（用于测试API）
+requests-mock==1.12.1       # HTTP请求Mock
+
+# 代码质量
+flake8==7.1.0               # 代码风格检查
+black==24.10.0              # 代码格式化
+isort==5.13.2               # 导入排序
+mypy==1.13.0                # 类型检查
+pre-commit==4.0.1           # Git钩子
+
+# 性能测试
+locust==2.29.0              # 负载测试
+memory-profiler==0.61.0     # 内存分析
+py-spy==0.3.14              # Python性能分析
+
+# 其他工具
+coverage==7.6.1             # 覆盖率工具
+tox==4.23.2                 # 多环境测试管理
+hypothesis==6.115.0         # 属性测试

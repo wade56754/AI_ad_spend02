@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:mcp.supabase.com)",
+      "Bash(echo:*)",
+      "Bash(curl:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:supabase.com)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
