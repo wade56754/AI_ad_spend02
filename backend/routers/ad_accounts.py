@@ -53,7 +53,7 @@ def list_ad_accounts(
         .limit(page_size)
         .all()
     )
-    data = [AdAccountRead.from_orm(item).dict() for item in items]
+    data = [AdAccountRead.model_validate(item, from_attributes=True).model_dump() for item in items]
     pagination = {
         "page": page,
         "page_size": page_size,
@@ -72,7 +72,7 @@ def get_ad_account(
     account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad account not found")
-    data = AdAccountRead.from_orm(account).dict()
+    data = AdAccountRead.model_validate(account, from_attributes=True).model_dump()
     return ok(data=data)
 
 
@@ -86,7 +86,7 @@ def create_ad_account(
     db.add(account)
     db.commit()
     db.refresh(account)
-    data = AdAccountRead.from_orm(account).dict()
+    data = AdAccountRead.model_validate(account, from_attributes=True).model_dump()
 
     LogService.write(
         db,
@@ -127,7 +127,7 @@ def update_ad_account_status(
             detail=f"Status transition from {current_status} to {target_status} is not allowed",
         )
 
-    before_state = jsonable_encoder(AdAccountRead.from_orm(account))
+    before_state = jsonable_encoder(AdAccountRead.model_validate(account, from_attributes=True).model_dump())
 
     account.status = target_status
     if payload.dead_reason is not None:
@@ -148,7 +148,7 @@ def update_ad_account_status(
     db.flush()
     db.refresh(account)
 
-    after_state = jsonable_encoder(AdAccountRead.from_orm(account))
+    after_state = jsonable_encoder(AdAccountRead.model_validate(account, from_attributes=True).model_dump())
     log_entry.after_data = after_state
 
     db.commit()

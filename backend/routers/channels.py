@@ -40,7 +40,7 @@ def list_channels(
         .limit(page_size)
         .all()
     )
-    data = [ChannelRead.from_orm(channel).dict() for channel in items]
+    data = [ChannelRead.model_validate(channel, from_attributes=True).model_dump() for channel in items]
     pagination = {
         "page": page,
         "page_size": page_size,
@@ -59,8 +59,8 @@ def get_channel(
     channel = db.query(Channel).filter(Channel.id == channel_id).first()
     if not channel:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found")
-    data = ChannelRead.from_orm(channel).dict()
-    return ok(data=data, status_code=status.HTTP_201_CREATED)
+    data = ChannelRead.model_validate(channel, from_attributes=True).model_dump()
+    return ok(data=data, status_code=status.HTTP_200_OK)
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -79,13 +79,13 @@ def create_channel(
         target_table="channels",
         target_id=channel.id,
         before_data=None,
-        after_data=jsonable_encoder(ChannelRead.from_orm(channel)),
+        after_data=jsonable_encoder(ChannelRead.model_validate(channel, from_attributes=True).model_dump()),
     )
     db.add(log_entry)
 
     db.commit()
     db.refresh(channel)
-    data = ChannelRead.from_orm(channel).dict()
+    data = ChannelRead.model_validate(channel, from_attributes=True).model_dump()
     return ok(data=data)
 
 
@@ -100,7 +100,7 @@ def update_channel(
     if not channel:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Channel not found")
 
-    before_state = jsonable_encoder(ChannelRead.from_orm(channel))
+    before_state = jsonable_encoder(ChannelRead.model_validate(channel, from_attributes=True).model_dump())
 
     update_data = payload.dict(exclude_unset=True)
     for key, value in update_data.items():
@@ -118,12 +118,12 @@ def update_channel(
 
     db.flush()
     db.refresh(channel)
-    log_entry.after_data = jsonable_encoder(ChannelRead.from_orm(channel))
+    log_entry.after_data = jsonable_encoder(ChannelRead.model_validate(channel, from_attributes=True).model_dump())
 
     db.commit()
     db.refresh(channel)
 
-    data = ChannelRead.from_orm(channel).dict()
+    data = ChannelRead.model_validate(channel, from_attributes=True).model_dump()
     return ok(data=data)
 
 
