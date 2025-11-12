@@ -13,7 +13,27 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from backend.utils.response import ErrorResponse, create_error_response
+from backend.core.response import error_response
+from types import SimpleNamespace
+from datetime import datetime
+import uuid
+
+
+def create_error_response(code: str, message: str, details: dict | None = None) -> SimpleNamespace:
+    """兼容旧代码的错误响应构造器，返回带有 .dict() 方法的对象。
+    最终由本模块使用 JSONResponse(status_code=..., content=...).
+    """
+    payload = {
+        "success": False,
+        "data": None,
+        "message": message,
+        "code": code,
+        "request_id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    if details is not None:
+        payload["details"] = details
+    return SimpleNamespace(dict=lambda: payload)
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -133,15 +153,11 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     )
 
     # 返回错误响应
-    error_response = create_error_response(
-        code=exc.code,
+    return error_response(
         message=exc.message,
-        details=exc.details
-    )
-
-    return JSONResponse(
+        code=exc.code,
         status_code=exc.status_code,
-        content=error_response.dict()
+        details=exc.details,
     )
 
 
@@ -180,15 +196,11 @@ async def validation_exception_handler(
     )
 
     # 返回错误响应
-    error_response = create_error_response(
-        code="VALIDATION_ERROR",
+    return error_response(
         message="参数验证失败",
-        details=details
-    )
-
-    return JSONResponse(
+        code="VALIDATION_ERROR",
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=error_response.dict()
+        details=details,
     )
 
 
@@ -224,14 +236,10 @@ async def http_exception_handler(
     )
 
     # 返回错误响应
-    error_response = create_error_response(
+    return error_response(
+        message=str(exc.detail),
         code=error_code,
-        message=exc.detail
-    )
-
-    return JSONResponse(
         status_code=exc.status_code,
-        content=error_response.dict()
     )
 
 

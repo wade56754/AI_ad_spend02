@@ -4,18 +4,20 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
-from backend.core.response import ok
+from backend.core.response import ok, paginated_response
 from backend.core.security import AuthenticatedUser, get_current_user
 from backend.models import Log, Project
 from backend.schemas import ProjectCreate, ProjectRead, ProjectUpdate
+from backend.schemas.response import StandardResponse, ProjectListResponse
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
-@router.get("/", response_model=dict)
+@router.get("/", response_model=StandardResponse[ProjectListResponse])
 def list_projects(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -23,7 +25,7 @@ def list_projects(
     search: Optional[str] = Query(None),
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> dict:
+) -> JSONResponse:
     query = db.query(Project)
 
     if status_filter:
@@ -40,27 +42,21 @@ def list_projects(
         .limit(page_size)
         .all()
     )
-    data = [ProjectRead.from_orm(project).dict() for project in items]
-    pagination = {
-        "page": page,
-        "page_size": page_size,
-        "total": total,
-        "total_pages": ceil(total / page_size) if page_size else 0,
-    }
-    return ok(data=data, meta={"pagination": pagination})
+    data = [ProjectRead.model_validate(project, from_attributes=True).model_dump() for project in items]
+    return paginated_response(data=data, page=page, page_size=page_size, total=total)
 
 
-@router.get("/{project_id}", response_model=dict)
+@router.get("/{project_id}", response_model=StandardResponse[dict])
 def get_project(
     project_id: UUID,
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
-) -> dict:
+) -> JSONResponse:
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
-    data = ProjectRead.from_orm(project).dict()
-    return ok(data=data, status_code=status.HTTP_201_CREATED)
+    data = ProjectRead.model_validate(project, from_attributes=True).model_dump()
+    return ok(data=data, status_code=status.HTTP_200_OK)
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -79,13 +75,13 @@ def create_project(
         target_table="projects",
         target_id=project.id,
         before_data=None,
-        after_data=jsonable_encoder(ProjectRead.from_orm(project)),
+        after_data=jsonable_encoder(ProjectRead.model_validate(project, from_attributes=True).model_dump()),
     )
     db.add(log_entry)
 
     db.commit()
     db.refresh(project)
-    data = ProjectRead.from_orm(project).dict()
+    data = ProjectRead.model_validate(project, from_attributes=True).model_dump()
     return ok(data=data)
 
 
@@ -100,7 +96,7 @@ def update_project(
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
-    before_state = jsonable_encoder(ProjectRead.from_orm(project))
+    before_state = jsonable_encoder(ProjectRead.model_validate(project, from_attributes=True).model_dump())
 
     update_data = payload.dict(exclude_unset=True)
     for key, value in update_data.items():
@@ -118,12 +114,12 @@ def update_project(
 
     db.flush()
     db.refresh(project)
-    log_entry.after_data = jsonable_encoder(ProjectRead.from_orm(project))
+    log_entry.after_data = jsonable_encoder(ProjectRead.model_validate(project, from_attributes=True).model_dump())
 
     db.commit()
     db.refresh(project)
 
-    data = ProjectRead.from_orm(project).dict()
+    data = ProjectRead.model_validate(project, from_attributes=True).model_dump()
     return ok(data=data)
 
 

@@ -8,7 +8,8 @@ import secrets
 from functools import lru_cache
 from typing import Any, List, Optional
 
-from pydantic import BaseSettings, validator, Field
+from pydantic import validator, Field
+from pydantic_settings import BaseSettings
 
 
 class SecurityConfig(BaseSettings):

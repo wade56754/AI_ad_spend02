@@ -36,33 +36,67 @@ app.include_router(import_jobs.router, prefix=API_V1_PREFIX)
 
 
 @app.get("/healthz")
-async def healthz() -> Dict[str, object]:
-    """Return service health status."""
-    return ok(
-        {
+async def healthz() -> JSONResponse:
+    """Return service health status (Kubernetes compatible)."""
+    from backend.core.response import success_response
+    return success_response(
+        data={
             "status": "ok",
             "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-        }
+        },
+        message="Health check passed",
     )
 
 
 @app.get("/readyz")
-async def readyz() -> Dict[str, object]:
-    """Readiness probe including database connectivity."""
+async def readyz() -> JSONResponse:
+    """Readiness probe including database connectivity (Kubernetes compatible)."""
+    from backend.core.response import success_response, error_response
     try:
         engine = get_engine()
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
     except Exception as exc:
         message = str(exc) if settings.debug else "Readiness check failed"
-        return fail(
-            code="READY_CHECK_FAILED",
+        return error_response(
             message=message,
-            data={"checks": {"database": "error"}},
+            code="READY_CHECK_FAILED",
             status_code=503,
+            details={"checks": {"database": "error"}}
         )
 
-    return ok({"status": "ok", "checks": {"database": "ok"}})
+    return success_response(
+        data={"status": "ok", "checks": {"database": "ok"}},
+        message="Readiness check passed"
+    )
+
+
+@app.get("/api/v1/health")
+async def health_api() -> JSONResponse:
+    """API version health check for consistency with documentation."""
+    from backend.core.response import success_response
+    return success_response(
+        data={
+            "status": "ok",
+            "service": "ai-ad-spend-backend",
+            "version": "v2.1",
+            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+        },
+        message="API health check passed",
+    )
+
+
+@app.api_route("/api/health", methods=["GET", "OPTIONS"])
+async def health_root() -> JSONResponse:
+    """Compatibility health check for tests expecting flat JSON under /api/health."""
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "healthy",
+            "version": "v2.1",
+            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+        },
+    )
 
 
 def _extract_error(detail: object, status_code: int) -> Tuple[str, str]:

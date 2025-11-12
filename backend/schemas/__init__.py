@@ -3,12 +3,12 @@ from decimal import Decimal
 from typing import Any, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ORMBase(BaseModel):
-    class Config:
-        orm_mode = True
+    # Pydantic v2: 启用属性读取以替代 v1 的 orm_mode
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TimestampMixin(BaseModel):
