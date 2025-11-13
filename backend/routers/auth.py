@@ -10,14 +10,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from backend.core.db import get_db
-from backend.core.security import (
+from ..core.db import get_db
+from ..core.security import (
     AuthenticatedUser,
     jwt_manager,
     token_blacklist,
     get_current_active_user
 )
-from backend.core.response import ok, fail
+from ..core.response import ok, fail
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -243,7 +243,7 @@ async def change_password(
 
 @router.get("/verify-token")
 async def verify_token(
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: AuthenticatedUser = Depends(get_current_active_user)
 ) -> Dict[str, Any]:
     """
     验证令牌有效性

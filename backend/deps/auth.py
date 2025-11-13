@@ -7,8 +7,8 @@ from typing import List, Optional, Union
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from backend.core.security import get_current_user
-from backend.models.users import User
+from ..core.security import get_current_user
+from ..models.users import User
 
 # HTTP Bearer认证方案
 security = HTTPBearer(auto_error=False)

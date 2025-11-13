@@ -1,157 +1,116 @@
 """
 项目管理模块
-包含项目、客户、收费模式等相关模型
+包含项目、成员、费用等相关模型
 """
 
-import uuid
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Numeric, Boolean, Integer, JSON
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Numeric, Boolean, Integer, Date, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from backend.core.db import Base
-from backend.models.ad_spend_daily import GUID
+from core.database import Base
+from models.user import User
 
 
 class Project(Base):
     """项目表 - 管理甲方项目信息"""
     __tablename__ = "projects"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    name = Column(String(255), nullable=False, index=True)
-    code = Column(String(50), unique=True, nullable=False, index=True)  # 项目编码
-    description = Column(Text, nullable=True)
+    # 主键
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
-    # 客户信息
-    client_name = Column(String(255), nullable=False)
-    client_contact = Column(String(255), nullable=True)
-    client_email = Column(String(255), nullable=True)
-    client_phone = Column(String(50), nullable=True)
-
-    # 收费模式
-    pricing_model = Column(String(50), nullable=False, default="per_lead")  # per_lead, fixed_fee, hybrid
-    lead_price = Column(Numeric(10, 2), nullable=False)  # 每个潜在客户价格
-    setup_fee = Column(Numeric(10, 2), default=0)  # 项目启动费
-    currency = Column(String(3), default="USD")  # 货币单位
+    # 基本信息
+    name = Column(String(200), nullable=False, index=True, comment="项目名称")
+    client_name = Column(String(200), nullable=False, comment="客户联系人姓名")
+    client_company = Column(String(200), nullable=False, comment="客户公司名称")
+    description = Column(Text, nullable=True, comment="项目描述")
 
     # 项目状态
-    status = Column(String(20), nullable=False, default="planning")  # planning, active, paused, completed, cancelled
-    start_date = Column(DateTime, nullable=True)
-    end_date = Column(DateTime, nullable=True)
+    status = Column(String(20), default="planning", nullable=False, comment="项目状态", index=True)
 
-    # 预算和限制
-    monthly_budget = Column(Numeric(12, 2), nullable=True)  # 月度预算
-    total_budget = Column(Numeric(15, 2), nullable=True)  # 总预算
+    # 预算信息
+    budget = Column(Numeric(15, 2), default=0.00, comment="项目预算")
+    currency = Column(String(10), default="USD", comment="货币类型")
 
-    # 目标设置
-    monthly_target_leads = Column(Integer, default=0)  # 月度目标潜在客户数
-    target_cpl = Column(Numeric(10, 2), nullable=True)  # 目标单粉成本
+    # 时间信息
+    start_date = Column(Date, nullable=True, comment="项目开始日期")
+    end_date = Column(Date, nullable=True, comment="项目结束日期")
 
     # 管理信息
-    manager_id = Column(GUID(), ForeignKey("users.id"), nullable=True)  # 项目经理
-    created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    account_manager_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="项目经理ID")
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False, comment="创建人ID")
+    updated_by = Column(Integer, ForeignKey("users.id"), nullable=True, comment="更新人ID")
+    created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, comment="更新时间")
+
+    # 索引
+    __table_args__ = (
+        Index('idx_projects_status', 'status'),
+        Index('idx_projects_client', 'client_name'),
+        Index('idx_projects_manager', 'account_manager_id'),
+        Index('idx_projects_created_by', 'created_by'),
+        Index('idx_projects_dates', 'start_date', 'end_date'),
+        {'comment': '项目信息表'}
+    )
 
     # 关系
-    manager = relationship("User", foreign_keys=[manager_id], lazy="joined")
+    account_manager = relationship("User", foreign_keys=[account_manager_id])
     creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
     ad_accounts = relationship("AdAccount", back_populates="project")
-    topups = relationship("Topup", back_populates="project")
+    members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
+    expenses = relationship("ProjectExpense", back_populates="project", cascade="all, delete-orphan")
 
 
-class Contract(Base):
-    """合同表 - 管理客户合同信息"""
-    __tablename__ = "contracts"
+class ProjectMember(Base):
+    """项目成员关联表"""
+    __tablename__ = "project_members"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    project_id = Column(GUID(), ForeignKey("projects.id"), nullable=False)
-    contract_number = Column(String(100), unique=True, nullable=False)
-    contract_name = Column(String(255), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String(50), nullable=False, comment="角色：account_manager, media_buyer, analyst")
+    joined_at = Column(DateTime, default=datetime.utcnow, comment="加入时间")
 
-    # 合同条款
-    lead_price = Column(Numeric(10, 2), nullable=False)  # 合同约定的单粉价格
-    setup_fee = Column(Numeric(10, 2), default=0)
-    billing_cycle = Column(String(20), default="monthly")  # monthly, weekly, daily
-
-    # 合同期限
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
-
-    # 合同状态
-    status = Column(String(20), default="draft")  # draft, active, expired, terminated
-
-    # 附加条款
-    terms = Column(Text, nullable=True)
-    special_requirements = Column(Text, nullable=True)
-
-    # 管理信息
-    created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    # 唯一约束
+    __table_args__ = (
+        Index('uq_project_members', 'project_id', 'user_id', unique=True),
+        Index('idx_project_members_project', 'project_id'),
+        Index('idx_project_members_user', 'user_id'),
+        {'comment': '项目成员关联表'}
+    )
 
     # 关系
-    project = relationship("Project", back_populates="contracts")
-    creator = relationship("User")
+    project = relationship("Project", back_populates="members")
+    user = relationship("User", foreign_keys=[user_id])
 
 
-class ProjectTarget(Base):
-    """项目目标表 - 管理项目KPI目标"""
-    __tablename__ = "project_targets"
+class ProjectExpense(Base):
+    """项目费用记录表"""
+    __tablename__ = "project_expenses"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    project_id = Column(GUID(), ForeignKey("projects.id"), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    expense_type = Column(String(50), nullable=False, comment="费用类型：media_spend, service_fee, other")
+    amount = Column(Numeric(15, 2), nullable=False, comment="金额")
+    description = Column(Text, nullable=True, comment="费用说明")
+    expense_date = Column(Date, nullable=False, comment="费用日期")
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, comment="创建时间")
 
-    # 目标类型
-    target_type = Column(String(50), nullable=False)  # leads_count, cpl, spend, roi
-    target_value = Column(Numeric(15, 2), nullable=False)
-
-    # 时间范围
-    period_type = Column(String(20), nullable=False)  # daily, weekly, monthly, quarterly
-    period_start = Column(DateTime, nullable=False)
-    period_end = Column(DateTime, nullable=False)
-
-    # 目标状态
-    status = Column(String(20), default="active")  # active, achieved, failed, cancelled
-
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-
-    # 关系
-    project = relationship("Project")
-
-
-class ProjectMetrics(Base):
-    """项目指标表 - 记录项目实际完成情况"""
-    __tablename__ = "project_metrics"
-
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    project_id = Column(GUID(), ForeignKey("projects.id"), nullable=False)
-
-    # 指标类型
-    metric_type = Column(String(50), nullable=False)  # leads_count, cpl, spend, revenue, profit
-
-    # 时间范围
-    period_type = Column(String(20), nullable=False)  # daily, weekly, monthly
-    period_start = Column(DateTime, nullable=False)
-    period_end = Column(DateTime, nullable=False)
-
-    # 实际值
-    actual_value = Column(Numeric(15, 2), nullable=False)
-
-    # 对比信息
-    target_value = Column(Numeric(15, 2), nullable=True)  # 目标值
-    achievement_rate = Column(Numeric(5, 2), nullable=True)  # 达成率
-
-    # 详细数据
-    breakdown_data = Column(JSON, nullable=True)  # 详细分解数据
-
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    # 索引
+    __table_args__ = (
+        Index('idx_expenses_project', 'project_id'),
+        Index('idx_expenses_date', 'expense_date'),
+        Index('idx_expenses_type', 'expense_type'),
+        {'comment': '项目费用记录表'}
+    )
 
     # 关系
-    project = relationship("Project")
+    project = relationship("Project", back_populates="expenses")
+    creator = relationship("User", foreign_keys=[created_by])
 
 
-# 为Project模型添加contracts关系
-Project.contracts = relationship("Contract", back_populates="project", order_by="Contract.created_at.desc()")

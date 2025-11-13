@@ -50,8 +50,18 @@ class Settings(BaseSettings):
 
     # Supabase配置
     supabase_url: str = Field(..., description="Supabase项目URL")
-    supabase_key: str = Field(..., min_length=20, description="Supabase匿名密钥")
-    supabase_service_key: Optional[str] = Field(None, description="Supabase服务密钥")
+    supabase_anon_key: str = Field(..., min_length=20, description="Supabase匿名密钥")
+    supabase_service_role_key: str = Field(..., min_length=20, description="Supabase服务角色密钥")
+
+    @property
+    def supabase_key(self) -> str:
+        """兼容性属性"""
+        return self.supabase_anon_key
+
+    @property
+    def supabase_service_key(self) -> str:
+        """兼容性属性"""
+        return self.supabase_service_role_key
 
     # CORS配置
     allowed_origins: List[str] = Field(default_factory=list, description="允许的源地址列表")
@@ -62,7 +72,7 @@ class Settings(BaseSettings):
     max_file_size: int = Field(10485760, ge=1024, le=104857600, description="最大文件大小（字节）")
 
     # 日志配置
-    log_level: str = Field("INFO", regex="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$", description="日志级别")
+    log_level: str = Field("INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$", description="日志级别")
 
     @validator("allowed_origins", pre=True)
     def parse_allowed_origins(cls, v: Any) -> List[str]:

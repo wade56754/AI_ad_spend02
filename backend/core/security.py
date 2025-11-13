@@ -15,9 +15,9 @@ import jwt
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.core.config import get_settings
-from backend.core.db import get_db
-from backend.models.users import User
+from .config import get_settings
+from .db import get_db
+from ..models.users import User
 
 
 def _base64url_decode(data: str) -> bytes:

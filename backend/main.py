@@ -6,10 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from backend.core.config import get_settings
-from backend.core.db import get_engine
-from backend.core.response import fail, ok
-from backend.routers import ad_accounts, ad_spend, channels, import_jobs, projects, reconciliations, reports, topups
+from core.config import get_settings
+from core.db import get_engine
+from core.response import fail, ok
+from routers import ad_accounts, ad_spend, channels, import_jobs, projects, reconciliations, reports, topup, daily_reports, reconciliation, ad_account, authentication
 
 settings = get_settings()
 
@@ -25,13 +25,17 @@ app.add_middleware(
 
 API_V1_PREFIX = "/api/v1"
 
+app.include_router(authentication.router, prefix=API_V1_PREFIX)
 app.include_router(projects.router, prefix=API_V1_PREFIX)
 app.include_router(channels.router, prefix=API_V1_PREFIX)
 app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)
+app.include_router(ad_account.router, prefix=API_V1_PREFIX)
 app.include_router(ad_spend.router, prefix=API_V1_PREFIX)
+app.include_router(daily_reports.router, prefix=API_V1_PREFIX)
 app.include_router(reconciliations.router, prefix=API_V1_PREFIX)
+app.include_router(reconciliation.router, prefix=API_V1_PREFIX)
 app.include_router(reports.router, prefix=API_V1_PREFIX)
-app.include_router(topups.router, prefix=API_V1_PREFIX)
+app.include_router(topup.router, prefix=API_V1_PREFIX)
 app.include_router(import_jobs.router, prefix=API_V1_PREFIX)
 
 
