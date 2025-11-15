@@ -10,7 +10,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy.orm import Session
 
-from core.database import get_db
+from core.db import get_db
 from core.dependencies import get_current_user, require_role, get_client_info
 from core.response import (
     success_response,
@@ -23,7 +23,7 @@ from exceptions.custom_exceptions import (
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.user import User
+from models.users import User
 from schemas.topup import (
     TopupRequestCreate,
     TopupRequestResponse,
@@ -115,12 +115,11 @@ async def list_topup_requests(
     status_code=status.HTTP_201_CREATED,
     summary="创建充值申请"
 )
-@require_role(["media_buyer", "account_manager"])
 async def create_topup_request(
     request_data: TopupRequestCreate,
     req: Request,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["media_buyer", "account_manager"]))
 ):
     """创建充值申请API"""
     try:
@@ -192,13 +191,12 @@ async def get_topup_request(
     response_model=StandardResponse[TopupRequestResponse],
     summary="数据员审核"
 )
-@require_role(["data_operator"])
 async def data_review_request(
     request_id: int,
     review_data: TopupDataReviewRequest,
     req: Request,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["data_operator"]))
 ):
     """数据员审核API"""
     try:
@@ -239,13 +237,12 @@ async def data_review_request(
     response_model=StandardResponse[TopupRequestResponse],
     summary="财务审批"
 )
-@require_role(["finance"])
 async def finance_approve_request(
     request_id: int,
     approval_data: TopupFinanceApprovalRequest,
     req: Request,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["finance"]))
 ):
     """财务审批API"""
     try:
@@ -286,13 +283,12 @@ async def finance_approve_request(
     response_model=StandardResponse[TopupRequestResponse],
     summary="标记已打款"
 )
-@require_role(["finance"])
 async def mark_as_paid(
     request_id: int,
     paid_data: TopupMarkPaidRequest,
     req: Request,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["finance"]))
 ):
     """标记已打款API"""
     try:
@@ -333,13 +329,12 @@ async def mark_as_paid(
     response_model=StandardResponse[TopupRequestResponse],
     summary="上传打款凭证"
 )
-@require_role(["finance"])
 async def upload_receipt(
     request_id: int,
     receipt_data: TopupReceiptUploadRequest,
     req: Request,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["finance"]))
 ):
     """上传打款凭证API"""
     try:
@@ -417,12 +412,11 @@ async def get_approval_logs(
     response_model=StandardResponse[TopupStatisticsResponse],
     summary="获取充值统计"
 )
-@require_role(["admin", "finance", "data_operator"])
 async def get_statistics(
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
 ):
     """获取充值统计API"""
     try:
@@ -503,13 +497,12 @@ async def get_account_balance(
     response_model=StandardResponse[List[dict]],
     summary="导出充值记录"
 )
-@require_role(["admin", "finance"])
 async def export_requests(
     start_date: Optional[date] = Query(None),
     end_date: Optional[date] = Query(None),
     status: Optional[str] = Query(None),
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["admin", "finance"]))
 ):
     """导出充值记录API"""
     try:
