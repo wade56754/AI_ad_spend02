@@ -9,26 +9,24 @@ from sqlalchemy import text
 from core.config import get_settings
 from core.db import get_engine
 from core.response import fail, ok, success_response, StandardResponse
-# 导入核心路由模块（暂时排除有问题的模块）
+# 导入核心路由模块
 from routers import (
     projects,
     authentication,
-    # supabase_auth,  # 暂时跳过
-    # ai_analytics,  # 暂时跳过
-    # project_templates,  # 暂时跳过
     ad_accounts,
     ad_spend,
     channels,
-    topup,  # ✅ 已修复装饰器问题，重新启用
-    # import_jobs,  # 暂时跳过
-    # reconciliations,  # 暂时跳过
-    # reports,  # 暂时跳过
-    # daily_reports,  # 暂时跳过
-    # reconciliation,  # 暂时跳过
-    # ad_account,  # 暂时跳过
-    ledger,  # 新增财务总账API
-    reconciliation_extended,  # 新增对账管理API
-    ai_monitoring,  # 新增AI监控API
+    topup,  # ✅ 充值管理API (已修复)
+    daily_reports,  # ✅ 日报管理API (已修复)
+    reports,  # ✅ 报表生成API
+    import_jobs,  # ✅ 数据导入API
+    ledger,  # 财务总账API
+    reconciliation_extended,  # 对账管理API
+    ai_monitoring,  # AI监控API
+    # 暂时跳过的模块:
+    # supabase_auth,  # 使用authentication代替
+    # ai_analytics,  # 待完善
+    # project_templates,  # 待完善
 )
 
 
@@ -48,16 +46,18 @@ app.add_middleware(
 API_V1_PREFIX = "/api/v1"
 
 # 注册核心API路由
-app.include_router(projects.router, prefix=API_V1_PREFIX)
-app.include_router(authentication.router, prefix=API_V1_PREFIX)
-app.include_router(ad_spend.router, prefix=API_V1_PREFIX)
-app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)
-app.include_router(channels.router, prefix=API_V1_PREFIX)
-app.include_router(topup.router, prefix=API_V1_PREFIX)  # ✅ 充值管理API (已修复)
-app.include_router(ledger.router, prefix=API_V1_PREFIX)  # 新增财务总账API
-app.include_router(reconciliation_extended.router, prefix=API_V1_PREFIX)  # 新增对账管理API
-app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # 新增AI监控API
-# 其他路由暂时跳过，待修复导入问题后再启用
+app.include_router(projects.router, prefix=API_V1_PREFIX)  # 项目管理
+app.include_router(authentication.router, prefix=API_V1_PREFIX)  # 用户认证
+app.include_router(ad_spend.router, prefix=API_V1_PREFIX)  # 广告消耗
+app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)  # 广告账户
+app.include_router(channels.router, prefix=API_V1_PREFIX)  # 渠道管理
+app.include_router(topup.router, prefix=API_V1_PREFIX)  # 充值管理
+app.include_router(daily_reports.router, prefix=API_V1_PREFIX)  # 日报管理 ✅ 新启用
+app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表生成 ✅ 新启用
+app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 新启用
+app.include_router(ledger.router, prefix=API_V1_PREFIX)  # 财务总账
+app.include_router(reconciliation_extended.router, prefix=API_V1_PREFIX)  # 对账管理
+app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 
 
 @app.get("/healthz")
