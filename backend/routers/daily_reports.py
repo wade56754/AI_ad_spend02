@@ -15,7 +15,7 @@ from io import BytesIO
 import pandas as pd
 import uuid
 
-from core.database import get_db
+from core.db import get_db
 from core.dependencies import get_current_user, require_role
 from core.response import (
     success_response,
@@ -29,7 +29,7 @@ from exceptions.custom_exceptions import (
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.user import User
+from models.users import User
 from schemas.daily_report import (
     DailyReportCreateRequest,
     DailyReportUpdateRequest,
@@ -124,11 +124,10 @@ async def list_daily_reports(
     summary="创建日报",
     description="创建新的日报记录"
 )
-@require_role(["media_buyer", "admin", "data_operator"])
 async def create_daily_report(
     request: DailyReportCreateRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["media_buyer", "admin", "data_operator"]))
 ):
     """
     创建日报API
@@ -215,12 +214,11 @@ async def get_daily_report(
     summary="更新日报",
     description="更新日报信息（仅未审核的日报可更新）"
 )
-@require_role(["media_buyer", "admin"])
 async def update_daily_report(
     report_id: int,
     request: DailyReportUpdateRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["media_buyer", "admin"]))
 ):
     """
     更新日报API
@@ -263,11 +261,10 @@ async def update_daily_report(
     summary="删除日报",
     description="删除日报记录（仅管理员可操作）"
 )
-@require_role(["admin"])
 async def delete_daily_report(
     report_id: int,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["admin"]))
 ):
     """
     删除日报API
@@ -304,12 +301,11 @@ async def delete_daily_report(
     summary="审核通过日报",
     description="审核通过日报记录"
 )
-@require_role(["data_operator", "admin"])
 async def approve_daily_report(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
 ):
     """
     审核通过日报API
@@ -352,12 +348,11 @@ async def approve_daily_report(
     summary="驳回报日",
     description="驳回报日记录"
 )
-@require_role(["data_operator", "admin"])
 async def reject_daily_report(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
 ):
     """
     驳回报日API
@@ -400,11 +395,10 @@ async def reject_daily_report(
     summary="批量导入日报",
     description="批量导入日报记录"
 )
-@require_role(["data_operator", "admin"])
 async def batch_import_daily_reports(
     request: DailyReportBatchImportRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
 ):
     """
     批量导入日报API
@@ -462,12 +456,11 @@ async def batch_import_daily_reports(
     summary="文件导入日报",
     description="通过Excel文件导入日报"
 )
-@require_role(["data_operator", "admin"])
 async def import_daily_reports_from_file(
     file: UploadFile = File(..., description="Excel文件"),
     skip_errors: bool = Query(False, description="是否跳过错误继续导入"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
 ):
     """
     文件导入日报API
@@ -551,14 +544,13 @@ async def import_daily_reports_from_file(
     summary="导出日报",
     description="导出日报数据为Excel文件"
 )
-@require_role(["finance", "admin", "data_operator", "account_manager"])
 async def export_daily_reports(
     report_date_start: Optional[str] = Query(None, description="开始日期"),
     report_date_end: Optional[str] = Query(None, description="结束日期"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
     status: Optional[str] = Query(None, description="审核状态"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["finance", "admin", "data_operator", "account_manager"]))
 ):
     """
     导出日报API
@@ -647,7 +639,6 @@ async def export_daily_reports(
     summary="获取日报统计",
     description="获取日报统计数据"
 )
-@require_role(["data_operator", "admin", "finance", "account_manager"])
 async def get_daily_report_statistics(
     report_date_start: Optional[str] = Query(None, description="开始日期"),
     report_date_end: Optional[str] = Query(None, description="结束日期"),
@@ -656,7 +647,7 @@ async def get_daily_report_statistics(
     media_buyer_id: Optional[int] = Query(None, description="投手ID"),
     project_id: Optional[int] = Query(None, description="项目ID"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_role(["data_operator", "admin", "finance", "account_manager"]))
 ):
     """
     获取日报统计API
