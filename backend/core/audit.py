@@ -15,7 +15,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
-from backend.core.db import Base, get_db_session
+from core.db import Base, get_db_session
 
 
 class AuditAction(str, Enum):
@@ -44,6 +44,7 @@ class AuditLevel(str, Enum):
 class AuditLog(Base):
     """审计日志表"""
     __tablename__ = "audit_logs"
+    __table_args__ = {'extend_existing': True}  # 允许扩展已存在的表
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String(255), nullable=True, index=True)  # 操作用户ID
