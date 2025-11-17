@@ -13,11 +13,7 @@ from .ai_monitoring import (
 )
 from .channels import Channel
 from .daily_report import DailyReport, DailyReportAuditLog
-from .ledger import (
-    LedgerTransaction,
-    AccountBalance,
-    BudgetAllocation
-)
+from .ledger import LedgerEntry
 from .log import Log
 from .notifications import (
     Notification,
@@ -31,7 +27,7 @@ from .reconciliation_extended import (
     ReconciliationDetail,
     ReconciliationDifference
 )
-from .topup import Topup
+from .topup import TopupRequest, TopupTransaction, TopupApprovalLog, Topup
 from .users import Role, User
 
 # 为了向后兼容，创建别名
@@ -54,10 +50,11 @@ __all__ = [
     "AdSpendDaily",
 
     # 充值和财务模型
-    "Topup",
-    "LedgerTransaction",
-    "AccountBalance",
-    "BudgetAllocation",
+    "Topup",  # 向后兼容别名
+    "TopupRequest",
+    "TopupTransaction",
+    "TopupApprovalLog",
+    "LedgerEntry",
 
     # 对账模型
     "Reconciliation",

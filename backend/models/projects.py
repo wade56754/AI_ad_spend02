@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Column, BigInteger, ForeignKey, String, Text, Numeric, Date, Index
+from sqlalchemy import Column, BigInteger, ForeignKey, String, Text, Numeric, Date, DateTime, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -60,13 +60,13 @@ class Project(Base):
         comment="更新人ID"
     )
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"
     )
     updated_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
@@ -113,7 +113,7 @@ class ProjectMember(Base):
     role = Column(String(20), nullable=False, comment="项目内角色，与全局角色一致")
     permissions = Column(Text, nullable=True, comment="扩展权限（JSONB）")
     joined_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="加入时间"
@@ -148,7 +148,7 @@ class ProjectExpense(Base):
     amount = Column(Numeric(15, 2), nullable=False, comment="金额")
     currency = Column(String(10), nullable=True, comment="货币类型")
     occurred_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="发生时间"
@@ -161,7 +161,7 @@ class ProjectExpense(Base):
         comment="创建人ID"
     )
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"

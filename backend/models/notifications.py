@@ -322,7 +322,7 @@ class AuditLog(Base):
     
     # 时间信息（对齐 DATA_SCHEMA：TIMESTAMPTZ）
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"

@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import (
-    Column, BigInteger, String, Date, DateTime, Boolean,
+    Column, BigInteger, Integer, String, Date, DateTime, Boolean,
     Text, Numeric, ForeignKey, JSON, Index, CheckConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -78,13 +78,13 @@ class AdAccount(Base):
     country = Column(String(2), nullable=True, comment="国家代码")
 
     # 性能数据
-    total_spend = Column(DECIMAL(15, 2), default=0, comment="总消耗")
+    total_spend = Column(Numeric(15, 2), default=0, comment="总消耗")
     total_leads = Column(Integer, default=0, comment="总潜在客户数")
-    avg_cpl = Column(DECIMAL(10, 2), nullable=True, comment="平均单粉成本")
-    best_cpl = Column(DECIMAL(10, 2), nullable=True, comment="最佳单粉成本")
+    avg_cpl = Column(Numeric(10, 2), nullable=True, comment="平均单粉成本")
+    best_cpl = Column(Numeric(10, 2), nullable=True, comment="最佳单粉成本")
 
     # 开户费用
-    setup_fee = Column(DECIMAL(10, 2), default=0, comment="开户费")
+    setup_fee = Column(Numeric(10, 2), default=0, comment="开户费")
     setup_fee_paid = Column(Boolean, default=False, comment="开户费是否已支付")
 
     # 账户配置
@@ -210,24 +210,24 @@ class AccountPerformance(Base):
     period_end = Column(Date, nullable=False, comment="周期结束日期")
 
     # 消耗数据
-    spend = Column(DECIMAL(15, 2), nullable=False, comment="消耗")
+    spend = Column(Numeric(15, 2), nullable=False, comment="消耗")
     impressions = Column(Integer, default=0, comment="展示次数")
     clicks = Column(Integer, default=0, comment="点击次数")
-    ctr = Column(DECIMAL(5, 4), nullable=True, comment="点击率")
+    ctr = Column(Numeric(5, 4), nullable=True, comment="点击率")
 
     # 转化数据
     leads = Column(Integer, default=0, comment="潜在客户数")
     conversions = Column(Integer, default=0, comment="转化数")
-    conversion_rate = Column(DECIMAL(5, 4), nullable=True, comment="转化率")
+    conversion_rate = Column(Numeric(5, 4), nullable=True, comment="转化率")
 
     # 成本数据
-    cpl = Column(DECIMAL(10, 2), nullable=True, comment="单粉成本")
-    cpa = Column(DECIMAL(10, 2), nullable=True, comment="单次转化成本")
-    roas = Column(DECIMAL(5, 2), nullable=True, comment="广告支出回报率")
+    cpl = Column(Numeric(10, 2), nullable=True, comment="单粉成本")
+    cpa = Column(Numeric(10, 2), nullable=True, comment="单次转化成本")
+    roas = Column(Numeric(5, 2), nullable=True, comment="广告支出回报率")
 
     # 质量指标
-    lead_quality_score = Column(DECIMAL(3, 2), nullable=True, comment="潜在客户质量评分")
-    account_health_score = Column(DECIMAL(3, 2), nullable=True, comment="账户健康评分")
+    lead_quality_score = Column(Numeric(3, 2), nullable=True, comment="潜在客户质量评分")
+    account_health_score = Column(Numeric(3, 2), nullable=True, comment="账户健康评分")
 
     # 详细数据
     breakdown_data = Column(JSON, nullable=True, comment="细分数据")
@@ -305,7 +305,7 @@ class AccountAlert(Base):
             "severity IN ('low', 'medium', 'high', 'critical')",
             name="check_alert_severity"
         ),
-        Index("idx_account_alerts_account", "account_id"),
+        Index("idx_account_alerts_account", "ad_account_id"),
         Index("idx_account_alerts_status", "status"),
         Index("idx_account_alerts_severity", "severity"),
         Index("idx_account_alerts_type", "alert_type"),
@@ -349,13 +349,8 @@ class AccountDocument(Base):
 
     # 索引和约束
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('active', 'archived', 'deleted')",
-            name="check_document_status"
-        ),
-        Index("idx_account_documents_account", "account_id"),
+        Index("idx_account_documents_account", "ad_account_id"),
         Index("idx_account_documents_type", "document_type"),
-        Index("idx_account_documents_status", "status"),
         Index("idx_account_documents_uploaded_at", "uploaded_at"),
         {"comment": "账户文档表"}
     )

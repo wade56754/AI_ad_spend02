@@ -3,7 +3,7 @@
 包含账本条目等相关模型
 """
 
-from sqlalchemy import Column, BigInteger, String, Text, Numeric, ForeignKey, Index
+from sqlalchemy import Column, BigInteger, String, Text, Numeric, ForeignKey, DateTime, Index, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -15,25 +15,25 @@ class LedgerEntry(Base):
     """资金总账表（对齐 DATA_SCHEMA.md 3.4.4）"""
     __tablename__ = "ledger_entries"
 
-    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
-    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="账本条目ID")
-    
-    # 关联信息（外键类型对齐 DATA_SCHEMA）
+    # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="账本条目ID")
+
+    # 关联信息（外键类型匹配实际数据库）
     project_id = Column(
-        BigInteger,
+        UUID(as_uuid=True),
         ForeignKey("projects.id"),
         nullable=False,
         index=True,
         comment="项目ID"
     )
     ad_account_id = Column(
-        BigInteger,
+        UUID(as_uuid=True),
         ForeignKey("ad_accounts.id"),
         nullable=True,
         index=True,
         comment="广告账户ID"
     )
-    
+
     # 条目信息（对齐 DATA_SCHEMA）
     entry_type = Column(
         String(20),
@@ -43,11 +43,11 @@ class LedgerEntry(Base):
     )
     amount = Column(Numeric(15, 2), nullable=False, comment="金额（借方为正，贷方为负）")
     currency = Column(String(10), nullable=False, comment="货币类型")
-    reference_id = Column(BigInteger, nullable=True, comment="关联ID（topup_transactions 或 daily_reports）")
+    reference_id = Column(UUID(as_uuid=True), nullable=True, comment="关联ID（topup_transactions 或 daily_reports）")
     
     # 时间信息（对齐 DATA_SCHEMA：TIMESTAMPTZ）
     occurred_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="发生时间"

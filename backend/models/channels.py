@@ -61,7 +61,7 @@ class Channel(Base):
     total_spend = Column(Numeric(15, 2), default=0)  # 总消耗金额
 
     # 元数据（对齐 DATA_SCHEMA：JSONB）
-    metadata = Column(JSON, nullable=True, server_default='{}', comment="扩展元数据（JSONB）")
+    channel_metadata = Column(JSON, nullable=True, server_default='{}', comment="扩展元数据（JSONB）")
     
     # 审计字段（对齐 DATA_SCHEMA：外键指向 user_profiles.id）
     created_by = Column(
@@ -101,11 +101,11 @@ class ChannelReview(Base):
     """渠道评价表 - 记录渠道质量评价"""
     __tablename__ = "channel_reviews"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    channel_id = Column(GUID(), ForeignKey("channels.id"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
+    channel_id = Column(UUID(as_uuid=True), ForeignKey("channels.id"), nullable=False)
 
     # 评价信息
-    reviewer_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    reviewer_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     review_date = Column(DateTime, nullable=False)
 
     # 评分项目
@@ -138,9 +138,9 @@ class ChannelAccountRequest(Base):
     """渠道账户申请表 - 记录向渠道申请账户的记录"""
     __tablename__ = "channel_account_requests"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    channel_id = Column(GUID(), ForeignKey("channels.id"), nullable=False)
-    project_id = Column(GUID(), ForeignKey("projects.id"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
+    channel_id = Column(UUID(as_uuid=True), ForeignKey("channels.id"), nullable=False)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False)
 
     # 申请信息
     request_type = Column(String(20), nullable=False)  # new_account, additional_account, replacement
@@ -162,13 +162,13 @@ class ChannelAccountRequest(Base):
     actual_setup_fee = Column(Numeric(10, 2), nullable=True)  # 实际开户费
 
     # 处理记录
-    approver_id = Column(GUID(), ForeignKey("users.id"), nullable=True)
+    approver_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
     rejection_reason = Column(Text, nullable=True)
     delivery_notes = Column(Text, nullable=True)
 
     # 申请信息
-    requested_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    requested_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -183,8 +183,8 @@ class ChannelPerformance(Base):
     """渠道表现表 - 统计渠道的表现数据"""
     __tablename__ = "channel_performance"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    channel_id = Column(GUID(), ForeignKey("channels.id"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
+    channel_id = Column(UUID(as_uuid=True), ForeignKey("channels.id"), nullable=False)
 
     # 统计周期
     period_type = Column(String(20), nullable=False)  # daily, weekly, monthly, quarterly
@@ -225,8 +225,8 @@ class ChannelContact(Base):
     """渠道联系人表 - 管理渠道的多个联系人"""
     __tablename__ = "channel_contacts"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    channel_id = Column(GUID(), ForeignKey("channels.id"), nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False)
+    channel_id = Column(UUID(as_uuid=True), ForeignKey("channels.id"), nullable=False)
 
     # 联系人信息
     name = Column(String(255), nullable=False)

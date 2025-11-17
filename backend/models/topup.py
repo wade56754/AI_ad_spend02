@@ -8,7 +8,7 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Column, BigInteger, String, Text, Numeric, ForeignKey, Date, Index
+from sqlalchemy import Column, BigInteger, String, Text, Numeric, ForeignKey, Date, DateTime, Index, text
 from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -20,22 +20,22 @@ class TopupRequest(Base):
     """充值申请主表（对齐 DATA_SCHEMA.md 3.4.1）"""
     __tablename__ = "topup_requests"
 
-    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
-    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="充值申请ID")
-    
+    # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="充值申请ID")
+
     # 申请单号
     request_no = Column(String(50), unique=True, nullable=False, index=True, comment="申请单号")
-    
-    # 关联信息（外键类型对齐 DATA_SCHEMA）
+
+    # 关联信息（外键类型匹配实际数据库）
     project_id = Column(
-        BigInteger,
+        UUID(as_uuid=True),
         ForeignKey("projects.id"),
         nullable=False,
         index=True,
         comment="项目ID"
     )
     ad_account_id = Column(
-        BigInteger,
+        UUID(as_uuid=True),
         ForeignKey("ad_accounts.id"),
         nullable=True,  # 可空（对齐 DATA_SCHEMA）
         comment="广告账户ID"
@@ -89,13 +89,13 @@ class TopupRequest(Base):
         comment="更新人ID"
     )
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"
     )
     updated_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
@@ -124,12 +124,12 @@ class TopupTransaction(Base):
     """充值交易记录表（对齐 DATA_SCHEMA.md 3.4.2）"""
     __tablename__ = "topup_transactions"
 
-    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
-    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="交易ID")
-    
+    # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="交易ID")
+
     # 关联申请（字段名对齐 DATA_SCHEMA：topup_request_id）
     topup_request_id = Column(
-        BigInteger,
+        UUID(as_uuid=True),
         ForeignKey("topup_requests.id"),
         nullable=False,
         index=True,
@@ -148,16 +148,16 @@ class TopupTransaction(Base):
     
     # 时间信息（字段名对齐 DATA_SCHEMA：paid_at）
     paid_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="打款时间"
     )
-    
+
     # 凭证信息（字段名对齐 DATA_SCHEMA：receipt_url）
     receipt_url = Column(Text, nullable=True, comment="凭证URL")
     notes = Column(Text, nullable=True, comment="备注")
-    
+
     # 创建信息（外键指向 user_profiles.id，UUID）
     created_by = Column(
         UUID(as_uuid=True),
@@ -166,7 +166,7 @@ class TopupTransaction(Base):
         comment="创建人ID"
     )
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"
@@ -188,12 +188,12 @@ class TopupApprovalLog(Base):
     """充值审批日志表（对齐 DATA_SCHEMA.md 3.4.3）"""
     __tablename__ = "topup_approval_logs"
 
-    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
-    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="日志ID")
-    
+    # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
+    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="日志ID")
+
     # 关联申请（字段名对齐 DATA_SCHEMA：topup_request_id）
     topup_request_id = Column(
-        BigInteger,
+        UUID(as_uuid=True),
         ForeignKey("topup_requests.id"),
         nullable=False,
         index=True,
@@ -211,10 +211,10 @@ class TopupApprovalLog(Base):
         comment="操作人ID"
     )
     comments = Column(Text, nullable=True, comment="操作说明")
-    
+
     # 时间
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"
