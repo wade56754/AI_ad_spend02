@@ -10,9 +10,9 @@ from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
 
 from models.topup import TopupRequest, TopupTransaction, TopupApprovalLog
-from models.user import User
+from models.users import User
 from models.ad_account import AdAccount
-from models.project import Project
+from models.projects import Project
 from schemas.topup import (
     TopupRequestCreate,
     TopupDataReviewRequest,

@@ -24,6 +24,8 @@
 
 ## 1. 监控架构概览
 
+> 状态说明：本文所涉 Prometheus/Grafana/Loki/Alertmanager 能力，部分为“规划能力”。当前版本按需启用基础监控与告警，完整方案落地以 `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md` 为准。
+
 ### 1.1 监控体系架构
 
 ```

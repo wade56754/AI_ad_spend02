@@ -12,9 +12,9 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from core.database import get_db
+from core.db import get_db
 from core.auth import get_current_user
-from models.user import User
+from models.users import User
 from models.reconciliation import ReconciliationDetail, ReconciliationAdjustment, ReconciliationReport
 from schemas.reconciliation import (
     ReconciliationBatchCreateRequest,

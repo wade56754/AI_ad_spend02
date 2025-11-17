@@ -36,6 +36,8 @@ structlog>=23.2.0,<25.0.0
 sentry-sdk[fastapi]>=1.38.0,<2.0.0
 
 # 工具库
+pandas>=2.0.0,<3.0.0
+openpyxl>=3.1.0,<4.0.0  # Excel文件处理（导入/导出）
 click>=8.1.0,<9.0.0
 rich>=13.6.0,<14.0.0
 
@@ -43,6 +45,9 @@ rich>=13.6.0,<14.0.0
 pytest>=7.4.0,<8.0.0
 pytest-asyncio>=0.21.0,<1.0.0
 pytest-cov>=4.1.0,<5.0.0
+pytest-mock>=3.12.0,<4.0.0  # Mock支持
+faker>=20.0.0,<21.0.0  # 测试数据生成
+httpx>=0.25.0  # 异步HTTP客户端（用于测试FastAPI）
 black>=23.9.0,<24.0.0
 isort>=5.12.0,<6.0.0
 flake8>=6.1.0,<7.0.0

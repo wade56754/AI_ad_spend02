@@ -9,8 +9,8 @@ from decimal import Decimal
 from datetime import date, datetime
 from unittest.mock import Mock, patch
 
-from models.project import Project, ProjectMember, ProjectExpense
-from models.user import User
+from models.projects import Project, ProjectMember, ProjectExpense
+from models.users import User
 from schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,

@@ -25,4 +25,10 @@ __all__ = [
     "ExternalServiceException",
     "RateLimitException",
     "register_exception_handlers",
+    "ValidationError",
+    "AuthenticationError",
 ]
+
+# 添加别名以保持兼容性
+ValidationError = ValidationException
+AuthenticationError = AuthenticationException

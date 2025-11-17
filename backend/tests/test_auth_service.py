@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, AsyncMock
 from sqlalchemy.orm import Session
 
-from models.user import User
+from models.users import User
 from services.auth_service import AuthService
 from exceptions import ValidationError, AuthenticationError
 from utils.response import success_response
@@ -237,9 +237,11 @@ class TestAuthService:
 
         def side_effect(*args):
             if "email" in str(args):
-                return mock_query.first.return_value = None
+                mock_query.first.return_value = None
+                return mock_query
             elif "username" in str(args):
-                return mock_query.first.return_value = User(username=username)
+                mock_query.first.return_value = User(username=username)
+                return mock_query
             return mock_query
 
         mock_query.first.side_effect = side_effect

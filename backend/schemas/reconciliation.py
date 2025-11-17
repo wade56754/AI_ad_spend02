@@ -139,17 +139,7 @@ class ReconciliationAdjustmentCreateRequest(BaseModel):
             raise ValueError('调整金额最多保留2位小数')
         return v
 
-    @field_validator('adjusted_amount')
-    @classmethod
-    def validate_adjusted_amount(cls, v, info):
-        """确保调整后金额正确"""
-        if v is not None:
-            original = info.data.get('original_amount', Decimal('0'))
-            adjustment = info.data.get('adjustment_amount', Decimal('0'))
-            calculated = original + adjustment
-            if abs(calculated - v) > Decimal('0.01'):
-                raise ValueError(f'调整后金额应为{calculated}，不是{v}')
-        return v
+    # adjusted_amount 字段验证器已移除，因为该字段在类中不存在
 
 
 class ReconciliationReportGenerateRequest(BaseModel):

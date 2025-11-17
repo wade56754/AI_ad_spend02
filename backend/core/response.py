@@ -1,13 +1,23 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TypeVar, Generic
 import uuid
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 
-class StandardResponse:
+T = TypeVar('T')
+
+
+class StandardResponse(BaseModel, Generic[T]):
     """标准响应格式类"""
+    success: bool
+    data: Optional[T] = None
+    message: str
+    code: str
+    request_id: str
+    timestamp: str
 
     @staticmethod
     def success(
@@ -116,7 +126,29 @@ def fail(code: str, message: str, status_code: int = 400, meta: Optional[Dict[st
 # 推荐使用的新函数
 def success_response(data: Any = None, message: str = "操作成功", code: str = "SUCCESS", **kwargs) -> JSONResponse:
     """成功响应函数"""
-    return StandardResponse.success(data=data, message=message, code=code, **kwargs)
+    # 直接构建成功响应内容，避免 Pydantic Generic 类的问题
+    content = {
+        "success": True,
+        "data": jsonable_encoder(data),
+        "message": message,
+        "code": code,
+        "request_id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+    # 处理额外参数
+    if "status_code" in kwargs:
+        status_code = kwargs.pop("status_code")
+    else:
+        status_code = 200
+
+    if kwargs:
+        content.update(kwargs)
+
+    return JSONResponse(
+        status_code=status_code,
+        content=content
+    )
 
 
 def error_response(message: str, code: str = "INTERNAL_ERROR", status_code: int = 400, **kwargs) -> JSONResponse:
@@ -127,5 +159,25 @@ def error_response(message: str, code: str = "INTERNAL_ERROR", status_code: int 
 def paginated_response(data: Any, page: int, page_size: int, total: int, **kwargs) -> JSONResponse:
     """分页响应函数"""
     return StandardResponse.paginated(data=data, page=page, page_size=page_size, total=total, **kwargs)
+
+
+# 新增的Pydantic模型类，用于API响应
+class ApiResponse(BaseModel, Generic[T]):
+    """API响应模型"""
+    success: bool
+    data: Optional[T] = None
+    message: str
+    code: str
+    request_id: Optional[str] = None
+    timestamp: Optional[str] = None
+
+
+class PaginatedResponse(BaseModel):
+    """分页响应模型"""
+    items: list
+    total: int
+    page: int
+    size: int
+    pages: int
 
 

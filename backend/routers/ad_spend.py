@@ -1,21 +1,22 @@
-import logging
-from math import ceil
+import structlog
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID, uuid4
-
-from fastapi import APIRouter, Depends, Query, status
+from math import ceil
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
+from core.db import get_db
+from core.error_codes import ErrorCode
+from core.response import success_response
+from core.security import AuthenticatedUser, get_current_user
+from core.logging import log_requests, setup_user_context
+from models import AdAccount, AdSpendDaily
+from services.log_service import LogService
 
-from backend.core.db import get_db
-from backend.core.error_codes import ErrorCode
-from backend.core.response import fail, ok
-from backend.core.security import AuthenticatedUser, get_current_user
-from backend.models import AdAccount, AdSpendDaily
-from backend.services.log_service import LogService
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/adspend", tags=["ad_spend"])
 
@@ -27,76 +28,58 @@ class AdSpendReportPayload(BaseModel):
     ad_account_id: UUID
     date: date
     spend: Decimal
-    leads_count: int
-    note: Optional[str] = None
+    leads: int
+    follows: int
+    conversions: int
+    impressions: Optional[int] = None
+    clicks: Optional[int] = None
 
     @validator("spend")
-    def validate_spend(cls, value: Decimal) -> Decimal:
-        value = value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-        if value < Decimal("0"):
+    def spend_must_be_positive(cls, v):
+        if v < 0:
             raise ValueError("spend must be non-negative")
-        if value > MAX_SPEND:
-            raise ValueError(f"spend must not exceed {MAX_SPEND}")
-        return value
+        if v > MAX_SPEND:
+            raise ValueError(f"spend exceeds maximum allowed amount of {MAX_SPEND}")
+        return v
 
-    @validator("leads_count")
-    def validate_leads(cls, value: int) -> int:
-        if value < 0:
-            raise ValueError("leads_count must be non-negative")
-        if value > MAX_LEADS:
-            raise ValueError(f"leads_count must not exceed {MAX_LEADS}")
-        return value
+    @validator("leads")
+    def leads_must_be_positive(cls, v):
+        if v < 0:
+            raise ValueError("leads must be non-negative")
+        if v > MAX_LEADS:
+            raise ValueError(f"leads exceeds maximum allowed amount of {MAX_LEADS}")
+        return v
 
-
-def _calculate_cost_per_lead(spend: Decimal, leads: int) -> Decimal:
-    if leads <= 0:
-        return Decimal("0")
-    return (spend / Decimal(leads)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-
-def _detect_anomaly(
-    current_spend: Decimal,
-    leads_count: int,
-    previous: Optional[AdSpendDaily],
-) -> Tuple[bool, Optional[str]]:
-    if leads_count == 0:
-        return True, "LEADS_COUNT_ZERO"
-    if previous is None:
-        return False, None
-    prev_spend = previous.spend or Decimal("0")
-    if prev_spend == 0:
-        if current_spend > 0:
-            return True, "SPEND_PREVIOUS_ZERO"
-        return False, None
-    change_ratio = (current_spend - prev_spend).copy_abs() / prev_spend.copy_abs()
-    if change_ratio > Decimal("0.30"):
-        percentage = (change_ratio * Decimal("100")).quantize(Decimal("0.01"))
-        return True, f"SPEND_CHANGE_{percentage}%"
-    return False, None
+    @validator("follows", "conversions")
+    def non_negative_int(cls, v):
+        if v < 0:
+            raise ValueError("value must be non-negative")
+        return v
 
 
-def _serialize_report(record: AdSpendDaily) -> Dict[str, Any]:
+def _serialize_report(report: AdSpendDaily) -> dict:
     return {
-        "id": record.id,
-        "ad_account_id": record.ad_account_id,
-        "date": record.date,
-        "spend": record.spend,
-        "leads_count": record.leads_count,
-        "note": record.note,
-        "is_anomaly": record.is_anomaly,
-        "anomaly_reason": record.anomaly_reason,
-        "created_at": record.created_at,
-        "updated_at": record.updated_at,
+        "id": str(report.id),
+        "ad_account_id": str(report.ad_account_id),
+        "date": report.date.isoformat(),
+        "spend": float(report.spend),
+        "leads": report.leads,
+        "follows": report.follows,
+        "conversions": report.conversions,
+        "impressions": report.impressions,
+        "clicks": report.clicks,
+        "created_at": report.created_at.isoformat() if report.created_at else None,
     }
 
 
 @router.get("/reports", response_model=dict)
+@log_requests("ad_spend")
 def list_ad_spend_reports(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
     ad_account_id: Optional[UUID] = Query(None),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -104,30 +87,29 @@ def list_ad_spend_reports(
 
     if ad_account_id:
         query = query.filter(AdSpendDaily.ad_account_id == ad_account_id)
-    if start_date:
-        query = query.filter(AdSpendDaily.date >= start_date)
-    if end_date:
-        query = query.filter(AdSpendDaily.date <= end_date)
+    if date_from:
+        query = query.filter(AdSpendDaily.date >= date_from)
+    if date_to:
+        query = query.filter(AdSpendDaily.date <= date_to)
 
     total = query.count()
-    records: List[AdSpendDaily] = (
-        query.order_by(AdSpendDaily.date.desc(), AdSpendDaily.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
-
-    data = [_serialize_report(record) for record in records]
     pagination = {
         "page": page,
-        "page_size": page_size,
+        "size": size,
         "total": total,
-        "total_pages": ceil(total / page_size) if page_size else 0,
+        "total_pages": ceil(total / size),
+        "has_next": page * size < total,
+        "has_prev": page > 1,
     }
-    return ok(data=data, meta={"pagination": pagination})
+
+    records = query.offset((page - 1) * size).limit(size).all()
+    data = [_serialize_report(record) for record in records]
+
+    return success_response(data=data, meta={"pagination": pagination})
 
 
 @router.get("/reports/{report_id}", response_model=dict)
+@log_requests("ad_spend")
 def get_ad_spend_report(
     report_id: UUID,
     current_user: AuthenticatedUser = Depends(get_current_user),
@@ -135,11 +117,19 @@ def get_ad_spend_report(
 ):
     record = db.query(AdSpendDaily).filter(AdSpendDaily.id == report_id).first()
     if record is None:
-        return fail(ErrorCode.INVALID_PARAM, "日报记录不存在", status_code=status.HTTP_404_NOT_FOUND)
-    return ok(data=_serialize_report(record))
+        logger.warning(f"日报记录不存在: report_id={report_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": ErrorCode.INVALID_PARAM,
+                "message": "日报记录不存在"
+            }
+        )
+    return success_response(data=_serialize_report(record))
 
 
 @router.post("/report", response_model=dict, status_code=status.HTTP_201_CREATED)
+@log_requests("ad_spend")
 def create_ad_spend_report(
     payload: AdSpendReportPayload,
     current_user: AuthenticatedUser = Depends(get_current_user),
@@ -148,11 +138,26 @@ def create_ad_spend_report(
     try:
         actor_id = UUID(str(current_user.id))
     except (TypeError, ValueError):
-        return fail(ErrorCode.INVALID_PARAM, "当前用户缺少有效 ID", status_code=status.HTTP_401_UNAUTHORIZED)
+        logger.error(f"用户缺少有效ID: user_id={current_user.id}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": ErrorCode.INVALID_PARAM,
+                "message": "当前用户缺少有效 ID"
+            }
+        )
 
+    logger.info(f"查找广告账户: ad_account_id={payload.ad_account_id}")
     account = db.query(AdAccount).filter(AdAccount.id == payload.ad_account_id).first()
     if account is None:
-        return fail(ErrorCode.INVALID_PARAM, "广告账户不存在", status_code=status.HTTP_404_NOT_FOUND)
+        logger.warning(f"广告账户不存在: ad_account_id={payload.ad_account_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": ErrorCode.INVALID_PARAM,
+                "message": "广告账户不存在"
+            }
+        )
 
     exists = (
         db.query(AdSpendDaily)
@@ -163,10 +168,13 @@ def create_ad_spend_report(
         .first()
     )
     if exists:
-        return fail(
-            ErrorCode.INVALID_STATUS,
-            "同一广告账户该日期的日报已存在",
+        logger.warning(f"日报已存在: ad_account_id={payload.ad_account_id}, date={payload.date}")
+        raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": ErrorCode.INVALID_STATUS,
+                "message": "同一广告账户该日期的日报已存在"
+            }
         )
 
     previous = (
@@ -179,36 +187,46 @@ def create_ad_spend_report(
         .first()
     )
 
-    spend_amount = payload.spend
-    is_anomaly, anomaly_reason = _detect_anomaly(spend_amount, payload.leads_count, previous)
-    cost_per_lead = _calculate_cost_per_lead(spend_amount, payload.leads_count)
+    try:
+        record = AdSpendDaily(
+            id=uuid4(),
+            ad_account_id=payload.ad_account_id,
+            date=payload.date,
+            spend=payload.spend,
+            leads=payload.leads,
+            follows=payload.follows,
+            conversions=payload.conversions,
+            impressions=payload.impressions,
+            clicks=payload.clicks,
+            previous_balance=previous.balance if previous else Decimal("0"),
+            balance=(previous.balance if previous else Decimal("0")) + payload.spend,
+        )
 
-    record = AdSpendDaily(
-        ad_account_id=payload.ad_account_id,
-        user_id=actor_id,
-        date=payload.date,
-        spend=spend_amount,
-        leads_count=payload.leads_count,
-        cost_per_lead=cost_per_lead,
-        is_anomaly=is_anomaly,
-        anomaly_reason=anomaly_reason,
-        note=payload.note,
-        created_by=actor_id,
-        updated_by=actor_id,
-    )
-    db.add(record)
-    db.commit()
-    db.refresh(record)
+        db.add(record)
+        db.commit()
 
-    serialized = jsonable_encoder(_serialize_report(record))
+        # 记录日志
+        LogService.write(
+            db,
+            action="create_ad_spend",
+            operator_id=str(actor_id),
+            target="ad_spend_daily",
+            detail={"payload": jsonable_encoder(payload), "record_id": str(record.id)},
+            target_id=record.id,
+        )
 
-    LogService.write(
-        db,
-        action="create_ad_spend_daily",
-        operator_id=current_user.id,
-        target="ad_spend_daily",
-        target_id=record.id,
-        detail=serialized,
-    )
+        logger.info(f"广告消耗日报创建成功: record_id={record.id}")
 
-    return ok(data=serialized, status_code=status.HTTP_201_CREATED)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"创建广告消耗日报失败: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "INTERNAL_ERROR",
+                "message": "创建日报失败"
+            }
+        )
+
+    serialized = _serialize_report(record)
+    return success_response(data=serialized, status_code=status.HTTP_201_CREATED)

@@ -19,8 +19,8 @@ from exceptions.custom_exceptions import (
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.project import Project, ProjectMember, ProjectExpense
-from models.user import User
+from models.projects import Project, ProjectMember, ProjectExpense
+from models.users import User
 from schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,

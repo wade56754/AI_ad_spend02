@@ -7,6 +7,7 @@ Author: Claude协作开发
 from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional, Dict, Any
+from pydantic import computed_field
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 

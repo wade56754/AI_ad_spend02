@@ -18,7 +18,7 @@ def test_create_daily_report_permissions(client, test_ad_account, sample_daily_r
     """测试创建日报的权限矩阵"""
     # 创建不同角色的用户
     from core.security import get_password_hash
-    from models.user import User
+    from models.users import User
     from core.security import create_access_token
 
     # 这里简化处理，实际应该通过fixtures创建

@@ -52,12 +52,13 @@ const channelData = [
 ];
 
 const costEfficiencyData = [
-  metric: "单粉成本",
-  average: 5.0,
-  target: 4.5,
-  best: 3.8,
-  worst: 6.2,
-},
+  {
+    metric: "单粉成本",
+    average: 5.0,
+    target: 4.5,
+    best: 3.8,
+    worst: 6.2,
+  },
   {
     metric: "转化成本",
     average: 25.0,

@@ -70,8 +70,8 @@
 - **数据库**: PostgreSQL (Supabase)
 - **缓存**: Redis
 - **CI/CD**: GitHub Actions
-- **监控**: Prometheus + Grafana
-- **日志**: ELK Stack
+- **监控**: Prometheus + Grafana（现状：按需启用；完善度见“已实现 vs 规划”）
+- **日志**: ELK Stack（规划能力；当前仅基础日志与告警）
 
 ---
 

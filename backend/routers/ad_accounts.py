@@ -2,16 +2,21 @@ from math import ceil
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from backend.core.db import get_db
-from backend.core.response import ok
-from backend.core.security import AuthenticatedUser, get_current_user
-from backend.models import AdAccount, Log
-from backend.schemas import AdAccountCreate, AdAccountRead, AdAccountStatusUpdate
-from backend.services.log_service import LogService
+from core.db import get_db
+from core.response import ok
+from core.security import AuthenticatedUser, get_current_user
+from core.logging import log_requests
+from models import AdAccount
+# from models import Log  # Log模型不存在，暂时注释
+from schemas import AdAccountCreate, AdAccountRead, AdAccountStatusUpdate
+# from services.log_service import LogService  # 暂时注释，Log模型不存在
+
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/ad-accounts", tags=["ad_accounts"])
 
@@ -25,6 +30,7 @@ ALLOWED_TRANSITIONS: Dict[str, List[str]] = {
 }
 
 
+@log_requests("ad_accounts")
 @router.get("", response_model=dict)
 def list_ad_accounts(
     page: int = Query(1, ge=1),
@@ -63,6 +69,7 @@ def list_ad_accounts(
     return ok(data=data, meta={"pagination": pagination})
 
 
+@log_requests("ad_accounts")
 @router.get("/{account_id}", response_model=dict)
 def get_ad_account(
     account_id: UUID,
@@ -76,6 +83,7 @@ def get_ad_account(
     return ok(data=data)
 
 
+@log_requests("ad_accounts")
 @router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
 def create_ad_account(
     payload: AdAccountCreate,
@@ -100,6 +108,7 @@ def create_ad_account(
     return ok(data=data, status_code=status.HTTP_201_CREATED)
 
 
+@log_requests("ad_accounts")
 @router.post("/{account_id}/status", response_model=dict)
 def update_ad_account_status(
     account_id: UUID,

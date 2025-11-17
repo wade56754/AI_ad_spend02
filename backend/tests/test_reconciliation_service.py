@@ -13,9 +13,9 @@ from models.reconciliation import (
     ReconciliationBatch, ReconciliationDetail,
     ReconciliationAdjustment, ReconciliationReport
 )
-from models.user import User
+from models.users import User
 from models.ad_account import AdAccount
-from models.project import Project
+from models.projects import Project
 from models.channel import Channel
 from schemas.reconciliation import (
     ReconciliationBatchCreateRequest,

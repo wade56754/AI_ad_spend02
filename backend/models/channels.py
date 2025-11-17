@@ -7,22 +7,28 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Numeric, Boolean, Integer, JSON
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Numeric, Boolean, Integer, JSON, Index
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from backend.core.db import Base
-from backend.models.ad_spend_daily import GUID
+from core.db import Base
 
 
 class Channel(Base):
-    """渠道表 - 管理广告代理商信息"""
+    """渠道表 - 管理广告代理商信息（对齐 DATA_SCHEMA.md 3.2.4）"""
     __tablename__ = "channels"
 
-    id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    name = Column(String(255), nullable=False, index=True)
-    code = Column(String(50), unique=True, nullable=False, index=True)  # 渠道编码
-    company_name = Column(String(255), nullable=False)
+    # 主键：UUID（对齐 DATA_SCHEMA）
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False, comment="渠道ID")
+    
+    # 基本信息（对齐 DATA_SCHEMA）
+    name = Column(String(200), nullable=False, index=True, comment="渠道名称")
+    platform = Column(String(50), nullable=False, comment="平台（如 Facebook/Google）")
+    
+    # 状态信息（枚举值以 STATE_MACHINE.md 为准）
+    status = Column(String(20), nullable=False, index=True, comment="渠道状态")
+    risk_level = Column(String(20), nullable=True, comment="风险等级：low/medium/high")
 
     # 联系信息
     contact_person = Column(String(255), nullable=True)
@@ -54,16 +60,41 @@ class Channel(Base):
     dead_accounts = Column(Integer, default=0)  # 死亡账户数
     total_spend = Column(Numeric(15, 2), default=0)  # 总消耗金额
 
-    # 管理信息
-    notes = Column(Text, nullable=True)  # 备注
-    created_by = Column(GUID(), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    # 元数据（对齐 DATA_SCHEMA：JSONB）
+    metadata = Column(JSON, nullable=True, server_default='{}', comment="扩展元数据（JSONB）")
+    
+    # 审计字段（对齐 DATA_SCHEMA：外键指向 user_profiles.id）
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=True,
+        comment="创建人ID"
+    )
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        comment="创建时间"
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+        comment="更新时间"
+    )
 
     # 关系
-    creator = relationship("User")
+    creator = relationship("UserProfile", foreign_keys=[created_by])
     ad_accounts = relationship("AdAccount", back_populates="channel")
     channel_reviews = relationship("ChannelReview", back_populates="channel")
+    
+    # 索引
+    __table_args__ = (
+        Index('idx_channels_name', 'name'),
+        Index('idx_channels_status', 'status'),
+        {'comment': '渠道主数据表'}
+    )
 
 
 class ChannelReview(Base):

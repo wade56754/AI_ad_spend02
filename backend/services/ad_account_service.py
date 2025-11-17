@@ -14,9 +14,9 @@ from models.ad_account import (
     AdAccount, AccountStatusHistory, AccountPerformance,
     AccountAlert, AccountDocument, AccountNote
 )
-from models.project import Project
+from models.projects import Project
 from models.channel import Channel
-from models.user import User
+from models.users import User
 from schemas.ad_account import (
     AdAccountCreateRequest,
     AdAccountUpdateRequest,

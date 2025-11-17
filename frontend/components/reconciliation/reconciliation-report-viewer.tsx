@@ -501,7 +501,7 @@ export function ReconciliationReportViewer({
                     <li>发现 <strong>{report.executive_summary.discrepancies_count}</strong> 个账户存在差异</li>
                     <li>高风险差异 <strong>{report.executive_summary.high_risk_count}</strong> 个</li>
                     <li>已处理差异 <strong>{report.executive_summary.resolved_count}</strong> 个</li>
-                    <li>处理完成率 <strong>{((report.executive_summary.resolved_count / Math.max(report.executive_summary.discrepancies_count, 1)) * 100).toFixed(1)}%</strong>
+                    <li>处理完成率 <strong>{((report.executive_summary.resolved_count / Math.max(report.executive_summary.discrepancies_count, 1)) * 100).toFixed(1)}%</strong></li>
                   </ul>
 
                   <h4>合规状态</h4>

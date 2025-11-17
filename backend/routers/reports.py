@@ -8,12 +8,12 @@ from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from backend.core.db import get_db
-from backend.core.error_codes import ErrorCode
-from backend.core.response import fail, ok
-from backend.core.security import AuthenticatedUser, get_current_user
-from backend.models import AdAccount, AdSpendDaily, Ledger, Project, Reconciliation
-from backend.services.log_service import LogService
+from core.db import get_db
+from core.error_codes import ErrorCode
+from core.response import fail, ok
+from core.security import AuthenticatedUser, get_current_user
+from models import AdAccount, AdSpendDaily, LedgerTransaction, Project, Reconciliation
+from services.log_service import LogService
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -59,13 +59,13 @@ def _collect_profit(
         db.query(
             Project.id.label("project_id"),
             Project.name.label("project_name"),
-            func.coalesce(func.sum(Ledger.amount), 0).label("ledger_amount"),
+            func.coalesce(func.sum(LedgerTransaction.amount), 0).label("ledger_amount"),
             func.coalesce(func.sum(AdSpendDaily.spend), 0).label("spend_amount"),
         )
         .join(AdAccount, AdAccount.project_id == Project.id)
         .join(AdSpendDaily, AdSpendDaily.ad_account_id == AdAccount.id)
         .join(Reconciliation, Reconciliation.daily_spend_id == AdSpendDaily.id)
-        .join(Ledger, Ledger.id == Reconciliation.finance_txn_id)
+        .join(LedgerTransaction, LedgerTransaction.id == Reconciliation.finance_txn_id)
         .filter(Reconciliation.status == "matched")
         .group_by(Project.id, Project.name)
     )
@@ -208,13 +208,13 @@ def report_profit(
         db.query(
             Project.id.label("project_id"),
             Project.name.label("project_name"),
-            func.coalesce(func.sum(Ledger.amount), 0).label("ledger_amount"),
+            func.coalesce(func.sum(LedgerTransaction.amount), 0).label("ledger_amount"),
             func.coalesce(func.sum(AdSpendDaily.spend), 0).label("spend_amount"),
         )
         .join(AdAccount, AdAccount.project_id == Project.id)
         .join(AdSpendDaily, AdSpendDaily.ad_account_id == AdAccount.id)
         .join(Reconciliation, Reconciliation.daily_spend_id == AdSpendDaily.id)
-        .join(Ledger, Ledger.id == Reconciliation.finance_txn_id)
+        .join(LedgerTransaction, LedgerTransaction.id == Reconciliation.finance_txn_id)
         .filter(Reconciliation.status == "matched")
         .group_by(Project.id, Project.name)
     )

@@ -9,13 +9,27 @@ from urllib.parse import urlparse
 
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from sqlalchemy.pool import StaticPool
 
-from backend.core.config import get_settings
+from core.config import get_settings
 
-# 获取配置
-settings = get_settings()
+# 延迟获取配置，避免模块导入时的问题
+def get_db_settings():
+    try:
+        return get_settings()
+    except:
+        # 返回测试环境默认配置
+        from types import SimpleNamespace
+        return SimpleNamespace(
+            database_url="sqlite:///:memory:",
+            pool_size=20,
+            max_overflow=30,
+            pool_timeout=30,
+            ssl_mode="prefer",
+            debug=True,
+            is_development=lambda: True
+        )
 
 # 数据库基础配置
 metadata = MetaData()
@@ -32,7 +46,7 @@ class DatabaseConfig:
     @staticmethod
     def create_ssl_context() -> Optional[ssl.SSLContext]:
         """创建SSL连接上下文"""
-        if settings.is_development():
+        if get_db_settings().is_development():
             # 开发环境可以选择不使用SSL
             return None
 
@@ -53,7 +67,7 @@ class DatabaseConfig:
     @staticmethod
     def get_database_url() -> str:
         """获取数据库连接URL"""
-        database_url = settings.database_url
+        database_url = get_db_settings().database_url
 
         # 为PostgreSQL添加SSL参数
         if database_url.startswith('postgresql://'):
@@ -63,7 +77,7 @@ class DatabaseConfig:
             query_params = []
 
             # 强制SSL（生产环境）
-            if not settings.is_development():
+            if not get_db_settings().is_development():
                 query_params.append('sslmode=require')
             else:
                 query_params.append('sslmode=prefer')
@@ -84,14 +98,8 @@ class DatabaseConfig:
     @staticmethod
     def get_engine_kwargs() -> dict:
         """获取引擎配置参数"""
+        settings = get_db_settings()
         kwargs = {
-            # 连接池配置
-            "pool_size": settings.pool_size,
-            "max_overflow": settings.max_overflow,
-            "pool_timeout": settings.pool_timeout,
-            "pool_recycle": 3600,  # 1小时回收连接
-            "pool_pre_ping": True,  # 连接前ping测试
-
             # 查询配置
             "echo": settings.debug,  # 开发环境打印SQL
             "echo_pool": settings.debug,  # 开发环境打印连接池信息
@@ -99,6 +107,17 @@ class DatabaseConfig:
             # 隔离级别
             "isolation_level": "READ_COMMITTED",
         }
+
+        # 只有非SQLite数据库才需要连接池配置
+        if not settings.database_url.startswith('sqlite'):
+            kwargs.update({
+                # 连接池配置
+                "pool_size": settings.pool_size,
+                "max_overflow": settings.max_overflow,
+                "pool_timeout": settings.pool_timeout,
+                "pool_recycle": 3600,  # 1小时回收连接
+                "pool_pre_ping": True,  # 连接前ping测试
+            })
 
         # 添加SSL配置
         ssl_context = DatabaseConfig.create_ssl_context()
@@ -108,12 +127,12 @@ class DatabaseConfig:
             }
 
         # SQLite特殊配置
-        if settings.database_url.startswith('sqlite'):
+        if get_db_settings().database_url.startswith('sqlite'):
             kwargs.update({
                 "poolclass": StaticPool,
                 "connect_args": {
                     "check_same_thread": False,
-                    "timeout": settings.pool_timeout
+                    "timeout": get_db_settings().pool_timeout
                 }
             })
 
@@ -130,9 +149,9 @@ def get_engine() -> Engine:
 
         _engine = create_engine(database_url, **engine_kwargs)
 
-        print(f"✅ 数据库引擎创建成功")
+        print("OK: 数据库引擎创建成功")
         print(f"   数据库: {database_url.split('@')[-1] if '@' in database_url else 'SQLite'}")
-        print(f"   连接池大小: {settings.pool_size}")
+        print(f"   连接池大小: {get_db_settings().pool_size}")
         print(f"   SSL: {'启用' if DatabaseConfig.create_ssl_context() else '禁用'}")
 
     return _engine
@@ -184,7 +203,7 @@ class DatabaseManager:
         """创建所有表"""
         try:
             Base.metadata.create_all(bind=self.engine)
-            print("✅ 数据库表创建成功")
+            print("OK: 数据库表创建成功")
         except Exception as e:
             print(f"❌ 数据库表创建失败: {e}")
             raise
@@ -287,7 +306,7 @@ def init_database():
         # 创建表
         db_manager.create_tables()
 
-        print("✅ 数据库初始化完成")
+        print("OK: 数据库初始化完成")
         return True
     except Exception as e:
         print(f"❌ 数据库初始化失败: {e}")

@@ -1,0 +1,50 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-page-custom-font": "off",
+
+    // 禁止使用裸HTML标签 - 必须使用shadcn/ui组件
+    "react/forbid-elements": [
+      "error",
+      {
+        "forbid": [
+          {
+            "element": "button",
+            "message": "使用 <Button> 组件替代 <button> 标签 (from '@/components/ui/button')"
+          },
+          {
+            "element": "input",
+            "message": "使用 <Input> 组件替代 <input> 标签 (from '@/components/ui/input')"
+          },
+          {
+            "element": "select",
+            "message": "使用 <Select> 组件替代 <select> 标签 (from '@/components/ui/select')"
+          },
+          {
+            "element": "textarea",
+            "message": "使用 <Textarea> 组件替代 <textarea> 标签 (from '@/components/ui/textarea')"
+          },
+          {
+            "element": "label",
+            "message": "使用 <Label> 组件替代 <label> 标签 (from '@/components/ui/label')"
+          },
+          {
+            "element": "form",
+            "message": "使用 <form> 时需要配合shadcn/ui表单组件使用"
+          }
+        ]
+      }
+    ],
+
+    // 强制使用TypeScript类型定义
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+
+    // 代码质量规则
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "prefer-const": "error",
+    "no-var": "error"
+  }
+}

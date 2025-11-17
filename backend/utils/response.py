@@ -171,3 +171,14 @@ def unauthorized(message: str = "未授权访问") -> ErrorResponse:
         code="UNAUTHORIZED",
         message=message
     )
+
+
+# 添加缺失的别名函数
+def success_response(data: T = None, message: str = "操作成功", code: str = "SUCCESS") -> BaseResponse[T]:
+    """成功响应（别名）"""
+    return create_response(data=data, message=message, code=code)
+
+
+def error_response(code: str, message: str, status_code: int = 500, details: Optional[Dict[str, Any]] = None) -> ErrorResponse:
+    """错误响应（别名）"""
+    return create_error_response(code=code, message=message, details=details)

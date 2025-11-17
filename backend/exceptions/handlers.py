@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from backend.core.response import error_response
+from core.response import error_response
 from types import SimpleNamespace
 from datetime import datetime
 import uuid

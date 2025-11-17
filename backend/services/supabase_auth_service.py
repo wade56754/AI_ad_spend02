@@ -12,14 +12,24 @@ from sqlalchemy.orm import Session
 
 from core.supabase_client import supabase_client
 from core.db import get_db
+from core.config import get_settings
+
+settings = get_settings()
 
 
 class SupabaseAuthService:
     """Supabase认证服务"""
 
     def __init__(self):
-        self.client = supabase_client.supabase
-        self.admin_client = supabase_client.get_admin_client()
+        self._provider = supabase_client
+
+    @property
+    def client(self):
+        return self._provider.supabase
+
+    @property
+    def admin_client(self):
+        return self._provider.get_admin_client()
 
     async def register_user(
         self,
@@ -266,10 +276,13 @@ class SupabaseAuthService:
             email: 邮箱地址
         """
         try:
+            # 获取前端URL，如果未配置则使用默认值
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+
             self.client.auth.reset_password_for_email(
                 email,
                 options={
-                    "redirect_to": f"{settings.FRONTEND_URL}/reset-password"
+                    "redirect_to": f"{frontend_url}/reset-password"
                 }
             )
 

@@ -26,7 +26,7 @@ from exceptions.custom_exceptions import (
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.user import User
+from models.users import User
 from models.daily_report import DailyReport
 
 

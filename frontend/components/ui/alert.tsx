@@ -56,7 +56,7 @@ const alertVariants = {
   }
 };
 
-export default function Alert({
+export const Alert = function Alert({
   variant = 'default',
   title,
   description,
@@ -115,7 +115,9 @@ export default function Alert({
       </div>
     </div>
   );
-}
+};
+
+export default Alert;
 
 // Alert Components for Different Variants
 export const AlertDestructive = (props: Omit<AlertProps, 'variant'>) => (

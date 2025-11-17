@@ -1,6 +1,460 @@
-class ErrorCode:
-    PERMISSION_DENIED = "4001"
-    INVALID_STATUS = "4002"
-    INVALID_PARAM = "4003"
-    UNKNOWN_ERROR = "5000"
+"""
+统一错误码定义
+Version: 1.0
+Author: Claude协作开发
 
+错误码命名规则:
+- AUTH_xxx: 认证/授权错误
+- BIZ_xxx: 业务逻辑错误
+- SYS_xxx: 系统错误
+- DB_xxx: 数据库错误
+- VALIDATION_xxx: 参数验证错误
+"""
+
+from typing import Dict, Any
+
+
+class ErrorCode:
+    """错误码基类"""
+    def __init__(self, code: str, message: str, status_code: int = 400):
+        self.code = code
+        self.message = message
+        self.status_code = status_code
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "code": self.code,
+            "message": self.message,
+            "status_code": self.status_code
+        }
+
+
+# ============================================
+# 认证错误码 (AUTH_xxx)
+# ============================================
+
+class AuthErrorCodes:
+    """认证相关错误码"""
+
+    # 登录相关 (001-099)
+    INVALID_CREDENTIALS = ErrorCode(
+        "AUTH_001",
+        "用户名或密码错误",
+        401
+    )
+
+    ACCOUNT_DISABLED = ErrorCode(
+        "AUTH_002",
+        "账户已被禁用",
+        403
+    )
+
+    TOKEN_REVOKED = ErrorCode(
+        "AUTH_003",
+        "令牌已被撤销",
+        401
+    )
+
+    USER_NOT_FOUND = ErrorCode(
+        "AUTH_004",
+        "用户不存在或已被禁用",
+        404
+    )
+
+    TOKEN_REFRESH_FAILED = ErrorCode(
+        "AUTH_005",
+        "令牌刷新失败",
+        401
+    )
+
+    # 注册相关 (100-199)
+    EMAIL_ALREADY_EXISTS = ErrorCode(
+        "AUTH_100",
+        "邮箱已被注册",
+        400
+    )
+
+    USERNAME_ALREADY_EXISTS = ErrorCode(
+        "AUTH_101",
+        "用户名已被使用",
+        400
+    )
+
+    REGISTER_FAILED = ErrorCode(
+        "AUTH_102",
+        "注册失败，请稍后重试",
+        500
+    )
+
+    # 密码相关 (200-299)
+    PASSWORD_TOO_SHORT = ErrorCode(
+        "AUTH_200",
+        "密码长度至少8位",
+        400
+    )
+
+    PASSWORD_MISSING_DIGIT = ErrorCode(
+        "AUTH_201",
+        "密码必须包含至少一个数字",
+        400
+    )
+
+    PASSWORD_MISSING_LETTER = ErrorCode(
+        "AUTH_202",
+        "密码必须包含至少一个字母",
+        400
+    )
+
+    PASSWORD_MISSING_SPECIAL = ErrorCode(
+        "AUTH_203",
+        "密码必须包含至少一个特殊字符",
+        400
+    )
+
+    OLD_PASSWORD_WRONG = ErrorCode(
+        "AUTH_204",
+        "旧密码错误",
+        400
+    )
+
+    RESET_TOKEN_INVALID = ErrorCode(
+        "AUTH_205",
+        "重置令牌无效或已过期",
+        400
+    )
+
+    PASSWORD_CHANGE_FAILED = ErrorCode(
+        "AUTH_206",
+        "密码修改失败",
+        500
+    )
+
+    # 邮箱验证 (300-399)
+    EMAIL_NOT_VERIFIED = ErrorCode(
+        "AUTH_300",
+        "邮箱未验证",
+        403
+    )
+
+    EMAIL_VERIFICATION_FAILED = ErrorCode(
+        "AUTH_301",
+        "邮箱验证失败",
+        400
+    )
+
+    EMAIL_ALREADY_VERIFIED = ErrorCode(
+        "AUTH_302",
+        "邮箱已验证",
+        400
+    )
+
+    # Token相关 (400-499)
+    TOKEN_MISSING = ErrorCode(
+        "AUTH_400",
+        "未提供认证令牌",
+        401
+    )
+
+    TOKEN_INVALID = ErrorCode(
+        "AUTH_401",
+        "无效的认证令牌",
+        401
+    )
+
+    TOKEN_EXPIRED = ErrorCode(
+        "AUTH_402",
+        "令牌已过期",
+        401
+    )
+
+    # 权限相关 (500-599)
+    PERMISSION_DENIED = ErrorCode(
+        "AUTH_500",
+        "权限不足",
+        403
+    )
+
+    ROLE_NOT_ALLOWED = ErrorCode(
+        "AUTH_501",
+        "角色权限不足",
+        403
+    )
+
+    # 通用认证错误 (900-999)
+    LOGIN_FAILED = ErrorCode(
+        "AUTH_900",
+        "登录失败，请稍后重试",
+        500
+    )
+
+    LOGOUT_FAILED = ErrorCode(
+        "AUTH_901",
+        "登出失败",
+        500
+    )
+
+    AUTHENTICATION_ERROR = ErrorCode(
+        "AUTH_999",
+        "认证失败",
+        401
+    )
+
+
+# ============================================
+# 业务错误码 (BIZ_xxx)
+# ============================================
+
+class BusinessErrorCodes:
+    """业务逻辑错误码"""
+
+    # 通用业务错误 (001-099)
+    INVALID_OPERATION = ErrorCode(
+        "BIZ_001",
+        "无效的操作",
+        400
+    )
+
+    RESOURCE_NOT_FOUND = ErrorCode(
+        "BIZ_002",
+        "资源不存在",
+        404
+    )
+
+    RESOURCE_ALREADY_EXISTS = ErrorCode(
+        "BIZ_003",
+        "资源已存在",
+        409
+    )
+
+    # 金额相关 (100-199)
+    INVALID_AMOUNT = ErrorCode(
+        "BIZ_100",
+        "金额无效",
+        400
+    )
+
+    INSUFFICIENT_BALANCE = ErrorCode(
+        "BIZ_101",
+        "余额不足",
+        400
+    )
+
+    # 日期相关 (200-299)
+    INVALID_DATE_RANGE = ErrorCode(
+        "BIZ_200",
+        "日期范围无效",
+        400
+    )
+
+    DATE_IN_FUTURE = ErrorCode(
+        "BIZ_201",
+        "日期不能为未来",
+        400
+    )
+
+    # 状态相关 (300-399)
+    INVALID_STATUS = ErrorCode(
+        "BIZ_300",
+        "状态无效",
+        400
+    )
+
+    STATUS_TRANSITION_NOT_ALLOWED = ErrorCode(
+        "BIZ_301",
+        "状态转换不允许",
+        400
+    )
+
+
+# ============================================
+# 系统错误码 (SYS_xxx)
+# ============================================
+
+class SystemErrorCodes:
+    """系统错误码"""
+
+    INTERNAL_ERROR = ErrorCode(
+        "SYS_001",
+        "系统内部错误",
+        500
+    )
+
+    SERVICE_UNAVAILABLE = ErrorCode(
+        "SYS_002",
+        "服务暂时不可用",
+        503
+    )
+
+    TIMEOUT = ErrorCode(
+        "SYS_003",
+        "请求超时",
+        504
+    )
+
+    RATE_LIMIT_EXCEEDED = ErrorCode(
+        "SYS_004",
+        "请求过于频繁",
+        429
+    )
+
+
+# ============================================
+# 数据库错误码 (DB_xxx)
+# ============================================
+
+class DatabaseErrorCodes:
+    """数据库错误码"""
+
+    CONNECTION_FAILED = ErrorCode(
+        "DB_001",
+        "数据库连接失败",
+        500
+    )
+
+    QUERY_FAILED = ErrorCode(
+        "DB_002",
+        "数据库查询失败",
+        500
+    )
+
+    CONSTRAINT_VIOLATION = ErrorCode(
+        "DB_003",
+        "数据完整性约束违反",
+        400
+    )
+
+    UNIQUE_VIOLATION = ErrorCode(
+        "DB_004",
+        "唯一性约束违反",
+        409
+    )
+
+    FOREIGN_KEY_VIOLATION = ErrorCode(
+        "DB_005",
+        "外键约束违反",
+        400
+    )
+
+
+# ============================================
+# 参数验证错误码 (VALIDATION_xxx)
+# ============================================
+
+class ValidationErrorCodes:
+    """参数验证错误码"""
+
+    REQUIRED_FIELD_MISSING = ErrorCode(
+        "VALIDATION_001",
+        "必填字段缺失",
+        400
+    )
+
+    INVALID_FORMAT = ErrorCode(
+        "VALIDATION_002",
+        "格式无效",
+        400
+    )
+
+    INVALID_EMAIL = ErrorCode(
+        "VALIDATION_003",
+        "邮箱格式无效",
+        400
+    )
+
+    INVALID_PHONE = ErrorCode(
+        "VALIDATION_004",
+        "电话格式无效",
+        400
+    )
+
+    VALUE_OUT_OF_RANGE = ErrorCode(
+        "VALIDATION_005",
+        "值超出范围",
+        400
+    )
+
+    INVALID_ENUM_VALUE = ErrorCode(
+        "VALIDATION_006",
+        "枚举值无效",
+        400
+    )
+
+
+# ============================================
+# 错误码字典 (用于快速查找)
+# ============================================
+
+ERROR_CODE_MAP: Dict[str, ErrorCode] = {
+    # 认证错误
+    "AUTH_001": AuthErrorCodes.INVALID_CREDENTIALS,
+    "AUTH_002": AuthErrorCodes.ACCOUNT_DISABLED,
+    "AUTH_003": AuthErrorCodes.TOKEN_REVOKED,
+    "AUTH_004": AuthErrorCodes.USER_NOT_FOUND,
+    "AUTH_005": AuthErrorCodes.TOKEN_REFRESH_FAILED,
+    "AUTH_100": AuthErrorCodes.EMAIL_ALREADY_EXISTS,
+    "AUTH_101": AuthErrorCodes.USERNAME_ALREADY_EXISTS,
+    "AUTH_102": AuthErrorCodes.REGISTER_FAILED,
+    "AUTH_200": AuthErrorCodes.PASSWORD_TOO_SHORT,
+    "AUTH_201": AuthErrorCodes.PASSWORD_MISSING_DIGIT,
+    "AUTH_202": AuthErrorCodes.PASSWORD_MISSING_LETTER,
+    "AUTH_203": AuthErrorCodes.PASSWORD_MISSING_SPECIAL,
+    "AUTH_204": AuthErrorCodes.OLD_PASSWORD_WRONG,
+    "AUTH_205": AuthErrorCodes.RESET_TOKEN_INVALID,
+    "AUTH_206": AuthErrorCodes.PASSWORD_CHANGE_FAILED,
+    "AUTH_300": AuthErrorCodes.EMAIL_NOT_VERIFIED,
+    "AUTH_301": AuthErrorCodes.EMAIL_VERIFICATION_FAILED,
+    "AUTH_302": AuthErrorCodes.EMAIL_ALREADY_VERIFIED,
+    "AUTH_400": AuthErrorCodes.TOKEN_MISSING,
+    "AUTH_401": AuthErrorCodes.TOKEN_INVALID,
+    "AUTH_402": AuthErrorCodes.TOKEN_EXPIRED,
+    "AUTH_500": AuthErrorCodes.PERMISSION_DENIED,
+    "AUTH_501": AuthErrorCodes.ROLE_NOT_ALLOWED,
+    "AUTH_900": AuthErrorCodes.LOGIN_FAILED,
+    "AUTH_901": AuthErrorCodes.LOGOUT_FAILED,
+    "AUTH_999": AuthErrorCodes.AUTHENTICATION_ERROR,
+
+    # 业务错误
+    "BIZ_001": BusinessErrorCodes.INVALID_OPERATION,
+    "BIZ_002": BusinessErrorCodes.RESOURCE_NOT_FOUND,
+    "BIZ_003": BusinessErrorCodes.RESOURCE_ALREADY_EXISTS,
+    "BIZ_100": BusinessErrorCodes.INVALID_AMOUNT,
+    "BIZ_101": BusinessErrorCodes.INSUFFICIENT_BALANCE,
+    "BIZ_200": BusinessErrorCodes.INVALID_DATE_RANGE,
+    "BIZ_201": BusinessErrorCodes.DATE_IN_FUTURE,
+    "BIZ_300": BusinessErrorCodes.INVALID_STATUS,
+    "BIZ_301": BusinessErrorCodes.STATUS_TRANSITION_NOT_ALLOWED,
+
+    # 系统错误
+    "SYS_001": SystemErrorCodes.INTERNAL_ERROR,
+    "SYS_002": SystemErrorCodes.SERVICE_UNAVAILABLE,
+    "SYS_003": SystemErrorCodes.TIMEOUT,
+    "SYS_004": SystemErrorCodes.RATE_LIMIT_EXCEEDED,
+
+    # 数据库错误
+    "DB_001": DatabaseErrorCodes.CONNECTION_FAILED,
+    "DB_002": DatabaseErrorCodes.QUERY_FAILED,
+    "DB_003": DatabaseErrorCodes.CONSTRAINT_VIOLATION,
+    "DB_004": DatabaseErrorCodes.UNIQUE_VIOLATION,
+    "DB_005": DatabaseErrorCodes.FOREIGN_KEY_VIOLATION,
+
+    # 验证错误
+    "VALIDATION_001": ValidationErrorCodes.REQUIRED_FIELD_MISSING,
+    "VALIDATION_002": ValidationErrorCodes.INVALID_FORMAT,
+    "VALIDATION_003": ValidationErrorCodes.INVALID_EMAIL,
+    "VALIDATION_004": ValidationErrorCodes.INVALID_PHONE,
+    "VALIDATION_005": ValidationErrorCodes.VALUE_OUT_OF_RANGE,
+    "VALIDATION_006": ValidationErrorCodes.INVALID_ENUM_VALUE,
+}
+
+
+def get_error_code(code: str) -> ErrorCode:
+    """
+    获取错误码对象
+
+    Args:
+        code: 错误码字符串
+
+    Returns:
+        ErrorCode对象
+    """
+    return ERROR_CODE_MAP.get(code, SystemErrorCodes.INTERNAL_ERROR)

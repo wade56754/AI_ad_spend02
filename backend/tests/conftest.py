@@ -4,6 +4,13 @@ Version: 1.0
 Author: Claude协作开发
 """
 
+import os
+from dotenv import load_dotenv
+
+# 加载测试环境配置
+env_path = os.path.join(os.path.dirname(__file__), '..', '.env.test')
+load_dotenv(env_path, override=True)
+
 import pytest
 from datetime import date, datetime
 from decimal import Decimal
@@ -14,13 +21,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from core.database import get_db, Base
+from core.db import get_db, Base
 from main import app
-from models.user import User
-from models.project import Project
-from models.channel import Channel
+from models.users import User
+from models.projects import Project
+from models.channels import Channel
 from models.ad_account import AdAccount
-from core.security import create_access_token, get_password_hash
+from models.daily_report import DailyReport
+from models.topup import Topup
+from core.security import jwt_manager
+import hashlib
+
+def get_password_hash(password: str) -> str:
+    """
+    简化的测试密码哈希（仅用于测试环境）
+    使用SHA256而非bcrypt以避免版本兼容性问题
+    """
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def create_access_token(data: dict) -> str:
+    """创建JWT token"""
+    return jwt_manager.create_access_token(data)
 
 
 # 测试数据库配置
@@ -47,13 +68,26 @@ def event_loop():
 @pytest.fixture(scope="function")
 def db_session():
     """创建测试数据库会话"""
-    Base.metadata.create_all(bind=engine)
+    # 只创建测试需要的核心表，避免UUID兼容性问题
+    tables_to_create = [
+        User.__table__,
+        Project.__table__,
+        Channel.__table__,
+        AdAccount.__table__,
+        DailyReport.__table__,
+        Topup.__table__,
+    ]
+    for table in tables_to_create:
+        table.create(bind=engine, checkfirst=True)
+
     session = TestingSessionLocal()
     try:
         yield session
     finally:
         session.close()
-        Base.metadata.drop_all(bind=engine)
+        # 清理测试表
+        for table in reversed(tables_to_create):
+            table.drop(bind=engine, checkfirst=True)
 
 
 @pytest.fixture(scope="function")
@@ -75,11 +109,9 @@ def client(db_session):
 def test_user(db_session):
     """创建测试用户"""
     user = User(
-        nickname="测试投手",
+        name="测试投手",
         email="buyer@test.com",
-        hashed_password=get_password_hash("test123"),
         role="media_buyer",
-        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -92,11 +124,9 @@ def test_user(db_session):
 def test_admin_user(db_session):
     """创建测试管理员用户"""
     user = User(
-        nickname="测试管理员",
+        name="测试管理员",
         email="admin@test.com",
-        hashed_password=get_password_hash("admin123"),
         role="admin",
-        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -109,11 +139,9 @@ def test_admin_user(db_session):
 def test_data_operator_user(db_session):
     """创建测试数据员用户"""
     user = User(
-        nickname="测试数据员",
+        name="测试数据员",
         email="operator@test.com",
-        hashed_password=get_password_hash("operator123"),
         role="data_operator",
-        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -133,7 +161,7 @@ def test_project(db_session, test_admin_user):
         status="planning",
         budget=Decimal("10000.00"),
         currency="USD",
-        created_by=test_admin_user.id
+        created_by=str(test_admin_user.id)  # 转换UUID为字符串以支持SQLite
     )
     db_session.add(project)
     db_session.commit()
@@ -142,13 +170,14 @@ def test_project(db_session, test_admin_user):
 
 
 @pytest.fixture
-def test_channel(db_session):
+def test_channel(db_session, test_admin_user):
     """创建测试渠道"""
     channel = Channel(
         name="Facebook",
-        service_fee_type="percent",
-        service_fee_value=Decimal("3.00"),
-        is_active=True,
+        code="FB001",
+        company_name="Facebook Ads Inc.",
+        service_fee_rate=Decimal("0.03"),  # 3%服务费率
+        created_by=str(test_admin_user.id),  # 转换UUID为字符串
         created_at=datetime.utcnow()
     )
     db_session.add(channel)
@@ -158,13 +187,16 @@ def test_channel(db_session):
 
 
 @pytest.fixture
-def test_ad_account(db_session, test_project, test_channel, test_user):
+def test_ad_account(db_session, test_project, test_channel, test_user, test_admin_user):
     """创建测试广告账户"""
     ad_account = AdAccount(
         name="测试账户",
+        account_id="TEST_ACCOUNT_001",  # 必需字段
+        platform="Facebook",  # 必需字段
         project_id=test_project.id,
-        channel_id=test_channel.id,
-        assigned_user_id=test_user.id,
+        channel_id=str(test_channel.id),  # 转换UUID为字符串以支持SQLite
+        assigned_user_id=str(test_user.id),  # 转换UUID为字符串以支持SQLite
+        created_by=str(test_admin_user.id),  # 必需字段：创建人
         status="active",
         created_at=datetime.utcnow()
     )
@@ -277,11 +309,9 @@ def excel_file_content():
 def test_account_manager_user(db_session):
     """创建测试账户管理员用户"""
     user = User(
-        nickname="测试账户经理",
+        name="测试账户经理",
         email="manager@test.com",
-        hashed_password=get_password_hash("manager123"),
         role="account_manager",
-        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -294,11 +324,9 @@ def test_account_manager_user(db_session):
 def test_finance_user(db_session):
     """创建测试财务用户"""
     user = User(
-        nickname="测试财务",
+        name="测试财务",
         email="finance@test.com",
-        hashed_password=get_password_hash("finance123"),
         role="finance",
-        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -372,7 +400,7 @@ def account_manager_project_id(account_manager_project):
 @pytest.fixture
 def media_buyer_project(db_session, test_admin_user, test_user):
     """创建媒体买家参与的项目"""
-    from models.project import ProjectMember
+    from models.projects import ProjectMember
 
     project = Project(
         name="媒体买家项目",
@@ -432,11 +460,9 @@ def sample_project_data():
 def test_finance_user(db_session):
     """创建测试财务用户"""
     user = User(
-        nickname="测试财务",
+        name="测试财务",
         email="finance@test.com",
-        hashed_password=get_password_hash("finance123"),
         role="finance",
-        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -449,11 +475,9 @@ def test_finance_user(db_session):
 def test_account_manager_user(db_session):
     """创建测试账户管理员用户"""
     user = User(
-        nickname="测试账户经理",
+        name="测试账户经理",
         email="manager@test.com",
-        hashed_password=get_password_hash("manager123"),
         role="account_manager",
-        is_active=True,
         created_at=datetime.utcnow()
     )
     db_session.add(user)
@@ -489,7 +513,7 @@ def sample_topup_request_id(test_topup_request):
 @pytest.fixture
 def managed_project(db_session, test_admin_user, test_account_manager_user):
     """创建由账户管理员管理的项目"""
-    from models.project import Project
+    from models.projects import Project
 
     project = Project(
         name="经理项目",
@@ -562,3 +586,195 @@ def account_manager_project_id(managed_project):
 def sample_ad_account_id(test_ad_account):
     """示例广告账户ID"""
     return test_ad_account.id
+
+
+# ============ 新增Fixtures：支持新功能 ============
+
+@pytest.fixture
+def test_finance_user(db_session):
+    """创建测试财务用户"""
+    user = User(
+        name="测试财务",
+        email="finance@test.com",
+        role="finance",
+        created_at=datetime.utcnow()
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def test_account_manager_user(db_session):
+    """创建测试户管用户"""
+    user = User(
+        name="测试户管",
+        email="account_manager@test.com",
+        role="account_manager",
+        created_at=datetime.utcnow()
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def auth_headers_finance(test_finance_user):
+    """财务用户认证头"""
+    access_token = create_access_token(data={"sub": test_finance_user.email})
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+def auth_headers_account_manager(test_account_manager_user):
+    """户管用户认证头"""
+    access_token = create_access_token(data={"sub": test_account_manager_user.email})
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+def sample_excel_data():
+    """
+    示例Excel导入数据
+    返回包含3行数据的字典列表
+    """
+    return [
+        {
+            "报表日期": "2024-01-15",
+            "广告账户ID": 1,
+            "广告系列名称": "测试广告系列1",
+            "广告组名称": "测试广告组1",
+            "广告创意名称": "测试广告创意1",
+            "展示次数": 10000,
+            "点击次数": 500,
+            "消耗金额": 100.00,
+            "转化次数": 10,
+            "新增粉丝数": 20,
+            "CPA": 10.00,
+            "ROAS": 5.00,
+            "备注": "测试备注1"
+        },
+        {
+            "报表日期": "2024-01-16",
+            "广告账户ID": 1,
+            "广告系列名称": "测试广告系列2",
+            "广告组名称": "测试广告组2",
+            "广告创意名称": "测试广告创意2",
+            "展示次数": 15000,
+            "点击次数": 750,
+            "消耗金额": 150.00,
+            "转化次数": 15,
+            "新增粉丝数": 30,
+            "CPA": 10.00,
+            "ROAS": 6.00,
+            "备注": "测试备注2"
+        },
+        {
+            "报表日期": "2024-01-17",
+            "广告账户ID": 1,
+            "广告系列名称": "测试广告系列3",
+            "广告组名称": "测试广告组3",
+            "广告创意名称": "测试广告创意3",
+            "展示次数": 20000,
+            "点击次数": 1000,
+            "消耗金额": 200.00,
+            "转化次数": 20,
+            "新增粉丝数": 40,
+            "CPA": 10.00,
+            "ROAS": 7.00,
+            "备注": "测试备注3"
+        }
+    ]
+
+
+@pytest.fixture
+def sample_excel_file_bytes(sample_excel_data):
+    """
+    创建示例Excel文件（字节流）
+    用于测试文件上传功能
+    """
+    import pandas as pd
+    from io import BytesIO
+
+    df = pd.DataFrame(sample_excel_data)
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='日报数据')
+    output.seek(0)
+    return output.getvalue()
+
+
+@pytest.fixture
+def sample_excel_data_invalid():
+    """
+    示例无效Excel数据（用于测试错误处理）
+    包含各种错误：缺失必需字段、无效日期、数值超范围等
+    """
+    return [
+        {
+            # 缺少"报表日期"（必需字段）
+            "广告账户ID": 1,
+            "展示次数": 10000,
+            "点击次数": 500,
+            "消耗金额": 100.00,
+            "转化次数": 10,
+            "新增粉丝数": 20
+        },
+        {
+            # 无效日期
+            "报表日期": "2025-13-32",
+            "广告账户ID": 1,
+            "展示次数": 10000,
+            "点击次数": 500,
+            "消耗金额": 100.00,
+            "转化次数": 10,
+            "新增粉丝数": 20
+        },
+        {
+            # 点击次数大于展示次数（业务逻辑错误）
+            "报表日期": "2024-01-15",
+            "广告账户ID": 1,
+            "展示次数": 100,
+            "点击次数": 500,
+            "消耗金额": 100.00,
+            "转化次数": 10,
+            "新增粉丝数": 20
+        }
+    ]
+
+
+@pytest.fixture
+def mock_daily_reports(db_session, test_ad_account, test_user):
+    """
+    创建多个测试日报记录
+    用于测试RBAC过滤和导出功能
+    """
+    from models.daily_report import DailyReport
+
+    reports = []
+    for i in range(10):
+        report = DailyReport(
+            report_date=date(2024, 1, 15 + i),
+            ad_account_id=test_ad_account.id,
+            campaign_name=f"测试广告系列{i+1}",
+            ad_group_name=f"测试广告组{i+1}",
+            ad_creative_name=f"测试广告创意{i+1}",
+            impressions=10000 * (i + 1),
+            clicks=500 * (i + 1),
+            spend=Decimal(str(100 * (i + 1))),
+            conversions=10 * (i + 1),
+            new_follows=20 * (i + 1),
+            status="pending",
+            created_by=test_user.id,
+            created_at=datetime.utcnow()
+        )
+        db_session.add(report)
+        reports.append(report)
+
+    db_session.commit()
+    for report in reports:
+        db_session.refresh(report)
+
+    return reports

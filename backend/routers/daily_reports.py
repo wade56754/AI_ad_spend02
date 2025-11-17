@@ -4,9 +4,10 @@ Version: 1.0
 Author: Claude协作开发
 """
 
-from datetime import datetime
-from decimal import Decimal
-from typing import List, Optional
+import logging
+from datetime import datetime, date
+from decimal import Decimal, InvalidOperation
+from typing import List, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -14,6 +15,15 @@ from sqlalchemy.orm import Session
 from io import BytesIO
 import pandas as pd
 import uuid
+
+from config.excel_column_mapping import (
+    find_column_definition,
+    validate_column_exists,
+    MAX_FILE_SIZE_BYTES,
+    MAX_FILE_SIZE_MB,
+    MAX_EXPORT_ROWS,
+    EXCEL_COLUMN_DEFINITIONS
+)
 
 from core.db import get_db
 from core.dependencies import get_current_user, require_role
@@ -46,12 +56,182 @@ from schemas.daily_report import (
 )
 from services.daily_report_service import DailyReportService
 
+# 创建logger实例
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/daily-reports", tags=["daily-reports"])
 
 
 def get_daily_report_service(db: Session = Depends(get_db)) -> DailyReportService:
     """获取日报服务实例"""
     return DailyReportService(db)
+
+
+# ============ 辅助函数：Excel数据解析 ============
+
+def parse_excel_row_to_report(
+    row: pd.Series,
+    row_number: int,
+    df_columns: List[str]
+) -> Tuple[Optional[DailyReportCreateRequest], Optional[DailyReportImportError]]:
+    """
+    解析Excel单行数据为DailyReportCreateRequest对象
+
+    Args:
+        row: pandas Series对象（单行数据）
+        row_number: 行号（从1开始，包含表头）
+        df_columns: DataFrame的所有列名
+
+    Returns:
+        (DailyReportCreateRequest对象或None, DailyReportImportError对象或None)
+        成功时返回(request, None)，失败时返回(None, error)
+    """
+    try:
+        report_data = {}
+
+        # 遍历所有列定义，尝试从Excel行中提取数据
+        for col_def in EXCEL_COLUMN_DEFINITIONS:
+            # 查找匹配的列名
+            matched_column = None
+            for df_col in df_columns:
+                if find_column_definition(df_col) == col_def:
+                    matched_column = df_col
+                    break
+
+            # 如果找不到列且是必需列，报错
+            if matched_column is None:
+                if col_def.required:
+                    return None, DailyReportImportError(
+                        row_number=row_number,
+                        error_code="MISSING_REQUIRED_COLUMN",
+                        error_message=f"缺少必需列：{col_def.cn_name}",
+                        field_name=col_def.field_name,
+                        suggestion=f"请确保Excel中包含'{col_def.cn_name}'或'{col_def.en_name}'列"
+                    )
+                # 可选列，使用默认值
+                report_data[col_def.field_name] = col_def.default
+                continue
+
+            # 获取单元格值
+            cell_value = row[matched_column]
+
+            # 处理空值
+            if pd.isna(cell_value) or cell_value == '':
+                if col_def.required:
+                    return None, DailyReportImportError(
+                        row_number=row_number,
+                        error_code="EMPTY_REQUIRED_FIELD",
+                        error_message=f"必需字段为空",
+                        field_name=col_def.field_name,
+                        invalid_value="(空)",
+                        suggestion=f"请填写'{col_def.cn_name}'"
+                    )
+                report_data[col_def.field_name] = col_def.default
+                continue
+
+            # 类型转换
+            try:
+                if col_def.data_type == "date":
+                    # 日期类型
+                    if isinstance(cell_value, pd.Timestamp):
+                        converted_value = cell_value.date()
+                    elif isinstance(cell_value, datetime):
+                        converted_value = cell_value.date()
+                    elif isinstance(cell_value, date):
+                        converted_value = cell_value
+                    else:
+                        # 尝试解析字符串
+                        converted_value = pd.to_datetime(str(cell_value)).date()
+
+                elif col_def.data_type == "int":
+                    # 整数类型
+                    converted_value = int(float(cell_value))  # 处理"123.0"这种情况
+
+                    # 范围验证
+                    if col_def.min_value is not None and converted_value < col_def.min_value:
+                        return None, DailyReportImportError(
+                            row_number=row_number,
+                            error_code="VALUE_OUT_OF_RANGE",
+                            error_message=f"值{converted_value}小于最小值{col_def.min_value}",
+                            field_name=col_def.field_name,
+                            invalid_value=str(cell_value),
+                            suggestion=f"'{col_def.cn_name}'必须≥{col_def.min_value}"
+                        )
+                    if col_def.max_value is not None and converted_value > col_def.max_value:
+                        return None, DailyReportImportError(
+                            row_number=row_number,
+                            error_code="VALUE_OUT_OF_RANGE",
+                            error_message=f"值{converted_value}超过最大值{col_def.max_value}",
+                            field_name=col_def.field_name,
+                            invalid_value=str(cell_value),
+                            suggestion=f"'{col_def.cn_name}'必须≤{col_def.max_value}"
+                        )
+
+                elif col_def.data_type == "decimal":
+                    # Decimal类型
+                    converted_value = Decimal(str(cell_value))
+
+                    # 范围验证
+                    if col_def.min_value is not None and converted_value < Decimal(str(col_def.min_value)):
+                        return None, DailyReportImportError(
+                            row_number=row_number,
+                            error_code="VALUE_OUT_OF_RANGE",
+                            error_message=f"值{converted_value}小于最小值{col_def.min_value}",
+                            field_name=col_def.field_name,
+                            invalid_value=str(cell_value),
+                            suggestion=f"'{col_def.cn_name}'必须≥{col_def.min_value}"
+                        )
+
+                elif col_def.data_type == "str":
+                    # 字符串类型
+                    converted_value = str(cell_value).strip()
+
+                    # 长度验证
+                    if col_def.max_length and len(converted_value) > col_def.max_length:
+                        return None, DailyReportImportError(
+                            row_number=row_number,
+                            error_code="STRING_TOO_LONG",
+                            error_message=f"字符串长度{len(converted_value)}超过最大限制{col_def.max_length}",
+                            field_name=col_def.field_name,
+                            invalid_value=converted_value[:50] + "...",
+                            suggestion=f"'{col_def.cn_name}'长度不能超过{col_def.max_length}字符"
+                        )
+
+                else:
+                    converted_value = cell_value
+
+                report_data[col_def.field_name] = converted_value
+
+            except (ValueError, InvalidOperation, OverflowError) as e:
+                return None, DailyReportImportError(
+                    row_number=row_number,
+                    error_code="TYPE_CONVERSION_ERROR",
+                    error_message=f"数据类型转换失败：{str(e)}",
+                    field_name=col_def.field_name,
+                    invalid_value=str(cell_value),
+                    suggestion=f"'{col_def.cn_name}'应为{col_def.data_type}类型"
+                )
+
+        # 创建请求对象（Pydantic会进行二次验证）
+        try:
+            request = DailyReportCreateRequest(**report_data)
+            return request, None
+        except Exception as e:
+            return None, DailyReportImportError(
+                row_number=row_number,
+                error_code="VALIDATION_ERROR",
+                error_message=f"数据验证失败：{str(e)}",
+                invalid_data=report_data
+            )
+
+    except Exception as e:
+        logger.error(f"Unexpected error parsing row {row_number}: {e}", exc_info=True)
+        return None, DailyReportImportError(
+            row_number=row_number,
+            error_code="PARSE_ERROR",
+            error_message=f"解析行数据失败：{str(e)}",
+            invalid_data=row.to_dict() if hasattr(row, 'to_dict') else {}
+        )
 
 
 @router.get(
@@ -398,14 +578,26 @@ async def reject_daily_report(
 async def batch_import_daily_reports(
     request: DailyReportBatchImportRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["data_operator", "admin"])),
+    parse_errors: List[DailyReportImportError] = []
 ):
     """
     批量导入日报API
+
+    Args:
+        request: 批量导入请求
+        service: 日报服务
+        current_user: 当前用户
+        parse_errors: 解析阶段的错误列表（来自Excel文件解析）
     """
     try:
         # 记录开始时间
         start_time = datetime.utcnow()
+
+        logger.info(
+            f"Starting batch import: user={current_user.id}, "
+            f"total_reports={len(request.reports)}, skip_errors={request.skip_errors}"
+        )
 
         # 批量导入
         success_count, error_count, errors, imported_ids = service.batch_import_daily_reports(
@@ -421,19 +613,28 @@ async def batch_import_daily_reports(
             for error in errors
         ]
 
+        # 合并解析阶段的错误
+        all_errors = parse_errors + error_responses
+        total_error_count = len(all_errors)
+
         # 构建响应
         response = DailyReportBatchImportResponse(
-            total_count=len(request.reports),
+            total_count=len(request.reports) + len(parse_errors),  # 总数包括解析失败的行
             success_count=success_count,
-            error_count=error_count,
-            errors=error_responses,
+            error_count=total_error_count,
+            errors=all_errors,
             imported_ids=imported_ids,
             processing_time_seconds=processing_time
         )
 
+        logger.info(
+            f"Batch import completed: success={success_count}, "
+            f"errors={total_error_count}, time={processing_time:.2f}s"
+        )
+
         return success_response(
             data=response,
-            message=f"批量导入完成，成功{success_count}条，失败{error_count}条"
+            message=f"批量导入完成，成功{success_count}条，失败{total_error_count}条"
         )
 
     except BusinessLogicError as e:
@@ -458,68 +659,134 @@ async def batch_import_daily_reports(
 )
 async def import_daily_reports_from_file(
     file: UploadFile = File(..., description="Excel文件"),
-    skip_errors: bool = Query(False, description="是否跳过错误继续导入"),
+    skip_errors: bool = Query(True, description="是否跳过错误继续导入（默认True）"),
     service: DailyReportService = Depends(get_daily_report_service),
     current_user: User = Depends(require_role(["data_operator", "admin"]))
 ):
     """
     文件导入日报API
+
+    改进点：
+    - 文件大小限制（5MB）
+    - 灵活列名匹配（支持中英文、别名）
+    - 详细错误信息（行号+列名+错误原因+修复建议）
+    - 支持部分成功（skip_errors=True）
     """
     try:
-        # 验证文件类型
+        logger.info(
+            f"Starting Excel import: filename={file.filename}, "
+            f"user={current_user.id}, skip_errors={skip_errors}"
+        )
+
+        # 1. 验证文件类型
         if not file.filename.endswith(('.xlsx', '.xls')):
+            logger.warning(f"Invalid file type: {file.filename}")
             return error_response(
-                code="BIZ_006",
+                code="BIZ_INVALID_FILE_TYPE",
                 message="只支持Excel文件格式（.xlsx, .xls）",
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        # 读取Excel文件
+        # 2. 读取文件内容并验证大小
         contents = await file.read()
-        df = pd.read_excel(BytesIO(contents))
+        file_size = len(contents)
 
-        # 转换为请求列表
-        reports = []
-        errors = []
-
-        for index, row in df.iterrows():
-            try:
-                # 转换行数据为请求对象
-                report_data = DailyReportCreateRequest(
-                    report_date=pd.to_datetime(row['报表日期']).date() if '报表日期' in row else None,
-                    ad_account_id=int(row['广告账户ID']) if '广告账户ID' in row else None,
-                    campaign_name=str(row['广告系列名称']) if '广告系列名称' in row else None,
-                    ad_group_name=str(row['广告组名称']) if '广告组名称' in row else None,
-                    ad_creative_name=str(row['广告创意名称']) if '广告创意名称' in row else None,
-                    impressions=int(row.get('展示次数', 0)),
-                    clicks=int(row.get('点击次数', 0)),
-                    spend=Decimal(str(row.get('消耗金额', 0))),
-                    conversions=int(row.get('转化次数', 0)),
-                    new_follows=int(row.get('新增粉丝数', 0)),
-                    cpa=Decimal(str(row['CPA'])) if 'CPA' in row and pd.notna(row['CPA']) else None,
-                    roas=Decimal(str(row['ROAS'])) if 'ROAS' in row and pd.notna(row['ROAS']) else None,
-                    notes=str(row['备注']) if '备注' in row and pd.notna(row['备注']) else None
-                )
-                reports.append(report_data)
-            except Exception as e:
-                errors.append(
-                    DailyReportImportError(
-                        row_number=index + 1,
-                        error_code="DATA_FORMAT_ERROR",
-                        error_message=str(e),
-                        invalid_data=row.to_dict()
-                    )
-                )
-
-        # 如果有格式错误且不跳过错误，返回错误
-        if errors and not skip_errors:
+        if file_size > MAX_FILE_SIZE_BYTES:
+            logger.warning(
+                f"File too large: {file_size} bytes (max: {MAX_FILE_SIZE_BYTES})"
+            )
             return error_response(
-                code="BIZ_006",
-                message="文件格式错误，请检查数据格式",
+                code="BIZ_FILE_TOO_LARGE",
+                message=f"文件大小{file_size / 1024 / 1024:.2f}MB超过限制{MAX_FILE_SIZE_MB}MB",
                 status_code=status.HTTP_400_BAD_REQUEST
             )
 
-        # 批量导入
+        logger.info(f"File size: {file_size / 1024:.2f}KB")
+
+        # 3. 解析Excel文件
+        try:
+            df = pd.read_excel(BytesIO(contents))
+        except Exception as e:
+            logger.error(f"Failed to parse Excel file: {e}")
+            return error_response(
+                code="BIZ_EXCEL_PARSE_ERROR",
+                message=f"Excel文件解析失败：{str(e)}",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        if df.empty:
+            logger.warning("Empty Excel file")
+            return error_response(
+                code="BIZ_EMPTY_FILE",
+                message="Excel文件为空，没有数据可导入",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        logger.info(f"Excel parsed successfully: {len(df)} rows, columns={list(df.columns)}")
+
+        # 4. 验证列是否完整
+        valid, missing_columns = validate_column_exists(list(df.columns))
+        if not valid:
+            logger.error(f"Missing required columns: {missing_columns}")
+            return error_response(
+                code="BIZ_MISSING_COLUMNS",
+                message=f"缺少必需列：{', '.join(missing_columns)}",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 5. 逐行解析数据
+        reports = []
+        parse_errors = []
+
+        for index, row in df.iterrows():
+            row_number = index + 2  # +2因为Excel从1开始且第1行是表头
+
+            request, error = parse_excel_row_to_report(row, row_number, list(df.columns))
+
+            if error:
+                parse_errors.append(error)
+                logger.debug(
+                    f"Row {row_number} parse error: {error.error_code} - {error.error_message}"
+                )
+            else:
+                reports.append(request)
+
+        logger.info(
+            f"Excel parsing completed: {len(reports)} valid rows, "
+            f"{len(parse_errors)} error rows"
+        )
+
+        # 6. 如果有解析错误且不跳过错误，返回错误
+        if parse_errors and not skip_errors:
+            logger.warning("Import aborted due to parse errors (skip_errors=False)")
+            return success_response(
+                data=DailyReportBatchImportResponse(
+                    total_count=len(df),
+                    success_count=0,
+                    error_count=len(parse_errors),
+                    errors=parse_errors,
+                    imported_ids=[],
+                    processing_time_seconds=0
+                ),
+                message=f"文件解析失败，共{len(parse_errors)}个错误。请修复后重新导入，或设置skip_errors=true跳过错误行"
+            )
+
+        # 7. 如果没有有效数据，返回错误
+        if not reports:
+            logger.warning("No valid data to import")
+            return success_response(
+                data=DailyReportBatchImportResponse(
+                    total_count=len(df),
+                    success_count=0,
+                    error_count=len(parse_errors),
+                    errors=parse_errors,
+                    imported_ids=[],
+                    processing_time_seconds=0
+                ),
+                message="没有有效数据可导入"
+            )
+
+        # 8. 批量导入（调用现有的批量导入API）
         batch_request = DailyReportBatchImportRequest(
             reports=reports,
             skip_errors=skip_errors
@@ -528,13 +795,15 @@ async def import_daily_reports_from_file(
         return await batch_import_daily_reports(
             batch_request,
             service,
-            current_user
+            current_user,
+            parse_errors  # 传递解析阶段的错误
         )
 
     except Exception as e:
+        logger.error(f"Unexpected error in file import: {e}", exc_info=True)
         return error_response(
             code="SYS_500",
-            message="文件处理失败：" + str(e),
+            message=f"文件处理失败：{str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -554,8 +823,20 @@ async def export_daily_reports(
 ):
     """
     导出日报API
+
+    改进点：
+    - 数据量限制（最多5000条）
+    - 安全的属性访问（避免因User不存在导致报错）
+    - 添加导出日志
+    - RBAC过滤（自动应用用户权限）
     """
     try:
+        logger.info(
+            f"Starting export: user={current_user.id} ({current_user.role}), "
+            f"filters: date={report_date_start}~{report_date_end}, "
+            f"account={ad_account_id}, status={status}"
+        )
+
         # 构建查询参数
         params = DailyReportQueryParams(
             report_date_start=report_date_start,
@@ -564,17 +845,45 @@ async def export_daily_reports(
             status=status
         )
 
-        # 获取所有符合条件的日报（不分页）
-        reports, _ = service.get_daily_reports(params, current_user, page=1, page_size=10000)
+        # 先统计总数（检查是否超限）
+        _, total = service.get_daily_reports(params, current_user, page=1, page_size=1)
 
-        # 转换为DataFrame
+        if total > MAX_EXPORT_ROWS:
+            logger.warning(
+                f"Export aborted: data count {total} exceeds limit {MAX_EXPORT_ROWS}"
+            )
+            return error_response(
+                code="BIZ_EXPORT_LIMIT_EXCEEDED",
+                message=(
+                    f"导出数据量({total}条)超过限制({MAX_EXPORT_ROWS}条)。"
+                    f"请缩小筛选范围（如缩短日期范围、指定账户等）或分批导出"
+                ),
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 获取所有符合条件的日报
+        reports, _ = service.get_daily_reports(
+            params, current_user, page=1, page_size=MAX_EXPORT_ROWS
+        )
+
+        if not reports:
+            logger.info("No data to export")
+            return error_response(
+                code="BIZ_NO_DATA",
+                message="没有符合条件的数据可导出",
+                status_code=status.HTTP_404_NOT_FOUND
+            )
+
+        logger.info(f"Exporting {len(reports)} records")
+
+        # 转换为DataFrame（使用安全的属性访问）
         data = []
         for report in reports:
             data.append({
                 'ID': report.id,
                 '报表日期': report.report_date,
                 '广告账户ID': report.ad_account_id,
-                '广告账户': report.ad_account.name if report.ad_account else '',
+                '广告账户': getattr(report.ad_account, 'name', '') if report.ad_account else '',
                 '广告系列': report.campaign_name or '',
                 '广告组': report.ad_group_name or '',
                 '广告创意': report.ad_creative_name or '',
@@ -583,10 +892,12 @@ async def export_daily_reports(
                 '消耗金额': float(report.spend),
                 '转化次数': report.conversions,
                 '新增粉丝': report.new_follows,
+                'CPA': float(report.cpa) if report.cpa else '',
+                'ROAS': float(report.roas) if report.roas else '',
                 '状态': report.status,
-                '创建人': report.creator.nickname if report.creator else '',
-                '创建时间': report.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                '审核人': report.auditor.nickname if report.auditor else '',
+                '创建人': getattr(report.creator, 'name', '') if report.creator else '',
+                '创建时间': report.created_at.strftime('%Y-%m-%d %H:%M:%S') if report.created_at else '',
+                '审核人': getattr(report.auditor, 'name', '') if report.auditor else '',
                 '审核时间': report.audit_time.strftime('%Y-%m-%d %H:%M:%S') if report.audit_time else '',
                 '备注': report.notes or '',
                 '审核说明': report.audit_notes or ''
@@ -618,6 +929,10 @@ async def export_daily_reports(
         # 生成文件名
         file_name = f"daily_reports_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
 
+        logger.info(
+            f"Export completed: {len(reports)} records, filename={file_name}"
+        )
+
         # 返回文件流
         return StreamingResponse(
             BytesIO(output.read()),
@@ -626,9 +941,10 @@ async def export_daily_reports(
         )
 
     except Exception as e:
+        logger.error(f"Unexpected error in export: {e}", exc_info=True)
         return error_response(
             code="SYS_500",
-            message="导出失败：" + str(e),
+            message=f"导出失败：{str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 

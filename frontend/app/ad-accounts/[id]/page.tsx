@@ -124,7 +124,8 @@ interface AdAccount {
   }>;
 }
 
-const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c", "#8dd1e1", "#d084d0"];
+import { getChartColors, CHART_COLORS } from "@/lib/theme-colors";
+const COLORS = getChartColors();
 
 export default function AdAccountDetailPage() {
   const params = useParams();
@@ -174,7 +175,7 @@ export default function AdAccountDetailPage() {
       {
         date: "2025-01-11T18:45:00Z",
         action: "广告投放",
-        description: "新广告系列"春季促销"开始投放",
+        description: "新广告系列\"春季促销\"开始投放",
         user: "张三",
       },
       {
@@ -311,7 +312,7 @@ export default function AdAccountDetailPage() {
 
   if (loading || !account) {
     return (
-      <PageTemplate title="账户详情" description="加载中...">
+      <PageTemplate title="账户详情" subtitle="加载中...">
         <div className="flex justify-center items-center h-64">
           <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
         </div>
@@ -322,7 +323,7 @@ export default function AdAccountDetailPage() {
   return (
     <PageTemplate
       title={account.account_name}
-      description={
+      subtitle={
         <div className="flex items-center gap-2">
           {getStatusBadge(account.account_status)}
           <span className="text-gray-500">|</span>
@@ -605,7 +606,7 @@ export default function AdAccountDetailPage() {
                         yAxisId="left"
                         type="monotone"
                         dataKey="spend"
-                        stroke="#ef4444"
+                        stroke={CHART_COLORS.destructive}
                         name="消耗金额(¥)"
                         strokeWidth={2}
                       />
@@ -613,7 +614,7 @@ export default function AdAccountDetailPage() {
                         yAxisId="right"
                         type="monotone"
                         dataKey="follows"
-                        stroke="#3b82f6"
+                        stroke={CHART_COLORS.info}
                         name="新增粉丝"
                         strokeWidth={2}
                       />

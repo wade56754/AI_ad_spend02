@@ -2,20 +2,24 @@ from math import ceil
 from typing import List, Optional
 from uuid import UUID
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from backend.core.db import get_db
-from backend.core.response import ok
-from backend.core.security import AuthenticatedUser, get_current_user
-from backend.models import Channel, Log
-from backend.schemas import ChannelCreate, ChannelRead, ChannelUpdate
+from core.db import get_db
+from core.logging import log_requests
+from core.response import ok
+from core.security import AuthenticatedUser, get_current_user
+from models import Channel, Log
+from schemas import ChannelCreate, ChannelRead, ChannelUpdate
 
+logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/channels", tags=["channels"])
 
 
 @router.get("/", response_model=dict)
+@log_requests("channels")
 def list_channels(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -51,6 +55,7 @@ def list_channels(
 
 
 @router.get("/{channel_id}", response_model=dict)
+@log_requests("channels")
 def get_channel(
     channel_id: UUID,
     current_user: AuthenticatedUser = Depends(get_current_user),
@@ -64,6 +69,7 @@ def get_channel(
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
+@log_requests("channels")
 def create_channel(
     payload: ChannelCreate,
     current_user: AuthenticatedUser = Depends(get_current_user),
@@ -90,6 +96,7 @@ def create_channel(
 
 
 @router.put("/{channel_id}", response_model=dict)
+@log_requests("channels")
 def update_channel(
     channel_id: UUID,
     payload: ChannelUpdate,

@@ -1,11 +1,17 @@
 {
   "mcpServers": {
     "supabase": {
-      "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=jzmcoivxhiyidizncyaq",
-      "headers": {
-        "Authorization": "Bearer ${SUPABASE_TOKEN}",
-        "apikey": "${SUPABASE_TOKEN}"
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ],
+      "env": {
+        "SUPABASE_URL": "",
+        "SUPABASE_ACCESS_TOKEN": "",
+        "SUPABASE_PROJECT_REF": "jzmcoivxhiyidizncyaq"
       }
     }
   }

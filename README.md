@@ -1,229 +1,395 @@
-﻿# AI骞垮憡浠ｆ姇绯荤粺
+# AI广告代投系统
 
-> 馃殌 **椤圭洰鐗堟湰**: v2.1
-> 馃搮 **鏈€鍚庢洿鏂?*: 2025-11-12
-> 馃捇 **鎶€鏈爤**: FastAPI + PostgreSQL + Supabase + Python
+> **项目版本**: v2.3
+> **最后更新**: 2025-11-12
+> **技术栈**: FastAPI + PostgreSQL + Redis + Python
 
 ---
 
-## 馃搵 椤圭洰姒傝堪
+## 📋 项目概述
 
-AI骞垮憡浠ｆ姇绯荤粺鏄竴涓熀浜嶧astAPI鍜孲upabase鐨勭幇浠ｅ寲骞垮憡鎶曟斁绠＄悊骞冲彴锛屾彁渚涘畬鏁寸殑骞垮憡璐︽埛绠＄悊銆佹秷鑰楄窡韪€佸厖鍊煎鎵广€佹暟鎹璐︾瓑鍔熻兘銆?
-### 鏍稿績鍔熻兘
-- 馃幆 **椤圭洰绠＄悊** - 澶氶」鐩€佸瀹㈡埛绠＄悊
-- 馃搳 **鏁版嵁杩借釜** - 瀹炴椂骞垮憡娑堣€楀拰绾跨储缁熻
-- 馃挵 **璐㈠姟瀹℃壒** - 鍏呭€肩敵璇枫€佸鎵规祦绋?- 馃搱 **鏁版嵁鍒嗘瀽** - CPL銆丷OI绛夊叧閿寚鏍囧垎鏋?- 馃攼 **鏉冮檺绠＄悊** - 鍩轰簬瑙掕壊鐨勮闂帶鍒?
+AI广告代投系统是一个基于FastAPI的现代化广告投放管理平台，提供完整的广告账户管理、数据监控、财务对账、数据分析等功能。
+
+### 核心功能
+
+#### 📊 核心功能模块
+
+##### 日报管理系统（已实现）
+- ✅ **日报创建和管理** - 投手每日提交广告投放数据
+- ✅ **审核工作流** - 数据员审核确认，支持通过/驳回
+- ✅ **批量导入导出** - 支持Excel文件导入导出
+- ✅ **数据统计分析** - 实时统计CPA、ROAS等关键指标
+- ✅ **审计日志** - 完整的操作记录追踪
+
+##### 项目管理模块（已实现）
+- ✅ **项目CRUD管理** - 完整的项目创建、查询、更新、删除
+- ✅ **成员管理** - 灵活的团队成员分配和权限控制
+- ✅ **费用记录** - 项目成本追踪和费用管理
+- ✅ **统计分析** - 项目数据统计和绩效分析
+- ✅ **权限控制** - 基于角色的细粒度访问控制
+
+##### 充值管理模块（已实现）
+- ✅ **充值申请管理** - 创建、查询、更新充值申请
+- ✅ **双重审核机制** - 数据审核 + 财务审批的完整流程
+- ✅ **打款凭证管理** - 支付凭证上传和管理
+- ✅ **统计分析报表** - 多维度充值数据分析
+- ✅ **资金流程控制** - 完整的资金流转管理
+
+#### 🔧 系统功能
+- 📈 **数据监控** - 实时广告投放数据监控
+- 💰 **财务对账** - 自动化对账系统
+- 📊 **数据分析** - CPL、ROI等关键指标分析
+- 🔒 **权限管理** - 基于角色的访问控制
+
 ---
 
-## 馃彈锔?绯荤粺鏋舵瀯
+## 📊 系统架构
 
 ```
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?    鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?    鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?  鍓嶇 (React)   鈹傗攢鈹€鈹€鈹€鈻垛攤  鍚庣 (FastAPI)  鈹傗攢鈹€鈹€鈹€鈻垛攤  鏁版嵁搴?PostgreSQL)鈹?鈹?                鈹?    鈹?                鈹?    鈹?                鈹?鈹?- 鐢ㄦ埛鐣岄潰       鈹?    鈹?- RESTful API   鈹?    鈹?- 涓氬姟鏁版嵁       鈹?鈹?- 鏁版嵁灞曠ず       鈹?    鈹?- 涓氬姟閫昏緫       鈹?    鈹?- 瀹¤鏃ュ織       鈹?鈹?- 浜や簰鎿嶄綔       鈹?    鈹?- 鏉冮檺鎺у埗       鈹?    鈹?- 鍏崇郴瀹屾暣鎬?    鈹?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?    鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?    鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?                                鈻?                                鈹?                        鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?                        鈹?  Supabase      鈹?                        鈹?                鈹?                        鈹?- 瀹炴椂璁㈤槄       鈹?                        鈹?- 鏂囦欢瀛樺偍       鈹?                        鈹?- 璁よ瘉鏈嶅姟       鈹?                        鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?```
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│             │       │             │       │             │
+│  前端 (Next.js)│◄──────┤  后端 (FastAPI) │◄──────┤  数据库 (PostgreSQL) │
+│             │       │             │       │             │
+│ - 用户界面    │       │ - RESTful API   │       │ - 业务数据       │
+│ - 业务逻辑    │       │ - 业务逻辑       │       │ - 数据持久化     │
+│ - 权限控制    │       │ - 身份验证       │       │ - 数据关系       │
+└─────────────┘       └─────────────┘       └─────────────┘
+                                    │
+                                    │
+                          ┌─────────────┐
+                          │             │
+                          │  Redis      │
+                          │             │
+                          │ - 缓存服务     │
+                          │ - 任务队列     │
+                          │ - 会话存储     │
+                          └─────────────┘
+```
 
 ---
 
-## 馃殌 蹇€熷紑濮?
-### 鐜瑕佹眰
-- Python 3.8+
-- PostgreSQL 12+
-- Node.js 16+ (鍓嶇)
+## 📚 开发规范和文档
 
-### 1. 鍏嬮殕椤圭洰
+### 核心规范文档（必读）
+
+> 完整文档地图与权威链接请访问：`docs/DOCUMENTATION_INDEX.md`
+1. **[.project-rules.md](./.project-rules.md)** ⭐ - 项目开发核心规范（最高优先级）
+   - 技术栈约定、角色权限、开发规范总则
+   - 所有规则冲突以此文档为准
+
+2. **[CLAUDE.md](./CLAUDE.md)** - AI助手开发规范
+   - AI助手强制性约束和开发流程
+   - 典型错误防范清单
+
+3. **[docs/API_RULEBOOK.md](./docs/API_RULEBOOK.md)** - API规则索引（定义以 SoT 为准；实践见 `docs/dev/API_RULEBOOK.md`）
+   - 统一响应格式、权限校验、性能指标
+
+4. **[docs/DOCUMENTATION_INDEX.md](./docs/DOCUMENTATION_INDEX.md)** - 文档索引与导航（SoT 与模块文档入口）
+   - 前端开发规范、UI设计指南、接口开发流程等
+
+### 规则优先级
+
+```
+Level 1: .project-rules.md (总纲和仲裁标准) ⭐
+    ↓
+Level 2: 领域规范 (API_RULEBOOK.md, FRONTEND_DEVELOPMENT_RULES.md, CLAUDE.md)
+    ↓
+Level 3: 执行指南 (AI_MODULE_DEVELOPMENT_WORKFLOW.md, UI_DESIGN_GUIDE.md)
+    ↓
+Level 4: 参考文档 (技术文档、部署指南)
+```
+
+**规则冲突时**: 以高优先级文档为准
+
+### 快速查找
+- 🔰 新手入门: [.project-rules.md](./.project-rules.md) + [CLAUDE.md](./CLAUDE.md)
+- 💻 后端开发: [docs/API_RULEBOOK.md](./docs/API_RULEBOOK.md) + [docs/rule/AI_MODULE_DEVELOPMENT_WORKFLOW.md](./docs/rule/AI_MODULE_DEVELOPMENT_WORKFLOW.md)
+- 🎨 前端开发: [docs/dev/FRONTEND_RULES.md](./docs/dev/FRONTEND_RULES.md) + [docs/rule/UI_DESIGN_GUIDE.md](./docs/rule/UI_DESIGN_GUIDE.md)
+- 🤖 AI助手: [CLAUDE.md](./CLAUDE.md) + [docs/rule/AI_MODULE_DEVELOPMENT_WORKFLOW.md](./docs/rule/AI_MODULE_DEVELOPMENT_WORKFLOW.md)
+
+---
+
+## 🚀 快速开始
+
+### 环境要求
+- Python 3.11+
+- PostgreSQL 12+
+- Redis 6+
+- Node.js 16+ (前端)
+
+### 1. 克隆项目
 ```bash
 git clone https://github.com/your-org/ai_ad_spend02.git
 cd ai_ad_spend02
 ```
 
-### 2. 鏁版嵁搴撹缃?```bash
-# 浣跨敤鎻愪緵鐨勮剼鏈垵濮嬪寲鏁版嵁搴?cd scripts/database
-python create_admin_simple.py
-
-# 鎴栨墜鍔ㄦ墽琛孲QL鏂囦欢
-psql $DATABASE_URL -f 01_init_database_supabase.sql
-```
-
-### 3. 鍚庣鍚姩
+### 2. 后端启动
 ```bash
-# 鍒涘缓铏氭嫙鐜
+# 创建虚拟环境
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 瀹夎渚濊禆
+# 安装依赖
 pip install -r requirements.txt
 
-# 閰嶇疆鐜鍙橀噺
+# 配置环境变量
 cp .env.example .env
-# 缂栬緫 .env 鏂囦欢锛屽～鍏ュ繀瑕侀厤缃?
-# 鍚姩鏈嶅姟
-uvicorn backend.main:app --reload
+# 编辑 .env 文件，填入必要配置
+
+# 数据库迁移
+cd backend
+alembic upgrade head
+
+# 启动服务
+uvicorn main:app --reload
 ```
 
-### 4. 鍓嶇鍚姩锛堝鏋滄湁锛?```bash
+### 3. 前端开发（重要）
+```bash
+# 进入前端目录
 cd frontend
-npm install
-npm start
+
+# 安装依赖
+pnpm install
+
+# 开发服务器（使用Turbo）
+pnpm dev
+
+# 代码质量检查（必须通过）
+pnpm lint          # ESLint检查
+pnpm type-check    # TypeScript类型检查
+
+# 生产构建
+pnpm build
 ```
+
+### 4. 访问系统
+- **前端应用**: http://localhost:3000
+- **API服务**: http://localhost:8000
+- **API文档**: http://localhost:8000/docs
+- **健康检查**: http://localhost:8000/healthz
+
+### ⚠️ 前端开发核心要求
+- **必须遵循**: [前端开发规则总纲](docs/dev/FRONTEND_RULES.md) 中的所有强制性规范
+- **页面结构**: 必须使用 `AppLayout + PageHeader` 标准结构
+- **组件使用**: 优先使用 shadcn/ui 组件，禁止裸HTML标签
+- **类型安全**: 严格的TypeScript类型检查，禁止any类型
+- **代码质量**: 提交前必须通过 `pnpm lint` 和 `pnpm type-check`
 
 ---
 
-## 馃摎 鏂囨。涓績
+## 📚 文档中心
 
-### 馃摉 蹇呰鏂囨。
-- [馃搵 鏂囨。绱㈠紩](docs/DOCUMENTATION_INDEX.md) - 瀹屾暣鏂囨。瀵艰埅
-- [馃敡 寮€鍙戣鑼僝(docs/development/DEVELOPMENT_STANDARDS.md) - 缂栫爜瑙勮寖鍜屾渶浣冲疄璺?- [馃梽锔?鏁版嵁搴撹璁(docs/core/DATA_SCHEMA_v2_3.md) - 瀹屾暣鏁版嵁搴撶粨鏋?
-### 馃殌 閮ㄧ讲鎸囧崡
-- [馃摝 閮ㄧ讲鎸囧崡](docs/deployment/DEPLOYMENT_GUIDE.md) - 鐢熶骇鐜閮ㄧ讲
-- [馃敀 瀹夊叏閰嶇疆](docs/deployment/SECURITY_CONFIG.md) - 瀹夊叏绛栫暐璁剧疆
-- [馃搳 鐩戞帶杩愮淮](docs/deployment/MONITORING_OPS.md) - 绯荤粺鐩戞帶鏂规
+### 📖 开发文档
+- [接口开发流程总览](docs/development/INTERFACE_DEVELOPMENT_WORKFLOW.md) - 四阶段开发流程
+- [分阶段任务模板](docs/development/PHASE_BASED_TASK_TEMPLATES.md) - 可复用的开发模板
+- [Claude协作开发指南](docs/development/CLAUDE_COLLABORATION_GUIDE.md) - AI辅助开发指南
+- [后端API开发规范](docs/development/BACKEND_API_GUIDE.md) - 完整的API开发规范
+- [日报管理API文档](docs/development/DAILY_REPORT_API_README.md) - 日报模块使用指南
+- [项目管理API文档](docs/development/PROJECT_API_README.md) - 项目模块使用指南
+- [充值管理API文档](docs/development/TOPUP_API_README.md) - 充值模块使用指南
 
-### 馃洜锔?寮€鍙戞寚鍗?- [馃彈锔?绯荤粺姒傝](docs/core/SYSTEM_OVERVIEW.md) - 鏋舵瀯璁捐璇存槑
-- [鈿欙笍 鐘舵€佹満璁捐](docs/core/STATE_MACHINE.md) - 涓氬姟娴佺▼鐘舵€佺鐞?- [馃攲 API寮€鍙戞寚鍗梋(docs/development/BACKEND_API_GUIDE.md) - 鍚庣API瑙勮寖
+### 🎨 前端开发规范（重要）
+- [前端开发规则总纲](docs/rule/FRONTEND_DEVELOPMENT_RULES.md) - **强制性的前端开发规范**
+- [项目开发规则索引](docs/rule/PROJECT_DEV_RULES.md) - 前端开发入口和快速查找指南
+- [UI设计与开发指南](docs/rule/UI_DESIGN_GUIDE.md) - 组件使用规范和设计标准
+- [页面模板指南](docs/rule/UI_LIST_PAGE_TEMPLATE.md) - **AppLayout + PageHeader 标准结构**
 
-### 馃搳 鏁版嵁搴撴枃妗?- [馃梽锔?鏁版嵁搴撹璁(docs/core/DATA_SCHEMA_v2_3.md) - 瀹屾暣鏁版嵁妯″瀷
-- [馃敡 鏁版嵁搴撹剼鏈琞(scripts/database/README.md) - 鍒濆鍖栧拰缁存姢鑴氭湰
-- [馃摑 SQL鏌ヨ绀轰緥](docs/database/queries/) - 甯哥敤鏌ヨ绀轰緥
+### 🔧 部署运维
+- [部署指南](docs/deployment/DEPLOYMENT_GUIDE.md) - 生产环境部署（含“已实现 vs 规划”标注）
+- [监控运维](docs/deployment/MONITORING_OPS.md) - 监控与告警（部分为规划能力）
+- [安全配置](docs/deployment/SECURITY_CONFIG.md) - 安全基线（RLS 为未来方案，当前未启用）
 
----
-
-## 馃敡 寮€鍙戝伐鍏?
-### VS Code閰嶇疆
-1. 瀹夎鎺ㄨ崘鎵╁睍锛?   ```
-   - Supabase (supabase.supabase)
-   - Python (ms-python.python)
-   - SQLTools (mtxr.sqltools)
-   ```
-
-2. 鎵撳紑宸ヤ綔鍖猴細
-   ```bash
-   code ai-ad-spend.code-workspace
-   ```
-
-### 鏁版嵁搴撹繛鎺?```bash
-# 涓绘暟鎹簱
-Host: db.jzmcoivxhiyidizncyaq.supabase.co
-Port: 5432
-Database: postgres
-User: postgres
-```
+### 📋 任务清单
+- [代码质量任务](docs/development/CODE_QUALITY_TASKS.md) - 代码规范和质量门禁
+- [测试实施任务](docs/development/TESTING_IMPLEMENTATION_TASKS.md) - 测试策略和规范
 
 ---
 
-## 馃搧 椤圭洰缁撴瀯
+## 🛠️ 技术栈
 
-```
-ai_ad_spend02/
-鈹溾攢鈹€ app/                    # 鍚庣搴旂敤浠ｇ爜
-鈹?  鈹溾攢鈹€ api/               # API璺敱
-鈹?  鈹溾攢鈹€ core/              # 鏍稿績閰嶇疆
-鈹?  鈹溾攢鈹€ models/            # 鏁版嵁妯″瀷
-鈹?  鈹溾攢鈹€ services/          # 涓氬姟鏈嶅姟
-鈹?  鈹斺攢鈹€ utils/             # 宸ュ叿鍑芥暟
-鈹溾攢鈹€ scripts/               # 鑴氭湰宸ュ叿
-鈹?  鈹斺攢鈹€ database/          # 鏁版嵁搴撶浉鍏宠剼鏈?鈹溾攢鈹€ docs/                  # 椤圭洰鏂囨。
-鈹?  鈹溾攢鈹€ core/              # 鏍稿績璁捐鏂囨。
-鈹?  鈹溾攢鈹€ development/       # 寮€鍙戞寚鍗?鈹?  鈹斺攢鈹€ deployment/        # 閮ㄧ讲鏂囨。
-鈹溾攢鈹€ frontend/              # 鍓嶇浠ｇ爜锛堝鏋滄湁锛?鈹溾攢鈹€ tests/                 # 娴嬭瘯浠ｇ爜
-鈹溾攢鈹€ requirements.txt       # Python渚濊禆
-鈹斺攢鈹€ README.md             # 椤圭洰璇存槑
-```
+### 后端技术
+- **框架**: FastAPI 0.104+
+- **数据库**: PostgreSQL 14+
+- **ORM**: SQLAlchemy 2.0 (同步)
+- **数据验证**: Pydantic v2
+- **认证**: JWT (15分钟访问令牌)
+- **缓存**: Redis
+- **任务队列**: RQ (Redis Queue)
+
+### 前端技术
+- **框架**: Next.js 16.0.2 + App Router
+- **语言**: TypeScript 5.x (严格模式)
+- **UI库**: React 18.x + shadcn/ui
+- **样式**: Tailwind CSS 3.x
+- **状态管理**: Zustand + React Hooks
+- **数据获取**: SWR 2.x
+- **表单处理**: React Hook Form 7.x
+- **图表**: Recharts 2.x
+- **构建工具**: Turbo (Next.js内置)
+
+### 开发工具
+#### 后端开发工具
+- **代码格式化**: Black + isort
+- **静态检查**: flake8 + mypy
+- **测试框架**: pytest
+- **API文档**: OpenAPI/Swagger
+- **数据库迁移**: Alembic
+
+#### 前端开发工具
+- **代码格式化**: Prettier + ESLint
+- **类型检查**: TypeScript (严格模式)
+- **测试框架**: Jest + Testing Library
+- **构建工具**: Next.js (内置Turbo)
+- **包管理器**: pnpm
+
+### 安全特性
+- **权限控制**: 服务层 RBAC（5个角色）；数据库 RLS 为未来方案（当前未启用）
+- **SQL注入防护**: ORM参数化查询
+- **XSS防护**: 输入验证和输出编码
+- **审计日志**: 完整的操作记录
 
 ---
 
-## 馃И 娴嬭瘯
+## 🎯 角色权限
 
-### 杩愯娴嬭瘯
+| 角色 | 权限范围 | 主要功能 |
+|------|----------|----------|
+| **admin** | 全部权限 | 系统管理、用户管理、全部数据访问 |
+| **finance** | 财务相关 | 查看报表、财务对账、充值审批 |
+| **data_operator** | 数据管理 | 审核日报、数据导入、统计分析 |
+| **account_manager** | 账户管理 | 管理所属项目、查看团队数据 |
+| **media_buyer** | 投手操作 | 创建/编辑日报、查看个人数据 |
+
+---
+
+## 📊 API端点
+
+### 核心模块
+- `/api/v1/topups` - 充值管理 **(新实现)**
+- `/api/v1/projects` - 项目管理 **(已实现)**
+- `/api/v1/ad-accounts` - 广告账户
+- `/api/v1/daily-reports` - 日报管理 **(已实现)**
+- `/api/v1/channels` - 渠道管理
+
+### 系统端点
+- `/healthz` - 健康检查
+- `/readyz` - 就绪检查（含数据库）
+- `/api/v1/health` - API状态
+
+---
+
+## 🧪 测试
+
+### 运行测试
 ```bash
-# 杩愯鎵€鏈夋祴璇?pytest
+# 运行所有测试
+pytest -v
 
-# 杩愯鐗瑰畾娴嬭瘯
-pytest tests/test_api.py
+# 运行带覆盖率的测试
+pytest --cov=backend --cov-report=html
 
-# 鐢熸垚娴嬭瘯瑕嗙洊鐜囨姤鍛?pytest --cov=app tests/
+# 运行特定模块测试
+pytest tests/test_daily_report_*.py -v
 ```
 
-### API娴嬭瘯
+### 测试覆盖率要求
+- 总覆盖率 ≥ 70%
+- 核心功能 100% 覆盖
+- 分支覆盖率 ≥ 80%
+
+---
+
+## 📦 部署
+
+### Docker部署
 ```bash
-# 鍋ュ悍妫€鏌?curl http://localhost:8000/health
+# 构建镜像
+docker build -t ai-ad-spend .
 
-# API鏂囨。
-http://localhost:8000/docs
+# 运行容器
+docker run -p 8000:8000 ai-ad-spend
+```
+
+### 生产环境
+```bash
+# 使用Docker Compose
+docker-compose -f docker-compose.prod.yml up -d
 ```
 
 ---
 
-## 馃攧 CI/CD
+## 🤝 贡献指南
 
-椤圭洰閰嶇疆浜嗚嚜鍔ㄥ寲娴佺▼锛?- **浠ｇ爜妫€鏌?*: Black, Flake8, MyPy
-- **娴嬭瘯**: pytest
-- **鏂囨。鐢熸垚**: Sphinx
-- **閮ㄧ讲**: Docker + Kubernetes
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开 Pull Request
 
----
+### 代码规范
+#### 后端代码规范
+- 遵循 PEP 8 Python代码规范
+- 使用 Black + isort 进行代码格式化
+- 编写单元测试，确保测试覆盖率
 
-## 馃 璐＄尞鎸囧崡
-
-1. Fork椤圭洰
-2. 鍒涘缓鍔熻兘鍒嗘敮 (`git checkout -b feature/AmazingFeature`)
-3. 鎻愪氦鏇存敼 (`git commit -m 'Add some AmazingFeature'`)
-4. 鎺ㄩ€佸埌鍒嗘敮 (`git push origin feature/AmazingFeature`)
-5. 鍒涘缓Pull Request
-
-### 寮€鍙戣鑼?- 閬靛惊 [PEP 8](https://www.python.org/dev/peps/pep-0008/)
-- 缂栧啓鍗曞厓娴嬭瘯
-- 鏇存柊鐩稿叧鏂囨。
-- 浣跨敤鏈夋剰涔夌殑鎻愪氦淇℃伅
-
----
-
-## 馃摑 鏇存柊鏃ュ織
-
-### v2.1 (2025-11-12)
-- 鉁?鏂板Supabase闆嗘垚
-- 馃敡 浼樺寲鏁版嵁搴撶粨鏋?- 馃摎 瀹屽杽鏂囨。浣撶郴
-- 馃洜锔?閲嶆瀯API鏋舵瀯
-
-### v2.0 (2025-10-20)
-- 馃殌 绯荤粺閲嶆瀯
-- 馃搳 鏂板鏁版嵁鍒嗘瀽鍔熻兘
-- 馃攼 澧炲己瀹夊叏鐗规€?
-[鏌ョ湅瀹屾暣鏇存柊鏃ュ織](CHANGELOG.md)
+#### 前端代码规范（强制要求）
+- **严格遵循**: [前端开发规则总纲](docs/rule/FRONTEND_DEVELOPMENT_RULES.md)
+- **页面结构**: 必须使用 AppLayout + PageHeader 标准布局
+- **组件使用**: 优先使用 shadcn/ui，禁止裸HTML标签
+- **类型安全**: TypeScript严格模式，禁止any类型
+- **代码质量**: 必须通过 ESLint 和 TypeScript 检查
+- **提交前检查**: `pnpm lint` 和 `pnpm type-check` 必须0错误
 
 ---
 
-## 馃摓 鏀寔
+## 📞 支持
 
-- 馃摟 **閭**: dev@aiad.com
-- 馃搵 **闂鍙嶉**: [GitHub Issues](https://github.com/your-org/ai_ad_spend02/issues)
-- 馃挰 **璁ㄨ**: [GitHub Discussions](https://github.com/your-org/ai_ad_spend02/discussions)
-- 馃摉 **鏂囨。**: [椤圭洰鏂囨。涓績](docs/DOCUMENTATION_INDEX.md)
-
----
-
-## 馃搫 璁稿彲璇?
-鏈」鐩噰鐢?[MIT License](LICENSE) - 鏌ョ湅 [LICENSE](LICENSE) 鏂囦欢浜嗚В璇︽儏
+- **问题反馈**: [GitHub Issues](https://github.com/your-org/ai_ad_spend02/issues)
+- **技术支持**: tech-support@your-domain.com
+- **文档反馈**: docs@your-domain.com
 
 ---
 
-## 馃檹 鑷磋阿
+## 📄 许可证
 
-鎰熻阿鎵€鏈変负杩欎釜椤圭洰鍋氬嚭璐＄尞鐨勫紑鍙戣€咃紒
+本项目采用 [MIT License](LICENSE) 许可证。
 
 ---
 
-<div align="center">
-  Made with 鉂わ笍 by AI骞垮憡浠ｆ姇绯荤粺鍥㈤槦
-</div>
+**更新日志**:
 
+### v2.3.0 (2025-11-12)
+- ✨ 新增：完整的充值管理系统
+- ✨ 新增：双重审核机制（数据审核+财务审批）
+- ✨ 新增：打款凭证管理功能
+- ✨ 新增：充值统计分析报表
+- ✨ 新增：资金流程控制
+- 🔧 优化：权限控制和RLS策略
 
+### v2.2.0 (2025-11-12)
+- ✨ 新增：完整的项目管理系统
+- ✨ 新增：项目成员管理功能
+- ✨ 新增：项目费用记录功能
+- ✨ 新增：项目统计分析功能
+- 🔧 优化：RLS权限策略
+- 📚 完善：API文档和使用指南
 
+### v2.1.0 (2025-11-12)
+- ✨ 新增：完整的日报管理系统
+- ✨ 新增：四阶段接口开发流程
+- ✨ 新增：Claude协作开发指南
+- 🔧 优化：统一响应格式
+- 🔧 优化：错误处理机制
+- 🔧 优化：权限控制系统
 
+### v2.0.0 (2025-01-15)
+- 🚀 重构：系统架构升级
+- 🚀 重构：数据库设计优化
+- 🚀 新增：RBAC权限系统
+- 🚀 新增：审计日志功能
 
+---
 
-## 🔌 接口文档入口
-- [🧭 接口文档索引](docs/development/API_DOCUMENTATION_INDEX.md)
-- [📚 接口开发指南（实现基线）](docs/development/API_DEVELOPMENT_GUIDE.md)
-- [🔌 后端API开发手册](docs/development/BACKEND_API_GUIDE.md)
-- [🧪 测试实施任务清单](docs/development/TESTING_IMPLEMENTATION_TASKS.md)
-- [✅ 代码质量任务清单](docs/development/CODE_QUALITY_TASKS.md)
-- [🚀 部署发布任务清单](docs/development/DEPLOYMENT_RELEASE_TASKS.md)
-
+**开发团队**: AI广告代投系统开发团队
+**最后更新**: 2025-11-12

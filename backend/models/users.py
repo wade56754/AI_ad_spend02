@@ -4,8 +4,8 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
-from backend.core.db import Base
-from backend.models.ad_spend_daily import GUID
+from core.db import Base
+from models.ad_spend_daily import GUID
 
 
 class Role(Base):

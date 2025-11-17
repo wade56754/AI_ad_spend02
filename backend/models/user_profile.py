@@ -7,14 +7,14 @@ Author: Claude协作开发
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy import (
-    Column, String, Boolean, DateTime, JSON, Text,
+    Column, String, Boolean, DateTime, JSON, Text, Integer, BigInteger,
     ForeignKey, Index
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.database import Base
+from core.db import Base
 
 
 class UserProfile(Base):
@@ -30,19 +30,20 @@ class UserProfile(Base):
         comment="Supabase用户ID"
     )
 
-    # 基本信息
+    # 基本信息（对齐 DATA_SCHEMA.md 3.1.1）
     username = Column(String(50), unique=True, nullable=True, index=True, comment="用户名")
-    full_name = Column(String(100), nullable=True, comment="全名")
+    full_name = Column(String(100), nullable=True, comment="真实姓名")
+    email = Column(String(255), nullable=True, comment="邮箱（冗余字段，方便联查）")
     phone = Column(String(20), nullable=True, comment="手机号")
     avatar_url = Column(String(500), nullable=True, comment="头像URL")
 
-    # 角色和权限
+    # 角色和权限（对齐 DATA_SCHEMA.md 3.1.1：仅允许 admin/finance/data_operator/account_manager/media_buyer）
     role = Column(
         String(20),
         nullable=False,
         default="media_buyer",
         index=True,
-        comment="用户角色"
+        comment="用户角色：admin/finance/data_operator/account_manager/media_buyer"
     )
     department = Column(String(100), nullable=True, comment="部门")
     position = Column(String(100), nullable=True, comment="职位")
@@ -65,33 +66,39 @@ class UserProfile(Base):
         comment="是否激活"
     )
     is_verified = Column(Boolean, default=False, comment="是否已验证")
+    email_verified = Column(Boolean, default=False, comment="邮箱是否已验证")
+    phone_verified = Column(Boolean, default=False, comment="电话是否已验证")
     last_login_at = Column(DateTime(timezone=True), nullable=True, comment="最后登录时间")
     last_login_ip = Column(String(45), nullable=True, comment="最后登录IP")
+    login_count = Column(Integer, default=0, comment="登录次数")
 
-    # 偏好设置
+    # 偏好设置（对齐 DATA_SCHEMA.md 3.1.1：JSONB，默认 {}）
     preferences = Column(
         JSON,
         default=dict,
+        server_default='{}',
         nullable=False,
-        comment="用户偏好设置"
+        comment="用户偏好设置（JSONB）"
     )
-    timezone = Column(String(50), default="UTC", comment="时区")
-    language = Column(String(10), default="zh-CN", comment="语言")
+    timezone = Column(String(50), default="UTC", server_default="UTC", comment="时区")
+    language = Column(String(10), default="zh-CN", server_default="zh-CN", comment="语言")
 
-    # 通知设置
+    # 通知设置（对齐 DATA_SCHEMA.md 3.1.1：JSONB，默认 {}）
     notification_settings = Column(
         JSON,
         default=dict,
+        server_default='{}',
         nullable=False,
-        comment="通知设置"
+        comment="通知设置（JSONB）"
     )
 
-    # 元数据
-    metadata = Column(
+    # 元数据（对齐 DATA_SCHEMA.md 3.1.1：JSONB，默认 {}）
+    profile_metadata = Column(
         JSON,
         default=dict,
+        server_default='{}',
         nullable=False,
-        comment="额外的元数据"
+        comment="用户档案元数据（JSONB）"
     )
 
     # 审计字段
@@ -129,12 +136,13 @@ class UserProfile(Base):
         backref="managed_users"
     )
 
-    # 约束
+    # 约束和索引（对齐 DATA_SCHEMA.md 3.1.1）
     __table_args__ = (
+        Index("idx_user_profiles_username", "username"),
+        Index("idx_user_profiles_role", "role"),
+        Index("idx_user_profiles_account_manager", "account_manager_id"),
         Index("idx_user_profiles_created_at", "created_at"),
         Index("idx_user_profiles_last_login", "last_login_at"),
-        Index("idx_user_profiles_department", "department"),
-        Index("idx_user_profiles_position", "position"),
         {
             "comment": "用户资料表（与Supabase Auth关联）"
         }
@@ -249,62 +257,53 @@ class UserLoginHistory(Base):
 
 
 class UserSession(Base):
-    """用户会话表"""
+    """用户会话表（对齐 DATA_SCHEMA.md 3.1.3）"""
     __tablename__ = "user_sessions"
 
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
     id = Column(
-        UUID(as_uuid=True),
+        BigInteger,
         primary_key=True,
-        default=func.gen_random_uuid(),
+        autoincrement=True,
         comment="会话ID"
     )
 
-    # 关联用户
+    # 关联用户（外键指向 user_profiles.id）
     user_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("auth.users(id)", ondelete="CASCADE"),
+        ForeignKey("user_profiles.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         comment="用户ID"
     )
 
-    # 会话信息
-    session_token = Column(
-        String(500),
+    # 会话信息（对齐 DATA_SCHEMA：session_id UUID UNIQUE）
+    session_id = Column(
+        UUID(as_uuid=True),
         unique=True,
         nullable=False,
         index=True,
-        comment="会话令牌"
+        comment="Supabase Session ID"
     )
-    device_info = Column(JSON, nullable=True, comment="设备信息")
+    
+    # 审计信息
+    ip_address = Column(String(45), nullable=True, comment="IP地址")
+    user_agent = Column(Text, nullable=True, comment="用户代理")
 
-    # 状态和时间
-    is_active = Column(
-        Boolean,
-        default=True,
-        nullable=False,
-        comment="是否活跃"
-    )
+    # 时间信息（对齐 DATA_SCHEMA）
     expires_at = Column(DateTime(timezone=True), nullable=True, comment="过期时间")
+    invalidated_at = Column(DateTime(timezone=True), nullable=True, comment="手动失效时间")
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"
     )
-    last_accessed_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False,
-        comment="最后访问时间"
-    )
 
-    # 索引
+    # 索引（对齐 DATA_SCHEMA 3.1.3）
     __table_args__ = (
-        Index("idx_sessions_user", "user_id"),
-        Index("idx_sessions_token", "session_token"),
-        Index("idx_sessions_active", "is_active"),
-        Index("idx_sessions_expires", "expires_at"),
+        Index("idx_user_sessions_user_id", "user_id"),
+        Index("idx_user_sessions_session_id", "session_id"),
         {
             "comment": "用户会话表"
         }

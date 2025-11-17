@@ -9,32 +9,53 @@ from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import (
-    Column, Integer, String, Date, DateTime, Boolean,
-    Text, DECIMAL, ForeignKey, JSON, Index, CheckConstraint
+    Column, BigInteger, String, Date, DateTime, Boolean,
+    Text, Numeric, ForeignKey, JSON, Index, CheckConstraint
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.database import Base
+from core.db import Base
 
 
 class AdAccount(Base):
-    """广告账户表"""
+    """广告账户表（对齐 DATA_SCHEMA.md 3.2.9）"""
     __tablename__ = "ad_accounts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(String(255), unique=True, nullable=False, index=True, comment="平台账户ID")
-    name = Column(String(255), nullable=False, index=True, comment="账户名称")
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="账户ID")
+    
+    # 基本信息（字段名对齐 DATA_SCHEMA）
+    name = Column(String(200), nullable=False, index=True, comment="账户别名")
+    account_code = Column(String(100), unique=True, nullable=False, index=True, comment="平台编号")
 
     # 平台信息
     platform = Column(String(50), nullable=False, comment="广告平台")
     platform_account_id = Column(String(255), nullable=True, comment="平台内部账户ID")
     platform_business_id = Column(String(255), nullable=True, comment="商务管理器ID")
 
-    # 关联信息
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, comment="项目ID")
-    channel_id = Column(Integer, ForeignKey("channels.id"), nullable=False, comment="渠道ID")
-    assigned_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="负责投手ID")
+    # 关联信息（外键类型对齐 DATA_SCHEMA）
+    project_id = Column(
+        BigInteger,
+        ForeignKey("projects.id"),
+        nullable=False,
+        index=True,
+        comment="项目ID"
+    )
+    channel_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("channels.id"),
+        nullable=False,
+        index=True,
+        comment="渠道ID"
+    )
+    owner_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=False,
+        comment="账户负责人ID"
+    )
 
     # 账户状态
     status = Column(String(20), nullable=False, default="new", comment="账户状态")
@@ -48,14 +69,12 @@ class AdAccount(Base):
     dead_date = Column(DateTime, nullable=True, comment="死亡时间")
     archived_date = Column(DateTime, nullable=True, comment="归档时间")
 
-    # 预算信息
-    daily_budget = Column(DECIMAL(10, 2), nullable=True, comment="日预算")
-    total_budget = Column(DECIMAL(12, 2), nullable=True, comment="总预算")
-    remaining_budget = Column(DECIMAL(12, 2), nullable=True, comment="剩余预算")
-
-    # 账户信息
-    currency = Column(String(3), default="USD", comment="货币单位")
-    timezone = Column(String(50), nullable=True, comment="时区设置")
+    # 预算信息（对齐 DATA_SCHEMA：spend_limit）
+    spend_limit = Column(Numeric(15, 2), default=0.00, server_default='0.00', comment="消费限额")
+    
+    # 账户信息（对齐 DATA_SCHEMA）
+    currency = Column(String(10), default='CNY', server_default='CNY', comment="货币单位")
+    timezone = Column(String(50), default='Asia/Shanghai', server_default='Asia/Shanghai', comment="时区设置")
     country = Column(String(2), nullable=True, comment="国家代码")
 
     # 性能数据
@@ -80,17 +99,31 @@ class AdAccount(Base):
     # 管理信息
     notes = Column(Text, nullable=True, comment="备注")
     tags = Column(JSON, nullable=True, comment="标签")
-    metadata = Column(JSON, nullable=True, comment="元数据")
+    account_metadata = Column(JSON, nullable=True, comment="账户元数据")
 
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False, comment="创建人ID")
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")
+    # 审计字段（外键指向 user_profiles.id，UUID）
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=True,
+        comment="创建人ID"
+    )
+    updated_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=True,
+        comment="更新人ID"
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="创建时间")
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False, comment="更新时间")
 
     # 关系
     project = relationship("Project", back_populates="ad_accounts")
     channel = relationship("Channel", back_populates="ad_accounts")
-    assigned_user = relationship("User", foreign_keys=[assigned_user_id])
-    creator = relationship("User", foreign_keys=[created_by])
+    owner = relationship("UserProfile", foreign_keys=[owner_id])
+    creator = relationship("UserProfile", foreign_keys=[created_by])
+    updater = relationship("UserProfile", foreign_keys=[updated_by])
+    daily_reports = relationship("DailyReport", back_populates="ad_account", cascade="all, delete-orphan")
     status_history = relationship("AccountStatusHistory", back_populates="account", cascade="all, delete-orphan")
     performance_records = relationship("AccountPerformance", back_populates="account", cascade="all, delete-orphan")
     alerts = relationship("AccountAlert", back_populates="account", cascade="all, delete-orphan")
@@ -115,57 +148,61 @@ class AdAccount(Base):
             "total_spend >= 0",
             name="check_total_spend_non_negative"
         ),
-        Index("idx_ad_accounts_platform", "platform"),
-        Index("idx_ad_accounts_status", "status"),
         Index("idx_ad_accounts_project", "project_id"),
         Index("idx_ad_accounts_channel", "channel_id"),
-        Index("idx_ad_accounts_assigned_user", "assigned_user_id"),
-        Index("idx_ad_accounts_created_at", "created_at"),
+        Index("idx_ad_accounts_status", "status"),
         {"comment": "广告账户表"}
     )
 
 
 class AccountStatusHistory(Base):
-    """账户状态历史表"""
+    """账户状态历史表（对齐 DATA_SCHEMA.md 3.2.9）"""
     __tablename__ = "account_status_history"
 
-    id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=False, comment="账户ID")
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="历史记录ID")
+    ad_account_id = Column(
+        BigInteger,
+        ForeignKey("ad_accounts.id"),
+        nullable=False,
+        index=True,
+        comment="账户ID"
+    )
 
-    # 状态变更信息
-    old_status = Column(String(20), nullable=True, comment="原状态")
-    new_status = Column(String(20), nullable=False, comment="新状态")
-    change_reason = Column(Text, nullable=True, comment="变更原因")
+    # 状态变更信息（字段名对齐 DATA_SCHEMA）
+    from_status = Column(String(20), nullable=True, comment="原状态")
+    to_status = Column(String(20), nullable=False, comment="新状态")
+    notes = Column(Text, nullable=True, comment="备注说明")
 
     # 变更时间
     changed_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="变更时间")
 
-    # 变更人员
-    changed_by = Column(Integer, ForeignKey("users.id"), nullable=False, comment="变更人ID")
-    change_source = Column(String(50), default="manual", comment="变更来源")
-
-    # 相关数据
-    performance_data = Column(JSON, nullable=True, comment="变更时的性能数据")
-    notes = Column(Text, nullable=True, comment="备注说明")
+    # 变更人员（外键指向 user_profiles.id，UUID）
+    changed_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=False,
+        comment="变更人ID"
+    )
 
     # 关系
     account = relationship("AdAccount", back_populates="status_history")
-    changed_user = relationship("User")
+    changed_user = relationship("UserProfile", foreign_keys=[changed_by])
 
     # 索引
     __table_args__ = (
-        Index("idx_account_status_history_account", "account_id"),
+        Index("idx_account_status_history_account", "ad_account_id"),
         Index("idx_account_status_history_changed_at", "changed_at"),
         {"comment": "账户状态历史表"}
     )
 
 
 class AccountPerformance(Base):
-    """账户表现表"""
+    """账户表现表（不在 DATA_SCHEMA 核心定义中，保留用于业务逻辑）"""
     __tablename__ = "account_performance"
 
-    id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=False, comment="账户ID")
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="表现记录ID")
+    account_id = Column(BigInteger, ForeignKey("ad_accounts.id"), nullable=False, comment="账户ID")
 
     # 统计周期
     period_type = Column(String(20), nullable=False, comment="统计周期")
@@ -218,44 +255,45 @@ class AccountPerformance(Base):
 
 
 class AccountAlert(Base):
-    """账户预警表"""
+    """账户预警表（对齐 DATA_SCHEMA.md 3.2.9）"""
     __tablename__ = "account_alerts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=False, comment="账户ID")
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="预警ID")
+    ad_account_id = Column(
+        BigInteger,
+        ForeignKey("ad_accounts.id"),
+        nullable=False,
+        index=True,
+        comment="账户ID"
+    )
 
-    # 预警信息
+    # 预警信息（对齐 DATA_SCHEMA）
     alert_type = Column(String(50), nullable=False, comment="预警类型")
-    severity = Column(String(20), nullable=False, comment="严重程度")
-    title = Column(String(255), nullable=False, comment="预警标题")
+    severity = Column(String(20), nullable=False, comment="严重程度：info/warning/critical")
     message = Column(Text, nullable=False, comment="预警消息")
 
-    # 预警状态
+    # 预警状态（枚举值以 STATE_MACHINE.md 为准）
     status = Column(String(20), default="active", comment="预警状态")
 
     # 触发条件
     trigger_condition = Column(JSON, nullable=True, comment="触发条件")
-    trigger_value = Column(DECIMAL(15, 2), nullable=True, comment="触发值")
-    threshold_value = Column(DECIMAL(15, 2), nullable=True, comment="阈值")
+    trigger_value = Column(Numeric(15, 2), nullable=True, comment="触发值")
+    threshold_value = Column(Numeric(15, 2), nullable=True, comment="阈值")
 
-    # 处理信息
-    acknowledged_by = Column(Integer, ForeignKey("users.id"), nullable=True, comment="确认人ID")
-    acknowledged_at = Column(DateTime, nullable=True, comment="确认时间")
-    resolution = Column(Text, nullable=True, comment="解决方案")
-    resolved_by = Column(Integer, ForeignKey("users.id"), nullable=True, comment="解决人ID")
-    resolved_at = Column(DateTime, nullable=True, comment="解决时间")
-
-    # 通知设置
-    notify_users = Column(JSON, nullable=True, comment="通知用户列表")
-    notification_sent = Column(Boolean, default=False, comment="是否已发送通知")
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")
+    # 处理信息（对齐 DATA_SCHEMA）
+    resolved_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=True,
+        comment="解决人ID"
+    )
+    resolved_at = Column(DateTime(timezone=True), nullable=True, comment="解决时间")
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="创建时间")
 
     # 关系
     account = relationship("AdAccount", back_populates="alerts")
-    acknowledged_user = relationship("User", foreign_keys=[acknowledged_by])
-    resolved_user = relationship("User", foreign_keys=[resolved_by])
+    resolved_user = relationship("UserProfile", foreign_keys=[resolved_by])
 
     # 索引和约束
     __table_args__ = (
@@ -277,40 +315,37 @@ class AccountAlert(Base):
 
 
 class AccountDocument(Base):
-    """账户文档表"""
+    """账户文档表（对齐 DATA_SCHEMA.md 3.2.9）"""
     __tablename__ = "account_documents"
 
-    id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=False, comment="账户ID")
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="文档ID")
+    ad_account_id = Column(
+        BigInteger,
+        ForeignKey("ad_accounts.id"),
+        nullable=False,
+        index=True,
+        comment="账户ID"
+    )
 
-    # 文档信息
+    # 文档信息（字段名对齐 DATA_SCHEMA）
     document_type = Column(String(50), nullable=False, comment="文档类型")
-    document_name = Column(String(255), nullable=False, comment="文档名称")
-    file_path = Column(String(500), nullable=True, comment="文件路径")
-    file_size = Column(Integer, nullable=True, comment="文件大小")
-    file_type = Column(String(50), nullable=True, comment="文件类型")
+    storage_path = Column(String(500), nullable=True, comment="存储路径")
+    file_name = Column(String(255), nullable=False, comment="文件名称")
+    notes = Column(Text, nullable=True, comment="备注说明")
 
-    # 文档描述
-    description = Column(Text, nullable=True, comment="文档描述")
-    tags = Column(JSON, nullable=True, comment="标签")
-
-    # 状态信息
-    status = Column(String(20), default="active", comment="状态")
-
-    # 上传信息
-    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=False, comment="上传人ID")
-    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), comment="上传时间")
-
-    # 访问权限
-    is_public = Column(Boolean, default=False, comment="是否公开")
-    shared_users = Column(JSON, nullable=True, comment="共享用户列表")
-
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), comment="更新时间")
+    # 上传信息（外键指向 user_profiles.id，UUID）
+    uploaded_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=False,
+        comment="上传人ID"
+    )
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="上传时间")
 
     # 关系
     account = relationship("AdAccount", back_populates="documents")
-    uploader = relationship("User")
+    uploader = relationship("UserProfile", foreign_keys=[uploaded_by])
 
     # 索引和约束
     __table_args__ = (
@@ -327,42 +362,39 @@ class AccountDocument(Base):
 
 
 class AccountNote(Base):
-    """账户备注表"""
+    """账户备注表（对齐 DATA_SCHEMA.md 3.2.9）"""
     __tablename__ = "account_notes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=False, comment="账户ID")
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="备注ID")
+    ad_account_id = Column(
+        BigInteger,
+        ForeignKey("ad_accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+        comment="账户ID"
+    )
 
-    # 备注信息
-    title = Column(String(255), nullable=False, comment="备注标题")
+    # 备注信息（字段名对齐 DATA_SCHEMA）
+    note_type = Column(String(20), nullable=False, default="general", comment="备注类型：general/risk/finance")
     content = Column(Text, nullable=False, comment="备注内容")
-    note_type = Column(String(50), default="general", comment="备注类型")
 
-    # 重要性
-    priority = Column(Integer, default=1, comment="优先级")
-
-    # 状态
-    is_resolved = Column(Boolean, default=False, comment="是否已解决")
-    resolved_at = Column(DateTime, nullable=True, comment="解决时间")
-
-    # 创建信息
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False, comment="创建人ID")
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), comment="创建时间")
+    # 创建信息（外键指向 user_profiles.id，UUID）
+    author_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=False,
+        comment="作者ID"
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, comment="创建时间")
 
     # 关系
     account = relationship("AdAccount", back_populates="notes")
-    creator = relationship("User")
+    author = relationship("UserProfile", foreign_keys=[author_id])
 
-    # 索引和约束
+    # 索引
     __table_args__ = (
-        CheckConstraint(
-            "priority BETWEEN 1 AND 5",
-            name="check_note_priority_range"
-        ),
-        Index("idx_account_notes_account", "account_id"),
+        Index("idx_account_notes_account", "ad_account_id"),
         Index("idx_account_notes_type", "note_type"),
-        Index("idx_account_notes_priority", "priority"),
-        Index("idx_account_notes_resolved", "is_resolved"),
-        Index("idx_account_notes_created_at", "created_at"),
         {"comment": "账户备注表"}
     )

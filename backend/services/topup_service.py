@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, func, desc, extract
 
 from models.topup import TopupRequest, TopupTransaction, TopupApprovalLog
-from models.user import User
+from models.users import User
 from models.ad_account import AdAccount
-from models.project import Project
+from models.projects import Project
 from schemas.topup import (
     TopupRequestCreate,
     TopupDataReviewRequest,
@@ -34,7 +34,7 @@ from exceptions.custom_exceptions import (
     ResourceConflictError
 )
 from utils.id_generator import generate_request_no
-from utils.audit import create_audit_log
+# from utils.audit import create_audit_log  # 暂时注释
 
 
 class TopupService:

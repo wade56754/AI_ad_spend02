@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useTheme } from '@/hooks/useTheme';
+import { useTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {

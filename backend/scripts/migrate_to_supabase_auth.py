@@ -21,7 +21,7 @@ from sqlalchemy.orm import sessionmaker
 from supabase import create_client
 
 from core.config import get_settings
-from models.user import User
+from models.users import User
 from core.supabase_client import supabase_client
 
 
@@ -31,7 +31,7 @@ settings = get_settings()
 @click.command()
 @click.option('--dry-run', is_flag=True, default=False, help='试运行模式，不实际执行迁移')
 @click.option('--batch-size', default=10, help='每批处理的用户数量')
-def migrate(dry_run, batch_size):
+async def migrate(dry_run, batch_size):
     """迁移现有用户到Supabase Auth"""
 
     print("=" * 60)

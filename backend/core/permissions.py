@@ -9,8 +9,8 @@ from enum import Enum
 
 from fastapi import Depends, HTTPException, status
 
-from backend.core.error_codes import ErrorCode
-from backend.core.security import (
+from core.error_codes import ErrorCode
+from core.security import (
     AuthenticatedUser,
     get_current_active_user,
     require_roles as _require_roles,
@@ -19,21 +19,30 @@ from backend.core.security import (
 
 
 class UserRole(str, Enum):
-    """用户角色枚举"""
-    ADMIN = "admin"           # 管理员
-    MANAGER = "manager"       # 经理
-    FINANCE = "finance"       # 财务
-    OPERATOR = "operator"     # 操作员
-    USER = "user"            # 普通用户
+    """用户角色枚举 - 匹配系统概述文档"""
+    ADMIN = "admin"                    # 管理员 - 系统全权限
+    MANAGER = "manager"                # 项目经理 - 项目管理，团队管理
+    DATA_CLERK = "data_clerk"          # 户管/数据员 - 账户管理，数据审核
+    FINANCE = "finance"                # 财务 - 充值审批，财务对账
+    MEDIA_BUYER = "media_buyer"        # 投手 - 账户投放，日报提交
 
 
 class Permission(str, Enum):
-    """权限枚举"""
+    """权限枚举 - 按系统概述权限矩阵设计"""
+    # 用户管理权限
+    USER_MANAGE = "user_manage"
+
     # 项目管理权限
     PROJECT_CREATE = "project_create"
     PROJECT_READ = "project_read"
     PROJECT_UPDATE = "project_update"
     PROJECT_DELETE = "project_delete"
+
+    # 渠道管理权限
+    CHANNEL_CREATE = "channel_create"
+    CHANNEL_READ = "channel_read"
+    CHANNEL_UPDATE = "channel_update"
+    CHANNEL_DELETE = "channel_delete"
 
     # 账户管理权限
     ACCOUNT_CREATE = "account_create"
@@ -41,53 +50,92 @@ class Permission(str, Enum):
     ACCOUNT_UPDATE = "account_update"
     ACCOUNT_DELETE = "account_delete"
 
-    # 财务管理权限
-    FINANCE_CREATE = "finance_create"
-    FINANCE_READ = "finance_read"
-    FINANCE_UPDATE = "finance_update"
-    FINANCE_DELETE = "finance_delete"
+    # 日报管理权限
+    DAILY_REPORT_CREATE = "daily_report_create"
+    DAILY_REPORT_READ = "daily_report_read"
+    DAILY_REPORT_UPDATE = "daily_report_update"
+    DAILY_REPORT_DELETE = "daily_report_delete"
+    DAILY_REPORT_AUDIT = "daily_report_audit"
 
-    # 报表权限
+    # 充值管理权限
+    TOPUP_CREATE = "topup_create"
+    TOPUP_READ = "topup_read"
+    TOPUP_UPDATE = "topup_update"
+    TOPUP_DELETE = "topup_delete"
+    TOPUP_APPROVE = "topup_approve"
+
+    # 财务对账权限
+    RECONCILIATION_CREATE = "reconciliation_create"
+    RECONCILIATION_READ = "reconciliation_read"
+    RECONCILIATION_UPDATE = "reconciliation_update"
+    RECONCILIATION_DELETE = "reconciliation_delete"
+
+    # 报表查看权限
     REPORT_READ = "report_read"
     REPORT_EXPORT = "report_export"
 
+    # AI监控权限
+    AI_MONITORING = "ai_monitoring"
+    AI_ANALYSIS = "ai_analysis"
+
+    # 通知系统权限
+    NOTIFICATION_MANAGE = "notification_manage"
+
     # 系统管理权限
-    USER_MANAGE = "user_manage"
     SYSTEM_CONFIG = "system_config"
+    AUDIT_LOG = "audit_log"
 
 
-# 角色权限映射
+# 角色权限映射 - 严格按照系统概述权限矩阵
 ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
     UserRole.ADMIN: [
-        # 管理员拥有所有权限
+        # 管理员拥有全部权限 ✅
+        Permission.USER_MANAGE,
         Permission.PROJECT_CREATE, Permission.PROJECT_READ, Permission.PROJECT_UPDATE, Permission.PROJECT_DELETE,
+        Permission.CHANNEL_CREATE, Permission.CHANNEL_READ, Permission.CHANNEL_UPDATE, Permission.CHANNEL_DELETE,
         Permission.ACCOUNT_CREATE, Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE, Permission.ACCOUNT_DELETE,
-        Permission.FINANCE_CREATE, Permission.FINANCE_READ, Permission.FINANCE_UPDATE, Permission.FINANCE_DELETE,
+        Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE, Permission.DAILY_REPORT_DELETE, Permission.DAILY_REPORT_AUDIT,
+        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE, Permission.TOPUP_APPROVE,
+        Permission.RECONCILIATION_CREATE, Permission.RECONCILIATION_READ, Permission.RECONCILIATION_UPDATE, Permission.RECONCILIATION_DELETE,
         Permission.REPORT_READ, Permission.REPORT_EXPORT,
-        Permission.USER_MANAGE, Permission.SYSTEM_CONFIG
+        Permission.AI_MONITORING, Permission.AI_ANALYSIS,
+        Permission.NOTIFICATION_MANAGE,
+        Permission.SYSTEM_CONFIG, Permission.AUDIT_LOG
     ],
     UserRole.MANAGER: [
-        # 经理权限
+        # 项目经理权限 - ✅ 用户管理、项目管理、渠道管理(只读)、账户管理、日报管理(只读)、充值管理(只读)、财务对账(只读)、报表查看
+        Permission.USER_MANAGE,
         Permission.PROJECT_CREATE, Permission.PROJECT_READ, Permission.PROJECT_UPDATE,
+        Permission.CHANNEL_READ,
         Permission.ACCOUNT_CREATE, Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE,
-        Permission.FINANCE_READ, Permission.FINANCE_UPDATE,
+        Permission.DAILY_REPORT_READ,
+        Permission.TOPUP_READ,
+        Permission.RECONCILIATION_READ,
         Permission.REPORT_READ, Permission.REPORT_EXPORT
     ],
-    UserRole.FINANCE: [
-        # 财务权限
-        Permission.FINANCE_CREATE, Permission.FINANCE_READ, Permission.FINANCE_UPDATE,
-        Permission.REPORT_READ, Permission.REPORT_EXPORT,
-        Permission.ACCOUNT_READ
-    ],
-    UserRole.OPERATOR: [
-        # 操作员权限
-        Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE,
-        Permission.FINANCE_CREATE, Permission.FINANCE_READ,
+    UserRole.DATA_CLERK: [
+        # 户管/数据员权限 - 👁 项目管理(只读)、✅ 渠道管理、✅ 账户管理、✅ 日报管理、✅ 充值管理、👁 报表查看
+        Permission.PROJECT_READ,
+        Permission.CHANNEL_CREATE, Permission.CHANNEL_READ, Permission.CHANNEL_UPDATE, Permission.CHANNEL_DELETE,
+        Permission.ACCOUNT_CREATE, Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE, Permission.ACCOUNT_DELETE,
+        Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE, Permission.DAILY_REPORT_DELETE, Permission.DAILY_REPORT_AUDIT,
+        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE,
         Permission.REPORT_READ
     ],
-    UserRole.USER: [
-        # 普通用户权限
+    UserRole.FINANCE: [
+        # 财务权限 - 👁 项目管理(只读)、👁 账户管理(只读)、👁 日报管理(只读)、✅ 充值管理、✅ 财务对账、👁 报表查看
+        Permission.PROJECT_READ,
         Permission.ACCOUNT_READ,
+        Permission.DAILY_REPORT_READ,
+        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE, Permission.TOPUP_APPROVE,
+        Permission.RECONCILIATION_CREATE, Permission.RECONCILIATION_READ, Permission.RECONCILIATION_UPDATE, Permission.RECONCILIATION_DELETE,
+        Permission.REPORT_READ, Permission.REPORT_EXPORT
+    ],
+    UserRole.MEDIA_BUYER: [
+        # 投手权限 - ✅ 账户管理(只读)、✅ 日报管理、✅ 充值管理、👁 报表查看
+        Permission.ACCOUNT_READ,
+        Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE,
+        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE,
         Permission.REPORT_READ
     ]
 }
@@ -262,21 +310,41 @@ def admin_required(user: AuthenticatedUser = Depends(get_current_active_user)) -
 
 
 def manager_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
-    """要求经理角色"""
+    """要求项目经理角色"""
     if user.role not in [UserRole.ADMIN.value, UserRole.MANAGER.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要经理或管理员权限"}
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要项目经理或管理员权限"}
         )
     return user
 
 
 def finance_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
     """要求财务权限"""
-    if user.role not in [UserRole.ADMIN.value, UserRole.MANAGER.value, UserRole.FINANCE.value]:
+    if user.role not in [UserRole.ADMIN.value, UserRole.FINANCE.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要财务权限"}
+        )
+    return user
+
+
+def data_clerk_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+    """要求户管/数据员权限"""
+    if user.role not in [UserRole.ADMIN.value, UserRole.DATA_CLERK.value]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要户管/数据员权限"}
+        )
+    return user
+
+
+def media_buyer_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+    """要求投手权限"""
+    if user.role not in [UserRole.ADMIN.value, UserRole.MEDIA_BUYER.value]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要投手权限"}
         )
     return user
 

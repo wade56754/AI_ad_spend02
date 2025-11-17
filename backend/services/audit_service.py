@@ -1,343 +1,370 @@
 """
-审计日志服务
-记录所有关键操作的审计日志
+审计服务
+提供业务操作审计和安全日志功能
 """
+
 import json
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
-from uuid import uuid4
+from typing import Dict, Any, Optional, List
+from enum import Enum
 
+from fastapi import Request, Depends
 from sqlalchemy.orm import Session
 
-from backend.core.db import get_db
-from backend.models.users import User
+from core.audit import audit_logger, security_logger, AuditAction, AuditLevel
+from core.security import AuthenticatedUser, get_current_active_user
+from core.db import get_db_session
 
 
-class AuditEvent:
-    """审计事件类型"""
-    # 用户操作
-    USER_LOGIN = "USER_LOGIN"
-    USER_LOGOUT = "USER_LOGOUT"
-    USER_CREATE = "USER_CREATE"
-    USER_UPDATE = "USER_UPDATE"
-    USER_DELETE = "USER_DELETE"
-    USER_PASSWORD_CHANGE = "USER_PASSWORD_CHANGE"
+class BusinessAction(str, Enum):
+    """业务操作类型"""
+    # 项目管理
+    PROJECT_CREATE = "project_create"
+    PROJECT_UPDATE = "project_update"
+    PROJECT_DELETE = "project_delete"
+    PROJECT_MEMBER_ADD = "project_member_add"
+    PROJECT_MEMBER_REMOVE = "project_member_remove"
 
-    # 项目操作
-    PROJECT_CREATE = "PROJECT_CREATE"
-    PROJECT_UPDATE = "PROJECT_UPDATE"
-    PROJECT_DELETE = "PROJECT_DELETE"
-    PROJECT_STATUS_CHANGE = "PROJECT_STATUS_CHANGE"
+    # 日报管理
+    DAILY_REPORT_SUBMIT = "daily_report_submit"
+    DAILY_REPORT_APPROVE = "daily_report_approve"
+    DAILY_REPORT_REJECT = "daily_report_reject"
 
-    # 账户操作
-    ACCOUNT_CREATE = "ACCOUNT_CREATE"
-    ACCOUNT_UPDATE = "ACCOUNT_UPDATE"
-    ACCOUNT_DELETE = "ACCOUNT_DELETE"
-    ACCOUNT_ASSIGN = "ACCOUNT_ASSIGN"
-    ACCOUNT_STATUS_CHANGE = "ACCOUNT_STATUS_CHANGE"
+    # 充值管理
+    TOPUP_SUBMIT = "topup_submit"
+    TOPUP_APPROVE_DATA = "topup_approve_data"
+    TOPUP_APPROVE_FINANCE = "topup_approve_finance"
+    TOPUP_REJECT = "topup_reject"
+    TOPUP_PAYMENT_CONFIRM = "topup_payment_confirm"
 
-    # 财务操作
-    TOPUP_REQUEST = "TOPUP_REQUEST"
-    TOPUP_APPROVE = "TOPUP_APPROVE"
-    TOPUP_REJECT = "TOPUP_REJECT"
-    TOPUP_CONFIRM = "TOPUP_CONFIRM"
-    RECONCILIATION_CREATE = "RECONCILIATION_CREATE"
-    RECONCILIATION_APPROVE = "RECONCILIATION_APPROVE"
+    # 财务对账
+    RECONCILIATION_CREATE = "reconciliation_create"
+    RECONCILIATION_PROCESS = "reconciliation_process"
+    RECONCILIATION_RESOLVE = "reconciliation_resolve"
 
-    # 报表操作
-    REPORT_SUBMIT = "REPORT_SUBMIT"
-    REPORT_REVIEW = "REPORT_REVIEW"
-    REPORT_APPROVE = "REPORT_APPROVE"
-    REPORT_REJECT = "REPORT_REJECT"
-
-    # 数据操作
-    DATA_IMPORT = "DATA_IMPORT"
-    DATA_EXPORT = "DATA_EXPORT"
-    DATA_MODIFY = "DATA_MODIFY"
-
-    # 系统操作
-    SYSTEM_CONFIG_CHANGE = "SYSTEM_CONFIG_CHANGE"
-    SYSTEM_BACKUP = "SYSTEM_BACKUP"
-    SYSTEM_RESTORE = "SYSTEM_RESTORE"
-
-    # 安全操作
-    SECURITY_BREACH = "SECURITY_BREACH"
-    SECURITY_VIOLATION = "SECURITY_VIOLATION"
-    PERMISSION_CHANGE = "PERMISSION_CHANGE"
+    # AI监控
+    AI_ANOMALY_DETECTED = "ai_anomaly_detected"
+    AI_PREDICTION_GENERATED = "ai_prediction_generated"
+    AI_RULE_TRIGGERED = "ai_rule_triggered"
 
 
-class AuditLogger:
-    """审计日志记录器"""
+class AuditService:
+    """审计服务类"""
 
-    def __init__(self, db: Session = None):
-        self.db = db
+    @staticmethod
+    def log_business_action(
+        action: BusinessAction,
+        user_id: str,
+        resource_type: str,
+        resource_id: str,
+        old_data: Dict[str, Any] = None,
+        new_data: Dict[str, Any] = None,
+        ip_address: str = None,
+        user_agent: str = None,
+        description: str = None,
+        level: AuditLevel = AuditLevel.MEDIUM
+    ):
+        """记录业务操作"""
+        audit_logger.log_action(
+            action=AuditAction.UPDATE,  # 使用通用的UPDATE操作
+            user_id=user_id,
+            table_name=resource_type,
+            record_id=resource_id,
+            old_values=old_data,
+            new_values=new_data,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            level=level,
+            description=description or f"{action.value} - {resource_type}:{resource_id}"
+        )
 
-    async def log(
-        self,
+    @staticmethod
+    def log_project_created(
+        project_id: str,
+        project_data: Dict[str, Any],
+        user_id: str,
+        request: Request = None
+    ):
+        """记录项目创建"""
+        AuditService.log_business_action(
+            action=BusinessAction.PROJECT_CREATE,
+            user_id=user_id,
+            resource_type="projects",
+            resource_id=project_id,
+            new_data=project_data,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            description=f"创建项目: {project_data.get('name', 'unknown')}"
+        )
+
+    @staticmethod
+    def log_daily_report_action(
+        action: BusinessAction,
+        report_id: str,
+        user_id: str,
+        report_data: Dict[str, Any] = None,
+        approved_amount: float = None,
+        rejection_reason: str = None,
+        request: Request = None
+    ):
+        """记录日报操作"""
+        new_data = report_data.copy() if report_data else {}
+
+        if action == BusinessAction.DAILY_REPORT_APPROVE:
+            if approved_amount is not None:
+                new_data['approved_amount'] = approved_amount
+            description = f"审核通过日报: {report_id}"
+            level = AuditLevel.MEDIUM
+        elif action == BusinessAction.DAILY_REPORT_REJECT:
+            new_data['rejection_reason'] = rejection_reason
+            description = f"驳回日报: {report_id} - {rejection_reason}"
+            level = AuditLevel.HIGH
+        else:
+            description = f"提交日报: {report_id}"
+            level = AuditLevel.LOW
+
+        AuditService.log_business_action(
+            action=action,
+            user_id=user_id,
+            resource_type="daily_reports",
+            resource_id=report_id,
+            new_data=new_data,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            description=description,
+            level=level
+        )
+
+    @staticmethod
+    def log_topup_action(
+        action: BusinessAction,
+        topup_id: str,
+        user_id: str,
+        topup_data: Dict[str, Any] = None,
+        approval_note: str = None,
+        rejection_reason: str = None,
+        payment_amount: float = None,
+        request: Request = None
+    ):
+        """记录充值操作"""
+        new_data = topup_data.copy() if topup_data else {}
+
+        if action == BusinessAction.TOPUP_APPROVE_DATA:
+            new_data['data_approval_note'] = approval_note
+            description = f"初审通过充值申请: {topup_id}"
+            level = AuditLevel.MEDIUM
+        elif action == BusinessAction.TOPUP_APPROVE_FINANCE:
+            new_data['finance_approval_note'] = approval_note
+            description = f"财务终审通过充值申请: {topup_id}"
+            level = AuditLevel.HIGH
+        elif action == BusinessAction.TOPUP_REJECT:
+            new_data['rejection_reason'] = rejection_reason
+            description = f"驳回充值申请: {topup_id} - {rejection_reason}"
+            level = AuditLevel.HIGH
+        elif action == BusinessAction.TOPUP_PAYMENT_CONFIRM:
+            new_data['payment_amount'] = payment_amount
+            description = f"确认充值打款: {topup_id} - 金额: {payment_amount}"
+            level = AuditLevel.CRITICAL
+        else:
+            description = f"提交充值申请: {topup_id}"
+            level = AuditLevel.MEDIUM
+
+        AuditService.log_business_action(
+            action=action,
+            user_id=user_id,
+            resource_type="topups",
+            resource_id=topup_id,
+            new_data=new_data,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            description=description,
+            level=level
+        )
+
+    @staticmethod
+    def log_reconciliation_action(
+        action: BusinessAction,
+        reconciliation_id: str,
+        user_id: str,
+        reconciliation_data: Dict[str, Any] = None,
+        difference_amount: float = None,
+        resolution_note: str = None,
+        request: Request = None
+    ):
+        """记录对账操作"""
+        new_data = reconciliation_data.copy() if reconciliation_data else {}
+
+        if action == BusinessAction.RECONCILIATION_PROCESS:
+            if difference_amount is not None:
+                new_data['difference_amount'] = difference_amount
+            description = f"执行对账: {reconciliation_id} - 差异: {difference_amount}"
+            level = AuditLevel.MEDIUM
+        elif action == BusinessAction.RECONCILIATION_RESOLVE:
+            new_data['resolution_note'] = resolution_note
+            description = f"解决对账差异: {reconciliation_id} - {resolution_note}"
+            level = AuditLevel.HIGH
+        else:
+            description = f"创建对账任务: {reconciliation_id}"
+            level = AuditLevel.LOW
+
+        AuditService.log_business_action(
+            action=action,
+            user_id=user_id,
+            resource_type="reconciliations",
+            resource_id=reconciliation_id,
+            new_data=new_data,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            description=description,
+            level=level
+        )
+
+    @staticmethod
+    def log_ai_action(
+        action: BusinessAction,
+        resource_id: str,
+        user_id: str = None,
+        ai_data: Dict[str, Any] = None,
+        anomaly_type: str = None,
+        prediction_result: Dict[str, Any] = None,
+        rule_name: str = None,
+        request: Request = None
+    ):
+        """记录AI操作"""
+        new_data = ai_data.copy() if ai_data else {}
+
+        if action == BusinessAction.AI_ANOMALY_DETECTED:
+            new_data['anomaly_type'] = anomaly_type
+            description = f"检测到异常: {anomaly_type} - {resource_id}"
+            level = AuditLevel.HIGH
+        elif action == BusinessAction.AI_PREDICTION_GENERATED:
+            new_data['prediction_result'] = prediction_result
+            description = f"生成AI预测: {resource_id}"
+            level = AuditLevel.MEDIUM
+        elif action == BusinessAction.AI_RULE_TRIGGERED:
+            new_data['rule_name'] = rule_name
+            description = f"触发AI规则: {rule_name} - {resource_id}"
+            level = AuditLevel.MEDIUM
+        else:
+            description = f"AI操作: {action.value} - {resource_id}"
+            level = AuditLevel.LOW
+
+        audit_logger.log_action(
+            action=AuditAction.UPDATE,
+            user_id=user_id or "system",  # AI操作可能没有具体用户
+            table_name="ai_monitoring",
+            record_id=resource_id,
+            new_data=new_data,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            description=description,
+            level=level
+        )
+
+    @staticmethod
+    def log_security_event(
         event_type: str,
-        user_id: Optional[int] = None,
-        user_email: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[Union[int, str]] = None,
-        details: Optional[Dict[str, Any]] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        request_id: Optional[str] = None,
-        success: bool = True,
-        error_message: Optional[str] = None
-    ) -> str:
-        """记录审计日志
+        user_id: str,
+        severity: str = "medium",
+        details: Dict[str, Any] = None,
+        request: Request = None,
+        description: str = None
+    ):
+        """记录安全事件"""
+        security_logger.log_security_event(
+            event_type=event_type,
+            severity=severity,
+            user_id=user_id,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            details=details,
+            description=description
+        )
 
-        Args:
-            event_type: 事件类型
-            user_id: 用户ID
-            user_email: 用户邮箱
-            resource_type: 资源类型（如：project, account, user）
-            resource_id: 资源ID
-            details: 详细信息（JSON格式）
-            ip_address: IP地址
-            user_agent: 用户代理
-            request_id: 请求ID
-            success: 是否成功
-            error_message: 错误信息
+    @staticmethod
+    def log_permission_denied(
+        user_id: str,
+        resource: str,
+        action: str,
+        request: Request = None
+    ):
+        """记录权限拒绝事件"""
+        AuditService.log_security_event(
+            event_type="permission_denied",
+            user_id=user_id,
+            severity="high",
+            details={
+                "resource": resource,
+                "action": action,
+                "user_role": None  # 可以从用户数据获取
+            },
+            request=request,
+            description=f"权限不足: {user_id} 尝试 {action} {resource}"
+        )
 
-        Returns:
-            审计日志ID
-        """
-        audit_id = str(uuid4())
+    @staticmethod
+    def log_data_export(
+        user_id: str,
+        table_name: str,
+        record_count: int,
+        filters: Dict[str, Any] = None,
+        request: Request = None
+    ):
+        """记录数据导出"""
+        audit_logger.log_export(
+            table_name=table_name,
+            record_count=record_count,
+            user_id=user_id,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            description=f"导出 {table_name} - 条件: {json.dumps(filters or {}, ensure_ascii=False)}"
+        )
 
-        # 构建审计日志记录
-        audit_record = {
-            "id": audit_id,
-            "event_type": event_type,
-            "user_id": user_id,
-            "user_email": user_email,
-            "resource_type": resource_type,
-            "resource_id": str(resource_id) if resource_id else None,
-            "details": json.dumps(details) if details else None,
-            "ip_address": ip_address,
-            "user_agent": user_agent,
-            "request_id": request_id,
-            "success": success,
-            "error_message": error_message,
-            "created_at": datetime.utcnow(),
+    @staticmethod
+    def log_bulk_operation(
+        operation: str,
+        table_name: str,
+        record_count: int,
+        user_id: str,
+        success_count: int = None,
+        error_count: int = None,
+        errors: List[str] = None,
+        request: Request = None
+    ):
+        """记录批量操作"""
+        details = {
+            "operation": operation,
+            "record_count": record_count,
+            "success_count": success_count or record_count,
+            "error_count": error_count or 0
         }
 
-        # 如果有数据库连接，保存到数据库
-        if self.db:
-            try:
-                # TODO: 创建audit_logs表并保存
-                # 目前先记录到应用日志
-                pass
-            except Exception as e:
-                print(f"Failed to save audit log: {e}")
+        if errors:
+            details["errors"] = errors[:5]  # 只记录前5个错误
 
-        # 记录到应用日志
-        self._log_to_file(audit_record)
+        level = AuditLevel.CRITICAL if error_count and error_count > 0 else AuditLevel.HIGH
 
-        return audit_id
-
-    def _log_to_file(self, audit_record: Dict[str, Any]):
-        """将审计日志记录到文件"""
-        import logging
-
-        # 创建审计日志记录器
-        logger = logging.getLogger("audit")
-        if not logger.handlers:
-            handler = logging.FileHandler("logs/audit.log")
-            formatter = logging.Formatter(
-                '%(asctime)s - AUDIT - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
-            )
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-            logger.setLevel(logging.INFO)
-
-        # 记录日志
-        logger.info(json.dumps(audit_record, default=str, ensure_ascii=False))
-
-    async def log_user_action(
-        self,
-        event_type: str,
-        user: User,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[Union[int, str]] = None,
-        details: Optional[Dict[str, Any]] = None,
-        request: Optional[Any] = None,
-        success: bool = True,
-        error_message: Optional[str] = None
-    ) -> str:
-        """记录用户操作日志
-
-        Args:
-            event_type: 事件类型
-            user: 用户对象
-            resource_type: 资源类型
-            resource_id: 资源ID
-            details: 详细信息
-            request: FastAPI请求对象
-            success: 是否成功
-            error_message: 错误信息
-
-        Returns:
-            审计日志ID
-        """
-        # 从请求中提取信息
-        ip_address = None
-        user_agent = None
-        request_id = None
-
-        if request:
-            ip_address = request.client.host
-            user_agent = request.headers.get("user-agent")
-            request_id = getattr(request.state, "request_id", None)
-
-        return await self.log(
-            event_type=event_type,
-            user_id=user.id,
-            user_email=user.email,
-            resource_type=resource_type,
-            resource_id=resource_id,
-            details=details,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            request_id=request_id,
-            success=success,
-            error_message=error_message
-        )
-
-    async def log_login(
-        self,
-        user: User,
-        ip_address: str,
-        user_agent: Optional[str] = None,
-        success: bool = True,
-        error_message: Optional[str] = None
-    ) -> str:
-        """记录登录日志"""
-        return await self.log(
-            event_type=AuditEvent.USER_LOGIN if success else AuditEvent.SECURITY_VIOLATION,
-            user_id=user.id,
-            user_email=user.email,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            success=success,
-            error_message=error_message,
-            details={"login_method": "jwt"}
-        )
-
-    async def log_permission_change(
-        self,
-        target_user_id: int,
-        target_user_email: str,
-        old_permissions: List[str],
-        new_permissions: List[str],
-        operator: User,
-        ip_address: Optional[str] = None
-    ) -> str:
-        """记录权限变更日志"""
-        return await self.log(
-            event_type=AuditEvent.PERMISSION_CHANGE,
-            user_id=operator.id,
-            user_email=operator.email,
-            resource_type="user",
-            resource_id=target_user_id,
-            ip_address=ip_address,
-            details={
-                "target_user": {
-                    "id": target_user_id,
-                    "email": target_user_email
-                },
-                "old_permissions": old_permissions,
-                "new_permissions": new_permissions
-            }
-        )
-
-    async def log_data_access(
-        self,
-        event_type: str,
-        user: User,
-        resource_type: str,
-        resource_ids: List[Union[int, str]],
-        access_type: str = "read",
-        request: Optional[Any] = None
-    ) -> str:
-        """记录数据访问日志"""
-        return await self.log(
-            event_type=event_type,
-            user_id=user.id,
-            user_email=user.email,
-            resource_type=resource_type,
-            resource_id=", ".join(map(str, resource_ids)),
-            details={
-                "access_type": access_type,
-                "count": len(resource_ids)
-            },
-            request=request
-        )
-
-    async def log_security_event(
-        self,
-        event_type: str,
-        details: Dict[str, Any],
-        user_id: Optional[int] = None,
-        user_email: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
-    ) -> str:
-        """记录安全事件日志"""
-        return await self.log(
-            event_type=event_type,
+        audit_logger.log_action(
+            action=AuditAction.UPDATE,
             user_id=user_id,
-            user_email=user_email,
-            resource_type="system",
-            details=details,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            success=False  # 安全事件默认为失败
+            table_name=table_name,
+            new_values=details,
+            ip_address=getattr(request, 'client', {}).get('host') if request else None,
+            user_agent=request.headers.get('user-agent') if request else None,
+            description=f"批量{operation}: {table_name} - 总计: {record_count}, 成功: {success_count or record_count}, 失败: {error_count or 0}",
+            level=level
         )
 
 
-# 创建全局审计日志实例
-audit_logger = AuditLogger()
+def get_audit_service() -> AuditService:
+    """获取审计服务实例"""
+    return AuditService()
 
 
-# 便捷函数
-async def log_audit(
-    event_type: str,
-    user: User,
-    resource_type: Optional[str] = None,
-    resource_id: Optional[Union[int, str]] = None,
-    details: Optional[Dict[str, Any]] = None,
-    request: Optional[Any] = None,
-    success: bool = True,
-    error_message: Optional[str] = None
-) -> str:
-    """记录审计日志的便捷函数"""
-    return await audit_logger.log_user_action(
-        event_type=event_type,
-        user=user,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        details=details,
-        request=request,
-        success=success,
-        error_message=error_message
-    )
-
-
-# 创建审计日志装饰器
-def audit_action(event_type: str, resource_type: str = None):
-    """审计装饰器
-
-    Args:
-        event_type: 事件类型
-        resource_type: 资源类型
-    """
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # TODO: 实现装饰器逻辑
-            # 需要从参数中提取用户、请求等信息
-            return await func(*args, **kwargs)
-        return wrapper
-    return decorator
+# FastAPI依赖注入函数
+def audit_dependency(
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
+    request: Request = None
+) -> tuple[AuthenticatedUser, AuditService]:
+    """审计依赖，返回当前用户和审计服务"""
+    return current_user, get_audit_service()

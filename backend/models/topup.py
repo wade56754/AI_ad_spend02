@@ -8,154 +8,227 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Column, Integer, String, Text, DECIMAL, TIMESTAMP, ForeignKey, DATE, Index
-from sqlalchemy.dialects.postgresql import INET
+from sqlalchemy import Column, BigInteger, String, Text, Numeric, ForeignKey, Date, Index
+from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.database import Base
+from core.db import Base
 
 
 class TopupRequest(Base):
-    """充值申请主表"""
+    """充值申请主表（对齐 DATA_SCHEMA.md 3.4.1）"""
     __tablename__ = "topup_requests"
 
-    id = Column(Integer, primary_key=True, index=True)
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="充值申请ID")
+    
+    # 申请单号
     request_no = Column(String(50), unique=True, nullable=False, index=True, comment="申请单号")
-    ad_account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=False, comment="广告账户ID")
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, comment="项目ID")
+    
+    # 关联信息（外键类型对齐 DATA_SCHEMA）
+    project_id = Column(
+        BigInteger,
+        ForeignKey("projects.id"),
+        nullable=False,
+        index=True,
+        comment="项目ID"
+    )
+    ad_account_id = Column(
+        BigInteger,
+        ForeignKey("ad_accounts.id"),
+        nullable=True,  # 可空（对齐 DATA_SCHEMA）
+        comment="广告账户ID"
+    )
+    
+    # 申请人（字段名对齐 DATA_SCHEMA：applicant_id）
+    applicant_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=False,
+        index=True,
+        comment="申请人ID"
+    )
+    
+    # 金额信息（字段名对齐 DATA_SCHEMA：amount）
+    amount = Column(Numeric(15, 2), nullable=False, comment="申请金额")
+    currency = Column(String(10), nullable=False, default='CNY', server_default='CNY', comment="货币类型")
+    
+    # 紧急程度（固定枚举，非状态机）
+    urgency_level = Column(
+        String(20),
+        nullable=False,
+        default='normal',
+        comment="紧急程度：low/normal/high/urgent"
+    )
+    
+    # 状态信息（枚举值以 STATE_MACHINE.md 为准）
+    status = Column(String(20), nullable=False, index=True, comment="申请状态")
+    status_reason = Column(Text, nullable=True, comment="状态变更原因")
+    
+    # 期望到账日期（字段名对齐 DATA_SCHEMA：expected_pay_date）
+    expected_pay_date = Column(Date, nullable=True, comment="期望到账日期")
+    
+    # 凭证URL（新增字段，对齐 DATA_SCHEMA）
+    voucher_url = Column(Text, nullable=True, comment="凭证URL")
+    
+    # 备注
+    notes = Column(Text, nullable=True, comment="补充说明")
+    
+    # 审计字段
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=True,
+        comment="创建人ID"
+    )
+    updated_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=True,
+        comment="更新人ID"
+    )
+    created_at = Column(
+        func.now(),
+        server_default=func.now(),
+        nullable=False,
+        comment="创建时间"
+    )
+    updated_at = Column(
+        func.now(),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+        comment="更新时间"
+    )
 
-    # 金额相关
-    requested_amount = Column(DECIMAL(15, 2), nullable=False, comment="申请金额")
-    actual_amount = Column(DECIMAL(15, 2), comment="实际打款金额")
-    currency = Column(String(10), nullable=False, default="USD", comment="货币类型")
-
-    # 申请信息
-    urgency_level = Column(String(20), nullable=False, default="normal", comment="紧急程度")
-    reason = Column(Text, nullable=False, comment="充值原因")
-    notes = Column(Text, comment="补充说明")
-    expected_date = Column(DATE, comment="期望到账日期")
-
-    # 状态信息
-    status = Column(String(20), nullable=False, default="pending", comment="申请状态")
-
-    # 支付信息
-    payment_method = Column(String(50), comment="打款方式")
-    transaction_id = Column(String(100), comment="交易流水号")
-    receipt_url = Column(String(500), comment="凭证URL")
-
-    # 申请人信息
-    requested_by = Column(Integer, ForeignKey("users.id"), nullable=False, comment="申请人ID")
-
-    # 数据审核信息
-    data_reviewed_by = Column(Integer, ForeignKey("users.id"), comment="数据审核人ID")
-    data_reviewed_at = Column(TIMESTAMP, comment="数据审核时间")
-    data_review_notes = Column(Text, comment="数据审核说明")
-
-    # 财务审批信息
-    finance_approved_by = Column(Integer, ForeignKey("users.id"), comment="财务审批人ID")
-    finance_approved_at = Column(TIMESTAMP, comment="财务审批时间")
-    finance_approve_notes = Column(Text, comment="财务审批说明")
-
-    # 支付完成时间
-    paid_at = Column(TIMESTAMP, comment="打款时间")
-    completed_at = Column(TIMESTAMP, comment="完成时间")
-
-    # 时间戳
-    created_at = Column(TIMESTAMP, default=func.now(), nullable=False, comment="创建时间")
-    updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now(), nullable=False, comment="更新时间")
-
-    # 关系
-    ad_account = relationship("AdAccount", backref="topup_requests")
-    project = relationship("Project", backref="topup_requests")
-    requester = relationship("User", foreign_keys=[requested_by])
-    data_reviewer = relationship("User", foreign_keys=[data_reviewed_by])
-    finance_approver = relationship("User", foreign_keys=[finance_approved_by])
-    transactions = relationship("TopupTransaction", back_populates="request")
-    approval_logs = relationship("TopupApprovalLog", back_populates="request")
-
-    # 索引
+    # 索引（对齐 DATA_SCHEMA 3.4.1）
     __table_args__ = (
-        Index('idx_topup_requests_account', 'ad_account_id'),
         Index('idx_topup_requests_project', 'project_id'),
         Index('idx_topup_requests_status', 'status'),
-        Index('idx_topup_requests_requested_by', 'requested_by'),
-        Index('idx_topup_requests_created_at', 'created_at'),
-        Index('idx_topup_requests_urgency', 'urgency_level'),
+        Index('idx_topup_requests_applicant', 'applicant_id'),
         {'comment': '充值申请表'}
     )
 
+    # 关系
+    project = relationship("Project", backref="topup_requests")
+    ad_account = relationship("AdAccount", backref="topup_requests")
+    applicant = relationship("UserProfile", foreign_keys=[applicant_id])
+    creator = relationship("UserProfile", foreign_keys=[created_by])
+    updater = relationship("UserProfile", foreign_keys=[updated_by])
+    transactions = relationship("TopupTransaction", back_populates="request")
+    approval_logs = relationship("TopupApprovalLog", back_populates="request")
+
 
 class TopupTransaction(Base):
-    """充值交易记录表（实际资金流水）"""
+    """充值交易记录表（对齐 DATA_SCHEMA.md 3.4.2）"""
     __tablename__ = "topup_transactions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    request_id = Column(Integer, ForeignKey("topup_requests.id"), nullable=False, comment="关联的申请ID")
-    transaction_no = Column(String(100), unique=True, nullable=False, index=True, comment="交易号")
-
-    # 交易信息
-    amount = Column(DECIMAL(15, 2), nullable=False, comment="交易金额")
-    currency = Column(String(10), nullable=False, default="USD", comment="货币类型")
-    payment_method = Column(String(50), nullable=False, comment="支付方式")
-    payment_account = Column(String(100), comment="付款账户")
-
-    # 时间信息
-    transaction_date = Column(TIMESTAMP, nullable=False, comment="交易时间")
-
-    # 凭证信息
-    receipt_file = Column(String(500), comment="凭证文件路径")
-    notes = Column(Text, comment="备注")
-
-    # 创建信息
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False, comment="创建人ID")
-    created_at = Column(TIMESTAMP, default=func.now(), nullable=False, comment="创建时间")
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="交易ID")
+    
+    # 关联申请（字段名对齐 DATA_SCHEMA：topup_request_id）
+    topup_request_id = Column(
+        BigInteger,
+        ForeignKey("topup_requests.id"),
+        nullable=False,
+        index=True,
+        comment="关联的申请ID"
+    )
+    
+    # 交易信息（字段名对齐 DATA_SCHEMA）
+    paid_amount = Column(Numeric(15, 2), nullable=False, comment="实际打款金额")
+    paid_currency = Column(String(10), nullable=False, comment="货币类型")
+    payment_method = Column(
+        String(50),
+        nullable=False,
+        comment="支付方式：bank_transfer/alipay/wechat/paypal/credit_card/other"
+    )
+    payment_reference = Column(String(100), nullable=True, comment="支付参考号")
+    
+    # 时间信息（字段名对齐 DATA_SCHEMA：paid_at）
+    paid_at = Column(
+        func.now(),
+        server_default=func.now(),
+        nullable=False,
+        comment="打款时间"
+    )
+    
+    # 凭证信息（字段名对齐 DATA_SCHEMA：receipt_url）
+    receipt_url = Column(Text, nullable=True, comment="凭证URL")
+    notes = Column(Text, nullable=True, comment="备注")
+    
+    # 创建信息（外键指向 user_profiles.id，UUID）
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=True,
+        comment="创建人ID"
+    )
+    created_at = Column(
+        func.now(),
+        server_default=func.now(),
+        nullable=False,
+        comment="创建时间"
+    )
 
     # 关系
     request = relationship("TopupRequest", back_populates="transactions")
-    creator = relationship("User")
+    creator = relationship("UserProfile", foreign_keys=[created_by])
 
     # 索引
     __table_args__ = (
-        Index('idx_topup_transactions_request', 'request_id'),
-        Index('idx_topup_transactions_date', 'transaction_date'),
+        Index('idx_topup_transactions_request', 'topup_request_id'),
+        Index('idx_topup_transactions_paid_at', 'paid_at'),
         {'comment': '充值交易记录表'}
     )
 
 
 class TopupApprovalLog(Base):
-    """充值审批日志表"""
+    """充值审批日志表（对齐 DATA_SCHEMA.md 3.4.3）"""
     __tablename__ = "topup_approval_logs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    request_id = Column(Integer, ForeignKey("topup_requests.id"), nullable=False, comment="关联的申请ID")
-
-    # 操作信息
+    # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="日志ID")
+    
+    # 关联申请（字段名对齐 DATA_SCHEMA：topup_request_id）
+    topup_request_id = Column(
+        BigInteger,
+        ForeignKey("topup_requests.id"),
+        nullable=False,
+        index=True,
+        comment="关联的申请ID"
+    )
+    
+    # 操作信息（字段名对齐 DATA_SCHEMA）
     action = Column(String(50), nullable=False, comment="操作类型")
-    actor_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="操作人ID")
-    actor_role = Column(String(50), nullable=False, comment="操作人角色")
-    notes = Column(Text, comment="操作说明")
-
-    # 状态变更
-    previous_status = Column(String(20), comment="原状态")
-    new_status = Column(String(20), comment="新状态")
-
-    # 请求信息
-    ip_address = Column(INET, comment="IP地址")
-    user_agent = Column(Text, comment="用户代理")
-
+    from_status = Column(String(20), nullable=True, comment="原状态")
+    to_status = Column(String(20), nullable=True, comment="新状态")
+    operator_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("user_profiles.id"),
+        nullable=False,
+        comment="操作人ID"
+    )
+    comments = Column(Text, nullable=True, comment="操作说明")
+    
     # 时间
-    created_at = Column(TIMESTAMP, default=func.now(), nullable=False, comment="创建时间")
+    created_at = Column(
+        func.now(),
+        server_default=func.now(),
+        nullable=False,
+        comment="创建时间"
+    )
 
     # 关系
     request = relationship("TopupRequest", back_populates="approval_logs")
-    actor = relationship("User")
+    operator = relationship("UserProfile", foreign_keys=[operator_id])
 
     # 索引
     __table_args__ = (
-        Index('idx_topup_approval_logs_request', 'request_id'),
+        Index('idx_topup_approval_logs_request', 'topup_request_id'),
         Index('idx_topup_approval_logs_action', 'action'),
-        Index('idx_topup_approval_logs_actor', 'actor_id'),
+        Index('idx_topup_approval_logs_operator', 'operator_id'),
         {'comment': '充值审批日志表'}
     )
 

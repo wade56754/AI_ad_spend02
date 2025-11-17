@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.sql import func
 from sqlalchemy.types import CHAR, TypeDecorator
 
-from backend.core.db import Base
+from core.db import Base
 
 
 class GUID(TypeDecorator):
@@ -50,8 +50,8 @@ class AdSpendDaily(Base):
     )
 
     id = Column(GUID(), primary_key=True, default=uuid.uuid4, nullable=False)
-    ad_account_id = Column(GUID(), ForeignKey("ad_accounts.id"), nullable=False)
-    user_id = Column(GUID(), ForeignKey("users.id"), nullable=False)
+    ad_account_id = Column(Integer, ForeignKey("ad_accounts.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     date = Column(Date, nullable=False)
     spend = Column(Numeric(18, 2), nullable=False, server_default="0")
     leads_count = Column(Integer, nullable=False, server_default="0")
@@ -59,8 +59,8 @@ class AdSpendDaily(Base):
     is_anomaly = Column(Boolean, nullable=False, server_default="false")
     anomaly_reason = Column(Text)
     note = Column(Text)
-    created_by = Column(GUID(), ForeignKey("users.id"))
-    updated_by = Column(GUID(), ForeignKey("users.id"))
+    created_by = Column(Integer, ForeignKey("users.id"))
+    updated_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

@@ -202,9 +202,6 @@ class DailyReportStatisticsResponse(BaseModel):
     total_new_follows: int
     avg_cpa: Optional[Decimal]
     avg_roas: Optional[Decimal]
-    ctr: Decimal  # Overall click-through rate
-    conversion_rate: Decimal  # Overall conversion rate
-    cpc: Optional[Decimal]  # Cost per click
 
     @computed_field
     @property
@@ -247,10 +244,13 @@ class DailyReportImportError(BaseModel):
     """导入错误详情"""
     model_config = ConfigDict(from_attributes=True)
 
-    row_number: int
-    error_code: str
-    error_message: str
-    invalid_data: Optional[dict] = None
+    row_number: int = Field(..., description="错误所在行号")
+    error_code: str = Field(..., description="错误码")
+    error_message: str = Field(..., description="错误描述")
+    field_name: Optional[str] = Field(None, description="出错的字段名")
+    invalid_value: Optional[str] = Field(None, description="无效的值")
+    suggestion: Optional[str] = Field(None, description="修复建议")
+    invalid_data: Optional[dict] = Field(None, description="整行无效数据")
 
 
 class DailyReportBatchImportResponse(BaseModel):

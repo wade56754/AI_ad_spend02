@@ -3,9 +3,16 @@
 """
 
 from typing import Any, Dict, Generic, List, Optional, TypeVar
+from datetime import date
 from pydantic import BaseModel, Field
 
 T = TypeVar('T')
+
+
+class DateRange(BaseModel):
+    """日期范围"""
+    start_date: date = Field(..., description="开始日期")
+    end_date: date = Field(..., description="结束日期")
 
 
 class PaginationMeta(BaseModel):
