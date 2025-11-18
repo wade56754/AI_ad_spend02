@@ -69,7 +69,14 @@
       "Bash(PORT=5000 pnpm dev:*)",
       "Bash(npm run test)",
       "Bash(cmd.exe /c \"set SUPABASE_URL && set SUPABASE_SERVICE_ROLE_KEY && python run_supabase_migration.py\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(tree:*)",
+      "Bash(python -c:*)",
+      "Bash(git clone:*)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []
