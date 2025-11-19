@@ -1,78 +1,134 @@
 """
-AI广告代投系统 - 数据模型
-导出所有数据模型类
+SQLAlchemy 模型统一导出模块
+
+本模块汇总导出所有 ORM 模型,支持：
+1. 从 backend.models 导入所有模型
+2. 保持向后兼容 (from backend.models import X)
+3. 提供 Base 和 Enum 类型
+
+重构版本：v2.0 (2025-11-19)
+- 按业务域拆分模型文件
+- 添加完整的 relationship 关系
+- 引入 Enum 类型支持
+- 抽取通用 Mixin
 """
 
-# 导入所有模型
-from .ad_account import AdAccount
-from .ad_spend_daily import AdSpendDaily
-from .ai_monitoring import (
-    AIAnomalyDetection,
-    AccountLifecyclePrediction,
-    MonitoringRule
+# Base 类和 Mixin
+from .base import (
+    Base,
+    TimestampMixin,
+    CreatedAtMixin,
+    SoftDeleteMixin,
+    UserScopeMixin,
+    AssignableMixin,
 )
-from .channels import Channel
-from .daily_report import DailyReport, DailyReportAuditLog
-from .ledger import LedgerEntry
-from .log import Log
-from .notifications import (
-    Notification,
-    NotificationTemplate,
-    SystemConfig,
-    AuditLog
+
+# Enum 枚举类型
+from .base import (
+    UserRole,
+    ChannelStatus,
+    ProjectStatus,
+    ReviewStatus,
+    AdAccountStatus,
+    DailyReportStatus,
+    TopupStatus,
+    LedgerEntryType,
+    ReconciliationBatchStatus,
+    ReconciliationDetailStatus,
+    AccountAlertStatus,
+    AccountAlertSeverity,
 )
-from .projects import Project, ProjectMember, ProjectExpense
-from .reconciliation_extended import (
+
+# 用户模块
+from .core.user import User
+
+# 渠道模块
+from .core.channel import Channel, ChannelReview, ChannelPerformance
+
+# 项目模块
+from .core.project import Project
+from .core.project_member import ProjectMember
+from .projects_fixed import ProjectExpense
+from .accounts.account_request import ChannelAccountRequest
+
+# 广告账户模块
+from .accounts.ad_account import AdAccount
+from .accounts.account_history import AccountStatusHistory, AccountAlert
+
+# 报告模块
+from .workflow.daily_report import DailyReport
+from .workflow.ad_spend import AdSpendDaily
+
+# 业务流程模块
+from .workflow.topup_request import TopupRequest
+
+# 充值相关辅助表（来自 topup.py）
+from .topup import (
+    TopupTransaction,
+    TopupApprovalLog,
+)
+
+# 财务模块
+from .finance import (
+    LedgerEntry,
     ReconciliationBatch,
     ReconciliationDetail,
-    ReconciliationDifference
 )
-from .topup import TopupRequest, TopupTransaction, TopupApprovalLog, Topup
-from .users import Role, User
 
-# 为了向后兼容，创建别名
-Reconciliation = ReconciliationDetail
+# 审计模块
+from .audit import AuditLog
 
-# 为了向后兼容，继续导出所有模型
+# 日志模块
+from .log import Log
+
+
+# =====================================================================
+# 统一导出所有模型
+# =====================================================================
+
 __all__ = [
-    # 核心业务模型
-    "Project",
-    "ProjectMember",
-    "ProjectExpense",
-    "Channel",
-    "AdAccount",
-    "User",
-    "Role",
+    # Base 和 Mixin
+    'Base',
+    'TimestampMixin',
+    'CreatedAtMixin',
+    'SoftDeleteMixin',
+    'UserScopeMixin',
+    'AssignableMixin',
 
-    # 日报和消耗模型
-    "DailyReport",
-    "DailyReportAuditLog",
-    "AdSpendDaily",
+    # Enum 类型
+    'UserRole',
+    'ChannelStatus',
+    'ProjectStatus',
+    'ReviewStatus',
+    'AdAccountStatus',
+    'DailyReportStatus',
+    'TopupStatus',
+    'LedgerEntryType',
+    'ReconciliationBatchStatus',
+    'ReconciliationDetailStatus',
+    'AccountAlertStatus',
+    'AccountAlertSeverity',
 
-    # 充值和财务模型
-    "Topup",  # 向后兼容别名
-    "TopupRequest",
-    "TopupTransaction",
-    "TopupApprovalLog",
-    "LedgerEntry",
-
-    # 对账模型
-    "Reconciliation",
-    "ReconciliationBatch",
-    "ReconciliationDetail",
-    "ReconciliationDifference",
-
-    # AI监控模型
-    "AIAnomalyDetection",
-    "AccountLifecyclePrediction",
-    "MonitoringRule",
-
-    # 通知和系统模型
-    "Notification",
-    "NotificationTemplate",
-    "SystemConfig",
-    "AuditLog",
-
-    # 日志模型
-    "Log",
+    # 模型类
+    'User',
+    'Channel',
+    'ChannelPerformance',
+    'Project',
+    'ProjectMember',
+    'ProjectExpense',
+    'ChannelReview',
+    'ChannelAccountRequest',
+    'AdAccount',
+    'AccountStatusHistory',
+    'AccountAlert',
+    'DailyReport',
+    'AdSpendDaily',
+    'TopupRequest',
+    'TopupTransaction',
+    'TopupApprovalLog',
+    'LedgerEntry',
+    'ReconciliationBatch',
+    'ReconciliationDetail',
+    'AuditLog',
+    'Log',
 ]
