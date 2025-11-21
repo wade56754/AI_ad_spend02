@@ -7,12 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from core.logging import log_requests
-from core.response import ok
-from core.security import AuthenticatedUser, get_current_user
-from models import Channel, Log
-from schemas import ChannelCreate, ChannelRead, ChannelUpdate
+from backend.core.db import get_db
+from backend.core.logging import log_requests
+from backend.core.response import ok
+from backend.core.security import AuthenticatedUser, get_current_user
+from backend.models import Channel, Log
+from backend.schemas import ChannelCreate, ChannelRead, ChannelUpdate
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/channels", tags=["channels"])

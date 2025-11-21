@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field
 
-from schemas.response import PaginationMeta, DateRange
+from backend.schemas.response import PaginationMeta, DateRange
 
 
 class DailyReportCreateRequest(BaseModel):

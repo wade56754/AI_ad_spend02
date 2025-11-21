@@ -11,14 +11,14 @@ from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc, case
 
-from core.db import get_db_session
-from core.error_codes import ErrorCode
-from core.response import ApiResponse, PaginatedResponse
-from models.reconciliation_extended import (
+from backend.core.db import get_db_session
+from backend.core.error_codes import ErrorCode
+from backend.core.response import ApiResponse, PaginatedResponse
+from backend.models.reconciliation_extended import (
     ReconciliationBatch, ReconciliationDetail, ReconciliationDifference,
     ReconciliationStatus, DifferenceStatus, DifferenceType
 )
-from services.audit_service import AuditService, BusinessAction
+from backend.services.audit_service import AuditService, BusinessAction
 
 
 class ReconciliationServiceExtended:
@@ -327,7 +327,7 @@ class ReconciliationServiceExtended:
         # 4. 创建对账详情和差异记录
 
         # 示例实现：模拟对账过程
-        from models.ledger import LedgerTransaction, TransactionType, TransactionStatus
+        from backend.models.ledger import LedgerTransaction, TransactionType, TransactionStatus
 
         # 获取时间范围内的充值和消费记录
         transactions = session.query(LedgerTransaction).filter(

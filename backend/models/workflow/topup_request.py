@@ -6,7 +6,7 @@ RLS 策略：用户只能访问自己提交或被分配的充值申请
 from decimal import Decimal
 from uuid import UUID
 from datetime import datetime
-from sqlalchemy import Column, BigInteger, String, Text, Numeric, DateTime, Index, CheckConstraint, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Text, Integer, Numeric, DateTime, Index, CheckConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -42,7 +42,7 @@ class TopupRequest(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
 
     # RLS 配置
     __rls_user_field__ = 'requested_by'
-    __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_MANAGER, UserRole.FINANCE]
+    __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_OPERATOR, UserRole.FINANCE]
     __rls_readonly_roles__ = []
 
     # 序列化配置
@@ -89,6 +89,9 @@ class TopupRequest(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     approved_at = Column(DateTime(timezone=True), nullable=True, comment="批准时间")
     paid_at = Column(DateTime(timezone=True), nullable=True, comment="打款时间")
     completed_at = Column(DateTime(timezone=True), nullable=True, comment="完成时间")
+
+    # 并发控制
+    version = Column(Integer, nullable=False, server_default='1', comment="乐观锁版本号")
 
     # ========== 关系定义 ==========
 
@@ -148,7 +151,7 @@ class TopupRequest(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     __table_args__ = (
         CheckConstraint(
             "status IN ('draft', 'pending_review', 'finance_approve', 'paid', 'completed', 'rejected', 'cancelled')",
-            name='topup_requests_status_check'
+            name='chk_topup_requests_status'
         ),
         Index('idx_topup_requests_ad_account_id', 'ad_account_id'),
         Index('idx_topup_requests_status', 'status'),
@@ -194,9 +197,9 @@ class TopupRequest(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         """
         检查是否可以转换到新状态
 
-        状态流转规则：
+        状态流转规则（基于 STATE_MACHINE.md v2.5 第 14.5 章）：
         - draft -> pending_review, cancelled
-        - pending_review -> finance_approve, rejected, cancelled
+        - pending_review -> finance_approve, rejected
         - finance_approve -> paid, rejected
         - paid -> completed
         - completed -> (终态)
@@ -208,8 +211,7 @@ class TopupRequest(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
             TopupRequestStatus.DRAFT: [TopupRequestStatus.PENDING_REVIEW, TopupRequestStatus.CANCELLED],
             TopupRequestStatus.PENDING_REVIEW: [
                 TopupRequestStatus.FINANCE_APPROVE,
-                TopupRequestStatus.REJECTED,
-                TopupRequestStatus.CANCELLED
+                TopupRequestStatus.REJECTED
             ],
             TopupRequestStatus.FINANCE_APPROVE: [TopupRequestStatus.PAID, TopupRequestStatus.REJECTED],
             TopupRequestStatus.PAID: [TopupRequestStatus.COMPLETED],
@@ -299,7 +301,7 @@ class TopupRequest(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     def can_be_reviewed_by(self, user_id: UUID, user_role: UserRole) -> bool:
         """检查用户是否可以审核此充值申请（数据员）"""
         # 只有管理员和数据员可以审核
-        if user_role not in [UserRole.ADMIN, UserRole.DATA_MANAGER]:
+        if user_role not in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
             return False
 
         # 只有待审核的申请才能审核
@@ -326,7 +328,7 @@ class TopupRequest(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
             return query
 
         # 数据员可以访问所有申请
-        if user_role == UserRole.DATA_MANAGER:
+        if user_role == UserRole.DATA_OPERATOR:
             return query
 
         # 财务可以访问所有申请

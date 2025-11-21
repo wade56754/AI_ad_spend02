@@ -8,12 +8,12 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from core.error_codes import ErrorCode
-from core.response import fail, ok
-from core.security import AuthenticatedUser, get_current_user
-from models import ImportJob
-from services.log_service import LogService
+from backend.core.db import get_db
+from backend.core.error_codes import ErrorCode
+from backend.core.response import fail, ok
+from backend.core.security import AuthenticatedUser, get_current_user
+from backend.models import ImportJob
+from backend.services.log_service import LogService
 
 router = APIRouter(prefix="/import_jobs", tags=["import_jobs"])
 

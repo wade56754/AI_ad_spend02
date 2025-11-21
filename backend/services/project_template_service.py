@@ -12,18 +12,18 @@ import json
 from sqlalchemy import and_, or_, func, desc
 from sqlalchemy.orm import Session
 
-from exceptions.custom_exceptions import (
+from backend.exceptions.custom_exceptions import (
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.projects import ProjectTemplate
-from models.users import User
-from schemas.project_template import (
+from backend.models import ProjectTemplate
+from backend.models import User
+from backend.schemas.project_template import (
     ProjectTemplateCreateRequest,
     ProjectTemplateUpdateRequest
 )
-from services.project_service import ProjectService
+from backend.services.project_service import ProjectService
 
 
 class ProjectTemplateService:
@@ -224,7 +224,7 @@ class ProjectTemplateService:
         end_date = start_date + timedelta(days=template.default_duration_days or 30)
 
         # 创建项目数据
-        from schemas.project import ProjectCreateRequest
+        from backend.schemas.project import ProjectCreateRequest
         project_request = ProjectCreateRequest(
             name=project_name,
             client_name=client_name,

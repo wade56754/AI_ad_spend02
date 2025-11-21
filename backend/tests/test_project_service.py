@@ -9,16 +9,16 @@ from decimal import Decimal
 from datetime import date, datetime
 from unittest.mock import Mock, patch
 
-from models.projects import Project, ProjectMember, ProjectExpense
-from models.users import User
-from schemas.project import (
+from backend.models import Project, ProjectMember, ProjectExpense
+from backend.models import User
+from backend.schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,
     ProjectMemberAssignRequest,
     ProjectExpenseRequest
 )
-from services.project_service import ProjectService
-from exceptions.custom_exceptions import (
+from backend.services.project_service import ProjectService
+from backend.exceptions.custom_exceptions import (
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError,

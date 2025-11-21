@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.db import Base
+from backend.models.base import Base
 
 
 class TopupRequest(Base):
@@ -42,7 +42,7 @@ class TopupRequest(Base):
     # 申请人（字段名对齐 DATA_SCHEMA：applicant_id）
     applicant_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=False,
         index=True,
         comment="申请人ID"
@@ -76,13 +76,13 @@ class TopupRequest(Base):
     # 审计字段
     created_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="创建人ID"
     )
     updated_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="更新人ID"
     )
@@ -111,9 +111,9 @@ class TopupRequest(Base):
     # 关系
     project = relationship("Project", backref="topup_requests")
     ad_account = relationship("AdAccount", backref="topup_requests")
-    applicant = relationship("UserProfile", foreign_keys=[applicant_id])
-    creator = relationship("UserProfile", foreign_keys=[created_by])
-    updater = relationship("UserProfile", foreign_keys=[updated_by])
+    applicant = relationship("User", foreign_keys=[applicant_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
     transactions = relationship("TopupTransaction", back_populates="request")
     approval_logs = relationship("TopupApprovalLog", back_populates="request")
 
@@ -158,7 +158,7 @@ class TopupTransaction(Base):
     # 创建信息
     created_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="创建人ID"
     )
@@ -171,7 +171,7 @@ class TopupTransaction(Base):
 
     # 关系
     request = relationship("TopupRequest", back_populates="transactions")
-    creator = relationship("UserProfile", foreign_keys=[created_by])
+    creator = relationship("User", foreign_keys=[created_by])
 
     # 索引
     __table_args__ = (
@@ -202,7 +202,7 @@ class TopupApprovalLog(Base):
     to_status = Column(String(20), nullable=True, comment="新状态")
     operator_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=False,
         comment="操作人ID"
     )
@@ -218,7 +218,7 @@ class TopupApprovalLog(Base):
 
     # 关系
     request = relationship("TopupRequest", back_populates="approval_logs")
-    operator = relationship("UserProfile", foreign_keys=[operator_id])
+    operator = relationship("User", foreign_keys=[operator_id])
 
     # 索引
     __table_args__ = (

@@ -8,12 +8,16 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.db import Base
+from backend.models.base import Base
 
 
-class LedgerEntry(Base):
+# ⚠️ DEPRECATED: 此 LedgerEntry 类已被 backend/models/finance.py 替代
+# 请使用 from backend.models.finance import LedgerEntry
+# 保留此类仅用于向后兼容，但已禁用表定义以避免重复注册
+class _LedgerEntryLegacy(Base):
     """资金总账表（对齐 DATA_SCHEMA.md 3.4.4）"""
-    __tablename__ = "ledger_entries"
+    # __tablename__ = "ledger_entries"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="账本条目ID")
@@ -53,10 +57,10 @@ class LedgerEntry(Base):
         comment="发生时间"
     )
     
-    # 审计字段（外键指向 user_profiles.id，UUID）
+    # 审计字段（外键指向 users.id，UUID）
     created_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="创建人ID"
     )
@@ -73,4 +77,4 @@ class LedgerEntry(Base):
     # 关系
     project = relationship("Project", foreign_keys=[project_id])
     ad_account = relationship("AdAccount", foreign_keys=[ad_account_id])
-    creator = relationship("UserProfile", foreign_keys=[created_by])
+    creator = relationship("User", foreign_keys=[created_by])

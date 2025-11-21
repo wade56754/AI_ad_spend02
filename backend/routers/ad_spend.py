@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
-from core.db import get_db
-from core.error_codes import ErrorCode
-from core.response import success_response
-from core.security import AuthenticatedUser, get_current_user
-from core.logging import log_requests, setup_user_context
-from models import AdAccount, AdSpendDaily
-from services.log_service import LogService
+from backend.core.db import get_db
+from backend.core.error_codes import ErrorCode
+from backend.core.response import success_response
+from backend.core.security import AuthenticatedUser, get_current_user
+from backend.core.logging import log_requests, setup_user_context
+from backend.models import AdAccount, AdSpendDaily
+from backend.services.log_service import LogService
 
 logger = structlog.get_logger(__name__)
 

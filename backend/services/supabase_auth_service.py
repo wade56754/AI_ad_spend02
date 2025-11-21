@@ -10,9 +10,9 @@ from fastapi import HTTPException, status, Request
 from supabase import Client
 from sqlalchemy.orm import Session
 
-from core.supabase_client import supabase_client
-from core.db import get_db
-from core.config import get_settings
+from backend.core.supabase_client import supabase_client
+from backend.core.db import get_db
+from backend.core.config import get_settings
 
 settings = get_settings()
 

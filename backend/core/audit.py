@@ -15,7 +15,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
 
-from core.db import Base, get_db_session
+from backend.core.db import Base, get_db_session
 
 
 class AuditAction(str, Enum):

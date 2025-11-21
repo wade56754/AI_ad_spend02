@@ -10,11 +10,12 @@ from typing import List, Tuple, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, func, desc, extract
 
-from models.topup import TopupRequest, TopupTransaction, TopupApprovalLog
-from models.users import User
-from models.ad_account import AdAccount
-from models.projects import Project
-from schemas.topup import (
+from backend.models import TopupRequest
+from backend.models.topup import TopupTransaction, TopupApprovalLog
+from backend.models import User
+from backend.models import AdAccount
+from backend.models import Project
+from backend.schemas.topup import (
     TopupRequestCreate,
     TopupDataReviewRequest,
     TopupFinanceApprovalRequest,
@@ -27,14 +28,14 @@ from schemas.topup import (
     TopupDashboardResponse,
     AdAccountBalance
 )
-from exceptions.custom_exceptions import (
+from backend.exceptions.custom_exceptions import (
     ResourceNotFoundError,
     PermissionDeniedError,
     BusinessLogicError,
     ResourceConflictError
 )
-from utils.id_generator import generate_request_no
-# from utils.audit import create_audit_log  # 暂时注释
+from backend.utils.id_generator import generate_request_no
+# from backend.utils.audit import create_audit_log  # 暂时注释
 
 
 class TopupService:

@@ -12,22 +12,22 @@ from unittest.mock import Mock, patch
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from services.daily_report_service import DailyReportService
-from schemas.daily_report import (
+from backend.services.daily_report_service import DailyReportService
+from backend.schemas.daily_report import (
     DailyReportCreateRequest,
     DailyReportUpdateRequest,
     DailyReportAuditRequest,
     DailyReportBatchImportRequest,
     DailyReportQueryParams
 )
-from exceptions.custom_exceptions import (
+from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.users import User
-from models.daily_report import DailyReport
+from backend.models import User
+from backend.models import DailyReport
 
 
 class TestDailyReportService:

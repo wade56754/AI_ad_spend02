@@ -75,9 +75,9 @@ class User(Base, TimestampMixin, SerializableMixin):
             
         Returns:
             bool: 是否拥有任一角色
-            
+
         Example:
-            user.has_role(UserRole.ADMIN, UserRole.DATA_MANAGER)
+            user.has_role(UserRole.ADMIN, UserRole.DATA_OPERATOR)
         """
         return self.role_enum in roles
     
@@ -89,9 +89,9 @@ class User(Base, TimestampMixin, SerializableMixin):
         """是否是财务"""
         return self.role_enum == UserRole.FINANCE
     
-    def is_data_manager(self) -> bool:
+    def is_data_operator(self) -> bool:
         """是否是数据员"""
-        return self.role_enum == UserRole.DATA_MANAGER
+        return self.role_enum == UserRole.DATA_OPERATOR
     
     def is_media_buyer(self) -> bool:
         """是否是投手"""
@@ -99,7 +99,7 @@ class User(Base, TimestampMixin, SerializableMixin):
     
     def can_access_all_projects(self) -> bool:
         """是否可以访问所有项目（管理员和数据员）"""
-        return self.has_role(UserRole.ADMIN, UserRole.DATA_MANAGER)
+        return self.has_role(UserRole.ADMIN, UserRole.DATA_OPERATOR)
     
     def can_approve_topup(self) -> bool:
         """是否可以批准充值申请"""
@@ -107,7 +107,7 @@ class User(Base, TimestampMixin, SerializableMixin):
     
     def can_review_daily_report(self) -> bool:
         """是否可以审核日报"""
-        return self.has_role(UserRole.ADMIN, UserRole.DATA_MANAGER)
+        return self.has_role(UserRole.ADMIN, UserRole.DATA_OPERATOR)
 
     # ========== 关系定义 ==========
 

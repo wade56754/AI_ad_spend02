@@ -12,15 +12,16 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role
-from core.response import success_response, error_response, StandardResponse
-from exceptions.custom_exceptions import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role
+from backend.core.response import success_response, error_response, StandardResponse
+from backend.core.error_codes import ValidationErrorCodes, SystemErrorCodes
+from backend.exceptions.custom_exceptions import (
     ResourceNotFoundError,
     PermissionDeniedError
 )
-from models.users import User
-from services.ai_anomaly_detection_service import AIAnomalyDetectionService
+from backend.models import User
+from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
 
 router = APIRouter(prefix="/ai/analytics", tags=["ai-analytics"])
 
@@ -88,15 +89,15 @@ async def detect_account_anomalies(
 
     except ValueError as e:
         return error_response(
-            code="VALIDATION_ERROR",
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
             message=str(e),
-            status_code=400
+            status_code=ValidationErrorCodes.VALIDATION_ERROR.status_code
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="异常检测失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -127,9 +128,9 @@ async def batch_detect_anomalies(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="批量异常检测失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -155,9 +156,9 @@ async def get_anomaly_summary(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取异常摘要失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -187,15 +188,15 @@ async def assess_account_risk(
 
     except ValueError as e:
         return error_response(
-            code="VALIDATION_ERROR",
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
             message=str(e),
-            status_code=400
+            status_code=ValidationErrorCodes.VALIDATION_ERROR.status_code
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="风险评估失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 

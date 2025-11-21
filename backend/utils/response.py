@@ -1,4 +1,15 @@
 """
+⚠️ DEPRECATED - 本模块已废弃
+废弃日期: 2025-11-20
+替代模块: backend.core.response
+原因:
+  1. backend.core.response 返回 JSONResponse,更符合 FastAPI 规范
+  2. backend.core.response 支持 status_code 参数
+  3. 本模块返回 Pydantic BaseModel,需要额外转换
+  4. 本模块包含硬编码错误码,违反统一错误码规范
+
+请使用: from backend.core.response import success_response, error_response
+
 统一的响应格式模块
 遵循项目规范中的API响应格式
 """
@@ -51,7 +62,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     success: bool = True
     data: List[T]
     message: str = "操作成功"
-    code: str = "SUCCESS"
+    code: str = "OK"
     request_id: str = Field(default_factory=lambda: str(uuid4()))
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     pagination: PaginationMeta
@@ -60,7 +71,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
 def create_response(
     data: T = None,
     message: str = "操作成功",
-    code: str = "SUCCESS",
+    code: str = "OK",
     success: bool = True
 ) -> BaseResponse[T]:
     """创建标准响应"""
@@ -93,7 +104,7 @@ def create_paginated_response(
     size: int,
     total: int,
     message: str = "获取成功",
-    code: str = "SUCCESS"
+    code: str = "OK"
 ) -> PaginatedResponse[T]:
     """创建分页响应"""
     pages = (total + size - 1) // size
@@ -120,23 +131,23 @@ def success(data: T = None, message: str = "操作成功") -> BaseResponse[T]:
 
 def created(data: T = None, message: str = "创建成功") -> BaseResponse[T]:
     """创建成功响应"""
-    return create_response(data=data, message=message, code="CREATED")
+    return create_response(data=data, message=message, code="OK")
 
 
 def updated(data: T = None, message: str = "更新成功") -> BaseResponse[T]:
     """更新成功响应"""
-    return create_response(data=data, message=message, code="UPDATED")
+    return create_response(data=data, message=message, code="OK")
 
 
 def deleted(message: str = "删除成功") -> BaseResponse[None]:
     """删除成功响应"""
-    return create_response(data=None, message=message, code="DELETED")
+    return create_response(data=None, message=message, code="OK")
 
 
 def not_found(message: str = "资源不存在") -> ErrorResponse:
     """404错误响应"""
     return create_error_response(
-        code="NOT_FOUND",
+        code="BIZ_002",
         message=message
     )
 
@@ -144,7 +155,7 @@ def not_found(message: str = "资源不存在") -> ErrorResponse:
 def validation_error(message: str = "参数验证失败") -> ErrorResponse:
     """验证错误响应"""
     return create_error_response(
-        code="VALIDATION_ERROR",
+        code="VALIDATION_001",
         message=message
     )
 
@@ -152,7 +163,7 @@ def validation_error(message: str = "参数验证失败") -> ErrorResponse:
 def permission_denied(message: str = "权限不足") -> ErrorResponse:
     """权限拒绝响应"""
     return create_error_response(
-        code="PERMISSION_DENIED",
+        code="AUTH_500",
         message=message
     )
 
@@ -160,7 +171,7 @@ def permission_denied(message: str = "权限不足") -> ErrorResponse:
 def server_error(message: str = "服务器内部错误") -> ErrorResponse:
     """服务器错误响应"""
     return create_error_response(
-        code="INTERNAL_SERVER_ERROR",
+        code="SYS_001",
         message=message
     )
 
@@ -168,13 +179,13 @@ def server_error(message: str = "服务器内部错误") -> ErrorResponse:
 def unauthorized(message: str = "未授权访问") -> ErrorResponse:
     """未授权响应"""
     return create_error_response(
-        code="UNAUTHORIZED",
+        code="AUTH_401",
         message=message
     )
 
 
 # 添加缺失的别名函数
-def success_response(data: T = None, message: str = "操作成功", code: str = "SUCCESS") -> BaseResponse[T]:
+def success_response(data: T = None, message: str = "操作成功", code: str = "OK") -> BaseResponse[T]:
     """成功响应（别名）"""
     return create_response(data=data, message=message, code=code)
 

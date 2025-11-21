@@ -22,5 +22,5 @@ TEST_CONFIG = {
 
 def get_test_settings():
     """获取测试环境配置"""
-    from core.config import Settings
+    from backend.core.config import Settings
     return Settings(**TEST_CONFIG)

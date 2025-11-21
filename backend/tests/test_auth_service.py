@@ -9,10 +9,10 @@ from datetime import datetime, timedelta
 from unittest.mock import Mock, patch, AsyncMock
 from sqlalchemy.orm import Session
 
-from models.users import User
-from services.auth_service import AuthService
-from exceptions import ValidationError, AuthenticationError
-from utils.response import success_response
+from backend.models import User
+from backend.services.auth_service import AuthService
+from backend.exceptions import ValidationError, AuthenticationError
+from backend.core.response import success_response
 
 
 class TestAuthService:

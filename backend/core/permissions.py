@@ -9,22 +9,14 @@ from enum import Enum
 
 from fastapi import Depends, HTTPException, status
 
-from core.error_codes import ErrorCode
-from core.security import (
+from backend.core.error_codes import ErrorCode
+from backend.core.security import (
     AuthenticatedUser,
     get_current_active_user,
     require_roles as _require_roles,
     require_permissions as _require_permissions
 )
-
-
-class UserRole(str, Enum):
-    """用户角色枚举 - 匹配系统概述文档"""
-    ADMIN = "admin"                    # 管理员 - 系统全权限
-    MANAGER = "manager"                # 项目经理 - 项目管理，团队管理
-    DATA_CLERK = "data_clerk"          # 户管/数据员 - 账户管理，数据审核
-    FINANCE = "finance"                # 财务 - 充值审批，财务对账
-    MEDIA_BUYER = "media_buyer"        # 投手 - 账户投放，日报提交
+from backend.models.enums import UserRole
 
 
 class Permission(str, Enum):
@@ -102,8 +94,8 @@ ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
         Permission.NOTIFICATION_MANAGE,
         Permission.SYSTEM_CONFIG, Permission.AUDIT_LOG
     ],
-    UserRole.MANAGER: [
-        # 项目经理权限 - ✅ 用户管理、项目管理、渠道管理(只读)、账户管理、日报管理(只读)、充值管理(只读)、财务对账(只读)、报表查看
+    UserRole.ACCOUNT_MANAGER: [
+        # 户管权限 - ✅ 用户管理、项目管理、渠道管理(只读)、账户管理、日报管理(只读)、充值管理(只读)、财务对账(只读)、报表查看
         Permission.USER_MANAGE,
         Permission.PROJECT_CREATE, Permission.PROJECT_READ, Permission.PROJECT_UPDATE,
         Permission.CHANNEL_READ,
@@ -113,8 +105,8 @@ ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
         Permission.RECONCILIATION_READ,
         Permission.REPORT_READ, Permission.REPORT_EXPORT
     ],
-    UserRole.DATA_CLERK: [
-        # 户管/数据员权限 - 👁 项目管理(只读)、✅ 渠道管理、✅ 账户管理、✅ 日报管理、✅ 充值管理、👁 报表查看
+    UserRole.DATA_OPERATOR: [
+        # 数据员权限 - 👁 项目管理(只读)、✅ 渠道管理、✅ 账户管理、✅ 日报管理、✅ 充值管理、👁 报表查看
         Permission.PROJECT_READ,
         Permission.CHANNEL_CREATE, Permission.CHANNEL_READ, Permission.CHANNEL_UPDATE, Permission.CHANNEL_DELETE,
         Permission.ACCOUNT_CREATE, Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE, Permission.ACCOUNT_DELETE,
@@ -142,8 +134,24 @@ ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
 
 
 def get_user_permissions(user: AuthenticatedUser) -> List[Permission]:
-    """获取用户权限列表"""
-    user_role = UserRole(user.role) if user.role else UserRole.USER
+    """获取用户权限列表
+
+    Args:
+        user: 认证用户对象
+
+    Returns:
+        用户权限列表
+
+    Raises:
+        ValueError: 用户角色不在合法角色列表中
+    """
+    try:
+        user_role = UserRole(user.role)
+    except ValueError:
+        raise ValueError(
+            f"Invalid user role: {user.role}. "
+            f"Must be one of: {[r.value for r in UserRole]}"
+        )
 
     # 基础角色权限
     permissions = set(ROLE_PERMISSIONS.get(user_role, []))
@@ -309,16 +317,6 @@ def admin_required(user: AuthenticatedUser = Depends(get_current_active_user)) -
     return user
 
 
-def manager_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
-    """要求项目经理角色"""
-    if user.role not in [UserRole.ADMIN.value, UserRole.MANAGER.value]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要项目经理或管理员权限"}
-        )
-    return user
-
-
 def finance_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
     """要求财务权限"""
     if user.role not in [UserRole.ADMIN.value, UserRole.FINANCE.value]:
@@ -329,12 +327,22 @@ def finance_required(user: AuthenticatedUser = Depends(get_current_active_user))
     return user
 
 
-def data_clerk_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
-    """要求户管/数据员权限"""
-    if user.role not in [UserRole.ADMIN.value, UserRole.DATA_CLERK.value]:
+def account_manager_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+    """要求户管权限"""
+    if user.role not in [UserRole.ADMIN.value, UserRole.ACCOUNT_MANAGER.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要户管/数据员权限"}
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要户管权限"}
+        )
+    return user
+
+
+def data_operator_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+    """要求数据员权限"""
+    if user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要数据员权限"}
         )
     return user
 

@@ -51,7 +51,7 @@ def test_config_loading():
         # 暂时清除 ALLOWED_ORIGINS 来避免解析问题
         os.environ.pop("ALLOWED_ORIGINS", None)
 
-        from core.config import get_settings
+        from backend.core.config import get_settings
         settings = get_settings()
         print(f"OK: Settings loaded successfully")
         print(f"  - Environment: {settings.env_name}")

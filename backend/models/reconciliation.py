@@ -15,12 +15,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.db import Base
+from backend.models.base import Base
 
 
-class ReconciliationBatch(Base):
+# ⚠️ DEPRECATED: 此 ReconciliationBatch 类已被 backend/models/finance.py 替代
+# 请使用 from backend.models.finance import ReconciliationBatch
+# 保留此类仅用于向后兼容，但已禁用表定义以避免重复注册
+class _ReconciliationBatchLegacy(Base):
     """对账批次表"""
-    __tablename__ = "reconciliation_batches"
+    # __tablename__ = "reconciliation_batches"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     id = Column(Integer, primary_key=True, index=True)
     batch_no = Column(String(50), unique=True, nullable=False, comment="对账批次号")
@@ -130,7 +134,8 @@ class ReconciliationBatch(Base):
 
 class ReconciliationDetail(Base):
     """对账详情表"""
-    __tablename__ = "reconciliation_details"
+    # __tablename__ = "reconciliation_details"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     id = Column(Integer, primary_key=True, index=True)
     batch_id = Column(

@@ -13,12 +13,20 @@ from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.db import Base
+from backend.models.base import Base
 
 
-class TopupRequest(Base):
-    """充值申请主表（对齐 DATA_SCHEMA.md 3.4.1）"""
-    __tablename__ = "topup_requests"
+class TopupRequestLegacy(Base):
+    """
+    充值申请主表（已废弃 - DEPRECATED）
+
+    ⚠️ 此类已被 backend.models.workflow.topup_request.TopupRequest 替代
+    请使用 from backend.models import TopupRequest
+
+    保留此类仅用于向后兼容，但已标记为抽象类以避免重复注册表
+    """
+    __abstract__ = True  # 标记为抽象类，不会创建表
+    # __tablename__ = "topup_requests"  # 已注释掉，避免重复定义表
 
     # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="充值申请ID")
@@ -44,7 +52,7 @@ class TopupRequest(Base):
     # 申请人（字段名对齐 DATA_SCHEMA：applicant_id）
     applicant_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=False,
         index=True,
         comment="申请人ID"
@@ -78,13 +86,13 @@ class TopupRequest(Base):
     # 审计字段
     created_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="创建人ID"
     )
     updated_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="更新人ID"
     )
@@ -113,9 +121,9 @@ class TopupRequest(Base):
     # 关系
     project = relationship("Project", backref="topup_requests")
     ad_account = relationship("AdAccount", backref="topup_requests")
-    applicant = relationship("UserProfile", foreign_keys=[applicant_id])
-    creator = relationship("UserProfile", foreign_keys=[created_by])
-    updater = relationship("UserProfile", foreign_keys=[updated_by])
+    applicant = relationship("User", foreign_keys=[applicant_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
     transactions = relationship("TopupTransaction", back_populates="request")
     approval_logs = relationship("TopupApprovalLog", back_populates="request")
 
@@ -124,12 +132,12 @@ class TopupTransaction(Base):
     """充值交易记录表（对齐 DATA_SCHEMA.md 3.4.2）"""
     __tablename__ = "topup_transactions"
 
-    # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="交易ID")
+    # 主键：BIGSERIAL（对齐 TopupRequest.id 类型）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="交易ID")
 
-    # 关联申请（字段名对齐 DATA_SCHEMA：topup_request_id）
+    # 关联申请（字段名和类型对齐 TopupRequest.id: BigInteger）
     topup_request_id = Column(
-        UUID(as_uuid=True),
+        BigInteger,
         ForeignKey("topup_requests.id"),
         nullable=False,
         index=True,
@@ -158,10 +166,10 @@ class TopupTransaction(Base):
     receipt_url = Column(Text, nullable=True, comment="凭证URL")
     notes = Column(Text, nullable=True, comment="备注")
 
-    # 创建信息（外键指向 user_profiles.id，UUID）
+    # 创建信息（外键指向 users.id，UUID）
     created_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="创建人ID"
     )
@@ -174,7 +182,7 @@ class TopupTransaction(Base):
 
     # 关系
     request = relationship("TopupRequest", back_populates="transactions")
-    creator = relationship("UserProfile", foreign_keys=[created_by])
+    creator = relationship("User", foreign_keys=[created_by])
 
     # 索引
     __table_args__ = (
@@ -188,12 +196,12 @@ class TopupApprovalLog(Base):
     """充值审批日志表（对齐 DATA_SCHEMA.md 3.4.3）"""
     __tablename__ = "topup_approval_logs"
 
-    # 主键：UUID（匹配实际数据库结构，Phase 0 决策）
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"), comment="日志ID")
+    # 主键：BIGSERIAL（对齐项目标准）
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="日志ID")
 
-    # 关联申请（字段名对齐 DATA_SCHEMA：topup_request_id）
+    # 关联申请（字段名和类型对齐 TopupRequest.id: BigInteger）
     topup_request_id = Column(
-        UUID(as_uuid=True),
+        BigInteger,
         ForeignKey("topup_requests.id"),
         nullable=False,
         index=True,
@@ -206,7 +214,7 @@ class TopupApprovalLog(Base):
     to_status = Column(String(20), nullable=True, comment="新状态")
     operator_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=False,
         comment="操作人ID"
     )
@@ -222,7 +230,7 @@ class TopupApprovalLog(Base):
 
     # 关系
     request = relationship("TopupRequest", back_populates="approval_logs")
-    operator = relationship("UserProfile", foreign_keys=[operator_id])
+    operator = relationship("User", foreign_keys=[operator_id])
 
     # 索引
     __table_args__ = (
@@ -233,5 +241,6 @@ class TopupApprovalLog(Base):
     )
 
 
-# 保持向后兼容的别名
-Topup = TopupRequest
+# 保持向后兼容的别名（已废弃）
+# Topup = TopupRequest  # 已注释，TopupRequest 已改为 TopupRequestLegacy（抽象类）
+# 请使用: from backend.models import TopupRequest（来自 workflow 版本）

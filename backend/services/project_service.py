@@ -12,16 +12,16 @@ from sqlalchemy import and_, or_, func, desc, asc
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 
-from core.response import success_response, error_response, paginated_response
-from exceptions.custom_exceptions import (
+from backend.core.response import success_response, error_response, paginated_response
+from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.projects import Project, ProjectMember, ProjectExpense
-from models.users import User
-from schemas.project import (
+from backend.models import Project, ProjectMember, ProjectExpense
+from backend.models import User
+from backend.schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,
     ProjectMemberAssignRequest,

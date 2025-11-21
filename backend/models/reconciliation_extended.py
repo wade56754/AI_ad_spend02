@@ -14,7 +14,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Numeric, Bool
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
-from core.db import Base
+from backend.models.base import Base
 
 
 class ReconciliationStatus(str, Enum):
@@ -53,9 +53,13 @@ class DifferenceStatus(str, Enum):
     ESCALATED = "escalated"          # 已上报
 
 
-class ReconciliationBatch(Base):
+# ⚠️ DEPRECATED: 此 ReconciliationBatch 类已被 backend/models/finance.py 替代
+# 请使用 from backend.models.finance import ReconciliationBatch
+# 保留此类仅用于向后兼容，但已禁用表定义以避免重复注册
+class _ReconciliationBatchLegacy(Base):
     """对账批次表 - 对账任务的主要容器"""
-    __tablename__ = "reconciliation_batches"
+    # __tablename__ = "reconciliation_batches"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     # 主键
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -136,7 +140,8 @@ class ReconciliationBatch(Base):
 
 class ReconciliationDetail(Base):
     """对账详情表 - 记录具体的对账匹配结果"""
-    __tablename__ = "reconciliation_details"
+    # __tablename__ = "reconciliation_details"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     # 主键
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -214,7 +219,8 @@ class ReconciliationDetail(Base):
 
 class ReconciliationDifference(Base):
     """对账差异表 - 记录和管理对账差异"""
-    __tablename__ = "reconciliation_differences"
+    # __tablename__ = "reconciliation_differences"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     # 主键
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)

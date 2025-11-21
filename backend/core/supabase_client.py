@@ -8,7 +8,7 @@ import os
 from typing import Optional, Dict, Any
 from supabase import create_client, Client
 
-from core.config import get_settings
+from backend.core.config import get_settings
 
 settings = get_settings()
 

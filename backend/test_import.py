@@ -26,13 +26,13 @@ try:
     print("Testing module imports...")
 
     # 测试核心模块导入
-    from core.config import get_settings
+    from backend.core.config import get_settings
     print("OK: core.config imported")
 
-    from core.db import get_db
+    from backend.core.db import get_db
     print("OK: core.db imported")
 
-    from core.response import success_response, fail, ok
+    from backend.core.response import success_response, fail, ok
     print("OK: core.response imported")
 
     # 测试路由模块导入

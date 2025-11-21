@@ -11,11 +11,11 @@ from uuid import UUID, uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc
 
-from core.db import get_db_session
-from core.error_codes import ErrorCode
-from core.response import ApiResponse, PaginatedResponse
-from models.ledger import LedgerTransaction, AccountBalance, BudgetAllocation, TransactionType, TransactionStatus
-from services.audit_service import AuditService, BusinessAction
+from backend.core.db import get_db_session
+from backend.core.error_codes import ErrorCode
+from backend.core.response import ApiResponse, PaginatedResponse
+from backend.models.ledger import LedgerTransaction, AccountBalance, BudgetAllocation, TransactionType, TransactionStatus
+from backend.services.audit_service import AuditService, BusinessAction
 
 
 class LedgerService:

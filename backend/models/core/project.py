@@ -3,7 +3,7 @@
 
 RLS 策略：用户只能访问自己创建或被分配的项目
 """
-from sqlalchemy import Column, BigInteger, String, Index, CheckConstraint
+from sqlalchemy import Column, BigInteger, String, Integer, Index, CheckConstraint
 from sqlalchemy.orm import relationship
 
 from backend.models.base import Base, TimestampMixin, UserScopeMixin
@@ -29,7 +29,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
 
     # RLS 配置
     __rls_user_field__ = 'created_by'
-    __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_MANAGER]
+    __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_OPERATOR]
 
     # 序列化配置
     __json_include_relationships__ = ['creator', 'ad_accounts']
@@ -42,6 +42,9 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     project_code = Column(String(50), unique=True, nullable=False, comment="项目代码")
     client_name = Column(String(100), nullable=True, comment="客户名称")
     status = Column(String(20), nullable=False, comment="项目状态")
+
+    # 并发控制
+    version = Column(Integer, nullable=False, server_default='1', comment="乐观锁版本号")
 
     # ========== 关系定义 ==========
 
@@ -84,7 +87,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     __table_args__ = (
         CheckConstraint(
             "status IN ('draft', 'active', 'suspended', 'archived')",
-            name='projects_status_check'
+            name='chk_projects_status'
         ),
         Index('idx_projects_status', 'status'),
         Index('idx_projects_created_by', 'created_by'),
@@ -162,7 +165,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
 
     def can_be_edited_by(self, user_id, user_role: UserRole) -> bool:
         """检查用户是否可以编辑此项目"""
-        if user_role in [UserRole.ADMIN, UserRole.DATA_MANAGER]:
+        if user_role in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
             return True
 
         if user_role == UserRole.MEDIA_BUYER:
@@ -183,7 +186,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         query = session.query(cls)
 
         # 管理员和数据员可以访问所有项目
-        if user_role in [UserRole.ADMIN, UserRole.DATA_MANAGER]:
+        if user_role in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
             return query
 
         # 投手只能访问自己创建的项目

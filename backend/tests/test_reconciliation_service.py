@@ -9,22 +9,22 @@ from decimal import Decimal
 from datetime import date, datetime
 from unittest.mock import Mock, patch, AsyncMock
 
-from models.reconciliation import (
+from backend.models.reconciliation import (
     ReconciliationBatch, ReconciliationDetail,
     ReconciliationAdjustment, ReconciliationReport
 )
-from models.users import User
-from models.ad_account import AdAccount
-from models.projects import Project
-from models.channel import Channel
-from schemas.reconciliation import (
+from backend.models import User
+from backend.models import AdAccount
+from backend.models import Project
+from backend.models import Channel
+from backend.schemas.reconciliation import (
     ReconciliationBatchCreateRequest,
     ReconciliationDetailReviewRequest,
     ReconciliationAdjustmentCreateRequest,
     ReconciliationReportGenerateRequest
 )
-from services.reconciliation_service import ReconciliationService
-from exceptions import ValidationError, NotFoundError, PermissionError
+from backend.services.reconciliation_service import ReconciliationService
+from backend.exceptions import ValidationError, NotFoundError, PermissionError
 
 
 class TestReconciliationService:

@@ -9,7 +9,7 @@ from decimal import Decimal
 from datetime import date
 from httpx import AsyncClient
 
-from models.users import User
+from backend.models import User
 
 
 class TestProjectAPI:

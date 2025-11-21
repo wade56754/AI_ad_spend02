@@ -1,5 +1,58 @@
 # Cursor Rules for AI_ad_spend02
 
+## 🚨 CRITICAL: 项目规则文档加载要求
+
+**在执行任何任务之前，必须首先读取 `docs/core/` 目录下的所有 SoT（Single Source of Truth）文档。**
+
+### 强制加载的文档清单（按优先级排序）
+
+#### P0 - 核心 SoT 文档（必须全部读取）
+1. **DATA_SCHEMA.md** - 数据库表结构、字段、类型、约束的唯一事实来源（SoT-Data）
+2. **STATE_MACHINE.md** - 状态枚举和状态流转的唯一事实来源（SoT-State）
+3. **AI_AD_SYSTEM_MAIN_DOCUMENT.md** - 角色、权限、业务流的实现规范（SoT-Implementation）
+4. **BUSINESS_RULES.md** - 业务规则唯一真相源，定义所有不可违反的业务约束
+5. **RLS_POLICIES.md** - 行级安全策略文档，定义所有 RLS 策略和权限矩阵
+6. **ERROR_CODES.md** - 全局错误码真相源，所有错误码定义和映射
+
+#### P1 - 开发流程文档（根据任务类型选择性读取）
+7. **API_DEVELOPMENT_FLOW.md** - API 开发流程和标准
+8. **AUTH_SPEC.md** - 认证授权规范
+9. **SQL_SCRIPTS_REVIEW.md** - SQL 脚本审查指南
+10. **SYSTEM_OVERVIEW.md** - 系统架构概览
+
+### 任务执行前的强制检查清单
+
+**在生成任何代码、修改任何文件、或执行任何开发任务之前，必须：**
+
+1. ✅ **读取所有 P0 文档**（至少读取与当前任务相关的章节）
+2. ✅ **验证字段名称**：使用 `DATA_SCHEMA.md` 中定义的字段名、类型、约束
+3. ✅ **验证状态值**：使用 `STATE_MACHINE.md` 中定义的状态枚举和流转规则
+4. ✅ **验证角色定义**：使用 `AI_AD_SYSTEM_MAIN_DOCUMENT.md` 中定义的 5 个合法角色
+5. ✅ **验证业务规则**：确保不违反 `BUSINESS_RULES.md` 中定义的任何业务规则
+6. ✅ **验证权限策略**：如涉及权限，参考 `RLS_POLICIES.md` 中的权限矩阵
+7. ✅ **验证错误码**：使用 `ERROR_CODES.md` 中定义的错误码，不得自创
+8. ✅ **遵循 API 规范**：如涉及 API 开发，遵循 `API_DEVELOPMENT_FLOW.md` 中的流程
+
+### 文档互锁关系
+
+这些文档之间存在严格的互锁关系，修改时必须同步更新：
+
+```
+DATA_SCHEMA.md (数据层)
+    ↕
+STATE_MACHINE.md (状态层)
+    ↕
+AI_AD_SYSTEM_MAIN_DOCUMENT.md (实现层)
+    ↕
+BUSINESS_RULES.md (业务规则层)
+    ↕
+RLS_POLICIES.md (权限层)
+    ↕
+ERROR_CODES.md (错误码层)
+```
+
+**规则**：任何修改必须确保所有相关 SoT 文档的一致性。
+
 Goal
 - Keep system-wide consistency: one data boundary (BFF), unified API envelope, auth, money rounding, time policy, pagination, concurrency, error codes, and documentation.
 

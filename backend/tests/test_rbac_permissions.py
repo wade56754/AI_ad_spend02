@@ -10,10 +10,10 @@ import pytest
 from datetime import date
 from decimal import Decimal
 
-from models.daily_report import DailyReport
-from services.daily_report_service import DailyReportService
-from schemas.daily_report import DailyReportQueryParams
-from exceptions.custom_exceptions import PermissionDeniedError
+from backend.models import DailyReport
+from backend.services.daily_report_service import DailyReportService
+from backend.schemas.daily_report import DailyReportQueryParams
+from backend.exceptions.custom_exceptions import PermissionDeniedError
 
 
 @pytest.mark.unit
@@ -47,7 +47,7 @@ class TestRBACDailyReportService:
         db_session.add(report1)
 
         # 创建属于其他用户的账户和日报
-        from models.ad_account import AdAccount
+        from backend.models import AdAccount
         other_account = AdAccount(
             name="其他用户账户",
             account_id="TEST_ACCOUNT_002",  # 必需字段
@@ -101,7 +101,7 @@ class TestRBACDailyReportService:
         db_session.commit()
 
         # 创建属于该项目的账户和日报
-        from models.ad_account import AdAccount
+        from backend.models import AdAccount
         managed_account = AdAccount(
             name="管理项目账户",
             account_id="TEST_ACCOUNT_MANAGED",  # 必需字段
@@ -130,7 +130,7 @@ class TestRBACDailyReportService:
         db_session.add(report1)
 
         # 创建其他项目的日报（非管理项目）
-        from models.projects import Project
+        from backend.models import Project
         other_project = Project(
             name="其他项目",
             client_name="其他客户",
@@ -244,7 +244,7 @@ class TestRBACDailyReportService:
         db_session.refresh(report)
 
         # 尝试编辑（作为media_buyer）
-        from schemas.daily_report import DailyReportUpdateRequest
+        from backend.schemas.daily_report import DailyReportUpdateRequest
         update_request = DailyReportUpdateRequest(
             spend=Decimal("200.00")
         )
@@ -280,7 +280,7 @@ class TestRBACDailyReportService:
         db_session.refresh(report)
 
         # 编辑（作为data_operator）
-        from schemas.daily_report import DailyReportUpdateRequest
+        from backend.schemas.daily_report import DailyReportUpdateRequest
         update_request = DailyReportUpdateRequest(
             spend=Decimal("200.00")
         )

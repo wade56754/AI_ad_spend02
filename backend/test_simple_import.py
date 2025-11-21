@@ -50,13 +50,13 @@ try:
     # 临时修改环境变量以避免JSON解析问题
     os.environ.pop("ALLOWED_ORIGINS", None)
 
-    from core.config import get_settings
+    from backend.core.config import get_settings
     print("OK: core.config imported")
 
     # 创建一个简单的SQLite内存数据库用于测试
     os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-    from core.db import get_engine
+    from backend.core.db import get_engine
     print("OK: core.db imported")
 
     print("Project modules OK!")

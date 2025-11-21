@@ -78,23 +78,23 @@ def test_service_imports():
         print("\nTesting service imports...")
 
         # 测试项目服务
-        from services.project_service import ProjectService
+        from backend.services.project_service import ProjectService
         print("OK: ProjectService imported")
 
         # 测试日报服务
-        from services.daily_report_service import DailyReportService
+        from backend.services.daily_report_service import DailyReportService
         print("OK: DailyReportService imported")
 
         # 测试充值服务
-        from services.topup_service import TopupService
+        from backend.services.topup_service import TopupService
         print("OK: TopupService imported")
 
         # 测试对账服务
-        from services.reconciliation_service import ReconciliationService
+        from backend.services.reconciliation_service import ReconciliationService
         print("OK: ReconciliationService imported")
 
         # 测试AI分析服务
-        from services.ai_anomaly_detection_service import AIAnomalyDetectionService
+        from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
         print("OK: AIAnomalyDetectionService imported")
 
         return True
@@ -143,7 +143,7 @@ def test_ai_anomaly_detection():
     try:
         print("\nTesting AI anomaly detection...")
 
-        from services.ai_anomaly_detection_service import AIAnomalyDetectionService
+        from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
 
         # 创建模拟数据
         performance_data = [

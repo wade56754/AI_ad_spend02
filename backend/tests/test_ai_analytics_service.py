@@ -10,10 +10,10 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import List, Dict, Any
 
-from services.ai_anomaly_detection_service import AIAnomalyDetectionService
-from models.ad_account import AdAccount
-from models.daily_report import DailyReport
-from core.db import get_db
+from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
+from backend.models import AdAccount
+from backend.models import DailyReport
+from backend.core.db import get_db
 
 
 class TestAIAnomalyDetectionService:
@@ -337,7 +337,7 @@ class TestAIAnalyticsIntegration:
 
     def test_end_to_end_analysis_workflow(self, db_session, test_ad_account):
         """端到端分析工作流测试"""
-        from services.ai_anomaly_detection_service import AIAnomalyDetectionService
+        from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
 
         service = AIAnomalyDetectionService(db_session)
 
@@ -426,7 +426,7 @@ class TestAIAnalyticsPerformance:
 
     def test_large_dataset_analysis_performance(self):
         """大数据集分析性能测试"""
-        from services.ai_anomaly_detection_service import AIAnomalyDetectionService
+        from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
         from time import time
 
         # 准备大数据集（30天数据）
@@ -462,7 +462,7 @@ class TestAIAnalyticsPerformance:
         from concurrent.futures import ThreadPoolExecutor
 
         def perform_analysis():
-            from services.ai_anomaly_detection_service import AIAnomalyDetectionService
+            from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
             service = AIAnomalyDetectionService(None)
 
             performance_data = [
@@ -490,7 +490,7 @@ class TestAIAnalyticsStress:
         """大数据集内存使用测试"""
         import psutil
         import os
-        from services.ai_anomaly_detection_service import AIAnomalyDetectionService
+        from backend.services.ai_anomaly_detection_service import AIAnomalyDetectionService
 
         # 获取初始内存使用
         process = psutil.Process(os.getpid())

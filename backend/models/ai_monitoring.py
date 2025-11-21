@@ -14,7 +14,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, String, Text, Numeric, Bool
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
-from core.db import Base
+from backend.models.base import Base
 
 
 class AnomalyType(str, Enum):

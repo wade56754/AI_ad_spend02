@@ -23,7 +23,7 @@ class StandardResponse(BaseModel, Generic[T]):
     def success(
         data: Any = None,
         message: str = "操作成功",
-        code: str = "SUCCESS",
+        code: str = "OK",
         status_code: int = 200,
         meta: Optional[Dict[str, Any]] = None
     ) -> JSONResponse:
@@ -81,7 +81,7 @@ class StandardResponse(BaseModel, Generic[T]):
         page_size: int,
         total: int,
         message: str = "获取成功",
-        code: str = "SUCCESS"
+        code: str = "OK"
     ) -> JSONResponse:
         """分页响应"""
         total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
@@ -124,7 +124,7 @@ def fail(code: str, message: str, status_code: int = 400, meta: Optional[Dict[st
 
 
 # 推荐使用的新函数
-def success_response(data: Any = None, message: str = "操作成功", code: str = "SUCCESS", **kwargs) -> JSONResponse:
+def success_response(data: Any = None, message: str = "操作成功", code: str = "OK", **kwargs) -> JSONResponse:
     """成功响应函数"""
     # 直接构建成功响应内容，避免 Pydantic Generic 类的问题
     content = {

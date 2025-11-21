@@ -7,13 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from core.response import ok
-from core.security import AuthenticatedUser, get_current_user
-from core.logging import log_requests
-from models import AdAccount
+from backend.core.db import get_db
+from backend.core.response import ok
+from backend.core.security import AuthenticatedUser, get_current_user
+from backend.core.logging import log_requests
+from backend.models import AdAccount
 # from models import Log  # Log模型不存在，暂时注释
-from schemas import AdAccountCreate, AdAccountRead, AdAccountStatusUpdate
+from backend.schemas import AdAccountCreate, AdAccountRead, AdAccountStatusUpdate
 # from services.log_service import LogService  # 暂时注释，Log模型不存在
 
 logger = structlog.get_logger(__name__)

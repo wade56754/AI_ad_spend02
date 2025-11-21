@@ -13,8 +13,8 @@ from decimal import Decimal
 import pandas as pd
 
 from fastapi import UploadFile
-from routers.daily_reports import parse_excel_row_to_report
-from config.excel_column_mapping import (
+from backend.routers.daily_reports import parse_excel_row_to_report
+from backend.config.excel_column_mapping import (
     find_column_definition,
     validate_column_exists,
     MAX_FILE_SIZE_BYTES

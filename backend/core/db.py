@@ -9,10 +9,11 @@ from urllib.parse import urlparse
 
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
-from core.config import get_settings
+from backend.core.config import get_settings
+from backend.models import Base
 
 # 延迟获取配置，避免模块导入时的问题
 def get_db_settings():
@@ -33,7 +34,6 @@ def get_db_settings():
 
 # 数据库基础配置
 metadata = MetaData()
-Base = declarative_base(metadata=metadata)
 
 # 全局引擎和会话工厂
 _engine: Optional[Engine] = None

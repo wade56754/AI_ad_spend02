@@ -16,7 +16,7 @@ from io import BytesIO
 import pandas as pd
 import uuid
 
-from config.excel_column_mapping import (
+from backend.config.excel_column_mapping import (
     find_column_definition,
     validate_column_exists,
     MAX_FILE_SIZE_BYTES,
@@ -25,22 +25,28 @@ from config.excel_column_mapping import (
     EXCEL_COLUMN_DEFINITIONS
 )
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role
-from core.response import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role
+from backend.core.response import (
     success_response,
     error_response,
     paginated_response,
     StandardResponse
 )
-from exceptions.custom_exceptions import (
+from backend.core.error_codes import (
+    SystemErrorCodes,
+    BusinessErrorCodes,
+    ValidationErrorCodes,
+    AuthErrorCodes
+)
+from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.users import User
-from schemas.daily_report import (
+from backend.models import User
+from backend.schemas.daily_report import (
     DailyReportCreateRequest,
     DailyReportUpdateRequest,
     DailyReportAuditRequest,
@@ -54,7 +60,7 @@ from schemas.daily_report import (
     DailyReportImportError,
     DailyReportAuditLogResponse
 )
-from services.daily_report_service import DailyReportService
+from backend.services.daily_report_service import DailyReportService
 
 # 创建logger实例
 logger = logging.getLogger(__name__)
@@ -291,9 +297,9 @@ async def list_daily_reports(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -339,9 +345,9 @@ async def create_daily_report(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -370,9 +376,9 @@ async def get_daily_report(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except PermissionDeniedError as e:
         return error_response(
@@ -382,9 +388,9 @@ async def get_daily_report(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -417,9 +423,9 @@ async def update_daily_report(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
@@ -429,9 +435,9 @@ async def update_daily_report(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -457,9 +463,9 @@ async def delete_daily_report(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except PermissionDeniedError as e:
         return error_response(
@@ -469,9 +475,9 @@ async def delete_daily_report(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -504,9 +510,9 @@ async def approve_daily_report(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
@@ -516,9 +522,9 @@ async def approve_daily_report(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -551,9 +557,9 @@ async def reject_daily_report(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
@@ -563,9 +569,9 @@ async def reject_daily_report(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -645,9 +651,9 @@ async def batch_import_daily_reports(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -682,9 +688,9 @@ async def import_daily_reports_from_file(
         if not file.filename.endswith(('.xlsx', '.xls')):
             logger.warning(f"Invalid file type: {file.filename}")
             return error_response(
-                code="BIZ_INVALID_FILE_TYPE",
+                code=BusinessErrorCodes.INVALID_FILE_TYPE.code,
                 message="只支持Excel文件格式（.xlsx, .xls）",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=BusinessErrorCodes.INVALID_FILE_TYPE.status_code
             )
 
         # 2. 读取文件内容并验证大小
@@ -696,9 +702,9 @@ async def import_daily_reports_from_file(
                 f"File too large: {file_size} bytes (max: {MAX_FILE_SIZE_BYTES})"
             )
             return error_response(
-                code="BIZ_FILE_TOO_LARGE",
+                code=BusinessErrorCodes.FILE_TOO_LARGE.code,
                 message=f"文件大小{file_size / 1024 / 1024:.2f}MB超过限制{MAX_FILE_SIZE_MB}MB",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=BusinessErrorCodes.FILE_TOO_LARGE.status_code
             )
 
         logger.info(f"File size: {file_size / 1024:.2f}KB")
@@ -709,17 +715,17 @@ async def import_daily_reports_from_file(
         except Exception as e:
             logger.error(f"Failed to parse Excel file: {e}")
             return error_response(
-                code="BIZ_EXCEL_PARSE_ERROR",
+                code=BusinessErrorCodes.EXCEL_PARSE_ERROR.code,
                 message=f"Excel文件解析失败：{str(e)}",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=BusinessErrorCodes.EXCEL_PARSE_ERROR.status_code
             )
 
         if df.empty:
             logger.warning("Empty Excel file")
             return error_response(
-                code="BIZ_EMPTY_FILE",
+                code=BusinessErrorCodes.EMPTY_FILE.code,
                 message="Excel文件为空，没有数据可导入",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=BusinessErrorCodes.EMPTY_FILE.status_code
             )
 
         logger.info(f"Excel parsed successfully: {len(df)} rows, columns={list(df.columns)}")
@@ -729,9 +735,9 @@ async def import_daily_reports_from_file(
         if not valid:
             logger.error(f"Missing required columns: {missing_columns}")
             return error_response(
-                code="BIZ_MISSING_COLUMNS",
+                code=BusinessErrorCodes.MISSING_COLUMNS.code,
                 message=f"缺少必需列：{', '.join(missing_columns)}",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=BusinessErrorCodes.MISSING_COLUMNS.status_code
             )
 
         # 5. 逐行解析数据
@@ -853,12 +859,12 @@ async def export_daily_reports(
                 f"Export aborted: data count {total} exceeds limit {MAX_EXPORT_ROWS}"
             )
             return error_response(
-                code="BIZ_EXPORT_LIMIT_EXCEEDED",
+                code=BusinessErrorCodes.EXPORT_LIMIT_EXCEEDED.code,
                 message=(
                     f"导出数据量({total}条)超过限制({MAX_EXPORT_ROWS}条)。"
                     f"请缩小筛选范围（如缩短日期范围、指定账户等）或分批导出"
                 ),
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=BusinessErrorCodes.EXPORT_LIMIT_EXCEEDED.status_code
             )
 
         # 获取所有符合条件的日报
@@ -869,9 +875,9 @@ async def export_daily_reports(
         if not reports:
             logger.info("No data to export")
             return error_response(
-                code="BIZ_NO_DATA",
+                code=BusinessErrorCodes.NO_DATA.code,
                 message="没有符合条件的数据可导出",
-                status_code=status.HTTP_404_NOT_FOUND
+                status_code=BusinessErrorCodes.NO_DATA.status_code
             )
 
         logger.info(f"Exporting {len(reports)} records")
@@ -989,9 +995,9 @@ async def get_daily_report_statistics(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -1023,9 +1029,9 @@ async def get_daily_report_audit_logs(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except PermissionDeniedError as e:
         return error_response(
@@ -1035,7 +1041,7 @@ async def get_daily_report_audit_logs(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )

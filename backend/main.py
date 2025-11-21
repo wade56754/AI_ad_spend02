@@ -6,11 +6,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
-from core.config import get_settings
-from core.db import get_engine
-from core.response import fail, ok, success_response, StandardResponse
+from backend.core.config import get_settings
+from backend.core.db import get_engine
+from backend.core.response import fail, ok, success_response, StandardResponse
+from backend.core.error_codes import SystemErrorCodes
 # 导入核心路由模块
-from routers import (
+from backend.routers import (
+    health,
     projects,
     authentication,
     ad_accounts,
@@ -46,6 +48,7 @@ app.add_middleware(
 API_V1_PREFIX = "/api/v1"
 
 # 注册核心API路由
+app.include_router(health.router, prefix=API_V1_PREFIX)  # 健康检查
 app.include_router(projects.router, prefix=API_V1_PREFIX)  # 项目管理
 app.include_router(authentication.router, prefix=API_V1_PREFIX)  # 用户认证
 app.include_router(ad_spend.router, prefix=API_V1_PREFIX)  # 广告消耗
@@ -76,7 +79,7 @@ async def healthz() -> JSONResponse:
 @app.get("/readyz")
 async def readyz() -> JSONResponse:
     """Readiness probe including database connectivity (Kubernetes compatible)."""
-    from core.response import success_response, error_response
+    from backend.core.response import success_response, error_response
     try:
         engine = get_engine()
         with engine.connect() as connection:
@@ -96,19 +99,7 @@ async def readyz() -> JSONResponse:
     )
 
 
-@app.get("/api/v1/health")
-async def health_api() -> JSONResponse:
-    """API version health check for consistency with documentation."""
-    from core.response import success_response
-    return success_response(
-        data={
-            "status": "ok",
-            "service": "ai-ad-spend-backend",
-            "version": "v2.1",
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-        },
-        message="API health check passed",
-    )
+# 注意：/api/v1/health 端点已通过 health.router 注册，无需重复定义
 
 
 @app.api_route("/api/health", methods=["GET", "OPTIONS"])
@@ -144,7 +135,7 @@ async def handle_http_exception(_: Request, exc: HTTPException) -> JSONResponse:
 @app.exception_handler(Exception)
 async def handle_unexpected_exception(_: Request, exc: Exception) -> JSONResponse:
     message = str(exc) if settings.debug else "Internal server error"
-    return fail(code="HTTP_500", message=message, status_code=500)
+    return fail(code=SystemErrorCodes.INTERNAL_ERROR.code, message=message, status_code=SystemErrorCodes.INTERNAL_ERROR.status_code)
 
 
 

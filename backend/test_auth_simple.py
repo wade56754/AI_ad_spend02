@@ -12,8 +12,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 def test_imports():
     """测试导入"""
     try:
-        from services.auth_service import AuthService
-        from routers.authentication import router
+        from backend.services.auth_service import AuthService
+        from backend.routers.authentication import router
         print("[成功] 认证模块导入成功")
         return True
     except Exception as e:

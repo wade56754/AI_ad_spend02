@@ -11,10 +11,10 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from models import AdAccount, AdSpendDaily, User
-from routers.ad_spend import AdSpendReportPayload
-from core.security import get_password_hash
-from core.db import Base
+from backend.models import AdAccount, AdSpendDaily, User
+from backend.routers.ad_spend import AdSpendReportPayload
+from backend.core.security import get_password_hash
+from backend.core.db import Base
 
 
 class TestAdSpendAPI:

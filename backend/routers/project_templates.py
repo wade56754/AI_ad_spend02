@@ -9,22 +9,22 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role
-from core.response import success_response, error_response, StandardResponse
-from exceptions.custom_exceptions import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role
+from backend.core.response import success_response, error_response, StandardResponse
+from backend.exceptions.custom_exceptions import (
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.users import User
-from schemas.project_template import (
+from backend.models import User
+from backend.schemas.project_template import (
     ProjectTemplateCreateRequest,
     ProjectTemplateUpdateRequest,
     ProjectTemplateResponse,
     ProjectTemplateListResponse
 )
-from services.project_template_service import ProjectTemplateService
+from backend.services.project_template_service import ProjectTemplateService
 
 router = APIRouter(prefix="/projects/templates", tags=["project-templates"])
 

@@ -12,11 +12,11 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from core.auth import get_current_user
-from models.users import User
-from models.reconciliation import ReconciliationDetail, ReconciliationAdjustment, ReconciliationReport
-from schemas.reconciliation import (
+from backend.core.db import get_db
+from backend.core.auth import get_current_user
+from backend.models import User
+from backend.models.reconciliation import ReconciliationDetail, ReconciliationAdjustment, ReconciliationReport
+from backend.schemas.reconciliation import (
     ReconciliationBatchCreateRequest,
     ReconciliationBatchResponse,
     ReconciliationBatchListResponse,
@@ -31,12 +31,12 @@ from schemas.reconciliation import (
     ReconciliationReportListResponse,
     ReconciliationExportData
 )
-from services.reconciliation_service import ReconciliationService
-from services.audit_log_service import AuditLogService
-from utils.decorators import require_role
-from utils.response import success_response, paginated_response
-from utils.export import export_to_excel, export_to_pdf, export_to_json
-from exceptions import ValidationError, NotFoundError, PermissionError
+from backend.services.reconciliation_service import ReconciliationService
+from backend.services.audit_log_service import AuditLogService
+from backend.utils.decorators import require_role
+from backend.core.response import success_response, paginated_response
+from backend.utils.export import export_to_excel, export_to_pdf, export_to_json
+from backend.exceptions import ValidationError, NotFoundError, PermissionError
 
 
 router = APIRouter(prefix="/reconciliations", tags=["对账管理"])

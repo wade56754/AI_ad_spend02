@@ -11,17 +11,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from pydantic import BaseModel, Field
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role
-from core.response import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role
+from backend.core.response import (
     success_response,
     error_response,
     StandardResponse
 )
-from core.error_codes import ErrorCode
-from models.users import User
-from models.reconciliation_extended import ReconciliationStatus, DifferenceStatus, DifferenceType
-from services.reconciliation_service_extended import get_reconciliation_service_extended, ReconciliationServiceExtended
+from backend.core.error_codes import ErrorCode, SystemErrorCodes, ValidationErrorCodes, BusinessErrorCodes
+from backend.models import User
+from backend.models.reconciliation_extended import ReconciliationStatus, DifferenceStatus, DifferenceType
+from backend.services.reconciliation_service_extended import get_reconciliation_service_extended, ReconciliationServiceExtended
 
 
 # 定义分页响应类型
@@ -135,9 +135,9 @@ async def create_reconciliation_batch(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"创建对账批次失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -161,15 +161,15 @@ async def process_reconciliation_batch(
 
     except ValueError as e:
         return error_response(
-            code="VALIDATION_ERROR",
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
             message=f"参数验证失败: {str(e)}",
-            status_code=400
+            status_code=ValidationErrorCodes.VALIDATION_ERROR.status_code
         )
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"执行对账批次失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -200,9 +200,9 @@ async def get_reconciliation_batches(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取对账批次列表失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -229,9 +229,9 @@ async def get_reconciliation_details(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取对账详情列表失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -262,9 +262,9 @@ async def get_reconciliation_differences(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取对账差异列表失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -289,24 +289,24 @@ async def resolve_difference(
 
         if not difference:
             return error_response(
-                code="NOT_FOUND",
+                code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
                 message="对账差异不存在",
-                status_code=404
+                status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
             )
 
         return success_response(data=ReconciliationDifferenceResponse(**reconciliation_service._difference_to_dict(difference)), message="对账差异解决成功")
 
     except ValueError as e:
         return error_response(
-            code="VALIDATION_ERROR",
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
             message=f"参数验证失败: {str(e)}",
-            status_code=400
+            status_code=ValidationErrorCodes.VALIDATION_ERROR.status_code
         )
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"解决对账差异失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -325,9 +325,9 @@ async def get_reconciliation_summary(
 
         if not summary_data:
             return error_response(
-                code="NOT_FOUND",
+                code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
                 message="对账批次不存在",
-                status_code=404
+                status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
             )
 
         return success_response(data=ReconciliationSummaryResponse(**summary_data), message="获取对账汇总信息成功")
@@ -336,9 +336,9 @@ async def get_reconciliation_summary(
         raise
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取对账汇总信息失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -368,7 +368,7 @@ async def export_reconciliation_data(
         )
 
         # 记录导出操作到审计日志
-        from services.audit_service import get_audit_service
+        from backend.services.audit_service import get_audit_service
         audit_service = get_audit_service()
         audit_service.log_data_export(
             user_id=current_user.id,
@@ -395,9 +395,9 @@ async def export_reconciliation_data(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"导出对账数据失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -456,7 +456,7 @@ async def get_reconciliation_statistics(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取对账统计信息失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )

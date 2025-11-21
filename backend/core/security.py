@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .db import get_db
-from models.users import User
+from backend.models import User
 
 
 def _base64url_decode(data: str) -> bytes:

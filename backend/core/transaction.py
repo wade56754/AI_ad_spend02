@@ -9,7 +9,7 @@ from typing import Any, Callable, Optional, TypeVar
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
-from core.db import get_db
+from backend.core.db import get_db
 
 logger = logging.getLogger(__name__)
 

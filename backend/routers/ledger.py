@@ -11,17 +11,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, HTTPException, status, Request
 from pydantic import BaseModel, Field
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role
-from core.response import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role
+from backend.core.response import (
     success_response,
     error_response,
     StandardResponse
 )
-from core.error_codes import ErrorCode
-from models.users import User
-from models.ledger import TransactionType, TransactionStatus
-from services.ledger_service import get_ledger_service, LedgerService
+from backend.core.error_codes import ErrorCode, BusinessErrorCodes
+from backend.models import User
+from backend.models.ledger import TransactionType, TransactionStatus
+from backend.services.ledger_service import get_ledger_service, LedgerService
 
 
 # 定义分页响应类型
@@ -139,9 +139,9 @@ async def create_transaction(
 
     except Exception as e:
         return error_response(
-            code="LEDGER_CREATE_ERROR",
+            code=BusinessErrorCodes.LEDGER_CREATE_ERROR.code,
             message=f"创建交易失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.LEDGER_CREATE_ERROR.status_code
         )
 
 
@@ -178,9 +178,9 @@ async def get_transactions(
 
     except Exception as e:
         return error_response(
-            code="LEDGER_QUERY_ERROR",
+            code=BusinessErrorCodes.LEDGER_QUERY_ERROR.code,
             message=f"获取交易记录失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.LEDGER_QUERY_ERROR.status_code
         )
 
 
@@ -205,9 +205,9 @@ async def update_transaction_status(
 
         if not transaction:
             return error_response(
-                code="TRANSACTION_NOT_FOUND",
+                code=BusinessErrorCodes.TRANSACTION_NOT_FOUND.code,
                 message="交易记录不存在",
-                status_code=404
+                status_code=BusinessErrorCodes.TRANSACTION_NOT_FOUND.status_code
             )
 
         return success_response(
@@ -217,9 +217,9 @@ async def update_transaction_status(
 
     except Exception as e:
         return error_response(
-            code="LEDGER_UPDATE_ERROR",
+            code=BusinessErrorCodes.LEDGER_UPDATE_ERROR.code,
             message=f"更新交易状态失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.LEDGER_UPDATE_ERROR.status_code
         )
 
 
@@ -247,9 +247,9 @@ async def get_account_balance(
 
     except Exception as e:
         return error_response(
-            code="BALANCE_QUERY_ERROR",
+            code=BusinessErrorCodes.BALANCE_QUERY_ERROR.code,
             message=f"获取账户余额失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.BALANCE_QUERY_ERROR.status_code
         )
 
 
@@ -273,9 +273,9 @@ async def get_project_budget_allocation(
 
     except Exception as e:
         return error_response(
-            code="BUDGET_QUERY_ERROR",
+            code=BusinessErrorCodes.BUDGET_QUERY_ERROR.code,
             message=f"获取项目预算分配失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.BUDGET_QUERY_ERROR.status_code
         )
 
 
@@ -316,9 +316,9 @@ async def create_budget_allocation(
 
     except Exception as e:
         return error_response(
-            code="BUDGET_CREATE_ERROR",
+            code=BusinessErrorCodes.BUDGET_CREATE_ERROR.code,
             message=f"创建预算分配失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.BUDGET_CREATE_ERROR.status_code
         )
 
 
@@ -347,9 +347,9 @@ async def get_transaction_statistics(
 
     except Exception as e:
         return error_response(
-            code="STATISTICS_QUERY_ERROR",
+            code=BusinessErrorCodes.STATISTICS_QUERY_ERROR.code,
             message=f"获取交易统计失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.STATISTICS_QUERY_ERROR.status_code
         )
 
 
@@ -384,7 +384,7 @@ async def export_transactions(
         )
 
         # 记录导出操作到审计日志
-        from services.audit_service import get_audit_service
+        from backend.services.audit_service import get_audit_service
         audit_service = get_audit_service()
         audit_service.log_data_export(
             user_id=current_user.id,
@@ -413,7 +413,7 @@ async def export_transactions(
 
     except Exception as e:
         return error_response(
-            code="EXPORT_ERROR",
+            code=BusinessErrorCodes.EXPORT_ERROR.code,
             message=f"导出交易记录失败: {str(e)}",
-            status_code=500
+            status_code=BusinessErrorCodes.EXPORT_ERROR.status_code
         )

@@ -10,17 +10,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from pydantic import BaseModel, Field
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role
-from core.response import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role
+from backend.core.response import (
     success_response,
     error_response,
     StandardResponse
 )
-from core.error_codes import ErrorCode
-from models.users import User
-from models.ai_monitoring import AnomalyType, AnomalySeverity, PredictionStatus, RuleStatus
-from services.ai_monitoring_service import get_ai_monitoring_service, AIMonitoringService
+from backend.core.error_codes import ErrorCode, SystemErrorCodes, BusinessErrorCodes
+from backend.models import User
+from backend.models.ai_monitoring import AnomalyType, AnomalySeverity, PredictionStatus, RuleStatus
+from backend.services.ai_monitoring_service import get_ai_monitoring_service, AIMonitoringService
 
 
 # 定义分页响应类型
@@ -155,9 +155,9 @@ async def create_anomaly_detection(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"创建异常检测失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -187,9 +187,9 @@ async def create_lifecycle_prediction(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"创建账户寿命预测失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -220,9 +220,9 @@ async def create_monitoring_rule(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"创建监控规则失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -259,9 +259,9 @@ async def get_anomaly_detections(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取异常检测列表失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -292,9 +292,9 @@ async def get_lifecycle_predictions(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取账户寿命预测列表失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -323,9 +323,9 @@ async def get_monitoring_rules(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取监控规则列表失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -351,9 +351,9 @@ async def update_anomaly_status(
 
         if not anomaly:
             return error_response(
-                code="NOT_FOUND",
+                code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
                 message="异常检测记录不存在",
-                status_code=404
+                status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
             )
 
         return success_response(data=AnomalyDetectionResponse(**ai_service._anomaly_to_dict(anomaly)), message="异常状态更新成功")
@@ -362,9 +362,9 @@ async def update_anomaly_status(
         raise
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"更新异常状态失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -402,9 +402,9 @@ async def simulate_anomaly_detection(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"模拟异常检测失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -429,9 +429,9 @@ async def get_ai_dashboard(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取AI监控仪表板数据失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -471,7 +471,7 @@ async def get_ai_statistics(
 
     except Exception as e:
         return error_response(
-            code="INTERNAL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取AI监控统计信息失败: {str(e)}",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )

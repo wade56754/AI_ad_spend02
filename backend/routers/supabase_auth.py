@@ -8,14 +8,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, Dict, Any, List
 
-from services.supabase_auth_service import supabase_auth_service
-from deps.supabase_auth import (
+from backend.services.supabase_auth_service import supabase_auth_service
+from backend.deps.supabase_auth import (
     get_current_user,
     get_current_active_user,
     require_admin,
     require_finance
 )
-from core.response import success_response, error_response
+from backend.core.response import success_response, error_response
+from backend.core.error_codes import AuthErrorCodes, SystemErrorCodes, BusinessErrorCodes
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 
@@ -110,14 +111,14 @@ async def register(request: RegisterRequest):
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=AuthErrorCodes.REGISTER_FAILED.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="注册失败",
-            code="REGISTER_FAILED",
-            status_code=500
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -157,14 +158,14 @@ async def login(
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=AuthErrorCodes.INVALID_CREDENTIALS.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="登录失败",
-            code="LOGIN_FAILED",
-            status_code=500
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -196,8 +197,8 @@ async def logout(
     except Exception as e:
         return error_response(
             message="登出失败",
-            code="LOGOUT_FAILED",
-            status_code=500
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -219,14 +220,14 @@ async def refresh_token(
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=AuthErrorCodes.TOKEN_REFRESH_FAILED.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="令牌刷新失败",
-            code="REFRESH_FAILED",
-            status_code=500
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -286,14 +287,14 @@ async def update_password(
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=AuthErrorCodes.PASSWORD_CHANGE_FAILED.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="密码更新失败",
-            code="UPDATE_PASSWORD_FAILED",
-            status_code=500
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -315,14 +316,14 @@ async def verify_email(request: VerifyEmailRequest):
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=AuthErrorCodes.TOKEN_INVALID.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="邮箱验证失败",
-            code="VERIFY_EMAIL_FAILED",
-            status_code=500
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -383,7 +384,7 @@ async def update_profile(
     - **notification_settings**: 通知设置
     """
     try:
-        from services.supabase_auth_service import supabase_client
+        from backend.services.supabase_auth_service import supabase_client
 
         # 构建更新数据
         update_data = {
@@ -431,14 +432,14 @@ async def update_profile(
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="更新用户资料失败",
-            code="UPDATE_PROFILE_FAILED",
-            status_code=500
+            code=BusinessErrorCodes.UPDATE_PROFILE_FAILED.code,
+            status_code=BusinessErrorCodes.UPDATE_PROFILE_FAILED.status_code
         )
 
 
@@ -467,8 +468,8 @@ async def get_user_sessions(
     except Exception as e:
         return error_response(
             message="获取会话列表失败",
-            code="GET_SESSIONS_FAILED",
-            status_code=500
+            code=BusinessErrorCodes.GET_SESSIONS_FAILED.code,
+            status_code=BusinessErrorCodes.GET_SESSIONS_FAILED.status_code
         )
 
 
@@ -495,8 +496,8 @@ async def revoke_session(
     except Exception as e:
         return error_response(
             message="撤销会话失败",
-            code="REVOKE_SESSION_FAILED",
-            status_code=500
+            code=BusinessErrorCodes.REVOKE_SESSION_FAILED.code,
+            status_code=BusinessErrorCodes.REVOKE_SESSION_FAILED.status_code
         )
 
 
@@ -528,8 +529,8 @@ async def revoke_all_sessions(
     except Exception as e:
         return error_response(
             message="撤销会话失败",
-            code="REVOKE_SESSIONS_FAILED",
-            status_code=500
+            code=BusinessErrorCodes.REVOKE_SESSIONS_FAILED.code,
+            status_code=BusinessErrorCodes.REVOKE_SESSIONS_FAILED.status_code
         )
 
 
@@ -545,7 +546,7 @@ async def activate_user(
     - **user_id**: 用户ID
     """
     try:
-        from services.supabase_auth_service import supabase_client
+        from backend.services.supabase_auth_service import supabase_client
 
         admin_client = supabase_client.get_admin_client()
         response = admin_client.table("user_profiles")\
@@ -566,14 +567,14 @@ async def activate_user(
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="激活用户失败",
-            code="ACTIVATE_USER_FAILED",
-            status_code=500
+            code=BusinessErrorCodes.ACTIVATE_USER_FAILED.code,
+            status_code=BusinessErrorCodes.ACTIVATE_USER_FAILED.status_code
         )
 
 
@@ -588,7 +589,7 @@ async def deactivate_user(
     - **user_id**: 用户ID
     """
     try:
-        from services.supabase_auth_service import supabase_client
+        from backend.services.supabase_auth_service import supabase_client
 
         admin_client = supabase_client.get_admin_client()
         response = admin_client.table("user_profiles")\
@@ -609,12 +610,12 @@ async def deactivate_user(
     except HTTPException as e:
         return error_response(
             message=e.detail,
-            code=e.status_code,
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             status_code=e.status_code
         )
     except Exception as e:
         return error_response(
             message="停用用户失败",
-            code="DEACTIVATE_USER_FAILED",
-            status_code=500
+            code=BusinessErrorCodes.DEACTIVATE_USER_FAILED.code,
+            status_code=BusinessErrorCodes.DEACTIVATE_USER_FAILED.status_code
         )

@@ -13,14 +13,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field
 
-from core.db import get_db
-from core.logging import log_requests
-from core.error_codes import AuthErrorCodes
-from core.security import AuthenticatedUser
-from deps.supabase_auth import get_current_user
-from services.supabase_auth_service import supabase_auth_service
-from utils.response import success_response, error_response
-from exceptions import ValidationError, AuthenticationError
+from backend.core.db import get_db
+from backend.core.logging import log_requests
+from backend.core.error_codes import AuthErrorCodes, SystemErrorCodes, ValidationErrorCodes, BusinessErrorCodes
+from backend.core.security import AuthenticatedUser
+from backend.deps.supabase_auth import get_current_user
+from backend.services.supabase_auth_service import supabase_auth_service
+from backend.core.response import success_response, error_response
+from backend.exceptions import ValidationError, AuthenticationError
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/auth", tags=["认证"])
@@ -246,9 +246,9 @@ async def logout_all(
 
     except Exception as e:
         return error_response(
-            code="AUTH_LOGOUT_ALL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="全设备登出失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -282,9 +282,9 @@ async def get_current_user_info(
 
     except Exception as e:
         return error_response(
-            code=AuthErrorCodes.AUTHENTICATION_ERROR.code,
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取用户信息失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -369,15 +369,15 @@ async def reset_password(
 
     except ValidationError as e:
         return error_response(
-            code=e.error_code,
+            code=ValidationErrorCodes.INVALID_INPUT.code,
             message=str(e),
-            status_code=400
+            status_code=ValidationErrorCodes.INVALID_INPUT.status_code
         )
     except Exception as e:
         return error_response(
-            code="AUTH_RESET_PASSWORD_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="密码重置失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -398,16 +398,16 @@ async def verify_email(
             )
         else:
             return error_response(
-                code="AUTH_VERIFY_EMAIL_FAILED",
+                code=AuthErrorCodes.TOKEN_INVALID.code,
                 message="验证链接无效或已过期",
                 status_code=400
             )
 
     except Exception as e:
         return error_response(
-            code="AUTH_VERIFY_EMAIL_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="邮箱验证失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -428,16 +428,16 @@ async def resend_verification(
             )
         else:
             return error_response(
-                code="AUTH_ALREADY_VERIFIED",
+                code=BusinessErrorCodes.OPERATION_FAILED.code,
                 message="邮箱已验证",
                 status_code=400
             )
 
     except Exception as e:
         return error_response(
-            code="AUTH_RESEND_VERIFICATION_ERROR",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="发送验证邮件失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -499,7 +499,7 @@ async def login_oauth(
 
     except AuthenticationError as e:
         return error_response(
-            code=e.error_code,
+            code=AuthErrorCodes.INVALID_CREDENTIALS.code,
             message=str(e),
             status_code=401
         )

@@ -12,14 +12,14 @@ import json
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc, case
 
-from core.db import get_db_session
-from core.error_codes import ErrorCode
-from core.response import ApiResponse, PaginatedResponse
-from models.ai_monitoring import (
+from backend.core.db import get_db_session
+from backend.core.error_codes import ErrorCode
+from backend.core.response import ApiResponse, PaginatedResponse
+from backend.models.ai_monitoring import (
     AIAnomalyDetection, AccountLifecyclePrediction, MonitoringRule,
     AnomalyType, AnomalySeverity, PredictionStatus, RuleStatus
 )
-from services.audit_service import AuditService, BusinessAction
+from backend.services.audit_service import AuditService, BusinessAction
 
 
 class AIMonitoringService:

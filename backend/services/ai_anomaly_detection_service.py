@@ -11,8 +11,8 @@ import statistics
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, desc
 
-from models.daily_report import DailyReport
-from models.ad_account import AdAccount
+from backend.models import DailyReport
+from backend.models import AdAccount
 
 
 class AIAnomalyDetectionService:

@@ -265,6 +265,161 @@ class BusinessErrorCodes:
         400
     )
 
+    # 用户管理相关 (400-499)
+    UPDATE_PROFILE_FAILED = ErrorCode(
+        "BIZ_400",
+        "更新用户资料失败",
+        500
+    )
+
+    ACTIVATE_USER_FAILED = ErrorCode(
+        "BIZ_401",
+        "激活用户失败",
+        500
+    )
+
+    DEACTIVATE_USER_FAILED = ErrorCode(
+        "BIZ_402",
+        "停用用户失败",
+        500
+    )
+
+    # 通用业务操作失败 (900-999)
+    OPERATION_FAILED = ErrorCode(
+        "BIZ_900",
+        "操作失败",
+        500
+    )
+
+    GET_SESSIONS_FAILED = ErrorCode(
+        "BIZ_901",
+        "获取会话列表失败",
+        500
+    )
+
+    REVOKE_SESSION_FAILED = ErrorCode(
+        "BIZ_902",
+        "撤销会话失败",
+        500
+    )
+
+    REVOKE_SESSIONS_FAILED = ErrorCode(
+        "BIZ_903",
+        "撤销所有会话失败",
+        500
+    )
+
+    # 文件操作相关 (500-599)
+    INVALID_FILE_TYPE = ErrorCode(
+        "BIZ_500",
+        "文件类型无效",
+        400
+    )
+
+    FILE_TOO_LARGE = ErrorCode(
+        "BIZ_501",
+        "文件过大",
+        400
+    )
+
+    EXCEL_PARSE_ERROR = ErrorCode(
+        "BIZ_502",
+        "Excel解析失败",
+        400
+    )
+
+    EMPTY_FILE = ErrorCode(
+        "BIZ_503",
+        "文件为空",
+        400
+    )
+
+    MISSING_COLUMNS = ErrorCode(
+        "BIZ_504",
+        "缺少必要列",
+        400
+    )
+
+    EXPORT_LIMIT_EXCEEDED = ErrorCode(
+        "BIZ_505",
+        "导出数量超限",
+        400
+    )
+
+    NO_DATA = ErrorCode(
+        "BIZ_506",
+        "无数据",
+        404
+    )
+
+    EXPORT_ERROR = ErrorCode(
+        "BIZ_507",
+        "导出失败",
+        500
+    )
+
+    IMPORT_ERROR = ErrorCode(
+        "BIZ_508",
+        "导入失败",
+        500
+    )
+
+    # 账本相关 (600-699)
+    LEDGER_CREATE_ERROR = ErrorCode(
+        "BIZ_600",
+        "账本创建失败",
+        500
+    )
+
+    LEDGER_QUERY_ERROR = ErrorCode(
+        "BIZ_601",
+        "账本查询失败",
+        500
+    )
+
+    TRANSACTION_NOT_FOUND = ErrorCode(
+        "BIZ_602",
+        "交易记录不存在",
+        404
+    )
+
+    LEDGER_UPDATE_ERROR = ErrorCode(
+        "BIZ_603",
+        "账本更新失败",
+        500
+    )
+
+    BALANCE_QUERY_ERROR = ErrorCode(
+        "BIZ_604",
+        "余额查询失败",
+        500
+    )
+
+    BUDGET_QUERY_ERROR = ErrorCode(
+        "BIZ_605",
+        "预算查询失败",
+        500
+    )
+
+    BUDGET_CREATE_ERROR = ErrorCode(
+        "BIZ_606",
+        "预算创建失败",
+        500
+    )
+
+    STATISTICS_QUERY_ERROR = ErrorCode(
+        "BIZ_607",
+        "统计查询失败",
+        500
+    )
+
+    # 系统健康检查 (700-799)
+    READY_CHECK_FAILED = ErrorCode(
+        "BIZ_700",
+        "服务就绪检查失败",
+        503
+    )
+
 
 # ============================================
 # 系统错误码 (SYS_xxx)
@@ -379,6 +534,43 @@ class ValidationErrorCodes:
         400
     )
 
+    # 数据验证详细错误 (100-199)
+    MISSING_REQUIRED_COLUMN = ErrorCode(
+        "VALIDATION_100",
+        "缺少必填列",
+        400
+    )
+
+    EMPTY_REQUIRED_FIELD = ErrorCode(
+        "VALIDATION_101",
+        "必填字段为空",
+        400
+    )
+
+    STRING_TOO_LONG = ErrorCode(
+        "VALIDATION_102",
+        "字符串过长",
+        400
+    )
+
+    TYPE_CONVERSION_ERROR = ErrorCode(
+        "VALIDATION_103",
+        "类型转换错误",
+        400
+    )
+
+    PARSE_ERROR = ErrorCode(
+        "VALIDATION_104",
+        "解析错误",
+        400
+    )
+
+    VALIDATION_ERROR = ErrorCode(
+        "VALIDATION_105",
+        "验证错误",
+        400
+    )
+
 
 # ============================================
 # 错误码字典 (用于快速查找)
@@ -423,6 +615,31 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "BIZ_201": BusinessErrorCodes.DATE_IN_FUTURE,
     "BIZ_300": BusinessErrorCodes.INVALID_STATUS,
     "BIZ_301": BusinessErrorCodes.STATUS_TRANSITION_NOT_ALLOWED,
+    "BIZ_400": BusinessErrorCodes.UPDATE_PROFILE_FAILED,
+    "BIZ_401": BusinessErrorCodes.ACTIVATE_USER_FAILED,
+    "BIZ_402": BusinessErrorCodes.DEACTIVATE_USER_FAILED,
+    "BIZ_900": BusinessErrorCodes.OPERATION_FAILED,
+    "BIZ_901": BusinessErrorCodes.GET_SESSIONS_FAILED,
+    "BIZ_902": BusinessErrorCodes.REVOKE_SESSION_FAILED,
+    "BIZ_903": BusinessErrorCodes.REVOKE_SESSIONS_FAILED,
+    "BIZ_500": BusinessErrorCodes.INVALID_FILE_TYPE,
+    "BIZ_501": BusinessErrorCodes.FILE_TOO_LARGE,
+    "BIZ_502": BusinessErrorCodes.EXCEL_PARSE_ERROR,
+    "BIZ_503": BusinessErrorCodes.EMPTY_FILE,
+    "BIZ_504": BusinessErrorCodes.MISSING_COLUMNS,
+    "BIZ_505": BusinessErrorCodes.EXPORT_LIMIT_EXCEEDED,
+    "BIZ_506": BusinessErrorCodes.NO_DATA,
+    "BIZ_507": BusinessErrorCodes.EXPORT_ERROR,
+    "BIZ_508": BusinessErrorCodes.IMPORT_ERROR,
+    "BIZ_600": BusinessErrorCodes.LEDGER_CREATE_ERROR,
+    "BIZ_601": BusinessErrorCodes.LEDGER_QUERY_ERROR,
+    "BIZ_602": BusinessErrorCodes.TRANSACTION_NOT_FOUND,
+    "BIZ_603": BusinessErrorCodes.LEDGER_UPDATE_ERROR,
+    "BIZ_604": BusinessErrorCodes.BALANCE_QUERY_ERROR,
+    "BIZ_605": BusinessErrorCodes.BUDGET_QUERY_ERROR,
+    "BIZ_606": BusinessErrorCodes.BUDGET_CREATE_ERROR,
+    "BIZ_607": BusinessErrorCodes.STATISTICS_QUERY_ERROR,
+    "BIZ_700": BusinessErrorCodes.READY_CHECK_FAILED,
 
     # 系统错误
     "SYS_001": SystemErrorCodes.INTERNAL_ERROR,
@@ -444,6 +661,12 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "VALIDATION_004": ValidationErrorCodes.INVALID_PHONE,
     "VALIDATION_005": ValidationErrorCodes.VALUE_OUT_OF_RANGE,
     "VALIDATION_006": ValidationErrorCodes.INVALID_ENUM_VALUE,
+    "VALIDATION_100": ValidationErrorCodes.MISSING_REQUIRED_COLUMN,
+    "VALIDATION_101": ValidationErrorCodes.EMPTY_REQUIRED_FIELD,
+    "VALIDATION_102": ValidationErrorCodes.STRING_TOO_LONG,
+    "VALIDATION_103": ValidationErrorCodes.TYPE_CONVERSION_ERROR,
+    "VALIDATION_104": ValidationErrorCodes.PARSE_ERROR,
+    "VALIDATION_105": ValidationErrorCodes.VALIDATION_ERROR,
 }
 
 

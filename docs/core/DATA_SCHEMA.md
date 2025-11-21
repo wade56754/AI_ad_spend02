@@ -1,14 +1,15 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
-> **版本**: v5.0  
-> **更新日期**: 2025‑11‑17  
-> **维护团队**: 系统架构团队（数据库规范守门人）  
-> **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。  
-> **互锁 SoT**:  
-> - 实现规范 → `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md`  
-> - 状态机 → `docs/core/STATE_MACHINE.md`（任何状态字段必须引用对应状态机）  
-> - API 流程 → `docs/core/API_DEVELOPMENT_FLOW.md`  
+> **版本**: v5.1
+> **更新日期**: 2025‑01‑21
+> **维护团队**: 系统架构团队（数据库规范守门人）
+> **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
+> **互锁 SoT**:
+> - 实现规范 → `docs/core/AI_AD_SYSTEM_MASTER_SPEC_v2.2.md` (v2.2最新版)
+> - 状态机 → `docs/core/STATE_MACHINE.md`（任何状态字段必须引用对应状态机）
+> - API 流程 → `docs/core/API_DEVELOPMENT_FLOW.md`
 > - 错误码 → `docs/ERROR_CODES.md`
+> - 业务需求 → `docs/core/BRD_chapter1_v3.1.md` (BRD v3.1基线)
 
 ---
 
@@ -26,7 +27,7 @@
 - **主键/外键**:  
   - 用户、渠道等跨系统实体：主键使用 UUID（对齐 Supabase/外部系统 ID）  
   - 核心业务表（项目、账户、日报、充值、账本、对账等）：主键统一使用 BIGSERIAL  
-  - 所有外键字段类型必须与被引用主键完全一致（如引用 `user_profiles.id` 必须是 UUID，引用 `projects.id` 必须是 BIGINT）
+  - 所有外键字段类型必须与被引用主键完全一致（如引用 `users.id` 必须是 UUID，引用 `projects.id` 必须是 BIGINT）
 
 ### 1.2 字段命名规则
 
@@ -43,7 +44,7 @@
 
 | 表名 | 说明 | 主键 | 状态 |
 | --- | --- | --- | --- |
-| `user_profiles` | Supabase Auth 业务扩展档案 | UUID | implemented |
+| `users` | 业务用户表（与 Supabase Auth 同步） | UUID | implemented |
 | `roles` | 历史角色表/兼容视图 | UUID | legacy |
 | `user_sessions` | 登录会话与安全审计 | BIGSERIAL | implemented |
 | `audit_logs` | 系统级审计日志 | BIGSERIAL | implemented |
@@ -80,7 +81,12 @@
 
 ### 3.1 用户与权限
 
-#### 3.1.1 `user_profiles`（implemented）
+#### 3.1.1 `users`（implemented）
+
+**说明**：
+- `users` 表是业务层的用户资料表，主键为 UUID
+- 主键 `id` 外键关联 `auth.users(id)`（Supabase Auth 内置用户表）
+- `auth.users` 用于认证，`users` 用于业务逻辑（角色、权限等）
 
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
@@ -90,16 +96,16 @@
 | `email` | VARCHAR(255) | 可空 | 冗余字段，方便联查 |
 | `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 仅 `admin/finance/data_operator/account_manager/media_buyer` |
 | `department` / `position` | VARCHAR(100) | | 组织信息 |
-| `account_manager_id` | UUID | FK → `user_profiles.id` | 投手关联户管 |
+| `account_manager_id` | UUID | FK → `users.id` | 投手关联户管 |
 | `is_active` | BOOLEAN | DEFAULT true | 账号可用性 |
 | `is_verified` | BOOLEAN | DEFAULT false | 资料验证状态 |
 | `last_login_at` / `last_login_ip` | TIMESTAMPTZ / VARCHAR(45) | | |
 | `preferences`, `notification_settings`, `profile_metadata` | JSONB | DEFAULT `{}` | 扩展配置 |
 | `timezone`, `language` | VARCHAR | DEFAULT `'UTC'` / `'zh-CN'` | |
 | `created_at` / `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | |
-| `created_by` / `updated_by` | UUID | FK → `user_profiles.id`, 可空 | |
+| `created_by` / `updated_by` | UUID | FK → `users.id`, 可空 | |
 
-索引：`idx_user_profiles_username`, `idx_user_profiles_role`, `idx_user_profiles_account_manager`, `idx_user_profiles_created_at`, `idx_user_profiles_last_login`.
+索引：`idx_users_username`, `idx_users_role`, `idx_users_account_manager`, `idx_users_created_at`, `idx_users_last_login`.
 
 #### 3.1.2 `roles`（legacy）
 
@@ -110,7 +116,7 @@
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `id` BIGSERIAL PK | |
-| `user_id` UUID FK → `user_profiles.id` | |
+| `user_id` UUID FK → `users.id` | |
 | `session_id` UUID UNIQUE | Supabase Session ID |
 | `ip_address` INET | |
 | `user_agent` TEXT | |
@@ -128,7 +134,7 @@
 | `module` VARCHAR(100) | 业务模块名 |
 | `action` VARCHAR(50) | `create/update/delete/approve/...` |
 | `entity_id` VARCHAR(64) | 关联实体主键或编号 |
-| `performed_by` UUID FK → `user_profiles.id` | |
+| `performed_by` UUID FK → `users.id` | |
 | `role` VARCHAR(20) | 操作者角色 |
 | `ip_address` INET / `user_agent` TEXT | | |
 | `payload_before` / `payload_after` JSONB | | |
@@ -147,11 +153,12 @@
 | `client_name` / `client_company` VARCHAR(200) NOT NULL | 客户联系人/公司 |
 | `description` TEXT | |
 | `status` VARCHAR(20) | 参考“项目状态机”，典型值如 draft/active/suspended/archived，具体枚举以 STATE_MACHINE.md 为准 |
-| `account_manager_id` UUID FK → `user_profiles.id` | |
+| `account_manager_id` UUID FK → `users.id` | |
 | `budget_total` DECIMAL(15,2) | DEFAULT 0.00 |
 | `budget_currency` VARCHAR(10) | DEFAULT 'CNY' |
+| `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 项目单粉价格(Per Lead),用于计算粉数收入,公式: `revenue = conversions_final × unit_price` |
 | `start_date` / `end_date` DATE | | |
-| `created_by` / `updated_by` UUID FK → `user_profiles.id` | |
+| `created_by` / `updated_by` UUID FK → `users.id` | |
 | `created_at` / `updated_at` TIMESTAMPTZ | DEFAULT NOW() | |
 
 索引：`idx_projects_name`, `idx_projects_status`, `idx_projects_account_manager`.
@@ -162,7 +169,7 @@
 | --- | --- | --- |
 | `id` BIGSERIAL PK | |
 | `project_id` BIGINT FK → `projects.id` ON DELETE CASCADE | |
-| `user_id` UUID FK → `user_profiles.id` | |
+| `user_id` UUID FK → `users.id` | |
 | `role` VARCHAR(20) | 项目内角色，与全局角色一致 |
 | `permissions` JSONB DEFAULT `{}` | 扩展权限 |
 | `joined_at` TIMESTAMPTZ DEFAULT NOW() | |
@@ -183,7 +190,7 @@
 | `platform` VARCHAR(50) | 平台（如 Facebook/Google） |
 | `status` VARCHAR(20) | 参考“渠道状态机”，具体枚举以 STATE_MACHINE.md 为准 |
 | `risk_level` VARCHAR(20) | 固定枚举 `low/medium/high` |
-| `created_by` UUID FK → `user_profiles.id` | |
+| `created_by` UUID FK → `users.id` | |
 | `created_at` / `updated_at` TIMESTAMPTZ | | |
 | `metadata` JSONB | | |
 
@@ -205,7 +212,7 @@
 | --- | --- | --- |
 | `id` UUID PK | |
 | `channel_id` UUID FK → `channels.id` | |
-| `reviewer_id` UUID FK → `user_profiles.id` | |
+| `reviewer_id` UUID FK → `users.id` | |
 | `review_status` VARCHAR(20) | 参考“渠道评审状态机”，典型值如 draft/pending/approved/rejected，具体枚举以 STATE_MACHINE.md 为准 |
 | `score` JSONB | 评估分项 |
 | `comments` TEXT | |
@@ -217,8 +224,8 @@
 | --- | --- | --- |
 | `id` UUID PK | |
 | `channel_id` UUID FK → `channels.id` | |
-| `requested_by` UUID FK → `user_profiles.id` | |
-| `approved_by` UUID FK → `user_profiles.id`, 可空 | |
+| `requested_by` UUID FK → `users.id` | |
+| `approved_by` UUID FK → `users.id`, 可空 | |
 | `status` VARCHAR(20) | 参考“账户申请状态机”，具体枚举以 STATE_MACHINE.md 为准 |
 | `request_payload` JSONB | 申请内容 |
 | `created_at` / `updated_at` TIMESTAMPTZ | | |
@@ -245,15 +252,16 @@
 | `id` BIGSERIAL PK | |
 | `project_id` BIGINT FK → `projects.id` | |
 | `channel_id` UUID FK → `channels.id` | |
-| `owner_id` UUID FK → `user_profiles.id` | 账户负责人，通常应为 `account_manager` 或 `media_buyer`，由 Service 层校验 |
+| `supplier_id` UUID | 可空, 所属供应商ID(用于死号迁移规则判断:同供应商vs跨供应商),FK → `suppliers.id`(suppliers表待定义) |
+| `owner_id` UUID FK → `users.id` | 账户负责人，通常应为 `account_manager` 或 `media_buyer`，由 Service 层校验 |
 | `name` VARCHAR(200) | 账户别名 |
 | `account_code` VARCHAR(100) | 平台编号，UNIQUE |
-| `status` VARCHAR(20) | 参考“账户生命周期状态机”，典型值如 new/testing/active/suspended/dead/archived，具体枚举以 STATE_MACHINE.md 为准 |
+| `status` VARCHAR(20) | 参考"账户生命周期状态机"，典型值如 new/testing/active/suspended/dead/archived，具体枚举以 STATE_MACHINE.md 为准 |
 | `status_reason` TEXT | |
 | `spend_limit` DECIMAL(15,2) | DEFAULT 0.00 |
 | `currency` VARCHAR(10) | DEFAULT 'CNY' |
 | `timezone` VARCHAR(50) | DEFAULT 'Asia/Shanghai' |
-| `created_by` / `updated_by` UUID | FK → `user_profiles.id` |
+| `created_by` / `updated_by` UUID | FK → `users.id` |
 | `created_at` / `updated_at` TIMESTAMPTZ | | |
 
 索引：`idx_ad_accounts_project`, `idx_ad_accounts_channel`, `idx_ad_accounts_status`.
@@ -276,7 +284,7 @@
 | --- | --- | --- |
 | `id` BIGSERIAL PK | |
 | `ad_account_id` BIGINT FK → `ad_accounts.id` ON DELETE CASCADE | |
-| `author_id` UUID FK → `user_profiles.id` | |
+| `author_id` UUID FK → `users.id` | |
 | `note_type` VARCHAR(20) | 固定枚举，如 `general`, `risk`, `finance` |
 | `content` TEXT | |
 | `created_at` TIMESTAMPTZ | DEFAULT NOW() |
@@ -294,12 +302,20 @@
 | `ad_account_id` BIGINT FK → `ad_accounts.id` | |
 | `campaign_name`, `ad_group_name`, `ad_creative_name` VARCHAR(200) | 可空 |
 | `impressions`, `clicks`, `conversions`, `new_follows` INTEGER | DEFAULT 0 |
-| `spend` DECIMAL(15,2) | DEFAULT 0.00 |
+| `conversions_raw` INTEGER | DEFAULT 0, 投手提交的原始粉数(T+0 23:59前),用于趋势风控(TF-001/002/003规则),不参与计费 |
+| `conversions_final` INTEGER | DEFAULT 0, 运营确认的最终粉数(T+1 14:00前),计费基准,公式: `revenue = conversions_final × unit_price` |
+| `spend` DECIMAL(15,2) | DEFAULT 0.00, 投手提交的原始消耗(raw_spend) |
+| `real_spend` DECIMAL(15,2) | DEFAULT 0.00, 运营录入的真实消耗(T+1 12:00前),成本核算基准,公式: `cost = real_spend + fee` |
+| `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 单粉价格,从项目继承(`projects.unit_price`),用于计算收入 |
 | `cpc`, `cpa`, `ctr`, `roi` DECIMAL(12,4) | 可空 |
-| `status` VARCHAR(20) | 参考“日报状态机”，典型值如 draft/pending/approved/rejected，具体枚举以 STATE_MACHINE.md 为准 |
+| `status` VARCHAR(20) | 参考"粉数确认状态机"(STATE_MACHINE.md 第8章)，合法取值: `raw_submitted/trend_pending/trend_ok/trend_flagged/trend_resolved/final_pending/final_confirmed/final_locked`，终态为 `final_locked` |
+| `trend_flag` VARCHAR(20) | DEFAULT 'normal', 趋势异常标记, 固定枚举: `normal/flagged/resolved` |
+| `trend_flag_reason` TEXT | 可空, 风控规则触发原因(如"TF-001: 粉数骤降50%") |
+| `trend_resolution_note` TEXT | 可空, 运营复核说明(`data_operator`填写) |
+| `final_locked_at` TIMESTAMPTZ | 可空, 计费锁定时间戳(系统自动设置,`status=final_locked`时) |
 | `notes` TEXT | |
 | `attachments` JSONB | |
-| `created_by`, `updated_by`, `submitted_by`, `audit_user_id` UUID | FK → `user_profiles.id` |
+| `created_by`, `updated_by`, `submitted_by`, `audit_user_id` UUID | FK → `users.id` |
 | `created_at`, `updated_at`, `submitted_at`, `approved_at` TIMESTAMPTZ | | |
 
 约束：`UNIQUE (report_date, ad_account_id)`。索引：`idx_daily_reports_date`, `idx_daily_reports_account`, `idx_daily_reports_status`, `idx_daily_reports_created_by`.
@@ -324,7 +340,7 @@
 | `request_no` VARCHAR(50) UNIQUE | |
 | `project_id` BIGINT FK → `projects.id` | |
 | `ad_account_id` BIGINT FK → `ad_accounts.id`, 可空 | |
-| `applicant_id` UUID FK → `user_profiles.id` | |
+| `applicant_id` UUID FK → `users.id` | |
 | `amount` DECIMAL(15,2) NOT NULL | |
 | `currency` VARCHAR(10) | DEFAULT 'CNY' |
 | `urgency_level` VARCHAR(20) | 固定枚举 `low/normal/high/urgent`（非状态机） |
@@ -350,17 +366,26 @@
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `id` BIGSERIAL PK | |
-| `project_id` BIGINT FK → `projects.id` | |
+| `ledger_type` VARCHAR(20) | 账本类型, 固定枚举 `PROJECT/SUPPLIER`, PROJECT账本记录项目收入(粉数计费), SUPPLIER账本记录供应商成本(真实消耗) |
+| `project_id` BIGINT FK → `projects.id` | PROJECT账本必填, SUPPLIER账本可空 |
+| `supplier_id` UUID FK → `suppliers.id` | SUPPLIER账本必填, PROJECT账本可空, 所属供应商ID(suppliers表待定义) |
 | `ad_account_id` BIGINT FK → `ad_accounts.id`, 可空 | |
-| `entry_type` VARCHAR(20) | 固定枚举 `topup_received/spend/adjustment/...` |
-| `amount` DECIMAL(15,2) | 金额，借方为正，贷方直接记录负数 |
+| `entry_type` VARCHAR(20) | 固定枚举(5种): `REVENUE`(粉数计费收入,PROJECT账本), `COST`(真实消耗成本,SUPPLIER账本), `TRANSFER_OUT`(死号余额迁出,同供应商), `TRANSFER_IN`(死号余额迁入,同供应商), `REVERSAL`(红冲修正,final_locked后修正) |
+| `amount` DECIMAL(15,2) | 金额，借方为正，贷方直接记录负数, 红冲时为负数 |
 | `currency` VARCHAR(10) | |
-| `reference_id` BIGINT | 关联 `topup_transactions` 或 `daily_reports` |
+| `reference_id` BIGINT | 关联 `topup_transactions` 或 `daily_reports` 或原Ledger记录ID(红冲时) |
 | `occurred_at` TIMESTAMPTZ | |
-| `created_by` UUID FK → `user_profiles.id` | |
+| `created_by` UUID FK → `users.id` | |
 | `notes` TEXT | |
 
-索引：`idx_ledger_project`, `idx_ledger_account`, `idx_ledger_entry_type`.
+**约束**: `ledger_type=PROJECT`时`project_id`必填, `ledger_type=SUPPLIER`时`supplier_id`必填
+
+**计费公式** (BRD v3.1第7-8章):
+- PROJECT账本收入: `revenue = conversions_final × unit_price`
+- SUPPLIER账本成本: `cost = real_spend + fee`
+- 项目毛利: `profit = revenue - cost`
+
+索引：`idx_ledger_project`, `idx_ledger_supplier`, `idx_ledger_entry_type`, `idx_ledger_type`.
 
 ---
 
@@ -390,13 +415,14 @@
 2. **组合索引**：针对高频过滤场景建立，如 `daily_reports(report_date, status)`、`topup_requests(project_id, status)`、`ledger_entries(project_id, occurred_at)`。  
 3. **CHECK 约束**：角色字段仅允许 5 个合法值；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
 4. **外键一致性**：外键字段类型必须与被引用主键一致，迁移旧字段时需同步更新 FK 定义与索引。  
-5. **触发器**：`user_profiles` 使用 `update_user_profiles_updated_at`；其他表如需类似逻辑必须在本文件登记。
+5. **触发器**：`users` 使用 `update_users_updated_at`；其他表如需类似逻辑必须在本文件登记。
 
 ---
 
 ## 5. 历史兼容与规划说明
 
-- **`users` 表/视图**：迁移至 Supabase Auth 后不再直接写入，旧代码通过视图映射到 `user_profiles`，并逐步移除。  
+- **`users` 表**：业务层用户资料表，主键为 UUID，外键关联 `auth.users(id)`。`auth.users` 用于认证（Supabase Auth 内置用户表），`users` 用于业务逻辑（角色、权限、扩展信息等）。
+- **历史兼容**：旧代码中可能使用 `user_profiles` 表名，已统一改为 `users`。如发现遗留的 `user_profiles` 引用，请更新为 `users`。所有外键必须指向 `users.id`（UUID），不再使用 `user_profiles`。  
 - **旧角色名**：`manager` = `account_manager`，`data_clerk` = `data_operator`。历史数据可读，新增逻辑禁止使用旧名。  
 - **`roles` 表**：标记为 `status: legacy`，仅用于兼容查询。  
 - **RLS**：部分迁移脚本包含 `ENABLE ROW LEVEL SECURITY`，当前部署统一关闭（`ENABLE_RLS=false`）；若未来启用须同步更新本文件与实现 SoT。  

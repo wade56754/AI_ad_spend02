@@ -12,15 +12,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from core.db import Base, get_db_session
-from core.security import AuthenticatedUser
-from models.ledger import TransactionType, TransactionStatus
-from models.reconciliation_extended import ReconciliationStatus, DifferenceStatus
-from models.ai_monitoring import AnomalyType, AnomalySeverity, PredictionStatus
-from services.ledger_service import LedgerService
-from services.reconciliation_service_extended import ReconciliationServiceExtended
-from services.ai_monitoring_service import AIMonitoringService
-from services.audit_service import AuditService, BusinessAction
+from backend.core.db import Base, get_db_session
+from backend.core.security import AuthenticatedUser
+from backend.models.ledger import TransactionType, TransactionStatus
+from backend.models.reconciliation_extended import ReconciliationStatus, DifferenceStatus
+from backend.models.ai_monitoring import AnomalyType, AnomalySeverity, PredictionStatus
+from backend.services.ledger_service import LedgerService
+from backend.services.reconciliation_service_extended import ReconciliationServiceExtended
+from backend.services.ai_monitoring_service import AIMonitoringService
+from backend.services.audit_service import AuditService, BusinessAction
 
 
 # 测试配置

@@ -76,7 +76,14 @@
       "Bash(rm:*)",
       "Bash(mkdir:*)",
       "Bash(git pull:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git prune:*)",
+      "Bash(cmd /c \"dir backend\\models\\*.py backend\\models\\*.md 2>nul\")",
+      "Bash(cmd /c \"dir /B /S backend\\models\\*.py 2>nul | findstr /V __pycache__\")",
+      "Bash(cmd /c \"dir /B backend\\alembic\\versions\")",
+      "Bash(cmd /c \"if not exist .github mkdir .github\")",
+      "Bash(cmd /c \"dir /B d:\\git\\1108\\AI_ad_spend02\\backend\\alembic\\versions\\20251117_*.py\")",
+      "Bash(cmd /c:*)"
     ],
     "deny": [],
     "ask": []

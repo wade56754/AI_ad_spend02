@@ -1,166 +1,537 @@
-# AI广告代投系统 - 开发强制规范
+# AI广告代投系统 - 项目规则总纲（SoT Master）
 
-> **文档版本**: v1.0
-> **文档类型**: 项目强制规范（SoT总纲）
-> **适用范围**: 所有开发工作
+> **文档版本**: v2.0
+> **文档类型**: 项目强制规范（Claude 项目记忆）
+> **适用范围**: 所有开发/重构/生成代码工作
 > **规范级别**: 🔴 强制执行
+> **生效日期**: 2025-11-18
+> **维护责任**: 规则总监 + 系统架构团队
 
 ---
 
-## 📚 文档真相源（SoT）层级结构
+## 📚 一、SoT 文档体系（唯一真相源）
 
-### 1. SoT-Data（数据库唯一真相）
-**文档**: `docs/core/DATA_SCHEMA.md v3.0`
+本项目采用**分层 SoT 架构**，所有开发必须严格遵循以下文档优先级：
 
-- 所有表结构、字段名、字段类型、主外键关系的唯一来源
-- 金额字段统一：`NUMERIC(15,2)`，费率字段：`NUMERIC(5,4)`
-- 时间字段统一：`TIMESTAMP WITH TIME ZONE`
-- 主键统一：`UUID (gen_random_uuid())`
+### 1. SoT-Data: 数据库定义
+**文档**: `docs/core/DATA_SCHEMA.md` (v5.0)
 
-### 2. SoT-State（状态机唯一真相）
-**文档**: `docs/core/STATE_MACHINE.md`
+- **作用**: 数据库字段、表结构、类型定义的唯一来源
+- **核心规则**:
+  - 所有表名、字段名必须与此文档完全一致
+  - 主键规则：UUID（用户/渠道）、BIGSERIAL（业务表）
+  - 金额字段：必须 `DECIMAL(15,2)`
+  - 时间字段：必须 `TIMESTAMPTZ`
+  - 状态字段：枚举值必须引用 `STATE_MACHINE.md`
 
-- 充值流程状态：`draft → pending_review → approved/rejected → pending_payment → paid → posted`
-- 广告账户生命周期：`new → testing → active → suspended → dead → archived`
-- 所有状态转换必须符合此文档定义，禁止自创状态值
+### 2. SoT-State: 状态机定义
+**文档**: `docs/core/STATE_MACHINE.md` (v2.3)
 
-### 3. SoT-Implementation（实现规范唯一真相）
-**文档**: `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md`
+- **作用**: 业务状态枚举和合法流转的唯一来源
+- **核心状态**:
+  - 充值: `draft → pending_review → finance_approve → paid → completed`
+  - 日报: `draft → pending → approved/rejected`
+  - 项目: `draft → active → suspended → archived`
+  - 账户: `new → testing → active → suspended → dead/archived`
+- **铁律**: 禁止自创状态值，所有流转必须记录审计日志
 
-- 合法角色**仅限5个**：`admin`, `finance`, `data_operator`, `account_manager`, `media_buyer`
-- 禁止使用旧角色名：`manager`, `data_clerk`, `trader` 等
-- 技术栈：FastAPI + Supabase PostgreSQL + Next.js
+### 3. SoT-Implementation: 实现规范
+**文档**: `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md` (v3.x)
 
-### 4. SoT-API（API开发流程唯一真相）
-**文档**: `docs/core/API_DEVELOPMENT_FLOW.md v7.0`
+- **作用**: 实现规范、角色权限、架构约束
+- **核心约束**:
+  - 合法角色**仅 5 个**: `admin` | `finance` | `data_operator` | `account_manager` | `media_buyer`
+  - 技术栈: FastAPI + Pydantic v2 + SQLAlchemy (同步) + Supabase Auth + Redis
+  - 前端: Next.js 16.0.2 + TypeScript + Tailwind + shadcn/ui
+  - **当前未启用 RLS**，权限通过 Service 层 RBAC 实现
 
-- **响应格式强制Envelope**: 必须使用 `success_response`/`error_response`，禁止直接返回dict
-- **前端调用强制apiFetch**: 禁止使用原生fetch或其他HTTP库，必须通过FastAPI BFF
-- **开发顺序强制**: Schema → Service → Router → Test → Exception Handler
-- 金额类型强制：Python用`Decimal`，TypeScript用`number`（展示）/`string`（传输）
+### 4. SoT-API: API 开发流程
+**文档**: `docs/core/API_DEVELOPMENT_FLOW.md` (v7.0)
 
----
-
-## 🚫 五大不可违背规则
-
-1. **数据库字段禁止自创** - 所有字段必须在DATA_SCHEMA.md中定义
-2. **角色限定为5个** - 使用旧角色名视为错误
-3. **状态值禁止自创** - 必须符合STATE_MACHINE.md定义
-4. **前端禁止绕过BFF** - 必须通过apiFetch调用FastAPI，禁止直连Supabase
-5. **API响应禁止裸数据** - 必须使用Envelope格式
-
----
-
-## 🏗️ 架构约束
-
-- **认证**: Supabase Auth（前端）+ JWT验证（后端）
-- **数据访问**: 前端通过FastAPI BFF，后端通过SQLAlchemy访问PostgreSQL
-- **禁止前端直接操作数据库**（除Supabase Auth外）
-- **所有业务逻辑必须在后端实现**
+- **作用**: API 开发流程、响应格式、错误处理规范
+- **强制流程**: Schema → Service → Router → Test → Exception Handler
+- **响应格式**: 必须使用 `success_response`/`error_response` Envelope
+- **前端调用**: 必须使用 `apiFetch`（来自 `lib/api.ts`）
 
 ---
 
-## 💻 代码生成规则
+## 🔴 二、五大不可违背铁律
 
-- 所有模型必须与DATA_SCHEMA.md完全一致
-- 外键必须指向实际存在的表（如`users.id`，非虚构的`user_profiles.id`）
-- 时间字段必须使用`DateTime(timezone=True)`
-- 金额字段必须使用`Numeric(15, 2)`
-- CHECK约束必须与DATA_SCHEMA.md定义一致
+### 1. 字段禁止自创
+**规则**: 所有表名、字段名必须在 `DATA_SCHEMA.md` 中定义
+
+```markdown
+❌ 错误: 使用了不存在的字段 `topup_amount`
+✅ 正确: 查找 DATA_SCHEMA.md § 3.4.1，使用 `amount`
+```
+
+### 2. 角色限定为 5 个
+**规则**: 仅允许使用 5 个标准角色，禁止旧角色名
+
+```python
+# ✅ 正确
+VALID_ROLES = ["admin", "finance", "data_operator", "account_manager", "media_buyer"]
+
+# ❌ 错误（历史兼容，禁止在新代码中使用）
+OLD_ROLES = ["manager", "data_clerk", "trader"]
+```
+
+**历史映射**（仅用于理解旧代码）:
+- `data_clerk` → `data_operator`
+- `manager` → `account_manager`
+- `recharge_requests` → `topup_requests`
+
+### 3. 状态值禁止自创
+**规则**: 所有状态必须符合 `STATE_MACHINE.md` 定义
+
+```markdown
+❌ 错误: 使用了自创状态 `processing`
+✅ 正确: 查找 STATE_MACHINE.md § 充值申请状态机，使用 `pending_review`
+```
+
+### 4. 前端禁止绕过 BFF
+**规则**: 前端必须通过 `apiFetch` 调用 FastAPI，禁止直连数据库
+
+```typescript
+// ❌ 错误
+const data = await fetch('/api/...')
+
+// ❌ 错误
+const { data } = await supabase.from('projects').select('*')
+
+// ✅ 正确
+const data = await apiFetch('/api/v1/projects')
+```
+
+### 5. API 响应禁止裸数据
+**规则**: 必须使用 Envelope 格式
+
+```python
+# ❌ 错误
+return {"id": 1, "name": "..."}
+
+# ✅ 正确
+return success_response(
+    data={"id": 1, "name": "..."},
+    message="操作成功"
+)
+```
 
 ---
 
-## ✅ AI 自检清单（每次生成代码前必查）
+## 🏗️ 三、技术栈约束（不可变更）
 
-### 🔍 数据层检查
-- [ ] 所有表名是否在`DATA_SCHEMA.md § 2`中存在？
-- [ ] 所有字段名是否在对应表定义中存在？
-- [ ] 字段类型是否与DATA_SCHEMA.md完全一致？
-  - 金额：`NUMERIC(15,2)` / `Decimal(15, 2)`
-  - 费率：`NUMERIC(5,4)` / `Decimal(5, 4)`
-  - 时间：`TIMESTAMP WITH TIME ZONE` / `DateTime(timezone=True)`
-  - 主键：`UUID` / `UUID(as_uuid=True)`
-- [ ] 外键关系是否与DATA_SCHEMA.md一致？
-- [ ] CHECK约束是否与DATA_SCHEMA.md一致？
+### 后端技术栈
+- **框架**: FastAPI
+- **验证**: Pydantic v2（`ConfigDict(from_attributes=True)`）
+- **ORM**: SQLAlchemy（同步版本）
+- **认证**: Supabase Auth（**禁止自建 JWT/bcrypt**）
+- **缓存**: Redis（仅速率限制/会话缓存，**无队列/RQ**）
 
-### 👤 角色与权限检查
-- [ ] 使用的角色是否仅限于以下5个？
-  - ✅ `admin`, `finance`, `data_operator`, `account_manager`, `media_buyer`
-  - ❌ 禁止：`manager`, `data_clerk`, `trader`, `clerk` 等旧名
-- [ ] 权限判断逻辑是否参考AI_AD_SYSTEM_MAIN_DOCUMENT.md权限矩阵？
+### 前端技术栈
+- **框架**: Next.js 16.0.2（App Router）
+- **语言**: TypeScript（严格模式）
+- **UI**: shadcn/ui + Tailwind CSS
+- **HTTP**: 必须使用 `apiFetch`（`lib/api.ts`）
 
-### 🔄 状态机检查
-- [ ] 使用的状态值是否在`STATE_MACHINE.md`对应状态机中定义？
-- [ ] 状态转换是否符合状态机流转规则？
-- [ ] 是否有非法的状态跳转？
-
-### 🌐 API层检查
-- [ ] 响应是否使用`success_response`/`error_response`（Envelope格式）？
-- [ ] 前端调用是否通过`apiFetch`而非直接fetch？
-- [ ] 是否绕过FastAPI BFF直接访问数据库？
-- [ ] 错误处理是否使用项目定义的异常类？
-- [ ] 开发顺序是否符合：Schema → Service → Router → Test？
-
-### 📝 命名与规范检查
-- [ ] 表名是否使用小写+下划线（如`ad_spend_daily`）？
-- [ ] 字段名是否使用小写+下划线（如`created_at`）？
-- [ ] 是否混用了新旧表名（如`topups` vs `topup_requests`）？
-- [ ] 是否发明了不在SoT中的辅助表？
-
-### 🚫 绝对禁止事项
-- [ ] 是否创建了不在DATA_SCHEMA.md中的表？
-- [ ] 是否创建了不在DATA_SCHEMA.md中的字段？
-- [ ] 是否使用了Float处理金额（必须用Decimal）？
-- [ ] 是否使用了没有时区的DateTime？
-- [ ] 是否跳过了Envelope直接返回裸数据？
-- [ ] 是否让前端直接访问Supabase做业务操作（Auth除外）？
+### 数据库
+- **类型**: PostgreSQL 15（Supabase 托管）
+- **权限**: **当前未启用 RLS**，通过 Service 层 RBAC 实现
+- **迁移**: Alembic
 
 ---
 
-## 📋 快速参考
+## 👥 四、角色与权限规则
 
-### 合法角色（仅5个）
+### 五角色体系
+| 角色 | 职责 | 关键权限 |
+|------|------|----------|
+| `admin` | 系统管理员 | 全部权限 |
+| `finance` | 财务 | 充值终审、对账、报表 |
+| `data_operator` | 数据运营 | 日报审核、数据管理 |
+| `account_manager` | 账户管理员 | 项目管理、账户分配 |
+| `media_buyer` | 广告投手 | 日报提交、充值申请 |
+
+### 核心权限分工
+**日报流程**:
+- 提交: `media_buyer`
+- 审核: `data_operator`（`admin` 兜底）
+
+**充值流程**:
+- 发起: `media_buyer` / `account_manager`
+- 复核: `data_operator`
+- 终审: `finance`
+- 入账: `finance` / `system`（自动）
+
+**项目管理**:
+- 维护: `account_manager`
+- 干预: `admin`
+
+---
+
+## 💾 五、数据库设计铁律
+
+### 主键规则
+```sql
+-- 跨系统实体（用户/渠道）: UUID
+CREATE TABLE user_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+);
+
+-- 业务表（项目/账户/日报/充值）: BIGSERIAL
+CREATE TABLE projects (
+    id BIGSERIAL PRIMARY KEY
+);
+```
+
+### 数据类型约束
+| 用途 | PostgreSQL | SQLAlchemy | Python | TypeScript |
+|------|-----------|-----------|--------|------------|
+| 金额 | `DECIMAL(15,2)` | `Numeric(15,2)` | `Decimal` | `string`（传输）/`number`（展示） |
+| 时间 | `TIMESTAMPTZ` | `DateTime(timezone=True)` | `datetime` | `string` (ISO 8601) |
+| 主键 | `BIGSERIAL/UUID` | `BigInteger/UUID` | `int/uuid.UUID` | `number/string` |
+
+### 外键一致性
+```python
+# ✅ 正确：外键类型与被引用主键一致
+class Project(Base):
+    id = Column(BigInteger, primary_key=True)  # BIGSERIAL
+    account_manager_id = Column(UUID(as_uuid=True), ForeignKey('user_profiles.id'))  # UUID
+
+# ❌ 错误：外键类型不匹配
+class Project(Base):
+    account_manager_id = Column(BigInteger, ForeignKey('user_profiles.id'))  # 错误！user_profiles.id 是 UUID
+```
+
+---
+
+## 🔄 六、状态机约束
+
+### 核心状态流转
+
+**充值申请** (`topup_requests.status`):
+```
+draft → pending_review → finance_approve → paid → completed
+   ↓                           ↓
+cancelled                   rejected
+```
+
+**日报** (`daily_reports.status`):
+```
+draft → pending → approved
+                    ↓
+                 rejected
+```
+
+**项目** (`projects.status`):
+```
+draft → active → suspended → archived
+```
+
+**广告账户** (`ad_accounts.status`):
+```
+new → testing → active → suspended → dead
+                                      ↓
+                                  archived
+```
+
+### 状态变更规则
+1. **禁止直接 UPDATE**: 必须通过 Service 层业务方法
+2. **必须审计**: 所有流转记录到 `audit_logs`（操作者、时间、旧/新状态、理由）
+3. **权限校验**: 不同角色只能执行允许的状态转换
+4. **终态保护**: 终态不可回退（除 `admin` 审计）
+
+---
+
+## 🌐 七、API 开发强制流程
+
+### 开发顺序（不可跨越）
+```
+1. 查阅 SoT 文档 → 2. 数据库模型 + Alembic 迁移 →
+3. Service 层 + 单元测试 → 4. Router 层 →
+5. 集成/E2E 测试 + 文档
+```
+
+### 统一响应格式（Envelope）
+
+**成功响应**:
+```json
+{
+  "success": true,
+  "data": {"id": 1, "status": "pending"},
+  "message": "操作成功",
+  "code": "SUCCESS",
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-11-18T10:00:00Z"
+}
+```
+
+**错误响应**:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "BIZ_003",
+    "message": "状态转换非法",
+    "details": {
+      "from": "approved",
+      "to": "pending",
+      "help": "请查阅 STATE_MACHINE.md 了解合法的状态转换"
+    }
+  },
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-11-18T10:00:00Z"
+}
+```
+
+### 错误码来源
+**必须来自**: `docs/ERROR_CODES.md`
+
+```python
+# ✅ 正确
+from core.error_codes import AuthErrorCodes, BusinessErrorCodes
+raise BusinessError(code=BusinessErrorCodes.INVALID_STATE_TRANSITION.code)
+
+# ❌ 错误
+raise HTTPException(status_code=400, detail="状态错误")  # 没有使用标准错误码
+```
+
+---
+
+## 🚫 八、AI 使用禁止清单
+
+### 严禁行为（违规立即回退）
+
+1. ❌ **发明新的字段/表/状态/角色/错误码**
+   - 所有定义必须来自 SoT 文档
+
+2. ❌ **引用历史废弃方案**
+   - bolt.new 在线前端
+   - 本地 bcrypt/自建 JWT
+   - 强制启用 RLS
+   - Redis 队列 (RQ/Celery)
+
+3. ❌ **绕过 Service 层**
+   - 在 Router 中直接写 SQL
+   - 直接操作数据库 Session
+
+4. ❌ **前端绕过 BFF**
+   - 使用 `fetch()` 而非 `apiFetch`
+   - 直接调用 Supabase API（Auth 除外）
+
+5. ❌ **使用旧命名**
+   - 角色: `data_clerk` / `manager` / `trader`
+   - 表名: `recharge_requests` / `users`（应用层）
+
+6. ❌ **修改技术栈**
+   - 未经批准更改 SoT 定义的框架、库、配置
+
+---
+
+## ✅ 九、AI 自检清单（每次生成代码前必查）
+
+### 1. 数据库一致性检查
+```markdown
+□ 我使用的表名是否在 DATA_SCHEMA.md § 2 中存在？
+  表名: ____________ → 查找结果: ✅/❌
+
+□ 我使用的字段名是否在对应表定义中存在？
+  字段名: ____________ → 查找 DATA_SCHEMA.md § 3.x: ✅/❌
+
+□ 数据类型是否正确？
+  - 金额用 Decimal？ ✅/❌
+  - 时间用 datetime/TIMESTAMPTZ？ ✅/❌
+  - 主键类型与外键一致？ ✅/❌
+```
+
+### 2. 角色合法性检查
+```markdown
+□ 我使用的角色是否在以下列表中？
+  [admin, finance, data_operator, account_manager, media_buyer]
+
+  我的代码中使用了: ____________
+  检查结果: ✅/❌
+
+□ 我是否不小心使用了旧角色名？
+  [data_clerk, manager, trader]
+  检查结果: ✅ 未使用 / ❌ 使用了
+```
+
+### 3. 状态机合规检查
+```markdown
+□ 我的状态值是否在 STATE_MACHINE.md 中定义？
+  模块: ____________ (如 topup_requests)
+  状态值: ____________
+  查找结果: ✅/❌
+
+□ 我的状态转换是否合法？
+  从: ____________ → 到: ____________
+  STATE_MACHINE.md 中存在此路径: ✅/❌
+```
+
+### 4. API 调用方式检查
+```markdown
+□ 前端是否使用 apiFetch？
+  import { apiFetch } from '@/lib/api': ✅/❌
+
+□ 后端是否有权限验证？
+  使用 @require_role 或 get_current_user: ✅/❌
+
+□ 是否绕过 BFF 直接访问数据库？
+  检查结果: ✅ 未绕过 / ❌ 绕过了
+```
+
+### 5. 响应格式检查
+```markdown
+□ API 响应是否使用 Envelope？
+  return success_response(...): ✅/❌
+  或使用 BusinessError/PermissionError: ✅/❌
+
+□ 是否直接返回 dict？
+  检查结果: ✅ 未直接返回 / ❌ 直接返回了
+```
+
+### 6. 历史兼容陷阱检查
+```markdown
+□ 是否使用了历史名称？
+  禁止使用:
+  - 角色: data_clerk / manager / trader
+  - 表名: recharge_requests / users (应用层)
+  - 方案: 本地 bcrypt / 自建 JWT / RLS / Redis 队列
+
+  检查结果: ✅ 未使用 / ❌ 使用了
+```
+
+### 7. 数据类型检查
+```markdown
+□ 金额字段是否使用 Decimal？
+  from decimal import Decimal: ✅/❌
+
+□ 时间字段是否使用 datetime？
+  from datetime import datetime: ✅/❌
+
+□ 是否使用了 float 表示金额？
+  检查结果: ✅ 未使用 / ❌ 使用了（错误！）
+```
+
+---
+
+## 📌 十、冲突处理流程
+
+### 当 AI 输出与 SoT 冲突时
+
+1. **立即停止**代码生成
+2. **重新加载**相关 SoT 文档
+3. **向用户说明**冲突点和正确做法
+4. **重新生成**符合 SoT 的代码
+
+### SoT 文档优先级
+```
+DATA_SCHEMA.md > STATE_MACHINE.md >
+AI_AD_SYSTEM_MAIN_DOCUMENT.md > API_DEVELOPMENT_FLOW.md >
+其他文档
+```
+
+### 文档更新触发
+- 当 SoT 文档变更时，必须立即同步更新本规则总纲
+- 所有 AI 工具配置文件（`.cursorrules` / `.claude/*`）必须同步
+
+---
+
+## 📚 十一、快速参考
+
+### 合法角色（仅 5 个）
 ```python
 VALID_ROLES = [
-    'admin',           # 系统管理员
-    'finance',         # 财务人员
-    'data_operator',   # 数据运营
-    'account_manager', # 账户管理员
-    'media_buyer'      # 广告投手
+    "admin",           # 系统管理员
+    "finance",         # 财务
+    "data_operator",   # 数据运营
+    "account_manager", # 账户管理员
+    "media_buyer"      # 广告投手
 ]
 ```
 
-### 充值状态（示例）
+### 充值状态（完整）
 ```python
 TOPUP_STATES = [
-    'draft',            # 草稿
-    'pending_review',   # 待审核
-    'approved',         # 已批准
-    'rejected',         # 已拒绝
-    'pending_payment',  # 待支付
-    'paid',            # 已支付
-    'posted',          # 已入账
-    'cancelled'        # 已取消
+    "draft",            # 草稿
+    "pending_review",   # 待复核
+    "finance_approve",  # 财务审批
+    "paid",            # 已支付
+    "completed",       # 已完成
+    "rejected",        # 已拒绝
+    "cancelled"        # 已取消
 ]
 ```
 
-### 标准响应格式
+### 日报状态
 ```python
-# 成功响应
+DAILY_REPORT_STATES = [
+    "draft",      # 草稿
+    "pending",    # 待审核
+    "approved",   # 已通过
+    "rejected"    # 已驳回
+]
+```
+
+### 标准响应示例
+```python
+# 成功
 return success_response(
     data=result,
     message="操作成功"
 )
 
-# 错误响应
-return error_response(
-    message="错误信息",
-    code="ERROR_CODE",
-    status_code=400
+# 业务错误
+raise BusinessError(
+    code=BusinessErrorCodes.INVALID_STATE_TRANSITION,
+    message="状态转换非法"
+)
+
+# 权限错误
+raise PermissionError(
+    code=AuthErrorCodes.INSUFFICIENT_PERMISSIONS,
+    message="权限不足"
 )
 ```
 
 ---
 
-**最后更新**: 2024-11-18
-**维护责任**: 项目规则总监
+## 📝 附录：文档索引
+
+### SoT 文档路径
+- `docs/core/DATA_SCHEMA.md` - 数据库定义（v5.0）
+- `docs/core/STATE_MACHINE.md` - 状态机定义（v2.3）
+- `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md` - 实现规范（v3.x）
+- `docs/core/API_DEVELOPMENT_FLOW.md` - API 开发流程（v7.0）
+- `docs/ERROR_CODES.md` - 错误码定义
+
+### 模块文档
+- `docs/modules/topup/` - 充值模块
+- `docs/modules/daily_report/` - 日报模块
+- `docs/modules/project/` - 项目模块
+- `docs/modules/reconciliation/` - 对账模块
+
+### AI 工具配置
+- `.claude/PROJECT_RULES.md` - 本文件（项目记忆）
+- `.claude/settings.local.json` - Claude Code 配置
+- `.cursorrules` - Cursor 配置（如有）
+
+---
+
+**规则总纲版本**: v2.0
+**生效日期**: 2025-11-18
+**最后更新**: 2025-11-18
+**下次审查**: SoT 文档变更时
+**维护责任人**: 规则总监 + 系统架构团队
+
+---
+
+## 🔒 执行承诺
+
+- **开发团队**：开始任务前必须确认已阅读并理解本规则总纲
+- **Code Review**：按此规则执行，发现冲突需立即纠正
+- **AI 工具**：每次生成代码前必须执行完整自检清单
+- **架构变更**：必须先更新 SoT 文档及本规则总纲，再进入开发环节
+
+**违规处理**: PR 自动拒绝 / 代码回滚 / 重新生成

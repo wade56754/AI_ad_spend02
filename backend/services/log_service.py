@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from models import Log
+from backend.models import Log
 
 
 class LogService:

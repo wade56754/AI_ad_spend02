@@ -10,14 +10,14 @@ from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, select, desc
 
-from models.ad_account import (
+from backend.models import (
     AdAccount, AccountStatusHistory, AccountPerformance,
     AccountAlert, AccountDocument, AccountNote
 )
-from models.projects import Project
-from models.channel import Channel
-from models.users import User
-from schemas.ad_account import (
+from backend.models import Project
+from backend.models import Channel
+from backend.models import User
+from backend.schemas.ad_account import (
     AdAccountCreateRequest,
     AdAccountUpdateRequest,
     AdAccountStatusUpdateRequest,
@@ -29,9 +29,9 @@ from schemas.ad_account import (
     AdAccountResponse,
     AdAccountStatisticsResponse
 )
-from utils.response import success_response, error_response
-from exceptions import ValidationError, NotFoundError, PermissionError
-from services.audit_log_service import AuditLogService
+from backend.core.response import success_response, error_response
+from backend.exceptions import ValidationError, NotFoundError, PermissionError
+from backend.services.audit_log_service import AuditLogService
 
 
 class AdAccountService:

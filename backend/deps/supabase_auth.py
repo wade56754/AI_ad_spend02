@@ -8,7 +8,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, Dict, Any, List
 
-from services.supabase_auth_service import supabase_auth_service
+from backend.services.supabase_auth_service import supabase_auth_service
 
 # HTTP Bearer认证
 security = HTTPBearer(auto_error=False)

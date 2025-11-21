@@ -13,7 +13,7 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID, UUID, INET
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.db import Base
+from backend.models.base import Base
 
 
 class NotificationType(str, Enum):
@@ -305,10 +305,10 @@ class AuditLog(Base):
     action = Column(String(50), nullable=False, comment="操作类型：create/update/delete/approve/...")
     entity_id = Column(String(64), nullable=True, comment="关联实体主键或编号")
     
-    # 操作者信息（外键指向 user_profiles.id，UUID）
+    # 操作者信息（外键指向 users.id，UUID）
     performed_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=False,
         comment="操作人ID"
     )
@@ -338,4 +338,4 @@ class AuditLog(Base):
     )
 
     # 关系
-    performer = relationship("UserProfile", foreign_keys=[performed_by])
+    performer = relationship("User", foreign_keys=[performed_by])

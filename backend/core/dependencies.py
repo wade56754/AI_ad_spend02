@@ -10,14 +10,15 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from models.users import User
+from backend.core.db import get_db
+from backend.models import User
 # 导入真实的JWT验证逻辑
-from core.security import (
+from backend.core.security import (
     get_current_user as security_get_current_user,
     get_current_active_user as security_get_current_active_user,
     AuthenticatedUser
 )
+from backend.core.error_codes import AuthErrorCodes, SystemErrorCodes
 
 # HTTP Bearer认证方案
 security = HTTPBearer(auto_error=False)
@@ -39,8 +40,13 @@ def _auth_user_to_db_user(
     Returns:
         User: 数据库User对象
 
+    Raises:
+        HTTPException: 401 - 用户ID格式无效
+        HTTPException: 404 - 用户在数据库中不存在
+
     Note:
-        优先从数据库查询完整User对象，如果不存在则构造最小化对象
+        严格模式: JWT中的用户ID必须对应数据库中的有效User记录
+        如果用户不存在,将抛出404错误而不是构造临时对象
     """
     try:
         # 尝试将字符串ID转为UUID
@@ -48,8 +54,11 @@ def _auth_user_to_db_user(
     except (TypeError, ValueError) as e:
         logger.error(f"Invalid user ID format: {auth_user.id}, error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "AUTH_INVALID_USER_ID", "message": "用户ID格式无效"}
+            status_code=AuthErrorCodes.TOKEN_INVALID.status_code,
+            detail={
+                "code": AuthErrorCodes.TOKEN_INVALID.code,
+                "message": "用户ID格式无效"
+            }
         )
 
     # 从数据库查询用户
@@ -60,23 +69,20 @@ def _auth_user_to_db_user(
         logger.debug(f"User {user_uuid} found in database, role: {db_user.role}")
         return db_user
 
-    # TODO: 生产环境应确保JWT中的用户ID对应的User记录存在
-    # 当前临时方案：构造最小化User对象以保持兼容性
-    logger.warning(
-        f"User {user_uuid} not found in database, creating minimal User object. "
+    # 用户在数据库中不存在,拒绝请求
+    # 生产环境中JWT中的用户ID必须对应有效的数据库记录
+    logger.error(
+        f"User {user_uuid} not found in database. "
+        f"JWT contains valid user ID but no corresponding database record exists. "
         f"Email: {auth_user.email}, Role: {auth_user.role}"
     )
-
-    # 构造最小化User对象
-    minimal_user = User(
-        id=user_uuid,
-        email=auth_user.email or "unknown@example.com",
-        name=auth_user.email.split('@')[0] if auth_user.email else "Unknown",
-        role=auth_user.role or "media_buyer",  # 默认角色
+    raise HTTPException(
+        status_code=AuthErrorCodes.USER_NOT_FOUND.status_code,
+        detail={
+            "code": AuthErrorCodes.USER_NOT_FOUND.code,
+            "message": AuthErrorCodes.USER_NOT_FOUND.message
+        }
     )
-
-    # 注意：这个对象不会保存到数据库，仅用于当前请求
-    return minimal_user
 
 
 async def get_current_user_optional(
@@ -105,8 +111,11 @@ async def get_current_user_optional(
     except Exception as e:
         logger.error(f"Unexpected error in get_current_user_optional: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "AUTH_ERROR", "message": "认证过程发生错误"}
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+            detail={
+                "code": SystemErrorCodes.INTERNAL_ERROR.code,
+                "message": "认证过程发生错误"
+            }
         )
 
 
@@ -126,8 +135,11 @@ async def get_current_active_user(
     """
     if not credentials:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "AUTH_MISSING_TOKEN", "message": "未提供认证令牌"},
+            status_code=AuthErrorCodes.TOKEN_MISSING.status_code,
+            detail={
+                "code": AuthErrorCodes.TOKEN_MISSING.code,
+                "message": AuthErrorCodes.TOKEN_MISSING.message
+            },
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -144,8 +156,11 @@ async def get_current_active_user(
         # 额外检查：确保用户活跃（如果DB user存在is_active字段）
         if hasattr(db_user, 'is_active') and not db_user.is_active:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": "AUTH_INACTIVE_USER", "message": "用户已被禁用"}
+                status_code=AuthErrorCodes.USER_DISABLED.status_code,
+                detail={
+                    "code": AuthErrorCodes.USER_DISABLED.code,
+                    "message": AuthErrorCodes.USER_DISABLED.message
+                }
             )
 
         logger.info(f"User authenticated successfully: {db_user.email}, role: {db_user.role}")
@@ -157,8 +172,11 @@ async def get_current_active_user(
     except Exception as e:
         logger.error(f"Unexpected error in get_current_active_user: {e}", exc_info=True)
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "AUTH_ERROR", "message": "认证过程发生错误"}
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+            detail={
+                "code": SystemErrorCodes.INTERNAL_ERROR.code,
+                "message": "认证过程发生错误"
+            }
         )
 
 
@@ -183,8 +201,11 @@ def require_role(allowed_roles: Union[str, List[str]]):
     ) -> User:
         if current_user.role not in allowed_roles:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"权限不足，需要角色: {', '.join(allowed_roles)}",
+                status_code=AuthErrorCodes.PERMISSION_DENIED.status_code,
+                detail={
+                    "code": AuthErrorCodes.PERMISSION_DENIED.code,
+                    "message": f"权限不足，需要角色: {', '.join(allowed_roles)}"
+                }
             )
         return current_user
 
@@ -278,8 +299,11 @@ def require_permission(permission: str):
     ) -> User:
         if not has_permission(current_user, permission):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"权限不足，需要权限: {permission}",
+                status_code=AuthErrorCodes.PERMISSION_DENIED.status_code,
+                detail={
+                    "code": AuthErrorCodes.PERMISSION_DENIED.code,
+                    "message": f"权限不足，需要权限: {permission}"
+                }
             )
         return current_user
 

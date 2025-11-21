@@ -10,21 +10,22 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role, get_client_info
-from core.response import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role, get_client_info
+from backend.core.response import (
     success_response,
     error_response,
     StandardResponse
 )
-from exceptions.custom_exceptions import (
+from backend.core.error_codes import SystemErrorCodes
+from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.users import User
-from schemas.topup import (
+from backend.models import User
+from backend.schemas.topup import (
     TopupRequestCreate,
     TopupRequestResponse,
     TopupRequestListResponse,
@@ -37,7 +38,7 @@ from schemas.topup import (
     TopupDashboardResponse,
     AdAccountBalance
 )
-from services.topup_service import TopupService
+from backend.services.topup_service import TopupService
 
 router = APIRouter(prefix="/topups", tags=["topups"])
 
@@ -103,9 +104,9 @@ async def list_topup_requests(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取充值申请列表失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -174,7 +175,7 @@ async def get_topup_request(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -220,7 +221,7 @@ async def data_review_request(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -266,7 +267,7 @@ async def finance_approve_request(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -312,7 +313,7 @@ async def mark_as_paid(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -358,7 +359,7 @@ async def upload_receipt(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -395,7 +396,7 @@ async def get_approval_logs(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -431,9 +432,9 @@ async def get_statistics(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取统计信息失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -455,9 +456,9 @@ async def get_dashboard(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取仪表板数据失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
 
@@ -480,7 +481,7 @@ async def get_account_balance(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -520,7 +521,7 @@ async def export_requests(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="导出数据失败",
-            status_code=500
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )

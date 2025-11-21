@@ -11,9 +11,9 @@ from enum import Enum
 from fastapi import Request, Depends
 from sqlalchemy.orm import Session
 
-from core.audit import audit_logger, security_logger, AuditAction, AuditLevel
-from core.security import AuthenticatedUser, get_current_active_user
-from core.db import get_db_session
+from backend.core.audit import audit_logger, security_logger, AuditAction, AuditLevel
+from backend.core.security import AuthenticatedUser, get_current_active_user
+from backend.core.db import get_db_session
 
 
 class BusinessAction(str, Enum):

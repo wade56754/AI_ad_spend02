@@ -11,7 +11,7 @@ from sqlalchemy import Column, String, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.declarative import declarative_base
 
-from core.db import Base
+from backend.models.base import Base
 
 
 class Log(Base):

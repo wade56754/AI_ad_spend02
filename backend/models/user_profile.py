@@ -14,12 +14,16 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from core.db import Base
+from backend.models.base import Base
 
 
-class UserProfile(Base):
-    """用户资料表（与Supabase Auth关联）"""
-    __tablename__ = "user_profiles"
+# ⚠️ DEPRECATED: 此 UserProfile 类已被 backend/models/core/user.py 替代
+# 请使用 from backend.models.core.user import User
+# 保留此类仅用于向后兼容，但已禁用表定义以避免重复注册
+class _UserProfileLegacy(Base):
+    """用户资料表（与Supabase Auth关联）（已废弃）"""
+    # __tablename__ = "user_profiles"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     # 关联Supabase Auth的用户ID
     id = Column(
@@ -51,7 +55,7 @@ class UserProfile(Base):
     # 组织结构
     account_manager_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         index=True,
         comment="上级经理ID"
@@ -117,20 +121,20 @@ class UserProfile(Base):
     )
     created_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="创建人ID"
     )
     updated_by = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id"),
+        ForeignKey("users.id"),
         nullable=True,
         comment="更新人ID"
     )
 
     # 关系
     account_manager = relationship(
-        "UserProfile",
+        "User",
         remote_side=[id],
         foreign_keys=[account_manager_id],
         backref="managed_users"
@@ -138,11 +142,11 @@ class UserProfile(Base):
 
     # 约束和索引（对齐 DATA_SCHEMA.md 3.1.1）
     __table_args__ = (
-        Index("idx_user_profiles_username", "username"),
-        Index("idx_user_profiles_role", "role"),
-        Index("idx_user_profiles_account_manager", "account_manager_id"),
-        Index("idx_user_profiles_created_at", "created_at"),
-        Index("idx_user_profiles_last_login", "last_login_at"),
+        Index("idx_users_username", "username"),
+        Index("idx_users_role", "role"),
+        Index("idx_users_account_manager", "account_manager_id"),
+        Index("idx_users_created_at", "created_at"),
+        Index("idx_users_last_login", "last_login_at"),
         {
             "comment": "用户资料表（与Supabase Auth关联）"
         }
@@ -268,10 +272,10 @@ class UserSession(Base):
         comment="会话ID"
     )
 
-    # 关联用户（外键指向 user_profiles.id）
+    # 关联用户（外键指向 users.id）
     user_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("user_profiles.id", ondelete="CASCADE"),
+        ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         comment="用户ID"

@@ -10,23 +10,23 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from core.db import get_db
-from core.dependencies import get_current_user, require_role
-from core.logging import log_requests
-from core.response import (
+from backend.core.db import get_db
+from backend.core.dependencies import get_current_user, require_role
+from backend.core.logging import log_requests
+from backend.core.response import (
     success_response,
     error_response,
     StandardResponse
 )
-from exceptions.custom_exceptions import (
+from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
     ResourceConflictError
 )
-from models.users import User
-from models.projects import Project, ProjectMember, ProjectExpense
-from schemas.project import (
+from backend.models import User
+from backend.models import Project, ProjectMember, ProjectExpense
+from backend.schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,
     ProjectResponse,
@@ -37,7 +37,7 @@ from schemas.project import (
     ProjectStatisticsResponse,
     ProjectMemberAssignRequest
 )
-from services.project_service import ProjectService
+from backend.services.project_service import ProjectService
 
 logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/projects", tags=["projects"])
