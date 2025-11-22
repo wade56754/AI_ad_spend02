@@ -282,9 +282,9 @@ ledger_entry = LedgerEntry(
 | entry_type | 账本类型 | 说明 | 触发场景 | 金额示例 |
 |-----------|---------|------|---------|---------|
 | **REVENUE** | PROJECT | 粉数计费收入 | `final_locked`后自动生成 | +5000.00 (收入5000) |
-| **COST** | SUPPLIER | 真实消耗成本 | 运营录入`real_spend`后生成 | +3000.00 (成本3000) |
-| **TRANSFER_OUT** | SUPPLIER | 死号余额迁出 | 同供应商死号迁移 | -1234.56 (余额减少) |
-| **TRANSFER_IN** | SUPPLIER | 死号余额迁入 | 同供应商死号迁移 | +1234.56 (余额增加) |
+| **COST** | SUPPLIER | 真实消耗成本 | 运营录入`real_spend`后生成 | -3000.00 (成本扣减,SUPPLIER账本) |
+| **TRANSFER_OUT** | SUPPLIER | 死号余额迁出 | 同供应商死号迁移 | -1234.56 (余额迁出,负数) |
+| **TRANSFER_IN** | SUPPLIER | 死号余额迁入 | 同供应商死号迁移 | +1234.56 (余额迁入,正数) |
 | **REVERSAL** | BOTH | 红冲修正 | `final_locked`后的修正 | -5000.00 (冲销收入) |
 
 ### 5.3 示例数据流
@@ -311,7 +311,7 @@ T+1日: 系统计费锁定
 │   └─ project_id = 123
 └─ Ledger记录2 (SUPPLIER账本):
     ├─ entry_type = COST
-    ├─ amount = 4800.00
+    ├─ amount = -4800.00  (成本为负数)
     └─ supplier_id = 456
 
 项目毛利 = 4750 - 4800 = -50.00 (亏损)

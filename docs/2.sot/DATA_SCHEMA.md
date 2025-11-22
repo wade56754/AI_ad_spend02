@@ -306,7 +306,7 @@
 | `impressions`, `clicks`, `conversions`, `new_follows` INTEGER | DEFAULT 0 |
 | `conversions_raw` INTEGER | DEFAULT 0, 投手提交的原始粉数(T+0 23:59前),用于趋势风控(TF-001/002/003规则),不参与计费 |
 | `conversions_final` INTEGER | DEFAULT 0, 运营确认的最终粉数(T+1 14:00前),计费基准,公式: `revenue = conversions_final × unit_price` |
-| `spend` DECIMAL(15,2) | DEFAULT 0.00, 投手提交的原始消耗(raw_spend) |
+| `raw_spend` DECIMAL(15,2) | DEFAULT 0.00, 投手提交的原始消耗(T+0 23:59前),用于趋势风控(TF-003规则),不计成本 |
 | `real_spend` DECIMAL(15,2) | DEFAULT 0.00, 运营录入的真实消耗(T+1 12:00前),成本核算基准,公式: `cost = real_spend + fee` |
 | `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 单粉价格,从项目继承(`projects.unit_price`),用于计算收入 |
 | `cpc`, `cpa`, `ctr`, `roi` DECIMAL(12,4) | 可空 |

@@ -1844,14 +1844,16 @@ VALID_ROLES = [
 ]
 ```
 
-#### 13.1.2 状态枚举
+#### 13.1.2 状态枚举（严格对齐 STATE_MACHINE.md v2.6）
 
-**项目状态** (STATE_MACHINE.md 第5章):
+⚠️ **强制约束**: 所有状态枚举必须严格对齐 [STATE_MACHINE.md v2.6](./STATE_MACHINE.md) 定义，禁止使用未在下方列出的旧状态值。任何状态流转必须遵循 STATE_MACHINE.md 中的合法流转白名单。
+
+**项目状态** (STATE_MACHINE.md v2.6 第5章):
 ```python
 PROJECT_STATUS = Literal["draft", "active", "suspended", "archived"]
 ```
 
-**日报状态** (STATE_MACHINE.md 第8章):
+**日报状态** (STATE_MACHINE.md v2.6 第8章):
 ```python
 DAILY_REPORT_STATUS = Literal[
     "raw_submitted",
@@ -1865,7 +1867,7 @@ DAILY_REPORT_STATUS = Literal[
 ]
 ```
 
-**充值状态** (STATE_MACHINE.md 第9章):
+**充值状态** (STATE_MACHINE.md v2.6 第9章):
 ```python
 TOPUP_STATUS = Literal[
     "draft",
@@ -1885,6 +1887,17 @@ RECONCILIATION_STATUS = Literal[
     "pending_review",
     "approved",
     "needs_adjustment",
+    "completed"
+]
+```
+
+**迁移状态** (STATE_MACHINE.md v2.6 第12章):
+```python
+TRANSFER_STATUS = Literal[
+    "draft",
+    "pending_approval",
+    "approved",
+    "rejected",
     "completed"
 ]
 ```
