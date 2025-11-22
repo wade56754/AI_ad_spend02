@@ -44,14 +44,15 @@ AI广告代投系统是一个专为Facebook广告代理商设计的智能化广�
 
 ## 📚 文档中心
 
-完整的文档请访问 [文档中心](./docs/README.md)
+完整的文档请访问 **[📖 DOCS_README.md](./DOCS_README.md)** - 完整的5层文档体系
 
 ### 快速链接
 
-- 📖 [系统架构文档](./docs/core/SYSTEM_OVERVIEW.md)
-- 🗄️ [数据库设计](./docs/core/DATA_SCHEMA.md)
-- 🔄 [状态机设计](./docs/core/STATE_MACHINE.md)
-- 📋 [项目开发规则](./.claude/PROJECT_RULES.md) - AI协作开发必读
+- 📋 [MASTER_SPEC.md](./MASTER_SPEC.md) - 系统根规范（最高优先级SoT）
+- 📖 [系统架构文档](./docs/1.overview/SYSTEM_OVERVIEW.md)
+- 🗄️ [数据库设计](./docs/2.sot/DATA_SCHEMA.md)
+- 🔄 [状态机设计](./docs/2.sot/STATE_MACHINE.md)
+- 📋 [项目开发规则](./docs/1.overview/PROJECT_RULES.md) - AI协作开发必读
 - 🚀 [快速开始指南](#快速开始)
 
 ## 🛠️ 技术栈
@@ -150,13 +151,17 @@ AI_ad_spend02/
 │   ├── app/              # Next.js App目录
 │   ├── components/       # React组件
 │   └── lib/              # 工具函数
-├── docs/                  # 文档中心
-│   ├── core/             # 核心文档
-│   ├── api/              # API文档
-│   └── guides/           # 使用指南
+├── docs/                  # 文档中心（5层架构）
+│   ├── 1.overview/       # Tier 1: 系统全局视图
+│   ├── 2.sot/            # Tier 2: 真相来源文档（11个SoT）
+│   ├── 3.dev-guides/     # Tier 3: 开发指南
+│   ├── 4.ui-ux/          # Tier 4: UI/UX文档
+│   ├── 5.ops/            # Tier 5: 运维文档
+│   └── archive/          # 历史文档归档
 ├── .claude/              # Claude Code项目规则
-│   ├── PROJECT_RULES.md  # 开发强制规范
-│   └── README.md         # 规则使用说明
+│   └── rule/             # AI开发规则集
+├── MASTER_SPEC.md        # 系统根规范（P0优先级）
+├── DOCS_README.md        # 文档中心完整索引
 ├── scripts/              # 脚本工具
 ├── tests/                # 集成测试
 └── docker-compose.yml    # Docker编排
@@ -210,7 +215,7 @@ kubectl apply -f k8s/
 kubectl get pods -n ai-ad-spend
 ```
 
-详细部署文档请参考 [部署指南](./docs/deployment/README.md)
+详细部署文档请参考 [部署指南](./docs/5.ops/README.md)
 
 ## 🤝 贡献指南
 
@@ -238,9 +243,9 @@ kubectl get pods -n ai-ad-spend
 - 提交前检查: `npm run lint` 和 `npm run type-check` 必须0错误
 
 #### AI协作开发
-- 严格遵循 [.claude/PROJECT_RULES.md](./.claude/PROJECT_RULES.md) 中定义的所有规则
-- 所有代码生成必须基于 docs/core 下的SoT文档
-- 必须通过AI自检清单的所有检查项
+- 严格遵循 [PROJECT_RULES.md](./docs/1.overview/PROJECT_RULES.md) 中定义的所有规则
+- 所有代码生成必须基于 [docs/2.sot/](./docs/2.sot/) 下的SoT文档
+- 开发前必读 [MASTER_SPEC.md](./MASTER_SPEC.md) 了解系统架构原则
 
 ## 📊 项目状态
 
@@ -262,6 +267,13 @@ kubectl get pods -n ai-ad-spend
 ---
 
 **更新日志**:
+
+### v4.0.0 (2025-11-22)
+- 🎯 重构：完成文档体系重构为5层分级架构
+- 📚 新增：MASTER_SPEC.md 系统根规范（P0优先级）
+- 📖 优化：11个SoT文档统一归档至 docs/2.sot/
+- 🗂️ 归档：历史文档版本统一归档至 docs/archive/
+- ✨ 新增：DOCS_README.md 完整文档索引
 
 ### v3.0.0 (2024-11-18)
 - 🎯 重构：创建项目规则总纲 (.claude/PROJECT_RULES.md)

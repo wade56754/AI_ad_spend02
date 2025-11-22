@@ -83,9 +83,17 @@
       "Bash(cmd /c \"dir /B backend\\alembic\\versions\")",
       "Bash(cmd /c \"if not exist .github mkdir .github\")",
       "Bash(cmd /c \"dir /B d:\\git\\1108\\AI_ad_spend02\\backend\\alembic\\versions\\20251117_*.py\")",
-      "Bash(cmd /c:*)"
+      "Bash(cmd /c:*)",
+      "Bash(\"d:\\git\\1108\\AI_ad_spend02\\docs\\core\\AUTH_SPEC.md\")",
+      "Bash(grep:*)",
+      "Bash(docs/4.ui-ux/README.md)",
+      "Bash(docs/5.ops/README.md)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }

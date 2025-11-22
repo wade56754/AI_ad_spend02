@@ -282,3 +282,4 @@ class TestModelCRUD:
         assert daily_report.submitter.id == test_user.id
 
 
+
