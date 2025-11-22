@@ -646,7 +646,7 @@ with db.begin():
 
 ## 10. 错误码引用（Error Codes）
 
-**引用**: ERROR_CODES_SOT.md v2.1 - 第 X 章（待补充）
+**引用**: ERROR_CODES_SOT.md v2.1 - § 6.6 Transfer模块错误码
 
 ### 10.1 Transfer 模块涉及的错误码
 

@@ -4,9 +4,9 @@
 > **更新日期**: 2025‑11‑22
 > **类型**: 状态与合法流转的唯一事实来源（SoT-State）  
 > **互锁文档**  
-> - 实现规范 → `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md`  
-> - 数据结构 → `docs/core/DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）  
-> - API 流程 → `docs/core/API_DEVELOPMENT_FLOW.md`  
+> - 实现规范 → `./AI_AD_SYSTEM_MAIN_DOCUMENT.md`  
+> - 数据结构 → `./DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）  
+> - API 流程 → `./API_DEVELOPMENT_FLOW.md`  
 > - 角色定义 → 仅 `admin/finance/data_operator/account_manager/media_buyer`（无其他角色）
 
 ---
@@ -106,7 +106,7 @@
 
 ---
 
-## 8. 粉数确认状态机（daily_reports.status - 6状态流程）
+## 8. 粉数确认状态机（daily_reports.status - 8状态流程）
 
 > **业务背景**: 基于BRD v3.1第4章"粉数确认状态机",系统采用三数据流(raw/real/final)分离设计,
 > final_conversions需经过趋势风控检查后方可锁定进入计费。
