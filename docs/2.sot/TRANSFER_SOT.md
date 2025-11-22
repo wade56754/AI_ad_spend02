@@ -48,8 +48,8 @@
 AI_AD_SYSTEM 文档体系
 │
 ├─ MASTER_SPEC.md v1.0         ← 系统架构总纲、全局规则
-├─ DATA_SCHEMA.md v5.1         ← transfer_requests 表结构的唯一来源
-├─ STATE_MACHINE.md v2.5       ← Transfer 状态机的唯一来源
+├─ DATA_SCHEMA.md v5.2         ← transfer_requests 表结构的唯一来源
+├─ STATE_MACHINE.md v2.6       ← Transfer 状态机的唯一来源
 ├─ LEDGER_SOT.md v1.1          ← 双账本逻辑的唯一来源
 ├─ BUSINESS_RULES.md v3.1      ← 业务规则的唯一来源
 ├─ ERROR_CODES_SOT.md v2.1     ← 错误码定义的唯一来源
@@ -68,8 +68,8 @@ AI_AD_SYSTEM 文档体系
 
 | 领域 | 唯一真相源 | 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
-| **数据库字段** | DATA_SCHEMA.md v5.1 | 字段名/类型/约束以 DATA_SCHEMA 为准 | `transfer_requests.request_no` 字段类型 |
-| **业务状态** | STATE_MACHINE.md v2.5 | 状态枚举/流转以 STATE_MACHINE 为准 | draft/approved/completed 状态机 |
+| **数据库字段** | DATA_SCHEMA.md v5.2 | 字段名/类型/约束以 DATA_SCHEMA 为准 | `transfer_requests.request_no` 字段类型 |
+| **业务状态** | STATE_MACHINE.md v2.6 | 状态枚举/流转以 STATE_MACHINE 为准 | draft/approved/completed 状态机 |
 | **错误码** | ERROR_CODES_SOT.md v2.1 | 错误码/HTTP 状态以 ERROR_CODES 为准 | `E-TRANS-004` 跨供应商迁移 |
 | **同/跨供应商规则** | TRANSFER_SOT.md (本文档) | 迁移规则以本文档为准 | 同 supplier 允许，跨 supplier 禁止 |
 | **双账本规则** | LEDGER_SOT.md v1.1 | TRANSFER_OUT/IN 规则以 LEDGER_SOT 为准 | entry_type 定义 |
@@ -178,7 +178,7 @@ graph TD
 
 ## 3. 数据模型 SoT（Mapping to DATA_SCHEMA）
 
-**引用**: DATA_SCHEMA.md v5.1
+**引用**: DATA_SCHEMA.md v5.2
 
 **说明**: 死号迁移功能需要 `transfer_requests` 表支持,但该表尚未在 DATA_SCHEMA.md 中定义。本章节定义了Transfer模块所需的数据模型概念,待DATA_SCHEMA.md补充表结构后需同步更新。
 

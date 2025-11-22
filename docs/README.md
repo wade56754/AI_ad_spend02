@@ -1,8 +1,8 @@
 # AI广告代投系统 - 文档中心
 
 > 版本: v4.0
-> 更新日期: 2025-11-22
-> 状态: 文档体系重构完成
+> 更新日期: 2025-01-23
+> 状态: ✅ SoT 体系已冻结（Freeze v1.0）
 
 ## 📚 文档体系架构
 
@@ -20,6 +20,15 @@
 
 ---
 
+## 🎯 SoT 冻结状态
+
+**当前状态**: ✅ **SoT Freeze v1.0**（2025-01-23 生效）
+**冻结范围**: 14 个 SoT 文档（Tier 1 + Tier 2）
+**变更流程**: 所有 SoT 变更需通过 RFC 流程
+**详细说明**: 查看 [SOT_FREEZE.md](./1.overview/SOT_FREEZE.md)
+
+---
+
 ## 📂 文档结构
 
 ```
@@ -27,22 +36,23 @@ docs/
 ├── README.md                    # 文档中心索引（本文件）
 │
 ├── 1.overview/                  # Tier 1: 系统全局视图
-│   ├── MASTER_SPEC.md          # 系统根规范（最高优先级SoT）
-│   ├── SYSTEM_OVERVIEW.md      # 系统架构图 + 职责划分 + 模块边界
-│   └── PROJECT_RULES.md        # 项目开发规则（Cursor/Claude 依赖）
+│   ├── MASTER_SPEC.md          # 系统根规范（最高优先级SoT）v1.1 ✅ Frozen
+│   ├── SYSTEM_OVERVIEW.md      # 系统架构图 + 职责划分 + 模块边界 v1.1 ✅ Frozen
+│   ├── PROJECT_RULES.md        # 项目开发规则（Cursor/Claude 依赖）v3.0 ✅ Frozen
+│   └── SOT_FREEZE.md           # SoT 冻结声明 v1.0 ✅ 新增
 │
-├── 2.sot/                       # Tier 2: 真相来源文档（Source of Truth）
-│   ├── API_SOT.md              # API接口规范（路由/请求/响应）
-│   ├── AUTH_SPEC.md            # 认证授权规范（角色/权限/JWT）
-│   ├── BUSINESS_RULES.md       # 业务规则（BR-*系列编码规则）
-│   ├── DAILY_REPORT_SOT.md     # 日报模块SoT
-│   ├── DATA_SCHEMA.md          # 数据库架构（表结构/字段/约束）
-│   ├── ERROR_CODES_SOT.md      # 错误码规范（分类/编码/处理）
-│   ├── LEDGER_SOT.md           # 账本系统SoT（双账本/流水/红冲）
-│   ├── RECONCILIATION_SOT.md   # 对账模块SoT
-│   ├── RLS_POLICIES_SOT.md     # RLS策略规范（Supabase行级安全）
-│   ├── STATE_MACHINE.md        # 状态机设计（8大状态机/转换规则）
-│   └── TRANSFER_SOT.md         # 划拨模块SoT
+├── 2.sot/                       # Tier 2: 真相来源文档（Source of Truth）✅ 全部冻结
+│   ├── API_SOT.md              # API接口规范（路由/请求/响应）v3.0 ✅ Frozen
+│   ├── AUTH_SPEC.md            # 认证授权规范（角色/权限/JWT）v2.0 ✅ Frozen
+│   ├── BUSINESS_RULES.md       # 业务规则（BR-*系列编码规则）v3.1 ✅ Frozen
+│   ├── DAILY_REPORT_SOT.md     # 日报模块SoT v1.0 ✅ Frozen
+│   ├── DATA_SCHEMA.md          # 数据库架构（表结构/字段/约束）v5.2 ✅ Frozen
+│   ├── ERROR_CODES_SOT.md      # 错误码规范（分类/编码/处理）v2.1 ✅ Frozen
+│   ├── LEDGER_SOT.md           # 账本系统SoT（双账本/流水/红冲）v2.0 ✅ Frozen
+│   ├── RECONCILIATION_SOT.md   # 对账模块SoT v1.0 ✅ Frozen
+│   ├── RLS_POLICIES_SOT.md     # RLS策略规范（Supabase行级安全）v2.1 ✅ Frozen
+│   ├── STATE_MACHINE.md        # 状态机设计（8大状态机/转换规则）v2.6 ✅ Frozen
+│   └── TRANSFER_SOT.md         # 划拨模块SoT v1.0 ✅ Frozen
 │
 ├── 3.dev-guides/                # Tier 3: 开发指南
 │   ├── API_DEVELOPMENT_FLOW.md # API开发生命周期SOP

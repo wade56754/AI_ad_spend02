@@ -1,187 +1,164 @@
-# Ledger双账本模块规范（LEDGER_SOT - Single Source of Truth）
-
-> **文档版本**: v1.1 (增强版)
+# Ledger双账本模块规范（LEDGER_SOT - Single Source of Truth�?
+> **文档版本**: v1.1 (增强�?
 > **发布日期**: 2025-01-22
-> **文档类型**: Ledger双账本领域唯一真相源（SoT-Ledger）
-> **适用范围**: 后端开发、数据库设计、财务团队、风控、对账、审计
-> **规范级别**: 🔴 强制执行（PR必查）
-> **文档定位**: 财务/开发/风控/审计都可单独依赖本文件完成Ledger相关业务
+> **文档类型**: Ledger双账本领域唯一真相源（SoT-Ledger�?> **适用范围**: 后端开发、数据库设计、财务团队、风控、对账、审�?> **规范级别**: 🔴 强制执行（PR必查�?> **文档定位**: 财务/开�?风控/审计都可单独依赖本文件完成Ledger相关业务
 
 ---
 
-## ⚡ 快速导航
-
+## �?快速导�?
 | 章节 | 内容 | 适用人员 |
 |-----|------|---------|
-| [1. 文档定位](#1-文档定位) | Ledger模块职责、仲裁规则 | 架构师、Tech Lead |
+| [1. 文档定位](#1-文档定位) | Ledger模块职责、仲裁规�?| 架构师、Tech Lead |
 | [2. 双账本模型总览](#2-双账本模型总览核心) | PROJECT/SUPPLIER双账本设计、余额真相源原则 | 全员 |
 | [3. ledger_entries表SoT](#3-ledger_entries表sot) | 字段逐项解释、TOPUP类型定义 | 后端开发、DBA |
-| [4. 金额方向绝对规则](#4-金额方向正负绝对规则) | 正负方向表、白名单矩阵 | 财务、开发 |
-| [5. 事务边界与锁策略](#5-事务边界与锁策略) | SELECT FOR UPDATE、幂等性 | 后端开发 |
-| [6. 失败与回滚策略](#6-失败与回滚策略) | DailyReport/Topup/Transfer失败处理 | 后端开发、SRE |
-| [7. DailyReport→Ledger映射](#7-dailyreport--ledger映射) | 日报计费入账逻辑 | 后端开发、财务 |
-| [8. 项目充值→Ledger映射](#8-项目充值topup--ledger映射) | 充值入账逻辑（TOPUP类型） | 后端开发、财务 |
-| [9. SUPPLIER充值→Ledger映射](#9-supplier充值--ledger映射) | 供应商充值逻辑（TOPUP类型） | 后端开发、财务 |
-| [10. 死号迁移→Ledger映射](#10-死号迁移transfer--ledger映射) | Transfer流程 | 后端开发、财务 |
-| [11. 对账→Ledger关联](#11-对账reconciliation--ledger关联) | 对账差异处理 | 财务、开发 |
-| [12. 手工调账SoT](#12-手工调账manual-entry-sot) | 人工调整规范、四大禁止 | 财务、开发 |
-| [13. 权限控制](#13-权限控制与auth_spec对齐) | 五角色权限矩阵 | 全员 |
-| [14. 错误码](#14-错误码从error_codes_sot引用) | Ledger错误码 | 全栈开发 |
-| [15. 测试矩阵](#15-测试矩阵qa使用) | QA测试用例 | 测试工程师 |
-| [16. Mermaid图](#16-mermaid图) | 架构图、数据流图 | 架构师、开发 |
-| [17. 参考文档](#17-参考文档) | 依赖文档列表 | 全员 |
+| [4. 金额方向绝对规则](#4-金额方向正负绝对规则) | 正负方向表、白名单矩阵 | 财务、开�?|
+| [5. 事务边界与锁策略](#5-事务边界与锁策略) | SELECT FOR UPDATE、幂等�?| 后端开�?|
+| [6. 失败与回滚策略](#6-失败与回滚策�? | DailyReport/Topup/Transfer失败处理 | 后端开发、SRE |
+| [7. DailyReport→Ledger映射](#7-dailyreport--ledger映射) | 日报计费入账逻辑 | 后端开发、财�?|
+| [8. 项目充值→Ledger映射](#8-项目充值topup--ledger映射) | 充值入账逻辑（TOPUP类型�?| 后端开发、财�?|
+| [9. SUPPLIER充值→Ledger映射](#9-supplier充�?-ledger映射) | 供应商充值逻辑（TOPUP类型�?| 后端开发、财�?|
+| [10. 死号迁移→Ledger映射](#10-死号迁移transfer--ledger映射) | Transfer流程 | 后端开发、财�?|
+| [11. 对账→Ledger关联](#11-对账reconciliation--ledger关联) | 对账差异处理 | 财务、开�?|
+| [12. 手工调账SoT](#12-手工调账manual-entry-sot) | 人工调整规范、四大禁�?| 财务、开�?|
+| [13. 权限控制](#13-权限控制与auth_spec对齐) | 五角色权限矩�?| 全员 |
+| [14. 错误码](#14-错误码从error_codes_sot引用) | Ledger错误�?| 全栈开�?|
+| [15. 测试矩阵](#15-测试矩阵qa使用) | QA测试用例 | 测试工程�?|
+| [16. Mermaid图](#16-mermaid�? | 架构图、数据流�?| 架构师、开�?|
+| [17. 参考文档](#17-参考文�? | 依赖文档列表 | 全员 |
 | [18. 版本历史](#18-版本历史) | 版本变更记录 | 全员 |
 
 ---
 
 ## 1. 文档定位
 
-### 1.1 Ledger模块的职责
+### 1.1 Ledger模块的职�?
+**Ledger模块是AI_AD_SYSTEM财务核算的核心模�?*，负责：
 
-**Ledger模块是AI_AD_SYSTEM财务核算的核心模块**，负责：
-
-- ✅ **双账本独立核算**: PROJECT账本记录项目收入，SUPPLIER账本记录供应商成本
-- ✅ **资金流水追溯**: 所有资金变动必须生成ledger_entry记录
-- ✅ **计费基准锁定**: final_locked状态后生成REVENUE记录，不可修改
-- ✅ **成本准确核算**: real_spend录入后生成COST记录
-- ✅ **死号余额迁移**: TRANSFER_OUT/TRANSFER_IN双向记录
-- ✅ **红冲机制**: 锁定记录后通过REVERSAL负向冲销
-- ✅ **审计完整性**: 所有操作记录performed_by和reason
+- �?**双账本独立核�?*: PROJECT账本记录项目收入，SUPPLIER账本记录供应商成�?- �?**资金流水追溯**: 所有资金变动必须生成ledger_entry记录
+- �?**计费基准锁定**: final_locked状态后生成REVENUE记录，不可修�?- �?**成本准确核算**: real_spend录入后生成COST记录
+- �?**死号余额迁移**: TRANSFER_OUT/TRANSFER_IN双向记录
+- �?**红冲机制**: 锁定记录后通过REVERSAL负向冲销
+- �?**审计完整�?*: 所有操作记录performed_by和reason
 
 ### 1.2 在SoT体系中的位置
 
 ```
 AI_AD_SYSTEM 文档体系
-│
-├─ DATA_SCHEMA.md v5.1        ← ledger_entries表结构的唯一来源
-├─ STATE_MACHINE.md v2.5      ← 业务状态流转的唯一来源
-├─ BUSINESS_RULES.md v3.1     ← 财务业务规则的唯一来源
-├─ ERROR_CODES_SOT.md v2.1    ← 错误码定义的唯一来源
-├─ AUTH_SPEC.md v2.0          ← 权限控制的唯一来源
-│
-└─ LEDGER_SOT.md v1.1 (本文档) ← Ledger业务逻辑的唯一来源
-    ├─ 引用 DATA_SCHEMA (ledger_entries表)
+�?├─ DATA_SCHEMA.md v5.2        �?ledger_entries表结构的唯一来源
+├─ STATE_MACHINE.md v2.6      �?业务状态流转的唯一来源
+├─ BUSINESS_RULES.md v3.1     �?财务业务规则的唯一来源
+├─ ERROR_CODES_SOT.md v2.1    �?错误码定义的唯一来源
+├─ AUTH_SPEC.md v2.0          �?权限控制的唯一来源
+�?└─ LEDGER_SOT.md v1.1 (本文�? �?Ledger业务逻辑的唯一来源
+    ├─ 引用 DATA_SCHEMA (ledger_entries�?
     ├─ 引用 STATE_MACHINE (日报/充值状态机)
     ├─ 引用 BUSINESS_RULES (BR-FIN-*)
     ├─ 引用 ERROR_CODES_SOT (LEDGER_*/BIZ_*)
-    └─ 定义 双账本逻辑、金额方向、事务边界
-```
+    └─ 定义 双账本逻辑、金额方向、事务边�?```
 
-### 1.3 仲裁规则（冲突优先级）
-
-| 领域 | 唯一真相源 | 仲裁规则 | 示例 |
+### 1.3 仲裁规则（冲突优先级�?
+| 领域 | 唯一真相�?| 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
-| **数据库字段** | DATA_SCHEMA.md v5.1 | 字段名/类型/约束以DATA_SCHEMA为准 | `ledger_entries.ledger_type` CHECK约束 |
-| **业务状态** | STATE_MACHINE.md v2.5 | 日报/充值状态以STATE_MACHINE为准 | `final_locked`后才计费 |
-| **错误码** | ERROR_CODES_SOT.md v2.1 | 错误码/HTTP状态以ERROR_CODES为准 | `BIZ_101`余额不足 |
-| **金额方向** | LEDGER_SOT.md v1.1 (本文档) | 正负方向规则以本文档为准 | REVENUE正数、COST负数 |
-| **事务边界** | LEDGER_SOT.md v1.1 (本文档) | 锁策略以本文档为准 | SELECT FOR UPDATE锁项目 |
+| **数据库字�?* | DATA_SCHEMA.md v5.2 | 字段�?类型/约束以DATA_SCHEMA为准 | `ledger_entries.ledger_type` CHECK约束 |
+| **业务状�?* | STATE_MACHINE.md v2.6 | 日报/充值状态以STATE_MACHINE为准 | `final_locked`后才计费 |
+| **错误�?* | ERROR_CODES_SOT.md v2.1 | 错误�?HTTP状态以ERROR_CODES为准 | `BIZ_101`余额不足 |
+| **金额方向** | LEDGER_SOT.md v1.1 (本文�? | 正负方向规则以本文档为准 | REVENUE正数、COST负数 |
+| **事务边界** | LEDGER_SOT.md v1.1 (本文�? | 锁策略以本文档为�?| SELECT FOR UPDATE锁项�?|
 | **权限控制** | AUTH_SPEC.md v2.0 | 角色权限以AUTH_SPEC为准 | finance可写Ledger |
 
 **冲突处理规则**:
-- ✅ 如果DATA_SCHEMA与LEDGER_SOT字段定义冲突 → **以DATA_SCHEMA为准，修改LEDGER_SOT**
-- ✅ 如果STATE_MACHINE与LEDGER_SOT状态规则冲突 → **以STATE_MACHINE为准，修改LEDGER_SOT**
-- ✅ 如果ERROR_CODES与LEDGER_SOT错误码冲突 → **以ERROR_CODES为准，修改LEDGER_SOT**
-- ✅ 如果API_SOT.md与LEDGER_SOT业务流程冲突 → **修改API_SOT.md，以LEDGER_SOT为准**
+- �?如果DATA_SCHEMA与LEDGER_SOT字段定义冲突 �?**以DATA_SCHEMA为准，修改LEDGER_SOT**
+- �?如果STATE_MACHINE与LEDGER_SOT状态规则冲�?�?**以STATE_MACHINE为准，修改LEDGER_SOT**
+- �?如果ERROR_CODES与LEDGER_SOT错误码冲�?�?**以ERROR_CODES为准，修改LEDGER_SOT**
+- �?如果API_SOT.md与LEDGER_SOT业务流程冲突 �?**修改API_SOT.md，以LEDGER_SOT为准**
 
 ---
 
 ## 2. 双账本模型总览（核心）
 
-### 2.1 为什么需要双账本？
+### 2.1 为什么需要双账本�?
+**单一账本的问�?*:
+- �?无法区分"项目收入"�?供应商成�?
+- �?死号迁移时同供应商vs跨供应商逻辑混乱
+- �?毛利计算需要复杂的JOIN和CASE WHEN
 
-**单一账本的问题**:
-- ❌ 无法区分"项目收入"和"供应商成本"
-- ❌ 死号迁移时同供应商vs跨供应商逻辑混乱
-- ❌ 毛利计算需要复杂的JOIN和CASE WHEN
-
-**双账本设计原则**:
+**双账本设计原�?*:
 1. **完全独立**: PROJECT账本和SUPPLIER账本绝不混用
-2. **单向关联**: 一条DailyReport可生成两条Ledger记录（PROJECT REVENUE + SUPPLIER COST）
-3. **独立核算**: 毛利 = Σ(PROJECT) - Σ(SUPPLIER)
+2. **单向关联**: 一条DailyReport可生成两条Ledger记录（PROJECT REVENUE + SUPPLIER COST�?3. **独立核算**: 毛利 = Σ(PROJECT) - Σ(SUPPLIER)
 
 ### 2.2 两套独立账本定义
 
 #### 2.2.1 PROJECT账本（项目收入账本）
 
-**用途**: 记录项目粉数计费收入和充值
-
-| 属性 | 值 |
+**用�?*: 记录项目粉数计费收入和充�?
+| 属�?| �?|
 |-----|-----|
 | **ledger_type** | `PROJECT` |
 | **关联实体** | `project_id` (必填) |
 | **entry_type范围** | `REVENUE`, `TOPUP`, `REVERSAL` |
-| **业务来源** | final_confirmed后自动生成(REVENUE) / 充值入账(TOPUP) |
+| **业务来源** | final_confirmed后自动生�?REVENUE) / 充值入�?TOPUP) |
 | **计费公式** | `revenue = conversions_final × unit_price` |
-| **金额方向** | 正数(收入/充值增加) / 负数(红冲减少) |
+| **金额方向** | 正数(收入/充值增�? / 负数(红冲减少) |
 
 **典型场景**:
-- ✅ 日报final_confirmed → 生成REVENUE记录
-- ✅ 充值入账 → 生成TOPUP记录
-- ✅ final_locked后修正 → 生成REVERSAL记录（负数）
+- �?日报final_confirmed �?生成REVENUE记录
+- �?充值入�?�?生成TOPUP记录
+- �?final_locked后修�?�?生成REVERSAL记录（负数）
 
 **禁止行为**:
-- ❌ **禁止**在PROJECT账本记录成本（COST）
-- ❌ **禁止**在PROJECT账本记录TRANSFER_OUT/TRANSFER_IN
-- ❌ **禁止**PROJECT账本的supplier_id有值
-
-#### 2.2.2 SUPPLIER账本（供应商成本账本）
-
-**用途**: 记录供应商消耗成本、充值、余额迁移
-
-| 属性 | 值 |
+- �?**禁止**在PROJECT账本记录成本（COST�?- �?**禁止**在PROJECT账本记录TRANSFER_OUT/TRANSFER_IN
+- �?**禁止**PROJECT账本的supplier_id有�?
+#### 2.2.2 SUPPLIER账本（供应商成本账本�?
+**用�?*: 记录供应商消耗成本、充值、余额迁�?
+| 属�?| �?|
 |-----|-----|
 | **ledger_type** | `SUPPLIER` |
 | **关联实体** | `supplier_id` (必填) |
 | **entry_type范围** | `COST`, `TOPUP`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL` |
-| **业务来源** | real_spend录入、充值入账、死号迁移 |
+| **业务来源** | real_spend录入、充值入账、死号迁�?|
 | **成本公式** | `cost = real_spend + fee` |
-| **金额方向** | 负数(成本增加) / 正数(充值/余额增加/成本减少) |
+| **金额方向** | 负数(成本增加) / 正数(充�?余额增加/成本减少) |
 
 **典型场景**:
-- ✅ 运营录入real_spend → 生成COST记录（负数）
-- ✅ 财务充值入账 → 生成TOPUP记录（正数）
-- ✅ 死号迁移 → 生成TRANSFER_OUT（负数）+ TRANSFER_IN（正数）
+- �?运营录入real_spend �?生成COST记录（负数）
+- �?财务充值入�?�?生成TOPUP记录（正数）
+- �?死号迁移 �?生成TRANSFER_OUT（负数）+ TRANSFER_IN（正数）
 
 **禁止行为**:
-- ❌ **禁止**在SUPPLIER账本记录粉数收入（REVENUE）
-- ❌ **禁止**SUPPLIER账本的project_id有值（可空）
-
+- �?**禁止**在SUPPLIER账本记录粉数收入（REVENUE�?- �?**禁止**SUPPLIER账本的project_id有值（可空�?
 ### 2.3 账本绝对不能混用原则
 
 **强制规则**:
 
 ```sql
--- ✅ 正确：PROJECT账本记录收入
+-- �?正确：PROJECT账本记录收入
 INSERT INTO ledger_entries (
     ledger_type, project_id, supplier_id, entry_type, amount
 ) VALUES (
     'PROJECT', 123, NULL, 'REVENUE', 4750.00  -- supplier_id必须为NULL
 );
 
--- ❌ 错误：PROJECT账本记录成本
+-- �?错误：PROJECT账本记录成本
 INSERT INTO ledger_entries (
     ledger_type, project_id, supplier_id, entry_type, amount
 ) VALUES (
-    'PROJECT', 123, NULL, 'COST', -4800.00  -- 禁止！
-);
+    'PROJECT', 123, NULL, 'COST', -4800.00  -- 禁止�?);
 
--- ✅ 正确：SUPPLIER账本记录成本
+-- �?正确：SUPPLIER账本记录成本
 INSERT INTO ledger_entries (
     ledger_type, project_id, supplier_id, entry_type, amount
 ) VALUES (
     'SUPPLIER', NULL, 456, 'COST', -4800.00  -- project_id必须为NULL
 );
 
--- ❌ 错误：SUPPLIER账本记录收入
+-- �?错误：SUPPLIER账本记录收入
 INSERT INTO ledger_entries (
     ledger_type, project_id, supplier_id, entry_type, amount
 ) VALUES (
-    'SUPPLIER', NULL, 456, 'REVENUE', 4750.00  -- 禁止！
-);
+    'SUPPLIER', NULL, 456, 'REVENUE', 4750.00  -- 禁止�?);
 ```
 
-**数据库约束** (引用: DATA_SCHEMA.md v5.1 3.4.4节):
+**数据库约�?* (引用: DATA_SCHEMA.md v5.2 3.4.4�?:
 
 ```sql
 ALTER TABLE ledger_entries ADD CONSTRAINT chk_ledger_type_entity CHECK (
@@ -195,36 +172,31 @@ ALTER TABLE ledger_entries ADD CONSTRAINT chk_ledger_entry_type CHECK (
 );
 ```
 
-### 2.4 余额唯一真相源原则
+### 2.4 余额唯一真相源原�?
+**核心原则**: 实时可用余额**只能**使用 `projects.balance` / `suppliers.balance` 字段�?*禁止**使用 `ledger_entries` 聚合计算实时余额�?
+**余额真相源定�?*:
 
-**核心原则**: 实时可用余额**只能**使用 `projects.balance` / `suppliers.balance` 字段，**禁止**使用 `ledger_entries` 聚合计算实时余额。
-
-**余额真相源定义**:
-
-| 用途 | 唯一真相源 | 使用场景 |
+| 用�?| 唯一真相�?| 使用场景 |
 |-----|-----------|---------|
-| **实时可用余额查询** | `projects.balance` / `suppliers.balance` | API返回余额、余额不足判断、余额扣减 |
+| **实时可用余额查询** | `projects.balance` / `suppliers.balance` | API返回余额、余额不足判断、余额扣�?|
 | **历史余额追溯** | `ledger_entries` 聚合计算 | 财务对账、审计报表、历史时间点余额 |
-| **余额变动记录** | `ledger_entries` | 审计日志、变动明细查询 |
+| **余额变动记录** | `ledger_entries` | 审计日志、变动明细查�?|
 
-**✅ 正确做法**:
+**�?正确做法**:
 
 ```python
-# ✅ 正确：查询实时余额
-project = db.query(Project).filter(Project.id == project_id).first()
+# �?正确：查询实时余�?project = db.query(Project).filter(Project.id == project_id).first()
 available_balance = project.balance  # 直接使用balance字段
 
-# ✅ 正确：余额不足判断
-if project.balance < required_amount:
+# �?正确：余额不足判�?if project.balance < required_amount:
     raise InsufficientBalanceException(code="BIZ_101")
 
-# ✅ 正确：余额更新（事务内）
+# �?正确：余额更新（事务内）
 with db.begin():
     project = db.query(Project).filter(Project.id == project_id).with_for_update().first()
     project.balance = project.balance + amount  # 直接更新balance字段
 
-    # 同时生成ledger_entry记录（仅用于审计）
-    ledger_entry = LedgerEntry(
+    # 同时生成ledger_entry记录（仅用于审计�?    ledger_entry = LedgerEntry(
         ledger_type="PROJECT",
         entry_type="TOPUP",
         amount=amount,
@@ -234,7 +206,7 @@ with db.begin():
     db.add(ledger_entry)
     db.commit()
 
-# ✅ 正确：历史余额追溯（财务对账用）
+# �?正确：历史余额追溯（财务对账用）
 historical_balance = db.query(
     func.sum(LedgerEntry.amount)
 ).filter(
@@ -243,40 +215,34 @@ historical_balance = db.query(
 ).scalar() or Decimal("0.00")
 ```
 
-**❌ 错误做法**:
+**�?错误做法**:
 
 ```python
-# ❌ 错误：使用ledger_entries聚合计算实时余额
+# �?错误：使用ledger_entries聚合计算实时余额
 available_balance = db.query(
     func.sum(LedgerEntry.amount)
 ).filter(
     LedgerEntry.project_id == project_id
-).scalar()  # 禁止！性能差且可能不一致
-
-# ❌ 错误：余额不足判断依赖ledger聚合
+).scalar()  # 禁止！性能差且可能不一�?
+# �?错误：余额不足判断依赖ledger聚合
 ledger_sum = db.query(func.sum(LedgerEntry.amount)).filter(...).scalar()
-if ledger_sum < required_amount:  # 禁止！
-    raise InsufficientBalanceException(code="BIZ_101")
+if ledger_sum < required_amount:  # 禁止�?    raise InsufficientBalanceException(code="BIZ_101")
 
-# ❌ 错误：报表直接依赖ledger聚合作为实时余额
+# �?错误：报表直接依赖ledger聚合作为实时余额
 report_data = {
     "project_id": project_id,
-    "balance": db.query(func.sum(LedgerEntry.amount)).filter(...).scalar()  # 禁止！
-}
+    "balance": db.query(func.sum(LedgerEntry.amount)).filter(...).scalar()  # 禁止�?}
 ```
 
-**为什么禁止使用 ledger_entries 聚合计算实时余额？**
+**为什么禁止使�?ledger_entries 聚合计算实时余额�?*
 
 1. **性能问题**: 聚合查询在大数据量下性能极差（每次查询需扫描所有历史记录）
-2. **一致性风险**: 如果balance字段和ledger聚合结果不一致，以谁为准？
-3. **并发问题**: 聚合查询无法使用 `SELECT FOR UPDATE` 锁定余额
-4. **业务语义**: `ledger_entries` 是审计日志，不是余额表
-
-**余额一致性保证**:
+2. **一致性风�?*: 如果balance字段和ledger聚合结果不一致，以谁为准�?3. **并发问题**: 聚合查询无法使用 `SELECT FOR UPDATE` 锁定余额
+4. **业务语义**: `ledger_entries` 是审计日志，不是余额�?
+**余额一致性保�?*:
 
 ```python
-# ✅ 余额更新的标准模式（balance + ledger双写）
-def update_balance_and_ledger(
+# �?余额更新的标准模式（balance + ledger双写�?def update_balance_and_ledger(
     db: Session,
     entity_type: str,  # 'project' or 'supplier'
     entity_id: Union[int, UUID],
@@ -307,11 +273,9 @@ def update_balance_and_ledger(
         if not entity:
             raise ResourceNotFoundException(code="BIZ_002")
 
-        # 更新余额（真相源）
-        new_balance = entity.balance + amount
+        # 更新余额（真相源�?        new_balance = entity.balance + amount
 
-        # 余额不足检查（只能在这里做）
-        if new_balance < 0:
+        # 余额不足检查（只能在这里做�?        if new_balance < 0:
             raise InsufficientBalanceException(
                 code="BIZ_101",
                 message=f"余额不足：当前余额{entity.balance}，需要扣减{abs(amount)}"
@@ -319,8 +283,7 @@ def update_balance_and_ledger(
 
         entity.balance = new_balance
 
-        # Step 2: 生成ledger记录（仅用于审计）
-        ledger_entry = LedgerEntry(
+        # Step 2: 生成ledger记录（仅用于审计�?        ledger_entry = LedgerEntry(
             ledger_type="PROJECT" if entity_type == "project" else "SUPPLIER",
             entry_type=entry_type,
             project_id=entity_id if entity_type == "project" else None,
@@ -340,14 +303,12 @@ def update_balance_and_ledger(
         return new_balance, ledger_entry
 ```
 
-**审计与对账**:
+**审计与对�?*:
 
 ```python
-# ✅ 财务对账：验证balance字段与ledger聚合一致性
-def verify_balance_consistency(db: Session, project_id: int) -> Dict:
+# �?财务对账：验证balance字段与ledger聚合一致�?def verify_balance_consistency(db: Session, project_id: int) -> Dict:
     """
-    财务对账工具：验证projects.balance与ledger_entries聚合结果是否一致
-    """
+    财务对账工具：验证projects.balance与ledger_entries聚合结果是否一�?    """
 
     # 真相源：projects.balance
     project = db.query(Project).filter(Project.id == project_id).first()
@@ -366,8 +327,7 @@ def verify_balance_consistency(db: Session, project_id: int) -> Dict:
 
     return {
         "project_id": project_id,
-        "balance_truth": balance_truth,  # 真相源
-        "ledger_sum": ledger_sum,        # 审计记录
+        "balance_truth": balance_truth,  # 真相�?        "ledger_sum": ledger_sum,        # 审计记录
         "is_consistent": is_consistent,
         "diff": balance_truth - ledger_sum
     }
@@ -377,10 +337,8 @@ def verify_balance_consistency(db: Session, project_id: int) -> Dict:
 
 ## 3. ledger_entries表SoT
 
-**引用**: DATA_SCHEMA.md v5.1 第3.4.4节
-
-### 3.1 完整表结构
-
+**引用**: DATA_SCHEMA.md v5.2 �?.4.4�?
+### 3.1 完整表结�?
 ```sql
 CREATE TABLE ledger_entries (
     -- ===== 主键 =====
@@ -392,33 +350,23 @@ CREATE TABLE ledger_entries (
     -- ===== 关联实体（互斥） =====
     project_id BIGINT REFERENCES projects(id),       -- PROJECT账本必填
     supplier_id UUID REFERENCES suppliers(id),       -- SUPPLIER账本必填
-    ad_account_id BIGINT REFERENCES ad_accounts(id), -- 可空，辅助字段
-
+    ad_account_id BIGINT REFERENCES ad_accounts(id), -- 可空，辅助字�?
     -- ===== 业务类型 =====
     entry_type VARCHAR(20) NOT NULL CHECK (entry_type IN (
-        'REVENUE',      -- 粉数计费收入（PROJECT专用）
-        'COST',         -- 真实消耗成本（SUPPLIER专用）
-        'TRANSFER_OUT', -- 死号余额迁出（SUPPLIER专用）
-        'TRANSFER_IN',  -- 死号余额迁入（SUPPLIER专用）
-        'REVERSAL'      -- 红冲修正（BOTH）
-    )),
+        'REVENUE',      -- 粉数计费收入（PROJECT专用�?        'COST',         -- 真实消耗成本（SUPPLIER专用�?        'TRANSFER_OUT', -- 死号余额迁出（SUPPLIER专用�?        'TRANSFER_IN',  -- 死号余额迁入（SUPPLIER专用�?        'REVERSAL'      -- 红冲修正（BOTH�?    )),
 
     -- ===== 金额字段 =====
-    amount DECIMAL(15,2) NOT NULL,  -- 借方为正，贷方为负
-    currency VARCHAR(10) DEFAULT 'CNY' NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,  -- 借方为正，贷方为�?    currency VARCHAR(10) DEFAULT 'CNY' NOT NULL,
 
     -- ===== 关联业务记录 =====
-    reference_id BIGINT,  -- 关联 daily_reports.id / topup_transactions.id / 原ledger_entries.id（红冲时）
-    reference_type VARCHAR(50),  -- 'daily_report' / 'topup' / 'transfer' / 'adjustment' / 'reversal'
+    reference_id BIGINT,  -- 关联 daily_reports.id / topup_transactions.id / 原ledger_entries.id（红冲时�?    reference_type VARCHAR(50),  -- 'daily_report' / 'topup' / 'transfer' / 'adjustment' / 'reversal'
 
     -- ===== 时间字段 =====
     occurred_at TIMESTAMPTZ NOT NULL,  -- 业务发生时间（final_locked时间/充值入账时间）
     created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
 
     -- ===== 审计字段 =====
-    created_by UUID REFERENCES users(id) NOT NULL,  -- 创建人（system操作时为system账户）
-    notes TEXT  -- 备注（红冲时必填原因）
-);
+    created_by UUID REFERENCES users(id) NOT NULL,  -- 创建人（system操作时为system账户�?    notes TEXT  -- 备注（红冲时必填原因�?);
 
 -- 索引
 CREATE INDEX idx_ledger_project ON ledger_entries(project_id, occurred_at);
@@ -434,16 +382,12 @@ CREATE INDEX idx_ledger_reference ON ledger_entries(reference_type, reference_id
 
 **概念定义**: 区分PROJECT（收入）账本和SUPPLIER（成本）账本
 
-**合法值**: `PROJECT`, `SUPPLIER`
+**合法�?*: `PROJECT`, `SUPPLIER`
 
-**数据源**: Service层创建Ledger时明确指定
-
-**是否参与事务**: ✅ 参与（与project_id/supplier_id的INSERT在同一事务）
-
+**数据�?*: Service层创建Ledger时明确指�?
+**是否参与事务**: �?参与（与project_id/supplier_id的INSERT在同一事务�?
 **业务规则绑定**:
-- BR-FIN-005: Topup与Ledger双写一致性
-- BR-FIN-003: 金额字段合规性约束
-
+- BR-FIN-005: Topup与Ledger双写一致�?- BR-FIN-003: 金额字段合规性约�?
 **校验逻辑**:
 ```python
 if ledger_type == "PROJECT":
@@ -458,79 +402,65 @@ elif ledger_type == "SUPPLIER":
 
 #### 3.2.2 entry_type（业务类型）
 
-**概念定义**: 区分不同的业务场景（计费/充值/成本/转移/红冲）
-
-**合法值**: `REVENUE`, `COST`, `TOPUP`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL`
+**概念定义**: 区分不同的业务场景（计费/充�?成本/转移/红冲�?
+**合法�?*: `REVENUE`, `COST`, `TOPUP`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL`
 
 **CHECK约束**:
 ```sql
 CHECK (entry_type IN ('REVENUE', 'COST', 'TOPUP', 'TRANSFER_OUT', 'TRANSFER_IN', 'REVERSAL'))
 ```
 
-**数据源**:
-- `REVENUE`: DailyReport.status从final_confirmed→final_locked时自动生成（**严格限定为粉数计费收入**）
-- `COST`: 运营录入real_spend后自动生成
-- `TOPUP`: 充值入账操作生成（**不是收入，而是余额变动**）
-  - 语义：充值/topup，NOT 收入/成本，just balance change
+**数据�?*:
+- `REVENUE`: DailyReport.status从final_confirmed→final_locked时自动生成（**严格限定为粉数计费收�?*�?- `COST`: 运营录入real_spend后自动生�?- `TOPUP`: 充值入账操作生成（**不是收入，而是余额变动**�?  - 语义：充�?topup，NOT 收入/成本，just balance change
   - 允许的ledger_types: Both PROJECT and SUPPLIER
 - `TRANSFER_OUT/TRANSFER_IN`: 死号迁移流程生成（成对出现）
 - `REVERSAL`: 人工红冲操作生成
 
-**是否参与事务**: ✅ 参与（与状态变更在同一事务）
-
+**是否参与事务**: �?参与（与状态变更在同一事务�?
 **业务规则绑定**:
-- BR-RPT-004: final_locked后数据锁定规则
-- BR-FIN-002: 审批职责分离原则
+- BR-RPT-004: final_locked后数据锁定规�?- BR-FIN-002: 审批职责分离原则
 
 #### 3.2.3 amount（金额）
 
-**概念定义**: 资金变动金额，**正负方向有严格规则**（见第4章）
+**概念定义**: 资金变动金额�?*正负方向有严格规�?*（见�?章）
 
 **数据类型**: `DECIMAL(15,2)` - 必须两位小数
 
-**数据源**:
+**数据�?*:
 - REVENUE: `conversions_final × unit_price`
 - COST: `real_spend + fee`
-- TOPUP: 充值金额（正数）
-- TRANSFER: 源账户余额（正数）
-
-**是否参与事务**: ✅ 参与（与balance更新在同一事务）
-
+- TOPUP: 充值金额（正数�?- TRANSFER: 源账户余额（正数�?
+**是否参与事务**: �?参与（与balance更新在同一事务�?
 **业务规则绑定**:
-- BR-FIN-003: 金额字段合规性（必须Decimal，禁止Float）
-
+- BR-FIN-003: 金额字段合规性（必须Decimal，禁止Float�?
 **校验逻辑**:
 ```python
 # 金额必须非零
-assert amount != Decimal("0.00"), "金额不能为0"
+assert amount != Decimal("0.00"), "金额不能�?"
 
-# 金额必须保留2位小数
-assert amount.as_tuple().exponent == -2, "金额必须2位小数"
+# 金额必须保留2位小�?assert amount.as_tuple().exponent == -2, "金额必须2位小�?
 
 # REVENUE必须正数
 if entry_type == "REVENUE":
-    assert amount > 0, "REVENUE金额必须为正数"
+    assert amount > 0, "REVENUE金额必须为正�?
 
 # COST必须负数
 if entry_type == "COST":
-    assert amount < 0, "COST金额必须为负数"
+    assert amount < 0, "COST金额必须为负�?
 ```
 
 #### 3.2.4 balance_before / balance_after（余额快照）
 
-**注意**: 当前DATA_SCHEMA.md v5.1中**未定义**这两个字段
-
-**建议**: 如果需要余额快照，建议在projects/suppliers表维护balance字段，而不是在ledger_entries中冗余
-
+**注意**: 当前DATA_SCHEMA.md v5.2�?*未定�?*这两个字�?
+**建议**: 如果需要余额快照，建议在projects/suppliers表维护balance字段，而不是在ledger_entries中冗�?
 **原因**:
-- ❌ ledger_entries中存储余额会导致数据冗余
-- ❌ 余额计算应该通过SUM聚合实现
-- ✅ 在projects/suppliers表维护最新余额，通过SELECT FOR UPDATE锁定
+- �?ledger_entries中存储余额会导致数据冗余
+- �?余额计算应该通过SUM聚合实现
+- �?在projects/suppliers表维护最新余额，通过SELECT FOR UPDATE锁定
 
 **当前设计**:
 ```sql
--- projects表维护余额
-SELECT balance FROM projects WHERE id = ? FOR UPDATE;  -- 锁定项目
+-- projects表维护余�?SELECT balance FROM projects WHERE id = ? FOR UPDATE;  -- 锁定项目
 UPDATE projects SET balance = balance + amount WHERE id = ?;
 
 -- 通过Ledger聚合计算历史余额
@@ -540,18 +470,15 @@ WHERE project_id = ? AND occurred_at <= '2025-01-15';
 
 #### 3.2.5 reference_id / reference_type（关联业务）
 
-**概念定义**: 追溯Ledger记录的业务来源
-
-**reference_type合法值**:
+**概念定义**: 追溯Ledger记录的业务来�?
+**reference_type合法�?*:
 - `daily_report`: 关联daily_reports.id
 - `topup`: 关联topup_requests.id
 - `transfer`: 关联ad_accounts.id（死号迁移）
 - `adjustment`: 人工调账
-- `reversal`: 关联原ledger_entries.id（红冲原记录）
-
-**数据源**: Service层创建Ledger时填充
-
-**是否参与事务**: ✅ 参与
+- `reversal`: 关联原ledger_entries.id（红冲原记录�?
+**数据�?*: Service层创建Ledger时填�?
+**是否参与事务**: �?参与
 
 **查询示例**:
 ```sql
@@ -563,8 +490,7 @@ WHERE reference_type = 'daily_report' AND reference_id = 12345;
 SELECT * FROM ledger_entries
 WHERE reference_type = 'topup' AND reference_id = 67890;
 
--- 查询某Ledger记录的红冲记录
-SELECT * FROM ledger_entries
+-- 查询某Ledger记录的红冲记�?SELECT * FROM ledger_entries
 WHERE reference_type = 'reversal' AND reference_id = 11111;  -- 11111是原Ledger ID
 ```
 
@@ -572,25 +498,20 @@ WHERE reference_type = 'reversal' AND reference_id = 11111;  -- 11111是原Ledge
 
 **概念定义**: Ledger记录对应的业务时间（非创建时间）
 
-**数据源**:
-- REVENUE: `daily_reports.updated_at`（final_locked时间）
-- COST: `daily_reports.updated_at`（real_spend录入时间）
-- TRANSFER: 死号迁移操作时间
+**数据�?*:
+- REVENUE: `daily_reports.updated_at`（final_locked时间�?- COST: `daily_reports.updated_at`（real_spend录入时间�?- TRANSFER: 死号迁移操作时间
 - REVERSAL: 红冲操作时间
 
-**用途**: 财务报表按occurred_at统计，而非created_at
+**用�?*: 财务报表按occurred_at统计，而非created_at
 
-**是否参与事务**: ✅ 参与
+**是否参与事务**: �?参与
 
-#### 3.2.7 created_by（创建人）
-
-**概念定义**: 记录创建此Ledger的用户
-
-**数据源**:
+#### 3.2.7 created_by（创建人�?
+**概念定义**: 记录创建此Ledger的用�?
+**数据�?*:
 - 人工操作: 当前登录用户ID
-- 系统自动: system专用账户UUID（需预先创建）
-
-**是否参与事务**: ✅ 参与
+- 系统自动: system专用账户UUID（需预先创建�?
+**是否参与事务**: �?参与
 
 **业务规则绑定**:
 - BR-FIN-002: 审批职责分离原则
@@ -618,59 +539,54 @@ audit_log = AuditLog(
 
 **概念定义**: 人工操作时的必填原因
 
-**是否参与事务**: ✅ 参与
+**是否参与事务**: �?参与
 
 **必填场景**:
-- ✅ REVERSAL（红冲）必填（至少10字符）
-- ✅ Manual Adjustment（手工调账）必填
-- ❌ 系统自动生成的REVENUE/COST可为空
-
+- �?REVERSAL（红冲）必填（至�?0字符�?- �?Manual Adjustment（手工调账）必填
+- �?系统自动生成的REVENUE/COST可为�?
 **校验逻辑**:
 ```python
 if entry_type == "REVERSAL":
-    assert notes is not None and len(notes.strip()) >= 10, "红冲必须填写原因（至少10字符）"
+    assert notes is not None and len(notes.strip()) >= 10, "红冲必须填写原因（至�?0字符�?
 
 if reference_type == "adjustment":
-    assert notes is not None and len(notes.strip()) >= 10, "手工调账必须填写原因（至少10字符）"
+    assert notes is not None and len(notes.strip()) >= 10, "手工调账必须填写原因（至�?0字符�?
 ```
 
 ---
 
 ## 4. 金额方向（正负）绝对规则
 
-### 4.1 完整金额方向表
-
-| ledger_type | entry_type | amount正负方向 | 说明 | 典型值示例 | 业务来源 |
+### 4.1 完整金额方向�?
+| ledger_type | entry_type | amount正负方向 | 说明 | 典型值示�?| 业务来源 |
 |------------|-----------|---------------|------|-----------|---------|
 | **PROJECT** | REVENUE | **+正数** | final_confirmed导致项目收入增加 | +4750.00 | conversions_final × unit_price |
-| **PROJECT** | TOPUP | **+正数** | 项目充值余额增加 | +10000.00 | 充值入账 |
+| **PROJECT** | TOPUP | **+正数** | 项目充值余额增�?| +10000.00 | 充值入�?|
 | **PROJECT** | REVERSAL | **-负数** | 红冲减少收入 | -4750.00 | 人工红冲原REVENUE |
-| **SUPPLIER** | COST | **-负数** | real_spend导致供应商成本增加（余额减少） | -4800.00 | real_spend + fee |
-| **SUPPLIER** | TOPUP | **+正数** | 供应商充值余额增加 | +50000.00 | 充值入账 |
+| **SUPPLIER** | COST | **-负数** | real_spend导致供应商成本增加（余额减少�?| -4800.00 | real_spend + fee |
+| **SUPPLIER** | TOPUP | **+正数** | 供应商充值余额增�?| +50000.00 | 充值入�?|
 | **SUPPLIER** | TRANSFER_OUT | **-负数** | 死号余额迁出（余额减少） | -1234.56 | 源账户remaining_balance |
 | **SUPPLIER** | TRANSFER_IN | **+正数** | 死号余额迁入（余额增加） | +1234.56 | 目标账户接收 |
-| **SUPPLIER** | REVERSAL | **取决于原记录** | 红冲方向与原记录相反 | 若原COST=-100，则REVERSAL=+100 | 人工红冲原记录 |
+| **SUPPLIER** | REVERSAL | **取决于原记录** | 红冲方向与原记录相反 | 若原COST=-100，则REVERSAL=+100 | 人工红冲原记�?|
 
-### 4.2 双账本 × entry_type 白名单矩阵
-
-**目的**: 明确定义所有 `ledger_type` 和 `entry_type` 的合法组合，**禁止**非法组合。
-
+### 4.2 双账�?× entry_type 白名单矩�?
+**目的**: 明确定义所�?`ledger_type` �?`entry_type` 的合法组合，**禁止**非法组合�?
 | ledger_type | entry_type | 是否允许 | amount符号 | 说明 |
 |------------|-----------|---------|-----------|------|
-| **PROJECT** | REVENUE | ✅ YES | +正数 | 粉数计费收入（final_locked后生成） |
-| **PROJECT** | COST | ❌ **NO** | - | **禁止**：项目账本不记录成本 |
-| **PROJECT** | TOPUP | ✅ YES | +正数 | 项目充值入账 |
-| **PROJECT** | TRANSFER_OUT | ❌ **NO** | - | **禁止**：项目账本不参与死号迁移 |
-| **PROJECT** | TRANSFER_IN | ❌ **NO** | - | **禁止**：项目账本不参与死号迁移 |
-| **PROJECT** | REVERSAL | ✅ YES | -负数 | 红冲原REVENUE/TOPUP记录 |
-| **SUPPLIER** | REVENUE | ❌ **NO** | - | **禁止**：供应商账本不记录粉数收入 |
-| **SUPPLIER** | COST | ✅ YES | -负数 | 真实消耗成本（real_spend录入后生成） |
-| **SUPPLIER** | TOPUP | ✅ YES | +正数 | 供应商充值入账 |
-| **SUPPLIER** | TRANSFER_OUT | ✅ YES | -负数 | 死号余额迁出 |
-| **SUPPLIER** | TRANSFER_IN | ✅ YES | +正数 | 死号余额迁入 |
-| **SUPPLIER** | REVERSAL | ✅ YES | 取决于原记录 | 红冲原COST/TOPUP/TRANSFER记录 |
+| **PROJECT** | REVENUE | �?YES | +正数 | 粉数计费收入（final_locked后生成） |
+| **PROJECT** | COST | �?**NO** | - | **禁止**：项目账本不记录成本 |
+| **PROJECT** | TOPUP | �?YES | +正数 | 项目充值入�?|
+| **PROJECT** | TRANSFER_OUT | �?**NO** | - | **禁止**：项目账本不参与死号迁移 |
+| **PROJECT** | TRANSFER_IN | �?**NO** | - | **禁止**：项目账本不参与死号迁移 |
+| **PROJECT** | REVERSAL | �?YES | -负数 | 红冲原REVENUE/TOPUP记录 |
+| **SUPPLIER** | REVENUE | �?**NO** | - | **禁止**：供应商账本不记录粉数收�?|
+| **SUPPLIER** | COST | �?YES | -负数 | 真实消耗成本（real_spend录入后生成） |
+| **SUPPLIER** | TOPUP | �?YES | +正数 | 供应商充值入�?|
+| **SUPPLIER** | TRANSFER_OUT | �?YES | -负数 | 死号余额迁出 |
+| **SUPPLIER** | TRANSFER_IN | �?YES | +正数 | 死号余额迁入 |
+| **SUPPLIER** | REVERSAL | �?YES | 取决于原记录 | 红冲原COST/TOPUP/TRANSFER记录 |
 
-**数据库约束**（已在2.3节定义）:
+**数据库约�?*（已�?.3节定义）:
 
 ```sql
 ALTER TABLE ledger_entries ADD CONSTRAINT chk_ledger_entry_type CHECK (
@@ -682,7 +598,7 @@ ALTER TABLE ledger_entries ADD CONSTRAINT chk_ledger_entry_type CHECK (
 **禁止组合示例**:
 
 ```python
-# ❌ 错误：PROJECT账本记录成本
+# �?错误：PROJECT账本记录成本
 ledger_entry = LedgerEntry(
     ledger_type="PROJECT",
     entry_type="COST",  # 禁止！触发CHECK约束
@@ -690,7 +606,7 @@ ledger_entry = LedgerEntry(
 )
 # IntegrityError: chk_ledger_entry_type violated
 
-# ❌ 错误：SUPPLIER账本记录粉数收入
+# �?错误：SUPPLIER账本记录粉数收入
 ledger_entry = LedgerEntry(
     ledger_type="SUPPLIER",
     entry_type="REVENUE",  # 禁止！触发CHECK约束
@@ -698,7 +614,7 @@ ledger_entry = LedgerEntry(
 )
 # IntegrityError: chk_ledger_entry_type violated
 
-# ❌ 错误：PROJECT账本参与死号迁移
+# �?错误：PROJECT账本参与死号迁移
 ledger_entry = LedgerEntry(
     ledger_type="PROJECT",
     entry_type="TRANSFER_OUT",  # 禁止！触发CHECK约束
@@ -710,22 +626,21 @@ ledger_entry = LedgerEntry(
 ### 4.3 核心原则
 
 **PROJECT账本（收入视角）**:
-- ✅ 收入增加 = **正数**
-- ✅ 收入减少 = **负数**
-- ❌ **禁止**成本相关记录
+- �?收入增加 = **正数**
+- �?收入减少 = **负数**
+- �?**禁止**成本相关记录
 
 **SUPPLIER账本（成本视角）**:
-- ✅ 成本增加（余额减少）= **负数**
-- ✅ 余额增加（充值/迁入）= **正数**
-- ❌ **禁止**收入相关记录
+- �?成本增加（余额减少）= **负数**
+- �?余额增加（充�?迁入�? **正数**
+- �?**禁止**收入相关记录
 
 ### 4.4 红冲规则
 
-**REVERSAL金额方向 = -原记录金额**
+**REVERSAL金额方向 = -原记录金�?*
 
 ```python
-# 示例：红冲一笔收入
-original_entry = LedgerEntry(
+# 示例：红冲一笔收�?original_entry = LedgerEntry(
     ledger_type="PROJECT",
     entry_type="REVENUE",
     amount=Decimal("4750.00"),  # 正数
@@ -738,8 +653,7 @@ reversal_entry = LedgerEntry(
     entry_type="REVERSAL",
     amount=Decimal("-4750.00"),  # 负数（与原记录相反）
     reference_type="reversal",
-    reference_id=original_entry.id,  # 指向原记录
-    notes="final_locked后发现粉数计算错误，红冲原记录"
+    reference_id=original_entry.id,  # 指向原记�?    notes="final_locked后发现粉数计算错误，红冲原记�?
 )
 ```
 
@@ -753,9 +667,9 @@ def validate_ledger_amount(
 ) -> None:
     """验证Ledger金额符号是否符合规则"""
 
-    # 金额不能为0
+    # 金额不能�?
     if amount == Decimal("0.00"):
-        raise ValidationException(code="BIZ_100", message="金额不能为0")
+        raise ValidationException(code="BIZ_100", message="金额不能�?")
 
     # PROJECT账本规则
     if ledger_type == "PROJECT":
@@ -763,19 +677,19 @@ def validate_ledger_amount(
             if amount <= 0:
                 raise ValidationException(
                     code="LEDGER_001",
-                    message="PROJECT REVENUE金额必须为正数"
+                    message="PROJECT REVENUE金额必须为正�?
                 )
         elif entry_type == "TOPUP":
             if amount <= 0:
                 raise ValidationException(
                     code="LEDGER_001",
-                    message="PROJECT TOPUP金额必须为正数"
+                    message="PROJECT TOPUP金额必须为正�?
                 )
         elif entry_type == "REVERSAL":
             if amount >= 0:
                 raise ValidationException(
                     code="LEDGER_001",
-                    message="PROJECT REVERSAL金额必须为负数"
+                    message="PROJECT REVERSAL金额必须为负�?
                 )
 
     # SUPPLIER账本规则
@@ -784,25 +698,25 @@ def validate_ledger_amount(
             if amount >= 0:
                 raise ValidationException(
                     code="LEDGER_001",
-                    message="SUPPLIER COST金额必须为负数"
+                    message="SUPPLIER COST金额必须为负�?
                 )
         elif entry_type == "TOPUP":
             if amount <= 0:
                 raise ValidationException(
                     code="LEDGER_001",
-                    message="SUPPLIER TOPUP金额必须为正数"
+                    message="SUPPLIER TOPUP金额必须为正�?
                 )
         elif entry_type == "TRANSFER_OUT":
             if amount >= 0:
                 raise ValidationException(
                     code="LEDGER_001",
-                    message="SUPPLIER TRANSFER_OUT金额必须为负数"
+                    message="SUPPLIER TRANSFER_OUT金额必须为负�?
                 )
         elif entry_type == "TRANSFER_IN":
             if amount <= 0:
                 raise ValidationException(
                     code="LEDGER_001",
-                    message="SUPPLIER TRANSFER_IN金额必须为正数"
+                    message="SUPPLIER TRANSFER_IN金额必须为正�?
                 )
 ```
 
@@ -812,8 +726,7 @@ def validate_ledger_amount(
 
 ### 5.1 SELECT FOR UPDATE示例
 
-#### 5.1.1 项目充值入账事务
-
+#### 5.1.1 项目充值入账事�?
 ```python
 # backend/services/topup_service.py
 def mark_topup_paid(
@@ -824,19 +737,14 @@ def mark_topup_paid(
     """
     标记充值为已支付（finance终审后）
 
-    事务范围：
-    1. 锁定topup_requests行
-    2. 锁定project行
-    3. 创建ledger_entry
+    事务范围�?    1. 锁定topup_requests�?    2. 锁定project�?    3. 创建ledger_entry
     4. 更新project.balance
     5. 更新topup_requests.status
     """
 
-    with self.db.begin():  # 开启事务
-        # Step 1: 锁定充值申请（防止重复操作）
-        topup = self.db.query(TopupRequest).filter(
+    with self.db.begin():  # 开启事�?        # Step 1: 锁定充值申请（防止重复操作�?        topup = self.db.query(TopupRequest).filter(
             TopupRequest.id == topup_id
-        ).with_for_update().first()  # ← SELECT FOR UPDATE
+        ).with_for_update().first()  # �?SELECT FOR UPDATE
 
         if not topup:
             raise ResourceNotFoundException(code="BIZ_002")
@@ -844,16 +752,15 @@ def mark_topup_paid(
         if topup.status != "finance_approve":
             raise BusinessRuleException(
                 code="STATE_400",
-                message=f"当前状态{topup.status}不允许标记为已支付"
+                message=f"当前状态{topup.status}不允许标记为已支�?
             )
 
         # Step 2: 锁定项目（防止并发修改余额）
         project = self.db.query(Project).filter(
             Project.id == topup.project_id
-        ).with_for_update().first()  # ← SELECT FOR UPDATE
+        ).with_for_update().first()  # �?SELECT FOR UPDATE
 
-        # Step 3: 创建Ledger记录（PROJECT账本）
-        ledger_entry = LedgerEntry(
+        # Step 3: 创建Ledger记录（PROJECT账本�?        ledger_entry = LedgerEntry(
             ledger_type="PROJECT",
             entry_type="REVENUE",  # 充值视为收入增加（注：实际应为TOPUP类型，这里简化）
             project_id=project.id,
@@ -870,8 +777,7 @@ def mark_topup_paid(
         # Step 4: 更新项目余额（原子操作）
         project.balance = project.balance + topup.amount
 
-        # Step 5: 更新充值状态
-        topup.status = "paid"
+        # Step 5: 更新充值状�?        topup.status = "paid"
         topup.paid_at = datetime.now(timezone.utc)
         topup.paid_by = user["user_id"]
 
@@ -894,8 +800,7 @@ def confirm_final(
     """
     确认final粉数并生成Ledger记录
 
-    事务范围：
-    1. 锁定日报
+    事务范围�?    1. 锁定日报
     2. 锁定项目
     3. 创建PROJECT REVENUE Ledger
     4. 创建SUPPLIER COST Ledger
@@ -979,9 +884,7 @@ def transfer_balance(
     """
     死号余额迁移（同供应商）
 
-    事务范围：
-    1. 锁定源账户
-    2. 锁定目标账户
+    事务范围�?    1. 锁定源账�?    2. 锁定目标账户
     3. 验证同供应商
     4. 创建TRANSFER_OUT Ledger
     5. 创建TRANSFER_IN Ledger
@@ -991,8 +894,7 @@ def transfer_balance(
     """
 
     with self.db.begin():
-        # Step 1: 锁定源账户
-        source = self.db.query(AdAccount).filter(
+        # Step 1: 锁定源账�?        source = self.db.query(AdAccount).filter(
             AdAccount.id == source_account_id
         ).with_for_update().first()
 
@@ -1028,7 +930,7 @@ def transfer_balance(
             reference_id=source_account_id,
             occurred_at=datetime.now(timezone.utc),
             created_by=user["user_id"],
-            notes=f"死号迁移：{source.account_code} → {target.account_code}"
+            notes=f"死号迁移：{source.account_code} �?{target.account_code}"
         )
         self.db.add(out_entry)
 
@@ -1043,7 +945,7 @@ def transfer_balance(
             reference_id=target_account_id,
             occurred_at=datetime.now(timezone.utc),
             created_by=user["user_id"],
-            notes=f"接收迁移：{source.account_code} → {target.account_code}"
+            notes=f"接收迁移：{source.account_code} �?{target.account_code}"
         )
         self.db.add(in_entry)
 
@@ -1064,18 +966,17 @@ def transfer_balance(
         }
 ```
 
-### 5.2 乐观锁 vs 悲观锁
-
-| 场景 | 推荐锁策略 | 原因 |
+### 5.2 乐观�?vs 悲观�?
+| 场景 | 推荐锁策�?| 原因 |
 |------|----------|------|
-| **充值入账** | 悲观锁（SELECT FOR UPDATE） | 涉及余额修改，必须保证原子性 |
-| **计费入账** | 悲观锁（SELECT FOR UPDATE） | 涉及余额修改，必须保证原子性 |
-| **死号迁移** | 悲观锁（SELECT FOR UPDATE） | 涉及两个账户余额修改 |
-| **红冲** | 悲观锁（SELECT FOR UPDATE） | 涉及余额回退 |
+| **充值入�?* | 悲观锁（SELECT FOR UPDATE�?| 涉及余额修改，必须保证原子�?|
+| **计费入账** | 悲观锁（SELECT FOR UPDATE�?| 涉及余额修改，必须保证原子�?|
+| **死号迁移** | 悲观锁（SELECT FOR UPDATE�?| 涉及两个账户余额修改 |
+| **红冲** | 悲观锁（SELECT FOR UPDATE�?| 涉及余额回退 |
 | **查询Ledger** | 无锁 | 只读操作 |
-| **对账批次** | 乐观锁（version字段） | 长事务，避免长时间锁表 |
+| **对账批次** | 乐观锁（version字段�?| 长事务，避免长时间锁�?|
 
-**乐观锁示例**（对账批次）:
+**乐观锁示�?*（对账批次）:
 
 ```python
 # 对账批次使用乐观锁（避免长时间锁定）
@@ -1090,25 +991,22 @@ def close_reconciliation_batch(batch_id: int, expected_version: int):
     with db.begin():
         batch = db.query(ReconciliationBatch).filter(
             ReconciliationBatch.id == batch_id,
-            ReconciliationBatch.version == expected_version  # 版本号校验
-        ).first()
+            ReconciliationBatch.version == expected_version  # 版本号校�?        ).first()
 
         if not batch:
             raise ConcurrentUpdateException(
                 code="STATE_409",
-                message="对账批次已被他人修改，请刷新后重试"
+                message="对账批次已被他人修改，请刷新后重�?
             )
 
         batch.status = "closed"
-        batch.version += 1  # 版本号+1
+        batch.version += 1  # 版本�?1
 
         db.commit()
 ```
 
-### 5.3 幂等性机制
-
-#### 5.3.1 Ledger幂等性保证
-
+### 5.3 幂等性机�?
+#### 5.3.1 Ledger幂等性保�?
 **方法1: 唯一索引（推荐）**
 
 ```sql
@@ -1117,13 +1015,12 @@ CREATE UNIQUE INDEX uq_ledger_daily_report
 ON ledger_entries(reference_type, reference_id, ledger_type, entry_type)
 WHERE reference_type = 'daily_report';
 
--- 防止同一充值重复入账
-CREATE UNIQUE INDEX uq_ledger_topup
+-- 防止同一充值重复入�?CREATE UNIQUE INDEX uq_ledger_topup
 ON ledger_entries(reference_type, reference_id)
 WHERE reference_type = 'topup';
 ```
 
-**方法2: Service层校验**
+**方法2: Service层校�?*
 
 ```python
 def create_revenue_ledger(report_id: int):
@@ -1136,8 +1033,7 @@ def create_revenue_ledger(report_id: int):
     ).first()
 
     if existing:
-        # 幂等：已生成则直接返回
-        return existing
+        # 幂等：已生成则直接返�?        return existing
 
     # 创建新Ledger
     new_entry = LedgerEntry(...)
@@ -1157,13 +1053,11 @@ async def mark_topup_paid(
     current_user: Dict = Depends(get_current_user)
 ):
     """
-    标记充值为已支付（finance终审）
-
+    标记充值为已支付（finance终审�?
     幂等性保证：通过Idempotency-Key Header
     """
 
-    # 检查是否重复请求
-    if idempotency_key:
+    # 检查是否重复请�?    if idempotency_key:
         cached_response = redis.get(f"idempotency:{idempotency_key}")
         if cached_response:
             return JSONResponse(
@@ -1174,8 +1068,7 @@ async def mark_topup_paid(
     # 执行业务逻辑
     result = topup_service.mark_topup_paid(topup_id, current_user)
 
-    # 缓存响应（24小时）
-    if idempotency_key:
+    # 缓存响应�?4小时�?    if idempotency_key:
         redis.setex(
             f"idempotency:{idempotency_key}",
             86400,  # 24小时
@@ -1187,31 +1080,25 @@ async def mark_topup_paid(
 
 ---
 
-## 6. 失败与回滚策略
-
+## 6. 失败与回滚策�?
 ### 6.1 核心原则
 
-**ALL-OR-NOTHING原则**: 业务状态更新、余额更新、Ledger记录生成**必须在同一事务内完成**，任何一步失败则完整回滚。
+**ALL-OR-NOTHING原则**: 业务状态更新、余额更新、Ledger记录生成**必须在同一事务内完�?*，任何一步失败则完整回滚�?
+**禁止部分成功状�?*:
+- �?**禁止**业务状态已更新但Ledger未生�?- �?**禁止**余额已更新但Ledger未生�?- �?**禁止**Ledger已生成但余额未更�?
+### 6.2 三大失败场景与回滚策�?
+#### 6.2.1 场景1: DailyReport �?final_locked �?write PROJECT ledger failure
 
-**禁止部分成功状态**:
-- ❌ **禁止**业务状态已更新但Ledger未生成
-- ❌ **禁止**余额已更新但Ledger未生成
-- ❌ **禁止**Ledger已生成但余额未更新
-
-### 6.2 三大失败场景与回滚策略
-
-#### 6.2.1 场景1: DailyReport → final_locked → write PROJECT ledger failure
-
-**触发时机**: 日报状态从 `final_confirmed` → `final_locked` 时，Ledger写入失败
+**触发时机**: 日报状态从 `final_confirmed` �?`final_locked` 时，Ledger写入失败
 
 **回滚策略**:
 
 | 项目 | 策略 |
 |-----|------|
-| **事务回滚** | 完整回滚，日报状态保持 `final_confirmed` |
-| **重试策略** | 幂等重试（检查是否已生成Ledger） |
-| **状态保持** | 日报保持 `final_confirmed` 状态，等待下次重试 |
-| **错误码** | `LEDGER_101` |
+| **事务回滚** | 完整回滚，日报状态保�?`final_confirmed` |
+| **重试策略** | 幂等重试（检查是否已生成Ledger�?|
+| **状态保�?* | 日报保持 `final_confirmed` 状态，等待下次重试 |
+| **错误�?* | `LEDGER_101` |
 
 **实现示例**:
 
@@ -1223,8 +1110,7 @@ def lock_final_report(
     user: Dict
 ) -> DailyReport:
     """
-    锁定final日报（final_confirmed → final_locked）
-
+    锁定final日报（final_confirmed �?final_locked�?
     触发: 生成PROJECT REVENUE Ledger
     """
 
@@ -1238,7 +1124,7 @@ def lock_final_report(
             if report.status != "final_confirmed":
                 raise BusinessRuleException(
                     code="STATE_400",
-                    message=f"当前状态{report.status}不允许锁定"
+                    message=f"当前状态{report.status}不允许锁�?
                 )
 
             # Step 2: 锁定项目
@@ -1258,8 +1144,7 @@ def lock_final_report(
             ).first()
 
             if existing_ledger:
-                # 幂等：已生成Ledger，直接返回
-                logger.info(f"Ledger already exists for report {report_id}, skipping")
+                # 幂等：已生成Ledger，直接返�?                logger.info(f"Ledger already exists for report {report_id}, skipping")
             else:
                 # 生成新Ledger
                 ledger_entry = LedgerEntry(
@@ -1280,8 +1165,7 @@ def lock_final_report(
                 # Step 5: 更新项目余额
                 project.balance = project.balance + revenue_amount
 
-            # Step 6: 更新日报状态
-            report.status = "final_locked"
+            # Step 6: 更新日报状�?            report.status = "final_locked"
             report.locked_at = datetime.now(timezone.utc)
             report.locked_by = user["user_id"]
 
@@ -1290,8 +1174,7 @@ def lock_final_report(
             return report
 
         except IntegrityError as e:
-            # Ledger写入失败（如唯一索引冲突）
-            self.db.rollback()
+            # Ledger写入失败（如唯一索引冲突�?            self.db.rollback()
             logger.error(f"Ledger write failed for report {report_id}: {e}")
             raise LedgerException(
                 code="LEDGER_101",
@@ -1308,30 +1191,23 @@ def lock_final_report(
 **状态机保证**:
 
 ```
-final_confirmed ──[lock_final_report]──┐
-       ↑                                │
-       │                                ▼
-       │                         (Ledger写入成功?)
-       │                                │
-       │                         ┌──────┴──────┐
-       │                         │             │
-       │                        YES           NO
-       │                         │             │
-       └─────(重试)──────────────┘       final_locked
+final_confirmed ──[lock_final_report]──�?       �?                               �?       �?                               �?       �?                        (Ledger写入成功?)
+       �?                               �?       �?                        ┌──────┴──────�?       �?                        �?            �?       �?                       YES           NO
+       �?                        �?            �?       └─────(重试)──────────────�?      final_locked
 ```
 
-#### 6.2.2 场景2: Topup approval → write ledger failure
+#### 6.2.2 场景2: Topup approval �?write ledger failure
 
-**触发时机**: 充值申请从 `pending_approval` → `approved` 时，Ledger写入失败
+**触发时机**: 充值申请从 `pending_approval` �?`approved` 时，Ledger写入失败
 
 **回滚策略**:
 
 | 项目 | 策略 |
 |-----|------|
-| **事务回滚** | 完整回滚，充值状态保持 `pending_approval` |
-| **重试策略** | 人工重试（finance重新批准） |
-| **状态保持** | 充值保持 `pending_approval` 状态，**禁止**进入 `approved` |
-| **错误码** | `LEDGER_102` |
+| **事务回滚** | 完整回滚，充值状态保�?`pending_approval` |
+| **重试策略** | 人工重试（finance重新批准�?|
+| **状态保�?* | 充值保�?`pending_approval` 状态，**禁止**进入 `approved` |
+| **错误�?* | `LEDGER_102` |
 
 **实现示例**:
 
@@ -1343,22 +1219,20 @@ def approve_topup_request(
     user: Dict
 ) -> TopupRequest:
     """
-    批准充值申请（pending_approval → approved）
-
+    批准充值申请（pending_approval �?approved�?
     触发: 生成PROJECT TOPUP Ledger + 更新余额
     """
 
     with self.db.begin():
         try:
-            # Step 1: 锁定充值申请
-            topup = self.db.query(TopupRequest).filter(
+            # Step 1: 锁定充值申�?            topup = self.db.query(TopupRequest).filter(
                 TopupRequest.id == topup_id
             ).with_for_update().first()
 
             if topup.status != "pending_approval":
                 raise BusinessRuleException(
                     code="STATE_400",
-                    message=f"当前状态{topup.status}不允许批准"
+                    message=f"当前状态{topup.status}不允许批�?
                 )
 
             # Step 2: 锁定项目
@@ -1366,11 +1240,9 @@ def approve_topup_request(
                 Project.id == topup.project_id
             ).with_for_update().first()
 
-            # Step 3: 创建Ledger记录（TOPUP类型）
-            ledger_entry = LedgerEntry(
+            # Step 3: 创建Ledger记录（TOPUP类型�?            ledger_entry = LedgerEntry(
                 ledger_type="PROJECT",
-                entry_type="TOPUP",  # 不是REVENUE！
-                project_id=project.id,
+                entry_type="TOPUP",  # 不是REVENUE�?                project_id=project.id,
                 supplier_id=None,
                 amount=topup.amount,  # 正数
                 currency="CNY",
@@ -1413,21 +1285,14 @@ def approve_topup_request(
 **状态机保证**:
 
 ```
-pending_approval ──[approve_topup]──┐
-       ↑                             │
-       │                             ▼
-       │                      (Ledger写入成功?)
-       │                             │
-       │                      ┌──────┴──────┐
-       │                      │             │
-       │                     YES           NO
-       │                      │             │
-       └──(人工重试)──────────┘         approved
+pending_approval ──[approve_topup]──�?       �?                            �?       �?                            �?       �?                     (Ledger写入成功?)
+       �?                            �?       �?                     ┌──────┴──────�?       �?                     �?            �?       �?                    YES           NO
+       �?                     �?            �?       └──(人工重试)──────────�?        approved
 ```
 
 #### 6.2.3 场景3: Transfer failure (all-or-nothing)
 
-**触发时机**: 死号余额迁移时，TRANSFER_OUT 或 TRANSFER_IN 任一失败
+**触发时机**: 死号余额迁移时，TRANSFER_OUT �?TRANSFER_IN 任一失败
 
 **回滚策略**:
 
@@ -1435,8 +1300,8 @@ pending_approval ──[approve_topup]──┐
 |-----|------|
 | **事务回滚** | 完整回滚，源/目标供应商余额都不变 |
 | **重试策略** | **禁止**自动重试（人工介入） |
-| **状态保持** | 源账户和目标账户余额保持不变 |
-| **错误码** | `LEDGER_103` |
+| **状态保�?* | 源账户和目标账户余额保持不变 |
+| **错误�?* | `LEDGER_103` |
 
 **实现示例**:
 
@@ -1449,8 +1314,7 @@ def transfer_account_balance(
     user: Dict
 ) -> Tuple[LedgerEntry, LedgerEntry]:
     """
-    死号余额迁移（同一供应商内）
-
+    死号余额迁移（同一供应商内�?
     触发: 生成TRANSFER_OUT + TRANSFER_IN双向Ledger
     """
 
@@ -1465,25 +1329,22 @@ def transfer_account_balance(
                 AdAccount.id == target_account_id
             ).with_for_update().first()
 
-            # Step 2: 验证同一供应商
-            if source_account.supplier_id != target_account.supplier_id:
+            # Step 2: 验证同一供应�?            if source_account.supplier_id != target_account.supplier_id:
                 raise BusinessRuleException(
                     code="BIZ_003",
                     message="禁止跨供应商余额迁移"
                 )
 
-            # Step 3: 锁定供应商
-            supplier = self.db.query(Supplier).filter(
+            # Step 3: 锁定供应�?            supplier = self.db.query(Supplier).filter(
                 Supplier.id == source_account.supplier_id
             ).with_for_update().first()
 
-            # Step 4: 获取源账户余额
-            transfer_amount = source_account.remaining_balance
+            # Step 4: 获取源账户余�?            transfer_amount = source_account.remaining_balance
 
             if transfer_amount <= 0:
                 raise BusinessRuleException(
                     code="BIZ_100",
-                    message="源账户余额为0，无法迁移"
+                    message="源账户余额为0，无法迁�?
                 )
 
             # Step 5: 创建TRANSFER_OUT Ledger
@@ -1499,7 +1360,7 @@ def transfer_account_balance(
                 reference_id=source_account.id,
                 occurred_at=datetime.now(timezone.utc),
                 created_by=user["user_id"],
-                notes=f"死号余额迁出：{source_account.account_name} → {target_account.account_name}"
+                notes=f"死号余额迁出：{source_account.account_name} �?{target_account.account_name}"
             )
             self.db.add(ledger_out)
 
@@ -1516,7 +1377,7 @@ def transfer_account_balance(
                 reference_id=target_account.id,
                 occurred_at=datetime.now(timezone.utc),
                 created_by=user["user_id"],
-                notes=f"死号余额迁入：{source_account.account_name} → {target_account.account_name}"
+                notes=f"死号余额迁入：{source_account.account_name} �?{target_account.account_name}"
             )
             self.db.add(ledger_in)
 
@@ -1537,7 +1398,7 @@ def transfer_account_balance(
             logger.error(f"Transfer ledger write failed: {e}")
             raise LedgerException(
                 code="LEDGER_103",
-                message="余额迁移Ledger记录生成失败，事务已回滚，禁止重试"
+                message="余额迁移Ledger记录生成失败，事务已回滚，禁止重�?
             )
 
         except Exception as e:
@@ -1550,62 +1411,25 @@ def transfer_account_balance(
 **ALL-OR-NOTHING保证**:
 
 ```
-                     ┌────────────────┐
-                     │ BEGIN TRANSACTION │
-                     └────────┬───────┘
-                              │
-                     ┌────────▼───────┐
-                     │ Lock Accounts   │
-                     └────────┬───────┘
-                              │
-                     ┌────────▼───────┐
-                     │ Validate Rules  │
-                     └────────┬───────┘
-                              │
-                     ┌────────▼────────┐
-                     │ Write TRANSFER_OUT│ ──(失败?)──┐
-                     └────────┬────────┘             │
-                              │                      │
-                     ┌────────▼────────┐             │
-                     │ Write TRANSFER_IN│ ──(失败?)──┤
-                     └────────┬────────┘             │
-                              │                      │
-                     ┌────────▼────────┐             │
-                     │ Update Balances │ ──(失败?)──┤
-                     └────────┬────────┘             │
-                              │                      │
-                              YES                    │
-                              │                      │
-                     ┌────────▼────────┐             │
-                     │   COMMIT        │             │
-                     └─────────────────┘             │
-                                                     │
-                                                     NO
-                                                     │
-                                            ┌────────▼────────┐
-                                            │   ROLLBACK      │
-                                            │  (余额不变)     │
-                                            └─────────────────┘
-```
+                     ┌────────────────�?                     �?BEGIN TRANSACTION �?                     └────────┬───────�?                              �?                     ┌────────▼───────�?                     �?Lock Accounts   �?                     └────────┬───────�?                              �?                     ┌────────▼───────�?                     �?Validate Rules  �?                     └────────┬───────�?                              �?                     ┌────────▼────────�?                     �?Write TRANSFER_OUT�?──(失败?)──�?                     └────────┬────────�?            �?                              �?                     �?                     ┌────────▼────────�?            �?                     �?Write TRANSFER_IN�?──(失败?)──�?                     └────────┬────────�?            �?                              �?                     �?                     ┌────────▼────────�?            �?                     �?Update Balances �?──(失败?)──�?                     └────────┬────────�?            �?                              �?                     �?                              YES                    �?                              �?                     �?                     ┌────────▼────────�?            �?                     �?  COMMIT        �?            �?                     └─────────────────�?            �?                                                     �?                                                     NO
+                                                     �?                                            ┌────────▼────────�?                                            �?  ROLLBACK      �?                                            �? (余额不变)     �?                                            └─────────────────�?```
 
 ### 8.3 回滚策略汇总表
 
-| 场景 | 失败点 | 回滚策略 | 重试策略 | 状态保持 | 错误码 |
+| 场景 | 失败�?| 回滚策略 | 重试策略 | 状态保�?| 错误�?|
 |------|--------|---------|---------|---------|--------|
 | DailyReport→Ledger | Ledger写入失败 | 完整事务回滚 | 幂等重试 | 保持 `final_confirmed` | `LEDGER_101` |
 | Topup→Ledger | Ledger写入失败 | 完整事务回滚 | 人工重试 | 保持 `pending_approval` | `LEDGER_102` |
-| Transfer→Ledger | TRANSFER_IN失败 | 完整事务回滚 | 禁止重试 | 源/目标余额不变 | `LEDGER_103` |
+| Transfer→Ledger | TRANSFER_IN失败 | 完整事务回滚 | 禁止重试 | �?目标余额不变 | `LEDGER_103` |
 
-### 7.4 失败监控与告警
-
+### 7.4 失败监控与告�?
 **监控指标**:
 
 ```python
 # backend/services/ledger_service.py
 from prometheus_client import Counter, Histogram
 
-# Ledger写入失败计数器
-ledger_write_failures = Counter(
+# Ledger写入失败计数�?ledger_write_failures = Counter(
     'ledger_write_failures_total',
     'Total number of ledger write failures',
     ['scenario', 'error_code']
@@ -1645,8 +1469,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "Ledger写入失败率过高"
-          description: "最近5分钟Ledger写入失败率 > 1%，场景: {{ $labels.scenario }}"
+          summary: "Ledger写入失败率过�?
+          description: "最�?分钟Ledger写入失败�?> 1%，场�? {{ $labels.scenario }}"
 
       - alert: LedgerWriteDurationHigh
         expr: histogram_quantile(0.95, ledger_write_duration_seconds_bucket) > 2
@@ -1660,31 +1484,25 @@ groups:
 
 ---
 
-## 7. DailyReport → Ledger映射
+## 7. DailyReport �?Ledger映射
 
 ### 16.1 日报状态机与Ledger生成时机
 
-**引用**: STATE_MACHINE.md v2.5 第8章
-
+**引用**: STATE_MACHINE.md v2.6 �?�?
 ```
-raw_submitted → trend_pending → trend_ok → trend_resolved → final_pending → final_confirmed → final_locked
-                                                                               ↑                ↑
-                                                                      不生成Ledger      生成Ledger
+raw_submitted �?trend_pending �?trend_ok �?trend_resolved �?final_pending �?final_confirmed �?final_locked
+                                                                               �?               �?                                                                      不生成Ledger      生成Ledger
 ```
 
 **关键规则**:
-- ❌ raw阶段**不入账**（raw_submitted/trend_pending/trend_ok）
-- ❌ final_pending阶段**不入账**（数据未确认）
-- ✅ final_confirmed阶段**生成Ledger**（运营确认final粉数后）
-- ✅ final_locked阶段**锁定Ledger**（状态机终态，禁止再修改）
+- �?raw阶段**不入�?*（raw_submitted/trend_pending/trend_ok�?- �?final_pending阶段**不入�?*（数据未确认�?- �?final_confirmed阶段**生成Ledger**（运营确认final粉数后）
+- �?final_locked阶段**锁定Ledger**（状态机终态，禁止再修改）
 
-### 16.2 real_spend → SUPPLIER COST映射
+### 16.2 real_spend �?SUPPLIER COST映射
 
-**触发时机**: 运营录入real_spend字段时
-
-**业务规则**: BR-RPT-003 - real粉数与消耗填写规则
-
-**Service层实现**:
+**触发时机**: 运营录入real_spend字段�?
+**业务规则**: BR-RPT-003 - real粉数与消耗填写规�?
+**Service层实�?*:
 
 ```python
 # backend/services/daily_report_service.py
@@ -1695,7 +1513,7 @@ def update_real_spend(
     user: Dict
 ) -> DailyReport:
     """
-    运营录入real_spend（T+1日12:00前）
+    运营录入real_spend（T+1�?2:00前）
 
     触发: 创建SUPPLIER COST Ledger
     """
@@ -1728,7 +1546,7 @@ def update_real_spend(
             reference_id=report.id,
             occurred_at=datetime.now(timezone.utc),
             created_by=user["user_id"],
-            notes=f"日报{report.id}真实消耗"
+            notes=f"日报{report.id}真实消�?
         )
         self.db.add(cost_entry)
 
@@ -1737,19 +1555,18 @@ def update_real_spend(
         return report
 ```
 
-### 8.3 conversions_final → PROJECT REVENUE映射
+### 8.3 conversions_final �?PROJECT REVENUE映射
 
 **触发时机**: final_confirmed状态流转时
 
-**业务规则**: BR-RPT-004 - final_locked后数据锁定规则
-
+**业务规则**: BR-RPT-004 - final_locked后数据锁定规�?
 **计费公式**:
 
 ```python
 revenue = conversions_final × project.unit_price
 ```
 
-**Service层实现**:
+**Service层实�?*:
 
 ```python
 # backend/services/daily_report_service.py
@@ -1812,19 +1629,17 @@ def confirm_final_and_lock(
         return report
 ```
 
-### 7.4 final_locked后不可再写Ledger（除红冲）
-
+### 7.4 final_locked后不可再写Ledger（除红冲�?
 **强制规则**:
 
 ```python
 def update_final_conversions(report_id: int, new_conversions: int):
     report = db.query(DailyReport).filter(DailyReport.id == report_id).first()
 
-    # 终态检查
-    if report.status == "final_locked":
+    # 终态检�?    if report.status == "final_locked":
         raise BusinessRuleException(
             code="STATE_400",
-            message="final_locked状态不可修改粉数，请使用红冲功能"
+            message="final_locked状态不可修改粉数，请使用红冲功�?
         )
 
     # 允许修改
@@ -1843,14 +1658,11 @@ def reversal_final_report(
     user: Dict
 ) -> DailyReport:
     """
-    红冲final_locked日报（仅admin）
-
+    红冲final_locked日报（仅admin�?
     流程:
     1. 查询原REVENUE Ledger
     2. 创建REVERSAL Ledger（负数，冲销原记录）
-    3. 创建新REVENUE Ledger（新粉数）
-    4. 不修改日报状态（保持final_locked）
-    """
+    3. 创建新REVENUE Ledger（新粉数�?    4. 不修改日报状态（保持final_locked�?    """
 
     if user["role"] != "admin":
         raise AuthorizationException(code="AUTH_500")
@@ -1893,8 +1705,7 @@ def reversal_final_report(
             amount=-original_entry.amount,  # 负数
             currency="CNY",
             reference_type="reversal",
-            reference_id=original_entry.id,  # 指向原记录
-            occurred_at=datetime.now(timezone.utc),
+            reference_id=original_entry.id,  # 指向原记�?            occurred_at=datetime.now(timezone.utc),
             created_by=user["user_id"],
             notes=f"红冲原因：{reason}"
         )
@@ -1941,9 +1752,7 @@ def reversal_final_report(
         )
         self.db.add(audit_log)
 
-        # 不修改report.status（保持final_locked）
-        # 不修改report.conversions_final（保留原值，通过Ledger追溯）
-
+        # 不修改report.status（保持final_locked�?        # 不修改report.conversions_final（保留原值，通过Ledger追溯�?
         self.db.commit()
 
         return report
@@ -1955,24 +1764,20 @@ def reversal_final_report(
 
 ### 8.1 充值状态机与Ledger生成时机
 
-**引用**: STATE_MACHINE.md v2.5 第9章
-
+**引用**: STATE_MACHINE.md v2.6 �?�?
 ```
-draft → pending_review → finance_approve → paid → completed
-                                            ↑       ↑
-                                      不生成Ledger  生成Ledger
+draft �?pending_review �?finance_approve �?paid �?completed
+                                            �?      �?                                      不生成Ledger  生成Ledger
 ```
 
 **关键规则**:
-- ❌ draft/pending_review/finance_approve阶段**不入账**
-- ✅ paid阶段**生成Ledger**（财务确认支付后）
-- ✅ completed阶段**锁定**（状态机终态）
+- �?draft/pending_review/finance_approve阶段**不入�?*
+- �?paid阶段**生成Ledger**（财务确认支付后�?- �?completed阶段**锁定**（状态机终态）
 
-### 8.2 财务批准时入账流程
-
+### 8.2 财务批准时入账流�?
 **引用**: BR-FIN-002 - 财务审批职责分离原则
 
-**Service层实现**:
+**Service层实�?*:
 
 ```python
 # backend/services/topup_service.py
@@ -1983,24 +1788,21 @@ def mark_topup_paid_and_create_ledger(
     user: Dict
 ) -> TopupRequest:
     """
-    财务标记充值为已支付（终审）
-
-    触发: 创建PROJECT TOPUP Ledger（v1.1新增：TOPUP独立类型）
-    """
+    财务标记充值为已支付（终审�?
+    触发: 创建PROJECT TOPUP Ledger（v1.1新增：TOPUP独立类型�?    """
 
     if user["role"] not in ["admin", "finance"]:
         raise AuthorizationException(code="AUTH_500")
 
     with self.db.begin():
-        # Step 1: 锁定充值申请
-        topup = self.db.query(TopupRequest).filter(
+        # Step 1: 锁定充值申�?        topup = self.db.query(TopupRequest).filter(
             TopupRequest.id == topup_id
         ).with_for_update().first()
 
         if topup.status != "finance_approve":
             raise BusinessRuleException(
                 code="STATE_400",
-                message=f"当前状态{topup.status}不允许标记为已支付"
+                message=f"当前状态{topup.status}不允许标记为已支�?
             )
 
         # Step 2: 锁定项目
@@ -2008,12 +1810,10 @@ def mark_topup_paid_and_create_ledger(
             Project.id == topup.project_id
         ).with_for_update().first()
 
-        # Step 3: 创建Ledger记录（PROJECT账本，TOPUP类型）
-        # v1.1更新：TOPUP不再使用REVENUE，而是独立的entry_type
+        # Step 3: 创建Ledger记录（PROJECT账本，TOPUP类型�?        # v1.1更新：TOPUP不再使用REVENUE，而是独立的entry_type
         ledger_entry = LedgerEntry(
             ledger_type="PROJECT",
-            entry_type="TOPUP",  # 充值使用TOPUP类型（非REVENUE）
-            project_id=project.id,
+            entry_type="TOPUP",  # 充值使用TOPUP类型（非REVENUE�?            project_id=project.id,
             supplier_id=None,
             amount=topup.amount,  # 正数
             currency="CNY",
@@ -2028,8 +1828,7 @@ def mark_topup_paid_and_create_ledger(
         # Step 4: 更新项目余额
         project.balance = project.balance + topup.amount
 
-        # Step 5: 更新充值状态
-        topup.status = "paid"
+        # Step 5: 更新充值状�?        topup.status = "paid"
         topup.paid_at = datetime.now(timezone.utc)
         topup.paid_by = user["user_id"]
         topup.payment_proof_url = payment_proof_url
@@ -2046,8 +1845,7 @@ def mark_topup_paid_and_create_ledger(
 **查询余额快照**:
 
 ```sql
--- 查询项目在特定时间点的余额
-SELECT
+-- 查询项目在特定时间点的余�?SELECT
     p.id AS project_id,
     p.name AS project_name,
     p.balance AS current_balance,
@@ -2066,14 +1864,12 @@ GROUP BY p.id, p.name, p.balance;
 
 ---
 
-## 9. SUPPLIER充值 → Ledger映射
+## 9. SUPPLIER充�?�?Ledger映射
 
 ### 9.1 SUPPLIER账本充值逻辑
 
-**场景**: 财务为供应商账户充值（增加可用余额）
-
-**entry_type**: `TOPUP`（v1.1新增独立类型，不再复用TRANSFER_IN）
-
+**场景**: 财务为供应商账户充值（增加可用余额�?
+**entry_type**: `TOPUP`（v1.1新增独立类型，不再复用TRANSFER_IN�?
 **金额方向**: **正数**（余额增加）
 
 ### 9.2 SUPPLIER充值Service实现
@@ -2088,32 +1884,27 @@ def topup_supplier_account(
     user: Dict
 ) -> LedgerEntry:
     """
-    财务为供应商账户充值
-
-    触发: 创建SUPPLIER TOPUP Ledger（v1.1新增：TOPUP独立类型）
-    """
+    财务为供应商账户充�?
+    触发: 创建SUPPLIER TOPUP Ledger（v1.1新增：TOPUP独立类型�?    """
 
     if user["role"] not in ["admin", "finance"]:
         raise AuthorizationException(code="AUTH_500")
 
     if amount <= 0:
-        raise ValidationException(code="BIZ_100", message="充值金额必须大于0")
+        raise ValidationException(code="BIZ_100", message="充值金额必须大�?")
 
     with self.db.begin():
-        # Step 1: 锁定供应商
-        supplier = self.db.query(Supplier).filter(
+        # Step 1: 锁定供应�?        supplier = self.db.query(Supplier).filter(
             Supplier.id == supplier_id
         ).with_for_update().first()
 
         if not supplier:
             raise ResourceNotFoundException(code="BIZ_002")
 
-        # Step 2: 创建Ledger记录（SUPPLIER账本，TOPUP类型）
-        # v1.1更新：TOPUP不再使用TRANSFER_IN，而是独立的entry_type
+        # Step 2: 创建Ledger记录（SUPPLIER账本，TOPUP类型�?        # v1.1更新：TOPUP不再使用TRANSFER_IN，而是独立的entry_type
         ledger_entry = LedgerEntry(
             ledger_type="SUPPLIER",
-            entry_type="TOPUP",  # 充值使用TOPUP类型（非TRANSFER_IN）
-            supplier_id=supplier.id,
+            entry_type="TOPUP",  # 充值使用TOPUP类型（非TRANSFER_IN�?            supplier_id=supplier.id,
             project_id=None,
             amount=amount,  # 正数
             currency="CNY",
@@ -2125,8 +1916,7 @@ def topup_supplier_account(
         )
         self.db.add(ledger_entry)
 
-        # Step 3: 更新供应商余额
-        supplier.balance = supplier.balance + amount
+        # Step 3: 更新供应商余�?        supplier.balance = supplier.balance + amount
 
         self.db.commit()
 
@@ -2142,28 +1932,25 @@ def topup_supplier_account(
 **业务规则**: BR-ACCT-002 - 死号余额迁移规则
 
 **前置条件**:
-- ✅ 源账户和目标账户必须属于**同一供应商**
-- ✅ 源账户remaining_balance > 0
-- ✅ 源账户状态为active/suspended（未dead）
-
+- �?源账户和目标账户必须属于**同一供应�?*
+- �?源账户remaining_balance > 0
+- �?源账户状态为active/suspended（未dead�?
 **禁止行为**:
-- ❌ **禁止跨供应商迁移**（需走退款流程）
-- ❌ **禁止**源账户余额为0时迁移
-
+- �?**禁止跨供应商迁移**（需走退款流程）
+- �?**禁止**源账户余额为0时迁�?
 ### 10.2 TRANSFER_OUT / TRANSFER_IN双向记录
 
-**Service层实现**（见第5.1.3节完整代码）
+**Service层实�?*（见�?.1.3节完整代码）
 
 **Ledger记录示例**:
 
 ```sql
--- TRANSFER_OUT（源账户）
-INSERT INTO ledger_entries (
+-- TRANSFER_OUT（源账户�?INSERT INTO ledger_entries (
     ledger_type, supplier_id, ad_account_id, entry_type, amount,
     reference_type, reference_id, occurred_at, created_by, notes
 ) VALUES (
     'SUPPLIER', '550e8400-e29b-41d4-a716-446655440000', 12345, 'TRANSFER_OUT', -1234.56,
-    'transfer', 12345, '2025-01-22 10:30:00', '...-user-id-...', '死号迁移：ACC001 → ACC002'
+    'transfer', 12345, '2025-01-22 10:30:00', '...-user-id-...', '死号迁移：ACC001 �?ACC002'
 );
 
 -- TRANSFER_IN（目标账户）
@@ -2172,7 +1959,7 @@ INSERT INTO ledger_entries (
     reference_type, reference_id, occurred_at, created_by, notes
 ) VALUES (
     'SUPPLIER', '550e8400-e29b-41d4-a716-446655440000', 67890, 'TRANSFER_IN', +1234.56,
-    'transfer', 67890, '2025-01-22 10:30:00', '...-user-id-...', '接收迁移：ACC001 → ACC002'
+    'transfer', 67890, '2025-01-22 10:30:00', '...-user-id-...', '接收迁移：ACC001 �?ACC002'
 );
 ```
 
@@ -2184,28 +1971,26 @@ INSERT INTO ledger_entries (
 def validate_transfer_ledgers(out_entry: LedgerEntry, in_entry: LedgerEntry):
     """验证TRANSFER_OUT/TRANSFER_IN金额必须相反"""
 
-    # 金额绝对值必须相等
-    if abs(out_entry.amount) != abs(in_entry.amount):
+    # 金额绝对值必须相�?    if abs(out_entry.amount) != abs(in_entry.amount):
         raise ValidationException(
             code="LEDGER_002",
-            message="TRANSFER_OUT和TRANSFER_IN金额绝对值必须相等"
+            message="TRANSFER_OUT和TRANSFER_IN金额绝对值必须相�?
         )
 
     # 符号必须相反
     if out_entry.amount >= 0:
         raise ValidationException(
             code="LEDGER_001",
-            message="TRANSFER_OUT金额必须为负数"
+            message="TRANSFER_OUT金额必须为负�?
         )
 
     if in_entry.amount <= 0:
         raise ValidationException(
             code="LEDGER_001",
-            message="TRANSFER_IN金额必须为正数"
+            message="TRANSFER_IN金额必须为正�?
         )
 
-    # 供应商必须一致
-    if out_entry.supplier_id != in_entry.supplier_id:
+    # 供应商必须一�?    if out_entry.supplier_id != in_entry.supplier_id:
         raise ValidationException(
             code="LEDGER_003",
             message="TRANSFER必须在同一供应商内进行"
@@ -2220,7 +2005,7 @@ def validate_transfer_ledgers(out_entry: LedgerEntry, in_entry: LedgerEntry):
 if source.supplier_id != target.supplier_id:
     raise BusinessRuleException(
         code="BIZ_001",
-        message="禁止跨供应商迁移余额，请联系财务走退款流程"
+        message="禁止跨供应商迁移余额，请联系财务走退款流�?
     )
 ```
 
@@ -2230,15 +2015,14 @@ if source.supplier_id != target.supplier_id:
 
 ### 16.1 对账差异如何影响SUPPLIER Ledger
 
-**场景**: 对账发现系统记录的消耗与供应商实际扣费不一致
-
+**场景**: 对账发现系统记录的消耗与供应商实际扣费不一�?
 **处理流程**:
 
 1. **创建对账批次** (reconciliation_batches)
 2. **生成对账明细** (reconciliation_details) - 记录差异
-3. **财务审批后** → 创建Adjustment Ledger（调整成本）
+3. **财务审批�?* �?创建Adjustment Ledger（调整成本）
 
-**Service层实现**:
+**Service层实�?*:
 
 ```python
 # backend/services/reconciliation_service.py
@@ -2251,8 +2035,7 @@ def apply_reconciliation_adjustment(
     user: Dict
 ) -> ReconciliationDetail:
     """
-    应用对账调整（仅finance）
-
+    应用对账调整（仅finance�?
     触发: 创建SUPPLIER COST Ledger（调整成本）
     """
 
@@ -2274,9 +2057,8 @@ def apply_reconciliation_adjustment(
                 message="仅pending状态可应用调整"
             )
 
-        # Step 2: 创建Ledger调整记录（SUPPLIER账本）
-        # adjustment_type = 'increase' → 成本增加（负数）
-        # adjustment_type = 'decrease' → 成本减少（正数）
+        # Step 2: 创建Ledger调整记录（SUPPLIER账本�?        # adjustment_type = 'increase' �?成本增加（负数）
+        # adjustment_type = 'decrease' �?成本减少（正数）
         amount = -adjustment_amount if adjustment_type == "increase" else adjustment_amount
 
         ledger_entry = LedgerEntry(
@@ -2294,8 +2076,7 @@ def apply_reconciliation_adjustment(
         )
         self.db.add(ledger_entry)
 
-        # Step 3: 更新对账明细状态
-        detail.status = "adjusted"
+        # Step 3: 更新对账明细状�?        detail.status = "adjusted"
         detail.adjusted_at = datetime.now(timezone.utc)
         detail.adjusted_by = user["user_id"]
 
@@ -2314,22 +2095,16 @@ def apply_reconciliation_adjustment(
         return detail
 ```
 
-### 16.2 审批流
-
-**对账批次状态机** (引用: STATE_MACHINE.md v2.5 第11.1节):
+### 16.2 审批�?
+**对账批次状态机** (引用: STATE_MACHINE.md v2.6 �?1.1�?:
 
 ```
-draft → pending → reviewing → closed
-                    ↑          ↑
-              财务复核     财务确认关闭
+draft �?pending �?reviewing �?closed
+                    �?         �?              财务复核     财务确认关闭
 ```
 
 **权限要求**:
-- `draft → pending`: data_operator可提交
-- `pending → reviewing`: finance可开始复核
-- `reviewing → closed`: finance确认无误后关闭
-- 调整Ledger: 仅finance可创建
-
+- `draft �?pending`: data_operator可提�?- `pending �?reviewing`: finance可开始复�?- `reviewing �?closed`: finance确认无误后关�?- 调整Ledger: 仅finance可创�?
 ---
 
 ## 12. 手工调账（Manual Entry）SoT
@@ -2339,39 +2114,31 @@ draft → pending → reviewing → closed
 **业务规则**: BR-FIN-002 - 审批职责分离原则
 
 **流程**:
-1. **申请人**（finance）提交调账申请（创建draft记录）
-2. **复核人**（另一finance或admin）复核批准
-3. **系统**自动生成Ledger记录
+1. **申请�?*（finance）提交调账申请（创建draft记录�?2. **复核�?*（另一finance或admin）复核批�?3. **系统**自动生成Ledger记录
 
 **禁止行为**:
-- ❌ **禁止**同一人申请并批准
-- ❌ **禁止**跳过复核直接生成Ledger
+- �?**禁止**同一人申请并批准
+- �?**禁止**跳过复核直接生成Ledger
 
-### 12.2 Ledger Entries的四大禁止
+### 12.2 Ledger Entries的四大禁�?
+**核心原则**: `ledger_entries` 表是**不可变日�?*，所有修正必须通过 REVERSAL 机制实现�?
+#### 禁止1: �?禁止直接UPDATE ledger_entries
 
-**核心原则**: `ledger_entries` 表是**不可变日志**，所有修正必须通过 REVERSAL 机制实现。
-
-#### 禁止1: ❌ 禁止直接UPDATE ledger_entries
-
-**规则**: 所有金额修正通过 REVERSAL + 新记录，**禁止**直接UPDATE existing ledger_entries。
-
+**规则**: 所有金额修正通过 REVERSAL + 新记录，**禁止**直接UPDATE existing ledger_entries�?
 **错误做法**:
 
 ```python
-# ❌ 错误：直接UPDATE修改金额
+# �?错误：直接UPDATE修改金额
 ledger_entry = db.query(LedgerEntry).filter(LedgerEntry.id == 12345).first()
-ledger_entry.amount = Decimal("5000.00")  # 禁止！
-db.commit()
+ledger_entry.amount = Decimal("5000.00")  # 禁止�?db.commit()
 ```
 
 **正确做法**:
 
 ```python
-# ✅ 正确：通过REVERSAL红冲原记录 + 创建新记录
-original_entry = db.query(LedgerEntry).filter(LedgerEntry.id == 12345).first()
+# �?正确：通过REVERSAL红冲原记�?+ 创建新记�?original_entry = db.query(LedgerEntry).filter(LedgerEntry.id == 12345).first()
 
-# Step 1: 创建REVERSAL记录（负向冲销）
-reversal_entry = LedgerEntry(
+# Step 1: 创建REVERSAL记录（负向冲销�?reversal_entry = LedgerEntry(
     ledger_type=original_entry.ledger_type,
     entry_type="REVERSAL",
     project_id=original_entry.project_id,
@@ -2379,10 +2146,9 @@ reversal_entry = LedgerEntry(
     amount=-original_entry.amount,  # 负向冲销
     currency="CNY",
     reference_type="reversal",
-    reference_id=original_entry.id,  # 指向原记录
-    occurred_at=datetime.now(timezone.utc),
+    reference_id=original_entry.id,  # 指向原记�?    occurred_at=datetime.now(timezone.utc),
     created_by=user["user_id"],
-    notes="发现粉数计算错误，红冲原记录：原金额4750.00元，实际应为5000.00元"
+    notes="发现粉数计算错误，红冲原记录：原金额4750.00元，实际应为5000.00�?
 )
 db.add(reversal_entry)
 
@@ -2398,21 +2164,20 @@ new_entry = LedgerEntry(
     reference_id=original_entry.reference_id,
     occurred_at=datetime.now(timezone.utc),
     created_by=user["user_id"],
-    notes="红冲后重新计费：正确金额5000.00元"
+    notes="红冲后重新计费：正确金额5000.00�?
 )
 db.add(new_entry)
 
 db.commit()
 ```
 
-#### 禁止2: ❌ 禁止直接DELETE ledger_entries
+#### 禁止2: �?禁止直接DELETE ledger_entries
 
-**规则**: 即使是测试数据也要通过 REVERSAL 红冲，**禁止**直接DELETE。
-
+**规则**: 即使是测试数据也要通过 REVERSAL 红冲�?*禁止**直接DELETE�?
 **错误做法**:
 
 ```python
-# ❌ 错误：直接DELETE删除记录
+# �?错误：直接DELETE删除记录
 db.query(LedgerEntry).filter(LedgerEntry.id == 12345).delete()
 db.commit()
 ```
@@ -2420,7 +2185,7 @@ db.commit()
 **正确做法**:
 
 ```python
-# ✅ 正确：通过REVERSAL红冲（保留审计日志）
+# �?正确：通过REVERSAL红冲（保留审计日志）
 original_entry = db.query(LedgerEntry).filter(LedgerEntry.id == 12345).first()
 
 reversal_entry = LedgerEntry(
@@ -2434,39 +2199,35 @@ reversal_entry = LedgerEntry(
     reference_id=original_entry.id,
     occurred_at=datetime.now(timezone.utc),
     created_by=user["user_id"],
-    notes="系统bug导致重复生成Ledger，红冲重复记录（原记录ID: 12345）"
+    notes="系统bug导致重复生成Ledger，红冲重复记录（原记录ID: 12345�?
 )
 db.add(reversal_entry)
 db.commit()
 ```
 
-**例外**: 仅在开发/测试环境可DELETE，**生产环境绝对禁止**。
+**例外**: 仅在开�?测试环境可DELETE�?*生产环境绝对禁止**�?
+#### 禁止3: �?禁止无追溯的修正
 
-#### 禁止3: ❌ 禁止无追溯的修正
-
-**规则**: 所有 REVERSAL/ADJUSTMENT 必须有:
-- `reference_type` + `reference_id` (指向被红冲的记录或业务来源)
-- `notes` (≥10字符，说明原因)
+**规则**: 所�?REVERSAL/ADJUSTMENT 必须�?
+- `reference_type` + `reference_id` (指向被红冲的记录或业务来�?
+- `notes` (�?0字符，说明原�?
 
 **错误做法**:
 
 ```python
-# ❌ 错误：无追溯信息的REVERSAL
+# �?错误：无追溯信息的REVERSAL
 reversal_entry = LedgerEntry(
     ledger_type="PROJECT",
     entry_type="REVERSAL",
     amount=Decimal("-4750.00"),
-    reference_type=None,  # 禁止！无法追溯
-    reference_id=None,    # 禁止！无法追溯
-    notes=None            # 禁止！无原因说明
+    reference_type=None,  # 禁止！无法追�?    reference_id=None,    # 禁止！无法追�?    notes=None            # 禁止！无原因说明
 )
 ```
 
 **正确做法**:
 
 ```python
-# ✅ 正确：完整追溯信息
-reversal_entry = LedgerEntry(
+# �?正确：完整追溯信�?reversal_entry = LedgerEntry(
     ledger_type="PROJECT",
     entry_type="REVERSAL",
     project_id=123,
@@ -2475,7 +2236,7 @@ reversal_entry = LedgerEntry(
     reference_id=12345,  # 指向原ledger_entries.id
     occurred_at=datetime.now(timezone.utc),
     created_by=user["user_id"],
-    notes="final_locked后发现粉数计算错误：原计费95粉×50元=4750元，实际应为100粉×50元=5000元，先红冲原记录"
+    notes="final_locked后发现粉数计算错误：原计�?5粉�?0�?4750元，实际应为100粉�?0�?5000元，先红冲原记录"
 )
 ```
 
@@ -2483,7 +2244,7 @@ reversal_entry = LedgerEntry(
 
 ```python
 def validate_reversal_entry(entry: LedgerEntry) -> None:
-    """验证REVERSAL/ADJUSTMENT记录的追溯完整性"""
+    """验证REVERSAL/ADJUSTMENT记录的追溯完整�?""
 
     if entry.entry_type in ["REVERSAL", "ADJUSTMENT"]:
         # 必须有reference_type和reference_id
@@ -2497,40 +2258,36 @@ def validate_reversal_entry(entry: LedgerEntry) -> None:
         if not entry.notes or len(entry.notes.strip()) < 10:
             raise ValidationException(
                 code="LEDGER_105",
-                message="REVERSAL/ADJUSTMENT记录必须填写原因（notes≥10字符）"
+                message="REVERSAL/ADJUSTMENT记录必须填写原因（notes�?0字符�?
             )
 ```
 
-#### 禁止4: ❌ 禁止孤立记录
+#### 禁止4: �?禁止孤立记录
 
-**规则**: 所有 ledger_entries 必须有 `reference_type` + `reference_id` 指向业务来源。
-
+**规则**: 所�?ledger_entries 必须�?`reference_type` + `reference_id` 指向业务来源�?
 **允许的reference_type**:
 - `daily_report`: 关联 `daily_reports.id`
 - `topup`: 关联 `topup_requests.id`
 - `transfer`: 关联 `ad_accounts.id`
 - `adjustment`: 关联 `manual_adjustments.id`
-- `reversal`: 关联原 `ledger_entries.id`
+- `reversal`: 关联�?`ledger_entries.id`
 
 **错误做法**:
 
 ```python
-# ❌ 错误：孤立记录（无业务来源）
+# �?错误：孤立记录（无业务来源）
 ledger_entry = LedgerEntry(
     ledger_type="PROJECT",
     entry_type="REVENUE",
     project_id=123,
     amount=Decimal("4750.00"),
-    reference_type=None,  # 禁止！无法追溯业务来源
-    reference_id=None     # 禁止！
-)
+    reference_type=None,  # 禁止！无法追溯业务来�?    reference_id=None     # 禁止�?)
 ```
 
 **正确做法**:
 
 ```python
-# ✅ 正确：指向业务来源
-ledger_entry = LedgerEntry(
+# �?正确：指向业务来�?ledger_entry = LedgerEntry(
     ledger_type="PROJECT",
     entry_type="REVENUE",
     project_id=123,
@@ -2543,7 +2300,7 @@ ledger_entry = LedgerEntry(
 )
 ```
 
-**数据库约束**（建议添加）:
+**数据库约�?*（建议添加）:
 
 ```sql
 -- 确保所有ledger_entries都有业务来源
@@ -2560,7 +2317,7 @@ ALTER TABLE ledger_entries ADD CONSTRAINT chk_ledger_notes CHECK (
 
 **审计日志要求**:
 
-所有 REVERSAL 操作必须记录到 `audit_logs` 表：
+所�?REVERSAL 操作必须记录�?`audit_logs` 表：
 
 ```python
 def create_reversal_with_audit(
@@ -2568,7 +2325,7 @@ def create_reversal_with_audit(
     reason: str,
     user: Dict
 ) -> LedgerEntry:
-    """创建REVERSAL记录并记录审计日志"""
+    """创建REVERSAL记录并记录审计日�?""
 
     # 创建REVERSAL
     reversal = LedgerEntry(
@@ -2609,10 +2366,10 @@ def create_reversal_with_audit(
 
 | 调账类型 | ledger_type | entry_type | amount方向 | 典型场景 |
 |---------|------------|-----------|-----------|---------|
-| **增加收入** | PROJECT | REVENUE | +正数 | 财务补记漏计的粉数收入 |
-| **减少收入** | PROJECT | REVERSAL | -负数 | 红冲错误的收入 |
-| **增加成本** | SUPPLIER | COST | -负数 | 补记漏计的消耗 |
-| **减少成本** | SUPPLIER | REVERSAL | +正数 | 红冲错误的成本 |
+| **增加收入** | PROJECT | REVENUE | +正数 | 财务补记漏计的粉数收�?|
+| **减少收入** | PROJECT | REVERSAL | -负数 | 红冲错误的收�?|
+| **增加成本** | SUPPLIER | COST | -负数 | 补记漏计的消�?|
+| **减少成本** | SUPPLIER | REVERSAL | +正数 | 红冲错误的成�?|
 
 ### 12.4 事务实现
 
@@ -2662,8 +2419,7 @@ def approve_manual_adjustment(
     user: Dict
 ) -> LedgerEntry:
     """
-    复核批准手工调账（finance/admin）
-
+    复核批准手工调账（finance/admin�?
     触发: 生成Ledger记录
     """
 
@@ -2678,11 +2434,10 @@ def approve_manual_adjustment(
         if adjustment.status != "draft":
             raise BusinessRuleException(code="STATE_400")
 
-        # SOD检查：不能批准自己提交的调账
-        if adjustment.applicant_id == user["user_id"]:
+        # SOD检查：不能批准自己提交的调�?        if adjustment.applicant_id == user["user_id"]:
             raise BusinessRuleException(
                 code="BIZ_001",
-                message="不能批准自己提交的调账申请（职责分离）"
+                message="不能批准自己提交的调账申请（职责分离�?
             )
 
         # 锁定项目或供应商
@@ -2711,8 +2466,7 @@ def approve_manual_adjustment(
         if adjustment.ledger_type == "PROJECT":
             project.balance = project.balance + adjustment.amount
 
-        # 更新调账状态
-        adjustment.status = "approved"
+        # 更新调账状�?        adjustment.status = "approved"
         adjustment.approved_by = user["user_id"]
         adjustment.approved_at = datetime.now(timezone.utc)
 
@@ -2727,80 +2481,70 @@ def approve_manual_adjustment(
 
 | 操作 | admin | finance | data_operator | account_manager | media_buyer |
 |------|-------|---------|---------------|----------------|-------------|
-| 提交调账申请 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 复核批准调账 | ✅ | ✅ (不能批准自己的) | ❌ | ❌ | ❌ |
-| 查询调账记录 | ✅ 全部 | ✅ 全部 | 🔍 只读 | ❌ | ❌ |
+| 提交调账申请 | �?| �?| �?| �?| �?|
+| 复核批准调账 | �?| �?(不能批准自己�? | �?| �?| �?|
+| 查询调账记录 | �?全部 | �?全部 | 🔍 只读 | �?| �?|
 
 ### 12.6 典型场景
 
-#### 场景1: 风控修正（补记漏计的成本）
-
+#### 场景1: 风控修正（补记漏计的成本�?
 ```python
 # 发现某日报real_spend录入错误，需补记成本差额
 adjustment = create_manual_adjustment(
     ledger_type="SUPPLIER",
     supplier_id=supplier_id,
     amount=Decimal("-500.00"),  # 负数（成本增加）
-    reason="风控发现日报ID 12345的real_spend录入错误，实际消耗4800元，系统记录4300元，补记差额500元"
+    reason="风控发现日报ID 12345的real_spend录入错误，实际消�?800元，系统记录4300元，补记差额500�?
 )
 ```
 
 #### 场景2: 财务补记（粉数计费遗漏）
 
 ```python
-# 发现某日报final粉数未计费（系统bug导致）
-adjustment = create_manual_adjustment(
+# 发现某日报final粉数未计费（系统bug导致�?adjustment = create_manual_adjustment(
     ledger_type="PROJECT",
     project_id=project_id,
     amount=Decimal("4750.00"),  # 正数（收入增加）
-    reason="补记日报ID 67890的粉数计费，系统bug导致final_locked时未生成Ledger，手工补记：95粉 × 50元/粉 = 4750元"
+    reason="补记日报ID 67890的粉数计费，系统bug导致final_locked时未生成Ledger，手工补记：95�?× 50�?�?= 4750�?
 )
 ```
 
-#### 场景3: 死号退款（跨供应商余额处理）
-
+#### 场景3: 死号退款（跨供应商余额处理�?
 ```python
-# 跨供应商死号无法迁移，需退款处理
-adjustment = create_manual_adjustment(
+# 跨供应商死号无法迁移，需退款处�?adjustment = create_manual_adjustment(
     ledger_type="SUPPLIER",
     supplier_id=source_supplier_id,
     amount=Decimal("1234.56"),  # 正数（成本减少，退款）
-    reason="跨供应商死号退款：账户ACC001（供应商A）余额1234.56元无法迁移至供应商B，财务已处理退款"
+    reason="跨供应商死号退款：账户ACC001（供应商A）余�?234.56元无法迁移至供应商B，财务已处理退�?
 )
 ```
 
 ---
 
-## 13. 权限控制（与AUTH_SPEC对齐）
-
-**引用**: AUTH_SPEC.md v2.0 第5章
-
-### 13.1 五角色权限矩阵
-
+## 13. 权限控制（与AUTH_SPEC对齐�?
+**引用**: AUTH_SPEC.md v2.0 �?�?
+### 13.1 五角色权限矩�?
 | 操作 | admin | finance | data_operator | account_manager | media_buyer |
 |------|-------|---------|---------------|----------------|-------------|
 | **查询Ledger** |
-| 查询PROJECT Ledger | ✅ 全部 | ✅ 全部 | 🔍 只读全部 | 🔍 仅自己管理的项目 | ❌ |
-| 查询SUPPLIER Ledger | ✅ 全部 | ✅ 全部 | 🔍 只读全部 | ❌ | ❌ |
+| 查询PROJECT Ledger | �?全部 | �?全部 | 🔍 只读全部 | 🔍 仅自己管理的项目 | �?|
+| 查询SUPPLIER Ledger | �?全部 | �?全部 | 🔍 只读全部 | �?| �?|
 | **写入Ledger** |
-| 创建REVENUE Ledger | ✅ (系统自动) | ❌ | ❌ | ❌ | ❌ |
-| 创建COST Ledger | ✅ (系统自动) | ❌ | ❌ | ❌ | ❌ |
-| 创建TRANSFER Ledger | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 创建REVERSAL Ledger | ✅ | ✅ | ❌ | ❌ | ❌ |
+| 创建REVENUE Ledger | �?(系统自动) | �?| �?| �?| �?|
+| 创建COST Ledger | �?(系统自动) | �?| �?| �?| �?|
+| 创建TRANSFER Ledger | �?| �?| �?| �?| �?|
+| 创建REVERSAL Ledger | �?| �?| �?| �?| �?|
 | **手工调账** |
-| 提交调账申请 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 复核批准调账 | ✅ | ✅ (不能批准自己的) | ❌ | ❌ | ❌ |
+| 提交调账申请 | �?| �?| �?| �?| �?|
+| 复核批准调账 | �?| �?(不能批准自己�? | �?| �?| �?|
 | **红冲** |
-| 红冲final_locked日报 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 红冲充值Ledger | ✅ | ✅ | ❌ | ❌ | ❌ |
+| 红冲final_locked日报 | �?| �?| �?| �?| �?|
+| 红冲充值Ledger | �?| �?| �?| �?| �?|
 
 **图例**:
-- ✅ 完整权限（CRUD）
-- 🔍 只读权限（Read-only）
-- ❌ 禁止访问
+- �?完整权限（CRUD�?- 🔍 只读权限（Read-only�?- �?禁止访问
 
-### 13.2 Service层权限校验
-
+### 13.2 Service层权限校�?
 ```python
 # backend/services/ledger_service.py
 class LedgerService:
@@ -2811,20 +2555,17 @@ class LedgerService:
         pagination: PaginationParams
     ) -> List[LedgerEntry]:
         """
-        查询项目Ledger列表（按角色过滤）
-        """
+        查询项目Ledger列表（按角色过滤�?        """
 
         # 权限校验
         user_role = user["role"]
         user_id = user["user_id"]
 
         if user_role == "admin":
-            # admin: 可见所有
-            pass
+            # admin: 可见所�?            pass
 
         elif user_role == "finance":
-            # finance: 可见所有
-            pass
+            # finance: 可见所�?            pass
 
         elif user_role == "data_operator":
             # data_operator: 只读全部
@@ -2867,40 +2608,36 @@ class LedgerService:
 
 ---
 
-## 14. 错误码（从ERROR_CODES_SOT引用）
-
+## 14. 错误码（从ERROR_CODES_SOT引用�?
 **引用**: ERROR_CODES_SOT.md v2.1
 
-### 13.1 Ledger专用错误码
-
-| 错误码 | HTTP状态码 | 消息 | 触发场景 | 状态 |
+### 13.1 Ledger专用错误�?
+| 错误�?| HTTP状态码 | 消息 | 触发场景 | 状�?|
 |--------|-----------|------|----------|------|
 | `LEDGER_001` | 400 | Ledger金额方向错误 | PROJECT REVENUE为负数、SUPPLIER COST为正数等 | USED |
-| `LEDGER_002` | 400 | TRANSFER金额不匹配 | TRANSFER_OUT和TRANSFER_IN金额不相等 | USED |
-| `LEDGER_003` | 400 | 跨供应商迁移禁止 | TRANSFER时source和target供应商不一致 | USED |
+| `LEDGER_002` | 400 | TRANSFER金额不匹�?| TRANSFER_OUT和TRANSFER_IN金额不相�?| USED |
+| `LEDGER_003` | 400 | 跨供应商迁移禁止 | TRANSFER时source和target供应商不一�?| USED |
 | `LEDGER_004` | 409 | 重复生成Ledger | 同一reference已生成Ledger（幂等性冲突） | USED |
 
-### 13.2 业务逻辑错误码（引用）
-
-| 错误码 | HTTP状态码 | 消息 | 触发场景 | 状态 |
+### 13.2 业务逻辑错误码（引用�?
+| 错误�?| HTTP状态码 | 消息 | 触发场景 | 状�?|
 |--------|-----------|------|----------|------|
-| `BIZ_001` | 400 | 无效的操作 | 违反业务规则（如SOD、终态修改） | USED |
-| `BIZ_002` | 404 | 资源不存在 | 根据ID查询资源未找到 | USED |
+| `BIZ_001` | 400 | 无效的操�?| 违反业务规则（如SOD、终态修改） | USED |
+| `BIZ_002` | 404 | 资源不存�?| 根据ID查询资源未找�?| USED |
 | `BIZ_100` | 400 | 金额无效 | 金额为负数、零或格式不正确 | USED |
-| `BIZ_101` | 400 | 余额不足 | 项目余额不足以支付广告消费 | USED |
+| `BIZ_101` | 400 | 余额不足 | 项目余额不足以支付广告消�?| USED |
 
-### 8.3 状态机错误码（引用）
-
-| 错误码 | HTTP状态码 | 消息 | 触发场景 | 状态 |
+### 8.3 状态机错误码（引用�?
+| 错误�?| HTTP状态码 | 消息 | 触发场景 | 状�?|
 |--------|-----------|------|----------|------|
-| `STATE_400` | 400 | 非法状态流转 | final_locked后尝试修改粉数 | USED |
-| `STATE_409` | 409 | 并发冲突 | 乐观锁版本号不匹配 | USED |
+| `STATE_400` | 400 | 非法状态流�?| final_locked后尝试修改粉�?| USED |
+| `STATE_409` | 409 | 并发冲突 | 乐观锁版本号不匹�?| USED |
 
 ### 15.4 数据库错误码（引用）
 
-| 错误码 | HTTP状态码 | 消息 | 触发场景 | 状态 |
+| 错误�?| HTTP状态码 | 消息 | 触发场景 | 状�?|
 |--------|-----------|------|----------|------|
-| `DB_004` | 409 | 唯一性冲突 | 违反UNIQUE约束（幂等性保护） | USED |
+| `DB_004` | 409 | 唯一性冲�?| 违反UNIQUE约束（幂等性保护） | USED |
 
 ### 15.5 自定义异常类
 
@@ -2926,7 +2663,7 @@ class InvalidLedgerAmountException(LedgerException):
         super().__init__(code="LEDGER_001", message=message)
 
 class TransferAmountMismatchException(LedgerException):
-    """TRANSFER金额不匹配"""
+    """TRANSFER金额不匹�?""
     def __init__(self, message: str = "TRANSFER_OUT和TRANSFER_IN金额必须相等"):
         super().__init__(code="LEDGER_002", message=message)
 
@@ -2943,48 +2680,45 @@ class DuplicateLedgerException(LedgerException):
 
 ---
 
-## 15. 测试矩阵（QA使用）
-
+## 15. 测试矩阵（QA使用�?
 ### 16.1 正常计费测试
 
-| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先级 |
+| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先�?|
 |------------|---------|---------|------|---------|--------|
 | TC-LEDGER-001 | 正常计费生成REVENUE | 日报status=final_confirmed<br>conversions_final=100<br>unit_price=50 | 系统自动锁定final_locked | 生成PROJECT REVENUE Ledger<br>amount=5000.00<br>project.balance减少5000 | P0 |
 | TC-LEDGER-002 | 正常成本生成COST | 日报real_spend=4800 | 运营录入real_spend | 生成SUPPLIER COST Ledger<br>amount=-4800.00 | P0 |
 
-### 16.2 final_locked状态测试
-
-| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先级 |
+### 16.2 final_locked状态测�?
+| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先�?|
 |------------|---------|---------|------|---------|--------|
 | TC-LEDGER-003 | final_locked后重复计账（幂等性） | 日报已生成REVENUE Ledger | 系统再次尝试生成Ledger | 幂等性检查通过，不重复生成 | P0 |
-| TC-LEDGER-004 | final_locked后修改粉数（禁止） | 日报status=final_locked | 尝试更新conversions_final | 返回HTTP 400, `STATE_400` | P0 |
-| TC-LEDGER-005 | final_locked后红冲（允许） | 日报status=final_locked<br>原REVENUE=5000 | admin执行红冲，新粉数=90 | 生成REVERSAL=-5000<br>生成新REVENUE=4500<br>审计日志含ADMIN_OVERRIDE | P0 |
+| TC-LEDGER-004 | final_locked后修改粉数（禁止�?| 日报status=final_locked | 尝试更新conversions_final | 返回HTTP 400, `STATE_400` | P0 |
+| TC-LEDGER-005 | final_locked后红冲（允许�?| 日报status=final_locked<br>原REVENUE=5000 | admin执行红冲，新粉数=90 | 生成REVERSAL=-5000<br>生成新REVENUE=4500<br>审计日志含ADMIN_OVERRIDE | P0 |
 
 ### 8.3 并发冲突测试
 
-| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先级 |
+| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先�?|
 |------------|---------|---------|------|---------|--------|
-| TC-LEDGER-006 | 并发提交final（SELECT FOR UPDATE） | 两个请求同时锁定final_confirmed | 请求A先获取锁，请求B等待 | 请求A成功生成Ledger<br>请求B等待后发现已生成（幂等） | P0 |
-| TC-LEDGER-007 | 并发充值（余额竞争） | 两个充值同时入账同一项目 | 请求A和请求B并发执行 | 两笔充值都成功<br>project.balance正确增加（A+B） | P0 |
+| TC-LEDGER-006 | 并发提交final（SELECT FOR UPDATE�?| 两个请求同时锁定final_confirmed | 请求A先获取锁，请求B等待 | 请求A成功生成Ledger<br>请求B等待后发现已生成（幂等） | P0 |
+| TC-LEDGER-007 | 并发充值（余额竞争�?| 两个充值同时入账同一项目 | 请求A和请求B并发执行 | 两笔充值都成功<br>project.balance正确增加（A+B�?| P0 |
 
 ### 15.4 死号迁移测试
 
-| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先级 |
+| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先�?|
 |------------|---------|---------|------|---------|--------|
-| TC-LEDGER-008 | 同供应商迁移成功 | 源账户supplier_id=A<br>目标账户supplier_id=A<br>余额=1234.56 | finance执行迁移 | 生成TRANSFER_OUT=-1234.56<br>生成TRANSFER_IN=+1234.56<br>源账户余额=0<br>目标账户余额增加1234.56 | P0 |
+| TC-LEDGER-008 | 同供应商迁移成功 | 源账户supplier_id=A<br>目标账户supplier_id=A<br>余额=1234.56 | finance执行迁移 | 生成TRANSFER_OUT=-1234.56<br>生成TRANSFER_IN=+1234.56<br>源账户余�?0<br>目标账户余额增加1234.56 | P0 |
 | TC-LEDGER-009 | 跨供应商迁移失败 | 源账户supplier_id=A<br>目标账户supplier_id=B | finance尝试迁移 | 返回HTTP 400, `LEDGER_003` | P0 |
 | TC-LEDGER-010 | 源账户余额为0（禁止） | 源账户remaining_balance=0 | finance尝试迁移 | 返回HTTP 400, `BIZ_101` | P1 |
 
-### 15.5 充值审批链路测试
-
-| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先级 |
+### 15.5 充值审批链路测�?
+| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先�?|
 |------------|---------|---------|------|---------|--------|
-| TC-LEDGER-011 | 充值正常入账 | 充值status=finance_approve<br>amount=10000 | finance标记paid | 生成PROJECT REVENUE Ledger<br>amount=10000.00<br>project.balance增加10000<br>topup.status=paid | P0 |
-| TC-LEDGER-012 | draft状态入账（禁止） | 充值status=draft | finance尝试标记paid | 返回HTTP 400, `STATE_400` | P0 |
+| TC-LEDGER-011 | 充值正常入�?| 充值status=finance_approve<br>amount=10000 | finance标记paid | 生成PROJECT REVENUE Ledger<br>amount=10000.00<br>project.balance增加10000<br>topup.status=paid | P0 |
+| TC-LEDGER-012 | draft状态入账（禁止�?| 充值status=draft | finance尝试标记paid | 返回HTTP 400, `STATE_400` | P0 |
 
 ### 15.6 红冲测试
 
-| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先级 |
+| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先�?|
 |------------|---------|---------|------|---------|--------|
 | TC-LEDGER-013 | 红冲收入 | 原REVENUE=5000<br>日报final_locked | admin执行红冲，新粉数=90 | 生成REVERSAL=-5000<br>生成新REVENUE=4500<br>project.balance变化=-500 | P0 |
 | TC-LEDGER-014 | 红冲原因缺失（禁止） | 原REVENUE=5000 | admin执行红冲，reason="" | 返回HTTP 400, `VALIDATION_001` | P1 |
@@ -2992,16 +2726,15 @@ class DuplicateLedgerException(LedgerException):
 
 ### 15.7 手工调账测试
 
-| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先级 |
+| 测试用例编号 | 测试场景 | 前置条件 | 操作 | 期望结果 | 优先�?|
 |------------|---------|---------|------|---------|--------|
 | TC-LEDGER-016 | 手工调账双人审核 | finance A提交调账申请<br>amount=500 | finance B复核批准 | 生成Ledger<br>adjustment.status=approved | P0 |
-| TC-LEDGER-017 | 自我批准（禁止SOD） | finance A提交调账申请 | finance A尝试批准 | 返回HTTP 400, `BIZ_001` | P0 |
+| TC-LEDGER-017 | 自我批准（禁止SOD�?| finance A提交调账申请 | finance A尝试批准 | 返回HTTP 400, `BIZ_001` | P0 |
 | TC-LEDGER-018 | 调账原因过短（禁止） | finance提交调账 | reason="test" | 返回HTTP 400, `VALIDATION_001` | P1 |
 
 ---
 
-## 16. Mermaid图
-
+## 16. Mermaid�?
 ### 16.1 双账本架构图
 
 ```mermaid
@@ -3013,7 +2746,7 @@ graph TB
         MA[Manual Adjustment<br>手工调账]
     end
 
-    subgraph "Ledger双账本"
+    subgraph "Ledger双账�?
         PROJECT[PROJECT账本<br>项目收入]
         SUPPLIER[SUPPLIER账本<br>供应商成本]
     end
@@ -3044,24 +2777,23 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant MBuyer as 投手
-    participant DOperat as 数据操作员
-    participant System as 系统
+    participant DOperat as 数据操作�?    participant System as 系统
     participant Ledger as ledger_entries
     participant Project as projects
 
-    Note over MBuyer,Project: T+0日 23:59前：投手提交raw
+    Note over MBuyer,Project: T+0�?23:59前：投手提交raw
 
     MBuyer->>System: POST /daily-reports<br>{conversions_raw: 100, raw_spend: 5000}
     System->>System: status = raw_submitted
     Note over System: 不生成Ledger
 
-    Note over MBuyer,Project: T+1日 12:00前：运营录入real_spend
+    Note over MBuyer,Project: T+1�?12:00前：运营录入real_spend
 
     DOperat->>System: PUT /daily-reports/{id}<br>{real_spend: 4800}
     System->>Ledger: INSERT SUPPLIER COST<br>amount = -4800.00
     Note over Ledger: SUPPLIER账本<br>成本增加
 
-    Note over MBuyer,Project: T+1日 14:00前：运营确认final粉数
+    Note over MBuyer,Project: T+1�?14:00前：运营确认final粉数
 
     DOperat->>System: POST /daily-reports/{id}/confirm-final<br>{conversions_final: 95}
     System->>System: status = final_confirmed
@@ -3078,7 +2810,7 @@ sequenceDiagram
     Note over Ledger: PROJECT账本<br>收入增加（余额减少）
 ```
 
-### 8.3 DailyReport → Ledger状态流
+### 8.3 DailyReport �?Ledger状态流
 
 ```mermaid
 stateDiagram-v2
@@ -3090,9 +2822,7 @@ stateDiagram-v2
 
     trend_flagged --> trend_resolved: 运营复核通过
 
-    trend_ok --> final_pending: 运营开始确认
-    trend_resolved --> final_pending: 运营开始确认
-
+    trend_ok --> final_pending: 运营开始确�?    trend_resolved --> final_pending: 运营开始确�?
     final_pending --> final_confirmed: 运营确认final粉数
 
     final_confirmed --> final_locked: 系统锁定计费
@@ -3102,51 +2832,44 @@ stateDiagram-v2
     end note
 
     note right of trend_ok
-        录入real_spend时
-        生成SUPPLIER COST Ledger
+        录入real_spend�?        生成SUPPLIER COST Ledger
     end note
 
     note right of final_locked
         生成PROJECT REVENUE Ledger
-        状态机终态
-        禁止修改（除红冲）
-    end note
+        状态机终�?        禁止修改（除红冲�?    end note
 
     final_locked --> [*]
 ```
 
 ---
 
-## 17. 参考文档
-
-本文档基于以下SoT文档编写：
-
+## 17. 参考文�?
+本文档基于以下SoT文档编写�?
 | SoT文档 | 版本 | 引用章节 | 引用次数 |
 |---------|------|---------|---------|
-| **DATA_SCHEMA.md** | v5.1 | 3.4.4 ledger_entries表, 3.2.1 projects表 | 20+ |
-| **STATE_MACHINE.md** | v2.5 | 第8章 日报状态机, 第9章 充值状态机 | 15+ |
+| **DATA_SCHEMA.md** | v5.1 | 3.4.4 ledger_entries�? 3.2.1 projects�?| 20+ |
+| **STATE_MACHINE.md** | v2.5 | �?�?日报状态机, �?�?充值状态机 | 15+ |
 | **BUSINESS_RULES.md** | v3.1 | BR-FIN-002, BR-FIN-003, BR-FIN-005 | 10+ |
-| **ERROR_CODES_SOT.md** | v2.1 | LEDGER_*, BIZ_*, STATE_* 错误码 | 12+ |
-| **SYSTEM_OVERVIEW.md** | v2.0 | 第5章 双账本模型 | 8+ |
-| **AUTH_SPEC.md** | v2.0 | 第5章 授权机制、权限矩阵 | 6+ |
-| **API_SOT.md** | v9.0 | 第11章 Ledger API | 4+ |
+| **ERROR_CODES_SOT.md** | v2.1 | LEDGER_*, BIZ_*, STATE_* 错误�?| 12+ |
+| **SYSTEM_OVERVIEW.md** | v2.0 | �?�?双账本模�?| 8+ |
+| **AUTH_SPEC.md** | v2.0 | �?�?授权机制、权限矩�?| 6+ |
+| **API_SOT.md** | v9.0 | �?1�?Ledger API | 4+ |
 
 ---
 
 ## 18. 版本历史
 
-| 版本 | 日期 | 变更内容 | 作者 |
+| 版本 | 日期 | 变更内容 | 作�?|
 |------|------|---------|------|
-| v1.1 | 2025-01-22 | **v1.1增强版**<br>- ✅ 新增"双账本×entry_type白名单矩阵"（4.2节）<br>- ✅ 分离TOPUP为独立entry_type（不再混用REVENUE语义）<br>- ✅ 新增"余额唯一真相源原则"（2.4节：禁止用ledger聚合计算实时余额）<br>- ✅ 新增"Ledger Entries的四大禁止"（12.2节：禁止UPDATE/DELETE）<br>- ✅ 新增"失败与回滚策略"章节（第6章：DailyReport/Topup/Transfer失败处理）<br>- 🔄 更新所有Topup相关代码示例使用TOPUP类型<br>- 🔄 更新快速导航表（新增v1.1内容） | 系统架构团队 |
-| v1.0 | 2025-01-22 | **正式SoT版**<br>- 完整双账本模型定义<br>- ledger_entries表字段逐项解释<br>- 金额方向绝对规则表<br>- 事务边界与锁策略（SELECT FOR UPDATE）<br>- DailyReport→Ledger完整映射<br>- Topup→Ledger映射<br>- Transfer→Ledger映射<br>- 对账调整流程<br>- 手工调账双人审核<br>- 权限控制矩阵<br>- 错误码定义<br>- 测试矩阵（18个测试用例）<br>- 3张Mermaid图 | 系统架构团队 |
+| v1.1 | 2025-01-22 | **v1.1增强�?*<br>- �?新增"双账本×entry_type白名单矩�?�?.2节）<br>- �?分离TOPUP为独立entry_type（不再混用REVENUE语义�?br>- �?新增"余额唯一真相源原�?�?.4节：禁止用ledger聚合计算实时余额�?br>- �?新增"Ledger Entries的四大禁�?�?2.2节：禁止UPDATE/DELETE�?br>- �?新增"失败与回滚策�?章节（第6章：DailyReport/Topup/Transfer失败处理�?br>- 🔄 更新所有Topup相关代码示例使用TOPUP类型<br>- 🔄 更新快速导航表（新增v1.1内容�?| 系统架构团队 |
+| v1.0 | 2025-01-22 | **正式SoT�?*<br>- 完整双账本模型定�?br>- ledger_entries表字段逐项解释<br>- 金额方向绝对规则�?br>- 事务边界与锁策略（SELECT FOR UPDATE�?br>- DailyReport→Ledger完整映射<br>- Topup→Ledger映射<br>- Transfer→Ledger映射<br>- 对账调整流程<br>- 手工调账双人审核<br>- 权限控制矩阵<br>- 错误码定�?br>- 测试矩阵�?8个测试用例）<br>- 3张Mermaid�?| 系统架构团队 |
 
 ---
 
-**文档性质**: Ledger双账本领域唯一真相源（SoT）
-**执行级别**: 🔴 强制执行（PR必查）
-**违规处理**: PR自动拒绝 / 代码回滚
-**最后更新**: 2025-01-22
-**版本**: v1.1 (增强版)
+**文档性质**: Ledger双账本领域唯一真相源（SoT�?**执行级别**: 🔴 强制执行（PR必查�?**违规处理**: PR自动拒绝 / 代码回滚
+**最后更�?*: 2025-01-22
+**版本**: v1.1 (增强�?
 
 ---
 
