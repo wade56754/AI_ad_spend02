@@ -2,7 +2,8 @@
 
 **文档版本**: v3.1
 **发布日期**: 2025-01-21
-**文档状态**: ✅ 规则已模块化拆分 (BRD v3.1对齐更新)
+**文档状态**: ✅ 规则已模块化拆分；当前文件为索引
+**规则正文位置**: `docs/archive/old_core/rules/BR-*.md`（归档版，现行有效内容以该目录文件为准，直至迁移至现行 SoT 目录）
 **维护团队**: 业务架构团队
 
 ---
@@ -11,7 +12,7 @@
 
 本文档是 **AI 广告代投系统** 业务规则的**索引导航文档**。
 
-**核心规则已模块化拆分**到 `docs/core/rules/` 目录下的独立文件中，每个模块一个文件。本文档仅作为导航入口，**不再直接包含规则详细内容**。
+**核心规则已模块化拆分**到 `docs/archive/old_core/rules/` 目录下的独立文件中，每个模块一个文件。本文档仅作为导航入口，**不再直接包含规则详细内容**。若未来迁移到现行 SoT 目录，将在本索引同步更新路径与版本说明。
 
 如需查阅具体规则，请通过下方的**规则导航表**跳转到对应的模块文件。
 
@@ -22,30 +23,28 @@
 > 1. **金额必用 Decimal**：严禁使用 Float/Double，必须保留2位小数 (Ref: BR-FIN-003)。
 > 2. **时间必用 UTC**：数据库存 TIMESTAMPTZ，后端用 `datetime.now(timezone.utc)` (Ref: BR-DATA-002)。
 > 3. **核心数据禁删**：项目/账户/资金记录严禁物理删除，必须走归档/取消流程 (Ref: BR-DATA-001)。
-> 4. **角色不可变**：用户角色一旦创建，非 Admin 不可变更 (Ref: BR-AUTH-001)。
-> 5. **终态不可逆**：充值/日报/对账一旦进入终态 (Completed/final_locked/Closed)，数据即锁定，仅可通过红冲修正 (Ref: BR-RPT-004, BR-RPT-005)。
+> 4. **角色不可混用**：用户角色一旦创建，非 Admin 不可变更 (Ref: BR-AUTH-001)。
+> 5. **终态不可回退**：充值/日报/对账一旦进入终态(Completed/final_locked/Closed)，数据即锁定，仅可通过红冲修正 (Ref: BR-RPT-004, BR-RPT-005)。
 
 ---
 
-## 🗂️ 规则导航表
+## 🗂️ 规则导航
 
 ### 核心业务模块
 
 | 模块代码 | 模块名称 | 规则文件路径 | 优先级 | 状态 |
 |---------|---------|-------------|-------|------|
-| **BR-AUTH** | 认证与授权 | [docs/archive/old_core/rules/BR-AUTH.md](../archive/old_core/rules/BR-AUTH.md) | P0 | ✅ 已定义 |
-| **BR-USER** | 用户与角色 | [docs/archive/old_core/rules/BR-USER.md](../archive/old_core/rules/BR-USER.md) | P0 | ✅ 已定义 |
-| **BR-PROJ** | 项目管理 | [docs/archive/old_core/rules/BR-PROJ.md](../archive/old_core/rules/BR-PROJ.md) | P1 | ✅ 已定义 |
-| **BR-CHAN** | 渠道管理 | [docs/archive/old_core/rules/BR-CHAN.md](../archive/old_core/rules/BR-CHAN.md) | P1 | ✅ 已定义 |
-| **BR-ACCT** | 广告账户 | [docs/archive/old_core/rules/BR-ACCT.md](../archive/old_core/rules/BR-ACCT.md) | P1 | ✅ 已定义 |
-| **BR-FIN** | 财务流程 | [docs/archive/old_core/rules/BR-FIN.md](../archive/old_core/rules/BR-FIN.md) | P0 | ✅ 已定义 |
-| **BR-RECON** | 对账流程 | [docs/archive/old_core/rules/BR-RECON.md](../archive/old_core/rules/BR-RECON.md) | P1 | ✅ 已定义 |
-| **BR-RPT** | 日报管理 | [docs/archive/old_core/rules/BR-RPT.md](../archive/old_core/rules/BR-RPT.md) | P1 | ✅ 已定义 |
-| **BR-DATA** | 数据完整性 | [docs/archive/old_core/rules/BR-DATA.md](../archive/old_core/rules/BR-DATA.md) | P0 | ✅ 已定义 |
+| **BR-AUTH** | 认证与授权 | [docs/archive/old_core/rules/BR-AUTH.md](../archive/old_core/rules/BR-AUTH.md) | P0 | ✅ 归档版（现行有效） |
+| **BR-USER** | 用户与角色 | [docs/archive/old_core/rules/BR-USER.md](../archive/old_core/rules/BR-USER.md) | P0 | ✅ 归档版（现行有效） |
+| **BR-PROJ** | 项目管理 | [docs/archive/old_core/rules/BR-PROJ.md](../archive/old_core/rules/BR-PROJ.md) | P1 | ✅ 归档版（现行有效） |
+| **BR-CHAN** | 渠道管理 | [docs/archive/old_core/rules/BR-CHAN.md](../archive/old_core/rules/BR-CHAN.md) | P1 | ✅ 归档版（现行有效） |
+| **BR-ACCT** | 广告账户 | [docs/archive/old_core/rules/BR-ACCT.md](../archive/old_core/rules/BR-ACCT.md) | P1 | ✅ 归档版（现行有效） |
+| **BR-FIN** | 财务流程 | [docs/archive/old_core/rules/BR-FIN.md](../archive/old_core/rules/BR-FIN.md) | P0 | ✅ 归档版（现行有效） |
+| **BR-RECON** | 对账流程 | [docs/archive/old_core/rules/BR-RECON.md](../archive/old_core/rules/BR-RECON.md) | P1 | ✅ 归档版（现行有效） |
+| **BR-RPT** | 日报管理 | [docs/archive/old_core/rules/BR-RPT.md](../archive/old_core/rules/BR-RPT.md) | P1 | ✅ 归档版（现行有效） |
+| **BR-DATA** | 数据完整性 | [docs/archive/old_core/rules/BR-DATA.md](../archive/old_core/rules/BR-DATA.md) | P0 | ✅ 归档版（现行有效） |
 
-**总计**: 25 条核心规则已定义 (新增 BR-RPT-005)
 
-### 优先级说明
 
 - **P0 (关键)**: 违反将导致系统安全风险、数据不一致或核心业务无法运行
 - **P1 (重要)**: 违反将导致业务流程错误或用户体验严重下降
@@ -155,7 +154,7 @@
 
 #### 2. 编辑对应的规则文件
 
-打开 `docs/core/rules/BR-{模块}.md` 文件,按照 v2.0 规则模板新增规则:
+打开 `docs/archive/old_core/rules/BR-{模块}.md` 文件,按照 v2.0 规则模板新增规则:
 
 ```markdown
 ## BR-{模块}-{序号}: {规则名称}
@@ -211,7 +210,7 @@ backend/services/*
 
 ### 如何修改现有规则
 
-1. 直接编辑 `docs/core/rules/BR-{模块}.md` 文件
+1. 直接编辑 `docs/archive/old_core/rules/BR-{模块}.md` 文件
 2. 更新规则内容,保持模板结构完整
 3. 同步更新 ERROR_CODES.md 和 DATA_SCHEMA.md(如有变更)
 4. 更新或新增测试用例
@@ -411,7 +410,7 @@ backend/tests/* (测试用例)
 ### v3.0 (2025-01-20)
 **重大重构** - 规则模块化拆分
 - ✅ 将 BUSINESS_RULES.md 重构为轻量级索引文档
-- ✅ 核心规则拆分到 `docs/core/rules/` 目录下的独立文件
+- ✅ 核心规则拆分到 `docs/archive/old_core/rules/` 目录下的独立文件
 - ✅ 完成 9 个模块文件创建(BR-AUTH, BR-USER, BR-PROJ, BR-CHAN, BR-ACCT, BR-FIN, BR-RECON, BR-RPT, BR-DATA)
 - ✅ 保留术语词汇表作为全局参考
 - ✅ 新增规则维护指南
@@ -431,8 +430,8 @@ backend/tests/* (测试用例)
 ## 📧 联系方式
 
 **维护团队**: 业务架构团队
-**文档仓库**: `docs/core/BUSINESS_RULES.md`
-**规则目录**: `docs/core/rules/`
+**文档仓库**: `./BUSINESS_RULES.md`
+**规则目录**: `docs/archive/old_core/rules/`
 
 ---
 

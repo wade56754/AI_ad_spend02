@@ -1,0 +1,61 @@
+# ==========================
+# Ruff 配置（AI_ad_spend02 专用??
+# ==========================
+line-length = 110
+target-version = "py311"
+src = ["backend", "scripts"]
+extend-exclude = [
+    "alembic/",
+    "migrations/",
+    "dist/",
+    "build/",
+    "node_modules/",
+]
+
+# --------------------------
+# Lint 规则（按你项目最适用的组合）
+# --------------------------
+[lint]
+# 启用的规则集
+select = [
+    "E",   # pycodestyle 基础规则
+    "F",   # pyflakes 语法检??
+    "I",   # import 排序（isort 替代??
+    "B",   # flake8-bugbear（捕获常??bug??
+    "UP",  # pyupgrade（自动升??Python 语法??
+    "SIM", # simplify（代码简化）
+    "PT",  # pytest 风格检查（你项目已有测试）
+    "RUF"  # Ruff 扩展规则（更强）
+]
+
+# 忽略的规??
+ignore = [
+    "E501", # 行长度，不限制（你项目文件行都偏长）
+    "E203", # ??Black 冲突，避免误??
+]
+
+[lint.per-file-ignores]
+"tests/**.py" = ["F401", "F841"]
+
+# --------------------------
+# 自动格式??
+# --------------------------
+[format]
+quote-style = "double"        # 强制使用双引??
+indent-style = "space"        # 使用空格缩进
+line-ending = "lf"            # 强制 LF（跨平台一致）
+skip-magic-trailing-comma = false
+docstring-code-format = true  # 格式??docstring 中的代码
+
+# --------------------------
+# import 规则（团队统一??
+# --------------------------
+[lint.isort]
+combine-as-imports = true
+force-single-line = false
+known-first-party = ["backend"]    # 你项目后端目??
+lines-after-imports = 2
+
+# --------------------------
+# 允许 Ruff 自动修复所有可修复问题
+# --------------------------

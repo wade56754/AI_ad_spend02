@@ -301,7 +301,7 @@
 
 ### 4.6 状态机错误类（STATE_）
 
-**引用**: `STATE_MACHINE.md` v2.5 - 状态流转与终态保护规则
+**引用**: `STATE_MACHINE.md` v2.6 - 状态流转与终态保护规则
 
 | 错误码 | 消息 | HTTP | 触发场景 | 状态 |
 |--------|------|------|----------|------|
@@ -741,8 +741,8 @@ def update_project(project_id: int, data: dict):
 
 | 文档名称 | 路径 | 说明 |
 |---------|------|------|
-| 数据模型 SoT | `docs/core/DATA_SCHEMA.md` | 数据库表结构定义 |
-| 业务规则 SoT | `docs/core/BUSINESS_RULES.md` | 业务规则和状态机定义 |
+| 数据模型 SoT | `./DATA_SCHEMA.md` | 数据库表结构定义 |
+| 业务规则 SoT | `./BUSINESS_RULES.md` | 业务规则和状态机定义 |
 | 项目模块 API 文档 | `docs/modules/projects/API_GUIDE.md` | 项目模块接口说明 |
 
 ### 8.4 变更日志

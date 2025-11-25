@@ -44,11 +44,11 @@
 
 ### 1.1 唯一真相源（强制依赖）
 
-- **数据定义**: [`docs/core/DATA_SCHEMA.md`](./DATA_SCHEMA.md) v5.2 - 表结构、字段、类型的唯一来源
-- **状态机定义**: [`docs/core/STATE_MACHINE.md`](./STATE_MACHINE.md) v2.6 - 业务状态流转的唯一来源
-- **业务规则**: [`docs/core/BUSINESS_RULES.md`](./BUSINESS_RULES.md) v3.1 - 业务约束的唯一来源
-- **错误码**: [`docs/core/ERROR_CODES_SOT.md`](./ERROR_CODES_SOT.md) v2.1 - 错误码定义的唯一来源
-- **系统架构**: [`docs/core/SYSTEM_OVERVIEW.md`](./SYSTEM_OVERVIEW.md) v2.0 - 系统架构的唯一来源
+- **数据定义**: [`./DATA_SCHEMA.md`](./DATA_SCHEMA.md) v5.2 - 表结构、字段、类型的唯一来源
+- **状态机定义**: [`./STATE_MACHINE.md`](./STATE_MACHINE.md) v2.6 - 业务状态流转的唯一来源
+- **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v3.1 - 业务约束的唯一来源
+- **错误码**: [`./ERROR_CODES_SOT.md`](./ERROR_CODES_SOT.md) v2.1 - 错误码定义的唯一来源
+- **系统架构**: [`../1.overview/SYSTEM_OVERVIEW.md`](../1.overview/SYSTEM_OVERVIEW.md) v2.0 - 系统架构的唯一来源
 
 ### 1.2 五个不可违背的规则
 
@@ -136,16 +136,16 @@
 
 ```bash
 # 1. 查看表结构定义
-grep -A 50 "{{table_name}}" docs/core/DATA_SCHEMA.md
+grep -A 50 "{{table_name}}" ./DATA_SCHEMA.md
 
 # 2. 查看状态机定义
-grep -A 30 "{{state_machine_name}}" docs/core/STATE_MACHINE.md
+grep -A 30 "{{state_machine_name}}" ./STATE_MACHINE.md
 
 # 3. 查看业务规则
-grep "BR-{{MODULE}}" docs/core/BUSINESS_RULES.md
+grep "BR-{{MODULE}}" ./BUSINESS_RULES.md
 
 # 4. 查看错误码
-grep "{{ERROR_CODE}}" docs/core/ERROR_CODES_SOT.md
+grep "{{ERROR_CODE}}" ./ERROR_CODES_SOT.md
 ```
 
 #### Step 2: Schema 层实现（15分钟）

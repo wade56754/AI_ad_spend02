@@ -1081,7 +1081,7 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;  -- STABLE自动缓存
 **文档状态**: ✅ 正式上线版 - RLS策略完整定义（v2.0）
 **维护责任**: 数据库安全架构团队
 **下次审查**: 每季度或重大安全变更时
-**反馈渠道**: 提交Issue或PR到 `docs/core/` 目录
+**反馈渠道**: 提交Issue或PR到 `./` 目录
 
 ---
 

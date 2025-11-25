@@ -127,7 +127,7 @@ ledger_entries (账本, manual_entry红冲/补录)
 | `system_spend` | DECIMAL(15,2) | DEFAULT 0.00 | 系统记录的消耗（daily_reports.real_spend） |
 | `external_spend` | DECIMAL(15,2) | DEFAULT 0.00 | 供应商提供的消耗 |
 | `difference_amount` | DECIMAL(15,2) | DEFAULT 0.00 | 差异金额 = system_spend - external_spend |
-| `status` | VARCHAR(20) | NOT NULL | 明细状态，参考STATE_MACHINE.md v2.5，合法值: `pending/confirmed/adjusted` |
+| `status` | VARCHAR(20) | NOT NULL | 明细状态，参考STATE_MACHINE.md v2.6，合法值: `pending/confirmed/adjusted` |
 | `notes` | TEXT | 可空 | 备注说明 |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
 

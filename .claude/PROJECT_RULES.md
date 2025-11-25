@@ -1,57 +1,91 @@
-# AI广告代投系统 - 项目规则总纲（SoT Master）
+# AI 广告代投系统 - 项目规则总纲 (Project Constitution)
 
-> **文档版本**: v2.0
-> **文档类型**: 项目强制规范（Claude 项目记忆）
-> **适用范围**: 所有开发/重构/生成代码工作
-> **规范级别**: 🔴 强制执行
-> **生效日期**: 2025-11-18
-> **维护责任**: 规则总监 + 系统架构团队
+> **文档版本**: v3.1 (基于 ASDD Freeze v1.0 + SoT Freeze v1.0)
+> **文档类型**: Claude/SuperClaude 的"世界观" - SoT 体系的裁判规则
+> **适用范围**: 所有开发/重构/代码生成工作
+> **规范级别**: 🔴 强制执行 (CI/CD 验证)
+> **生效日期**: 2025-11-25
+> **维护责任**: AI Architecture Team
+> **Freeze 基准**:
+>   - MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
+>   - STATE_MACHINE.md v2.6 (8状态机)
+>   - DATA_SCHEMA.md v5.2
+>   - API_SOT.md v9.0
+>   - BUSINESS_RULES.md v3.1
+>   - ERROR_CODES_SOT.md v2.1
+>   - AUTH_SPEC.md v2.0
+>   - LEDGER_SOT.md v1.1
 
 ---
 
-## 📚 一、SoT 文档体系（唯一真相源）
+## 📜 一、系统宪法 (Core Principles) - SoT 裁判链
 
-本项目采用**分层 SoT 架构**，所有开发必须严格遵循以下文档优先级：
+**所有技术决策必须遵循以下优先级 (仲裁链)**:
 
-### 1. SoT-Data: 数据库定义
-**文档**: `docs/core/DATA_SCHEMA.md` (v5.0)
+```
+MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
+    ↓ 引用
+STATE_MACHINE.md v2.6 (状态定义) ←─── 🚫 禁止在其他文档重复定义状态
+    ↓ 引用
+DATA_SCHEMA.md v5.2 (数据结构)   ←─── 📌 所有表结构、字段类型以此为准
+    ↓ 引用
+BUSINESS_RULES.md v3.1 (业务规则) ←─── ⚖️ BR-* 规则编号具有法律效力
+    ↓ 引用
+API_SOT.md v9.0 (API 契约)       ←─── 🌐 所有路径、请求/响应格式以此为准
+    ↓ 引用
+ERROR_CODES_SOT.md v2.1 (错误码) ←─── 🚨 禁止自定义错误码
+    ↓ 引用
+AUTH_SPEC.md v2.0 (认证授权)     ←─── 🔐 RLS 策略以此为准
+    ↓ 引用
+LEDGER_SOT.md v1.1 (账本规则)    ←─── 💰 财务逻辑禁止绕过账本
+    ↓ 引用
+DAILY_REPORT_SOT.md v1.0 (日报流程)
+RECONCILIATION_SOT.md v1.0 (对账流程)
+TRANSFER_SOT.md v1.0 (调拨流程)
+```
 
-- **作用**: 数据库字段、表结构、类型定义的唯一来源
-- **核心规则**:
-  - 所有表名、字段名必须与此文档完全一致
-  - 主键规则：UUID（用户/渠道）、BIGSERIAL（业务表）
-  - 金额字段：必须 `DECIMAL(15,2)`
-  - 时间字段：必须 `TIMESTAMPTZ`
-  - 状态字段：枚举值必须引用 `STATE_MACHINE.md`
+### 🔒 不可侵犯原则 (Inviolable Rules)
 
-### 2. SoT-State: 状态机定义
-**文档**: `docs/core/STATE_MACHINE.md` (v2.3)
+1. **禁止重复定义状态枚举**
+   - ❌ 错误: 在 `models/base.py` 定义 `DailyReportStatus = Enum("DRAFT", "PENDING", "APPROVED", "REJECTED")`
+   - ✅ 正确: 使用 STATE_MACHINE.md v2.6 第8章定义的 **8 状态机**
+   - **强制**: 所有状态必须从 STATE_MACHINE.md 继承
 
-- **作用**: 业务状态枚举和合法流转的唯一来源
-- **核心状态**:
-  - 充值: `draft → pending_review → finance_approve → paid → completed`
-  - 日报: `draft → pending → approved/rejected`
-  - 项目: `draft → active → suspended → archived`
-  - 账户: `new → testing → active → suspended → dead/archived`
-- **铁律**: 禁止自创状态值，所有流转必须记录审计日志
+2. **禁止自定义错误码**
+   - ❌ 错误: `raise HTTPException(400, "Invalid request")`
+   - ✅ 正确: `raise HTTPException(400, detail={"code": "VAL-001", "message": "..."})`
+   - **强制**: 所有错误码必须来自 ERROR_CODES_SOT.md v2.1
 
-### 3. SoT-Implementation: 实现规范
-**文档**: `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md` (v3.x)
+3. **禁止直接修改数据库 (必须通过 Alembic)**
+   - ❌ 错误: 手动执行 `ALTER TABLE` SQL
+   - ✅ 正确: 先更新 DATA_SCHEMA.md v5.2 → 生成 Alembic 迁移 → DBA 审核执行
+   - **强制**: 所有 schema 变更必须有对应迁移文件
 
-- **作用**: 实现规范、角色权限、架构约束
-- **核心约束**:
-  - 合法角色**仅 5 个**: `admin` | `finance` | `data_operator` | `account_manager` | `media_buyer`
-  - 技术栈: FastAPI + Pydantic v2 + SQLAlchemy (同步) + Supabase Auth + Redis
-  - 前端: Next.js 16.0.2 + TypeScript + Tailwind + shadcn/ui
-  - **当前未启用 RLS**，权限通过 Service 层 RBAC 实现
+4. **禁止绕过账本系统**
+   - ❌ 错误: 直接修改 `ad_accounts.balance` 字段
+   - ✅ 正确: 通过 `ledger_entries` 表记录交易 → 触发余额计算
+   - **强制**: 所有资金流动必须在 LEDGER_SOT.md v1.1 定义的双账本体系中
 
-### 4. SoT-API: API 开发流程
-**文档**: `docs/core/API_DEVELOPMENT_FLOW.md` (v7.0)
+5. **禁止跳过状态机流转**
+   - ❌ 错误: `UPDATE daily_reports SET status = 'final_locked' WHERE id = 123`
+   - ✅ 正确: 调用 `DailyReportService.transition_to(status)` 触发状态验证
+   - **强制**: 所有状态变更必须通过 STATE_MACHINE.md v2.6 定义的合法路径
 
-- **作用**: API 开发流程、响应格式、错误处理规范
-- **强制流程**: Schema → Service → Router → Test → Exception Handler
-- **响应格式**: 必须使用 `success_response`/`error_response` Envelope
-- **前端调用**: 必须使用 `apiFetch`（来自 `lib/api.ts`）
+### 📍 文档路径索引 (快速访问)
+
+| 文档 | 版本 | 路径 | 核心章节 |
+|------|------|------|---------|
+| MASTER | v3.4 | `docs/1.overview/MASTER.md` | 系统宪法 (ASDD Freeze) |
+| STATE_MACHINE | v2.6 | `docs/2.sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
+| DATA_SCHEMA | v5.2 | `docs/2.sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
+| BUSINESS_RULES | v3.1 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
+| API_SOT | v9.0 | `docs/2.sot/API_SOT.md` | §9 Daily Reports API |
+| ERROR_CODES_SOT | v2.1 | `docs/2.sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
+| AUTH_SPEC | v2.0 | `docs/2.sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
+| LEDGER_SOT | v1.1 | `docs/2.sot/LEDGER_SOT.md` | §2 双账本体系 |
+| DAILY_REPORT_SOT | v1.0 | `docs/2.sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
+| RECONCILIATION_SOT | v1.0 | `docs/2.sot/RECONCILIATION_SOT.md` | §3 对账流程 |
+| TRANSFER_SOT | v1.0 | `docs/2.sot/TRANSFER_SOT.md` | §2 调拨规则 |
 
 ---
 
@@ -209,18 +243,35 @@ class Project(Base):
 
 ### 核心状态流转
 
+**粉数确认 8 状态机** (`daily_reports.status`) - 来源: STATE_MACHINE.md v2.6 §8:
+
+```
+[raw_submitted]       投手提交原始数据 (conversions_raw, raw_spend)
+     ↓ 自动触发趋势检测
+[trend_pending]       等待趋势风控校验
+     ↓ 分支
+     ├─ [trend_ok]        未触发风控规则 → 自动流转
+     └─ [trend_flagged]   触发风控 (TF-001: 粉数骤降 >50%) → 需运营复核
+              ↓ 运营审核
+         [trend_resolved]  运营确认"正常波动" → 继续流转
+     ↓ 合并
+[final_pending]       等待运营录入真实消耗 (real_spend)
+     ↓ 运营确认
+[final_confirmed]     运营确认最终粉数 (conversions_final)
+     ↓ 财务锁定
+[final_locked]        计费锁定 → 触发账本记录创建
+```
+
+**关键业务规则**:
+- **BR-RPT-001**: `conversions_raw != conversions_final` 时，差异 >20% 必须标记 `trend_flagged`
+- **BR-RPT-002**: 只有 `final_locked` 状态的日报才能参与账本计算
+- **BR-RPT-003**: `final_locked` 后禁止修改 (除非走调整流程 ADJUSTMENT_SOT.md)
+
 **充值申请** (`topup_requests.status`):
 ```
 draft → pending_review → finance_approve → paid → completed
    ↓                           ↓
 cancelled                   rejected
-```
-
-**日报** (`daily_reports.status`):
-```
-draft → pending → approved
-                    ↓
-                 rejected
 ```
 
 **项目** (`projects.status`):
@@ -464,14 +515,21 @@ TOPUP_STATES = [
 ]
 ```
 
-### 日报状态
+### 日报状态 (8 状态机 - STATE_MACHINE.md v2.6 §8)
 ```python
 DAILY_REPORT_STATES = [
-    "draft",      # 草稿
-    "pending",    # 待审核
-    "approved",   # 已通过
-    "rejected"    # 已驳回
+    "raw_submitted",    # 投手提交原始数据
+    "trend_pending",    # 趋势风控检测中
+    "trend_ok",         # 趋势正常
+    "trend_flagged",    # 趋势异常待审核
+    "trend_resolved",   # 趋势异常已解决
+    "final_pending",    # 等待最终确认
+    "final_confirmed",  # 最终确认完成
+    "final_locked"      # 计费锁定 (终态)
 ]
+
+# ⚠️ 历史 4 状态机 (已废弃，禁止使用)
+# OLD_STATES = ["draft", "pending", "approved", "rejected"]
 ```
 
 ### 标准响应示例
@@ -519,19 +577,111 @@ raise PermissionError(
 
 ---
 
-**规则总纲版本**: v2.0
-**生效日期**: 2025-11-18
-**最后更新**: 2025-11-18
-**下次审查**: SoT 文档变更时
-**维护责任人**: 规则总监 + 系统架构团队
+---
+
+## 🎯 十二、Claude/SuperClaude 使用指南
+
+### 快速决策流程图
+
+```
+收到需求 → 识别涉及的业务域
+   ↓
+查询对应 SoT 文档 (优先级按第1章裁判链)
+   ↓
+找到相关规则编号 (如 BR-RPT-001)
+   ↓
+检查当前代码是否符合规则
+   ↓
+   ├─ 符合 → 继续开发
+   └─ 不符合 → 先修复代码 (或提出 RFC 修改 SoT)
+```
+
+### 高频参考场景
+
+| 场景 | 查询路径 | 关键检查点 |
+|------|---------|-----------|
+| **添加日报字段** | DATA_SCHEMA.md §3.3.1 | 是否与现有字段冲突？是否需要索引？ |
+| **修改状态流转** | STATE_MACHINE.md §8 | 是否违反单向流转原则？ |
+| **新增 API 端点** | API_SOT.md §9 | 路径是否平面化？响应格式是否统一？ |
+| **计算账户余额** | LEDGER_SOT.md §2.3 | 是否通过账本分录计算？是否绕过双账本？ |
+| **用户权限验证** | AUTH_SPEC.md §3.2 | 是否符合 RBAC 矩阵？是否触发 RLS？ |
+
+### 常见反模式识别
+
+**当看到以下代码立即拦截**:
+
+```python
+# ❌ 反模式 1: 硬编码旧状态 (4 状态机)
+class DailyReportStatus(str, Enum):
+    DRAFT = "draft"
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+# 违反: STATE_MACHINE.md v2.6 定义的是 8 状态机
+
+# ❌ 反模式 2: 直接修改余额
+ad_account.balance -= 100
+db.commit()
+# 违反: LEDGER_SOT.md 要求通过 ledger_entries 记录
+
+# ❌ 反模式 3: 自定义错误码
+raise HTTPException(400, "Invalid data")
+# 违反: ERROR_CODES_SOT.md 要求使用 VAL-001
+
+# ❌ 反模式 4: 跳过状态流转
+report.status = "final_locked"
+# 违反: STATE_MACHINE.md 要求按顺序流转
+
+# ❌ 反模式 5: 缺少可追溯性
+ledger_entry = LedgerEntry(amount=100, entry_type="SPEND")
+# 违反: LEDGER_SOT.md 要求 related_entity_type + related_entity_id
+```
+
+### 职责声明
+
+**Claude/SuperClaude**:
+- 每次处理需求前，请先查阅本文档第一章"SoT 裁判链"
+- 确保所有决策符合仲裁链优先级
+- 如有疑问，优先查询对应 SoT 文档的具体章节，而非自行推测
+- **记住**: 你的职责是**执行裁判规则**，而非创造规则
+- 当遇到 SoT 未覆盖的场景，应提出 RFC 请求，而非自行扩展
+
+---
+
+## 🔐 十三、规则总纲生效声明
+
+**本文档自 v3.0 起生效，具有以下法律效力**:
+
+1. **强制性**: 所有代码提交必须符合本规则，CI/CD 流程应集成一致性检查脚本
+2. **优先级**: 当本文档与其他文档冲突时，以本文档为准 (本文档是 SoT 的 Meta-SoT)
+3. **修订流程**: 修改本文档需经过架构委员会 2/3 多数通过
+4. **培训要求**: 所有新加入团队成员必须完成本文档学习并通过测试
+5. **Freeze 保护**:
+   - 禁止直接修改状态定义 → 必须通过 RFC 流程
+   - 禁止重复定义枚举 → 所有下游文档只能引用上游 SoT
+   - 强制 PR 审查 → 所有 SoT 文档修改必须经过一致性脚本验证
+   - 仲裁链修改 → 需 2 名架构师批准
+
+**签署人**: AI Architecture Team
+**生效日期**: 2025-11-24
+**基准版本**: SoT Freeze v1.0
+
+---
+
+**规则总纲版本**: v3.0 (基于 SoT Freeze v1.0)
+**生效日期**: 2025-11-24
+**最后更新**: 2025-11-24
+**下次审查**: SoT 文档变更时或每季度
+**维护责任人**: AI Architecture Team
 
 ---
 
 ## 🔒 执行承诺
 
-- **开发团队**：开始任务前必须确认已阅读并理解本规则总纲
-- **Code Review**：按此规则执行，发现冲突需立即纠正
-- **AI 工具**：每次生成代码前必须执行完整自检清单
-- **架构变更**：必须先更新 SoT 文档及本规则总纲，再进入开发环节
+- **开发团队**: 开始任务前必须确认已阅读并理解本规则总纲
+- **Code Review**: 按此规则执行，发现冲突需立即纠正
+- **AI 工具 (Claude/SuperClaude)**: 每次生成代码前必须执行完整自检清单
+- **架构变更**: 必须先更新 SoT 文档及本规则总纲，再进入开发环节
+- **违规处理**: PR 自动拒绝 / 代码回滚 / 重新生成
 
-**违规处理**: PR 自动拒绝 / 代码回滚 / 重新生成
+**记住**: SoT 文档体系已达到"裁判级"成熟度 (Freeze v1.0)，本规则总纲是所有 AI Agent 的"世界观"基础。

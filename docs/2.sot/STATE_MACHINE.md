@@ -4,9 +4,9 @@
 > **更新日期**: 2025‑11‑22
 > **类型**: 状态与合法流转的唯一事实来源（SoT-State）  
 > **互锁文档**  
-> - 实现规范 → `./AI_AD_SYSTEM_MAIN_DOCUMENT.md`  
+> - 实现规范 → `../1.overview/MASTER_SPEC.md`  
 > - 数据结构 → `./DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）  
-> - API 流程 → `./API_DEVELOPMENT_FLOW.md`  
+> - API 流程 → `../3.dev-guides/API_DEVELOPMENT_FLOW.md`  
 > - 角色定义 → 仅 `admin/finance/data_operator/account_manager/media_buyer`（无其他角色）
 
 ---
@@ -444,7 +444,7 @@ draft → pending_approval → approved → completed
 
 ## 14. 权限视角提示（非仲裁）
 
-- 本表仅为状态流转视角的快速参考；**真正的权限规则以 AI_AD_SYSTEM_MAIN_DOCUMENT 为准**。
+- 本表仅为状态流转视角的快速参考；**真正的权限规则以 MASTER_SPEC 为准**。
 - 若冲突，以实现规范为准，并需同步更新本文件。
 
 | 模块 | 关键动作 | 允许角色 |
@@ -2627,7 +2627,7 @@ pytest -m state_machine --cov=backend/services --cov-report=html
 | v2.3 | 2025‑11‑17 | 新增全局状态一览表；补全各模块合法取值；新增自检 Checklist；强化 SoT 边界与 Planned 分层。 |
 | v2.2 | 2025‑11‑17 | 对齐实现/数据 SoT：日报仅 data_operator 审核；充值状态收敛为 7 个；批次 `archived` 标记 planned；新增 system 虚拟操作者说明；规划集中到 Planned 章节。 |
 | v2.1 | 2025‑11‑17 | 补齐渠道评审/账户预警等状态机，标注自动化实现状态。 |
-| v2.0 | 2025‑11‑17 | 对齐 AI_AD_SYSTEM_MAIN_DOCUMENT v3.0 与 DATA_SCHEMA v5.0，统一角色与状态枚举。 |
+| v2.0 | 2025‑11‑17 | 对齐 MASTER_SPEC v3.0 与 DATA_SCHEMA v5.0，统一角色与状态枚举。 |
 
 ---
 

@@ -47,7 +47,7 @@
 ```
 AI_AD_SYSTEM 文档体系
 │
-├─ MASTER_SPEC.md v1.0         ← 系统架构总纲、全局规则
+├─ MASTER_SPEC.md v1.1         ← 系统架构总纲、全局规则
 ├─ DATA_SCHEMA.md v5.2         ← transfer_requests 表结构的唯一来源
 ├─ STATE_MACHINE.md v2.6       ← Transfer 状态机的唯一来源
 ├─ LEDGER_SOT.md v1.1          ← 双账本逻辑的唯一来源
@@ -299,7 +299,7 @@ graph LR
 
 ## 5. 状态机（State Machine）
 
-**引用**: STATE_MACHINE.md v2.5
+**引用**: STATE_MACHINE.md v2.6
 
 **说明**: Transfer状态机尚未在STATE_MACHINE.md中正式定义,本章节描述了预期的状态流转规则,待STATE_MACHINE.md补充后需同步对齐。
 
