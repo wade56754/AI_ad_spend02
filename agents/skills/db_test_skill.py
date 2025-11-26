@@ -1,123 +1,72 @@
-"""
-数据库测试 Skill - 执行 db_invariants_test_v2.sql
-"""
+from typing import Dict, Any
 
-from typing import Dict, Any, Optional, List
-from pathlib import Path
-import re
+from agents_config import SOT_FILES, read_optional
 
 
-class DBTestSkill:
-    """数据库测试技能"""
-    
-    def __init__(self, base_path: Optional[Path] = None):
-        """
-        初始化数据库测试技能
-        
-        Args:
-            base_path: 项目根路径
-        """
-        if base_path is None:
-            self.base_path = Path(__file__).parent.parent.parent
-        else:
-            self.base_path = Path(base_path)
-    
-    def get_test_script_path(self) -> Path:
-        """获取测试脚本路径"""
-        return self.base_path / "backend" / "db" / "db_invariants_test_v2.sql"
-    
-    def get_test_cases_path(self) -> Path:
-        """获取测试用例文档路径"""
-        return self.base_path / "backend" / "db" / "TEST_CASES_v2.0.md"
-    
-    def parse_test_cases(self) -> Dict[str, Dict[str, str]]:
-        """
-        解析测试用例文档，提取用例编号和优先级
-        
-        Returns:
-            测试用例信息字典 {tc_id: {priority: str, module: str}}
-        """
-        test_cases_path = self.get_test_cases_path()
-        if not test_cases_path.exists():
-            return {}
-        
-        content = test_cases_path.read_text(encoding='utf-8')
-        test_case_info = {}
-        current_priority = None
-        
-        # 匹配优先级标题
-        priority_pattern = r'## (\d+)\. (P\d+) 测试用例'
-        for line in content.splitlines():
-            priority_match = re.match(priority_pattern, line)
-            if priority_match:
-                current_priority = priority_match.group(2)
-            
-            # 匹配测试用例编号
-            tc_match = re.search(r'#### (TC-[A-Z]+-\d+):', line)
-            if tc_match and current_priority:
-                tc_id = tc_match.group(1)
-                test_case_info[tc_id] = {
-                    'priority': current_priority,
-                    'module': tc_id.split('-')[1]
-                }
-        
-        # 集成测试用例
-        flow_tc_pattern = r'#### (TC-FLOW-\d+):'
-        for line in content.splitlines():
-            flow_match = re.search(flow_tc_pattern, line)
-            if flow_match:
-                tc_id = flow_match.group(1)
-                test_case_info[tc_id] = {
-                    'priority': '集成',
-                    'module': 'FLOW'
-                }
-        
-        return test_case_info
-    
-    def execute_test(self, project_id: str) -> Dict[str, Any]:
-        """
-        执行数据库不变量测试
-        
-        Args:
-            project_id: Supabase 项目 ID
-            
-        Returns:
-            测试执行结果
-            
-        Note:
-            此方法需要通过 Supabase MCP 执行测试脚本
-        """
-        test_script_path = self.get_test_script_path()
-        if not test_script_path.exists():
-            return {
-                "success": False,
-                "error": f"Test script not found: {test_script_path}"
-            }
-        
-        # TODO: 通过 Supabase MCP 执行测试脚本
-        # 这里需要集成 Supabase MCP 工具
-        
-        return {
-            "success": True,
-            "message": "Test execution initiated",
-            "script_path": str(test_script_path)
-        }
-    
-    def parse_test_results(self, output: str) -> Dict[str, List[str]]:
-        """
-        解析测试执行结果
-        
-        Args:
-            output: 测试执行输出
-            
-        Returns:
-            解析结果 {passed: [...], failed: [...]}
-        """
-        passed = re.findall(r'PASS: (TC-[A-Z]+-\d+)', output)
-        failed = re.findall(r'TEST_FAILED \[(TC-[A-Z]+-\d+)\]: (.+)', output)
-        
-        return {
-            "passed": passed,
-            "failed": [{"tc_id": tc_id, "reason": reason} for tc_id, reason in failed]
-        }
+def db_test_skill() -> Dict[str, Any]:
+    cases = read_optional(SOT_FILES["DB_TEST_CASES"])
+    sql = read_optional(SOT_FILES["DB_INVARIANTS_SQL"])
 
+    if not sql:
+        return {"ok": False, "error": "db_invariants_test_v2.sql 未找到"}
+
+    # 生成给 Claude + Supabase MCP 使用的提示词
+    prompt = f"""
+<ROLE>
+你是“数据库不变量测试 Agent”，需要使用 Supabase MCP 服务器执行 SQL 测试脚本。
+</ROLE>
+
+<CONTEXT>
+<TEST_CASES_MD>
+{cases}
+</TEST_CASES_MD>
+
+<INVARIANTS_SQL>
+{sql}
+</INVARIANTS_SQL>
+</CONTEXT>
+
+<TASK>
+1. 连接到当前项目的 Supabase 数据库（通过 supabase MCP server）。
+2. 在一个全新的事务中依次执行 INVARIANTS_SQL 中的内容：
+   - 准备测试数据
+   - 执行所有 P0/P1/P2 测试用例
+3. 收集每个测试用例的执行结果：
+   - 通过：记录 PASS + 用例编号
+   - 失败：记录 FAIL + 用例编号 + 错误信息
+4. 生成一份结构化的测试报告（JSON），包含：
+   - 覆盖统计：P0/P1/P2/集成 测试用例数量与通过率
+   - 失败用例明细列表
+   - 对 schema / 触发器 / 约束的修复建议（文字描述即可）
+</TASK>
+
+<OUTPUT_FORMAT>
+请只输出一段 JSON，形如：
+
+{{
+  "summary": {{
+    "p0": {{"total": 13, "passed": 13}},
+    "p1": {{"total": 8, "passed": 7}},
+    "p2": {{"total": 5, "passed": 5}},
+    "flow": {{"total": 4, "passed": 4}}
+  }},
+  "failures": [
+    {{
+      "case_id": "TC-LED-00X",
+      "severity": "P0 | P1 | P2 | FLOW",
+      "reason": "失败原因",
+      "suggest_fix": "建议如何修改 init_schema.sql 或业务逻辑"
+    }}
+  ],
+  "notes": [
+    "整体结论",
+    "下一步建议"
+  ]
+}}
+</OUTPUT_FORMAT>
+""".strip()
+
+    return {
+        "ok": True,
+        "prompt": prompt,
+    }

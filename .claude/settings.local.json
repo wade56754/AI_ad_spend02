@@ -12,7 +12,14 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(claude plugin add anthropics/skills)",
+      "Bash(dir /b \"%USERPROFILE%\\.claude\\plugins\\marketplaces\\anthropic-agent-skills\")",
+      "Bash(d:git1108AI_ad_spend02.venvScriptspython.exe -c \"import sys; print(sys.path)\")",
+      "Bash(d:git1108AI_ad_spend02.venvScriptspython.exe -c \"import anthropic; print(''anthropic OK'')\")",
+      "Bash(d:git1108AI_ad_spend02.venvScriptspython.exe -m pip list)",
+      "Bash(findstr:*)",
+      "Bash(d:git1108AI_ad_spend02.venvScriptspython.exe -c \"from agents_config import SOT_FILES; print(list(SOT_FILES.keys()))\")"
     ],
     "deny": [],
     "ask": []
