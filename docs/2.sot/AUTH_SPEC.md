@@ -1,8 +1,11 @@
 # 认证与授权规范（AUTH_SPEC - Single Source of Truth�?
 
-> **文档版本**: v2.0 (正式SoT�?
+> **文档版本**: v2.0 (正式SoT)
+> **status**: active
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 > **发布日期**: 2025-01-22
-> **文档类型**: 认证授权领域唯一真相源（SoT-Auth�?
+> **文档类型**: 认证授权领域唯一真相源（SoT-Auth）
 > **适用范围**: FastAPI后端 + Supabase Auth + Next.js前端
 > **规范级别**: 🔴 强制执行（PR必查�?
 > **文档定位**: 开�?测试/前端/后端/架构都可单独依赖本文件完成认证授权实�?

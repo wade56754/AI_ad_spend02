@@ -1,6 +1,9 @@
 # 全局错误码真相源（Error Codes SoT）
 
 **版本**: v2.1
+**status**: active
+**owner**: wade
+**last_reviewed**: 2025-11-27
 **最后更新**: 2025-01-21
 **文档状态**: ✅ Source of Truth（真相源）
 

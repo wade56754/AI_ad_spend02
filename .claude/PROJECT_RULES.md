@@ -1,12 +1,16 @@
 # AI 广告代投系统 - 项目规则总纲 (Project Constitution)
 
-> **文档版本**: v3.1 (基于 ASDD Freeze v1.0 + SoT Freeze v1.0)
+> **文档版本**: v3.2 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0)
 > **文档类型**: Claude/SuperClaude 的"世界观" - SoT 体系的裁判规则
 > **适用范围**: 所有开发/重构/代码生成工作
 > **规范级别**: 🔴 强制执行 (CI/CD 验证)
-> **生效日期**: 2025-11-25
+> **生效日期**: 2025-11-27
 > **维护责任**: AI Architecture Team
 > **Freeze 基准**:
+>   - FREEZE_MANIFEST_v1.0.md (Overview Layer Freeze v1.0)
+>   - SOT_FREEZE_MANIFEST_v2.6.md (SoT Layer Freeze v2.6)
+>   - DEV_GUIDES_FREEZE_MANIFEST_v2.1.md (Dev-Guides Layer Freeze v2.1)
+>   - ARCHITECTURE_FREEZE_MANIFEST_v1.0.md (Architecture Layer Freeze v1.0)
 >   - MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
 >   - STATE_MACHINE.md v2.6 (8状态机)
 >   - DATA_SCHEMA.md v5.2
@@ -71,11 +75,21 @@ TRANSFER_SOT.md v1.0 (调拨流程)
    - ✅ 正确: 调用 `DailyReportService.transition_to(status)` 触发状态验证
    - **强制**: 所有状态变更必须通过 STATE_MACHINE.md v2.6 定义的合法路径
 
-### 📍 文档路径索引 (快速访问)
+### 📍 文档路径索引 (ASDD 4层架构)
 
+**完整导航**: 查阅 **[docs/README.md](../docs/README.md)** - 文档导航中心
+
+#### Layer 1: Overview (系统全局视图)
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|---------|
 | MASTER | v3.4 | `docs/1.overview/MASTER.md` | 系统宪法 (ASDD Freeze) |
+| PROJECT | v1.2 | `docs/1.overview/PROJECT.md` | 业务定义与边界 |
+| ARCHITECTURE | v1.0 | `docs/1.overview/ARCHITECTURE.md` | 系统架构总览 |
+| DOMAIN | v1.0 | `docs/1.overview/DOMAIN.md` | 领域模型与业务逻辑 |
+
+#### Layer 2: SoT (单一真相来源)
+| 文档 | 版本 | 路径 | 核心章节 |
+|------|------|------|---------|
 | STATE_MACHINE | v2.6 | `docs/2.sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
 | DATA_SCHEMA | v5.2 | `docs/2.sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
 | BUSINESS_RULES | v3.1 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
@@ -86,6 +100,21 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 | DAILY_REPORT_SOT | v1.0 | `docs/2.sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
 | RECONCILIATION_SOT | v1.0 | `docs/2.sot/RECONCILIATION_SOT.md` | §3 对账流程 |
 | TRANSFER_SOT | v1.0 | `docs/2.sot/TRANSFER_SOT.md` | §2 调拨规则 |
+
+#### Layer 3: Dev-Guides (开发指南)
+| 文档 | 路径 | 核心内容 |
+|------|------|---------|
+| API_DEVELOPMENT_FLOW | `docs/3.dev-guides/API_DEVELOPMENT_FLOW.md` | Router → Service → Repository |
+| FRONTEND_DEVELOPMENT_RULES | `docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md` | 前端开发规范 |
+| DDD_API_ARCHITECTURE | `docs/3.dev-guides/DDD_API_ARCHITECTURE.md` | DDD 架构设计 |
+
+#### Layer 4: Architecture (架构视图)
+| 文档 | 版本 | 路径 | 核心内容 |
+|------|------|------|---------|
+| SYSTEM_CONTEXT_VIEW | v1.0 | `docs/4.architecture/SYSTEM_CONTEXT_VIEW.md` | C4 Level 1 系统上下文 |
+| BOUNDED_CONTEXT_MAP | v1.0 | `docs/4.architecture/BOUNDED_CONTEXT_MAP.md` | DDD 限界上下文映射 |
+| SERVICE_COMPONENT_VIEW | v1.0 | `docs/4.architecture/SERVICE_COMPONENT_VIEW.md` | C4 Level 2/3 组件视图 |
+| DATA_FLOW_VIEW | v1.0 | `docs/4.architecture/DATA_FLOW_VIEW.md` | 状态机/账本/API 数据流 |
 
 ---
 
@@ -648,7 +677,96 @@ ledger_entry = LedgerEntry(amount=100, entry_type="SPEND")
 
 ---
 
-## 🔐 十三、规则总纲生效声明
+## 🏛️ 十三、ASDD 4层架构合规性 (v3.2 新增)
+
+### ASDD 4层架构概述
+
+**ASDD (AI-Spec-Driven Development)** 是本项目的文档治理框架，所有代码生成与文档变更必须遵循以下 4 层架构：
+
+```
+docs/1.overview/  (系统全局视图 - Freeze v1.0)
+    ↓ 引用
+docs/2.sot/       (单一真相来源 - Freeze v2.6)
+    ↓ 引用
+docs/3.dev-guides/ (开发指南 - Freeze v2.1)
+    ↓ 引用
+docs/4.architecture/ (架构视图 - Freeze v1.0)
+```
+
+### 代码生成合规性检查
+
+**所有代码生成前必须执行以下检查**:
+
+1. **SoT/Dev-Guides/Architecture 对齐验证**
+   - 查询 SoT Layer 对应文档 (STATE_MACHINE/DATA_SCHEMA/API_SOT 等)
+   - 查询 Dev-Guides Layer 对应文档 (API_DEVELOPMENT_FLOW 等)
+   - 查询 Architecture Layer 对应文档 (DATA_FLOW_VIEW 等)
+   - 确保三层定义一致，无冲突
+
+2. **Freeze 状态验证**
+   - 检查文档是否处于 Freeze 状态 (`status: frozen` or `status: ready_for_production`)
+   - 禁止修改已冻结文档 (需先提交 RFC 解冻)
+   - 禁止引用未冻结文档作为实现依据
+
+3. **版本对齐验证**
+   - 确保引用的 SoT 版本号与 Freeze Manifest 一致
+   - 例: STATE_MACHINE.md 必须引用 v2.6 (SoT Freeze v2.6)
+   - 例: API_SOT.md 必须引用 v9.0 (SoT Freeze v2.6)
+
+### 文档变更合规性检查
+
+**所有文档变更必须通过 ai-ad-spec-governor 管道**:
+
+```
+DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
+```
+
+**变更规则**:
+1. **Overview Layer 变更**: 需 Master Architect 批准 + RFC
+2. **SoT Layer 变更**: 需 SoT Guardian 批准 + RFC + 影响分析
+3. **Dev-Guides Layer 变更**: 需开发团队 Lead 批准
+4. **Architecture Layer 变更**: 需 Master Architect 批准
+
+### Agent 文件操作规范
+
+**所有 Agent (AI Agent/人工) 在操作文件前必须**:
+
+1. **Freeze 状态查询**
+   ```markdown
+   Q: 我要修改 STATE_MACHINE.md，是否允许？
+   A: 查询 docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md
+      → STATE_MACHINE.md status: frozen → 禁止直接修改
+      → 必须提交 RFC → 解冻 → 修改 → 重新 Freeze
+   ```
+
+2. **版本引用检查**
+   ```markdown
+   Q: 我要引用 DATA_SCHEMA.md，应该用哪个版本？
+   A: 查询 docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md
+      → DATA_SCHEMA.md v5.2 (frozen) → 使用 v5.2
+   ```
+
+3. **Layer 依赖关系检查**
+   ```markdown
+   Q: 我要修改 API_DEVELOPMENT_FLOW.md (Dev-Guides)，是否需要检查 SoT？
+   A: 是
+      → 查询 API_SOT.md v9.0 (SoT Layer 上游)
+      → 查询 SERVICE_COMPONENT_VIEW.md v1.0 (Architecture Layer 下游)
+      → 确保修改不违反上游 SoT，不破坏下游 Architecture
+   ```
+
+### Freeze Manifest 路径
+
+| Layer | Freeze Manifest | 路径 |
+|-------|-----------------|------|
+| **Overview** | FREEZE_MANIFEST_v1.0.md | `docs/1.overview/FREEZE_MANIFEST_v1.0.md` |
+| **SoT** | SOT_FREEZE_MANIFEST_v2.6.md | `docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md` |
+| **Dev-Guides** | DEV_GUIDES_FREEZE_MANIFEST_v2.1.md | `docs/3.dev-guides/DEV_GUIDES_FREEZE_MANIFEST_v2.1.md` |
+| **Architecture** | ARCHITECTURE_FREEZE_MANIFEST_v1.0.md | `docs/4.architecture/ARCHITECTURE_FREEZE_MANIFEST_v1.0.md` |
+
+---
+
+## 🔐 十四、规则总纲生效声明
 
 **本文档自 v3.0 起生效，具有以下法律效力**:
 
@@ -668,11 +786,16 @@ ledger_entry = LedgerEntry(amount=100, entry_type="SPEND")
 
 ---
 
-**规则总纲版本**: v3.0 (基于 SoT Freeze v1.0)
-**生效日期**: 2025-11-24
-**最后更新**: 2025-11-24
-**下次审查**: SoT 文档变更时或每季度
+**规则总纲版本**: v3.2 (基于 ASDD 4层 Freeze: Overview v1.0 + SoT v2.6 + Dev-Guides v2.1 + Architecture v1.0)
+**生效日期**: 2025-11-27
+**最后更新**: 2025-11-27
+**下次审查**: Freeze Manifest 变更时或每季度
 **维护责任人**: AI Architecture Team
+
+**版本变更历史**:
+- v3.2 (2025-11-27): 新增 ASDD 4层架构合规性章节，更新 Freeze 基准为 4层 Freeze Manifests，更新文档路径索引为 4层架构
+- v3.1 (2025-11-25): 基于 ASDD Freeze v1.0 + SoT Freeze v1.0
+- v3.0 (2025-11-24): 初始版本
 
 ---
 

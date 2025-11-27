@@ -1,6 +1,9 @@
 # RECONCILIATION_SOT.md · 对账模块唯一真相源
 
 > **版本**: v1.0
+> **status**: active
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 > **更新日期**: 2025-01-22
 > **维护团队**: 系统架构团队
 > **定位**: 对账模块（Channel Reconciliation）唯一真相源（Single Source of Truth），定义对账业务模型、核心流程、状态机、并发控制、账本影响等全部规则。
@@ -8,7 +11,7 @@
 > - 数据结构 → `DATA_SCHEMA.md` v5.2
 > - 状态机 → `STATE_MACHINE.md` v2.6
 > - 业务规则 → `BUSINESS_RULES.md` v3.1 (BR-RECON)
-> - 账本逻辑 → `LEDGER_SOT.md` v2.0
+> - 账本逻辑 → `LEDGER_SOT.md` v1.1
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
 > - 权限控制 → `AUTH_SPEC.md` v2.0
 > - RLS策略 → `RLS_POLICIES_SOT.md` v2.1 (规划中未启用)

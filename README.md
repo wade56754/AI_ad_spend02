@@ -42,18 +42,20 @@ AI广告代投系统是一个专为Facebook广告代理商设计的智能化广�
 - ✅ **统计分析报表** - 多维度充值数据分析
 - ✅ **资金流程控制** - 完整的资金流转管理
 
-## 📚 文档中心
+## 📚 Documentation Center
 
-完整的文档请访问 **[📖 DOCS_README.md](./DOCS_README.md)** - 完整的5层文档体系
+Complete ASDD 5-layer documentation (all layers frozen ✅):
+- 📖 **[Documentation Index](./docs/README.md)** - Navigation & Freeze Status
+- 📋 **[MASTER.md](./docs/1.overview/MASTER.md)** v3.4 - System Constitution
+- 📊 **[Project Rules](./.claude/PROJECT_RULES.md)** v3.2 - AI Collaboration Rules
+- 📑 **[Project Docs Index](./docs/PROJECT_DOCS_INDEX_v1.0.md)** - Complete Inventory
 
-### 快速链接
-
-- 📋 [MASTER_SPEC.md](./MASTER_SPEC.md) - 系统根规范（最高优先级SoT）
-- 📖 [系统架构文档](./docs/1.overview/SYSTEM_OVERVIEW.md)
-- 🗄️ [数据库设计](./docs/2.sot/DATA_SCHEMA.md)
-- 🔄 [状态机设计](./docs/2.sot/STATE_MACHINE.md)
-- 📋 [项目开发规则](./docs/1.overview/PROJECT_RULES.md) - AI协作开发必读
-- 🚀 [快速开始指南](#快速开始)
+### Quick Links by Layer
+- **Overview** (Freeze v1.0): [MASTER.md v3.4](./docs/1.overview/MASTER.md), [PROJECT.md](./docs/1.overview/PROJECT.md)
+- **SoT** (Freeze v2.6): [STATE_MACHINE v2.6](./docs/2.sot/STATE_MACHINE.md), [DATA_SCHEMA v5.2](./docs/2.sot/DATA_SCHEMA.md), [API_SOT v9.0](./docs/2.sot/API_SOT.md)
+- **Dev-Guides** (Freeze vFinal): [API_DEVELOPMENT_FLOW](./docs/3.dev-guides/API_DEVELOPMENT_FLOW.md), [FRONTEND_DEVELOPMENT_RULES](./docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md), [TESTING_STRATEGY](./docs/3.dev-guides/TESTING_STRATEGY.md)
+- **Architecture** (Freeze v1.0): [SYSTEM_CONTEXT_VIEW](./docs/4.architecture/SYSTEM_CONTEXT_VIEW.md), [DATA_FLOW_VIEW](./docs/4.architecture/DATA_FLOW_VIEW.md), [SERVICE_COMPONENT_VIEW](./docs/4.architecture/SERVICE_COMPONENT_VIEW.md)
+- **Infrastructure** (Freeze v1.0): [CI_PIPELINE_SPEC](./docs/5.infrastructure/CI_PIPELINE_SPEC.md), [DEPLOYMENT_PIPELINE_SPEC](./docs/5.infrastructure/DEPLOYMENT_PIPELINE_SPEC.md), [OBSERVABILITY_GUIDE](./docs/5.infrastructure/OBSERVABILITY_GUIDE.md)
 
 ## 🛠️ 技术栈
 

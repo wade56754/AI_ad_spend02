@@ -1,15 +1,42 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from anthropic import Anthropic, APIStatusError
 import json
+import logging
 
-from agents_config import SOT_FILES, FRONTEND_DIR, read_optional
-from tools.fs_tool import read_files, write_files
+from ..agents_config import SOT_FILES, FRONTEND_DIR, LLM_CONFIG, read_optional
+from ..tools.fs_tool import read_files
+from ..tools.validation import validate_task_and_files
+from ..tools.types import SkillResult
+
+logger = logging.getLogger(__name__)
+
+# Anthropic client (lazy initialized)
+_client: Optional[Anthropic] = None
 
 
-client = Anthropic()  # 依赖环境变量 ANTHROPIC_API_KEY
+def _get_client() -> Anthropic:
+    """获取 Anthropic client 单例"""
+    global _client
+    if _client is None:
+        _client = Anthropic()  # 依赖环境变量 ANTHROPIC_API_KEY
+    return _client
 
 
 def _build_fe_prompt(task: str, existing_files: Dict[str, str]) -> str:
+    """
+    Build frontend code generation prompt with SoT context.
+
+    Structure:
+        - SYSTEM: Role definition, tech stack (Next.js/React/Tailwind/shadcn)
+        - CONTEXT: Loads MASTER, API_SOT, FRONTEND_RULES, UI_DESIGN_SYSTEM
+        - EXISTING_FRONTEND_FILES: Current code to be modified
+        - TASK: User's task description
+        - THINKING_CHAIN: Step-by-step reasoning guide for LLM
+        - OUTPUT_FORMAT: JSON schema with 'changes' and 'notes' fields
+
+    Returns:
+        Complete prompt string for Claude API
+    """
     master = read_optional(SOT_FILES["MASTER"])
     api_sot = read_optional(SOT_FILES["API_SOT"])
     fe_rules = read_optional(SOT_FILES["FRONTEND_RULES"])
@@ -92,36 +119,77 @@ def _build_fe_prompt(task: str, existing_files: Dict[str, str]) -> str:
 """.strip()
 
 
-def fe_dev_skill(task: str, target_files: List[str]) -> Dict[str, Any]:
+def fe_dev_skill(task: str, target_files: List[str]) -> SkillResult:
+    """
+    前端开发 Skill：生成前端代码变更。
+
+    Args:
+        task: 任务描述
+        target_files: 目标文件列表
+
+    Returns:
+        {
+            "success": bool,
+            "data": {
+                "changes": Dict[str, str],  # 文件路径 -> 新内容
+                "notes": List[str]
+            },
+            "error": Optional[str]
+        }
+    """
+    # 参数校验（使用统一函数）
+    validation_error = validate_task_and_files(task, target_files)
+    if validation_error:
+        logger.warning(f"FE Skill validation failed: {validation_error['error']}")
+        return validation_error
+
+    logger.info(f"FE Skill started: task='{task[:60]}...' files={len(target_files)}")
+
+    # 读取现有文件
     existing = read_files(FRONTEND_DIR, target_files)
     prompt = _build_fe_prompt(task, existing)
 
+    # 调用 Anthropic API
     try:
+        client = _get_client()
+        logger.debug(f"Calling Anthropic API: model={LLM_CONFIG['model']}")
         resp = client.messages.create(
-            model="claude-3-5-sonnet-latest",
-            max_tokens=8000,
-            temperature=0,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
+            model=LLM_CONFIG["model"],
+            max_tokens=LLM_CONFIG["max_tokens"],
+            temperature=LLM_CONFIG["temperature"],
+            messages=[{"role": "user", "content": prompt}],
         )
     except APIStatusError as e:
-        return {"ok": False, "error": f"Anthropic API error: {e}"}
+        logger.error(f"Anthropic API error: {e}")
+        return {
+            "success": False,
+            "data": None,
+            "error": f"Anthropic API error: {e}",
+        }
 
-    # 兼容 text / json 两种返回
+    # 提取响应文本
     text = "".join(
-        block.text for msg in resp.content for block in (msg if isinstance(msg, list) else [msg])
+        block.text
+        for msg in resp.content
+        for block in (msg if isinstance(msg, list) else [msg])
         if getattr(block, "type", None) == "text"
     ) if hasattr(resp, "content") else str(resp)
 
+    logger.debug(f"API response received: {len(text)} chars")
+
+    # 解析 JSON
     try:
         data = json.loads(text)
-    except json.JSONDecodeError:
-        return {"ok": False, "error": "模型返回内容不是合法 JSON", "raw": text}
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON parsing failed: {e}")
+        return {
+            "success": False,
+            "data": None,
+            "error": "模型返回内容不是合法 JSON",
+            "raw": text[:500],  # 保留前500字符便于调试
+        }
 
+    # 提取 changes
     changes_spec = data.get("changes", [])
     changes: Dict[str, str] = {}
     for item in changes_spec:
@@ -130,11 +198,14 @@ def fe_dev_skill(task: str, target_files: List[str]) -> Dict[str, Any]:
         if isinstance(path, str) and isinstance(content, str):
             changes[path] = content
 
-    if changes:
-        write_files(FRONTEND_DIR, changes)
+    logger.info(f"FE Skill completed: {len(changes)} files generated")
 
+    # 注意：不再自动写入文件，由 Agent 层决定是否写入
     return {
-        "ok": True,
-        "changes": list(changes.keys()),
-        "notes": data.get("notes", []),
+        "success": True,
+        "data": {
+            "changes": changes,  # 返回完整内容，而非文件名列表
+            "notes": data.get("notes", []),
+        },
+        "error": None,
     }

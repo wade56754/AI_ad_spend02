@@ -1,14 +1,37 @@
 from typing import Dict, Any
+import logging
 
-from agents_config import SOT_FILES, read_optional
+from ..agents_config import SOT_FILES, read_optional
+from ..tools.types import SkillResult
+
+logger = logging.getLogger(__name__)
 
 
-def db_test_skill() -> Dict[str, Any]:
+def db_test_skill() -> SkillResult:
+    """
+    数据库测试 Skill：生成测试提示词。
+
+    Returns:
+        {
+            "success": bool,
+            "data": {
+                "prompt": str  # 给 Supabase MCP 使用的提示词
+            },
+            "error": Optional[str]
+        }
+    """
     cases = read_optional(SOT_FILES["DB_TEST_CASES"])
     sql = read_optional(SOT_FILES["DB_INVARIANTS_SQL"])
 
     if not sql:
-        return {"ok": False, "error": "db_invariants_test_v2.sql 未找到"}
+        logger.error("DB test SQL file not found")
+        return {
+            "success": False,
+            "data": None,
+            "error": "db_invariants_test_v2.sql 未找到",
+        }
+
+    logger.debug(f"DB test prompt generated: sql={len(sql)} chars, cases={len(cases)} chars")
 
     # 生成给 Claude + Supabase MCP 使用的提示词
     prompt = f"""
@@ -67,6 +90,9 @@ def db_test_skill() -> Dict[str, Any]:
 """.strip()
 
     return {
-        "ok": True,
-        "prompt": prompt,
+        "success": True,
+        "data": {
+            "prompt": prompt,
+        },
+        "error": None,
     }

@@ -1,940 +1,493 @@
-# API 开发流程规范
-
-> **⚠️ 本文档已废弃，请使用新的唯一真相源**
->
-> **唯一真相源**: [`API_SOT.md`](./API_SOT.md)
->
-> 本文档 (v7.0) 已被合并到 API_SOT.md (v8.0) 中，请参考新文档获取最新、最完整的API开发规范。
-
+---
+version: v0.1
+status: ready_for_production
+layer: dev-guide
+last_reviewed: 2025-11-27
+owner: wade
+baseline: MASTER.md v3.4, SoT Freeze v2.6
 ---
 
-## 快速跳转到新文档
+# API Development Flow
 
-- **完整 API 规范**: [`API_SOT.md`](./API_SOT.md)
-- **开发流程**: [`API_SOT.md 第 3 章`](./API_SOT.md#3-api-开发流程)
-- **响应格式**: [`API_SOT.md 第 4 章`](./API_SOT.md#4-响应格式规范)
-- **权限与认证**: [`API_SOT.md 第 6 章`](./API_SOT.md#6-权限与认证)
-- **状态机集成**: [`API_SOT.md 第 7 章`](./API_SOT.md#7-状态机集成)
-- **错误处理**: [`API_SOT.md 第 8 章`](./API_SOT.md#8-错误处理)
-- **AI 工具指导**: [`API_SOT.md 第 9 章`](./API_SOT.md#9-ai-工具开发指导)
-- **检查清单**: [`API_SOT.md 第 10 章`](./API_SOT.md#10-检查清单)
+## 1. Purpose
 
----
+定义后端 API 开发的标准流程，确保所有 API 端点符合 SoT 规范。
 
-## v7.0 → v8.0 变更说明
+## 2. Scope
 
-**v8.0 (API_SOT.md) 新增内容**:
-- 合并了 API_RULEBOOK.md 的统一约束
-- 整合了各模块 API_GUIDE.md 的端点说明
-- 增强了前端调用规范
-- 统一了所有 API 相关文档的引用
+本文档覆盖：
+- API 开发 6 步流程（查阅 SoT → Schema → Service → Router → Test → 文档更新）
+- SoT 对齐检查流程
+- 错误处理标准（基于 ERROR_CODES_SOT v2.1）
+- 测试要求（单测 + 集成测试）
+- 核心不可变量检查点（INV-001, INV-002, INV-003）
 
-**迁移指南**:
-- 将所有对本文档的引用更新为 [`API_SOT.md`](./API_SOT.md)
-- Claude Code / Cursor 配置文件更新引用路径
-- AI Prompt 模板使用新文档的章节链接
+## 3. Development Workflow
 
----
+### 3.1 开发流程概览
 
-# 以下内容已废弃，请参考 API_SOT.md
+API 开发必须遵循以下 6 步标准流程：
 
----
+```mermaid
+graph TD
+    A[Step 1: 查阅 SoT 文档] --> B[Step 2: Schema 层实现]
+    B --> C[Step 3: Service 层实现]
+    C --> D[Step 4: Router 层实现]
+    D --> E[Step 5: 测试编写]
+    E --> F[Step 6: 文档更新]
+    F --> G{SoT 对齐检查}
+    G -->|通过| H[提交 PR]
+    G -->|失败| A
 
-## ⚠️ 核心约束与真相源
-
-### 唯一真相源（强制依赖）
-- **数据定义**: [`docs/core/DATA_SCHEMA.md`](./DATA_SCHEMA.md) - 表结构、字段、类型的唯一来源
-- **系统规范**: [`docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md`](./AI_AD_SYSTEM_MAIN_DOCUMENT.md) - 角色、权限、业务流程的唯一来源
-- **状态机定义**: [`docs/core/STATE_MACHINE.md`](./STATE_MACHINE.md) - 业务状态流转的唯一来源
-- **模块规划**: `docs/modules/{{MODULE_NAME}}/API_GUIDE.md` - 具体模块的API设计文档
-
-### 五个不可违背的规则
-1. **数据库字段禁止自创** - 所有字段必须在 DATA_SCHEMA.md 中定义
-2. **角色限定为5个** - `admin`/`finance`/`data_operator`/`account_manager`/`media_buyer`
-3. **响应必须使用 Envelope** - 使用 `success_response`/`error_response`
-4. **前端必须通过 apiFetch** - 禁止直接 fetch 或其他 HTTP 库
-5. **开发顺序强制执行** - Schema → Service → Router → Test → Exception Handler
-
----
-
-## 🤖 AI 工具开发指导
-
-### Claude Code / Cursor 推荐 Prompt 模板
-
-#### 创建新API时的标准Prompt
-```markdown
-基于以下规范创建 {{模块名}} 模块的 {{功能}} API：
-
-1. 数据定义参考：docs/core/DATA_SCHEMA.md 中的 {{表名}} 表
-2. 状态机定义：docs/core/STATE_MACHINE.md 中的 {{状态机名称}}
-3. 权限要求：{{角色列表}} 可以执行此操作
-
-具体需求：
-- 功能描述：{{功能描述}}
-- 输入参数：{{参数列表}}
-- 业务规则：{{业务规则}}
-- 状态转换：{{from_status}} → {{to_status}}
-
-请按照以下顺序生成代码：
-1. Schema定义（backend/schemas/{{module}}.py）
-2. Service实现（backend/services/{{module}}_service.py）
-3. Router接口（backend/routers/{{module}}.py）
-4. 异常处理器（backend/core/exception_handlers.py 中添加）
-5. 测试用例（backend/tests/test_{{module}}_api.py）
-
-注意事项：
-- 严格使用 DATA_SCHEMA.md 中的字段名
-- 使用项目定义的5个角色
-- 金额用 Decimal，时间用 datetime
-- 响应使用 success_response/error_response
-- 状态转换必须符合 STATE_MACHINE.md 定义
+    C -.-> I[不可变量检查]
+    I -.-> C
 ```
 
-#### 修复Bug时的标准Prompt
-```markdown
-修复 {{模块名}} 模块的 {{问题描述}}：
+**流程说明**：
+1. **Step 1**: 定位并阅读相关 SoT 文档，理解业务规则和约束
+2. **Step 2**: 基于 DATA_SCHEMA v5.2 定义 Pydantic Schema
+3. **Step 3**: 实现业务逻辑，嵌入不可变量检查（INV-001/002/003）
+4. **Step 4**: 定义 FastAPI 路由，对齐 API_SOT v9.0
+5. **Step 5**: 编写单测和集成测试，覆盖正常流程和异常场景
+6. **Step 6**: 更新 API 文档和开发日志
 
-错误信息：
-{{错误日志或堆栈}}
+**关键原则**：
+- 任何步骤失败，必须回到 Step 1 重新确认 SoT 规范
+- Service 层必须包含显式的不可变量检查
+- 所有错误必须使用 ERROR_CODES_SOT v2.1 定义的错误码
 
-相关文件：
-- 模型定义：backend/models/{{model}}.py
-- 服务实现：backend/services/{{service}}.py
-- 路由定义：backend/routers/{{router}}.py
+### 3.2 Step 1: 查阅 SoT 文档
 
-请检查：
-1. 字段名是否与 DATA_SCHEMA.md 一致
-2. 角色是否使用标准5个角色之一
-3. 状态转换是否符合 STATE_MACHINE.md
-4. 是否正确处理了异常
+**目标**: 理解需求的完整 SoT 上下文，避免违反现有规范。
 
-修复要求：
-- 保持现有API接口不变
-- 添加适当的错误处理
-- 更新相关测试用例
-```
+**操作步骤**：
 
-### AI工具配置文件示例
+1. **定位相关 SoT 文档**（按优先级查阅）：
+   ```
+   STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
+   → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1 → AUTH_SPEC.md v2.0
+   → LEDGER_SOT.md v1.1 → DAILY_REPORT_SOT.md v1.0 → TRANSFER_SOT.md v1.0
+   → RECONCILIATION_SOT.md v1.0
+   ```
 
-#### .cursorrules (Cursor配置)
-```yaml
-project_rules:
-  - file: docs/core/API_DEVELOPMENT_FLOW.md
-    enforce: always
-  - file: docs/core/DATA_SCHEMA.md
-    reference: database_fields
-  - file: docs/core/STATE_MACHINE.md
-    reference: state_transitions
+2. **提取关键信息**：
+   - 业务规则编号（如 BR-RPT-001）
+   - 状态机定义（8 状态流转规则）
+   - 数据模型字段定义
+   - 权限要求（AUTH_SPEC v2.0）
+   - 错误码映射
 
-code_generation:
-  - always_use: "success_response, error_response"
-  - never_use: "direct return dict"
-  - decimal_for: "all money fields"
-  - roles: ["admin", "finance", "data_operator", "account_manager", "media_buyer"]
-```
+3. **检查是否存在冲突**：
+   - 新 API 是否会破坏现有状态机？
+   - 是否需要修改 models/（需 DBA 审核）？
+   - 是否涉及账务操作（需遵循 LEDGER_SOT v1.1）？
 
-#### .claude/project-rules.md (Claude Code配置)
-```markdown
-# 项目规则
+**示例场景**：开发"提交日报"API
+- 查阅 `STATE_MACHINE.md` v2.6 第 8.2 节：确认 `raw_submitted` → `trend_pending` 转换条件
+- 查阅 `BUSINESS_RULES.md` v3.1 第 BR-RPT-001：确认提交时的数据完整性要求
+- 查阅 `API_SOT.md` v9.0：确认端点路径为 `POST /api/v1/daily-reports/{report_id}/submit`
 
-## 必须遵循的文档
-- API开发流程：docs/core/API_DEVELOPMENT_FLOW.md
-- 数据库定义：docs/core/DATA_SCHEMA.md
-- 状态机定义：docs/core/STATE_MACHINE.md
+### 3.3 Step 2: Schema 层实现
 
-## 代码生成规则
-1. 所有API响应使用 Envelope 格式
-2. 金额字段使用 Decimal 类型
-3. 前端调用使用 apiFetch
-4. 角色限定为5个标准角色
-5. 状态转换严格遵循状态机定义
-```
+**目标**: 定义符合 DATA_SCHEMA v5.2 的 Pydantic Schema。
 
----
+**规范要求**：
 
-## 📋 开发步骤（强制流程）
+1. **Request Schema 规范**：
+   ```python
+   # backend/schemas/daily_report.py
+   from pydantic import BaseModel, Field, validator
+   from datetime import date
 
-### Step 1: 确认需求与文档（10分钟）
+   class DailyReportSubmitRequest(BaseModel):
+       """日报提交请求（对齐 DATA_SCHEMA v5.2 DailyReport 表）"""
+       report_date: date = Field(..., description="日报日期")
+       platform: str = Field(..., description="平台名称（fb/google/tiktok）")
+       ad_account_id: int = Field(..., description="广告账户 ID")
+       raw_spend: float = Field(..., ge=0, description="原始花费（CNY）")
+       raw_conversions: int = Field(..., ge=0, description="转化数")
 
-#### 必须查阅的文档
-```bash
-# 1. 查看表结构定义
-grep -A 50 "{{table_name}}" docs/core/DATA_SCHEMA.md
+       @validator('platform')
+       def validate_platform(cls, v):
+           allowed = ['fb', 'google', 'tiktok']
+           if v not in allowed:
+               raise ValueError(f"平台必须是 {allowed} 之一")
+           return v
+   ```
 
-# 2. 查看状态机定义
-grep -A 30 "{{state_machine_name}}" docs/core/STATE_MACHINE.md
+2. **Response Schema 规范**：
+   ```python
+   class DailyReportResponse(BaseModel):
+       """日报响应（映射 DailyReport 模型）"""
+       id: int
+       report_date: date
+       status: str  # 必须来自 STATE_MACHINE v2.6
+       raw_spend: float
+       final_spend: float | None
+       created_at: datetime
 
-# 3. 查看权限矩阵
-grep -A 20 "权限矩阵" docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md
+       class Config:
+           orm_mode = True  # 允许从 SQLAlchemy 模型转换
+   ```
 
-# 4. 查看模块API规划（如果存在）
-cat docs/modules/{{module_name}}/API_GUIDE.md
-```
+3. **字段对齐检查**：
+   - 所有字段名必须与 `DATA_SCHEMA.md` v5.2 表定义一致
+   - 枚举值（如 platform）必须与 BUSINESS_RULES v3.1 对齐
+   - 状态字段（status）必须使用 STATE_MACHINE v2.6 定义的值
 
-#### 实际示例：充值模块
-```bash
-# 查看充值申请表结构
-grep -A 50 "topup_requests" docs/core/DATA_SCHEMA.md
+### 3.4 Step 3: Service 层实现
 
-# 查看充值状态机
-grep -A 30 "充值申请状态机" docs/core/STATE_MACHINE.md
-# 输出：draft → pending → approved/rejected/cancelled
+**目标**: 实现业务逻辑，确保符合不可变量和状态机规则。
 
-# 查看充值权限
-grep -A 20 "充值管理" docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md
-# 输出：创建(media_buyer,finance,admin) 审批(finance)
-```
+**核心规范**：
 
-### Step 2: Schema 层实现（15分钟）
+#### 3.4.1 不可变量检查（MASTER.md v3.4 定义）
 
-#### 标准实现（引用STATE_MACHINE.md）
+所有 Service 层代码必须显式检查以下不可变量：
+
+- **INV-001: 账务只追加，不修改**
+  ```python
+  # ❌ 错误示例
+  def update_balance(account_id: int, new_balance: float):
+      account.balance = new_balance  # 违反 INV-001
+
+  # ✅ 正确示例
+  def record_topup(account_id: int, amount: float):
+      entry = LedgerEntry(
+          account_id=account_id,
+          entry_type='topup',
+          amount=amount,
+          direction='credit'
+      )
+      db.add(entry)  # 只追加，不修改
+  ```
+
+- **INV-002: 终态不可逆**
+  ```python
+  def submit_report(report_id: int):
+      report = db.query(DailyReport).get(report_id)
+
+      # 检查终态（final_locked, cancelled）
+      if report.status in ['final_locked', 'cancelled']:
+          raise ValueError(
+              f"报表已处于终态 {report.status}，不可修改",
+              error_code='VAL-001'  # ERROR_CODES_SOT v2.1
+          )
+
+      # 状态转换
+      report.status = 'raw_submitted'
+  ```
+
+- **INV-003: 日报状态单向流转**
+  ```python
+  def validate_status_transition(current: str, target: str):
+      # STATE_MACHINE v2.6 定义的合法转换
+      allowed_transitions = {
+          'draft': ['raw_submitted'],
+          'raw_submitted': ['trend_pending'],
+          'trend_pending': ['trend_ok', 'trend_flagged'],
+          'trend_flagged': ['trend_resolved'],
+          'trend_resolved': ['final_pending'],
+          'final_pending': ['final_confirmed'],
+          'final_confirmed': ['final_locked'],
+      }
+
+      if target not in allowed_transitions.get(current, []):
+          raise ValueError(
+              f"非法状态转换: {current} → {target}",
+              error_code='STATE-001'  # ERROR_CODES_SOT v2.1
+          )
+  ```
+
+#### 3.4.2 Service 层代码结构
+
 ```python
-# backend/schemas/topup.py
-from pydantic import BaseModel, Field, ConfigDict, field_validator
-from decimal import Decimal
-from typing import Optional, Literal
-from datetime import datetime
-
-# 状态定义来自 STATE_MACHINE.md - 充值申请状态机
-TOPUP_STATUS = Literal["draft", "pending", "approved", "rejected", "cancelled"]
-
-class TopupRequestCreate(BaseModel):
-    """创建充值申请 - 基于 DATA_SCHEMA.md topup_requests表"""
-    model_config = ConfigDict(from_attributes=True)
-
-    # 字段严格对应 DATA_SCHEMA.md 定义
-    project_id: int = Field(..., description="项目ID - 外键projects.id")
-    ad_account_id: int = Field(..., description="广告账户ID - 外键ad_accounts.id")
-    requested_amount: Decimal = Field(
-        ...,
-        ge=100,  # 业务规则：最小100元
-        le=1000000,  # 业务规则：单笔上限100万
-        description="申请金额 - DECIMAL(15,2)"
-    )
-    reason: str = Field(..., min_length=10, max_length=500)
-
-class TopupStatusTransition(BaseModel):
-    """状态转换 - 基于 STATE_MACHINE.md 充值申请状态机"""
-    from_status: TOPUP_STATUS
-    to_status: TOPUP_STATUS
-
-    @field_validator('to_status')
-    def validate_transition(cls, v, values):
-        """验证状态转换合法性 - 参考 STATE_MACHINE.md"""
-        transitions = {
-            "draft": ["pending", "cancelled"],
-            "pending": ["approved", "rejected"],
-            "approved": [],  # 终态
-            "rejected": [],  # 终态
-            "cancelled": []  # 终态
-        }
-        from_status = values.get('from_status')
-        if from_status and v not in transitions.get(from_status, []):
-            raise ValueError(f"非法状态转换: {from_status} → {v}")
-        return v
-```
-
-### Step 3: Service 层实现（30分钟）
-
-#### 包含状态机验证的Service
-```python
-# backend/services/topup_service.py
-from typing import List, Optional, Dict, Any
-from decimal import Decimal
-from datetime import datetime
+# backend/services/daily_report_service.py
 from sqlalchemy.orm import Session
-from backend.models.topup import TopupRequest
-from backend.schemas.topup import TopupRequestCreate, TopupStatusTransition
-from backend.core.exceptions import BusinessError, PermissionError, StateTransitionError
-from backend.core.error_codes import ErrorCode
+from backend.models.daily_report import DailyReport
+from backend.schemas.daily_report import DailyReportSubmitRequest
+from backend.core.errors import ValidationError
 
-class TopupService:
-    """充值服务 - 实现 STATE_MACHINE.md 定义的充值申请状态机"""
-
-    # 状态转换规则（来自 STATE_MACHINE.md）
-    STATE_TRANSITIONS = {
-        "draft": {
-            "pending": "submit_request",  # 提交申请
-            "cancelled": "cancel_draft"    # 取消草稿
-        },
-        "pending": {
-            "approved": "approve_request",  # 审批通过
-            "rejected": "reject_request"    # 审批拒绝
-        },
-        "approved": {},  # 终态，不可转换
-        "rejected": {},  # 终态，不可转换
-        "cancelled": {} # 终态，不可转换
-    }
-
-    # 状态转换权限（来自 AI_AD_SYSTEM_MAIN_DOCUMENT.md）
-    TRANSITION_PERMISSIONS = {
-        "submit_request": ["media_buyer", "admin"],  # 提交权限
-        "approve_request": ["finance"],              # 审批权限
-        "reject_request": ["finance"],               # 拒绝权限
-        "cancel_draft": ["media_buyer", "admin"]     # 取消权限
-    }
-
+class DailyReportService:
     def __init__(self, db: Session):
         self.db = db
 
-    def validate_state_transition(
-        self,
-        from_status: str,
-        to_status: str,
-        user_role: str
-    ) -> str:
-        """
-        验证状态转换合法性
-        返回转换方法名称
-        """
-        # 检查转换路径是否存在
-        transitions = self.STATE_TRANSITIONS.get(from_status, {})
-        if to_status not in transitions:
-            raise StateTransitionError(
-                f"状态转换非法: {from_status} → {to_status}，"
-                f"请参考 STATE_MACHINE.md 充值申请状态机"
+    def submit_report(self, report_id: int, request: DailyReportSubmitRequest):
+        """提交日报（对齐 BUSINESS_RULES v3.1 BR-RPT-001）"""
+
+        # 1. 获取报表
+        report = self.db.query(DailyReport).get(report_id)
+        if not report:
+            raise ValidationError(
+                code='VAL-002',  # ERROR_CODES_SOT v2.1
+                message=f"报表 {report_id} 不存在"
             )
 
-        # 获取转换方法
-        method_name = transitions[to_status]
-
-        # 检查权限
-        allowed_roles = self.TRANSITION_PERMISSIONS.get(method_name, [])
-        if user_role not in allowed_roles:
-            raise PermissionError(
-                code=ErrorCode.AUTH_002,
-                message=f"角色 {user_role} 无权执行 {from_status} → {to_status} 转换"
+        # 2. 检查不可变量 INV-002
+        if report.status in ['final_locked', 'cancelled']:
+            raise ValidationError(
+                code='VAL-001',
+                message=f"报表已处于终态 {report.status}，不可修改"
             )
 
-        return method_name
+        # 3. 验证状态转换 INV-003
+        self._validate_transition(report.status, 'raw_submitted')
 
-    def create_request(
-        self,
-        data: TopupRequestCreate,
-        current_user_id: int,
-        current_user_role: str
-    ) -> TopupRequest:
-        """创建充值申请（初始状态：draft）"""
-
-        # 权限检查（基于 AI_AD_SYSTEM_MAIN_DOCUMENT.md）
-        if current_user_role not in ['admin', 'finance', 'media_buyer']:
-            raise PermissionError(
-                code=ErrorCode.AUTH_002,
-                message="无权限创建充值申请"
-            )
-
-        # 创建申请，初始状态为 draft（STATE_MACHINE.md 定义）
-        topup = TopupRequest(
-            **data.model_dump(),
-            status='draft',  # 初始状态
-            created_by=current_user_id,
-            created_at=datetime.utcnow()
-        )
-
-        self.db.add(topup)
-        self.db.commit()
-        self.db.refresh(topup)
-
-        return topup
-
-    def transition_status(
-        self,
-        request_id: int,
-        to_status: str,
-        current_user_id: int,
-        current_user_role: str,
-        **kwargs
-    ) -> TopupRequest:
-        """
-        通用状态转换方法
-        基于 STATE_MACHINE.md 定义的状态机执行转换
-        """
-        topup = self.db.query(TopupRequest).filter_by(id=request_id).first()
-
-        if not topup:
-            raise BusinessError(ErrorCode.BIZ_002, "充值申请不存在")
-
-        # 验证状态转换
-        method_name = self.validate_state_transition(
-            topup.status,
-            to_status,
-            current_user_role
-        )
-
-        # 执行具体的转换方法
-        transition_method = getattr(self, f"_{method_name}")
-        return transition_method(topup, current_user_id, **kwargs)
-
-    def _submit_request(self, topup: TopupRequest, user_id: int, **kwargs):
-        """提交申请: draft → pending"""
-        topup.status = 'pending'
-        topup.submitted_at = datetime.utcnow()
-        topup.submitted_by = user_id
+        # 4. 更新数据（对齐 DATA_SCHEMA v5.2）
+        report.raw_spend = request.raw_spend
+        report.raw_conversions = request.raw_conversions
+        report.status = 'raw_submitted'
+        report.submitted_at = datetime.utcnow()
 
         self.db.commit()
-        self.db.refresh(topup)
-        return topup
+        return report
 
-    def _approve_request(self, topup: TopupRequest, user_id: int, **kwargs):
-        """审批通过: pending → approved"""
-        actual_amount = kwargs.get('actual_amount')
-        if not actual_amount:
-            raise BusinessError(ErrorCode.BIZ_001, "请提供实际充值金额")
-
-        topup.status = 'approved'
-        topup.actual_amount = actual_amount
-        topup.approved_by = user_id
-        topup.approved_at = datetime.utcnow()
-
-        # TODO: 触发实际充值流程
-
-        self.db.commit()
-        self.db.refresh(topup)
-        return topup
-
-    def _reject_request(self, topup: TopupRequest, user_id: int, **kwargs):
-        """审批拒绝: pending → rejected"""
-        rejection_reason = kwargs.get('rejection_reason')
-        if not rejection_reason:
-            raise BusinessError(ErrorCode.BIZ_001, "请提供拒绝原因")
-
-        topup.status = 'rejected'
-        topup.rejection_reason = rejection_reason
-        topup.rejected_by = user_id
-        topup.rejected_at = datetime.utcnow()
-
-        self.db.commit()
-        self.db.refresh(topup)
-        return topup
+    def _validate_transition(self, current: str, target: str):
+        """状态转换验证（STATE_MACHINE v2.6）"""
+        # ... （参见 3.4.1 示例代码）
 ```
 
-### Step 4: Router 层实现（20分钟）
+### 3.5 Step 4: Router 层实现
+
+**目标**: 定义 FastAPI 路由，对齐 API_SOT v9.0。
+
+**规范要求**：
+
+1. **路径命名规范**（API_SOT v9.0 Section 2）：
+   ```python
+   # backend/routers/daily_reports.py
+   from fastapi import APIRouter, Depends
+   from backend.schemas.daily_report import DailyReportSubmitRequest, DailyReportResponse
+   from backend.services.daily_report_service import DailyReportService
+   from backend.core.auth import require_permission  # AUTH_SPEC v2.0
+
+   router = APIRouter(prefix="/api/v1/daily-reports", tags=["daily-reports"])
+
+   @router.post(
+       "/{report_id}/submit",
+       response_model=DailyReportResponse,
+       status_code=200,
+       summary="提交日报",
+       description="将日报从 draft 状态提交到 raw_submitted（STATE_MACHINE v2.6）"
+   )
+   async def submit_daily_report(
+       report_id: int,
+       request: DailyReportSubmitRequest,
+       service: DailyReportService = Depends(get_service),
+       current_user = Depends(require_permission('daily_report:submit'))  # AUTH_SPEC v2.0
+   ):
+       return service.submit_report(report_id, request)
+   ```
+
+2. **权限检查**（AUTH_SPEC v2.0）：
+   - 所有写操作必须检查权限
+   - 使用 `require_permission(resource:action)` 格式
+   - 权限定义参见 AUTH_SPEC v2.0 Section 3
+
+3. **响应码规范**（API_SOT v9.0 Section 4）：
+   - 成功创建: 201
+   - 成功更新/提交: 200
+   - 客户端错误: 400/403/404
+   - 服务器错误: 500
+
+### 3.6 Step 5: 测试编写
+
+**目标**: 确保代码覆盖正常流程和异常场景。
+
+**测试要求**：
+
+1. **单元测试**（Service 层）：
+   ```python
+   # tests/test_daily_report_service.py
+   import pytest
+   from backend.services.daily_report_service import DailyReportService
+   from backend.core.errors import ValidationError
+
+   def test_submit_report_success(db_session, sample_report):
+       """测试正常提交流程"""
+       service = DailyReportService(db_session)
+       result = service.submit_report(
+           report_id=sample_report.id,
+           request=DailyReportSubmitRequest(
+               report_date=date.today(),
+               platform='fb',
+               ad_account_id=1,
+               raw_spend=1000.0,
+               raw_conversions=50
+           )
+       )
+       assert result.status == 'raw_submitted'
+
+   def test_submit_locked_report_fails(db_session, locked_report):
+       """测试 INV-002: 终态不可逆"""
+       service = DailyReportService(db_session)
+       with pytest.raises(ValidationError) as exc:
+           service.submit_report(locked_report.id, ...)
+       assert exc.value.code == 'VAL-001'
+
+   def test_invalid_status_transition(db_session, pending_report):
+       """测试 INV-003: 非法状态转换"""
+       service = DailyReportService(db_session)
+       with pytest.raises(ValidationError) as exc:
+           service._validate_transition('final_confirmed', 'draft')
+       assert exc.value.code == 'STATE-001'
+   ```
+
+2. **集成测试**（API 端点）：
+   ```python
+   # tests/test_daily_report_api.py
+   from fastapi.testclient import TestClient
+
+   def test_submit_report_api(client: TestClient, auth_headers):
+       """测试提交日报 API（对齐 API_SOT v9.0）"""
+       response = client.post(
+           "/api/v1/daily-reports/1/submit",
+           json={
+               "report_date": "2025-11-27",
+               "platform": "fb",
+               "ad_account_id": 1,
+               "raw_spend": 1000.0,
+               "raw_conversions": 50
+           },
+           headers=auth_headers
+       )
+       assert response.status_code == 200
+       assert response.json()['status'] == 'raw_submitted'
+
+   def test_submit_without_permission(client: TestClient):
+       """测试权限检查（AUTH_SPEC v2.0）"""
+       response = client.post("/api/v1/daily-reports/1/submit", ...)
+       assert response.status_code == 403
+       assert response.json()['code'] == 'AUTH-001'  # ERROR_CODES_SOT v2.1
+   ```
+
+3. **测试覆盖率要求**：
+   - Service 层: ≥ 90%
+   - Router 层: ≥ 80%
+   - 必须覆盖所有不可变量检查分支
+
+### 3.7 Step 6: 文档更新
+
+**目标**: 保持 API 文档和开发日志的同步更新。
+
+**更新清单**：
+
+1. **API_SOT.md v9.0 更新**（如果新增端点）：
+   ```markdown
+   ### POST /api/v1/daily-reports/{report_id}/submit
+
+   **描述**: 提交日报，将状态从 `draft` 转换到 `raw_submitted`
+
+   **权限**: `daily_report:submit` (AUTH_SPEC v2.0)
+
+   **请求体**:
+   - `report_date` (date): 日报日期
+   - `platform` (string): 平台（fb/google/tiktok）
+   - `raw_spend` (float): 原始花费
+
+   **响应**: 200 OK + DailyReportResponse
+
+   **错误码**:
+   - VAL-001: 终态报表不可修改
+   - STATE-001: 非法状态转换
+   ```
+
+2. **DEVELOPMENT_PROGRESS_REPORT.md 更新**：
+   - 在"已完成功能"章节记录新 API
+   - 更新测试覆盖率数据
+   - 记录任何 SoT 规范的新发现
+
+3. **OpenAPI 文档同步**：
+   - 确保 FastAPI 自动生成的 `/docs` 包含完整描述
+   - 验证 schema 示例正确
+
+## 4. Error Handling
+
+### 4.1 错误码使用规范
+
+所有错误必须使用 `ERROR_CODES_SOT.md` v2.1 定义的错误码：
 
 ```python
-# backend/routers/topups.py
-from fastapi import APIRouter, Depends, Query, Body, Request
-from typing import Dict, Any
-from backend.core.dependencies import get_db, get_current_user, require_role
-from backend.core.response import success_response, error_response
-from backend.services.topup_service import TopupService
-from backend.schemas.topup import TopupRequestCreate, TopupRequestResponse
-from backend.models.users import User
-from sqlalchemy.orm import Session
+from backend.core.errors import ValidationError, StateTransitionError
 
-router = APIRouter(prefix="/api/v1/topup-requests", tags=["充值管理"])
-
-@router.post("", summary="创建充值申请")
-async def create_topup_request(
-    request: TopupRequestCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """创建充值申请（初始状态为draft）"""
-    service = TopupService(db)
-    result = service.create_request(
-        data=request,
-        current_user_id=current_user.id,
-        current_user_role=current_user.role
-    )
-
-    return success_response(
-        data=TopupRequestResponse.model_validate(result),
-        message="充值申请已创建"
-    )
-
-@router.post("/{request_id}/transition", summary="状态转换")
-async def transition_status(
-    request: Request,
-    request_id: int,
-    body: Dict[str, Any] = Body(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    通用状态转换接口
-    基于 STATE_MACHINE.md 定义的状态机规则
-    """
-    to_status = body.pop('to_status')
-
-    service = TopupService(db)
-    result = service.transition_status(
-        request_id=request_id,
-        to_status=to_status,
-        current_user_id=current_user.id,
-        current_user_role=current_user.role,
-        **body  # 传递其他参数
-    )
-
-    return success_response(
-        data=TopupRequestResponse.model_validate(result),
-        message=f"状态已转换为 {to_status}"
-    )
-```
-
-### Step 5: 全局异常处理器（10分钟）
-
-```python
-# backend/core/exception_handlers.py
-from fastapi import Request, status
-from fastapi.responses import JSONResponse
-from backend.core.exceptions import (
-    BusinessError,
-    PermissionError,
-    StateTransitionError,
-    ValidationError
+# 验证错误
+raise ValidationError(
+    code='VAL-001',  # 来自 ERROR_CODES_SOT v2.1
+    message="报表已处于终态，不可修改"
 )
-from backend.core.response import error_response
-from backend.core.config import settings
-import traceback
-import logging
 
-logger = logging.getLogger(__name__)
+# 状态转换错误
+raise StateTransitionError(
+    code='STATE-001',
+    message=f"非法状态转换: {current} → {target}"
+)
 
-async def business_exception_handler(request: Request, exc: BusinessError):
-    """业务异常处理器"""
-    logger.warning(f"Business error: {exc.message}", extra={
-        "path": request.url.path,
-        "method": request.method,
-        "error_code": exc.code
-    })
-
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content=error_response(
-            code=exc.code,
-            message=exc.message,
-            details=exc.details
-        )
-    )
-
-async def permission_exception_handler(request: Request, exc: PermissionError):
-    """权限异常处理器"""
-    logger.warning(f"Permission denied: {exc.message}", extra={
-        "path": request.url.path,
-        "method": request.method,
-        "user_id": request.state.user_id if hasattr(request.state, 'user_id') else None
-    })
-
-    return JSONResponse(
-        status_code=status.HTTP_403_FORBIDDEN,
-        content=error_response(
-            code=exc.code,
-            message=exc.message
-        )
-    )
-
-async def state_transition_exception_handler(request: Request, exc: StateTransitionError):
-    """状态转换异常处理器"""
-    logger.error(f"State transition error: {exc.message}", extra={
-        "path": request.url.path,
-        "method": request.method,
-        "transition": exc.transition_info
-    })
-
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content=error_response(
-            code="BIZ_003",
-            message=exc.message,
-            details={
-                "transition": exc.transition_info,
-                "help": "请查阅 STATE_MACHINE.md 了解合法的状态转换"
-            }
-        )
-    )
-
-async def validation_exception_handler(request: Request, exc: ValidationError):
-    """参数验证异常处理器"""
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content=error_response(
-            code="VALIDATION_001",
-            message="参数验证失败",
-            details=exc.errors()
-        )
-    )
-
-async def generic_exception_handler(request: Request, exc: Exception):
-    """通用异常处理器（兜底）"""
-    logger.error(f"Unhandled exception: {str(exc)}", extra={
-        "path": request.url.path,
-        "method": request.method,
-        "traceback": traceback.format_exc()
-    })
-
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=error_response(
-            code="SYS_001",
-            message="系统内部错误",
-            details={"error": str(exc)} if settings.DEBUG else None
-        )
-    )
-
-def register_exception_handlers(app):
-    """注册所有异常处理器到FastAPI应用"""
-    app.add_exception_handler(BusinessError, business_exception_handler)
-    app.add_exception_handler(PermissionError, permission_exception_handler)
-    app.add_exception_handler(StateTransitionError, state_transition_exception_handler)
-    app.add_exception_handler(ValidationError, validation_exception_handler)
-    app.add_exception_handler(Exception, generic_exception_handler)
+# 权限错误
+raise PermissionError(
+    code='AUTH-001',
+    message="缺少 daily_report:submit 权限"
+)
 ```
 
-#### 在main.py中注册
-```python
-# backend/main.py
-from fastapi import FastAPI
-from backend.core.exception_handlers import register_exception_handlers
+### 4.2 错误响应格式
 
-app = FastAPI(title="AI广告代投系统")
+统一使用以下 JSON 格式（API_SOT v9.0 Section 5）：
 
-# 注册全局异常处理器
-register_exception_handlers(app)
-```
-
-### Step 6: 测试编写（30分钟）
-
-```python
-# backend/tests/test_topup_api.py
-import pytest
-from httpx import AsyncClient
-from decimal import Decimal
-
-class TestTopupAPI:
-    """充值申请API测试 - 覆盖STATE_MACHINE.md定义的所有状态转换"""
-
-    @pytest.fixture
-    def valid_topup_data(self):
-        """有效的充值申请数据"""
-        return {
-            "project_id": 1,
-            "ad_account_id": 1,
-            "requested_amount": "10000.00",
-            "reason": "Facebook广告账户余额不足，需要补充推广预算"
-        }
-
-    async def test_state_machine_workflow(
-        self,
-        client: AsyncClient,
-        media_buyer_token: str,
-        finance_token: str,
-        valid_topup_data: dict
-    ):
-        """✅ 测试完整状态机流程: draft → pending → approved"""
-        # 1. 创建草稿 (初始状态: draft)
-        response = await client.post(
-            "/api/v1/topup-requests",
-            json=valid_topup_data,
-            headers={"Authorization": f"Bearer {media_buyer_token}"}
-        )
-        assert response.status_code == 200
-        draft = response.json()["data"]
-        assert draft["status"] == "draft"
-
-        # 2. 提交申请 (draft → pending)
-        response = await client.post(
-            f"/api/v1/topup-requests/{draft['id']}/transition",
-            json={"to_status": "pending"},
-            headers={"Authorization": f"Bearer {media_buyer_token}"}
-        )
-        assert response.status_code == 200
-        pending = response.json()["data"]
-        assert pending["status"] == "pending"
-
-        # 3. 审批通过 (pending → approved)
-        response = await client.post(
-            f"/api/v1/topup-requests/{draft['id']}/transition",
-            json={
-                "to_status": "approved",
-                "actual_amount": "9500.00"
-            },
-            headers={"Authorization": f"Bearer {finance_token}"}
-        )
-        assert response.status_code == 200
-        approved = response.json()["data"]
-        assert approved["status"] == "approved"
-        assert approved["actual_amount"] == "9500.00"
-
-    async def test_invalid_state_transition(
-        self,
-        client: AsyncClient,
-        finance_token: str,
-        approved_topup_id: int
-    ):
-        """✅ 测试非法状态转换 (违反STATE_MACHINE.md)"""
-        # 尝试从approved转回pending（非法）
-        response = await client.post(
-            f"/api/v1/topup-requests/{approved_topup_id}/transition",
-            json={"to_status": "pending"},
-            headers={"Authorization": f"Bearer {finance_token}"}
-        )
-        assert response.status_code == 400
-        error = response.json()["error"]
-        assert error["code"] == "BIZ_003"
-        assert "STATE_MACHINE.md" in error["details"]["help"]
-
-    async def test_permission_on_state_transition(
-        self,
-        client: AsyncClient,
-        media_buyer_token: str,
-        pending_topup_id: int
-    ):
-        """✅ 测试状态转换权限 (基于AI_AD_SYSTEM_MAIN_DOCUMENT.md)"""
-        # media_buyer尝试审批（无权限）
-        response = await client.post(
-            f"/api/v1/topup-requests/{pending_topup_id}/transition",
-            json={
-                "to_status": "approved",
-                "actual_amount": "5000.00"
-            },
-            headers={"Authorization": f"Bearer {media_buyer_token}"}
-        )
-        assert response.status_code == 403
-        error = response.json()["error"]
-        assert error["code"] == "AUTH_002"
-```
-
----
-
-## 🔴 强制检查清单（每次提交前必须完成）
-
-### 代码检查
-```markdown
-## 数据一致性
-[ ] 表名与 DATA_SCHEMA.md 完全一致
-[ ] 字段名与 DATA_SCHEMA.md 完全一致
-[ ] 数据类型正确（Decimal for money, datetime for time）
-
-## 状态机合规
-[ ] 初始状态来自 STATE_MACHINE.md
-[ ] 状态转换路径符合 STATE_MACHINE.md
-[ ] 终态不可再转换
-
-## 权限控制
-[ ] 使用标准5个角色
-[ ] 权限矩阵与 AI_AD_SYSTEM_MAIN_DOCUMENT.md 一致
-[ ] Service层有权限验证
-
-## 异常处理
-[ ] 业务异常使用 BusinessError
-[ ] 权限异常使用 PermissionError
-[ ] 状态异常使用 StateTransitionError
-[ ] 已注册全局异常处理器
-
-## API规范
-[ ] 使用 success_response/error_response
-[ ] 包含完整的 Envelope 字段
-[ ] 错误码来自 core.error_codes
-[ ] 分页响应包含 meta.pagination
-
-## 测试覆盖
-[ ] 正常流程测试
-[ ] 状态转换测试
-[ ] 权限验证测试
-[ ] 异常处理测试
-[ ] 边界条件测试
-```
-
-### 提交前命令
-```bash
-# 1. 格式检查
-black backend/
-isort backend/
-
-# 2. 类型检查
-mypy backend/
-
-# 3. 运行测试
-pytest backend/tests/ -v
-
-# 4. 检查覆盖率
-pytest --cov=backend --cov-report=html
-
-# 5. 安全检查
-bandit -r backend/
-```
-
----
-
-## 🚫 常见违规及AI纠正指导
-
-### 违规类型与纠正
-
-| 违规类型 | 错误示例 | 正确示例 | AI纠正Prompt |
-|---------|---------|---------|-------------|
-| **字段自创** | `topup_amount` | `requested_amount` | "请使用 DATA_SCHEMA.md 中 topup_requests 表的准确字段名" |
-| **角色错误** | `manager` | `account_manager` | "角色必须是: admin/finance/data_operator/account_manager/media_buyer" |
-| **状态自创** | `processing` | `pending` | "请参考 STATE_MACHINE.md 中的充值申请状态机" |
-| **直接返回** | `return {"data": ...}` | `return success_response(...)` | "使用 backend.core.response 的 success_response/error_response" |
-| **Float金额** | `amount: float` | `amount: Decimal` | "所有金额字段必须使用 Decimal 类型" |
-
-### AI工具调试技巧
-
-#### 当AI生成错误代码时
-```markdown
-你生成的代码有以下问题：
-1. 字段名 {{field}} 不存在，请查看 DATA_SCHEMA.md 的 {{table}} 表
-2. 状态 {{status}} 不合法，请查看 STATE_MACHINE.md 的 {{state_machine}} 定义
-3. 角色 {{role}} 不存在，标准角色只有5个
-
-请重新生成，严格遵循：
-- docs/core/DATA_SCHEMA.md
-- docs/core/STATE_MACHINE.md
-- docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md
-```
-
----
-
-## 📚 真实模块文档引用
-
-### 充值模块完整示例
-- 表定义: `DATA_SCHEMA.md#topup_requests`
-- 状态机: `STATE_MACHINE.md#充值申请状态机`
-- 权限矩阵: `AI_AD_SYSTEM_MAIN_DOCUMENT.md#充值管理权限`
-- API设计: `docs/modules/topup/API_GUIDE.md`
-
-### 日报模块完整示例
-- 表定义: `DATA_SCHEMA.md#daily_reports`
-- 状态机: `STATE_MACHINE.md#日报状态机`
-- 权限矩阵: `AI_AD_SYSTEM_MAIN_DOCUMENT.md#日报管理权限`
-- API设计: `docs/modules/daily_report/API_GUIDE.md`
-
-### 项目模块完整示例
-- 表定义: `DATA_SCHEMA.md#projects`
-- 状态机: `STATE_MACHINE.md#项目状态机`
-- 权限矩阵: `AI_AD_SYSTEM_MAIN_DOCUMENT.md#项目管理权限`
-- API设计: `docs/modules/project/API_GUIDE.md`
-
----
-
-## 🔧 快速参考卡片
-
-### 核心常量定义
-```python
-# 5个标准角色
-VALID_ROLES = ["admin", "finance", "data_operator", "account_manager", "media_buyer"]
-
-# 6个核心表
-CORE_TABLES = ["users", "projects", "ad_accounts", "daily_reports", "topup_requests", "reconciliations"]
-
-# 错误码前缀
-ERROR_PREFIXES = {
-    "AUTH_": "认证授权（401/403）",
-    "BIZ_": "业务逻辑（400/404）",
-    "SYS_": "系统错误（500）",
-    "VALIDATION_": "参数验证（422）"
-}
-```
-
-### 状态机快查（STATE_MACHINE.md摘要）
-```yaml
-充值申请: draft → pending → approved/rejected/cancelled
-日报: draft → submitted → approved/rejected
-项目: draft → active → paused → completed → archived
-账户: pending → active → disabled → banned
-对账: processing → completed → confirmed → disputed
-```
-
-### 权限矩阵快查（AI_AD_SYSTEM_MAIN_DOCUMENT.md摘要）
-```yaml
-admin: 全部权限
-finance: 财务审批、对账、报表
-data_operator: 日报审核、数据管理
-account_manager: 项目管理、账户分配
-media_buyer: 日报提交、充值申请
-```
-
----
-
-## 📊 统一响应格式（Envelope）
-
-### 成功响应
 ```json
 {
-  "success": true,
-  "data": {
-    "id": 1,
-    "status": "pending",
-    "requested_amount": "10000.00"
-  },
-  "message": "操作成功",
-  "code": "SUCCESS",
-  "request_id": "550e8400-e29b-41d4-a716-446655440000",
-  "timestamp": "2025-11-17T10:00:00Z"
+  "code": "VAL-001",
+  "message": "报表已处于终态 final_locked，不可修改",
+  "details": {
+    "report_id": 123,
+    "current_status": "final_locked"
+  }
 }
 ```
 
-### 错误响应
-```json
-{
-  "success": false,
-  "error": {
-    "code": "BIZ_003",
-    "message": "状态转换非法",
-    "details": {
-      "from": "approved",
-      "to": "pending",
-      "help": "请查阅 STATE_MACHINE.md 了解合法的状态转换"
-    }
-  },
-  "request_id": "550e8400-e29b-41d4-a716-446655440000",
-  "timestamp": "2025-11-17T10:00:00Z"
-}
+## 5. Relation to SoT
+
+本文档依赖以下 SoT 文档（SoT Freeze v1.0）：
+
+| SoT 文档 | 版本 | 用途 |
+|---------|------|------|
+| `STATE_MACHINE.md` | v2.6 | 8 状态机定义，状态转换规则 |
+| `DATA_SCHEMA.md` | v5.2 | 数据模型字段定义 |
+| `BUSINESS_RULES.md` | v3.1 | 业务规则编号（BR-XXX-001） |
+| `API_SOT.md` | v9.0 | API 端点路径、权限、响应码规范 |
+| `ERROR_CODES_SOT.md` | v2.1 | 错误码定义（VAL-001, STATE-001 等） |
+| `AUTH_SPEC.md` | v2.0 | 权限模型、鉴权规范 |
+| `LEDGER_SOT.md` | v1.1 | 账本系统规范（账务操作相关 API） |
+| `DAILY_REPORT_SOT.md` | v1.0 | 日报专项规范 |
+| `TRANSFER_SOT.md` | v1.0 | 转账专项规范 |
+| `RECONCILIATION_SOT.md` | v1.0 | 对账专项规范 |
+
+**SoT 裁判链优先级**：
+```
+STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
+→ API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1 → AUTH_SPEC.md v2.0
+→ LEDGER_SOT.md v1.1 → 专项 SoT（DAILY_REPORT/TRANSFER/RECONCILIATION）
 ```
 
-### 分页响应
-```json
-{
-  "success": true,
-  "data": {
-    "items": [...],
-    "meta": {
-      "pagination": {
-        "page": 1,
-        "page_size": 20,
-        "total": 100,
-        "total_pages": 5,
-        "has_next": true,
-        "has_prev": false
-      }
-    }
-  },
-  "message": "查询成功",
-  "code": "SUCCESS"
-}
-```
+## 6. Invariants Checkpoints
 
----
+开发过程中必须检查以下不可变量（MASTER.md v3.4 定义）：
 
-## 🔗 相关文档链接
+- **INV-001**: 账务只追加，不修改
+  - ❌ 禁止: 直接修改 `balance` 字段
+  - ✅ 必须: 通过 `ledger_entries` 表记录（LEDGER_SOT v1.1）
 
-### 核心规范（强制阅读）
-1. **[DATA_SCHEMA.md](./DATA_SCHEMA.md)** - 数据库定义
-2. **[STATE_MACHINE.md](./STATE_MACHINE.md)** - 状态机定义
-3. **[AI_AD_SYSTEM_MAIN_DOCUMENT.md](./AI_AD_SYSTEM_MAIN_DOCUMENT.md)** - 系统总规范
+- **INV-002**: 终态不可逆
+  - ❌ 禁止: 修改 `final_locked` 或 `cancelled` 状态的记录
+  - ✅ 必须: Service 层显式检查终态
 
-### 模块设计（按需阅读）
-- `docs/modules/topup/` - 充值模块
-- `docs/modules/daily_report/` - 日报模块
-- `docs/modules/project/` - 项目模块
-- `docs/modules/reconciliation/` - 对账模块
+- **INV-003**: 日报状态单向流转
+  - ❌ 禁止: 从 `final_confirmed` 回退到 `draft`
+  - ✅ 必须: 使用 STATE_MACHINE v2.6 定义的合法转换路径
 
-### 开发工具
-- `scripts/check_compliance.py` - 合规性检查脚本
-- `scripts/generate_api.py` - API代码生成器
-- `.github/workflows/api_check.yml` - CI检查配置
+## 7. References
 
----
-
-**文档性质**: 项目强制规范
-**执行级别**: 🔴 必须严格遵守
-**违规处理**: PR自动拒绝 / 代码回滚
-**最后更新**: 2025-11-17
-**版本**: v7.0
-
-**v7.0 更新说明**:
-- 新增 AI 工具专用 Prompt 模板
-- 新增全局异常处理器示例
-- 强化 STATE_MACHINE.md 引用
-- 添加真实模块文档路径
-- 优化 AI 纠错指导
+- [MASTER.md](../1.overview/MASTER.md) v3.4 - 文档架构和不可变量定义
+- [SoT 文档集](../2.sot/) - 完整 SoT Freeze v1.0 规范
+- [PROJECT_RULES.md](../../.claude/PROJECT_RULES.md) v3.1 - Claude Code 项目规则
+- [FastAPI 官方文档](https://fastapi.tiangolo.com/) - 路由和依赖注入
+- [Pydantic 官方文档](https://docs.pydantic.dev/) - Schema 定义规范

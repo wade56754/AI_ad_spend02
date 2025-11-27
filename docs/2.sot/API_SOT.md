@@ -1,6 +1,9 @@
 # API 开发与使用规范（API Single Source of Truth）
 
 > **文档版本**: v9.0 (端点级完整版)
+> **status**: frozen
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 > **文档类型**: 项目唯一真相源（SoT）
 > **适用范围**: 所有后端API开发与前端API调用
 > **规范级别**: 🔴 强制执行

@@ -1,56 +1,32 @@
-"""
-后端 Agent
-"""
+from agents.skills.sot_guard_skill import SotGuardSkill
 
-from typing import Dict, Any, Optional
-from pathlib import Path
+class BackendAgent:
+    def __init__(self, claude_client):
+        self.claude = claude_client
+        self.sot_guard = SotGuardSkill(claude_client)
 
-from ..skills.be_dev_skill import BEDevSkill
-from ..tools.fs_tool import FSTool
+    def run(self, task: BackendTaskConfig):
+        # 1. 官方后端 sub-agent 干活（例如对 daily_reports 生成/修改 Router+Service）
+        code_result = self._call_backend_subagent(task)
 
+        # 2. 调 SoT 守门员
+        guard_result = self.sot_guard.run_check(
+            target_description=f"backend: {task.module_name}",
+            artifacts=code_result.changed_files,
+        )
 
-class BEAgent:
-    """后端开发 Agent"""
-    
-    def __init__(self, base_path: Optional[Path] = None):
-        """
-        初始化后端 Agent
-        
-        Args:
-            base_path: 项目根路径
-        """
-        if base_path is None:
-            self.base_path = Path(__file__).parent.parent.parent
-        else:
-            self.base_path = Path(base_path)
-        
-        self.skill = BEDevSkill(base_path)
-        self.fs_tool = FSTool(base_path)
-    
-    def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        处理后端开发请求
-        
-        Args:
-            request: 请求内容，包含 action 和参数
-            
-        Returns:
-            处理结果
-        """
-        action = request.get("action")
-        
-        if action == "create_api_route":
-            return self.skill.create_api_route(
-                request.get("route_name"),
-                request.get("method", "GET")
+        # 3. 如果有 P0 问题：可以直接 fail，或者自动再触发一轮修复
+        if guard_result.issues.get("P0"):
+            # 简单版本：直接报告错误
+            return BackendRunResult(
+                success=False,
+                message="SoT 审查未通过（存在 P0 问题）",
+                guard_report=guard_result.raw_report,
             )
-        elif action == "create_service":
-            return self.skill.create_service(
-                request.get("service_name")
-            )
-        else:
-            return {
-                "success": False,
-                "error": f"Unknown action: {action}"
-            }
 
+        # 4. P1/P2 先报告，但不阻塞（你可以之后再决定要不要自动修）
+        return BackendRunResult(
+            success=True,
+            message="生成成功，已通过 SoT P0 审查",
+            guard_report=guard_result.raw_report,
+        )

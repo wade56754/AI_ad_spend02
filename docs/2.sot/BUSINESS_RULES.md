@@ -1,6 +1,9 @@
 # 业务规则索引 (Business Rules Index)
 
 **文档版本**: v3.1
+**status**: active
+**owner**: wade
+**last_reviewed**: 2025-11-27
 **发布日期**: 2025-01-21
 **文档状态**: ✅ 规则已模块化拆分；当前文件为索引
 **规则正文位置**: `docs/archive/old_core/rules/BR-*.md`（归档版，现行有效内容以该目录文件为准，直至迁移至现行 SoT 目录）

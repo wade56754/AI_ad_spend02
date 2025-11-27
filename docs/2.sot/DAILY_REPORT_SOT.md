@@ -1,6 +1,9 @@
 # Daily Report 模块规范（DAILY_REPORT_SOT - Single Source of Truth）
 
 > **文档版本**: v1.0
+> **status**: active
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 > **发布日期**: 2025-01-22
 > **文档类型**: 日报模块领域唯一真相源（SoT-DailyReport）
 > **适用范围**: 后端开发、前端开发、数据运营、财务团队、测试工程师

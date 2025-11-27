@@ -3,7 +3,10 @@
 > **文档性质**: 测试策略与质量保证规范
 > **约束级别**: 项目级，所有测试实现必须遵循本文档定义的策略与约束
 > **版本**: v1.0
+> **status**: frozen
 > **基准**: MASTER.md v3.4, ARCHITECTURE.md v1.0, PATTERNS.md v1.0
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 
 ---
 
@@ -221,7 +224,7 @@ class TestLedgerBalance:
 | 错误码一致性 | MUST | 使用 ERROR_CODES_SOT.md 定义的错误码 |
 | 分页参数 | MUST | page 1-based, size <= 100 |
 
-> 引用: API_SOT.md v2.2, ERROR_CODES_SOT.md v2.1
+> 引用: API_SOT.md v9.0, ERROR_CODES_SOT.md v2.1
 
 ### 5.2 API 响应格式测试
 

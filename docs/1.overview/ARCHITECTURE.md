@@ -3,7 +3,10 @@
 > **文档性质**: 组件约束与技术拓扑
 > **约束级别**: 项目级，所有技术实现必须遵循本文档定义的架构边界
 > **版本**: v1.0
+> **status**: frozen
 > **基准**: MASTER.md v3.4, PROJECT.md v1.2, DOMAIN.md v1.0
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 
 ---
 

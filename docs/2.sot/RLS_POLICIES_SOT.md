@@ -1,6 +1,9 @@
 # RLS_POLICIES_SOT.md · 行级安全策略唯一事实来源
 
 > **版本**: v2.1 (规划版 - 当前未启用)
+> **status**: planned
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 > **发布日期**: 2025-11-22
 > **文档类型**: Row Level Security (RLS) 策略的唯一真相源（SoT-RLS）
 > **当前状态**: ⚠️ **规划中，当前版本未启用** - 仅应用层RBAC（Service + `@require_role`）

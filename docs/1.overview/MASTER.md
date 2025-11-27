@@ -3,8 +3,11 @@
 > **文档性质**: 系统唯一入口，所有代码实现的最高裁决依据
 > **约束级别**: 强制执行，违反本文档定义的不变量视为 P0 缺陷
 > **裁判优先级**: 本文档 > 所有 SoT 文档 > 所有开发指南
-> **版本**: v3.4
-> **基准**: SoT Freeze v1.0 (2025-11-24), PROJECT.md v1.2
+> **版本**: v3.5
+> **status**: frozen
+> **基准**: SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Layer Freeze v1.0, PROJECT.md v1.2
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 
 ---
 
@@ -458,6 +461,9 @@ Freeze 是治理机制，不是建议。
 8. DAILY_REPORT_SOT.md         → 日报规则
 9. RECONCILIATION_SOT.md       → 对账规则
 10. TRANSFER_SOT.md            → 转账规则
+11. SUBAGENT_PROTOCOL.md       → AI Agent 协议定义
+12. AGENT_SECURITY_SPEC.md     → AI Agent 安全规范
+13. AGENT_ORCHESTRATION_PIPELINE.md → AI Agent 编排流程
 ```
 
 **冲突解决规则**
@@ -541,7 +547,7 @@ Freeze 是治理机制，不是建议。
 
 ### Tier 1: 架构宪法
 
-- **docs/1.overview/MASTER.md** v3.4 - 系统唯一入口（本文档）
+- **docs/1.overview/MASTER.md** v3.5 - 系统唯一入口（本文档）
 - **docs/1.overview/PROJECT.md** v1.2 - 业务定义与边界声明
 
 ### Tier 2: 单源真相 (docs/2.sot/)
@@ -580,6 +586,37 @@ Freeze 是治理机制，不是建议。
 **质量保证**
 - **docs/3.dev-guides/TESTING_GUIDE.md** - 测试指南
 
+### Tier 4: 架构层 (docs/4.architecture/)
+
+**系统架构视图**
+- **docs/4.architecture/ARCH_LAYER_OVERVIEW.md** - 架构层总览
+- **docs/4.architecture/SYSTEM_CONTEXT_VIEW.md** - 系统上下文视图（C4 Level 1）
+- **docs/4.architecture/BOUNDED_CONTEXT_MAP.md** - DDD 限界上下文映射
+- **docs/4.architecture/SERVICE_COMPONENT_VIEW.md** - 服务组件视图（C4 Level 2/3）
+- **docs/4.architecture/DATA_FLOW_VIEW.md** - 数据流视图
+- **docs/4.architecture/ERROR_HANDLING_STRATEGY.md** - 错误处理策略
+- **docs/4.architecture/PERFORMANCE_AND_CAPACITY_GUIDE.md** - 性能与容量规划
+
+### Tier 5: 基础设施层 (docs/5.infrastructure/)
+
+**基础设施规范**
+- **docs/5.infrastructure/INFRA_OVERVIEW.md** - 基础设施层总览
+- **docs/5.infrastructure/CI_PIPELINE_SPEC.md** - CI/CD 流水线规范
+- **docs/5.infrastructure/DEPLOYMENT_PIPELINE_SPEC.md** - 部署流水线规范
+- **docs/5.infrastructure/ENVIRONMENT_VARIABLES_GUIDE.md** - 环境变量指南
+- **docs/5.infrastructure/OBSERVABILITY_GUIDE.md** - 可观测性指南
+
+### Tier 6: AI Agent 层 (docs/6.agent-layer/)
+
+**AI Agent 系统规范**
+- **docs/6.agent-layer/AGENT_LAYER_OVERVIEW.md** - Agent 层总览与定位
+- **docs/6.agent-layer/SUBAGENT_PROTOCOL.md** - Sub-Agent 协议定义（裁判链优先级 #11）
+- **docs/6.agent-layer/AGENT_SECURITY_SPEC.md** - Agent 安全规范（裁判链优先级 #12）
+- **docs/6.agent-layer/AGENT_ORCHESTRATION_PIPELINE.md** - Agent 编排流程（裁判链优先级 #13）
+- **docs/6.agent-layer/CODEX_LOOP_SPEC.md** - Codex Loop 规范（代码级 Agent 操作）
+- **docs/6.agent-layer/AGENT_VERSIONING_RULES.md** - Agent 版本管理规则
+- **docs/6.agent-layer/AGENT_SKILL_REGISTRY.md** - Agent Skill 注册表
+
 ### 快速导航
 
 **在 Cursor 中使用**:
@@ -612,11 +649,12 @@ Freeze 是治理机制，不是建议。
 | v3.2 | 2025-11-24 | 补充日报计费触发规则 | 系统架构师 |
 | v3.3 | 2025-11-25 | 对齐 CLAUDE.md v3.0，完善裁判链 | 系统架构师 |
 | v3.4 | 2025-11-25 | 整合 PROJECT.md v1.2：业务不可变量、永久禁止行为、Freeze 机制 | Master Architect |
+| v3.5 | 2025-11-27 | 扩展至 6 层架构：新增 Agent Layer（第 6 层），扩展裁判链至 13 项，更新文档索引 | Master Architect |
 
 ---
 
-**文档版本**: v3.4
-**最后更新**: 2025-11-25
-**对齐文档**: PROJECT.md v1.2, SoT Freeze v1.0, CLAUDE.md v3.0
+**文档版本**: v3.5
+**最后更新**: 2025-11-27
+**对齐文档**: PROJECT.md v1.2, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Layer Freeze v1.0, CLAUDE.md v3.0
 **维护者**: 系统架构师
 **变更审批**: 所有修改必须经过 RFC 流程

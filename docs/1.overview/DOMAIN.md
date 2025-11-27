@@ -3,7 +3,10 @@
 > **文档性质**: 领域索引与 SoT 导航
 > **约束级别**: 项目级，作为开发者查阅 SoT 的入口
 > **版本**: v1.0
+> **status**: frozen
 > **基准**: MASTER.md v3.4, PROJECT.md v1.2
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 
 ---
 
@@ -146,7 +149,9 @@ DOMAIN.md 是 SoT 体系的导航入口，职责如下：
 
 账本领域
 ├─ ledger_entries       (核心聚合根)
-└─ balance_snapshots    (余额快照)
+└─ balance_snapshots    (余额快照) *
+
+> *注：该表将作为未来版本（DATA_SCHEMA v5.3）加入正式 SoT，目前为规划中的领域对象。
 
 项目领域
 ├─ projects             (核心聚合根)

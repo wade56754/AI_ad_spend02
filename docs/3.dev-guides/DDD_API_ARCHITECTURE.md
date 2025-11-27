@@ -1,6 +1,14 @@
+---
+version: v1.1
+status: ready_for_production
+layer: dev-guide
+owner: wade
+last_reviewed: 2025-11-27
+baseline: MASTER.md v3.4, SoT Freeze v2.6
+---
+
 # AI 广告代投系统 - DDD + API 优先架构设计
 
-> **文档版本**: v1.1
 > **发布日期**: 2025-11-23
 > **文档类型**: 🟢 架构设计指南 (DDD + API-First Approach)
 > **适用范围**: 系统架构设计、模块重构、新功能开发
@@ -9,7 +17,7 @@
 > **⚠️ SoT 引用声明**:
 > - **数据模型**: 严格遵循 `DATA_SCHEMA.md` v5.2
 > - **状态机**: 严格遵循 `STATE_MACHINE.md` v2.6（禁止重复定义状态）
-> - **API 规范**: 实际路径以 `API_SOT.md` v2.2 为准（本文档为架构设计参考）
+> - **API 规范**: 实际路径以 `API_SOT.md` v9.0 为准（本文档为架构设计参考）
 > - **业务规则**: 参考 `BUSINESS_RULES.md` v3.1
 > - **错误码**: 引用 `ERROR_CODES_SOT.md` v2.1
 >
@@ -597,7 +605,7 @@ class ReconciliationBatch:
 
 > **⚠️ 重要说明**:
 > 本节展示的是 **DDD 理想架构设计** 中的嵌套路由风格（资源层级化）。
-> **实际项目的 API 路径规范以 `API_SOT.md` v2.2 为准**（采用平面化路由）。
+> **实际项目的 API 路径规范以 `API_SOT.md` v9.0 为准**（采用平面化路由）。
 >
 > **路径对照表**:
 > | DDD 理想设计 | API_SOT.md 实际路径 |

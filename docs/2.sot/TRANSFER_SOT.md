@@ -1,6 +1,9 @@
 # 死号余额迁移模块规范（TRANSFER_SOT - Single Source of Truth）
 
 > **文档版本**: v1.0
+> **status**: active
+> **owner**: wade
+> **last_reviewed**: 2025-11-27
 > **发布日期**: 2025-01-22
 > **文档类型**: Transfer 模块领域唯一真相源（SoT-Transfer）
 > **适用范围**: 后端开发、财务团队、运维团队、测试工程师
