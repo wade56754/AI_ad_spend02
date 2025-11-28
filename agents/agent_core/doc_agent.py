@@ -41,7 +41,8 @@ from datetime import datetime
 import logging
 import re
 
-from ..agents_config import SOT_FILES, read_optional
+# 延迟导入以避免循环依赖
+# from ..agents_config import SOT_FILES, read_optional
 
 logger = logging.getLogger(__name__)
 
@@ -487,6 +488,9 @@ class DocAgent:
 
     def _load_sot_context(self) -> Dict[str, str]:
         """Load relevant SoT documents for context."""
+        # 延迟导入以避免循环依赖
+        from ..agents_config import SOT_FILES, read_optional
+        
         context = {}
         priority_docs = [
             "MASTER", "STATE_MACHINE", "DATA_SCHEMA",

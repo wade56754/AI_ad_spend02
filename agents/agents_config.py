@@ -13,13 +13,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Protocol, TypedDict
 
-# === 引入各个 Agent 实现 ===
-from .agent_core.fe_agent import FEAgent
-from .agent_core.be_agent import BEAgent
-from .agent_core.test_agent import TestAgent
-from .agent_core.orchestrator_agent import OrchestratorAgent
-from .agent_core.doc_agent import DocAgent
-from .agent_core.code_review_agent import CodeReviewAgent
+# === Agent 导入采用延迟加载 ===
+# 避免循环导入：agent_core 模块可能导入本模块的 SOT_FILES 等常量
+# 实际导入在各 factory 函数中完成
 
 
 # === 通用 Agent 协议（方便类型检查，不强制继承） ===
@@ -268,21 +264,24 @@ def setup_logging(level: int = logging.INFO) -> None:
 
 
 # === 各 Agent 的工厂函数 ===
+# 注意：使用延迟导入避免循环依赖
 
 
 def _fe_agent_factory(
     base_path: Optional[Path] = None,
     **_: Any,
-) -> FEAgent:
+) -> "AgentProtocol":
     """前端 Agent 工厂"""
+    from .agent_core.fe_agent import FEAgent
     return FEAgent(base_path=base_path or _default_base_path())
 
 
 def _be_agent_factory(
     base_path: Optional[Path] = None,
     **_: Any,
-) -> BEAgent:
+) -> "AgentProtocol":
     """后端 Agent 工厂"""
+    from .agent_core.be_agent import BEAgent
     return BEAgent(base_path=base_path or _default_base_path())
 
 
@@ -290,7 +289,7 @@ def _test_agent_factory(
     base_path: Optional[Path] = None,
     supabase_project_id: Optional[str] = None,
     **_: Any,
-) -> TestAgent:
+) -> "AgentProtocol":
     """
     测试 Agent 工厂
 
@@ -298,6 +297,7 @@ def _test_agent_factory(
         - 传入后会注入给 TestAgent(project_id=...)
         - 不传则只解析/生成 SQL & 用例，不真正执行
     """
+    from .agent_core.test_agent import TestAgent
     return TestAgent(
         base_path=base_path or _default_base_path(),
         project_id=supabase_project_id,
@@ -308,8 +308,9 @@ def _orchestrator_agent_factory(
     base_path: Optional[Path] = None,
     supabase_project_id: Optional[str] = None,
     **_: Any,
-) -> OrchestratorAgent:
+) -> "AgentProtocol":
     """Orchestrator Agent 工厂"""
+    from .agent_core.orchestrator_agent import OrchestratorAgent
     return OrchestratorAgent(
         base_path=base_path or _default_base_path(),
         supabase_project_id=supabase_project_id,
@@ -319,16 +320,18 @@ def _orchestrator_agent_factory(
 def _doc_agent_factory(
     base_path: Optional[Path] = None,
     **_: Any,
-) -> DocAgent:
+) -> "AgentProtocol":
     """文档 Agent 工厂"""
+    from .agent_core.doc_agent import DocAgent
     return DocAgent(base_path=base_path or _default_base_path())
 
 
 def _code_review_agent_factory(
     base_path: Optional[Path] = None,
     **_: Any,
-) -> CodeReviewAgent:
+) -> "AgentProtocol":
     """代码审核 Agent 工厂"""
+    from .agent_core.code_review_agent import CodeReviewAgent
     return CodeReviewAgent(base_path=base_path or _default_base_path())
 
 

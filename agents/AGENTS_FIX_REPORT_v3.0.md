@@ -10,9 +10,14 @@
 
 | 优先级 | 问题数 | 已修复 | 需手动操作 |
 |--------|--------|--------|------------|
-| **P0** | 2 | 0 | 2 (需手动删除) |
+| **P0** | 3 | 1 | 2 (需手动删除) |
 | **P1** | 3 | 3 | 0 |
-| **合计** | 5 | 3 | 2 |
+| **合计** | 6 | 4 | 2 |
+
+### 新增修复: 循环导入问题 ✅
+
+**问题**: `agents_config.py` 顶层导入 Agent 类 → Agent 类导入 `SOT_FILES` → 循环依赖
+**修复**: 将 Agent 导入改为延迟导入（在 factory 函数内部导入）
 
 ---
 
@@ -139,7 +144,7 @@ SotParser.invalidate_cache()  # 下次访问时重新解析
 
 | 文件 | 变更类型 | 描述 |
 |------|----------|------|
-| `agents/agents_config.py` | 修改 | 添加 FRONTEND_RESTRUCTURE_FILES 配置 |
+| `agents/agents_config.py` | 修改 | 添加 FRONTEND_RESTRUCTURE_FILES 配置; **延迟导入修复循环依赖** |
 | `agents/agent_core/orchestrator_agent.py` | 修改 | 使用配置替代硬编码路径 |
 | `agents/tools/claude_code_adapter.py` | 修改 | 增强参数日志和 system 支持 |
 | `agents/skills/sot_guard_skill.py` | 修改 | 添加 reload/invalidate 方法 |
