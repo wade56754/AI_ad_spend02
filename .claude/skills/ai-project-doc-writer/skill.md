@@ -1,3 +1,19 @@
+---
+name: ai-project-doc-writer
+version: "3.1"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
 <skill>
 ──────────────────────────────────────────────
   <name>ai-project-doc-writer</name>
@@ -97,11 +113,10 @@ Auditor 永远在最后执行。
 </mode_switching>
 
 切换规则：
-用户明确说“继续” → Expand
+用户明确说"继续" → Expand
 遇到缺失 → Halt
 遇到不一致 → Conflict
 未知 → Ask
-</mode_switching>
 
 
 <!-- ======================================================
@@ -212,5 +227,24 @@ Missing: <具体项>
 禁止表现出情绪；
 结果必须冷静克制。
 </cot>
+
+
+<!-- ======================================================
+  11. 版本记录
+====================================================== -->
+<VERSION_NOTES>
+### v3.0-superclaude (2025-11-27)
+- ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+- ✅ 修复 P1-PDW-002: 删除重复的 </mode_switching> 闭合标签
+- ✅ 对齐 ASDD 6-Layer Architecture baseline
+
+### v2.0 (2025-11-25)
+- 重构为 SuperClaude 框架结构
+- 引入三子人格系统 (Writer/Auditor/Gatekeeper)
+- 新增 INTERROGATE → OUTLINE → NEGOTIATE → WRITE → AUDIT → FREEZE 动作链
+
+### v1.0 (2025-11-20)
+- 初始版本，基础文档生成功能
+</VERSION_NOTES>
 
 </skill>

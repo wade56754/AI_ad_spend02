@@ -1,11 +1,27 @@
-# AI-Ad Spec Governor Skill v1.0
+---
+name: ai-ad-spec-governor
+version: "1.2"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
+# AI-Ad Spec Governor Skill v1.1
 
 <skill>
 <name>ai-ad-spec-governor</name>
-<version>v1.0</version>
+<version>v1.1</version>
 <status>active</status>
 <owner>doc-architect / wade</owner>
-<last_updated>2025-11-26</last_updated>
+<last_updated>2025-11-27</last_updated>
 
 <mission>
 负责在整个文档体系范围内执行 Spec-Driven 治理和 SoT 对齐，作为规范治理总调度器（Spec Governor），统筹文档审计、修复、验证和 Freeze 合规性检查。
@@ -20,7 +36,7 @@
 1. **规范治理闭环**: 审计 → 修复 → 验证 → 上线判定
 2. **SoT 对齐**: 确保所有文档符合 `docs/2.sot/` 真相源
 3. **子 Skill 调度**: 协调现有文档治理 Skill（auditor / fixer / pipeline / orchestrator）
-4. **Freeze 合规**: 确保文档变更不违反 ASDD Freeze v1.0 / SoT Freeze v1.0
+4. **Freeze 合规**: 确保文档变更不违反 ASDD Freeze v1.0 / SoT Freeze v2.6
 
 **职责边界**:
 - ✅ **调度协调**: 决定何时调用哪个子 Skill
@@ -371,7 +387,7 @@ interface SpecGovernorInput {
 #### 6. 忽略 Freeze 规则
 ```xml
 <forbidden>
-  <action>在 SoT Freeze v1.0 保护下直接修改 STATE_MACHINE.md / DATA_SCHEMA.md 等</action>
+  <action>在 SoT Freeze v2.6 保护下直接修改 STATE_MACHINE.md / DATA_SCHEMA.md 等</action>
   <reason>违反 Freeze 规则，破坏版本稳定性</reason>
   <correct_action>输出"此文档处于 Freeze 状态，需架构委员会审批"</correct_action>
 </forbidden>
@@ -432,7 +448,7 @@ interface SpecGovernorInput {
                               ▼
          ┌──────────────────────────────────────────┐
          │  Phase 5: FREEZE_CHECK (Freeze 合规检查) │
-         │  - 检查是否违反 SoT Freeze v1.0          │
+         │  - 检查是否违反 SoT Freeze v2.6          │
          │  - 检查是否违反 ASDD Freeze v1.0         │
          │  - 输出 Freeze 冲突报告                  │
          └──────────────────────────────────────────┘
@@ -513,11 +529,13 @@ interface SpecGovernorInput {
     <step order="3">
       <description>文档分类与层级识别</description>
       <logic>
-        根据文件路径确定层级：
+        根据文件路径确定层级（ASDD 6-Layer Architecture）：
         - docs/1.overview/ → Tier 1 (Overview)
         - docs/2.sot/ → Tier 2 (SoT) [最高优先级]
         - docs/3.dev-guides/ → Tier 3 (Dev Guides)
-        - docs/4.appendix/ → Tier 4 (Appendix)
+        - docs/4.architecture/ → Tier 4 (Architecture)
+        - docs/5.infrastructure/ → Tier 5 (Infrastructure)
+        - docs/6.agent-layer/ → Tier 6 (Agent Layer)
 
         特殊标记：
         - 如果文件名包含 "_SOT.md"，标记为 SoT 文档
@@ -925,7 +943,7 @@ interface SpecGovernorInput {
 ```xml
 <phase id="FREEZE_CHECK">
   <goal>
-    检查文档修改是否违反 SoT Freeze v1.0 / ASDD Freeze v1.0 规则
+    检查文档修改是否违反 SoT Freeze v2.6 / ASDD Freeze v1.0 规则
   </goal>
 
   <inputs>
@@ -942,8 +960,8 @@ interface SpecGovernorInput {
     <step order="1">
       <description>识别 Freeze 保护的文档</description>
       <logic>
-        Freeze 保护文档列表（SoT Freeze v1.0）:
-        - MASTER.md v3.4 (ASDD Freeze v1.0)
+        Freeze 保护文档列表（SoT Freeze v2.6）:
+        - MASTER.md v3.5 (ASDD Freeze v1.0)
         - STATE_MACHINE.md v2.6
         - DATA_SCHEMA.md v5.2
         - API_SOT.md v9.0
@@ -951,6 +969,9 @@ interface SpecGovernorInput {
         - BUSINESS_RULES.md v3.1
         - AUTH_SPEC.md v2.0
         - LEDGER_SOT.md v1.1
+        - DAILY_REPORT_SOT.md v4.1
+        - RECONCILIATION_SOT.md v2.1
+        - TRANSFER_SOT.md v1.0
       </logic>
     </step>
 
@@ -988,7 +1009,7 @@ interface SpecGovernorInput {
         ### Freeze 冲突
 
         1. ❌ [STATE_MACHINE.md] 被修改
-           - Freeze 版本: v2.6 (SoT Freeze v1.0)
+           - Freeze 版本: v2.6 (SoT Freeze v2.6)
            - 修改操作: 添加新状态 `trend_flagged_resolved`
            - **处理建议**: 此文档处于 Freeze 保护，需提交 RFC 并经架构委员会审批
            - **审批流程**: RFC → 2 名架构师审批 → 版本升级 (v2.6 → v2.7)
@@ -1402,6 +1423,14 @@ interface SpecGovernorInput {
 ---
 
 ## 🔄 VERSION_HISTORY
+
+### v1.1 (2025-11-27)
+- ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+- ✅ 更新 Tier 定义至 ASDD 6-Layer Architecture
+- ✅ 更新 SoT Freeze v1.0 → v2.6
+- ✅ 更新 MASTER.md v3.4 → v3.5
+- ✅ 扩展 Freeze 保护文档列表（新增 DAILY_REPORT_SOT/RECONCILIATION_SOT/TRANSFER_SOT）
+- ✅ 对齐 baseline: MASTER.md v3.5, SoT Freeze v2.6
 
 ### v1.0 (2025-11-26)
 - ✅ 初始版本发布

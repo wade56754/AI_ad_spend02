@@ -1,17 +1,17 @@
 ---
-version: v1.0
+version: v1.1
 status: frozen
 layer: documentation-governance
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0
 ---
 
-# Project Documentation Index v1.0
+# Project Documentation Index v1.1
 
 > **Complete Inventory**: AI广告代投系统 Documentation Governance
-> **Framework**: ASDD (AI-Spec-Driven Development) 5-Layer Architecture
-> **Total Documents**: 34 + 5 freeze manifests = 39 governance artifacts
+> **Framework**: ASDD (AI-Spec-Driven Development) 6-Layer Architecture
+> **Total Documents**: 42 + 6 freeze manifests = 48 governance artifacts
 > **Last Updated**: 2025-11-27
 
 ---
@@ -20,10 +20,10 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 | Metric | Value |
 |--------|-------|
-| **Total Layers** | 5 (Overview, SoT, Dev-Guides, Architecture, Infrastructure) |
-| **Total Documents** | 34 specification documents |
-| **Total Freeze Manifests** | 5 governance records |
-| **Frozen Documents** | 34 (100%) |
+| **Total Layers** | 6 (Overview, SoT, Dev-Guides, Architecture, Infrastructure, Agent) |
+| **Total Documents** | 42 specification documents |
+| **Total Freeze Manifests** | 6 governance records |
+| **Frozen Documents** | 42 (100%) |
 | **Overall Health Score** | 100/100 (all layers) |
 | **ASDD Framework Status** | ✅ COMPLETE |
 
@@ -61,14 +61,15 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 | 2.5 | BUSINESS_RULES.md | v3.1 | 🟢 Frozen | ~12,000 | Business logic rules, pricing formulas, validation |
 | 2.6 | AUTH_SPEC.md | v2.0 | 🟢 Frozen | ~7,000 | 5 user roles, RBAC permissions, JWT authentication |
 | 2.7 | LEDGER_SOT.md | v1.1 | 🟢 Frozen | ~9,000 | Dual-ledger system (PROJECT vs SUPPLIER accounts) |
-| 2.8 | IMPORT_JOB_SOT.md | v1.1 | 🟢 Frozen | ~5,500 | CSV import workflow, validation rules |
-| 2.9 | TOPUP_SOT.md | v1.0 | 🟢 Frozen | ~4,500 | Topup lifecycle (draft → pending → approved → completed) |
-| 2.10 | RECONCILIATION_SOT.md | v1.0 | 🟢 Frozen | ~4,000 | Batch reconciliation workflow |
-| 2.11 | SOT_FREEZE_MANIFEST_v2.6.md | v2.6 | 🟢 Frozen | ~8,000 | SoT Layer freeze record with complete audit log |
+| 2.8 | DAILY_REPORT_SOT.md | v1.0 | 🟢 Frozen | ~5,500 | Daily report workflow and data flow |
+| 2.9 | TRANSFER_SOT.md | v1.0 | 🟢 Frozen | ~4,500 | Transfer workflow specification |
+| 2.10 | TOPUP_SOT.md | v1.0 | 🟢 Frozen | ~4,500 | Topup lifecycle (draft → pending → approved → completed) |
+| 2.11 | RECONCILIATION_SOT.md | v1.0 | 🟢 Frozen | ~4,000 | Batch reconciliation workflow |
+| 2.12 | SOT_FREEZE_MANIFEST_v2.6.md | v2.6 | 🟢 Frozen | ~8,000 | SoT Layer freeze record with complete audit log |
 
 **Layer Statistics**:
-- Documents: 11 (10 specs + 1 manifest)
-- Total Word Count: ~125,000 words
+- Documents: 12 (11 specs + 1 manifest)
+- Total Word Count: ~130,000 words
 - P0/P1/P2 Issues: 0/0/0
 - Key Metrics:
   - 23 database tables documented
@@ -235,7 +236,8 @@ Level 4: Infrastructure Layer Freeze v1.0 (Implementation Environment)
 | BUSINESS_RULES.md | v3.1 | 2025-11-26 | Dev-Guides (3), Architecture (2) |
 | AUTH_SPEC.md | v2.0 | 2025-11-26 | Dev-Guides (2), Architecture (1) |
 | LEDGER_SOT.md | v1.1 | 2025-11-26 | Dev-Guides (2), Architecture (2) |
-| IMPORT_JOB_SOT.md | v1.1 | 2025-11-26 | Dev-Guides (1), Architecture (1) |
+| DAILY_REPORT_SOT.md | v1.0 | 2025-11-26 | Dev-Guides (2), Architecture (2) |
+| TRANSFER_SOT.md | v1.0 | 2025-11-26 | Dev-Guides (1), Architecture (1) |
 | TOPUP_SOT.md | v1.0 | 2025-11-26 | Dev-Guides (1), Architecture (1) |
 | RECONCILIATION_SOT.md | v1.0 | 2025-11-26 | Dev-Guides (1), Architecture (1) |
 

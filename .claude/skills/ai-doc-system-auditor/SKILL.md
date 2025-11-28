@@ -1,3 +1,19 @@
+---
+name: ai-doc-system-auditor
+version: "1.5"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
 <skill>
 ──────────────────────────────────────────────
   <name>ai-doc-system-auditor</name>
@@ -44,26 +60,34 @@
     - docs/1.overview/
     - docs/2.sot/
     - docs/3.dev-guides/
+    - docs/4.architecture/
+    - docs/5.infrastructure/
+    - docs/6.agent-layer/
     - .claude/
     - CLAUDE.md
 
-    审查对象：
-    1) 宪法层（Constitution）
-       - docs/1.overview/MASTER*.md, PROJECT*.md, DOMAIN*.md
+    审查对象（ASDD 6-Layer Architecture）：
+    1) 宪法层 Layer 1（Overview）
+       - docs/1.overview/MASTER*.md, PROJECT*.md
 
-    2) SoT 层（Source of Truth）
+    2) SoT 层 Layer 2（Source of Truth）
        - docs/2.sot/STATE_MACHINE*.md, DATA_SCHEMA*.md, BUSINESS_RULES*.md
-       - docs/2.sot/*_SOT.md（LEDGER / DAILY_REPORT / TRANSFER / RECONCILIATION 等）
-       - docs/2.sot/ERROR_CODES*.md, RLS_POLICIES*.md
+       - docs/2.sot/*_SOT.md（LEDGER / DAILY_REPORT / TRANSFER / RECONCILIATION / TOPUP / IMPORT_JOB 等）
+       - docs/2.sot/ERROR_CODES*.md, AUTH_SPEC*.md
 
-    3) 实现规范层（Implementation）
-       - docs/1.overview/ARCHITECTURE*.md, PATTERNS*.md, TESTING*.md, DEPLOYMENT*.md
+    3) 开发指南层 Layer 3（Dev-Guides）
        - docs/3.dev-guides/ 下所有开发指南
 
-    4) AI 行为层（AI Rules & Skills）
+    4) 架构视图层 Layer 4（Architecture）
+       - docs/4.architecture/ 下所有架构文档
+
+    5) 基础设施层 Layer 5（Infrastructure）
+       - docs/5.infrastructure/ 下所有基础设施文档
+
+    6) AI Agent 层 Layer 6（Agent）
+       - docs/6.agent-layer/ 下所有 Agent 规范
        - CLAUDE*.md, .claude/PROJECT_RULES.md
        - .claude/skills/**/SKILL.md
-       - Orchestrator / Architect / Writer / Fixer 等文档相关 Skill
 
     禁止扫描：
     - 白名单以外的任何路径
@@ -428,5 +452,23 @@
     - 遇到 halt 条件时立即终止，输出 halt JSON，不继续执行后续步骤
     - 禁止基于推断扩展扫描范围
   </chain_of_thought>
+
+  <!-- ======================================================
+       11. 版本记录
+  ====================================================== -->
+  <VERSION_NOTES>
+    ### v3.0-superclaude (2025-11-27)
+    - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+    - ✅ 修复 P1-DSA-002: 扩展白名单根路径至 ASDD 6-Layer Architecture
+    - ✅ 对齐 MASTER.md v3.5, SoT Freeze v2.6 baseline
+
+    ### v2.0 (2025-11-25)
+    - SuperClaude XML 框架重构
+    - 多模块架构支持 (SYSTEM-SCAN, DEEP-ANALYZE 等)
+    - halt 机制与冲突检测引入
+
+    ### v1.0 (2025-11-20)
+    - 初始版本，基础审计功能
+  </VERSION_NOTES>
 
 </skill>

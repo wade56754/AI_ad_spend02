@@ -116,6 +116,68 @@ LLM_CONFIG: Dict[str, Any] = {
 }
 
 
+# === Claude Code CLI 配置 ===
+
+def get_llm_backend() -> str:
+    """
+    检测当前使用的 LLM 后端。
+
+    Returns:
+        "anthropic_api" - 使用 Anthropic API（需要 ANTHROPIC_API_KEY）
+        "claude_code" - 使用 Claude Code CLI（支持 Claude Max 订阅）
+    """
+    import os
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return "anthropic_api"
+    return "claude_code"
+
+
+def check_llm_available() -> Dict[str, Any]:
+    """
+    检查 LLM 服务是否可用。
+
+    Returns:
+        {
+            "available": bool,
+            "backend": str,  # "anthropic_api" 或 "claude_code"
+            "message": str,
+            "details": Any
+        }
+    """
+    import os
+    backend = get_llm_backend()
+
+    if backend == "anthropic_api":
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if api_key:
+            return {
+                "available": True,
+                "backend": "anthropic_api",
+                "message": "Anthropic API 可用",
+                "details": {"key_prefix": api_key[:10] + "..."},
+            }
+        return {
+            "available": False,
+            "backend": "anthropic_api",
+            "message": "ANTHROPIC_API_KEY 未设置",
+            "details": None,
+        }
+
+    # Claude Code CLI 检测
+    from .tools.claude_code_adapter import check_claude_code_available
+    result = check_claude_code_available()
+
+    return {
+        "available": result["available"],
+        "backend": "claude_code",
+        "message": "Claude Code CLI 可用" if result["available"] else result["error"],
+        "details": {
+            "path": result.get("path"),
+            "version": result.get("version"),
+        },
+    }
+
+
 # === 日志配置 ===
 
 def setup_logging(level: int = logging.INFO) -> None:
@@ -285,6 +347,8 @@ __all__ = [
     "SOT_FILES",
     # LLM 配置
     "LLM_CONFIG",
+    "get_llm_backend",
+    "check_llm_available",
     # 工具函数
     "read_optional",
     "setup_logging",

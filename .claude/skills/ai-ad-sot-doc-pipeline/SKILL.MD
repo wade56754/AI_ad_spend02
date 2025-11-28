@@ -1,10 +1,17 @@
+---
 name: ai-ad-sot-doc-pipeline
-description: >
-  AI_AD_SYSTEM SoT 文档流水线执行器（SuperClaude v3.0）。
-  使用 SuperClaude 角色系统（Planner / Executor / Critic / Summarizer）和六阶段命令流，
-  按固定四阶段（analyze → cleanup → design → implement）执行 /sc 命令。
-  仅在用户或上层 orchestrator 明确给出指令时运行，不自动发起任何审查、修复或代码操作。
-version: "3.0"
+version: "3.1"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
 ---
 
 # AI_AD_SYSTEM · SoT 文档流水线执行器（SuperClaude v3.0）
@@ -360,3 +367,20 @@ Skill 名称：ai-ad-sot-doc-pipeline
 角色：严格执行器，不参与业务与架构决策
 
 可被调用方：用户 / ai-ad-doc-orchestrator
+
+---
+
+## 8. 版本记录
+
+### v3.0 (2025-11-27)
+- ✅ 添加完整 YAML frontmatter 符合 Skill Freeze 标准
+- ✅ 对齐 ASDD 6-Layer Architecture baseline
+- ✅ 更新 SoT Freeze v2.6 引用
+
+### v2.0 (2025-11-25)
+- SuperClaude 角色系统集成
+- 六阶段命令流实现
+- 四阶段任务类型支持
+
+### v1.0 (2025-11-20)
+- 初始版本，基础流水线功能

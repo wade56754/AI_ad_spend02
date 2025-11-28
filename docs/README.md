@@ -1,10 +1,10 @@
 ---
-version: v1.0
+version: v1.1
 status: ready_for_production
 layer: documentation-index
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0
 ---
 
 # AI广告代投系统 - Documentation Center
@@ -48,7 +48,7 @@ graph TD
 
 | Document | Version | Status | Purpose |
 |----------|---------|--------|---------|
-| [MASTER.md](./1.overview/MASTER.md) | v3.4 | 🟢 Frozen | System architecture constitution, 三大不可变量 |
+| [MASTER.md](./1.overview/MASTER.md) | v3.5 | 🟢 Frozen | System architecture constitution, 三大不可变量 |
 | [PROJECT.md](./1.overview/PROJECT.md) | v1.2 | 🟢 Frozen | Project scope, capability boundaries |
 | [FREEZE_MANIFEST_v1.0.md](./1.overview/FREEZE_MANIFEST_v1.0.md) | v1.0 | 🟢 Frozen | Overview Layer freeze record |
 
@@ -69,7 +69,8 @@ graph TD
 | [BUSINESS_RULES.md](./2.sot/BUSINESS_RULES.md) | v3.1 | 🟢 Frozen | Business logic rules, pricing formulas |
 | [AUTH_SPEC.md](./2.sot/AUTH_SPEC.md) | v2.0 | 🟢 Frozen | 5 user roles, RBAC permissions |
 | [LEDGER_SOT.md](./2.sot/LEDGER_SOT.md) | v1.1 | 🟢 Frozen | Dual-ledger system (PROJECT vs SUPPLIER) |
-| [IMPORT_JOB_SOT.md](./2.sot/IMPORT_JOB_SOT.md) | v1.1 | 🟢 Frozen | CSV import workflow specification |
+| [DAILY_REPORT_SOT.md](./2.sot/DAILY_REPORT_SOT.md) | v1.0 | 🟢 Frozen | Daily report workflow and data flow |
+| [TRANSFER_SOT.md](./2.sot/TRANSFER_SOT.md) | v1.0 | 🟢 Frozen | Transfer workflow specification |
 | [TOPUP_SOT.md](./2.sot/TOPUP_SOT.md) | v1.0 | 🟢 Frozen | Topup lifecycle (draft → completed) |
 | [RECONCILIATION_SOT.md](./2.sot/RECONCILIATION_SOT.md) | v1.0 | 🟢 Frozen | Batch reconciliation workflow |
 | [SOT_FREEZE_MANIFEST_v2.6.md](./2.sot/SOT_FREEZE_MANIFEST_v2.6.md) | v2.6 | 🟢 Frozen | SoT Layer freeze record |
@@ -160,7 +161,7 @@ graph TD
 When technical conflicts arise, follow this priority order:
 
 ```
-MASTER.md v3.4 (System Constitution)
+MASTER.md v3.5 (System Constitution)
   ↓
 SoT Layer Freeze v2.6 (Technical Truth)
   ├── STATE_MACHINE.md v2.6 (State transitions)

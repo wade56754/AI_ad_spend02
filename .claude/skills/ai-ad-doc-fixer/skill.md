@@ -1,3 +1,19 @@
+---
+name: ai-ad-doc-fixer
+version: "3.1"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-doc-fixer</name>
@@ -253,5 +269,23 @@
     禁止长篇解释「为什么这样改」；
     报告中只出现结论与证据，不出现心理活动。
   </chain_of_thought>
+
+  <!-- ======================================================
+       10. 版本记录
+  ====================================================== -->
+  <VERSION_NOTES>
+    ### v3.0-superclaude (2025-11-27)
+    - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+    - ✅ 对齐 MASTER.md v3.5, SoT Freeze v2.6 baseline
+    - ✅ 对齐 ASDD 6-Layer Architecture
+
+    ### v2.0 (2025-11-25)
+    - SuperClaude 三子角色系统引入 (Reviewer/Fixer/Guardian)
+    - 动作链定义 (DOC-ANALYZE → DOC-PLAN → DOC-PATCH → DOC-REVIEW → DOC-FINAL)
+    - halt/Missing/Conflict 机制完善
+
+    ### v1.0 (2025-11-20)
+    - 初始版本，基础文档审核功能
+  </VERSION_NOTES>
 
 </skill>

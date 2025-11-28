@@ -1,7 +1,23 @@
+---
+name: ai-ad-doc-architect
+version: "2.2"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-doc-architect</name>
-  <version>2.0</version>
+  <version>2.1</version>
   <status>active</status>
   <domain>AI_AD_SYSTEM / ASDD 文档架构分析与一致性审查</domain>
   <profile>Architecture-Analyzer / Read-Only / Structural-Review</profile>
@@ -494,6 +510,11 @@
     - 混合了 orchestrator 和 architect 职责
     - 无明确边界定义
     - 已废弃
+
+    ### v2.1 (2025-11-27)
+    - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+    - ✅ 对齐 MASTER.md v3.5, SoT Freeze v2.6 baseline
+    - ✅ 对齐 ASDD 6-Layer Architecture
   </VERSION_NOTES>
 
 </skill>

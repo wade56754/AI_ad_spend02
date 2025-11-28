@@ -1,7 +1,23 @@
+---
+name: ai-ad-agents-test-orchestrator
+version: "2.2"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-agents-test-orchestrator</name>
-  <version>2.0</version>
+  <version>2.1</version>
   <status>active</status>
   <domain>AI_AD_SYSTEM / Agents 测试巡检工作流协调</domain>
   <profile>Test-Orchestrator / Quality-Gate / Auto-Regression</profile>
@@ -620,6 +636,11 @@
     - 使用非标准根标签（SYSTEM_ROLE）
     - 无明确边界定义
     - 已废弃
+
+    ### v2.1 (2025-11-27)
+    - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+    - ✅ 对齐 MASTER.md v3.5, SoT Freeze v2.6 baseline
+    - ✅ 对齐 ASDD 6-Layer Architecture
   </VERSION_NOTES>
 
 </skill>

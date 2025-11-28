@@ -1,3 +1,19 @@
+---
+name: ai-ad-doc-orchestrator
+version: "5.3"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-doc-orchestrator</name>
@@ -26,7 +42,7 @@
   ====================================================== -->
   <sub_skills>
     - ai-project-doc-writer    <!-- 负责：大纲 + 正文 生成 -->
-    - ai-project-doc-fixer     <!-- 负责：审查 + 修订 -->
+    - ai-ad-doc-fixer          <!-- 负责：审查 + 修订 -->
     - ai-master-architect      <!-- 负责：与 MASTER / SoT 的宪法级校验 -->
   </sub_skills>
 
@@ -521,5 +537,25 @@
       - 问题清单（P0/P1/P2）
       - Missing / Conflict 概要。
   </chain_of_thought>
+
+
+  <!-- ======================================================
+       11. 版本记录
+  ====================================================== -->
+  <VERSION_NOTES>
+    ### v5.2 (2025-11-27)
+    - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+    - ✅ 修复 P0-DO-001: 子 Skill 引用错误 (ai-project-doc-fixer → ai-ad-doc-fixer)
+    - ✅ 对齐 ASDD 6-Layer Architecture baseline
+
+    ### v5.1 (2025-11-26)
+    - 新增 OUTLINE 流水线阶段
+    - 新增 P1 安全规则（单章节执行限制）
+    - 完善 CONTEXT_SCAN 阶段约束
+
+    ### v5.0 (2025-11-25)
+    - 重构为 SuperClaude 框架结构
+    - 引入两层流水线架构（大纲流水线 + 正文流水线）
+  </VERSION_NOTES>
 
 </skill>

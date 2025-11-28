@@ -1,24 +1,38 @@
 from typing import List, Dict, Any, Optional
-from anthropic import Anthropic, APIStatusError
 import json
 import logging
+import os
 
 from ..agents_config import SOT_FILES, BACKEND_DIR, LLM_CONFIG, read_optional
 from ..tools.fs_tool import read_files
 from ..tools.validation import validate_task_and_files
 from ..tools.types import SkillResult
+from ..tools.claude_code_adapter import call_claude_code, ClaudeCodeClient
 
 logger = logging.getLogger(__name__)
 
-# Anthropic client (lazy initialized)
-_client: Optional[Anthropic] = None
+# LLM Client (支持两种模式：Anthropic API 或 Claude Code CLI)
+_client: Optional[Any] = None
+_use_claude_code: bool = not os.environ.get("ANTHROPIC_API_KEY")
 
 
-def _get_client() -> Anthropic:
-    """获取 Anthropic client 单例"""
-    global _client
+def _get_client() -> Any:
+    """
+    获取 LLM client 单例。
+
+    优先级：
+    1. 如果设置了 ANTHROPIC_API_KEY，使用 Anthropic API
+    2. 否则使用 Claude Code CLI 适配器
+    """
+    global _client, _use_claude_code
     if _client is None:
-        _client = Anthropic()  # 依赖环境变量 ANTHROPIC_API_KEY
+        if _use_claude_code:
+            logger.info("Using Claude Code CLI adapter (no ANTHROPIC_API_KEY found)")
+            _client = ClaudeCodeClient()
+        else:
+            from anthropic import Anthropic
+            logger.info("Using Anthropic API")
+            _client = Anthropic()
     return _client
 
 
@@ -163,22 +177,22 @@ def be_dev_skill(task: str, target_files: List[str]) -> SkillResult:
     existing = read_files(BACKEND_DIR, target_files)
     prompt = _build_be_prompt(task, existing)
 
-    # 调用 Anthropic API
+    # 调用 LLM (Anthropic API 或 Claude Code CLI)
     try:
         client = _get_client()
-        logger.debug(f"Calling Anthropic API: model={LLM_CONFIG['model']}")
+        logger.debug(f"Calling LLM: model={LLM_CONFIG['model']}")
         resp = client.messages.create(
             model=LLM_CONFIG["model"],
             max_tokens=LLM_CONFIG["max_tokens"],
             temperature=LLM_CONFIG["temperature"],
             messages=[{"role": "user", "content": prompt}],
         )
-    except APIStatusError as e:
-        logger.error(f"Anthropic API error: {e}")
+    except Exception as e:
+        logger.error(f"LLM API error: {e}")
         return {
             "success": False,
             "data": None,
-            "error": f"Anthropic API error: {e}",
+            "error": f"LLM API error: {e}",
         }
 
     # 提取响应文本

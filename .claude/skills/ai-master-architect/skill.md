@@ -1,3 +1,19 @@
+---
+name: ai-master-architect
+version: "4.1"
+status: ready_for_production
+layer: skill
+owner: wade
+last_reviewed: 2025-11-28
+baseline:
+  - MASTER.md v3.5
+  - SoT Freeze v2.6
+  - Dev-Guides Freeze vFinal
+  - Architecture Freeze v1.0
+  - Infrastructure Freeze v1.0
+  - Agent Freeze v1.0
+---
+
 <skill>
     <name>ai-master-architect</name>
     <version>4.0</version>
@@ -30,7 +46,7 @@
         根据输入内容判定其类型：
 
         ARCHITECTURE_CHARTER:
-            MASTER.md / MASTER_SPEC.md
+            MASTER.md
             解释系统存在原因、不变量、核心机制。
 
         STATE_MACHINE:
@@ -248,6 +264,51 @@
         - 禁止截断句子
         - 禁止半结构
     </token_policy>
+
+    <!-- ================================
+         14. 使用示例
+       ================================ -->
+    <usage>
+        示例 1：审查 MASTER.md 一致性
+        「
+        使用 ai-master-architect，
+        输入 MASTER.md 全文，
+        检查是否存在不变量冲突或术语歧义。
+        」
+
+        示例 2：审查跨文档一致性
+        「
+        使用 ai-master-architect，
+        输入 STATE_MACHINE.md + DATA_SCHEMA.md，
+        检查状态名称、字段定义是否跨文档一致。
+        」
+
+        示例 3：裁决业务逻辑冲突
+        「
+        使用 ai-master-architect，
+        当 dev-guide 与 SoT 存在描述冲突时，
+        裁决应以哪个为准。
+        」
+    </usage>
+
+    <!-- ================================
+         15. 版本记录
+       ================================ -->
+    <VERSION_NOTES>
+        ### v4.0 (2025-11-27)
+        - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+        - ✅ 修复 P1-MA-002: 统一 MASTER.md 引用（移除 MASTER_SPEC.md）
+        - ✅ 添加 <usage> 使用示例章节
+        - ✅ 对齐 ASDD 6-Layer Architecture baseline
+
+        ### v3.0 (2025-11-25)
+        - 重构为 SuperClaude XML 框架
+        - 新增宪法级不变量检查
+        - 新增术语域防火墙
+
+        ### v2.0 (2025-11-20)
+        - 初始结构化版本
+    </VERSION_NOTES>
 
 </skill>
 
