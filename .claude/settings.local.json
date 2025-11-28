@@ -71,7 +71,16 @@
       "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" ls-files \"docs/1.overview/MASTER_SPEC.md\")",
       "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" rm \"docs/1.overview/MASTER_SPEC.md\" \"docs/1.overview/SYSTEM_OVERVIEW.md\" \"docs/1.overview/PROJECT_RULES.md\" \"docs/1.overview/SOT_FREEZE.md\")",
       "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" status docs/1.overview/ docs/archive/2025-11-overview-legacy/)",
-      "Bash(claude --version)"
+      "Bash(claude --version)",
+      "Bash(del:*)",
+      "Bash(if exist \"D:\\git\\1108\\AI_ad_spend02\\agents\\agents\" rd /s /q \"D:\\git\\1108\\AI_ad_spend02\\agents\\agents\")",
+      "Bash(git -C D:git1108AI_ad_spend02 add -A)",
+      "Bash(git -C D:git1108AI_ad_spend02 commit -m \"$(cat <<''EOF''\nrefactor(agents): Complete P0/P1 fixes for Agent Layer production-ready\n\n## P0 Fixes (4 items)\n- Fix SOT_FILES paths to align with SoT Freeze v2.6\n  - RLS_POLICIES -> RLS_POLICIES_SOT.md\n  - FRONTEND_RULES -> FRONTEND_DEVELOPMENT_RULES.md\n  - Add TOPUP_SOT, UI_FLOW_SPEC, API_DEV_FLOW, etc.\n- Implement sot_guard_skill.py with P0-level checks\n  - Daily report 8-state machine validation\n  - Ledger operation violation detection (LED-001, LED-002)\n  - Error code prefix validation\n- Remove duplicate agents/agents/ directory\n- Delete misnamed agentsskillssot_guard_skill.py\n\n## P1 Fixes (4 items)\n- Register DocAgent and CodeReviewAgent in _AGENT_REGISTRY\n- Implement server.py FastAPI HTTP interface\n  - GET /health, GET /agents, POST /agents/{key}/handle\n- Verify TestAgent returns executed=False correctly\n- CLI already enhanced with status/run commands\n\n## New Files\n- agents/agent_core/doc_agent.py (~160 lines)\n- agents/agent_core/code_review_agent.py (~175 lines)\n- agents/server.py (~190 lines)\n- agents/AGENTS_LAYER_FIX_REPORT.md\n\n## Registered Agents (6 total)\n- fe, be, test, orch, doc, review\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git -C D:git1108AI_ad_spend02 commit -m \"refactor(agents): Complete P0/P1 fixes for Agent Layer production-ready\n\nP0 Fixes:\n- Fix SOT_FILES paths (align SoT Freeze v2.6)\n- Implement sot_guard_skill.py with P0 checks\n- Remove duplicate agents/agents/ directory\n- Delete misnamed agentsskillssot_guard_skill.py\n\nP1 Fixes:\n- Register DocAgent and CodeReviewAgent\n- Implement server.py FastAPI HTTP interface\n- Verify TestAgent returns executed=False\n\nNew: doc_agent.py, code_review_agent.py, server.py\n\nGenerated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\")",
+      "Bash(git -C D:git1108AI_ad_spend02 log -1 --oneline)",
+      "Bash(git -C D:git1108AI_ad_spend02 push origin sot-fix-20251123)",
+      "Bash(git -C D:git1108AI_ad_spend02 log --oneline -3)",
+      "Bash(git -C D:git1108AI_ad_spend02 branch -vv)"
     ],
     "deny": [],
     "ask": []

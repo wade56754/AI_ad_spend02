@@ -18,6 +18,8 @@ from .agent_core.fe_agent import FEAgent
 from .agent_core.be_agent import BEAgent
 from .agent_core.test_agent import TestAgent
 from .agent_core.orchestrator_agent import OrchestratorAgent
+from .agent_core.doc_agent import DocAgent
+from .agent_core.code_review_agent import CodeReviewAgent
 
 
 # === 通用 Agent 协议（方便类型检查，不强制继承） ===
@@ -64,13 +66,17 @@ BASE_PATH = _default_base_path()
 BACKEND_DIR = BASE_PATH / "backend"
 FRONTEND_DIR = BASE_PATH / "frontend"
 
-# SoT 文档路径映射
+# SoT 文档路径映射 (对齐 SoT Freeze v2.6 + Dev-Guides Freeze vFinal)
 SOT_FILES: Dict[str, Path] = {
+    # Layer 1: Overview
     "MASTER": BASE_PATH / "docs/1.overview/MASTER.md",
     "PROJECT": BASE_PATH / "docs/1.overview/PROJECT.md",
     "ARCHITECTURE": BASE_PATH / "docs/1.overview/ARCHITECTURE.md",
     "PATTERNS": BASE_PATH / "docs/1.overview/PATTERNS.md",
     "TESTING": BASE_PATH / "docs/1.overview/TESTING.md",
+    "DOMAIN": BASE_PATH / "docs/1.overview/DOMAIN.md",
+    "DEPLOYMENT": BASE_PATH / "docs/1.overview/DEPLOYMENT.md",
+    # Layer 2: SoT (v2.6 Freeze)
     "API_SOT": BASE_PATH / "docs/2.sot/API_SOT.md",
     "DATA_SCHEMA": BASE_PATH / "docs/2.sot/DATA_SCHEMA.md",
     "STATE_MACHINE": BASE_PATH / "docs/2.sot/STATE_MACHINE.md",
@@ -81,9 +87,17 @@ SOT_FILES: Dict[str, Path] = {
     "RECONCILIATION_SOT": BASE_PATH / "docs/2.sot/RECONCILIATION_SOT.md",
     "TRANSFER_SOT": BASE_PATH / "docs/2.sot/TRANSFER_SOT.md",
     "AUTH_SPEC": BASE_PATH / "docs/2.sot/AUTH_SPEC.md",
-    "RLS_POLICIES": BASE_PATH / "docs/2.sot/RLS_POLICIES.md",
-    "FRONTEND_RULES": BASE_PATH / "docs/3.dev-guides/FRONTEND_SPEC.md",
+    "RLS_POLICIES": BASE_PATH / "docs/2.sot/RLS_POLICIES_SOT.md",
+    "TOPUP_SOT": BASE_PATH / "docs/2.sot/TOPUP_SOT.md",
+    # Layer 3: Dev-Guides (vFinal Freeze)
+    "FRONTEND_RULES": BASE_PATH / "docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md",
     "UI_DESIGN_SYSTEM": BASE_PATH / "docs/3.dev-guides/UI_DESIGN_SYSTEM.md",
+    "UI_FLOW_SPEC": BASE_PATH / "docs/3.dev-guides/UI_FLOW_SPEC.md",
+    "API_DEV_FLOW": BASE_PATH / "docs/3.dev-guides/API_DEVELOPMENT_FLOW.md",
+    "DDD_ARCHITECTURE": BASE_PATH / "docs/3.dev-guides/DDD_API_ARCHITECTURE.md",
+    "TESTING_STRATEGY": BASE_PATH / "docs/3.dev-guides/TESTING_STRATEGY.md",
+    "AGENT_WORKFLOW": BASE_PATH / "docs/3.dev-guides/AGENT_WORKFLOW_GUIDE.md",
+    # Test artifacts (可选)
     "DB_TEST_CASES": BASE_PATH / "tests/db_invariants_test_cases.md",
     "DB_INVARIANTS_SQL": BASE_PATH / "tests/db_invariants_test_v2.sql",
 }
@@ -243,6 +257,22 @@ def _orchestrator_agent_factory(
     )
 
 
+def _doc_agent_factory(
+    base_path: Optional[Path] = None,
+    **_: Any,
+) -> DocAgent:
+    """文档 Agent 工厂"""
+    return DocAgent(base_path=base_path or _default_base_path())
+
+
+def _code_review_agent_factory(
+    base_path: Optional[Path] = None,
+    **_: Any,
+) -> CodeReviewAgent:
+    """代码审核 Agent 工厂"""
+    return CodeReviewAgent(base_path=base_path or _default_base_path())
+
+
 # === 注册中心 ===
 
 _AGENT_REGISTRY: Dict[str, AgentMeta] = {
@@ -269,6 +299,18 @@ _AGENT_REGISTRY: Dict[str, AgentMeta] = {
         name="OrchestratorAgent",
         description="总控 Orchestrator Agent：协调前端/后端/测试三个 Agent 组成流水线。",
         factory=_orchestrator_agent_factory,
+    ),
+    "doc": AgentMeta(
+        key="doc",
+        name="DocAgent",
+        description="文档 Agent：负责生成/审核/同步项目文档。",
+        factory=_doc_agent_factory,
+    ),
+    "review": AgentMeta(
+        key="review",
+        name="CodeReviewAgent",
+        description="代码审核 Agent：负责 SoT 一致性检查和代码质量审核。",
+        factory=_code_review_agent_factory,
     ),
 }
 
