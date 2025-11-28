@@ -1,7 +1,12 @@
 """
 充值管理数据模型
-Version: 1.0
+Version: 2.0 (SoT Aligned - STATE_MACHINE.md v2.6)
 Author: Claude协作开发
+
+充值申请状态机（7状态）：
+draft → pending_review → finance_approve → paid → completed
+                       → rejected
+                       → cancelled
 """
 
 from datetime import date, datetime
@@ -10,6 +15,10 @@ from typing import Optional, List
 from enum import Enum
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+# 从 models.base 导入规范的枚举，而非重复定义
+# 注意：Pydantic schemas 仍使用字符串类型，但默认值使用枚举的 .value
+from backend.models.base import TopupStatus as TopupStatusEnum
 
 
 class TopupUrgencyLevel(str, Enum):
@@ -20,15 +29,8 @@ class TopupUrgencyLevel(str, Enum):
     URGENT = "urgent"
 
 
-class TopupStatus(str, Enum):
-    """充值状态枚举"""
-    PENDING = "pending"
-    DATA_REVIEW = "data_review"
-    FINANCE_APPROVE = "finance_approve"
-    REJECTED = "rejected"
-    PAID = "paid"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+# 已移除重复的 TopupStatus 定义，使用 backend.models.base.TopupStatus
+# 7 状态: draft, pending_review, finance_approve, paid, completed, rejected, cancelled
 
 
 class PaymentMethod(str, Enum):

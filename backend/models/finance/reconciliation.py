@@ -18,18 +18,23 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
     """
     对账批次表
 
+    必须与 STATE_MACHINE.md v2.6 第4章（全局状态一览表）保持严格一致。
+
+    5状态流程：
+    draft → pending_review → approved/needs_adjustment → completed
+
     字段：
     - id: 主键
     - batch_code: 批次代码（唯一）
     - period_start: 对账期间开始日期
     - period_end: 对账期间结束日期
-    - status: 状态（draft/pending/reviewing/closed）
+    - status: 状态（5状态机）
     - total_system_spend: 系统总消耗
     - total_actual_spend: 实际总消耗
     - discrepancy: 差异金额
     - created_by: 创建人ID（外键）
     - reviewed_by: 审核人ID（外键）
-    - closed_at: 关闭时间
+    - closed_at: 完成时间
     - created_at/updated_at: 时间戳（自动管理）
     """
     __tablename__ = 'reconciliation_batches'
@@ -96,10 +101,10 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
         doc="对账明细"
     )
 
-    # 约束和索引
+    # 约束和索引 - 必须与 STATE_MACHINE.md v2.6 第4章保持一致
     __table_args__ = (
         CheckConstraint(
-            "status IN ('draft', 'pending', 'reviewing', 'closed')",
+            "status IN ('draft', 'pending_review', 'approved', 'needs_adjustment', 'completed')",
             name='chk_reconciliation_batches_status'
         ),
         Index('idx_reconciliation_batches_status', 'status'),
@@ -110,7 +115,7 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
     def __repr__(self):
         return f"<ReconciliationBatch(id={self.id}, code='{self.batch_code}', status='{self.status}')>"
 
-    # ========== 业务属性 ==========
+    # ========== 业务属性（5状态机）==========
 
     @property
     def status_enum(self) -> ReconciliationBatchStatus:
@@ -118,9 +123,29 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
         return ReconciliationBatchStatus(self.status)
 
     @property
-    def is_closed(self) -> bool:
-        """是否已关闭"""
-        return self.status == ReconciliationBatchStatus.CLOSED.value
+    def is_draft(self) -> bool:
+        """是否是草稿"""
+        return self.status == ReconciliationBatchStatus.DRAFT.value
+
+    @property
+    def is_pending_review(self) -> bool:
+        """是否待审核"""
+        return self.status == ReconciliationBatchStatus.PENDING_REVIEW.value
+
+    @property
+    def is_approved(self) -> bool:
+        """是否已批准"""
+        return self.status == ReconciliationBatchStatus.APPROVED.value
+
+    @property
+    def is_needs_adjustment(self) -> bool:
+        """是否需要调整"""
+        return self.status == ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value
+
+    @property
+    def is_completed(self) -> bool:
+        """是否已完成（终态）"""
+        return self.status == ReconciliationBatchStatus.COMPLETED.value
 
     @property
     def discrepancy_rate(self) -> Decimal:
@@ -128,6 +153,22 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
         if not self.total_system_spend or self.total_system_spend == 0:
             return Decimal('0.0000')
         return abs(Decimal(self.discrepancy or Decimal('0.00'))) / Decimal(self.total_system_spend) * Decimal('100')
+
+    # ========== 状态流转方法（5状态机）==========
+
+    # 合法流转白名单 - 必须与 STATE_MACHINE.md v2.6 保持一致
+    STATE_TRANSITIONS = {
+        ReconciliationBatchStatus.DRAFT: [ReconciliationBatchStatus.PENDING_REVIEW],
+        ReconciliationBatchStatus.PENDING_REVIEW: [ReconciliationBatchStatus.APPROVED, ReconciliationBatchStatus.NEEDS_ADJUSTMENT],
+        ReconciliationBatchStatus.APPROVED: [ReconciliationBatchStatus.COMPLETED],
+        ReconciliationBatchStatus.NEEDS_ADJUSTMENT: [ReconciliationBatchStatus.PENDING_REVIEW],
+        ReconciliationBatchStatus.COMPLETED: [],  # 终态
+    }
+
+    def can_transition_to(self, new_status: ReconciliationBatchStatus) -> bool:
+        """检查是否可以转换到新状态"""
+        current = ReconciliationBatchStatus(self.status)
+        return new_status in self.STATE_TRANSITIONS.get(current, [])
 
     # ========== 业务方法 ==========
 
@@ -145,9 +186,31 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
         self.total_actual_spend = result.total_actual or Decimal('0.00')
         self.discrepancy = self.total_actual_spend - self.total_system_spend
 
-    def close(self, reviewer_id: UUID):
-        """关闭对账批次"""
-        self.status = ReconciliationBatchStatus.CLOSED.value
+    def submit_for_review(self):
+        """提交审核"""
+        if not self.can_transition_to(ReconciliationBatchStatus.PENDING_REVIEW):
+            raise ValueError(f"不允许从 {self.status} 状态提交审核")
+        self.status = ReconciliationBatchStatus.PENDING_REVIEW.value
+
+    def approve(self, reviewer_id: UUID):
+        """批准"""
+        if not self.can_transition_to(ReconciliationBatchStatus.APPROVED):
+            raise ValueError(f"不允许从 {self.status} 状态批准")
+        self.status = ReconciliationBatchStatus.APPROVED.value
+        self.reviewed_by = reviewer_id
+
+    def mark_needs_adjustment(self, reviewer_id: UUID, reason: str):
+        """标记需要调整"""
+        if not self.can_transition_to(ReconciliationBatchStatus.NEEDS_ADJUSTMENT):
+            raise ValueError(f"不允许从 {self.status} 状态标记需要调整")
+        self.status = ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value
+        self.reviewed_by = reviewer_id
+
+    def complete(self, reviewer_id: UUID):
+        """完成对账批次（终态）"""
+        if not self.can_transition_to(ReconciliationBatchStatus.COMPLETED):
+            raise ValueError(f"不允许从 {self.status} 状态完成")
+        self.status = ReconciliationBatchStatus.COMPLETED.value
         self.reviewed_by = reviewer_id
         self.closed_at = func.now()
 

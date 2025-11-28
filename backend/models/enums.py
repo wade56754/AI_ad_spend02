@@ -68,11 +68,21 @@ class AdAccountStatus(str, Enum):
 
 
 class DailyReportStatus(str, Enum):
-    """日报状态枚举"""
-    DRAFT = "draft"
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    """
+    日报状态枚举（粉数确认状态机）
+
+    必须与 STATE_MACHINE.md v2.6 第8章保持严格一致。
+    8 状态流程：raw_submitted → trend_pending → trend_ok/trend_flagged
+    → trend_resolved → final_pending → final_confirmed → final_locked
+    """
+    RAW_SUBMITTED = "raw_submitted"       # 投手提交原始粉数
+    TREND_PENDING = "trend_pending"       # 等待趋势风控检查
+    TREND_OK = "trend_ok"                 # 趋势正常
+    TREND_FLAGGED = "trend_flagged"       # 趋势异常,需人工复核
+    TREND_RESOLVED = "trend_resolved"     # 运营确认异常已解决
+    FINAL_PENDING = "final_pending"       # 等待最终粉数确认
+    FINAL_CONFIRMED = "final_confirmed"   # 最终粉数已确认
+    FINAL_LOCKED = "final_locked"         # 已进入计费,锁定(终态)
 
 
 class TopupRequestStatus(str, Enum):
@@ -87,11 +97,17 @@ class TopupRequestStatus(str, Enum):
 
 
 class ReconciliationBatchStatus(str, Enum):
-    """对账批次状态枚举"""
-    DRAFT = "draft"
-    PENDING = "pending"
-    REVIEWING = "reviewing"
-    CLOSED = "closed"
+    """
+    对账批次状态枚举
+
+    必须与 STATE_MACHINE.md v2.6 第4章（全局状态一览表）保持严格一致。
+    流程: draft → pending_review → approved/needs_adjustment → completed
+    """
+    DRAFT = "draft"                         # 草稿
+    PENDING_REVIEW = "pending_review"       # 待审核
+    APPROVED = "approved"                   # 已批准
+    NEEDS_ADJUSTMENT = "needs_adjustment"   # 需调整
+    COMPLETED = "completed"                 # 已完成（终态）
 
 
 class ReconciliationDetailStatus(str, Enum):
@@ -109,10 +125,19 @@ class AccountAlertStatus(str, Enum):
 
 
 class LedgerEntryType(str, Enum):
-    """账本条目类型枚举"""
-    TOPUP_RECEIVED = "topup_received"
-    SPEND = "spend"
-    ADJUSTMENT = "adjustment"
+    """
+    总账分录类型枚举
+
+    必须与 LEDGER_SOT.md v1.1 第2.2节保持严格一致。
+    PROJECT账本: REVENUE, TOPUP, REVERSAL
+    SUPPLIER账本: COST, TOPUP, TRANSFER_OUT, TRANSFER_IN, REVERSAL
+    """
+    REVENUE = "REVENUE"              # 项目收入（PROJECT账本）
+    COST = "COST"                    # 供应商成本（SUPPLIER账本）
+    TOPUP = "TOPUP"                  # 充值（两账本通用）
+    TRANSFER_OUT = "TRANSFER_OUT"    # 转出（SUPPLIER账本）
+    TRANSFER_IN = "TRANSFER_IN"      # 转入（SUPPLIER账本）
+    REVERSAL = "REVERSAL"            # 红冲（两账本通用）
 
 
 class ChannelAccountRequestStatus(str, Enum):

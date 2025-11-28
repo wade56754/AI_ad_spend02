@@ -19,7 +19,13 @@ from backend.models.mixins.rls_aware import RLSAwareMixin
 
 class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     """
-    投手每日报告表
+    投手每日报告表（粉数确认状态机）
+
+    必须与 STATE_MACHINE.md v2.6 第8章保持严格一致。
+
+    8 状态流程：
+    raw_submitted → trend_pending → trend_ok/trend_flagged
+    → trend_resolved → final_pending → final_confirmed → final_locked
 
     字段：
     - id: 主键
@@ -27,9 +33,16 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     - submitted_by: 提交人ID（外键）
     - reviewed_by: 审核人ID（外键）
     - report_date: 报告日期
-    - status: 状态（draft/pending/approved/rejected）
-    - fans_gained: 新增粉丝数
-    - spend_amount: 消耗金额
+    - status: 状态（8状态机）
+    - conversions_raw: 投手提交的原始粉数
+    - conversions_final: 运营确认的最终粉数
+    - raw_spend: 原始消耗
+    - real_spend: 真实消耗
+    - trend_flag: 趋势异常标记
+    - trend_flag_reason: 异常原因
+    - trend_resolution_note: 运营复核说明
+    - final_locked_at: 锁定时间
+    - unit_price: 单粉价格
     - notes: 备注
     - submitted_at: 提交时间
     - reviewed_at: 审核时间
@@ -108,10 +121,11 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         doc="审核人（数据员）"
     )
 
-    # 约束和索引
+    # 约束和索引 - 必须与 STATE_MACHINE.md v2.6 第8章保持一致
     __table_args__ = (
         CheckConstraint(
-            "status IN ('draft', 'pending', 'approved', 'rejected')",
+            "status IN ('raw_submitted', 'trend_pending', 'trend_ok', 'trend_flagged', "
+            "'trend_resolved', 'final_pending', 'final_confirmed', 'final_locked')",
             name='chk_daily_reports_status'
         ),
         UniqueConstraint(
@@ -126,7 +140,7 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     def __repr__(self):
         return f"<DailyReport(id={self.id}, account_id={self.ad_account_id}, date={self.report_date})>"
 
-    # ========== 业务属性 ==========
+    # ========== 业务属性（8状态机）==========
 
     @property
     def status_enum(self) -> DailyReportStatus:
@@ -134,102 +148,162 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         return DailyReportStatus(self.status)
 
     @property
-    def is_draft(self) -> bool:
-        """是否是草稿"""
-        return self.status == DailyReportStatus.DRAFT.value
+    def is_raw_submitted(self) -> bool:
+        """是否是原始提交状态"""
+        return self.status == DailyReportStatus.RAW_SUBMITTED.value
 
     @property
-    def is_pending(self) -> bool:
-        """是否待审核"""
-        return self.status == DailyReportStatus.PENDING.value
+    def is_trend_pending(self) -> bool:
+        """是否等待趋势风控检查"""
+        return self.status == DailyReportStatus.TREND_PENDING.value
 
     @property
-    def is_approved(self) -> bool:
-        """是否已批准"""
-        return self.status == DailyReportStatus.APPROVED.value
+    def is_trend_ok(self) -> bool:
+        """趋势是否正常"""
+        return self.status == DailyReportStatus.TREND_OK.value
 
     @property
-    def is_rejected(self) -> bool:
-        """是否已拒绝"""
-        return self.status == DailyReportStatus.REJECTED.value
+    def is_trend_flagged(self) -> bool:
+        """趋势是否异常"""
+        return self.status == DailyReportStatus.TREND_FLAGGED.value
 
-    # ========== 状态流转方法 ==========
+    @property
+    def is_trend_resolved(self) -> bool:
+        """趋势异常是否已解决"""
+        return self.status == DailyReportStatus.TREND_RESOLVED.value
+
+    @property
+    def is_final_pending(self) -> bool:
+        """是否等待最终粉数确认"""
+        return self.status == DailyReportStatus.FINAL_PENDING.value
+
+    @property
+    def is_final_confirmed(self) -> bool:
+        """最终粉数是否已确认"""
+        return self.status == DailyReportStatus.FINAL_CONFIRMED.value
+
+    @property
+    def is_final_locked(self) -> bool:
+        """是否已锁定（终态）"""
+        return self.status == DailyReportStatus.FINAL_LOCKED.value
+
+    # ========== 状态流转方法（8状态机）==========
+
+    # 合法流转白名单 - 必须与 STATE_MACHINE.md v2.6 第14.5章保持一致
+    STATE_TRANSITIONS = {
+        DailyReportStatus.RAW_SUBMITTED: [DailyReportStatus.TREND_PENDING],
+        DailyReportStatus.TREND_PENDING: [DailyReportStatus.TREND_OK, DailyReportStatus.TREND_FLAGGED],
+        DailyReportStatus.TREND_OK: [DailyReportStatus.FINAL_PENDING],
+        DailyReportStatus.TREND_FLAGGED: [DailyReportStatus.TREND_RESOLVED, DailyReportStatus.RAW_SUBMITTED],
+        DailyReportStatus.TREND_RESOLVED: [DailyReportStatus.FINAL_PENDING],
+        DailyReportStatus.FINAL_PENDING: [DailyReportStatus.FINAL_CONFIRMED],
+        DailyReportStatus.FINAL_CONFIRMED: [DailyReportStatus.FINAL_LOCKED],
+        DailyReportStatus.FINAL_LOCKED: [],  # 终态，仅可通过红冲修正
+    }
 
     def can_transition_to(self, new_status: DailyReportStatus) -> bool:
         """
         检查是否可以转换到新状态
 
-        状态流转规则：
-        - draft -> pending
-        - pending -> approved, rejected
-        - approved -> (终态)
-        - rejected -> pending（重新提交）
+        8状态流转规则（STATE_MACHINE.md v2.6 第8章）：
+        - raw_submitted -> trend_pending
+        - trend_pending -> trend_ok, trend_flagged
+        - trend_ok -> final_pending
+        - trend_flagged -> trend_resolved, raw_submitted
+        - trend_resolved -> final_pending
+        - final_pending -> final_confirmed
+        - final_confirmed -> final_locked
+        - final_locked -> (终态，仅可红冲)
         """
         current = DailyReportStatus(self.status)
-        transitions = {
-            DailyReportStatus.DRAFT: [DailyReportStatus.PENDING],
-            DailyReportStatus.PENDING: [DailyReportStatus.APPROVED, DailyReportStatus.REJECTED],
-            DailyReportStatus.APPROVED: [],
-            DailyReportStatus.REJECTED: [DailyReportStatus.PENDING],
-        }
-        return new_status in transitions.get(current, [])
+        return new_status in self.STATE_TRANSITIONS.get(current, [])
 
-    def submit(self, submitter_id: UUID):
-        """提交日报"""
-        if not self.can_transition_to(DailyReportStatus.PENDING):
-            raise ValueError(f"不允许从 {self.status} 状态提交日报")
-
-        self.status = DailyReportStatus.PENDING.value
+    def submit_raw(self, submitter_id: UUID, conversions_raw: int, raw_spend: Decimal):
+        """投手提交原始粉数（T+0）"""
+        self.status = DailyReportStatus.RAW_SUBMITTED.value
         self.submitted_by = submitter_id
         self.submitted_at = func.now()
+        # conversions_raw 和 raw_spend 字段需要在模型中添加
 
-    def approve(self, reviewer_id: UUID, notes: str = None):
-        """批准日报"""
-        if not self.can_transition_to(DailyReportStatus.APPROVED):
-            raise ValueError(f"不允许从 {self.status} 状态批准日报")
+    def trigger_trend_check(self):
+        """触发趋势风控检查（系统自动）"""
+        if not self.can_transition_to(DailyReportStatus.TREND_PENDING):
+            raise ValueError(f"不允许从 {self.status} 状态触发趋势检查")
+        self.status = DailyReportStatus.TREND_PENDING.value
 
-        self.status = DailyReportStatus.APPROVED.value
+    def mark_trend_ok(self):
+        """标记趋势正常（系统自动）"""
+        if not self.can_transition_to(DailyReportStatus.TREND_OK):
+            raise ValueError(f"不允许从 {self.status} 状态标记趋势正常")
+        self.status = DailyReportStatus.TREND_OK.value
+
+    def mark_trend_flagged(self, reason: str):
+        """标记趋势异常（系统自动）"""
+        if not self.can_transition_to(DailyReportStatus.TREND_FLAGGED):
+            raise ValueError(f"不允许从 {self.status} 状态标记趋势异常")
+        self.status = DailyReportStatus.TREND_FLAGGED.value
+        self.notes = reason  # trend_flag_reason 字段需要添加
+
+    def resolve_trend(self, reviewer_id: UUID, resolution_note: str):
+        """运营确认趋势异常已解决"""
+        if not self.can_transition_to(DailyReportStatus.TREND_RESOLVED):
+            raise ValueError(f"不允许从 {self.status} 状态解决趋势异常")
+        self.status = DailyReportStatus.TREND_RESOLVED.value
+        self.reviewed_by = reviewer_id
+        self.notes = resolution_note  # trend_resolution_note 字段需要添加
+
+    def enter_final_pending(self, reviewer_id: UUID):
+        """运营录入real_spend后进入等待最终确认"""
+        if not self.can_transition_to(DailyReportStatus.FINAL_PENDING):
+            raise ValueError(f"不允许从 {self.status} 状态进入最终确认等待")
+        self.status = DailyReportStatus.FINAL_PENDING.value
+        self.reviewed_by = reviewer_id
+
+    def confirm_final(self, reviewer_id: UUID):
+        """运营确认最终粉数"""
+        if not self.can_transition_to(DailyReportStatus.FINAL_CONFIRMED):
+            raise ValueError(f"不允许从 {self.status} 状态确认最终粉数")
+        self.status = DailyReportStatus.FINAL_CONFIRMED.value
         self.reviewed_by = reviewer_id
         self.reviewed_at = func.now()
-        if notes:
-            self.notes = notes
 
-    def reject(self, reviewer_id: UUID, reason: str):
-        """拒绝日报"""
-        if not self.can_transition_to(DailyReportStatus.REJECTED):
-            raise ValueError(f"不允许从 {self.status} 状态拒绝日报")
+    def lock_final(self):
+        """系统计费锁定（终态）"""
+        if not self.can_transition_to(DailyReportStatus.FINAL_LOCKED):
+            raise ValueError(f"不允许从 {self.status} 状态锁定")
+        self.status = DailyReportStatus.FINAL_LOCKED.value
+        # final_locked_at 字段需要添加
 
-        self.status = DailyReportStatus.REJECTED.value
-        self.reviewed_by = reviewer_id
-        self.reviewed_at = func.now()
-        self.notes = reason
-
-    # ========== 权限判断方法 ==========
+    # ========== 权限判断方法（8状态机）==========
 
     def can_be_edited_by(self, user_id: UUID, user_role: UserRole) -> bool:
         """检查用户是否可以编辑此日报"""
-        # 管理员和数据员可以编辑所有日报
+        # 管理员和数据员可以编辑所有未锁定的日报
         if user_role in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
-            return True
+            return not self.is_final_locked
 
-        # 投手只能编辑自己提交的草稿或被拒绝的日报
+        # 投手只能编辑自己的原始提交状态或被退回的日报
         if user_role == UserRole.MEDIA_BUYER:
             if self.submitted_by != user_id:
                 return False
-            return self.status in [DailyReportStatus.DRAFT.value, DailyReportStatus.REJECTED.value]
+            return self.status == DailyReportStatus.RAW_SUBMITTED.value
 
         return False
 
     def can_be_reviewed_by(self, user_id: UUID, user_role: UserRole) -> bool:
-        """检查用户是否可以审核此日报"""
+        """检查用户是否可以审核此日报（趋势复核或最终确认）"""
         # 只有管理员和数据员可以审核
         if user_role not in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
             return False
 
-        # 只有待审核的日报才能审核
-        return self.status == DailyReportStatus.PENDING.value
+        # 可审核状态：trend_flagged（趋势复核）、final_pending（最终确认）
+        reviewable_statuses = [
+            DailyReportStatus.TREND_FLAGGED.value,
+            DailyReportStatus.FINAL_PENDING.value,
+        ]
+        return self.status in reviewable_statuses
 
-    # ========== 查询作用域方法 ==========
+    # ========== 查询作用域方法（8状态机）==========
 
     @classmethod
     def get_user_accessible_query(cls, session, user_id: UUID, user_role: UserRole):
@@ -244,20 +318,32 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         if user_role == UserRole.MEDIA_BUYER:
             return query.filter(cls.submitted_by == user_id)
 
-        # 财务可以查看所有已批准的日报
+        # 财务可以查看所有已锁定的日报（用于计费）
         if user_role == UserRole.FINANCE:
-            return query.filter(cls.status == DailyReportStatus.APPROVED.value)
+            return query.filter(cls.status == DailyReportStatus.FINAL_LOCKED.value)
 
         return query.filter(cls.submitted_by == user_id)
 
     @classmethod
-    def get_pending_reports(cls, session, user_role: UserRole):
-        """获取待审核的日报（数据员使用）"""
+    def get_pending_trend_review(cls, session, user_role: UserRole):
+        """获取待趋势复核的日报（运营使用）"""
         if user_role not in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
             return []
 
         return session.query(cls).filter(
-            cls.status == DailyReportStatus.PENDING.value
+            cls.status == DailyReportStatus.TREND_FLAGGED.value
+        ).order_by(
+            cls.submitted_at.asc()
+        ).all()
+
+    @classmethod
+    def get_pending_final_confirm(cls, session, user_role: UserRole):
+        """获取待最终确认的日报（运营使用）"""
+        if user_role not in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
+            return []
+
+        return session.query(cls).filter(
+            cls.status == DailyReportStatus.FINAL_PENDING.value
         ).order_by(
             cls.submitted_at.asc()
         ).all()

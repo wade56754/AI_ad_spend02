@@ -119,11 +119,12 @@ db.commit()
 ```python
 from backend.models import LedgerEntry, LedgerEntryType
 
-# 通过账本系统记录
+# 通过账本系统记录（LEDGER_SOT.md v1.1）
+# 6种分录类型：REVENUE, COST, TOPUP, TRANSFER_OUT, TRANSFER_IN, REVERSAL
 ledger_entry = LedgerEntry(
     ad_account_id=ad_account.id,
-    entry_type=LedgerEntryType.SPEND,
-    amount=Decimal("100.00"),
+    entry_type=LedgerEntryType.COST,  # SUPPLIER账本成本，负数
+    amount=Decimal("-100.00"),
     related_entity_type="daily_report",
     related_entity_id=report.id,
     description="日报消耗扣款"

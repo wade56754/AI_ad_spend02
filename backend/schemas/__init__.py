@@ -1,9 +1,20 @@
+"""
+Pydantic Schemas
+Version: 2.0 (SoT Aligned - STATE_MACHINE.md v2.6)
+Author: Claude协作开发
+
+注意：status 字段使用字符串类型，默认值应与 models.base 枚举保持一致。
+"""
+
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+
+# 导入规范枚举用于默认值
+from backend.models.base import TopupStatus, ProjectStatus, AdAccountStatus
 
 
 class ORMBase(BaseModel):
@@ -42,7 +53,7 @@ class ProjectBase(BaseModel):
     name: str
     client_name: Optional[str] = None
     currency: str = "USD"
-    status: str = "active"
+    status: str = ProjectStatus.ACTIVE.value  # 使用枚举默认值
     created_by: Optional[UUID] = None
     updated_by: Optional[UUID] = None
 
@@ -97,7 +108,7 @@ class AdAccountBase(BaseModel):
     project_id: UUID
     channel_id: UUID
     assigned_user_id: Optional[UUID] = None
-    status: str = "new"
+    status: str = AdAccountStatus.NEW.value  # 使用枚举默认值
     dead_reason: Optional[str] = None
     created_by: Optional[UUID] = None
     updated_by: Optional[UUID] = None
@@ -208,7 +219,7 @@ class TopupBase(BaseModel):
     requested_by: UUID
     amount: Decimal
     service_fee_amount: Optional[Decimal] = None
-    status: str = "pending"
+    status: str = TopupStatus.PENDING_REVIEW.value  # 使用枚举默认值 (pending_review 而非 pending)
     remark: Optional[str] = None
     created_by: Optional[UUID] = None
     updated_by: Optional[UUID] = None
@@ -302,7 +313,7 @@ class ReconciliationManualRequest(BaseModel):
 # Import Jobs
 class ImportJobBase(BaseModel):
     type: str
-    status: str = "pending"
+    status: str = "pending"  # ImportJob 有自己的状态机，保持原样
     file_path: Optional[str] = None
     file_hash: str
     error_log: Optional[Any] = None

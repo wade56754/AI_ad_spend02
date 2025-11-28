@@ -1,7 +1,10 @@
 """
 对账管理服务
-Version: 1.0
+Version: 2.0 (SoT Aligned - STATE_MACHINE.md v2.6)
 Author: Claude协作开发
+
+对账批次状态机（5状态）：
+draft → pending_review → approved/needs_adjustment → completed
 """
 
 from datetime import datetime, date
@@ -18,6 +21,7 @@ from backend.models import AdAccount
 from backend.models import Project
 from backend.models import Channel
 from backend.models import User
+from backend.models.base import ReconciliationBatchStatus, UserRole
 from backend.schemas.reconciliation import (
     ReconciliationBatchCreateRequest,
     ReconciliationDetailReviewRequest,
@@ -56,11 +60,11 @@ class ReconciliationService:
         # 生成批次号
         batch_no = generate_request_no("REC")
 
-        # 创建对账批次
+        # 创建对账批次 - 使用 ReconciliationBatchStatus 枚举 (STATE_MACHINE.md v2.6)
         batch = ReconciliationBatch(
             batch_no=batch_no,
             reconciliation_date=request.reconciliation_date,
-            status="pending",
+            status=ReconciliationBatchStatus.DRAFT.value,  # 初始状态为 draft
             auto_match=request.auto_match,
             created_by=current_user_id,
             notes=request.notes
@@ -158,11 +162,12 @@ class ReconciliationService:
         """执行对账"""
         batch = await self.get_batch_by_id(batch_id, current_user_id, "admin")
 
-        if batch.status != "pending":
-            raise ValidationError("BIZ_306", "只能对待处理的批次执行对账")
+        # 检查状态 - 只能从 draft 或 pending_review 状态执行对账
+        if batch.status not in [ReconciliationBatchStatus.DRAFT.value, ReconciliationBatchStatus.PENDING_REVIEW.value]:
+            raise ValidationError("BIZ_306", "只能对草稿或待审核的批次执行对账")
 
-        # 更新批次状态
-        batch.status = "processing"
+        # 更新批次状态为 pending_review
+        batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
         batch.started_at = datetime.utcnow()
         self.db.commit()
 
@@ -237,13 +242,14 @@ class ReconciliationService:
             batch.total_platform_spend = platform_total
             batch.total_internal_spend = internal_total
             batch.total_difference = difference_total
-            batch.status = "completed"
+            # 对账完成后状态为 approved（需人工审核后才 completed）
+            batch.status = ReconciliationBatchStatus.APPROVED.value
             batch.completed_at = datetime.utcnow()
 
             self.db.commit()
 
         except Exception as e:
-            batch.status = "exception"
+            batch.status = ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value  # 异常时需要调整
             self.db.commit()
             raise e
 
@@ -294,6 +300,7 @@ class ReconciliationService:
         if not detail:
             raise NotFoundError("SYS_004", "对账详情不存在")
 
+        # 对账详情状态检查 - pending, manual_review, exception 可审核
         if detail.match_status not in ["pending", "manual_review", "exception"]:
             raise ValidationError("BIZ_306", "只能审核待处理或异常的对账详情")
 
@@ -405,16 +412,16 @@ class ReconciliationService:
         if date_to:
             query = query.filter(ReconciliationBatch.reconciliation_date <= date_to)
 
-        # 总体统计
+        # 总体统计 - 使用 ReconciliationBatchStatus 枚举 (STATE_MACHINE.md v2.6)
         total_batches = query.count()
         completed_batches = query.filter(
-            ReconciliationBatch.status == "completed"
+            ReconciliationBatch.status == ReconciliationBatchStatus.COMPLETED.value
         ).count()
         exception_batches = query.filter(
-            ReconciliationBatch.status == "exception"
+            ReconciliationBatch.status == ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value
         ).count()
         resolved_batches = query.filter(
-            ReconciliationBatch.status == "resolved"
+            ReconciliationBatch.status == ReconciliationBatchStatus.APPROVED.value
         ).count()
 
         # 账户统计

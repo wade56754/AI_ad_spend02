@@ -62,11 +62,19 @@ def cmd_run(args: argparse.Namespace) -> None:
         supabase_project_id=args.supabase_project_id,
     )
 
-    request = {
-        "action": args.action,
-        "task": args.action,  # 兼容旧接口
-        "target_files": args.files.split(",") if args.files else [],
-    }
+    # 构建请求：对于 orchestrator，action 就是 flow 名称
+    if args.agent == "orch":
+        request = {
+            "flow": args.action,  # frontend_restructure, backend_only, etc.
+            "task": args.task if hasattr(args, "task") and args.task else args.action,
+            "auto_write": getattr(args, "auto_write", False),
+        }
+    else:
+        request = {
+            "action": args.action,
+            "task": args.action,  # 兼容旧接口
+            "target_files": args.files.split(",") if args.files else [],
+        }
 
     print(f"\n启动 Agent: {args.agent}")
     print(f"任务: {args.action}")
@@ -101,7 +109,17 @@ def main() -> None:
         "--action", "-a",
         type=str,
         required=True,
-        help="任务描述，例如：'实现 projects CRUD API'"
+        help=(
+            "任务描述或 flow 名称。\n"
+            "  fe/be: 任务描述，如 '实现 projects CRUD API'\n"
+            "  orch: flow 名称 (backend_only|frontend_only|full_pipeline|frontend_restructure)"
+        )
+    )
+    run_parser.add_argument(
+        "--task", "-t",
+        type=str,
+        default=None,
+        help="任务描述（仅 orch Agent 用，可选）"
     )
     run_parser.add_argument(
         "--files", "-f",
@@ -121,6 +139,31 @@ def main() -> None:
         default=None,
         help="Supabase 项目 ID（仅 test Agent 用）"
     )
+    run_parser.add_argument(
+        "--auto-write",
+        action="store_true",
+        default=False,
+        help="（仅 orch Agent）自动将生成的文件写入磁盘。默认 False（dry-run 模式，只返回变更预览）"
+    )
+
+    # 示例用法
+    run_parser.epilog = """
+示例用法:
+  # 前端代码生成
+  python -m agents.cli run fe --action "实现项目列表页面"
+
+  # 后端代码生成
+  python -m agents.cli run be --action "实现 projects CRUD API"
+
+  # SC-ORCH 前端重构流水线（dry-run 模式，默认）
+  python -m agents.cli run orch --action frontend_restructure --task "重构前端结构"
+
+  # SC-ORCH 前端重构流水线（auto-write 模式，写入文件）
+  python -m agents.cli run orch --action frontend_restructure --task "重构前端结构" --auto-write
+
+  # 完整流水线
+  python -m agents.cli run orch --action full_pipeline
+"""
 
     # 兼容旧命令格式：python -m agents.cli be --action "..."
     # 如果第一个参数是 agent 名称，则使用旧格式

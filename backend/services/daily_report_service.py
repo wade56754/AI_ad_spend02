@@ -1,7 +1,11 @@
 """
 日报管理业务逻辑层
-Version: 1.0
+Version: 2.0 (SoT Aligned - STATE_MACHINE.md v2.6)
 Author: Claude协作开发
+
+日报状态机（8状态）：
+raw_submitted → trend_pending → trend_ok/trend_flagged
+→ trend_resolved → final_pending → final_confirmed → final_locked
 """
 
 import logging
@@ -25,6 +29,7 @@ from backend.exceptions.custom_exceptions import (
 from backend.models import DailyReport
 from backend.models import AdAccount
 from backend.models import User
+from backend.models.base import DailyReportStatus, UserRole
 from backend.schemas.daily_report import (
     DailyReportCreateRequest,
     DailyReportUpdateRequest,
@@ -205,8 +210,8 @@ class DailyReportService:
                 )
             )
 
-        # 应用权限过滤
-        if current_user.role == "media_buyer":
+        # 应用权限过滤 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        if current_user.role == UserRole.MEDIA_BUYER.value:
             # 投手：只能看分配给自己的账户的日报
             logger.debug(f"Applying media_buyer RBAC filter for user {current_user.id}")
             where_conditions.append(
@@ -216,7 +221,7 @@ class DailyReportService:
                     )
                 )
             )
-        elif current_user.role == "account_manager":
+        elif current_user.role == UserRole.ACCOUNT_MANAGER.value:
             # 户管：只能看所管理项目的日报
             accessible_projects = self._get_manager_accessible_projects(current_user.id)
             logger.debug(
@@ -230,7 +235,7 @@ class DailyReportService:
                     )
                 )
             )
-        elif current_user.role in ["admin", "finance", "data_operator"]:
+        elif current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
             # 管理员、财务、数据员：可以看所有数据
             logger.debug(f"User {current_user.id} ({current_user.role}) has full access to all reports")
         else:
@@ -318,10 +323,12 @@ class DailyReportService:
 
         report = self.get_daily_report(report_id, current_user)
 
-        # 检查是否可以修改
-        if report.status == "approved":
-            logger.warning(f"Cannot update approved report: id={report_id}")
-            raise BusinessLogicError("已审核的日报不能修改")
+        # 检查是否可以修改 - 终态 (FINAL_LOCKED/FINAL_CONFIRMED) 不可修改
+        # 基于 STATE_MACHINE.md v2.6 第8章
+        terminal_states = [DailyReportStatus.FINAL_LOCKED.value, DailyReportStatus.FINAL_CONFIRMED.value]
+        if report.status in terminal_states:
+            logger.warning(f"Cannot update locked/confirmed report: id={report_id}, status={report.status}")
+            raise BusinessLogicError("已确认或锁定的日报不能修改")
 
         # 权限检查：验证当前用户是否有权限编辑该日报
         if not self._can_user_edit_report(current_user, report):
@@ -379,8 +386,8 @@ class DailyReportService:
 
         report = self.get_daily_report(report_id, current_user)
 
-        # 只有管理员可以删除
-        if current_user.role != "admin":
+        # 只有管理员可以删除 - 使用 UserRole 枚举
+        if current_user.role != UserRole.ADMIN.value:
             logger.warning(
                 f"Non-admin user {current_user.id} ({current_user.role}) attempted to delete report {report_id}"
             )
@@ -399,14 +406,17 @@ class DailyReportService:
             logger.info(f"Daily report deleted successfully: id={report_id}")
             return True
 
-    def approve_daily_report(
+    def confirm_final_report(
         self,
         report_id: int,
         request: DailyReportAuditRequest,
         current_user: User
     ) -> DailyReport:
         """
-        审核通过日报
+        确认最终粉数（运营确认）
+
+        基于 STATE_MACHINE.md v2.6 第8章:
+        final_pending → final_confirmed
 
         Args:
             report_id: 日报ID
@@ -416,21 +426,24 @@ class DailyReportService:
         Returns:
             DailyReport: 更新后的日报对象
         """
-        return self._audit_daily_report(
+        return self._transition_daily_report(
             report_id=report_id,
-            new_status="approved",
+            target_status=DailyReportStatus.FINAL_CONFIRMED,
             audit_request=request,
             current_user=current_user
         )
 
-    def reject_daily_report(
+    def lock_final_report(
         self,
         report_id: int,
         request: DailyReportAuditRequest,
         current_user: User
     ) -> DailyReport:
         """
-        驳回报日
+        锁定日报（进入计费）
+
+        基于 STATE_MACHINE.md v2.6 第8章:
+        final_confirmed → final_locked (终态)
 
         Args:
             report_id: 日报ID
@@ -440,9 +453,63 @@ class DailyReportService:
         Returns:
             DailyReport: 更新后的日报对象
         """
-        return self._audit_daily_report(
+        return self._transition_daily_report(
             report_id=report_id,
-            new_status="rejected",
+            target_status=DailyReportStatus.FINAL_LOCKED,
+            audit_request=request,
+            current_user=current_user
+        )
+
+    def flag_trend_anomaly(
+        self,
+        report_id: int,
+        request: DailyReportAuditRequest,
+        current_user: User
+    ) -> DailyReport:
+        """
+        标记趋势异常（需人工复核）
+
+        基于 STATE_MACHINE.md v2.6 第8章:
+        trend_pending → trend_flagged
+
+        Args:
+            report_id: 日报ID
+            request: 审核请求
+            current_user: 当前用户
+
+        Returns:
+            DailyReport: 更新后的日报对象
+        """
+        return self._transition_daily_report(
+            report_id=report_id,
+            target_status=DailyReportStatus.TREND_FLAGGED,
+            audit_request=request,
+            current_user=current_user
+        )
+
+    def resolve_trend_anomaly(
+        self,
+        report_id: int,
+        request: DailyReportAuditRequest,
+        current_user: User
+    ) -> DailyReport:
+        """
+        解决趋势异常
+
+        基于 STATE_MACHINE.md v2.6 第8章:
+        trend_flagged → trend_resolved
+
+        Args:
+            report_id: 日报ID
+            request: 审核请求
+            current_user: 当前用户
+
+        Returns:
+            DailyReport: 更新后的日报对象
+        """
+        return self._transition_daily_report(
+            report_id=report_id,
+            target_status=DailyReportStatus.TREND_RESOLVED,
             audit_request=request,
             current_user=current_user
         )
@@ -542,12 +609,18 @@ class DailyReportService:
 
         status_counts = {status: count for status, count in status_stats}
 
-        # 构建返回数据
+        # 构建返回数据 - 使用 8 状态机枚举 (STATE_MACHINE.md v2.6)
         result = {
             'total_reports': stats.total_reports or 0,
-            'approved_reports': status_counts.get('approved', 0),
-            'rejected_reports': status_counts.get('rejected', 0),
-            'pending_reports': status_counts.get('pending', 0),
+            # 8 状态统计
+            'raw_submitted_reports': status_counts.get(DailyReportStatus.RAW_SUBMITTED.value, 0),
+            'trend_pending_reports': status_counts.get(DailyReportStatus.TREND_PENDING.value, 0),
+            'trend_ok_reports': status_counts.get(DailyReportStatus.TREND_OK.value, 0),
+            'trend_flagged_reports': status_counts.get(DailyReportStatus.TREND_FLAGGED.value, 0),
+            'trend_resolved_reports': status_counts.get(DailyReportStatus.TREND_RESOLVED.value, 0),
+            'final_pending_reports': status_counts.get(DailyReportStatus.FINAL_PENDING.value, 0),
+            'final_confirmed_reports': status_counts.get(DailyReportStatus.FINAL_CONFIRMED.value, 0),
+            'final_locked_reports': status_counts.get(DailyReportStatus.FINAL_LOCKED.value, 0),
             'total_spend': stats.total_spend or Decimal('0'),
             'total_impressions': stats.total_impressions or 0,
             'total_clicks': stats.total_clicks or 0,
@@ -590,38 +663,62 @@ class DailyReportService:
 
         return []
 
-    def _audit_daily_report(
+    # 8 状态机流转白名单 (STATE_MACHINE.md v2.6 第8章)
+    STATE_TRANSITIONS = {
+        DailyReportStatus.RAW_SUBMITTED: [DailyReportStatus.TREND_PENDING],
+        DailyReportStatus.TREND_PENDING: [DailyReportStatus.TREND_OK, DailyReportStatus.TREND_FLAGGED],
+        DailyReportStatus.TREND_OK: [DailyReportStatus.FINAL_PENDING],
+        DailyReportStatus.TREND_FLAGGED: [DailyReportStatus.TREND_RESOLVED, DailyReportStatus.RAW_SUBMITTED],
+        DailyReportStatus.TREND_RESOLVED: [DailyReportStatus.FINAL_PENDING],
+        DailyReportStatus.FINAL_PENDING: [DailyReportStatus.FINAL_CONFIRMED],
+        DailyReportStatus.FINAL_CONFIRMED: [DailyReportStatus.FINAL_LOCKED],
+        DailyReportStatus.FINAL_LOCKED: [],  # 终态，仅可通过红冲修正
+    }
+
+    def _transition_daily_report(
         self,
         report_id: int,
-        new_status: str,
+        target_status: DailyReportStatus,
         audit_request: DailyReportAuditRequest,
         current_user: User
     ) -> DailyReport:
         """
-        审核日报内部方法
+        日报状态流转内部方法
+
+        基于 STATE_MACHINE.md v2.6 第8章的 8 状态机白名单
 
         Args:
             report_id: 日报ID
-            new_status: 新状态
+            target_status: 目标状态 (DailyReportStatus 枚举)
             audit_request: 审核请求
             current_user: 当前用户
 
         Returns:
             DailyReport: 更新后的日报对象
         """
-        # 验证权限
-        if current_user.role not in ["admin", "data_operator"]:
+        # 验证权限 - 使用 UserRole 枚举
+        if current_user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
             raise PermissionDeniedError("无权限审核日报")
 
         report = self.get_daily_report(report_id, current_user)
 
-        # 检查状态
-        if report.status == new_status:
-            raise BusinessLogicError(f"日报已经是{new_status}状态")
+        # 获取当前状态枚举
+        try:
+            current_status = DailyReportStatus(report.status)
+        except ValueError:
+            raise BusinessLogicError(f"无效的当前状态: {report.status}")
+
+        # 检查状态流转是否合法
+        allowed_transitions = self.STATE_TRANSITIONS.get(current_status, [])
+        if target_status not in allowed_transitions:
+            raise BusinessLogicError(
+                f"非法状态流转: {current_status.value} → {target_status.value}。"
+                f"允许的目标状态: {[s.value for s in allowed_transitions]}"
+            )
 
         with self.transaction():
             old_status = report.status
-            report.status = new_status
+            report.status = target_status.value
             report.audit_notes = audit_request.audit_notes
             report.audit_user_id = current_user.id
             report.audit_time = datetime.utcnow()
@@ -630,10 +727,10 @@ class DailyReportService:
             # 记录审计日志
             self._create_audit_log(
                 daily_report_id=report_id,
-                action=new_status,
+                action=target_status.value,
                 audit_user_id=current_user.id,
                 old_status=old_status,
-                new_status=new_status,
+                new_status=target_status.value,
                 audit_notes=audit_request.audit_notes,
                 ip_address=getattr(current_user, 'ip_address', None),
                 user_agent=getattr(current_user, 'user_agent', None)
@@ -744,18 +841,18 @@ class DailyReportService:
         import logging
         logger = logging.getLogger(__name__)
 
-        # admin 全部权限
-        if user.role == "admin":
+        # admin 全部权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        if user.role == UserRole.ADMIN.value:
             logger.debug(f"User {user.id} (admin) has access to account {account.id}")
             return True
 
         # 数据员可以操作所有账户（用于审核）
-        if user.role == "data_operator":
+        if user.role == UserRole.DATA_OPERATOR.value:
             logger.debug(f"User {user.id} (data_operator) has access to account {account.id}")
             return True
 
         # 投手：只能操作 assigned_user_id 是自己的账户
-        if user.role == "media_buyer":
+        if user.role == UserRole.MEDIA_BUYER.value:
             has_access = account.assigned_user_id == user.id
             logger.debug(
                 f"User {user.id} (media_buyer) {'has' if has_access else 'NO'} access to account {account.id}"
@@ -763,7 +860,7 @@ class DailyReportService:
             return has_access
 
         # 项目经理：只能操作自己管理的项目下的账户
-        if user.role == "account_manager":
+        if user.role == UserRole.ACCOUNT_MANAGER.value:
             accessible_projects = self._get_manager_accessible_projects(user.id)
             has_access = account.project_id in accessible_projects
             logger.debug(
@@ -794,13 +891,13 @@ class DailyReportService:
         import logging
         logger = logging.getLogger(__name__)
 
-        # admin/finance/data_operator 可以看所有
-        if user.role in ["admin", "finance", "data_operator"]:
+        # admin/finance/data_operator 可以看所有 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        if user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
             logger.debug(f"User {user.id} ({user.role}) can view report {report.id}")
             return True
 
         # 投手：只能看 assigned_user_id 是自己的账户
-        if user.role == "media_buyer":
+        if user.role == UserRole.MEDIA_BUYER.value:
             account = report.ad_account
             if not account:
                 logger.warning(f"Report {report.id} has no associated account")
@@ -812,7 +909,7 @@ class DailyReportService:
             return has_access
 
         # 项目经理：检查是否有项目权限
-        if user.role == "account_manager":
+        if user.role == UserRole.ACCOUNT_MANAGER.value:
             if not report.ad_account or not report.ad_account.project_id:
                 logger.warning(f"Report {report.id} has no associated account or project")
                 return False
@@ -842,13 +939,13 @@ class DailyReportService:
         Returns:
             bool: 是否有编辑权限
         """
-        # 管理员和数据员可以编辑所有日报
-        if user.role in ["admin", "data_operator"]:
+        # 管理员和数据员可以编辑所有日报 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        if user.role in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
             logger.debug(f"User {user.id} ({user.role}) can edit all reports")
             return True
 
         # 投手只能编辑自己创建的日报
-        if user.role == "media_buyer":
+        if user.role == UserRole.MEDIA_BUYER.value:
             has_access = report.created_by == user.id
             logger.debug(
                 f"User {user.id} (media_buyer) {'can' if has_access else 'CANNOT'} edit report {report.id} "

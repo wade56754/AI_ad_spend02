@@ -1,7 +1,12 @@
 """
 充值管理服务层
-Version: 1.0
+Version: 2.0 (SoT Aligned - STATE_MACHINE.md v2.6)
 Author: Claude协作开发
+
+充值申请状态机（7状态）：
+draft → pending_review → finance_approve → paid → completed
+                       → rejected
+                       → cancelled
 """
 
 from datetime import datetime, date, timedelta
@@ -15,6 +20,7 @@ from backend.models.topup import TopupTransaction, TopupApprovalLog
 from backend.models import User
 from backend.models import AdAccount
 from backend.models import Project
+from backend.models.base import TopupStatus, UserRole
 from backend.schemas.topup import (
     TopupRequestCreate,
     TopupDataReviewRequest,
@@ -99,13 +105,13 @@ class TopupService:
         self.db.add(topup_request)
         self.db.flush()
 
-        # 6. 记录审批日志
+        # 6. 记录审批日志 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
         self._create_approval_log(
             request_id=topup_request.id,
             action="submitted",
             actor=current_user,
             previous_status=None,
-            new_status="pending",
+            new_status=TopupStatus.PENDING_REVIEW.value,  # pending_review 而非 pending
             notes="提交充值申请",
             ip_address=ip_address,
             user_agent=user_agent
@@ -207,15 +213,16 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "data_review")
 
-        # 检查状态流转
-        if request.status not in ["pending"]:
+        # 检查状态流转 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        if request.status != TopupStatus.PENDING_REVIEW.value:
             raise BusinessLogicError(
                 f"当前状态({request.status})不能进行数据审核",
                 error_code="BIZ_203"
             )
 
         old_status = request.status
-        new_status = "data_review" if review_data.action == "approve" else "rejected"
+        # 数据审核通过后进入 finance_approve，拒绝则进入 rejected
+        new_status = TopupStatus.FINANCE_APPROVE.value if review_data.action == "approve" else TopupStatus.REJECTED.value
 
         # 更新审核信息
         request.data_reviewed_by = current_user.id
@@ -250,15 +257,17 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "finance_approve")
 
-        # 检查状态流转
-        if request.status not in ["data_review"]:
+        # 检查状态流转 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        if request.status != TopupStatus.FINANCE_APPROVE.value:
             raise BusinessLogicError(
                 f"当前状态({request.status})不能进行财务审批",
                 error_code="BIZ_203"
             )
 
         old_status = request.status
-        new_status = "finance_approve" if approval_data.action == "approve" else "rejected"
+        # 财务审批通过后保持 finance_approve（等待打款），拒绝则进入 rejected
+        # 注：这里保持在 finance_approve 状态，下一步是 mark_as_paid
+        new_status = TopupStatus.FINANCE_APPROVE.value if approval_data.action == "approve" else TopupStatus.REJECTED.value
 
         # 更新审批信息
         request.finance_approved_by = current_user.id
@@ -295,8 +304,8 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "finance_approve")
 
-        # 检查状态
-        if request.status != "finance_approve":
+        # 检查状态 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        if request.status != TopupStatus.FINANCE_APPROVE.value:
             raise BusinessLogicError(
                 f"当前状态({request.status})不能标记为已打款",
                 error_code="BIZ_203"
@@ -306,9 +315,9 @@ class TopupService:
         if request.paid_at:
             raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ_207")
 
-        # 更新打款信息
+        # 更新打款信息 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
         request.paid_at = datetime.utcnow()
-        request.status = "paid"
+        request.status = TopupStatus.PAID.value
         if paid_data.transaction_id:
             request.transaction_id = paid_data.transaction_id
 
@@ -317,8 +326,8 @@ class TopupService:
             request_id=request_id,
             action="paid",
             actor=current_user,
-            previous_status="finance_approve",
-            new_status="paid",
+            previous_status=TopupStatus.FINANCE_APPROVE.value,
+            new_status=TopupStatus.PAID.value,
             notes=paid_data.notes,
             ip_address=ip_address,
             user_agent=user_agent
@@ -344,10 +353,10 @@ class TopupService:
         if receipt_data.transaction_id:
             request.transaction_id = receipt_data.transaction_id
 
-        # 如果已打款但未完成，更新为完成
-        if request.status == "paid" and not request.completed_at:
+        # 如果已打款但未完成，更新为完成 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        if request.status == TopupStatus.PAID.value and not request.completed_at:
             request.completed_at = datetime.utcnow()
-            request.status = "completed"
+            request.status = TopupStatus.COMPLETED.value
 
             # 创建交易记录
             transaction = TopupTransaction(
@@ -368,8 +377,8 @@ class TopupService:
                 request_id=request_id,
                 action="completed",
                 actor=current_user,
-                previous_status="paid",
-                new_status="completed",
+                previous_status=TopupStatus.PAID.value,
+                new_status=TopupStatus.COMPLETED.value,
                 notes="上传凭证后自动完成",
                 ip_address=ip_address,
                 user_agent=user_agent
@@ -422,15 +431,15 @@ class TopupService:
         if end_date:
             base_query = base_query.filter(TopupRequest.created_at <= end_date + timedelta(days=1))
 
-        # 基础统计
+        # 基础统计 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
         total_requests = base_query.count()
-        pending_requests = base_query.filter(TopupRequest.status == "pending").count()
-        data_review_requests = base_query.filter(TopupRequest.status == "data_review").count()
-        finance_approve_requests = base_query.filter(TopupRequest.status == "finance_approve").count()
-        approved_requests = base_query.filter(TopupRequest.status == "finance_approve").count()
-        paid_requests = base_query.filter(TopupRequest.status == "paid").count()
-        completed_requests = base_query.filter(TopupRequest.status == "completed").count()
-        rejected_requests = base_query.filter(TopupRequest.status == "rejected").count()
+        pending_requests = base_query.filter(TopupRequest.status == TopupStatus.PENDING_REVIEW.value).count()
+        draft_requests = base_query.filter(TopupRequest.status == TopupStatus.DRAFT.value).count()
+        finance_approve_requests = base_query.filter(TopupRequest.status == TopupStatus.FINANCE_APPROVE.value).count()
+        approved_requests = base_query.filter(TopupRequest.status == TopupStatus.FINANCE_APPROVE.value).count()
+        paid_requests = base_query.filter(TopupRequest.status == TopupStatus.PAID.value).count()
+        completed_requests = base_query.filter(TopupRequest.status == TopupStatus.COMPLETED.value).count()
+        rejected_requests = base_query.filter(TopupRequest.status == TopupStatus.REJECTED.value).count()
 
         # 金额统计
         total_amount_requested = base_query.with_entities(
@@ -438,13 +447,13 @@ class TopupService:
         ).scalar() or Decimal(0)
 
         total_amount_approved = base_query.filter(
-            TopupRequest.status.in_(["finance_approve", "paid", "completed"])
+            TopupRequest.status.in_([TopupStatus.FINANCE_APPROVE.value, TopupStatus.PAID.value, TopupStatus.COMPLETED.value])
         ).with_entities(
             func.coalesce(func.sum(TopupRequest.actual_amount), 0)
         ).scalar() or Decimal(0)
 
         total_amount_paid = base_query.filter(
-            TopupRequest.status.in_(["paid", "completed"])
+            TopupRequest.status.in_([TopupStatus.PAID.value, TopupStatus.COMPLETED.value])
         ).with_entities(
             func.coalesce(func.sum(TopupRequest.actual_amount), 0)
         ).scalar() or Decimal(0)
@@ -458,10 +467,10 @@ class TopupService:
             TopupRequest.urgency_level == "high"
         ).count()
 
-        # 逾期统计
+        # 逾期统计 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
         overdue_requests = base_query.filter(
             and_(
-                TopupRequest.status.in_(["pending", "data_review", "finance_approve"]),
+                TopupRequest.status.in_([TopupStatus.PENDING_REVIEW.value, TopupStatus.FINANCE_APPROVE.value]),
                 TopupRequest.expected_date < date.today()
             )
         ).count()
@@ -477,7 +486,7 @@ class TopupService:
         return TopupStatisticsResponse(
             total_requests=total_requests,
             pending_requests=pending_requests,
-            data_review_requests=data_review_requests,
+            data_review_requests=draft_requests,  # 使用 draft_requests
             finance_approve_requests=finance_approve_requests,
             approved_requests=approved_requests,
             paid_requests=paid_requests,
@@ -504,15 +513,15 @@ class TopupService:
         base_query = self.db.query(TopupRequest)
         base_query = self._apply_permission_filter(base_query, current_user)
 
-        # 待办事项
-        pending_reviews = base_query.filter(TopupRequest.status == "pending").count()
-        pending_approvals = base_query.filter(TopupRequest.status == "data_review").count()
-        pending_payments = base_query.filter(TopupRequest.status == "finance_approve").count()
+        # 待办事项 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        pending_reviews = base_query.filter(TopupRequest.status == TopupStatus.PENDING_REVIEW.value).count()
+        pending_approvals = base_query.filter(TopupRequest.status == TopupStatus.FINANCE_APPROVE.value).count()
+        pending_payments = base_query.filter(TopupRequest.status == TopupStatus.PAID.value).count()
 
         # 逾期项
         overdue_items = base_query.filter(
             and_(
-                TopupRequest.status.in_(["pending", "data_review", "finance_approve"]),
+                TopupRequest.status.in_([TopupStatus.PENDING_REVIEW.value, TopupStatus.FINANCE_APPROVE.value]),
                 TopupRequest.expected_date < date.today()
             )
         ).count()
@@ -549,7 +558,7 @@ class TopupService:
             TopupRequest.completed_at >= month_start
         ).count()
 
-        # 近期申请
+        # 近期申请 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
         recent_requests = (
             base_query
             .options(
@@ -557,7 +566,7 @@ class TopupService:
                 joinedload(TopupRequest.project),
                 joinedload(TopupRequest.requester)
             )
-            .filter(TopupRequest.status != "completed")
+            .filter(TopupRequest.status != TopupStatus.COMPLETED.value)
             .order_by(desc(TopupRequest.created_at))
             .limit(5)
             .all()
@@ -599,7 +608,7 @@ class TopupService:
             .filter(
                 and_(
                     TopupRequest.ad_account_id == ad_account_id,
-                    TopupRequest.status == "completed"
+                    TopupRequest.status == TopupStatus.COMPLETED.value
                 )
             )
             .scalar() or Decimal(0)
@@ -685,17 +694,17 @@ class TopupService:
         if not ad_account:
             raise ResourceNotFoundError("广告账户不存在", error_code="SYS_004")
 
-        # 管理员和财务可以访问所有账户
-        if current_user.role in ["admin", "finance", "data_operator"]:
+        # 管理员和财务可以访问所有账户 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
             return ad_account
 
         # 账户管理员可以访问自己项目的账户
-        if current_user.role == "account_manager":
+        if current_user.role == UserRole.ACCOUNT_MANAGER.value:
             if ad_account.project and ad_account.project.account_manager_id == current_user.id:
                 return ad_account
 
         # 媒体买家可以访问分配给自己的账户
-        if current_user.role == "media_buyer":
+        if current_user.role == UserRole.MEDIA_BUYER.value:
             if ad_account.assigned_user_id == current_user.id:
                 return ad_account
 
@@ -710,7 +719,7 @@ class TopupService:
             .filter(
                 and_(
                     TopupRequest.ad_account_id == ad_account_id,
-                    TopupRequest.status == "completed"
+                    TopupRequest.status == TopupStatus.COMPLETED.value
                 )
             )
             .scalar() or Decimal(0)
@@ -745,13 +754,13 @@ class TopupService:
             )
 
     def _apply_permission_filter(self, query, current_user: User):
-        """应用权限过滤"""
+        """应用权限过滤 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)"""
         # 管理员和财务可以查看所有
-        if current_user.role in ["admin", "finance", "data_operator"]:
+        if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
             return query
 
         # 账户管理员查看自己项目的申请
-        if current_user.role == "account_manager":
+        if current_user.role == UserRole.ACCOUNT_MANAGER.value:
             project_ids = (
                 self.db.query(Project.id)
                 .filter(Project.account_manager_id == current_user.id)
@@ -760,25 +769,25 @@ class TopupService:
             return query.filter(TopupRequest.project_id.in_(project_ids))
 
         # 媒体买家查看自己的申请
-        if current_user.role == "media_buyer":
+        if current_user.role == UserRole.MEDIA_BUYER.value:
             return query.filter(TopupRequest.requested_by == current_user.id)
 
         # 默认返回空查询
         return query.filter(False)
 
     def _check_request_access(self, request: TopupRequest, current_user: User):
-        """检查充值申请访问权限"""
+        """检查充值申请访问权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)"""
         # 管理员和财务可以访问所有
-        if current_user.role in ["admin", "finance", "data_operator"]:
+        if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
             return
 
         # 账户管理员查看自己项目的申请
-        if current_user.role == "account_manager":
+        if current_user.role == UserRole.ACCOUNT_MANAGER.value:
             if request.project and request.project.account_manager_id == current_user.id:
                 return
 
         # 媒体买家查看自己的申请
-        if current_user.role == "media_buyer":
+        if current_user.role == UserRole.MEDIA_BUYER.value:
             if request.requested_by == current_user.id:
                 return
 
@@ -793,11 +802,11 @@ class TopupService:
         """获取可操作的充值申请"""
         request = self.get_request_by_id(request_id, current_user)
 
-        # 验证操作权限
-        if action == "data_review" and current_user.role != "data_operator":
+        # 验证操作权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        if action == "data_review" and current_user.role != UserRole.DATA_OPERATOR.value:
             raise PermissionDeniedError("只有数据员可以进行数据审核", error_code="BIZ_206")
 
-        if action == "finance_approve" and current_user.role != "finance":
+        if action == "finance_approve" and current_user.role != UserRole.FINANCE.value:
             raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ_206")
 
         return request
@@ -832,7 +841,7 @@ class TopupService:
         # 计算平均处理时间
         completed_requests = query.filter(
             and_(
-                TopupRequest.status == "completed",
+                TopupRequest.status == TopupStatus.COMPLETED.value,
                 TopupRequest.completed_at.isnot(None)
             )
         ).all()
@@ -848,10 +857,10 @@ class TopupService:
 
         avg_processing_time = total_hours / len(completed_requests)
 
-        # 计算成功率
+        # 计算成功率 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
         total_count = query.count()
         success_count = query.filter(
-            TopupRequest.status == "completed"
+            TopupRequest.status == TopupStatus.COMPLETED.value
         ).count()
 
         success_rate = (success_count / total_count * 100) if total_count > 0 else 0.0

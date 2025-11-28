@@ -14,16 +14,34 @@ from backend.models.mixins.serializable import SerializableMixin
 
 class LedgerEntry(Base, SerializableMixin):
     """
-    总账分录表 - 记录所有资金流水
+    总账分录表 - 双账本记录所有资金流水
+
+    必须与 LEDGER_SOT.md v1.1 第2.2节保持严格一致。
+
+    双账本设计：
+    - PROJECT账本：记录项目收入（REVENUE, TOPUP, REVERSAL）
+    - SUPPLIER账本：记录供应商成本（COST, TOPUP, TRANSFER_OUT, TRANSFER_IN, REVERSAL）
+
+    6种分录类型：
+    - REVENUE: 项目收入（PROJECT账本，正数）
+    - COST: 供应商成本（SUPPLIER账本，负数）
+    - TOPUP: 充值（两账本通用，正数）
+    - TRANSFER_OUT: 转出（SUPPLIER账本，负数）
+    - TRANSFER_IN: 转入（SUPPLIER账本，正数）
+    - REVERSAL: 红冲（两账本通用，负数）
 
     字段：
     - id: 主键
-    - ad_account_id: 广告账户ID（外键）
-    - entry_type: 分录类型（topup_received/spend/adjustment）
+    - ledger_type: 账本类型（PROJECT/SUPPLIER）
+    - project_id: 项目ID（PROJECT账本必填）
+    - supplier_id: 供应商ID（SUPPLIER账本必填）
+    - entry_type: 分录类型（6种）
     - amount: 金额
     - balance_after: 交易后余额
     - reference_id: 关联记录ID
     - reference_type: 关联记录类型
+    - performed_by: 操作人ID
+    - reason: 操作原因
     - notes: 备注
     - entry_date: 分录日期
     - created_at: 创建时间
@@ -78,10 +96,10 @@ class LedgerEntry(Base, SerializableMixin):
         doc="所属广告账户"
     )
 
-    # 约束和索引
+    # 约束和索引 - 必须与 LEDGER_SOT.md v1.1 第2.2节保持一致
     __table_args__ = (
         CheckConstraint(
-            "entry_type IN ('topup_received', 'spend', 'adjustment')",
+            "entry_type IN ('REVENUE', 'COST', 'TOPUP', 'TRANSFER_OUT', 'TRANSFER_IN', 'REVERSAL')",
             name='chk_ledger_entries_entry_type'
         ),
         Index('idx_ledger_entries_ad_account_id', 'ad_account_id'),
@@ -92,7 +110,7 @@ class LedgerEntry(Base, SerializableMixin):
     def __repr__(self):
         return f"<LedgerEntry(id={self.id}, account_id={self.ad_account_id}, type='{self.entry_type}', amount={self.amount})>"
 
-    # ========== 业务属性 ==========
+    # ========== 业务属性（6分录类型）==========
 
     @property
     def entry_type_enum(self) -> LedgerEntryType:
@@ -100,19 +118,57 @@ class LedgerEntry(Base, SerializableMixin):
         return LedgerEntryType(self.entry_type)
 
     @property
+    def is_revenue(self) -> bool:
+        """是否是收入（PROJECT账本）"""
+        return self.entry_type == LedgerEntryType.REVENUE.value
+
+    @property
+    def is_cost(self) -> bool:
+        """是否是成本（SUPPLIER账本）"""
+        return self.entry_type == LedgerEntryType.COST.value
+
+    @property
     def is_topup(self) -> bool:
         """是否是充值"""
-        return self.entry_type == LedgerEntryType.TOPUP_RECEIVED.value
+        return self.entry_type == LedgerEntryType.TOPUP.value
 
     @property
-    def is_spend(self) -> bool:
-        """是否是消耗"""
-        return self.entry_type == LedgerEntryType.SPEND.value
+    def is_transfer_out(self) -> bool:
+        """是否是转出（SUPPLIER账本）"""
+        return self.entry_type == LedgerEntryType.TRANSFER_OUT.value
 
     @property
-    def is_adjustment(self) -> bool:
-        """是否是调整"""
-        return self.entry_type == LedgerEntryType.ADJUSTMENT.value
+    def is_transfer_in(self) -> bool:
+        """是否是转入（SUPPLIER账本）"""
+        return self.entry_type == LedgerEntryType.TRANSFER_IN.value
+
+    @property
+    def is_reversal(self) -> bool:
+        """是否是红冲"""
+        return self.entry_type == LedgerEntryType.REVERSAL.value
+
+    # ========== 金额方向验证（LEDGER_SOT.md v1.1 第4章）==========
+
+    def validate_amount_direction(self) -> bool:
+        """
+        验证金额方向是否正确（不可变量检查）
+
+        金额方向绝对规则：
+        - REVENUE: 正数（收入增加）
+        - COST: 负数（成本增加）
+        - TOPUP: 正数（充值增加）
+        - TRANSFER_OUT: 负数（余额减少）
+        - TRANSFER_IN: 正数（余额增加）
+        - REVERSAL: 负数（冲销）
+        """
+        positive_types = [LedgerEntryType.REVENUE.value, LedgerEntryType.TOPUP.value, LedgerEntryType.TRANSFER_IN.value]
+        negative_types = [LedgerEntryType.COST.value, LedgerEntryType.TRANSFER_OUT.value, LedgerEntryType.REVERSAL.value]
+
+        if self.entry_type in positive_types:
+            return self.amount >= 0
+        elif self.entry_type in negative_types:
+            return self.amount <= 0
+        return False
 
     # ========== 查询作用域方法 ==========
 
