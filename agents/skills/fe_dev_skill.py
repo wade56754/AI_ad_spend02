@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional
 import json
 import logging
 import os
+import threading
 
 from ..agents_config import SOT_FILES, FRONTEND_DIR, LLM_CONFIG, read_optional
 from ..tools.fs_tool import read_files
@@ -12,28 +13,71 @@ from ..tools.claude_code_adapter import call_claude_code, ClaudeCodeClient
 logger = logging.getLogger(__name__)
 
 # LLM Client (支持两种模式：Anthropic API 或 Claude Code CLI)
+# Thread-safe singleton pattern using lock
 _client: Optional[Any] = None
+_client_lock = threading.Lock()
 _use_claude_code: bool = not os.environ.get("ANTHROPIC_API_KEY")
 
 
 def _get_client() -> Any:
     """
-    获取 LLM client 单例。
+    获取 LLM client 单例（线程安全）。
 
     优先级：
     1. 如果设置了 ANTHROPIC_API_KEY，使用 Anthropic API
     2. 否则使用 Claude Code CLI 适配器
+
+    Thread Safety:
+        Uses double-checked locking pattern to ensure thread-safe
+        singleton initialization without performance overhead.
     """
     global _client, _use_claude_code
-    if _client is None:
-        if _use_claude_code:
-            logger.info("Using Claude Code CLI adapter (no ANTHROPIC_API_KEY found)")
-            _client = ClaudeCodeClient()
-        else:
-            from anthropic import Anthropic
-            logger.info("Using Anthropic API")
-            _client = Anthropic()
+
+    # Fast path: client already initialized
+    if _client is not None:
+        return _client
+
+    # Slow path: acquire lock and initialize
+    with _client_lock:
+        # Double-check after acquiring lock
+        if _client is None:
+            if _use_claude_code:
+                logger.info("Using Claude Code CLI adapter (no ANTHROPIC_API_KEY found)")
+                _client = ClaudeCodeClient()
+            else:
+                from anthropic import Anthropic
+                logger.info("Using Anthropic API")
+                _client = Anthropic()
     return _client
+
+
+def _extract_response_text(resp: Any) -> str:
+    """
+    Extract text content from LLM API response.
+
+    Handles both Anthropic API response format and ClaudeCodeClient mock response.
+
+    Args:
+        resp: Response object from LLM API call
+
+    Returns:
+        Extracted text content as string
+    """
+    if not hasattr(resp, "content"):
+        return str(resp)
+
+    text_parts: List[str] = []
+    for item in resp.content:
+        # Handle list of blocks (some API versions)
+        if isinstance(item, list):
+            for block in item:
+                if getattr(block, "type", None) == "text":
+                    text_parts.append(block.text)
+        # Handle single block
+        elif getattr(item, "type", None) == "text":
+            text_parts.append(item.text)
+
+    return "".join(text_parts)
 
 
 def _build_fe_prompt(task: str, existing_files: Dict[str, str]) -> str:
@@ -181,27 +225,26 @@ def fe_dev_skill(task: str, target_files: List[str]) -> SkillResult:
             "error": f"LLM API error: {e}",
         }
 
-    # 提取响应文本
-    text = "".join(
-        block.text
-        for msg in resp.content
-        for block in (msg if isinstance(msg, list) else [msg])
-        if getattr(block, "type", None) == "text"
-    ) if hasattr(resp, "content") else str(resp)
-
+    # 提取响应文本（P2-8: refactored for readability）
+    text = _extract_response_text(resp)
     logger.debug(f"API response received: {len(text)} chars")
 
-    # 解析 JSON
+    # 解析 JSON（P2-8: improved error handling）
     try:
         data = json.loads(text)
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON parsing failed: {e}")
-        return {
-            "success": False,
-            "data": None,
-            "error": "模型返回内容不是合法 JSON",
-            "raw": text[:500],  # 保留前500字符便于调试
-        }
+    except json.JSONDecodeError as parse_error:
+        # Try to extract JSON from markdown code blocks or embedded JSON
+        from ..tools.claude_code_adapter import _extract_json
+        try:
+            data = _extract_json(text)
+        except json.JSONDecodeError:
+            logger.error(f"JSON parsing failed: {parse_error}")
+            return {
+                "success": False,
+                "data": None,
+                "error": f"模型返回内容不是合法 JSON: {str(parse_error)[:100]}",
+                "raw": text[:500],  # 保留前500字符便于调试
+            }
 
     # 提取 changes
     changes_spec = data.get("changes", [])

@@ -13,8 +13,8 @@ Claude Code CLI 适配器：通过 subprocess 调用 claude 命令行工具，
 import subprocess
 import json
 import logging
-import tempfile
 import os
+import re
 from typing import Optional, Dict, Any
 from pathlib import Path
 
@@ -95,24 +95,12 @@ def call_claude_code(
     timeout = timeout or CLAUDE_CODE_CONFIG["timeout"]
     cwd = str(working_dir) if working_dir else None
 
-    # 使用临时文件存储长提示词（避免命令行长度限制）
-    with tempfile.NamedTemporaryFile(
-        mode="w",
-        suffix=".txt",
-        delete=False,
-        encoding="utf-8",
-    ) as f:
-        f.write(prompt)
-        prompt_file = f.name
+    logger.info(f"Calling Claude Code CLI: timeout={timeout}s")
+    logger.debug(f"Prompt length: {len(prompt)} chars")
 
     try:
-        # 构建命令：claude -p "$(cat prompt_file)" --output-format text
-        # Windows 兼容方式：直接读取文件内容作为参数
-        logger.info(f"Calling Claude Code CLI: timeout={timeout}s")
-        logger.debug(f"Prompt length: {len(prompt)} chars")
-
         # 使用 -p 参数传递提示词（print mode，非交互）
-        # 添加 --no-input 避免交互式输入
+        # Note: For very long prompts, consider using stdin instead
         cmd = [
             claude_cli,
             "-p", prompt,  # 直接传递提示词
@@ -129,12 +117,13 @@ def call_claude_code(
         )
 
         if result.returncode != 0:
-            logger.error(f"Claude CLI error: {result.stderr}")
+            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+            logger.error(f"Claude CLI error (exit code {result.returncode}): {error_msg}")
             return {
                 "success": False,
                 "content": result.stdout,
                 "data": None,
-                "error": f"Claude CLI 返回错误: {result.stderr}",
+                "error": f"Claude CLI 返回错误 (exit {result.returncode}): {error_msg[:200]}",
             }
 
         content = result.stdout.strip()
@@ -142,19 +131,22 @@ def call_claude_code(
 
         # 解析 JSON（如果需要）
         data = None
+        parse_error = None
         if output_format == "json":
             try:
                 # 尝试从响应中提取 JSON
                 data = _extract_json(content)
             except json.JSONDecodeError as e:
-                logger.warning(f"JSON parsing failed: {e}")
-                # 不返回错误，保留原始内容
+                parse_error = str(e)
+                logger.warning(f"JSON parsing failed: {e}. Content preview: {content[:100]}...")
+                # 不返回错误，保留原始内容供调用者处理
 
         return {
             "success": True,
             "content": content,
             "data": data,
             "error": None,
+            "parse_warning": parse_error,  # 新增：JSON 解析警告
         }
 
     except subprocess.TimeoutExpired:
@@ -163,22 +155,24 @@ def call_claude_code(
             "success": False,
             "content": "",
             "data": None,
-            "error": f"Claude CLI 超时（{timeout}秒）",
+            "error": f"Claude CLI 超时（{timeout}秒）。考虑增加 timeout 参数或简化 prompt。",
         }
-    except Exception as e:
-        logger.error(f"Claude CLI exception: {e}")
+    except FileNotFoundError:
+        logger.error(f"Claude CLI not found at: {claude_cli}")
         return {
             "success": False,
             "content": "",
             "data": None,
-            "error": f"Claude CLI 异常: {str(e)}",
+            "error": f"Claude CLI 可执行文件未找到: {claude_cli}。请确保已正确安装。",
         }
-    finally:
-        # 清理临时文件
-        try:
-            os.unlink(prompt_file)
-        except OSError:
-            pass
+    except Exception as e:
+        logger.error(f"Claude CLI exception: {type(e).__name__}: {e}")
+        return {
+            "success": False,
+            "content": "",
+            "data": None,
+            "error": f"Claude CLI 异常 ({type(e).__name__}): {str(e)[:200]}",
+        }
 
 
 def _extract_json(text: str) -> Any:
@@ -208,7 +202,6 @@ def _extract_json(text: str) -> Any:
         pass
 
     # 2. 尝试提取 Markdown 代码块
-    import re
     code_block_pattern = r"```(?:json)?\s*\n?([\s\S]*?)\n?```"
     matches = re.findall(code_block_pattern, text)
     for match in matches:
@@ -360,4 +353,5 @@ __all__ = [
     "check_claude_code_available",
     "ClaudeCodeClient",
     "CLAUDE_CODE_CONFIG",
+    "_extract_json",  # Used by fe_dev_skill/be_dev_skill for fallback JSON parsing
 ]

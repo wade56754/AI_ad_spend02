@@ -61,6 +61,7 @@ def _default_base_path() -> Path:
 
 # 项目根路径（供外部导入使用）
 BASE_PATH = _default_base_path()
+PROJECT_ROOT = BASE_PATH  # Alias for compatibility with sot_guard_skill.py
 
 # 前后端代码目录
 BACKEND_DIR = BASE_PATH / "backend"
@@ -103,12 +104,27 @@ SOT_FILES: Dict[str, Path] = {
 }
 
 
-def read_optional(path: Path) -> str:
+logger = logging.getLogger(__name__)
+
+# Critical SoT files that should trigger warnings when missing
+CRITICAL_SOT_FILES = {
+    "STATE_MACHINE", "DATA_SCHEMA", "BUSINESS_RULES",
+    "API_SOT", "ERROR_CODES", "LEDGER_SOT",
+}
+
+# Track which missing files have been warned about (avoid duplicate warnings)
+_warned_missing_files: set = set()
+
+
+def read_optional(path: Path, warn_if_critical: bool = True) -> str:
     """
     读取文件内容，如果文件不存在则返回空字符串。
 
+    P2 增强：对关键 SoT 文件缺失发出警告（每个文件只警告一次）。
+
     Args:
         path: 文件路径
+        warn_if_critical: 是否在关键文件缺失时发出警告（默认 True）
 
     Returns:
         文件内容，或空字符串（文件不存在时）
@@ -116,9 +132,34 @@ def read_optional(path: Path) -> str:
     try:
         if path.exists():
             return path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, PermissionError, OSError):
-        pass
+        else:
+            # P2-10: Add warning for missing critical SoT files
+            if warn_if_critical:
+                _warn_if_critical_missing(path)
+    except (UnicodeDecodeError, PermissionError, OSError) as e:
+        logger.warning(f"Error reading file {path}: {e}")
     return ""
+
+
+def _warn_if_critical_missing(path: Path) -> None:
+    """
+    Check if a missing file is a critical SoT file and warn if so.
+
+    Only warns once per file path to avoid log spam.
+    """
+    global _warned_missing_files
+
+    # Check if this is a critical SoT file
+    for sot_key, sot_path in SOT_FILES.items():
+        if sot_path == path and sot_key in CRITICAL_SOT_FILES:
+            if str(path) not in _warned_missing_files:
+                _warned_missing_files.add(str(path))
+                logger.warning(
+                    f"[SoT Warning] Critical SoT file missing: {path.name} "
+                    f"(key: {sot_key}). Agent operations may use default values "
+                    "which could be outdated. Ensure SoT documents exist."
+                )
+            break
 
 
 # === LLM 配置常量 ===
@@ -383,10 +424,12 @@ __all__ = [
     "list_agents",
     # 项目路径
     "BASE_PATH",
+    "PROJECT_ROOT",  # Alias for BASE_PATH
     "BACKEND_DIR",
     "FRONTEND_DIR",
     # SoT 文档配置
     "SOT_FILES",
+    "CRITICAL_SOT_FILES",
     # LLM 配置
     "LLM_CONFIG",
     "get_llm_backend",

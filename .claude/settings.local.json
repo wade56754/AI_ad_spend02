@@ -116,7 +116,11 @@
       "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\frontend\\tests\\unit\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\frontend\\tests\\unit\")",
       "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\frontend\\tests\\integration\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\frontend\\tests\\integration\")",
       "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\frontend\\tests\\e2e\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\frontend\\tests\\e2e\")",
-      "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\frontend\\public\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\frontend\\public\")"
+      "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\frontend\\public\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\frontend\\public\")",
+      "Bash(tree:*)",
+      "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" rev-parse --show-toplevel)",
+      "Bash(more:*)",
+      "Bash(D:)"
     ],
     "deny": [],
     "ask": []

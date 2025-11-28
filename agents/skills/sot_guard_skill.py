@@ -1,5 +1,5 @@
 """
-SoT 守门员 Skill - 最小可用版本
+SoT 守门员 Skill - P2 增强版
 
 职责：
 - 验证 AI 生成的代码是否违反 SoT 规则
@@ -11,20 +11,48 @@ SoT 守门员 Skill - 最小可用版本
 - ERROR_CODES_SOT.md v2.1
 - DATA_SCHEMA.md v5.2
 - LEDGER_SOT.md v1.1 (双账本)
+
+P2 增强：
+- 支持动态解析 SoT 文档获取枚举值
+- 解析失败时回退到硬编码默认值
+- 增加 SoT 文件缺失警告
 """
 
 from typing import Dict, List, Any, Optional, Set
 from dataclasses import dataclass, field
+from pathlib import Path
 import re
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-# === SoT 常量定义（来自 STATE_MACHINE.md v2.6）===
+# === SoT 文档路径配置 ===
+# 尝试从 agents_config 导入，失败则使用默认路径
+try:
+    from ..agents_config import SOT_FILES, read_optional, PROJECT_ROOT
+except ImportError:
+    # Fallback for standalone usage
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+    SOT_FILES = {
+        "STATE_MACHINE": PROJECT_ROOT / "docs" / "2.sot" / "STATE_MACHINE.md",
+        "ERROR_CODES": PROJECT_ROOT / "docs" / "2.sot" / "ERROR_CODES_SOT.md",
+        "DATA_SCHEMA": PROJECT_ROOT / "docs" / "2.sot" / "DATA_SCHEMA.md",
+        "LEDGER_SOT": PROJECT_ROOT / "docs" / "2.sot" / "LEDGER_SOT.md",
+    }
 
-# 日报 8 状态机
-DAILY_REPORT_STATES: Set[str] = {
+    def read_optional(path: Path) -> str:
+        """Fallback read_optional implementation."""
+        try:
+            return path.read_text(encoding="utf-8") if path.exists() else ""
+        except Exception:
+            return ""
+
+
+# === 硬编码默认值（来自 STATE_MACHINE.md v2.6）===
+# 这些值作为 SoT 解析失败时的回退
+
+DEFAULT_DAILY_REPORT_STATES: Set[str] = {
     "raw_submitted",
     "trend_pending",
     "trend_ok",
@@ -35,8 +63,7 @@ DAILY_REPORT_STATES: Set[str] = {
     "final_locked",
 }
 
-# 日报状态流转白名单
-DAILY_REPORT_TRANSITIONS: Dict[str, List[str]] = {
+DEFAULT_DAILY_REPORT_TRANSITIONS: Dict[str, List[str]] = {
     "raw_submitted": ["trend_pending"],
     "trend_pending": ["trend_ok", "trend_flagged"],
     "trend_ok": ["final_pending"],
@@ -47,8 +74,7 @@ DAILY_REPORT_TRANSITIONS: Dict[str, List[str]] = {
     "final_locked": [],  # 终态，不可再流转
 }
 
-# 项目状态枚举
-PROJECT_STATES: Set[str] = {
+DEFAULT_PROJECT_STATES: Set[str] = {
     "draft",
     "active",
     "paused",
@@ -56,8 +82,7 @@ PROJECT_STATES: Set[str] = {
     "archived",
 }
 
-# 充值状态枚举
-TOPUP_STATES: Set[str] = {
+DEFAULT_TOPUP_STATES: Set[str] = {
     "pending",
     "approved",
     "rejected",
@@ -65,14 +90,12 @@ TOPUP_STATES: Set[str] = {
     "cancelled",
 }
 
-# 账本类型枚举
-LEDGER_TYPES: Set[str] = {
+DEFAULT_LEDGER_TYPES: Set[str] = {
     "PROJECT",
     "SUPPLIER",
 }
 
-# 分录类型枚举
-ENTRY_TYPES: Set[str] = {
+DEFAULT_ENTRY_TYPES: Set[str] = {
     "RECHARGE",
     "SPEND",
     "ADJUST",
@@ -80,14 +103,271 @@ ENTRY_TYPES: Set[str] = {
     "TRANSFER_IN",
 }
 
-# 用户角色枚举
-USER_ROLES: Set[str] = {
+DEFAULT_USER_ROLES: Set[str] = {
     "admin",
     "finance",
     "data_operator",
     "account_manager",
     "media_buyer",
 }
+
+DEFAULT_ERROR_CODE_PREFIXES: Set[str] = {
+    "VAL", "AUTH", "BIZ", "SYS", "DB", "API", "LED", "SM", "REC", "TRF"
+}
+
+DEFAULT_KNOWN_TABLES: Set[str] = {
+    "users", "projects", "ad_accounts", "daily_reports",
+    "ledger_entries", "topup_requests", "reconciliations",
+    "transfers", "audit_logs", "channels", "project_channels",
+}
+
+
+# === 动态 SoT 解析器 ===
+
+class SotParser:
+    """
+    从 SoT 文档中动态解析枚举值。
+
+    P2 增强：优先从 SoT 文档解析，解析失败时退回硬编码默认值。
+    """
+
+    _instance: Optional["SotParser"] = None
+    _cached: bool = False
+
+    # 解析后的值
+    daily_report_states: Set[str] = set()
+    project_states: Set[str] = set()
+    topup_states: Set[str] = set()
+    ledger_types: Set[str] = set()
+    entry_types: Set[str] = set()
+    user_roles: Set[str] = set()
+    error_code_prefixes: Set[str] = set()
+    known_tables: Set[str] = set()
+
+    # 解析状态
+    parse_warnings: List[str] = []
+
+    @classmethod
+    def get_instance(cls) -> "SotParser":
+        """获取单例实例"""
+        if cls._instance is None:
+            cls._instance = SotParser()
+            cls._instance._parse_all()
+        return cls._instance
+
+    def _parse_all(self) -> None:
+        """解析所有 SoT 文档"""
+        if self._cached:
+            return
+
+        self.parse_warnings = []
+
+        # 解析 STATE_MACHINE.md
+        self._parse_state_machine()
+
+        # 解析 DATA_SCHEMA.md
+        self._parse_data_schema()
+
+        # 解析 ERROR_CODES_SOT.md
+        self._parse_error_codes()
+
+        self._cached = True
+
+        if self.parse_warnings:
+            logger.warning(
+                f"SoT Parser: {len(self.parse_warnings)} warnings during parsing. "
+                "Using default values for missing items."
+            )
+            for w in self.parse_warnings[:5]:  # Log first 5
+                logger.warning(f"  - {w}")
+
+    def _parse_state_machine(self) -> None:
+        """从 STATE_MACHINE.md 解析状态枚举"""
+        content = ""
+        if "STATE_MACHINE" in SOT_FILES:
+            content = read_optional(SOT_FILES["STATE_MACHINE"])
+
+        if not content:
+            self.parse_warnings.append("STATE_MACHINE.md not found or empty, using defaults")
+            self.daily_report_states = DEFAULT_DAILY_REPORT_STATES.copy()
+            self.project_states = DEFAULT_PROJECT_STATES.copy()
+            self.topup_states = DEFAULT_TOPUP_STATES.copy()
+            return
+
+        # 尝试解析日报状态（查找 8 状态机相关段落）
+        dr_states = self._extract_enum_from_markdown(
+            content,
+            patterns=[
+                r"日报.*状态.*:\s*([a-z_]+(?:\s*[,→|]\s*[a-z_]+)*)",
+                r"DailyReportStatus.*:\s*`?([a-z_]+(?:\s*[,|]\s*[a-z_]+)*)`?",
+                r"raw_submitted\s*→\s*([a-z_]+(?:\s*→\s*[a-z_]+)*)",
+            ],
+            default=DEFAULT_DAILY_REPORT_STATES
+        )
+        self.daily_report_states = dr_states
+
+        # 尝试解析项目状态
+        proj_states = self._extract_enum_from_markdown(
+            content,
+            patterns=[
+                r"项目状态.*:\s*([a-z_]+(?:\s*[,|]\s*[a-z_]+)*)",
+                r"ProjectStatus.*:\s*([a-z_]+(?:\s*[,|]\s*[a-z_]+)*)",
+            ],
+            default=DEFAULT_PROJECT_STATES
+        )
+        self.project_states = proj_states
+
+        # 尝试解析充值状态
+        topup_states = self._extract_enum_from_markdown(
+            content,
+            patterns=[
+                r"充值.*状态.*:\s*([a-z_]+(?:\s*[,|]\s*[a-z_]+)*)",
+                r"TopupStatus.*:\s*([a-z_]+(?:\s*[,|]\s*[a-z_]+)*)",
+            ],
+            default=DEFAULT_TOPUP_STATES
+        )
+        self.topup_states = topup_states
+
+        # 账本类型和分录类型
+        self.ledger_types = DEFAULT_LEDGER_TYPES.copy()
+        self.entry_types = DEFAULT_ENTRY_TYPES.copy()
+        self.user_roles = DEFAULT_USER_ROLES.copy()
+
+    def _parse_data_schema(self) -> None:
+        """从 DATA_SCHEMA.md 解析表名"""
+        content = ""
+        if "DATA_SCHEMA" in SOT_FILES:
+            content = read_optional(SOT_FILES["DATA_SCHEMA"])
+
+        if not content:
+            self.parse_warnings.append("DATA_SCHEMA.md not found or empty, using default table list")
+            self.known_tables = DEFAULT_KNOWN_TABLES.copy()
+            return
+
+        # 尝试提取表名（从 CREATE TABLE 或 class XXX(Base) 定义）
+        tables = set()
+        table_patterns = [
+            r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)",
+            r"表名[：:]\s*`?(\w+)`?",
+            r"###?\s+(\w+)\s*表",
+        ]
+
+        for pattern in table_patterns:
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            tables.update(m.lower() for m in matches)
+
+        if tables:
+            self.known_tables = tables
+        else:
+            self.parse_warnings.append("Could not parse table names from DATA_SCHEMA.md")
+            self.known_tables = DEFAULT_KNOWN_TABLES.copy()
+
+    def _parse_error_codes(self) -> None:
+        """从 ERROR_CODES_SOT.md 解析错误码前缀"""
+        content = ""
+        if "ERROR_CODES" in SOT_FILES:
+            content = read_optional(SOT_FILES["ERROR_CODES"])
+
+        if not content:
+            self.parse_warnings.append("ERROR_CODES_SOT.md not found or empty, using default prefixes")
+            self.error_code_prefixes = DEFAULT_ERROR_CODE_PREFIXES.copy()
+            return
+
+        # 提取错误码前缀（XXX-NNN 格式）
+        prefixes = set()
+        error_pattern = r'"([A-Z]{2,4})-\d{3}"'
+        matches = re.findall(error_pattern, content)
+        prefixes.update(matches)
+
+        if prefixes:
+            self.error_code_prefixes = prefixes
+        else:
+            self.parse_warnings.append("Could not parse error code prefixes from ERROR_CODES_SOT.md")
+            self.error_code_prefixes = DEFAULT_ERROR_CODE_PREFIXES.copy()
+
+    def _extract_enum_from_markdown(
+        self,
+        content: str,
+        patterns: List[str],
+        default: Set[str]
+    ) -> Set[str]:
+        """
+        尝试从 Markdown 内容中提取枚举值。
+
+        Args:
+            content: Markdown 内容
+            patterns: 正则模式列表
+            default: 解析失败时的默认值
+
+        Returns:
+            提取的枚举集合
+        """
+        for pattern in patterns:
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            if matches:
+                # 将匹配结果分割成单独的值
+                values = set()
+                for match in matches:
+                    # 分割 "a, b, c" 或 "a → b → c" 或 "a | b | c"
+                    parts = re.split(r'\s*[,→|]\s*', match)
+                    values.update(p.strip().lower() for p in parts if p.strip())
+                if values:
+                    return values
+
+        return default.copy()
+
+
+# === 运行时获取 SoT 值的便捷函数 ===
+
+def get_daily_report_states() -> Set[str]:
+    """获取日报状态枚举"""
+    return SotParser.get_instance().daily_report_states
+
+
+def get_project_states() -> Set[str]:
+    """获取项目状态枚举"""
+    return SotParser.get_instance().project_states
+
+
+def get_topup_states() -> Set[str]:
+    """获取充值状态枚举"""
+    return SotParser.get_instance().topup_states
+
+
+def get_known_tables() -> Set[str]:
+    """获取已知表名集合"""
+    return SotParser.get_instance().known_tables
+
+
+def get_error_code_prefixes() -> Set[str]:
+    """获取已知错误码前缀"""
+    return SotParser.get_instance().error_code_prefixes
+
+
+# === 兼容旧 API：模块级变量（从解析器获取） ===
+# 这些变量会在首次访问时初始化
+
+def _init_module_vars():
+    """初始化模块级变量（延迟初始化）"""
+    parser = SotParser.get_instance()
+    return {
+        "DAILY_REPORT_STATES": parser.daily_report_states,
+        "PROJECT_STATES": parser.project_states,
+        "TOPUP_STATES": parser.topup_states,
+        "LEDGER_TYPES": parser.ledger_types,
+        "ENTRY_TYPES": parser.entry_types,
+        "USER_ROLES": parser.user_roles,
+    }
+
+
+# 使用默认值初始化，调用 get_*() 函数获取动态值
+DAILY_REPORT_STATES = DEFAULT_DAILY_REPORT_STATES
+DAILY_REPORT_TRANSITIONS = DEFAULT_DAILY_REPORT_TRANSITIONS
+PROJECT_STATES = DEFAULT_PROJECT_STATES
+TOPUP_STATES = DEFAULT_TOPUP_STATES
+LEDGER_TYPES = DEFAULT_LEDGER_TYPES
+ENTRY_TYPES = DEFAULT_ENTRY_TYPES
+USER_ROLES = DEFAULT_USER_ROLES
 
 
 @dataclass
@@ -149,6 +429,18 @@ def validate_against_sot(changes: Dict[str, str]) -> Dict[str, Any]:
     """
     result = SotGuardResult(passed=True)
 
+    # 触发 SoT 解析（如果尚未解析）
+    parser = SotParser.get_instance()
+
+    # 如果解析时有警告，添加到结果中
+    for warn_msg in parser.parse_warnings:
+        result.warnings.append(SotViolation(
+            file="<sot_parser>",
+            rule="SOT-PARSE-001",
+            severity="P2",
+            detail=warn_msg,
+        ))
+
     for file_path, content in changes.items():
         # P0 检查：状态枚举
         state_violations = check_state_machine_compliance(content, file_path)
@@ -203,6 +495,10 @@ def check_state_machine_compliance(code: str, file_path: str = "") -> List[SotVi
     violations = []
     lines = code.split("\n")
 
+    # 使用动态解析的状态值
+    daily_report_states = get_daily_report_states()
+    project_states = get_project_states()
+
     # 检测日报状态相关代码
     daily_report_patterns = [
         r'status\s*[=:]\s*["\'](\w+)["\']',  # status = "xxx" 或 status: "xxx"
@@ -222,7 +518,7 @@ def check_state_machine_compliance(code: str, file_path: str = "") -> List[SotVi
                 for match in matches:
                     state = match.lower()
                     # 检查是否是已知的日报状态
-                    if state not in DAILY_REPORT_STATES and _looks_like_state(state):
+                    if state not in daily_report_states and _looks_like_state(state):
                         violations.append(SotViolation(
                             file=file_path,
                             rule="SM-DR-001",
@@ -243,7 +539,7 @@ def check_state_machine_compliance(code: str, file_path: str = "") -> List[SotVi
                 matches = re.findall(pattern, line, re.IGNORECASE)
                 for match in matches:
                     state = match.lower()
-                    if state not in PROJECT_STATES and _looks_like_state(state):
+                    if state not in project_states and _looks_like_state(state):
                         violations.append(SotViolation(
                             file=file_path,
                             rule="SM-PROJ-001",
@@ -289,8 +585,6 @@ def check_ledger_compliance(code: str, file_path: str = "") -> List[SotViolation
     ]
 
     for line_num, line in enumerate(lines, 1):
-        line_lower = line.lower()
-
         # 跳过注释
         if line.strip().startswith("#") or line.strip().startswith("//") or line.strip().startswith("--"):
             continue
@@ -343,8 +637,8 @@ def check_error_code_compliance(code: str, file_path: str = "") -> List[SotViola
     # 错误码格式：XXX-NNN（3字母-3数字）
     error_code_pattern = r'["\']([A-Z]{2,4}-\d{3})["\']'
 
-    # 已知的错误码前缀（来自 ERROR_CODES_SOT.md v2.1）
-    known_prefixes = {"VAL", "AUTH", "BIZ", "SYS", "DB", "API", "LED", "SM", "REC", "TRF"}
+    # 使用动态解析的前缀
+    known_prefixes = get_error_code_prefixes()
 
     for line_num, line in enumerate(lines, 1):
         matches = re.findall(error_code_pattern, line)
@@ -379,12 +673,8 @@ def check_data_schema_compliance(code: str, file_path: str = "") -> List[SotViol
     """
     warnings = []
 
-    # 已知的核心表名
-    known_tables = {
-        "users", "projects", "ad_accounts", "daily_reports",
-        "ledger_entries", "topup_requests", "reconciliations",
-        "transfers", "audit_logs", "channels", "project_channels",
-    }
+    # 使用动态解析的表名
+    known_tables = get_known_tables()
 
     # 检测可疑的表定义
     table_pattern = r'class\s+(\w+)\s*\(.*Base.*\)'
@@ -429,3 +719,22 @@ def guard_check(changes: Dict[str, str]) -> Dict[str, Any]:
     等同于 validate_against_sot()，提供更简短的函数名。
     """
     return validate_against_sot(changes)
+
+
+# Export all public functions and classes
+__all__ = [
+    "validate_against_sot",
+    "guard_check",
+    "check_state_machine_compliance",
+    "check_ledger_compliance",
+    "check_error_code_compliance",
+    "check_data_schema_compliance",
+    "SotViolation",
+    "SotGuardResult",
+    "SotParser",
+    "get_daily_report_states",
+    "get_project_states",
+    "get_topup_states",
+    "get_known_tables",
+    "get_error_code_prefixes",
+]

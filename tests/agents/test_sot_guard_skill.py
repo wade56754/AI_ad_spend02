@@ -1,112 +1,278 @@
 """
-SoT 守门员 Skill（预留接口）
+Tests for SoT 守门员 Skill (sot_guard_skill.py)
 
-职责：
-- 验证 AI 生成的代码是否违反 SoT 规则
-- 检测是否发明了 SoT 中不存在的字段/状态/错误码
-- 符合 PATTERNS.md AP-AI-002 要求
+Tests cover:
+- State machine compliance checking
+- Ledger compliance checking
+- Error code compliance checking
+- Data schema compliance checking
+- Dynamic SoT parsing (P2 enhancement)
 """
 
-from typing import Dict, List, Any
+import pytest
+from agents.skills.sot_guard_skill import (
+    validate_against_sot,
+    guard_check,
+    check_state_machine_compliance,
+    check_ledger_compliance,
+    check_error_code_compliance,
+    check_data_schema_compliance,
+    SotViolation,
+    SotGuardResult,
+    get_daily_report_states,
+    get_project_states,
+    get_error_code_prefixes,
+    DEFAULT_DAILY_REPORT_STATES,
+    DEFAULT_ERROR_CODE_PREFIXES,
+)
 
 
-def validate_against_sot(changes: Dict[str, str]) -> Dict[str, Any]:
-    """
-    校验生成的代码是否符合 SoT 规范。
+class TestStateMachineCompliance:
+    """Tests for state machine compliance checking."""
 
-    Args:
-        changes: 文件路径 -> 文件内容的字典
+    def test_valid_daily_report_status(self):
+        """Valid daily report status should not trigger violations."""
+        code = '''
+        report.status = "raw_submitted"
+        report.status = "trend_pending"
+        report.status = "final_locked"
+        '''
+        violations = check_state_machine_compliance(code, "test.py")
+        # Valid states should not generate P0 violations
+        p0_violations = [v for v in violations if v.severity == "P0"]
+        assert len(p0_violations) == 0
 
-    Returns:
-        {
-            "passed": bool,
-            "violations": List[Dict],  # 违规列表
-            "warnings": List[Dict],    # 警告列表
+    def test_invalid_daily_report_status_detected(self):
+        """Invalid daily report status should trigger P0 violation."""
+        code = '''
+        report.status = "invalid_status"
+        daily_report.status = "unknown_state"
+        '''
+        violations = check_state_machine_compliance(code, "test.py")
+        # Should detect invalid states
+        assert len(violations) >= 1
+        assert all(v.severity == "P0" for v in violations)
+        assert all(v.rule == "SM-DR-001" for v in violations)
+
+    def test_project_status_validation(self):
+        """Project status should be validated against SoT."""
+        # Valid
+        valid_code = 'project.status = "active"'
+        violations = check_state_machine_compliance(valid_code, "test.py")
+        p0 = [v for v in violations if v.severity == "P0" and "SM-PROJ" in v.rule]
+        assert len(p0) == 0
+
+    def test_comments_are_skipped(self):
+        """Comments should be skipped in compliance checking."""
+        code = '''
+        # status = "invalid_status"
+        // status = "another_invalid"
+        '''
+        violations = check_state_machine_compliance(code, "test.py")
+        assert len(violations) == 0
+
+
+class TestLedgerCompliance:
+    """Tests for ledger system compliance checking."""
+
+    def test_direct_balance_modification_detected(self):
+        """Direct balance modification should trigger P0 violation."""
+        code = '''
+        project.balance = 1000
+        account.balance += 500
+        balance = balance + 100
+        '''
+        violations = check_ledger_compliance(code, "test.py")
+        assert len(violations) >= 1
+        assert any(v.rule == "LED-001" for v in violations)
+        assert all(v.severity == "P0" for v in violations)
+
+    def test_sql_balance_update_detected(self):
+        """SQL UPDATE on balance should trigger P0 violation."""
+        code = '''
+        UPDATE projects SET balance = 1000 WHERE id = 1
+        '''
+        violations = check_ledger_compliance(code, "test.py")
+        assert len(violations) >= 1
+        assert any(v.rule == "LED-001" for v in violations)
+
+    def test_ledger_entries_update_detected(self):
+        """UPDATE/DELETE on ledger_entries should trigger P0 violation."""
+        code = '''
+        UPDATE ledger_entries SET amount = 100
+        DELETE FROM ledger_entries WHERE id = 1
+        '''
+        violations = check_ledger_compliance(code, "test.py")
+        assert len(violations) >= 2
+        assert all(v.rule == "LED-002" for v in violations)
+
+    def test_ledger_insert_allowed(self):
+        """INSERT into ledger_entries should be allowed."""
+        code = '''
+        INSERT INTO ledger_entries (amount, type) VALUES (100, 'RECHARGE')
+        '''
+        violations = check_ledger_compliance(code, "test.py")
+        assert len(violations) == 0
+
+    def test_comments_are_skipped_in_ledger(self):
+        """SQL comments should be skipped."""
+        code = '''
+        -- UPDATE ledger_entries SET amount = 100
+        # project.balance = 1000
+        '''
+        violations = check_ledger_compliance(code, "test.py")
+        assert len(violations) == 0
+
+
+class TestErrorCodeCompliance:
+    """Tests for error code compliance checking."""
+
+    def test_valid_error_code_prefixes(self):
+        """Known error code prefixes should not trigger warnings."""
+        code = '''
+        raise APIError("VAL-001", "Validation error")
+        return error_response("AUTH-002", "Unauthorized")
+        '''
+        warnings = check_error_code_compliance(code, "test.py")
+        assert len(warnings) == 0
+
+    def test_unknown_error_code_prefix_detected(self):
+        """Unknown error code prefix should trigger P1 warning."""
+        code = '''
+        raise APIError("XYZ-001", "Unknown error")
+        '''
+        warnings = check_error_code_compliance(code, "test.py")
+        assert len(warnings) >= 1
+        assert warnings[0].rule == "ERR-001"
+        assert warnings[0].severity == "P1"
+        assert "XYZ" in warnings[0].detail
+
+
+class TestDataSchemaCompliance:
+    """Tests for data schema compliance checking."""
+
+    def test_known_table_allowed(self):
+        """Known tables should not trigger warnings."""
+        code = '''
+        class DailyReports(Base):
+            __tablename__ = "daily_reports"
+        '''
+        warnings = check_data_schema_compliance(code, "test.py")
+        assert len(warnings) == 0
+
+    def test_unknown_table_detected(self):
+        """Unknown table definitions should trigger P1 warning."""
+        code = '''
+        class UnknownTable(Base):
+            __tablename__ = "unknown_table"
+        '''
+        warnings = check_data_schema_compliance(code, "test.py")
+        assert len(warnings) >= 1
+        assert warnings[0].rule == "SCHEMA-001"
+        assert warnings[0].severity == "P1"
+
+
+class TestValidateAgainstSot:
+    """Integration tests for validate_against_sot function."""
+
+    def test_empty_changes_pass(self):
+        """Empty changes should pass validation."""
+        result = validate_against_sot({})
+        assert result["passed"] is True
+        assert len(result["violations"]) == 0
+
+    def test_clean_code_passes(self):
+        """Clean code following SoT should pass."""
+        changes = {
+            "test.py": '''
+            report.status = "raw_submitted"
+            ledger_entry = LedgerEntry(amount=100, type="RECHARGE")
+            db.add(ledger_entry)
+            '''
         }
+        result = validate_against_sot(changes)
+        # Should pass (no P0 violations)
+        assert result["passed"] is True
 
-        违规/警告格式:
-        {
-            "file": str,           # 文件路径
-            "rule": str,           # 违反的规则（如 "AP-AI-002"）
-            "severity": str,       # "P0" | "P1" | "P2"
-            "detail": str,         # 详细描述
-            "line": Optional[int], # 行号（如果可定位）
+    def test_p0_violations_fail_validation(self):
+        """P0 violations should fail validation."""
+        changes = {
+            "bad_code.py": '''
+            project.balance = 1000  # LED-001: Direct balance modification
+            '''
         }
-    """
-    # TODO: 实现 SoT 规则校验逻辑
-    # 1. 检查状态枚举是否来自 STATE_MACHINE.md
-    # 2. 检查错误码是否来自 ERROR_CODES_SOT.md
-    # 3. 检查数据库字段是否符合 DATA_SCHEMA.md
-    # 4. 检查是否直接修改 balance 字段（违反 LEDGER_SOT.md）
-    # 5. 检查是否绕过账本系统
+        result = validate_against_sot(changes)
+        assert result["passed"] is False
+        assert len(result["violations"]) >= 1
 
-    # 当前版本：占位实现，默认通过
-    return {
-        "passed": True,
-        "violations": [],
-        "warnings": [],
-    }
+    def test_guard_check_alias(self):
+        """guard_check should be alias for validate_against_sot."""
+        changes = {"test.py": "valid = True"}
+        result1 = validate_against_sot(changes)
+        result2 = guard_check(changes)
+        assert result1 == result2
 
 
-def check_state_machine_compliance(code: str) -> List[Dict[str, Any]]:
-    """
-    检查代码中的状态枚举是否符合 STATE_MACHINE.md 定义。
+class TestSotGuardResult:
+    """Tests for SotGuardResult dataclass."""
 
-    Args:
-        code: 代码内容
-
-    Returns:
-        违规列表
-    """
-    # TODO: 实现状态机检查逻辑
-    return []
-
-
-def check_error_code_compliance(code: str) -> List[Dict[str, Any]]:
-    """
-    检查代码中的错误码是否符合 ERROR_CODES_SOT.md 定义。
-
-    Args:
-        code: 代码内容
-
-    Returns:
-        违规列表
-    """
-    # TODO: 实现错误码检查逻辑
-    return []
+    def test_to_dict(self):
+        """to_dict should return proper dictionary format."""
+        violation = SotViolation(
+            file="test.py",
+            rule="LED-001",
+            severity="P0",
+            detail="Direct balance modification",
+            line=10,
+        )
+        result = SotGuardResult(
+            passed=False,
+            violations=[violation],
+            warnings=[],
+        )
+        d = result.to_dict()
+        assert d["passed"] is False
+        assert len(d["violations"]) == 1
+        assert d["violations"][0]["file"] == "test.py"
+        assert d["violations"][0]["rule"] == "LED-001"
+        assert d["violations"][0]["line"] == 10
 
 
-def check_data_schema_compliance(code: str) -> List[Dict[str, Any]]:
-    """
-    检查代码中的数据库字段是否符合 DATA_SCHEMA.md 定义。
+class TestDynamicSotParsing:
+    """Tests for P2 dynamic SoT parsing enhancement."""
 
-    Args:
-        code: 代码内容
+    def test_get_daily_report_states_returns_set(self):
+        """get_daily_report_states should return a non-empty set."""
+        states = get_daily_report_states()
+        assert isinstance(states, set)
+        assert len(states) > 0
+        # Should include default states as minimum
+        assert "raw_submitted" in states
+        assert "final_locked" in states
 
-    Returns:
-        违规列表
-    """
-    # TODO: 实现数据结构检查逻辑
-    return []
+    def test_get_project_states_returns_set(self):
+        """get_project_states should return a non-empty set."""
+        states = get_project_states()
+        assert isinstance(states, set)
+        assert len(states) > 0
+        assert "active" in states or "draft" in states
 
+    def test_get_error_code_prefixes_returns_set(self):
+        """get_error_code_prefixes should return known prefixes."""
+        prefixes = get_error_code_prefixes()
+        assert isinstance(prefixes, set)
+        assert len(prefixes) > 0
+        # Should include default prefixes as minimum
+        assert "VAL" in prefixes or len(prefixes) > 5
 
-def check_ledger_compliance(code: str) -> List[Dict[str, Any]]:
-    """
-    检查代码是否违反账本系统规则（LEDGER_SOT.md）。
+    def test_default_states_available(self):
+        """Default state constants should be available for fallback."""
+        assert len(DEFAULT_DAILY_REPORT_STATES) == 8
+        assert "raw_submitted" in DEFAULT_DAILY_REPORT_STATES
+        assert "final_locked" in DEFAULT_DAILY_REPORT_STATES
 
-    检查项：
-    - 是否直接修改 balance 字段
-    - 是否绕过 ledger_entries 表
-    - 是否直接 UPDATE/DELETE ledger_entries
-
-    Args:
-        code: 代码内容
-
-    Returns:
-        违规列表
-    """
-    # TODO: 实现账本规则检查逻辑
-    # 检测关键词：
-    # - "balance =" / "balance +=" / "balance -="
-    # - "UPDATE ledger_entries" / "DELETE FROM ledger_entries"
-    return []
+    def test_default_error_prefixes_available(self):
+        """Default error code prefixes should be available."""
+        assert len(DEFAULT_ERROR_CODE_PREFIXES) >= 10
+        assert "VAL" in DEFAULT_ERROR_CODE_PREFIXES
+        assert "AUTH" in DEFAULT_ERROR_CODE_PREFIXES
