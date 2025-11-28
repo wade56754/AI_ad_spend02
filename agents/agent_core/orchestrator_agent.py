@@ -330,20 +330,9 @@ class OrchestratorAgent:
 
         # Step 4: Generate frontend structure (FEAgent)
         logger.info("Orchestrator: Step 4 - Generating frontend structure")
-        frontend_files = [
-            "src/lib/api/apiFetch.ts",
-            "src/lib/api/apiTypes.ts",
-            "src/lib/api/apiErrors.ts",
-            "src/lib/api/queryKeys.ts",
-            "src/lib/auth/authStore.ts",
-            "src/modules/daily-reports/types/dailyReport.types.ts",
-            "src/modules/daily-reports/services/dailyReportsApi.ts",
-            "src/modules/daily-reports/hooks/useDailyReports.ts",
-            "src/modules/topups/types/topup.types.ts",
-            "src/modules/topups/services/topupsApi.ts",
-            "src/modules/ledger/types/ledger.types.ts",
-            "src/modules/reconciliation/types/reconciliation.types.ts",
-        ]
+        # P1-AG-001 修复：从配置读取文件列表，支持 request 覆盖
+        from ..agents_config import FRONTEND_RESTRUCTURE_FILES
+        frontend_files = request.get("frontend_files") or FRONTEND_RESTRUCTURE_FILES
 
         fe_result = self._frontend_agent.handle_request({
             "task": f"{task} - Generate modular frontend structure aligned with SoT",

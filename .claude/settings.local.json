@@ -120,7 +120,8 @@
       "Bash(tree:*)",
       "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" rev-parse --show-toplevel)",
       "Bash(more:*)",
-      "Bash(D:)"
+      "Bash(D:)",
+      "Bash(rd /s /q \"agents\\agents\")"
     ],
     "deny": [],
     "ask": []

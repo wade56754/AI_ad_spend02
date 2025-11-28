@@ -155,6 +155,36 @@ class SotParser:
             cls._instance._parse_all()
         return cls._instance
 
+    @classmethod
+    def reload(cls) -> "SotParser":
+        """
+        P1-AG-003 增强：重新加载 SoT 文档。
+
+        当 SoT 文档更新后，调用此方法使解析器重新读取最新内容。
+        无需重启进程即可获取最新的状态枚举、错误码等定义。
+
+        Returns:
+            重新加载后的 SotParser 实例
+
+        Example:
+            from agents.skills.sot_guard_skill import SotParser
+            SotParser.reload()
+        """
+        cls.invalidate_cache()
+        return cls.get_instance()
+
+    @classmethod
+    def invalidate_cache(cls) -> None:
+        """
+        使当前缓存失效。
+
+        下次调用 get_instance() 时会重新解析 SoT 文档。
+        """
+        if cls._instance is not None:
+            cls._instance._cached = False
+            cls._instance = None
+            logger.info("SotParser cache invalidated, will reload on next access")
+
     def _parse_all(self) -> None:
         """解析所有 SoT 文档"""
         if self._cached:

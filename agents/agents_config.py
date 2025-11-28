@@ -11,7 +11,7 @@ import logging
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Protocol, TypedDict
+from typing import Any, Callable, Dict, List, Optional, Protocol, TypedDict
 
 # === 引入各个 Agent 实现 ===
 from .agent_core.fe_agent import FEAgent
@@ -102,6 +102,24 @@ SOT_FILES: Dict[str, Path] = {
     "DB_TEST_CASES": BASE_PATH / "tests/db_invariants_test_cases.md",
     "DB_INVARIANTS_SQL": BASE_PATH / "tests/db_invariants_test_v2.sql",
 }
+
+# Frontend restructure pipeline 默认目标文件列表
+# 对应 OrchestratorAgent._run_frontend_restructure() 中的 frontend_files
+# 可通过 request["frontend_files"] 覆盖
+FRONTEND_RESTRUCTURE_FILES: List[str] = [
+    "src/lib/api/apiFetch.ts",
+    "src/lib/api/apiTypes.ts",
+    "src/lib/api/apiErrors.ts",
+    "src/lib/api/queryKeys.ts",
+    "src/lib/auth/authStore.ts",
+    "src/modules/daily-reports/types/dailyReport.types.ts",
+    "src/modules/daily-reports/services/dailyReportsApi.ts",
+    "src/modules/daily-reports/hooks/useDailyReports.ts",
+    "src/modules/topups/types/topup.types.ts",
+    "src/modules/topups/services/topupsApi.ts",
+    "src/modules/ledger/types/ledger.types.ts",
+    "src/modules/reconciliation/types/reconciliation.types.ts",
+]
 
 
 logger = logging.getLogger(__name__)
@@ -440,4 +458,6 @@ __all__ = [
     # 类型定义
     "AgentProtocol",
     "AgentInfo",
+    # Pipeline 配置
+    "FRONTEND_RESTRUCTURE_FILES",
 ]

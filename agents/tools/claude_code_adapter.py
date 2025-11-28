@@ -303,12 +303,32 @@ class _MessagesAPI:
         """
         模拟 Anthropic messages.create() 方法。
 
-        注意：Claude Code CLI 不支持所有参数，部分参数会被忽略。
+        P1-AG-002 增强：记录并传递 model/temperature 参数（用于日志和未来扩展）。
+        注意：Claude Code CLI 当前版本不支持运行时切换模型，参数仅用于日志记录。
+
+        Args:
+            model: 模型名称（记录到日志，CLI 模式下使用用户默认模型）
+            max_tokens: 最大 token 数（CLI 模式下由 Claude Code 控制）
+            temperature: 温度参数（CLI 模式下暂不支持）
+            messages: 消息列表
+            **kwargs: 其他参数（system 等）
         """
         messages = messages or []
 
+        # P1-AG-002: 记录请求参数（便于调试）
+        logger.debug(
+            f"ClaudeCodeClient.create: model={model}, max_tokens={max_tokens}, "
+            f"temperature={temperature}, messages_count={len(messages)}"
+        )
+
         # 提取用户消息内容
         prompt_parts = []
+
+        # 处理 system 参数（如果提供）
+        system_prompt = kwargs.get("system")
+        if system_prompt:
+            prompt_parts.append(f"[SYSTEM]\n{system_prompt}")
+
         for msg in messages:
             role = msg.get("role", "user")
             content = msg.get("content", "")
@@ -324,6 +344,7 @@ class _MessagesAPI:
         prompt = "\n\n".join(prompt_parts)
 
         # 调用 Claude Code CLI
+        # 注意：未来若 Claude CLI 支持 --model 参数，可在此处添加
         result = call_claude_code(prompt, output_format="text")
 
         if not result["success"]:
