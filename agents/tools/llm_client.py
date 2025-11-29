@@ -1,12 +1,12 @@
 """
-llm_client.py - LLM 客户端统一管理
+llm_client.py - LLM 客户端统一管理（纯 API Key 模式）
 
-# Fix: P1-03 - 从 fe_dev_skill/be_dev_skill 提取重复的 LLM 客户端逻辑
-# Fix: NEW-02 - 修复 _use_claude_code 在模块加载时固定的问题
+提供线程安全的 LLM 客户端单例，使用 Anthropic 官方 API。
 
-提供线程安全的 LLM 客户端单例，支持：
-1. Anthropic API（需要 ANTHROPIC_API_KEY 环境变量）
-2. Claude Code CLI（支持 Claude Max 订阅用户）
+重构变更：
+- 移除 Claude Code CLI 支持
+- 强制要求 ANTHROPIC_API_KEY 环境变量
+- 支持可选的 ANTHROPIC_BASE_URL（代理支持）
 
 基准对齐：
 - Agent Layer Freeze v1.0
@@ -20,88 +20,85 @@ import threading
 
 logger = logging.getLogger(__name__)
 
-# Fix: P1-03 - 线程安全的客户端单例
+# 线程安全的客户端单例
 _client: Optional[Any] = None
 _client_lock = threading.Lock()
-_current_backend: Optional[str] = None  # Fix: NEW-02 - 记录当前后端类型
-
-
-def _should_use_claude_code() -> bool:
-    """
-    判断是否使用 Claude Code CLI。
-
-    # Fix: NEW-02 - 每次调用时检查环境变量，而非模块加载时固定
-
-    Returns:
-        True: 使用 Claude Code CLI
-        False: 使用 Anthropic API
-    """
-    return not bool(os.environ.get("ANTHROPIC_API_KEY"))
 
 
 def get_llm_client() -> Any:
     """
-    获取 LLM 客户端单例（线程安全）。
+    获取 Anthropic API 客户端单例（线程安全）。
 
-    # Fix: P1-03 - 统一的客户端获取函数
-    # Fix: NEW-02 - 支持运行时切换后端（环境变量变化时重新创建客户端）
-
-    优先级：
-    1. 如果设置了 ANTHROPIC_API_KEY，使用 Anthropic API
-    2. 否则使用 Claude Code CLI 适配器
+    环境变量：
+        - ANTHROPIC_API_KEY (必需): Anthropic API密钥
+        - ANTHROPIC_BASE_URL (可选): 自定义API基础URL（用于代理）
 
     Thread Safety:
         使用双重检查锁定模式，确保线程安全的单例初始化。
 
     Returns:
-        Anthropic 客户端或 ClaudeCodeClient 实例
+        Anthropic 客户端实例
+
+    Raises:
+        RuntimeError: ANTHROPIC_API_KEY 未设置
     """
-    global _client, _current_backend
+    global _client
 
-    use_claude_code = _should_use_claude_code()
-    expected_backend = "claude_code" if use_claude_code else "anthropic_api"
-
-    # Fix: NEW-02 - 如果后端类型变化，重新创建客户端
-    if _client is not None and _current_backend == expected_backend:
+    # Fast path: 客户端已初始化
+    if _client is not None:
         return _client
 
     with _client_lock:
         # 双重检查
-        if _client is not None and _current_backend == expected_backend:
+        if _client is not None:
             return _client
 
-        # 后端变化或首次创建
-        if _current_backend != expected_backend:
-            if _current_backend is not None:
-                logger.info(f"LLM backend changed: {_current_backend} -> {expected_backend}")
-            _client = None
+        # 检查 API Key
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "ANTHROPIC_API_KEY 环境变量未设置。"
+                "请设置 API Key 后重试。"
+            )
 
-        if _client is None:
-            if use_claude_code:
-                from .claude_code_adapter import ClaudeCodeClient
-                logger.info("Using Claude Code CLI adapter (no ANTHROPIC_API_KEY found)")
-                _client = ClaudeCodeClient()
+        # 检查可选的代理 URL
+        base_url = os.environ.get("ANTHROPIC_BASE_URL")
+
+        # 创建 Anthropic 客户端
+        try:
+            from anthropic import Anthropic
+
+            kwargs = {}
+            if base_url:
+                kwargs["base_url"] = base_url
+                logger.info(f"Using Anthropic API with custom base URL: {base_url}")
             else:
-                from anthropic import Anthropic
-                logger.info("Using Anthropic API")
-                _client = Anthropic()
-            _current_backend = expected_backend
+                logger.info("Using Anthropic API (official endpoint)")
+
+            _client = Anthropic(api_key=api_key, **kwargs)
+            logger.debug(f"Anthropic client initialized (key: {api_key[:10]}...)")
+
+        except ImportError:
+            raise RuntimeError(
+                "anthropic 包未安装。请运行: pip install anthropic"
+            )
+        except Exception as e:
+            raise RuntimeError(f"初始化 Anthropic 客户端失败: {e}")
 
     return _client
 
 
 def extract_response_text(resp: Any) -> str:
     """
-    从 LLM API 响应中提取文本内容。
+    从 Anthropic API 响应中提取文本内容。
 
-    # Fix: P1-03 - 统一的响应文本提取函数
-
-    处理以下响应格式：
-    - Anthropic API 响应对象
-    - ClaudeCodeClient mock 响应
+    处理响应格式：
+    - resp.content: List[ContentBlock]
+    - ContentBlock.type == "text"
+    - ContentBlock.text: str
 
     Args:
-        resp: LLM API 响应对象
+        resp: Anthropic API 响应对象
 
     Returns:
         提取的文本内容
@@ -127,14 +124,11 @@ def reset_client() -> None:
     """
     重置 LLM 客户端（用于测试或运行时切换）。
 
-    # Fix: NEW-02 - 提供手动重置入口
-
     调用后，下次 get_llm_client() 会重新创建客户端。
     """
-    global _client, _current_backend
+    global _client
     with _client_lock:
         _client = None
-        _current_backend = None
         logger.info("LLM client reset, will reinitialize on next call")
 
 
