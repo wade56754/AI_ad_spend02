@@ -9,7 +9,8 @@ across Agent and Skill layers.
 - MASTER.md v3.5
 """
 
-from typing import Any, Optional, TypedDict, Dict, List
+from typing import Any, Optional, Dict, List
+from typing_extensions import TypedDict  # Fix: Python 3.11 兼容
 
 
 class AgentResponseData(TypedDict, total=False):
@@ -51,18 +52,26 @@ class AgentResponseData(TypedDict, total=False):
     meta: Dict[str, Any]
 
 
-class AgentResponse(TypedDict, total=False):
+# Fix: P1-07 - 使用继承方式区分必需和可选字段
+class _AgentResponseRequired(TypedDict):
+    """AgentResponse 必需字段（内部使用）"""
+    success: bool
+
+
+class AgentResponse(_AgentResponseRequired, total=False):
     """
     Standard response structure for all Agent.handle_request() calls.
+
+    # Fix: P1-07 - success 现在是真正的必需字段
 
     All agents MUST return responses conforming to this structure.
 
     Required Fields:
-        success: Whether the operation completed successfully
-        error: Error message if success=False, None otherwise
+        success: Whether the operation completed successfully (MUST be present)
 
     Optional Fields:
         data: Operation result (structure varies by agent type, see AgentResponseData)
+        error: Error message if success=False, None otherwise
 
     Usage Examples:
         # Success response
@@ -88,24 +97,31 @@ class AgentResponse(TypedDict, total=False):
         - AGENT_ORCHESTRATION_PIPELINE.md: Step result structure
     """
 
-    success: bool
     data: Any  # Should conform to AgentResponseData when present
     error: Optional[str]
 
 
-class SkillResult(TypedDict, total=False):
+# Fix: P1-07 - 使用继承方式区分必需和可选字段
+class _SkillResultRequired(TypedDict):
+    """SkillResult 必需字段（内部使用）"""
+    success: bool
+
+
+class SkillResult(_SkillResultRequired, total=False):
     """
     Standard response structure for Skill functions.
+
+    # Fix: P1-07 - success 现在是真正的必需字段
 
     Similar to AgentResponse but allows optional 'raw' field for debugging.
     Used when skills need to preserve raw API responses for error diagnosis.
 
     Required Fields:
-        success: Whether the skill execution succeeded
-        error: Error message if success=False, None otherwise
+        success: Whether the skill execution succeeded (MUST be present)
 
     Optional Fields:
         data: Skill output (e.g., generated code, prompts, analysis results)
+        error: Error message if success=False, None otherwise
         raw: Raw response text from external APIs for debugging
 
     Usage:
@@ -113,7 +129,6 @@ class SkillResult(TypedDict, total=False):
         Agents wrap this into AgentResponse before returning to callers.
     """
 
-    success: bool
     data: Any
     error: Optional[str]
     raw: str

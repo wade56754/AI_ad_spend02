@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
 
-from ..tools.types import AgentResponse
+from agents.tools.types import AgentResponse
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ class TestAgent:
                 "error": Optional[str]
             }
         """
-        from ..skills.db_test_skill import db_test_skill
+        from agents.skills.db_test_skill import db_test_skill
 
         logger.info("Test Agent generating DB test prompt")
 

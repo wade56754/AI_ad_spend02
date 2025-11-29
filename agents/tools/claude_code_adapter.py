@@ -21,9 +21,12 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # Claude Code CLI 配置
+# Fix: P2-10 - 增加默认超时时间，LLM 调用可能需要较长时间
 CLAUDE_CODE_CONFIG = {
     "command": "claude",  # Claude Code CLI 命令
-    "timeout": 300,  # 超时时间（秒）
+    "timeout": 300,  # 默认超时时间（秒）- 5分钟
+    "timeout_simple": 120,  # 简单请求超时（秒）- 2分钟
+    "timeout_complex": 600,  # 复杂请求超时（秒）- 10分钟
     "max_retries": 2,  # 最大重试次数
 }
 
@@ -37,24 +40,66 @@ def _find_claude_cli() -> Optional[str]:
     """
     # Windows: 尝试常见路径
     possible_paths = [
-        "claude",  # 在 PATH 中
+        "claude",  # 在 PATH 中（最高优先级）
         "claude.exe",
-        os.path.expanduser("~/.claude/claude.exe"),
-        os.path.expanduser("~/AppData/Local/Programs/claude/claude.exe"),
+        "claude.cmd",  # npm 安装的 cmd 包装器
     ]
+    
+    # 添加 Windows 特定路径
+    if os.name == "nt":  # Windows
+        appdata = os.environ.get("APPDATA", "")
+        localappdata = os.environ.get("LOCALAPPDATA", "")
+        userprofile = os.environ.get("USERPROFILE", "")
+        current_dir = os.getcwd()
+        
+        windows_paths = [
+            # npm 全局安装路径（优先）
+            os.path.join(appdata, "npm", "claude.cmd"),
+            os.path.join(appdata, "npm", "claude"),
+            # 用户本地 bin
+            os.path.join(userprofile, ".local", "bin", "claude.exe"),
+            # 项目目录下的批处理文件
+            os.path.join(current_dir, "claude.bat"),
+            # 常见安装路径
+            os.path.expanduser("~/.claude/claude.exe"),
+            os.path.join(localappdata, "Programs", "claude", "claude.exe"),
+            os.path.join(localappdata, "Claude", "claude.exe"),
+            # Program Files
+            "C:\\Program Files\\Claude\\claude.exe",
+            "C:\\Program Files (x86)\\Claude\\claude.exe",
+        ]
+        possible_paths.extend(windows_paths)
+    else:
+        # Unix-like 系统
+        unix_paths = [
+            os.path.expanduser("~/.local/bin/claude"),
+            os.path.expanduser("~/.claude/claude"),
+            "/usr/local/bin/claude",
+            "/usr/bin/claude",
+        ]
+        possible_paths.extend(unix_paths)
 
     for path in possible_paths:
         try:
+            # Windows 上，对于 .cmd 和 .bat 文件，可能需要使用 shell=True
+            use_shell = os.name == "nt" and (
+                path.endswith(".cmd") or 
+                path.endswith(".bat") or 
+                path.endswith(".exe")
+            )
+            
             result = subprocess.run(
                 [path, "--version"],
                 capture_output=True,
                 text=True,
                 timeout=5,
+                shell=use_shell,
             )
             if result.returncode == 0:
                 logger.debug(f"Found claude CLI at: {path}")
                 return path
-        except (subprocess.SubprocessError, FileNotFoundError, OSError):
+        except (subprocess.SubprocessError, FileNotFoundError, OSError) as e:
+            logger.debug(f"Failed to test path {path}: {e}")
             continue
 
     return None
@@ -107,6 +152,19 @@ def call_claude_code(
             "--output-format", "text",  # 纯文本输出
         ]
 
+        # Windows 上，对于 .cmd 和 .bat 文件，或者简单的命令名（需要 PATH 解析），使用 shell=True
+        # 对于简单的命令名（如 "claude"），在 Windows 上也需要 shell=True 来正确解析 PATH
+        # 如果路径不是绝对路径，或者文件不存在（需要通过 PATH 解析），使用 shell=True
+        use_shell = False
+        if os.name == "nt":  # Windows
+            if claude_cli.endswith((".cmd", ".bat")):
+                use_shell = True
+            elif not os.path.isabs(claude_cli):
+                # 对于相对路径或命令名，检查是否是绝对路径或文件是否存在
+                if not os.path.exists(claude_cli):
+                    # 需要通过 PATH 解析，使用 shell=True
+                    use_shell = True
+
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -114,6 +172,7 @@ def call_claude_code(
             timeout=timeout,
             cwd=cwd,
             encoding="utf-8",
+            shell=use_shell,
         )
 
         if result.returncode != 0:

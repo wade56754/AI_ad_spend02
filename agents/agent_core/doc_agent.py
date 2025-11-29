@@ -506,8 +506,19 @@ class DocAgent:
         return context
 
     def _get_sot_versions(self) -> Dict[str, str]:
-        """Extract version information from SoT documents."""
-        versions = {
+        """
+        Extract version information from SoT documents.
+
+        # Fix: P2-04 - 从实际 SoT 文档中提取版本号，而非硬编码
+
+        Returns:
+            Dict mapping document key to version string (e.g., "v3.5")
+        """
+        # 延迟导入以避免循环依赖
+        from ..agents_config import SOT_FILES, read_optional
+
+        # 默认版本（文件不存在或解析失败时使用）
+        default_versions = {
             "MASTER": "v3.5",
             "STATE_MACHINE": "v2.6",
             "DATA_SCHEMA": "v5.2",
@@ -517,6 +528,23 @@ class DocAgent:
             "AUTH_SPEC": "v2.0",
             "LEDGER_SOT": "v1.1",
         }
+
+        versions = {}
+        version_pattern = re.compile(r"^version:\s*[\"']?v?([\d.]+)[\"']?\s*$", re.MULTILINE)
+
+        for doc_key in default_versions.keys():
+            if doc_key in SOT_FILES:
+                content = read_optional(SOT_FILES[doc_key], warn_if_critical=False)
+                if content:
+                    # 尝试从 YAML frontmatter 提取版本
+                    match = version_pattern.search(content[:500])  # 只搜索开头
+                    if match:
+                        versions[doc_key] = f"v{match.group(1)}"
+                        continue
+
+            # 使用默认版本
+            versions[doc_key] = default_versions[doc_key]
+
         return versions
 
     def _generate_from_template(

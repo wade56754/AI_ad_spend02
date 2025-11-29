@@ -11,7 +11,8 @@ import logging
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Protocol, TypedDict
+from typing import Any, Callable, Dict, List, Optional, Protocol
+from typing_extensions import TypedDict  # Fix: Python 3.11 兼容
 
 # === Agent 导入采用延迟加载 ===
 # 避免循环导入：agent_core 模块可能导入本模块的 SOT_FILES 等常量
@@ -121,9 +122,10 @@ FRONTEND_RESTRUCTURE_FILES: List[str] = [
 logger = logging.getLogger(__name__)
 
 # Critical SoT files that should trigger warnings when missing
+# Fix: P2-03 - 添加 AUTH_SPEC 到关键 SoT 文件列表
 CRITICAL_SOT_FILES = {
     "STATE_MACHINE", "DATA_SCHEMA", "BUSINESS_RULES",
-    "API_SOT", "ERROR_CODES", "LEDGER_SOT",
+    "API_SOT", "ERROR_CODES", "LEDGER_SOT", "AUTH_SPEC",
 }
 
 # Track which missing files have been warned about (avoid duplicate warnings)

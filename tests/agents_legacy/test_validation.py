@@ -6,7 +6,7 @@ validation.py
 
 from typing import Dict, Any, List, Optional
 
-from .types import AgentResponse
+from agents.tools.types import AgentResponse
 
 def validate_task_and_files(
     task: str, target_files: List[str]

@@ -724,14 +724,55 @@ def check_data_schema_compliance(code: str, file_path: str = "") -> List[SotViol
 
 
 def _looks_like_state(value: str) -> bool:
-    """判断一个值是否看起来像状态枚举"""
+    """
+    判断一个值是否看起来像状态枚举。
+
+    # Fix: P2-07 - 改进状态识别逻辑，减少误报
+
+    Args:
+        value: 要检查的字符串值
+
+    Returns:
+        True 如果值可能是状态枚举
+    """
+    value_lower = value.lower()
+
     # 排除常见的非状态词
     non_states = {
-        "true", "false", "null", "none", "undefined",
-        "id", "name", "type", "value", "data", "error",
-        "success", "failure", "ok", "fail",
+        # 布尔/空值
+        "true", "false", "null", "none", "undefined", "nil",
+        # 通用字段名
+        "id", "name", "type", "value", "data", "error", "message",
+        "result", "response", "request", "content", "body",
+        # 通用状态词（不属于业务状态）
+        "success", "failure", "ok", "fail", "failed", "passed",
+        "enabled", "disabled", "valid", "invalid",
+        # 时间相关
+        "created", "updated", "deleted", "new", "old",
+        # 数据库相关
+        "insert", "update", "delete", "select", "query",
+        # API 相关
+        "get", "post", "put", "patch", "head", "options",
     }
-    return value.lower() not in non_states and len(value) > 2
+
+    # Fix: P2-07 - 额外排除规则
+    # 1. 长度太短
+    if len(value) <= 2:
+        return False
+
+    # 2. 在排除列表中
+    if value_lower in non_states:
+        return False
+
+    # 3. 纯数字或以数字开头
+    if value.isdigit() or (value and value[0].isdigit()):
+        return False
+
+    # 4. 包含特殊字符（除了下划线）
+    if not value.replace("_", "").isalnum():
+        return False
+
+    return True
 
 
 def _camel_to_snake(name: str) -> str:

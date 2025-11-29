@@ -121,7 +121,8 @@
       "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" rev-parse --show-toplevel)",
       "Bash(more:*)",
       "Bash(D:)",
-      "Bash(rd /s /q \"agents\\agents\")"
+      "Bash(rd /s /q \"agents\\agents\")",
+      "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\agents\\tests\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\agents\\tests\")"
     ],
     "deny": [],
     "ask": []

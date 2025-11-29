@@ -1,83 +1,16 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import json
 import logging
-import os
-import threading
 
 from ..agents_config import SOT_FILES, FRONTEND_DIR, LLM_CONFIG, read_optional
 from ..tools.fs_tool import read_files
 from ..tools.validation import validate_task_and_files
 from ..tools.types import SkillResult
-from ..tools.claude_code_adapter import call_claude_code, ClaudeCodeClient
+# Fix: P1-03 - 使用统一的 LLM 客户端模块，移除重复代码
+from ..tools.llm_client import get_llm_client, extract_response_text
+from ..tools.claude_code_adapter import _extract_json
 
 logger = logging.getLogger(__name__)
-
-# LLM Client (支持两种模式：Anthropic API 或 Claude Code CLI)
-# Thread-safe singleton pattern using lock
-_client: Optional[Any] = None
-_client_lock = threading.Lock()
-_use_claude_code: bool = not os.environ.get("ANTHROPIC_API_KEY")
-
-
-def _get_client() -> Any:
-    """
-    获取 LLM client 单例（线程安全）。
-
-    优先级：
-    1. 如果设置了 ANTHROPIC_API_KEY，使用 Anthropic API
-    2. 否则使用 Claude Code CLI 适配器
-
-    Thread Safety:
-        Uses double-checked locking pattern to ensure thread-safe
-        singleton initialization without performance overhead.
-    """
-    global _client, _use_claude_code
-
-    # Fast path: client already initialized
-    if _client is not None:
-        return _client
-
-    # Slow path: acquire lock and initialize
-    with _client_lock:
-        # Double-check after acquiring lock
-        if _client is None:
-            if _use_claude_code:
-                logger.info("Using Claude Code CLI adapter (no ANTHROPIC_API_KEY found)")
-                _client = ClaudeCodeClient()
-            else:
-                from anthropic import Anthropic
-                logger.info("Using Anthropic API")
-                _client = Anthropic()
-    return _client
-
-
-def _extract_response_text(resp: Any) -> str:
-    """
-    Extract text content from LLM API response.
-
-    Handles both Anthropic API response format and ClaudeCodeClient mock response.
-
-    Args:
-        resp: Response object from LLM API call
-
-    Returns:
-        Extracted text content as string
-    """
-    if not hasattr(resp, "content"):
-        return str(resp)
-
-    text_parts: List[str] = []
-    for item in resp.content:
-        # Handle list of blocks (some API versions)
-        if isinstance(item, list):
-            for block in item:
-                if getattr(block, "type", None) == "text":
-                    text_parts.append(block.text)
-        # Handle single block
-        elif getattr(item, "type", None) == "text":
-            text_parts.append(item.text)
-
-    return "".join(text_parts)
 
 
 def _build_fe_prompt(task: str, existing_files: Dict[str, str]) -> str:
@@ -207,9 +140,9 @@ def fe_dev_skill(task: str, target_files: List[str]) -> SkillResult:
     existing = read_files(FRONTEND_DIR, target_files)
     prompt = _build_fe_prompt(task, existing)
 
-    # 调用 LLM (Anthropic API 或 Claude Code CLI)
+    # Fix: P1-03 - 使用统一的 LLM 客户端
     try:
-        client = _get_client()
+        client = get_llm_client()
         logger.debug(f"Calling LLM: model={LLM_CONFIG['model']}")
         resp = client.messages.create(
             model=LLM_CONFIG["model"],
@@ -225,16 +158,15 @@ def fe_dev_skill(task: str, target_files: List[str]) -> SkillResult:
             "error": f"LLM API error: {e}",
         }
 
-    # 提取响应文本（P2-8: refactored for readability）
-    text = _extract_response_text(resp)
+    # Fix: P1-03 - 使用统一的响应提取函数
+    text = extract_response_text(resp)
     logger.debug(f"API response received: {len(text)} chars")
 
-    # 解析 JSON（P2-8: improved error handling）
+    # 解析 JSON
     try:
         data = json.loads(text)
     except json.JSONDecodeError as parse_error:
         # Try to extract JSON from markdown code blocks or embedded JSON
-        from ..tools.claude_code_adapter import _extract_json
         try:
             data = _extract_json(text)
         except json.JSONDecodeError:

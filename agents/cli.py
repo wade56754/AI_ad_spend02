@@ -147,6 +147,7 @@ def main() -> None:
     )
 
     # 示例用法
+    # Fix: P2-08 - 添加 doc 和 review Agent 示例
     run_parser.epilog = """
 示例用法:
   # 前端代码生成
@@ -154,6 +155,15 @@ def main() -> None:
 
   # 后端代码生成
   python -m agents.cli run be --action "实现 projects CRUD API"
+
+  # 文档生成 (doc Agent)
+  python -m agents.cli run doc --action generate --files "docs/api/README.md"
+
+  # 文档审核 (doc Agent)
+  python -m agents.cli run doc --action review --files "docs/2.sot/API_SOT.md"
+
+  # 代码审核 (review Agent)
+  python -m agents.cli run review --action review --files "backend/routers/daily_reports.py"
 
   # SC-ORCH 前端重构流水线（dry-run 模式，默认）
   python -m agents.cli run orch --action frontend_restructure --task "重构前端结构"
