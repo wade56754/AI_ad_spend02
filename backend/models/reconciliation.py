@@ -17,10 +17,19 @@ from sqlalchemy.sql import func
 
 from backend.models.base import Base
 
+# 从 finance 模块导入正式的模型类（向后兼容）
+from backend.models.finance.reconciliation import (
+    ReconciliationBatch,
+    ReconciliationDetail,
+)
 
-# ⚠️ DEPRECATED: 此 ReconciliationBatch 类已被 backend/models/finance.py 替代
-# 请使用 from backend.models.finance import ReconciliationBatch
-# 保留此类仅用于向后兼容，但已禁用表定义以避免重复注册
+# 占位符类，用于向后兼容
+ReconciliationAdjustment = None  # TODO: 待实现
+ReconciliationReport = None      # TODO: 待实现
+
+
+# ⚠️ DEPRECATED: 以下 Legacy 类已被 backend/models/finance.py 替代
+# 保留仅用于参考，已禁用表定义以避免重复注册
 class _ReconciliationBatchLegacy(Base):
     """对账批次表"""
     # __tablename__ = "reconciliation_batches"  # 已注释掉，避免重复定义表

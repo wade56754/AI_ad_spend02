@@ -57,6 +57,23 @@ class RiskLevel(str, Enum):
     CRITICAL = "critical"          # 严重风险
 
 
+class PredictionStatus(str, Enum):
+    """预测状态枚举"""
+    PENDING = "pending"            # 待处理
+    IN_PROGRESS = "in_progress"    # 进行中
+    COMPLETED = "completed"        # 已完成
+    FAILED = "failed"              # 失败
+    EXPIRED = "expired"            # 已过期
+
+
+class RuleStatus(str, Enum):
+    """规则状态枚举"""
+    ACTIVE = "active"              # 活跃
+    INACTIVE = "inactive"          # 未激活
+    TESTING = "testing"            # 测试中
+    DEPRECATED = "deprecated"      # 已弃用
+
+
 class AIAnomalyDetection(Base):
     """AI异常检测表 - 记录系统检测到的各种异常"""
     __tablename__ = "ai_anomaly_detections"

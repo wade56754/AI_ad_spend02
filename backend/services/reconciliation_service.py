@@ -33,6 +33,11 @@ from backend.utils.id_generator import generate_request_no
 # Note: Response helpers moved to routers layer
 from backend.exceptions import ValidationException, ResourceNotFoundException, AuthorizationException
 
+# 别名定义，与代码中使用的名称对齐
+ValidationError = ValidationException
+NotFoundError = ResourceNotFoundException
+PermissionError = AuthorizationException
+
 
 class ReconciliationService:
     """对账管理服务类"""

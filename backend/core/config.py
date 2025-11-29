@@ -6,7 +6,7 @@ AI财务系统配置管理模块
 import os
 import secrets
 from functools import lru_cache
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from pydantic import field_validator, Field
 from pydantic_settings import BaseSettings
@@ -77,7 +77,9 @@ class Settings(BaseSettings):
         return self.supabase_service_role_key
 
     # CORS配置
-    allowed_origins: List[str] = Field(
+    # 注意：pydantic-settings 2.x 在 DotEnvSettingsSource 阶段会先尝试解析类型
+    # 使用 Union[str, List[str]] 允许从 .env 读取逗号分隔字符串
+    allowed_origins: Union[str, List[str]] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000"],
         description="允许的源地址列表"
     )

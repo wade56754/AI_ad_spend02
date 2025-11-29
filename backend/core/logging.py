@@ -16,6 +16,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 # 配置结构化日志
 structlog.configure(
     processors=[
+        structlog.contextvars.merge_contextvars,
         structlog.stdlib.filter_by_level,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -24,12 +25,37 @@ structlog.configure(
         structlog.processors.StackInfoRenderer(),
         structlog.processors.format_exc_info,
         structlog.processors.UnicodeDecoder(),
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
     ],
     context_class=dict,
     logger_factory=structlog.stdlib.LoggerFactory(),
     wrapper_class=structlog.stdlib.BoundLogger,
     cache_logger_on_first_use=True,
 )
+
+# 配置标准库日志处理器
+logging.basicConfig(
+    format="%(message)s",
+    level=logging.INFO,
+    handlers=[logging.StreamHandler()],
+)
+
+# 为标准库日志添加 structlog 处理器
+formatter = structlog.stdlib.ProcessorFormatter(
+    processor=structlog.dev.ConsoleRenderer(),
+    foreign_pre_chain=[
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.add_logger_name,
+        structlog.processors.TimeStamper(fmt="iso"),
+    ],
+)
+
+# 配置根日志处理器
+root_handler = logging.StreamHandler()
+root_handler.setFormatter(formatter)
+logging.root.handlers = [root_handler]
+logging.root.setLevel(logging.INFO)
 
 logger = structlog.get_logger(__name__)
 
