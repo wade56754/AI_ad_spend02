@@ -103,10 +103,14 @@ class DatabaseConfig:
             # 查询配置
             "echo": settings.debug,  # 开发环境打印SQL
             "echo_pool": settings.debug,  # 开发环境打印连接池信息
-
-            # 隔离级别
-            "isolation_level": "READ_COMMITTED",
         }
+
+        # SQLite 使用 SERIALIZABLE 隔离级别（SQLite 不支持 READ_COMMITTED）
+        # PostgreSQL 使用 READ_COMMITTED
+        if settings.database_url.startswith('sqlite'):
+            kwargs["isolation_level"] = "SERIALIZABLE"
+        else:
+            kwargs["isolation_level"] = "READ_COMMITTED"
 
         # 只有非SQLite数据库才需要连接池配置
         if not settings.database_url.startswith('sqlite'):
@@ -127,12 +131,12 @@ class DatabaseConfig:
             }
 
         # SQLite特殊配置
-        if get_db_settings().database_url.startswith('sqlite'):
+        if settings.database_url.startswith('sqlite'):
             kwargs.update({
                 "poolclass": StaticPool,
                 "connect_args": {
                     "check_same_thread": False,
-                    "timeout": get_db_settings().pool_timeout
+                    "timeout": settings.pool_timeout
                 }
             })
 

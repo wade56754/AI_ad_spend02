@@ -144,8 +144,8 @@ async def get_current_active_user(
         )
 
     try:
-        # 使用真实的JWT验证
-        auth_user = security_get_current_active_user(
+        # 使用真实的JWT验证（调用 get_current_user 而非 get_current_active_user）
+        auth_user = security_get_current_user(
             authorization=f"Bearer {credentials.credentials}",
             db=db
         )

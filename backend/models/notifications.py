@@ -293,9 +293,12 @@ class SystemConfig(Base):
     updater = relationship("User", foreign_keys=[updated_by])
 
 
-class AuditLog(Base):
-    """审计日志表（对齐 DATA_SCHEMA.md 3.1.4）"""
-    __tablename__ = "audit_logs"
+class _AuditLogDeprecated(Base):
+    """
+    ⚠️ DEPRECATED: 此类已被 backend/models/audit/audit_log.py 中的 AuditLog 替代
+    保留此定义仅作参考，但标记为抽象类不会创建表
+    """
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     # 主键：BIGSERIAL（对齐 DATA_SCHEMA）
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="审计日志ID")

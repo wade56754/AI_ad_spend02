@@ -27,8 +27,12 @@ __all__ = [
     "register_exception_handlers",
     "ValidationError",
     "AuthenticationError",
+    "NotFoundError",
+    "PermissionError",
 ]
 
 # 添加别名以保持兼容性
 ValidationError = ValidationException
 AuthenticationError = AuthenticationException
+NotFoundError = ResourceNotFoundException
+PermissionError = AuthorizationException

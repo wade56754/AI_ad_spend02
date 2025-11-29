@@ -252,7 +252,7 @@ async def list_daily_reports(
     report_date_start: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     report_date_end: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
-    status: Optional[str] = Query(None, pattern="^(pending|approved|rejected)$", description="审核状态"),
+    status: Optional[str] = Query(None, pattern="^(raw_submitted|trend_pending|trend_ok|trend_flagged|trend_resolved|final_pending|final_confirmed|final_locked)$", description="日报状态（8状态机）"),
     media_buyer_id: Optional[int] = Query(None, description="投手ID"),
     project_id: Optional[int] = Query(None, description="项目ID"),
     service: DailyReportService = Depends(get_daily_report_service),
@@ -481,33 +481,32 @@ async def delete_daily_report(
         )
 
 
+# ============ 8 状态机流转端点 (STATE_MACHINE.md v2.6) ============
+
+
 @router.post(
-    "/{report_id}/approve",
+    "/{report_id}/trend-flag",
     response_model=StandardResponse[DailyReportResponse],
-    summary="审核通过日报",
-    description="审核通过日报记录"
+    summary="标记趋势异常",
+    description="将日报标记为趋势异常，需人工复核 (trend_pending → trend_flagged)"
 )
-async def approve_daily_report(
+async def flag_trend_anomaly(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
     current_user: User = Depends(require_role(["data_operator", "admin"]))
 ):
     """
-    审核通过日报API
+    标记趋势异常API (STATE_MACHINE.md v2.6 第8章)
+    trend_pending → trend_flagged
     """
     try:
-        # 审核通过
-        report = service.approve_daily_report(report_id, request, current_user)
-
-        # 转换为响应格式
+        report = service.flag_trend_anomaly(report_id, request, current_user)
         report_response = DailyReportResponse.model_validate(report)
-
         return success_response(
             data=report_response,
-            message="日报审核通过"
+            message="日报已标记为趋势异常"
         )
-
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
@@ -529,32 +528,114 @@ async def approve_daily_report(
 
 
 @router.post(
-    "/{report_id}/reject",
+    "/{report_id}/trend-resolve",
     response_model=StandardResponse[DailyReportResponse],
-    summary="驳回报日",
-    description="驳回报日记录"
+    summary="解决趋势异常",
+    description="运营确认趋势异常已解决 (trend_flagged → trend_resolved)"
 )
-async def reject_daily_report(
+async def resolve_trend_anomaly(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
     current_user: User = Depends(require_role(["data_operator", "admin"]))
 ):
     """
-    驳回报日API
+    解决趋势异常API (STATE_MACHINE.md v2.6 第8章)
+    trend_flagged → trend_resolved
     """
     try:
-        # 驳回报日
-        report = service.reject_daily_report(report_id, request, current_user)
-
-        # 转换为响应格式
+        report = service.resolve_trend_anomaly(report_id, request, current_user)
         report_response = DailyReportResponse.model_validate(report)
-
         return success_response(
             data=report_response,
-            message="日报已驳回"
+            message="趋势异常已解决"
+        )
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
+
+@router.post(
+    "/{report_id}/final-confirm",
+    response_model=StandardResponse[DailyReportResponse],
+    summary="确认最终粉数",
+    description="运营确认最终粉数 (final_pending → final_confirmed)"
+)
+async def confirm_final_report(
+    report_id: int,
+    request: DailyReportAuditRequest,
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
+):
+    """
+    确认最终粉数API (STATE_MACHINE.md v2.6 第8章)
+    final_pending → final_confirmed
+    """
+    try:
+        report = service.confirm_final_report(report_id, request, current_user)
+        report_response = DailyReportResponse.model_validate(report)
+        return success_response(
+            data=report_response,
+            message="最终粉数已确认"
+        )
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.post(
+    "/{report_id}/final-lock",
+    response_model=StandardResponse[DailyReportResponse],
+    summary="锁定日报",
+    description="锁定日报进入计费，终态 (final_confirmed → final_locked)"
+)
+async def lock_final_report(
+    report_id: int,
+    request: DailyReportAuditRequest,
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
+):
+    """
+    锁定日报API (STATE_MACHINE.md v2.6 第8章)
+    final_confirmed → final_locked (终态)
+    """
+    try:
+        report = service.lock_final_report(report_id, request, current_user)
+        report_response = DailyReportResponse.model_validate(report)
+        return success_response(
+            data=report_response,
+            message="日报已锁定，进入计费"
+        )
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,

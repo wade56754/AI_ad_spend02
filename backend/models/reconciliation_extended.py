@@ -16,6 +16,9 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 
 from backend.models.base import Base
 
+# 从 finance 模块导入正式的 ReconciliationBatch 模型类（向后兼容）
+from backend.models.finance.reconciliation import ReconciliationBatch
+
 
 class ReconciliationStatus(str, Enum):
     """对账状态枚举"""

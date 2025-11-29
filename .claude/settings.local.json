@@ -122,7 +122,21 @@
       "Bash(more:*)",
       "Bash(D:)",
       "Bash(rd /s /q \"agents\\agents\")",
-      "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\agents\\tests\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\agents\\tests\")"
+      "Bash(if not exist \"D:\\git\\1108\\AI_ad_spend02\\agents\\tests\" mkdir \"D:\\git\\1108\\AI_ad_spend02\\agents\\tests\")",
+      "Bash(/usr/bin/python3:*)",
+      "Bash(ALLOWED_ORIGINS='*' DATABASE_URL='sqlite:///./test.db' JWT_SECRET='test_secret_for_testing_only_12345678901234567890' SECRET_KEY='test_secret_key_32_characters_long_12345678' ENVIRONMENT='test' /usr/bin/python3 -m pytest:*)",
+      "Bash(cat:*)",
+      "Bash(brew --version:*)",
+      "Bash(brew list:*)",
+      "Bash(brew install:*)",
+      "Bash(/opt/homebrew/bin/python3.11:*)",
+      "Bash(source .venv311/bin/activate:*)",
+      "Bash(pip install:*)",
+      "Bash(pip show:*)",
+      "Bash(/Users/wade/Desktop/AI_Ads/.venv311/bin/python:*)",
+      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python:*)",
+      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/pytest:*)",
+      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python3.11:*)"
     ],
     "deny": [],
     "ask": []
