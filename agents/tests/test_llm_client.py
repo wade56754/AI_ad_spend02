@@ -3,6 +3,7 @@ Tests for LLM client module (tools/llm_client.py)
 
 Migrated from tests/agents_legacy/test_llm_client.py
 Fixed: Added missing imports (MagicMock, patch)
+Fixed: P1-TEST - Corrected patch location for ClaudeCodeClient (imported inside function)
 """
 
 import pytest
@@ -20,7 +21,8 @@ class TestGetLlmClient:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         mock_client = MagicMock()
-        with patch.object(llm_client, "ClaudeCodeClient", return_value=mock_client):
+        # Fix: ClaudeCodeClient is imported inside get_llm_client(), patch at source
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
             from agents.tools.llm_client import get_llm_client
             client = get_llm_client()
 
@@ -34,7 +36,8 @@ class TestGetLlmClient:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         mock_client = MagicMock()
-        with patch.object(llm_client, "ClaudeCodeClient", return_value=mock_client):
+        # Fix: ClaudeCodeClient is imported inside get_llm_client(), patch at source
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
             from agents.tools.llm_client import get_llm_client
             client1 = get_llm_client()
             client2 = get_llm_client()
@@ -60,14 +63,19 @@ class TestExtractResponseText:
         assert result == "Hello, world!"
 
     def test_extract_from_plain_string(self):
-        """Should handle plain string response."""
+        """Should handle plain string response (no .content attribute)."""
         from agents.tools.llm_client import extract_response_text
 
-        mock_response = MagicMock(spec=[])
-        mock_response.__str__ = lambda self: "plain text"
+        # Fix: Use a simple object without .content attribute
+        # The extract_response_text function calls str(resp) when no .content
+        class PlainResponse:
+            def __str__(self):
+                return "plain text"
+
+        mock_response = PlainResponse()
 
         result = extract_response_text(mock_response)
-        assert result is not None
+        assert result == "plain text"
 
     def test_extract_multiple_blocks(self):
         """Should concatenate multiple text blocks."""
@@ -88,6 +96,91 @@ class TestExtractResponseText:
         assert "Part 1" in result
         assert "Part 2" in result
 
+    def test_extract_from_empty_content(self):
+        """Should return empty string when content list is empty.
+
+        P1-01 边界测试：验证 content = [] 时返回空字符串。
+        """
+        from agents.tools.llm_client import extract_response_text
+
+        mock_response = MagicMock()
+        mock_response.content = []
+
+        result = extract_response_text(mock_response)
+        assert result == ""
+
+    def test_extract_from_nested_content(self):
+        """Should extract text from nested content lists.
+
+        P1-01 边界测试：验证嵌套列表 [[TextBlock1], [TextBlock2]] 能正确拼接。
+        llm_client.py:115-118 处理此分支。
+        """
+        from agents.tools.llm_client import extract_response_text
+
+        # 创建嵌套的 text blocks
+        block1 = MagicMock()
+        block1.type = "text"
+        block1.text = "Nested 1. "
+
+        block2 = MagicMock()
+        block2.type = "text"
+        block2.text = "Nested 2."
+
+        mock_response = MagicMock()
+        # 嵌套列表格式：[[block1], [block2]]
+        mock_response.content = [[block1], [block2]]
+
+        result = extract_response_text(mock_response)
+        assert "Nested 1" in result
+        assert "Nested 2" in result
+
+    def test_extract_ignores_non_text_blocks(self):
+        """Should skip non-text blocks (e.g., image, tool_use).
+
+        P1-01 边界测试：验证混合类型 content 中跳过非 text 类型。
+        """
+        from agents.tools.llm_client import extract_response_text
+
+        text_block = MagicMock()
+        text_block.type = "text"
+        text_block.text = "Only text content"
+
+        image_block = MagicMock()
+        image_block.type = "image"  # 应被跳过
+
+        tool_use_block = MagicMock()
+        tool_use_block.type = "tool_use"  # 应被跳过
+
+        mock_response = MagicMock()
+        mock_response.content = [image_block, text_block, tool_use_block]
+
+        result = extract_response_text(mock_response)
+        assert result == "Only text content"
+
+    def test_extract_handles_block_without_type(self):
+        """Should skip blocks without 'type' attribute.
+
+        P1-01 边界测试：验证缺少 type 属性的 block 被安全跳过。
+        llm_client.py:120 使用 getattr(item, "type", None) 处理此情况。
+        """
+        from agents.tools.llm_client import extract_response_text
+
+        text_block = MagicMock()
+        text_block.type = "text"
+        text_block.text = "Valid block"
+
+        # 创建一个没有 type 属性的对象
+        class BlockWithoutType:
+            pass
+
+        invalid_block = BlockWithoutType()
+
+        mock_response = MagicMock()
+        mock_response.content = [invalid_block, text_block]
+
+        result = extract_response_text(mock_response)
+        assert result == "Valid block"
+
 
 class TestResetClient:
     """Tests for reset_client function."""
@@ -100,13 +193,14 @@ class TestResetClient:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         mock_client1 = MagicMock()
-        with patch.object(llm_client, "ClaudeCodeClient", return_value=mock_client1):
+        # Fix: Patch at source module
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client1):
             client1 = llm_client.get_llm_client()
 
         llm_client.reset_client()
 
         mock_client2 = MagicMock()
-        with patch.object(llm_client, "ClaudeCodeClient", return_value=mock_client2):
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client2):
             client2 = llm_client.get_llm_client()
 
         assert client1 is not client2
@@ -123,7 +217,8 @@ class TestBackendDetection:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         mock_client = MagicMock()
-        with patch.object(llm_client, "ClaudeCodeClient", return_value=mock_client):
+        # Fix: Patch at source module
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
             client = llm_client.get_llm_client()
 
         assert client is mock_client

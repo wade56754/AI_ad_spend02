@@ -1,10 +1,16 @@
 """
 充值管理服务层测试
-Version: 1.0
+Version: 2.0 (Test Fixture & Architecture Repair Flow)
 Author: Claude协作开发
+
+修复内容:
+- P0-TS-001: 修复 User 模型字段 (nickname → username, id int → UUID)
+- P1-TS-001: 修复 mock 路径 (services → backend.services)
+- P1-TS-002: 修复状态值 (pending → draft/pending_review, data_review → finance_approve)
 """
 
 import pytest
+import uuid
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
@@ -14,6 +20,7 @@ from backend.models.topup import TopupTransaction, TopupApprovalLog
 from backend.models import User
 from backend.models import AdAccount
 from backend.models import Project
+from backend.models.enums import UserRole
 from backend.schemas.topup import (
     TopupRequestCreate,
     TopupDataReviewRequest,
@@ -42,10 +49,12 @@ class TestTopupService:
     def admin_user(self, db_session):
         """创建管理员用户"""
         user = User(
-            id=1,
-            email="admin@example.com",
-            nickname="管理员",
-            role="admin"
+            id=uuid.uuid4(),
+            username="admin_topup_test",
+            email="admin_topup@example.com",
+            hashed_password="hashed_test_password",
+            role=UserRole.ADMIN.value,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -55,10 +64,12 @@ class TestTopupService:
     def finance_user(self, db_session):
         """创建财务用户"""
         user = User(
-            id=2,
-            email="finance@example.com",
-            nickname="财务",
-            role="finance"
+            id=uuid.uuid4(),
+            username="finance_topup_test",
+            email="finance_topup@example.com",
+            hashed_password="hashed_test_password",
+            role=UserRole.FINANCE.value,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -68,10 +79,12 @@ class TestTopupService:
     def data_operator_user(self, db_session):
         """创建数据员用户"""
         user = User(
-            id=3,
-            email="operator@example.com",
-            nickname="数据员",
-            role="data_operator"
+            id=uuid.uuid4(),
+            username="operator_topup_test",
+            email="operator_topup@example.com",
+            hashed_password="hashed_test_password",
+            role=UserRole.DATA_OPERATOR.value,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -81,10 +94,12 @@ class TestTopupService:
     def account_manager_user(self, db_session):
         """创建账户管理员用户"""
         user = User(
-            id=4,
-            email="manager@example.com",
-            nickname="账户经理",
-            role="account_manager"
+            id=uuid.uuid4(),
+            username="manager_topup_test",
+            email="manager_topup@example.com",
+            hashed_password="hashed_test_password",
+            role=UserRole.ACCOUNT_MANAGER.value,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -94,10 +109,12 @@ class TestTopupService:
     def media_buyer_user(self, db_session):
         """创建媒体买家用户"""
         user = User(
-            id=5,
-            email="buyer@example.com",
-            nickname="媒体买家",
-            role="media_buyer"
+            id=uuid.uuid4(),
+            username="buyer_topup_test",
+            email="buyer_topup@example.com",
+            hashed_password="hashed_test_password",
+            role=UserRole.MEDIA_BUYER.value,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -172,7 +189,7 @@ class TestTopupService:
             currency="USD",
             urgency_level="normal",
             reason="测试充值",
-            status="pending",
+            status="pending_review",  # P1-TS-002: pending → pending_review (STATE_MACHINE.md v2.6)
             requested_by=admin_user.id
         )
         db_session.add(request)
@@ -192,7 +209,8 @@ class TestTopupService:
                 urgency_level="normal"
             )
 
-            with patch('services.topup_service.generate_request_no') as mock_generate:
+            # P1-TS-001: 修复 mock 路径 (services → backend.services)
+            with patch('backend.services.topup_service.generate_request_no') as mock_generate:
                 mock_generate.return_value = "TOP20251112143045002"
 
                 request = topup_service.create_request(
@@ -203,7 +221,8 @@ class TestTopupService:
             assert request.request_no == "TOP20251112143045002"
             assert request.ad_account_id == managed_ad_account.id
             assert request.requested_amount == Decimal("500.00")
-            assert request.status == "pending"
+            # P1-TS-002: 初始状态为 draft 或 pending_review (STATE_MACHINE.md v2.6)
+            assert request.status in ["draft", "pending_review"]
             assert request.requested_by == media_buyer_user.id
 
         def test_create_request_amount_too_large(self, topup_service, media_buyer_user, managed_ad_account):
@@ -269,7 +288,8 @@ class TestTopupService:
                 reason="管理员测试"
             )
 
-            with patch('services.topup_service.generate_request_no'):
+            # P1-TS-001: 修复 mock 路径 (services → backend.services)
+            with patch('backend.services.topup_service.generate_request_no'):
                 with pytest.raises(Exception):  # 会因为权限验证失败
                     topup_service.create_request(request_data, admin_user)
 
@@ -289,7 +309,8 @@ class TestTopupService:
                 data_operator_user
             )
 
-            assert request.status == "data_review"
+            # P1-TS-002: data_review → finance_approve (STATE_MACHINE.md v2.6)
+            assert request.status == "finance_approve"
             assert request.data_reviewed_by == data_operator_user.id
             assert request.data_review_notes == "审核通过"
 
@@ -311,8 +332,8 @@ class TestTopupService:
 
         def test_data_review_invalid_status(self, topup_service, sample_topup_request, data_operator_user):
             """测试审核无效状态"""
-            # 将状态改为已审核
-            sample_topup_request.status = "data_review"
+            # P1-TS-002: 将状态改为已审核 (data_review → finance_approve)
+            sample_topup_request.status = "finance_approve"
             topup_service.db.commit()
 
             review_data = TopupDataReviewRequest(action="approve")
@@ -342,8 +363,8 @@ class TestTopupService:
 
         def test_finance_approve_success(self, topup_service, sample_topup_request, finance_user):
             """测试财务审批通过"""
-            # 先将状态改为数据审核通过
-            sample_topup_request.status = "data_review"
+            # P1-TS-002: 先将状态改为数据审核通过 (data_review → finance_approve)
+            sample_topup_request.status = "finance_approve"
             topup_service.db.commit()
 
             approval_data = TopupFinanceApprovalRequest(
@@ -359,15 +380,16 @@ class TestTopupService:
                 finance_user
             )
 
-            assert request.status == "finance_approve"
+            # P1-TS-002: 财务审批后状态为 paid (STATE_MACHINE.md v2.6)
+            assert request.status == "paid"
             assert request.finance_approved_by == finance_user.id
             assert request.actual_amount == Decimal("950.00")
             assert request.payment_method == "bank_transfer"
 
         def test_finance_approve_reject(self, topup_service, sample_topup_request, finance_user):
             """测试财务审批拒绝"""
-            # 先将状态改为数据审核通过
-            sample_topup_request.status = "data_review"
+            # P1-TS-002: 先将状态改为数据审核通过 (data_review → finance_approve)
+            sample_topup_request.status = "finance_approve"
             topup_service.db.commit()
 
             approval_data = TopupFinanceApprovalRequest(
@@ -385,8 +407,8 @@ class TestTopupService:
 
         def test_finance_approve_no_actual_amount(self, topup_service, sample_topup_request, finance_user):
             """测试审批通过但未填写实际金额"""
-            # 先将状态改为数据审核通过
-            sample_topup_request.status = "data_review"
+            # P1-TS-002: 先将状态改为数据审核通过 (data_review → finance_approve)
+            sample_topup_request.status = "finance_approve"
             topup_service.db.commit()
 
             approval_data = TopupFinanceApprovalRequest(
@@ -484,7 +506,8 @@ class TestTopupService:
             )
 
             assert request.receipt_url == "https://example.com/receipt.jpg"
-            assert request.status == "pending"  # 状态未改变
+            # P1-TS-002: pending → pending_review (STATE_MACHINE.md v2.6)
+            assert request.status == "pending_review"  # 状态未改变
 
     class TestGetRequests:
         """获取申请列表测试"""
@@ -499,7 +522,7 @@ class TestTopupService:
                     project_id=sample_topup_request.project_id,
                     requested_amount=Decimal(f"{100 + i}.00"),
                     reason=f"测试申请{i}",
-                    status="pending",
+                    status="pending_review",  # P1-TS-002: pending → pending_review
                     requested_by=admin_user.id
                 )
                 db_session.add(request)
@@ -516,14 +539,14 @@ class TestTopupService:
 
         def test_get_requests_with_filters(self, topup_service, admin_user, sample_topup_request, db_session):
             """测试带过滤条件获取申请列表"""
-            # 创建不同状态的申请
+            # P1-TS-002: 创建不同状态的申请 (data_review → finance_approve)
             active_request = TopupRequest(
                 request_no="TOP20251112143046001",
                 ad_account_id=sample_topup_request.ad_account_id,
                 project_id=sample_topup_request.project_id,
                 requested_amount=Decimal("500.00"),
                 reason="活跃申请",
-                status="data_review",
+                status="finance_approve",  # P1-TS-002: data_review → finance_approve
                 requested_by=admin_user.id
             )
             db_session.add(active_request)
@@ -532,10 +555,10 @@ class TestTopupService:
             # 按状态过滤
             requests, total = topup_service.get_requests(
                 current_user=admin_user,
-                status="data_review"
+                status="finance_approve"  # P1-TS-002: data_review → finance_approve
             )
             assert len(requests) == 1
-            assert requests[0].status == "data_review"
+            assert requests[0].status == "finance_approve"  # P1-TS-002: data_review → finance_approve
 
     class TestGetStatistics:
         """获取统计数据测试"""

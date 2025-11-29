@@ -510,10 +510,17 @@ def check_state_machine_compliance(code: str, file_path: str = "") -> List[SotVi
     """
     检查代码中的状态枚举是否符合 STATE_MACHINE.md v2.6 定义。
 
+    Fix: P1-05 - 改进日报状态检测逻辑，减少误报
+
     检测模式：
     1. 字符串字面量中的状态值
     2. Enum 定义中的状态值
     3. 状态流转逻辑中的非法跳转
+
+    误报防护：
+    - 仅在明确与日报相关的上下文中检测日报状态
+    - 使用更精确的关键词匹配
+    - 排除通用 status 赋值
 
     Args:
         code: 代码内容
@@ -529,38 +536,72 @@ def check_state_machine_compliance(code: str, file_path: str = "") -> List[SotVi
     daily_report_states = get_daily_report_states()
     project_states = get_project_states()
 
+    # Fix: P1-05 - 日报相关上下文关键词（更精确）
+    # 必须包含这些关键词之一才认为与日报相关
+    daily_report_context_keywords = {
+        "daily_report", "dailyreport", "daily_reports", "dailyreports",
+        "dailyreportstatus", "daily_report_status",
+        "ad_spend_daily", "report_status", "日报",
+    }
+
     # 检测日报状态相关代码
+    # Fix: P1-05 - 更精确的模式匹配
     daily_report_patterns = [
-        r'status\s*[=:]\s*["\'](\w+)["\']',  # status = "xxx" 或 status: "xxx"
-        r'DailyReportStatus\.(\w+)',  # DailyReportStatus.xxx
-        r'["\']status["\']\s*:\s*["\'](\w+)["\']',  # "status": "xxx"
+        r'DailyReportStatus\.(\w+)',  # 最高优先级：明确的枚举引用
+        r'daily_report.*status\s*[=:]\s*["\'](\w+)["\']',  # daily_report.status = "xxx"
+        r'report_status\s*[=:]\s*["\'](\w+)["\']',  # report_status = "xxx"
     ]
+
+    # 通用 status 模式（需要上下文验证）
+    generic_status_pattern = r'status\s*[=:]\s*["\'](\w+)["\']'
 
     for line_num, line in enumerate(lines, 1):
         # 跳过注释
         if line.strip().startswith("#") or line.strip().startswith("//"):
             continue
 
-        # 检查是否涉及日报状态
-        if "daily" in line.lower() or "report" in line.lower() or "status" in line.lower():
-            for pattern in daily_report_patterns:
-                matches = re.findall(pattern, line, re.IGNORECASE)
-                for match in matches:
-                    state = match.lower()
-                    # 检查是否是已知的日报状态
-                    if state not in daily_report_states and _looks_like_state(state):
-                        violations.append(SotViolation(
-                            file=file_path,
-                            rule="SM-DR-001",
-                            severity="P0",
-                            detail=f"发现未定义的日报状态 '{match}'，不在 STATE_MACHINE.md v2.6 的 8 状态中",
-                            line=line_num,
-                        ))
+        line_lower = line.lower()
+
+        # Fix: P1-05 - 检查是否有明确的日报上下文
+        has_daily_report_context = any(
+            kw in line_lower for kw in daily_report_context_keywords
+        )
+
+        # 检查明确的日报状态模式（无需额外上下文验证）
+        for pattern in daily_report_patterns:
+            matches = re.findall(pattern, line, re.IGNORECASE)
+            for match in matches:
+                state = match.lower()
+                if state not in daily_report_states and _looks_like_state(state):
+                    violations.append(SotViolation(
+                        file=file_path,
+                        rule="SM-DR-001",
+                        severity="P0",
+                        detail=f"发现未定义的日报状态 '{match}'，不在 STATE_MACHINE.md v2.6 的 8 状态中",
+                        line=line_num,
+                    ))
+
+        # Fix: P1-05 - 通用 status 模式仅在有明确日报上下文时检测
+        if has_daily_report_context:
+            matches = re.findall(generic_status_pattern, line, re.IGNORECASE)
+            for match in matches:
+                state = match.lower()
+                # 额外检查：排除已知的非日报状态词
+                if (state not in daily_report_states
+                    and _looks_like_state(state)
+                    and not _is_generic_status_value(state)):
+                    violations.append(SotViolation(
+                        file=file_path,
+                        rule="SM-DR-001",
+                        severity="P0",
+                        detail=f"发现未定义的日报状态 '{match}'，不在 STATE_MACHINE.md v2.6 的 8 状态中",
+                        line=line_num,
+                    ))
 
     # 检测项目状态
     project_patterns = [
+        r'ProjectStatus\.(\w+)',  # 最高优先级：明确的枚举引用
         r'project.*status\s*[=:]\s*["\'](\w+)["\']',
-        r'ProjectStatus\.(\w+)',
     ]
 
     for line_num, line in enumerate(lines, 1):
@@ -579,6 +620,26 @@ def check_state_machine_compliance(code: str, file_path: str = "") -> List[SotVi
                         ))
 
     return violations
+
+
+def _is_generic_status_value(value: str) -> bool:
+    """
+    Fix: P1-05 - 判断是否是通用的状态值（不属于业务状态机）。
+
+    这些值在各种上下文中常见，不应触发日报状态检测。
+    """
+    generic_statuses = {
+        # HTTP 状态相关
+        "ok", "error", "success", "failed", "failure",
+        # 通用状态
+        "pending", "processing", "completed", "cancelled", "canceled",
+        "active", "inactive", "enabled", "disabled",
+        # 验证状态
+        "valid", "invalid", "verified", "unverified",
+        # 加载状态
+        "loading", "loaded", "idle",
+    }
+    return value.lower() in generic_statuses
 
 
 def check_ledger_compliance(code: str, file_path: str = "") -> List[SotViolation]:

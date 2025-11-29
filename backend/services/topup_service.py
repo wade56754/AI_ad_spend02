@@ -705,7 +705,7 @@ class TopupService:
 
         # 媒体买家可以访问分配给自己的账户
         if current_user.role == UserRole.MEDIA_BUYER.value:
-            if ad_account.assigned_user_id == current_user.id:
+            if ad_account.assigned_to == current_user.id:
                 return ad_account
 
         raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ_206")

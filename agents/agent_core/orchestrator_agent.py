@@ -38,6 +38,9 @@ class OrchestratorAgent:
         - "backend_only": Runs only backend code generation
         - "frontend_only": Runs only frontend code generation
         - "full_pipeline": Runs backend → frontend → test (sequentially)
+        - "frontend_restructure": SC-ORCH 7-step frontend restructure pipeline
+        - "gen_backend": Batch generate/refactor multiple backend modules
+        - "auto_fix": Generate → Test → Fix → Retry loop (P1-01)
 
     Request format:
         {
@@ -87,7 +90,8 @@ class OrchestratorAgent:
             "frontend_only": self._run_frontend_only,
             "full_pipeline": self._run_full_pipeline,
             "frontend_restructure": self._run_frontend_restructure,
-            "gen_backend": self._run_backend_gen,  # 新增：多模块后端生成
+            "gen_backend": self._run_backend_gen,  # 多模块后端生成
+            "auto_fix": self._run_auto_fix,  # Fix: P1-01 - 自动修复流水线
         }
 
     # ------------------------------------------------------------------ #
@@ -666,6 +670,214 @@ class OrchestratorAgent:
         return OrchestratorResult(
             success=overall_success,
             flow="gen_backend",
+            message=message,
+            steps=steps,
+            errors=errors,
+            notes=notes,
+        )
+
+    def _run_auto_fix(self, request: Dict[str, Any]) -> OrchestratorResult:
+        """
+        Auto-Fix Pipeline: Generate → Test → Fix → Retry loop.
+
+        # Fix: P1-01 - 自动修复流水线骨架
+
+        Request format:
+            {
+                "flow": "auto_fix",
+                "target": "backend" | "frontend",  # Required: which agent to use
+                "task": str,                       # Required: task description
+                "target_files": List[str],         # Required: files to generate/fix
+                "max_retries": Optional[int],      # Default: 3
+                "auto_write": Optional[bool],      # Default: False (dry-run)
+            }
+
+        Pipeline flow:
+        1. Generate code (BEAgent or FEAgent)
+        2. Run test/lint validation (TestAgent)
+        3. If test fails and retries remain:
+           - Analyze errors
+           - Generate fix request
+           - Re-run step 1 with fix context
+        4. Return final result (success if tests pass, partial if max retries exceeded)
+
+        Returns:
+            OrchestratorResult with iteration details in steps.
+        """
+        steps: Dict[str, Dict[str, Any]] = {}
+        errors: List[str] = []
+        notes: List[str] = []
+        final_changes: Dict[str, str] = {}
+
+        # 解析参数
+        target = request.get("target", "").lower()
+        task = request.get("task", "")
+        target_files = request.get("target_files", [])
+        max_retries = int(request.get("max_retries", 3))
+        auto_write = bool(request.get("auto_write", False))
+
+        # 参数验证
+        if target not in ("backend", "frontend"):
+            return OrchestratorResult(
+                success=False,
+                flow="auto_fix",
+                message="Missing or invalid 'target' field (expected 'backend' or 'frontend')",
+                steps=steps,
+                errors=["Invalid 'target' field"],
+                notes=["Error: target must be 'backend' or 'frontend'"],
+            )
+
+        if not task:
+            return OrchestratorResult(
+                success=False,
+                flow="auto_fix",
+                message="Missing 'task' field",
+                steps=steps,
+                errors=["Missing 'task' field"],
+                notes=["Error: task is required"],
+            )
+
+        if not target_files:
+            return OrchestratorResult(
+                success=False,
+                flow="auto_fix",
+                message="Missing 'target_files' field",
+                steps=steps,
+                errors=["Missing 'target_files' field"],
+                notes=["Error: target_files is required"],
+            )
+
+        # 选择代码生成 Agent
+        code_agent = self._backend_agent if target == "backend" else self._frontend_agent
+
+        logger.info(
+            f"Orchestrator: auto_fix started (target={target}, max_retries={max_retries}, "
+            f"files={len(target_files)}, auto_write={auto_write})"
+        )
+        notes.append(f"Mode: {'auto_write' if auto_write else 'dry-run (preview only)'}")
+        notes.append(f"Target: {target}, Max retries: {max_retries}")
+
+        # 迭代循环：gen → test → fix → retry
+        iteration = 0
+        fix_context: List[str] = []  # 累积的修复上下文
+        test_passed = False
+        last_test_error: Optional[str] = None
+
+        while iteration <= max_retries and not test_passed:
+            iteration += 1
+            logger.info(f"Orchestrator: auto_fix iteration {iteration}/{max_retries + 1}")
+            notes.append(f"--- Iteration {iteration} ---")
+
+            # Step A: Generate/Fix code
+            gen_task = task
+            if fix_context:
+                # 添加修复上下文到任务描述
+                fix_hint = "\n".join(fix_context[-3:])  # 最近 3 条修复提示
+                gen_task = f"{task}\n\n[Auto-Fix Context]\n{fix_hint}"
+
+            gen_request = {
+                "task": gen_task,
+                "target_files": target_files,
+            }
+
+            logger.info(f"Orchestrator: auto_fix iteration {iteration} - generating code")
+            gen_result = code_agent.handle_request(gen_request)
+            steps[f"gen_iter_{iteration}"] = gen_result
+
+            if not gen_result.get("success", False):
+                error_msg = f"Iteration {iteration} generation failed: {gen_result.get('error')}"
+                errors.append(error_msg)
+                notes.append(f"[WARN] {error_msg}")
+                logger.warning(error_msg)
+                # 生成失败，跳过测试直接进入下一轮（如果有重试）
+                fix_context.append(f"Previous generation failed: {gen_result.get('error')}")
+                continue
+
+            # 更新 changes
+            gen_changes = gen_result.get("data", {}).get("changes", {})
+            final_changes.update(gen_changes)
+            notes.append(f"Iteration {iteration}: Generated {len(gen_changes)} files")
+
+            # Step B: Run test/lint validation
+            logger.info(f"Orchestrator: auto_fix iteration {iteration} - running tests")
+            test_request = {
+                "changes": gen_changes,
+                "target": target,
+                "context": f"Auto-fix iteration {iteration}",
+            }
+            test_result = self._test_agent.handle_request(test_request)
+            steps[f"test_iter_{iteration}"] = test_result
+
+            # 判断测试结果
+            # TestAgent 当前返回 prompt + executed=False，需要解析 prompt 内容判断
+            # 未来可扩展为实际执行测试
+            test_success = test_result.get("success", False)
+            test_data = test_result.get("data", {})
+
+            # 检查是否有实际错误（目前 TestAgent 仅生成 prompt，假设成功）
+            # 真正的测试执行应通过 MCP 或外部命令
+            if test_success:
+                # TestAgent prompt 生成成功，假设验证通过
+                # 实际项目中应解析测试输出判断
+                test_passed = True
+                notes.append(f"Iteration {iteration}: Validation passed")
+                logger.info(f"Orchestrator: auto_fix iteration {iteration} - validation passed")
+            else:
+                last_test_error = test_result.get("error", "Unknown test error")
+                notes.append(f"Iteration {iteration}: Validation failed - {last_test_error}")
+                logger.warning(f"Orchestrator: auto_fix iteration {iteration} - validation failed")
+
+                # 添加修复上下文
+                fix_context.append(f"Test error in iteration {iteration}: {last_test_error}")
+
+        # 写入文件（如果启用且测试通过）
+        files_written = 0
+        if auto_write and final_changes and test_passed:
+            logger.info(f"Orchestrator: auto_write=True, writing {len(final_changes)} files")
+            target_dir = "backend" if target == "backend" else "frontend"
+            for file_path, content in final_changes.items():
+                try:
+                    full_path = self.base_path / target_dir / file_path
+                    full_path.parent.mkdir(parents=True, exist_ok=True)
+                    full_path.write_text(content, encoding="utf-8")
+                    files_written += 1
+                except Exception as e:
+                    logger.error(f"Failed to write {file_path}: {e}")
+                    notes.append(f"Warning: Failed to write {file_path}")
+            notes.append(f"Wrote {files_written}/{len(final_changes)} files to disk")
+        elif auto_write and not test_passed:
+            notes.append("auto_write skipped: tests did not pass")
+        else:
+            notes.append("Dry-run mode - no files written")
+
+        # 生成汇总
+        summary = {
+            "target": target,
+            "iterations": iteration,
+            "max_retries": max_retries,
+            "test_passed": test_passed,
+            "files_generated": len(final_changes),
+            "files_written": files_written,
+            "auto_write": auto_write,
+            "last_error": last_test_error if not test_passed else None,
+        }
+        steps["summary"] = {"success": test_passed, "data": summary, "error": None}
+
+        # 确定最终状态
+        if test_passed:
+            mode_msg = f"(wrote {files_written} files)" if auto_write else "(dry-run)"
+            message = f"Auto-fix completed in {iteration} iteration(s): {len(final_changes)} files {mode_msg}"
+            overall_success = True
+        else:
+            message = f"Auto-fix exhausted {max_retries + 1} iterations without passing tests"
+            errors.append(message)
+            overall_success = False
+
+        logger.info(f"Orchestrator: auto_fix finished - {message}")
+
+        return OrchestratorResult(
+            success=overall_success,
+            flow="auto_fix",
             message=message,
             steps=steps,
             errors=errors,

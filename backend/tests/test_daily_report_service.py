@@ -55,7 +55,8 @@ class TestDailyReportService:
         assert report.report_date == date(2024, 1, 15)
         assert report.ad_account_id == test_ad_account.id
         assert report.created_by == test_user.id
-        assert report.status == "pending"
+        # P0-DR-003 修复：初始状态应为 raw_submitted（STATE_MACHINE.md v2.6 第8章）
+        assert report.status == "raw_submitted"
         assert report.impressions == 10000
 
         # 验证审计日志已创建
@@ -143,19 +144,20 @@ class TestDailyReportService:
         )
         report = service.create_daily_report(request1, test_user)
 
-        # 审核其中一个
+        # 审核其中一个（approve 使状态流转到 final_confirmed）
         service.approve_daily_report(
             report.id,
             DailyReportAuditRequest(audit_notes="审核通过"),
             test_user
         )
 
-        # 按状态筛选
-        params = DailyReportQueryParams(status="approved")
+        # P0 修复：按状态筛选使用 SoT 定义的状态值 final_confirmed（STATE_MACHINE.md v2.6 第8章）
+        # 8状态机中审核通过对应 final_confirmed，不存在 "approved" 状态
+        params = DailyReportQueryParams(status="final_confirmed")
         reports, total = service.get_daily_reports(params, test_user)
 
         assert total == 1
-        assert reports[0].status == "approved"
+        assert reports[0].status == "final_confirmed"
 
     def test_get_daily_report_detail_success(self, db_session, test_ad_account, test_user):
         """测试成功获取日报详情"""
@@ -256,7 +258,9 @@ class TestDailyReportService:
             test_user
         )
 
-        assert approved_report.status == "approved"
+        # P0 修复：审核通过后状态为 final_confirmed（STATE_MACHINE.md v2.6 第8章）
+        # 8状态机中不存在 "approved" 状态，审核通过对应 final_confirmed
+        assert approved_report.status == "final_confirmed"
         assert approved_report.audit_notes == "数据准确"
         assert approved_report.audit_user_id == test_user.id
 
@@ -279,7 +283,11 @@ class TestDailyReportService:
             test_user
         )
 
-        assert rejected_report.status == "rejected"
+        # P0 修复：驳回后状态为 raw_submitted（STATE_MACHINE.md v2.6 第8章）
+        # 8状态机中不存在 "rejected" 状态
+        # 业务语义：驳回 = 要求投手重新提交 = 回退到 raw_submitted
+        # 或者是 trend_flagged（标记异常需复核）
+        assert rejected_report.status in ["raw_submitted", "trend_flagged"]
         assert rejected_report.audit_notes == "数据有误"
 
     def test_batch_import_success(self, db_session, test_ad_account, test_user):
@@ -410,8 +418,9 @@ class TestDailyReportService:
         assert logs[0].action == "created"
         assert any(log.action == "approved" for log in logs)
 
-    @patch('services.daily_report_service.DailyReportService.get_current_user_id')
-    def test_transaction_rollback_on_error(self, mock_get_user_id, db_session, test_ad_account):
+    # P1 修复：Mock 路径应为 'backend.services.daily_report_service'
+    @patch('backend.services.daily_report_service.DailyReportService.get_current_user_id')
+    def test_transaction_rollback_on_error(self, mock_get_user_id, db_session, test_ad_account, test_user):
         """测试错误时事务回滚"""
         mock_get_user_id.return_value = 1
         service = DailyReportService(db_session)

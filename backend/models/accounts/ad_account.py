@@ -116,6 +116,24 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
     # ========== 业务属性 ==========
 
     @property
+    def assigned_user_id(self):
+        """
+        向后兼容别名：返回 assigned_to 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 assigned_to
+        """
+        return self.assigned_to
+
+    @assigned_user_id.setter
+    def assigned_user_id(self, value):
+        """
+        向后兼容别名：设置 assigned_to 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 assigned_to
+        """
+        self.assigned_to = value
+
+    @property
     def status_enum(self) -> AdAccountStatus:
         """返回状态枚举对象"""
         return AdAccountStatus(self.status)

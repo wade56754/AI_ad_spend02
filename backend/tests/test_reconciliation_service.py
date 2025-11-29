@@ -1,10 +1,17 @@
 """
 对账管理服务测试
-Version: 1.0
+Version: 2.0 (Test Fixture & Architecture Repair Flow)
 Author: Claude协作开发
+
+修复内容:
+- P0-RS-001: 修复异常导入 (ValidationError/NotFoundError/PermissionError → custom_exceptions)
+- P0-RS-002: 修复 User 模型字段 (id int → UUID, name → username)
+- P1-RS-001: 修复状态值 (pending → draft for ReconciliationBatch)
+- P1-RS-002: 修复 mock 路径 (services → backend.services)
 """
 
 import pytest
+import uuid
 from decimal import Decimal
 from datetime import date, datetime
 from unittest.mock import Mock, patch, AsyncMock
@@ -17,6 +24,7 @@ from backend.models import User
 from backend.models import AdAccount
 from backend.models import Project
 from backend.models import Channel
+from backend.models.enums import UserRole
 from backend.schemas.reconciliation import (
     ReconciliationBatchCreateRequest,
     ReconciliationDetailReviewRequest,
@@ -24,7 +32,13 @@ from backend.schemas.reconciliation import (
     ReconciliationReportGenerateRequest
 )
 from backend.services.reconciliation_service import ReconciliationService
-from backend.exceptions import ValidationError, NotFoundError, PermissionError
+# P0-RS-001: 使用正确的异常类
+from backend.exceptions.custom_exceptions import (
+    ValidationError,
+    ResourceNotFoundError,
+    PermissionDeniedError,
+    BusinessLogicError
+)
 
 
 class TestReconciliationService:
@@ -49,21 +63,25 @@ class TestReconciliationService:
     @pytest.fixture
     def sample_user(self):
         """示例用户"""
+        # P0-RS-002: 修复 User 模型字段
         return User(
-            id=1,
-            name="测试用户",
-            email="test@example.com",
-            role="admin"
+            id=uuid.uuid4(),
+            username="test_reconciliation_user",
+            email="test_recon@example.com",
+            hashed_password="hashed_test_password",
+            role=UserRole.ADMIN.value,
+            is_active=True
         )
 
     @pytest.fixture
     def sample_batch(self):
         """示例对账批次"""
+        # P1-RS-001: status pending → draft (STATE_MACHINE.md v2.6)
         return ReconciliationBatch(
             id=1,
             batch_no="REC20251112143000123",
             reconciliation_date=date.today(),
-            status="pending",
+            status="draft",  # P1-RS-001: pending → draft
             total_accounts=0,
             matched_accounts=0,
             mismatched_accounts=0,
@@ -107,14 +125,14 @@ class TestReconciliationService:
         # 模拟没有已存在的批次
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
-        # 模拟批次创建
-        with patch('services.reconciliation_service.generate_request_no') as mock_gen:
+        # P1-RS-002: 修复 mock 路径
+        with patch('backend.services.reconciliation_service.generate_request_no') as mock_gen:
             mock_gen.return_value = "REC20251112143000123"
 
             batch = ReconciliationBatch(
                 batch_no="REC20251112143000123",
                 reconciliation_date=request.reconciliation_date,
-                status="pending",
+                status="draft",  # P1-RS-001: pending → draft
                 created_by=sample_user.id,
                 notes=request.notes
             )
@@ -128,7 +146,8 @@ class TestReconciliationService:
             # 验证
             assert result.batch_no == "REC20251112143000123"
             assert result.reconciliation_date == request.reconciliation_date
-            assert result.status == "pending"
+            # P1-RS-001: pending → draft (STATE_MACHINE.md v2.6)
+            assert result.status == "draft"
             assert result.created_by == sample_user.id
             mock_db.add.assert_called_once()
             mock_db.commit.assert_called_once()
@@ -145,11 +164,13 @@ class TestReconciliationService:
         # 模拟已存在相同日期的批次
         mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
 
-        # 执行并验证异常
-        with pytest.raises(ValidationError) as exc_info:
+        # P0-RS-001: ValidationError → BusinessLogicError
+        with pytest.raises(BusinessLogicError) as exc_info:
             await service.create_batch(request, 1)
 
-        assert exc_info.value.error_code == "BIZ_302"
+        # P0 修复：BIZ_302 不存在于 ERROR_CODES_SOT.md v2.1
+        # 资源已存在应使用 BIZ_003（资源已存在, 409）
+        assert "BIZ_003" in str(exc_info.value) or exc_info.value.code == "BIZ_003"
         assert "已存在对账批次" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -165,11 +186,11 @@ class TestReconciliationService:
         mock_query.offset.return_value = mock_query
         mock_query.limit.return_value = [sample_batch]
 
-        # 执行
+        # P1-RS-001: pending → draft
         batches, total = await service.get_batches(
             page=1,
             page_size=20,
-            status="pending",
+            status="draft",  # P1-RS-001: pending → draft
             date_from=date(2025, 11, 1),
             date_to=date(2025, 11, 30)
         )
@@ -177,7 +198,7 @@ class TestReconciliationService:
         # 验证
         assert len(batches) == 1
         assert total == 1
-        assert batches[0].status == "pending"
+        assert batches[0].status == "draft"  # P1-RS-001: pending → draft
 
     @pytest.mark.asyncio
     async def test_get_batch_by_id_not_found(self, service, mock_db):
@@ -185,11 +206,13 @@ class TestReconciliationService:
         # 模拟批次不存在
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
-        # 执行并验证异常
-        with pytest.raises(NotFoundError) as exc_info:
+        # P0-RS-001: NotFoundError → ResourceNotFoundError
+        with pytest.raises(ResourceNotFoundError) as exc_info:
             await service.get_batch_by_id(999)
 
-        assert exc_info.value.error_code == "SYS_004"
+        # P1 修复：SYS_004 是"请求过于频繁"(429)，不是"资源不存在"
+        # 资源不存在应使用 BIZ_002（资源不存在, 404）- ERROR_CODES_SOT.md v2.1
+        assert "BIZ_002" in str(exc_info.value) or exc_info.value.code == "BIZ_002"
         assert "对账批次不存在" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -225,11 +248,14 @@ class TestReconciliationService:
         sample_batch.status = "completed"
         mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
 
-        # 执行并验证异常
-        with pytest.raises(ValidationError) as exc_info:
+        # P0-RS-001: ValidationError → BusinessLogicError
+        with pytest.raises(BusinessLogicError) as exc_info:
             await service.run_reconciliation(1, 1)
 
-        assert exc_info.value.error_code == "BIZ_306"
+        # P1 修复：BIZ_306 不存在于 ERROR_CODES_SOT.md v2.1
+        # 状态转换不允许应使用 BIZ_301（状态转换不允许, 400）或 STATE_400（非法状态流转, 400）
+        assert "BIZ_301" in str(exc_info.value) or "STATE_400" in str(exc_info.value) or \
+               exc_info.value.code in ["BIZ_301", "STATE_400"]
         assert "只能对待处理的批次执行对账" in str(exc_info.value)
 
     @pytest.mark.asyncio
@@ -291,7 +317,8 @@ class TestReconciliationService:
         assert result.adjustment_type == "spend_adjustment"
         assert result.adjustment_amount == Decimal('-50.00')
         assert result.adjusted_amount == Decimal('950.00')
-        assert detail.match_status == "resolved"
+        # P1 修复：修复未定义变量 detail → sample_detail
+        assert sample_detail.match_status == "resolved"
 
     @pytest.mark.asyncio
     async def test_get_statistics(self, service, mock_db):
@@ -402,11 +429,13 @@ class TestReconciliationService:
         mock_query.filter.return_value = mock_query
         mock_query.first.return_value = None
 
-        # 执行并验证异常
-        with pytest.raises(PermissionError) as exc_info:
+        # P0-RS-001: PermissionError → PermissionDeniedError
+        with pytest.raises(PermissionDeniedError) as exc_info:
             await service.get_batch_by_id(1, sample_user.id, sample_user.role)
 
-        assert exc_info.value.error_code == "BIZ_303"
+        # P1 修复：BIZ_303 不存在于 ERROR_CODES_SOT.md v2.1
+        # 权限不足应使用 AUTH_500（权限不足, 403）- ERROR_CODES_SOT.md v2.1
+        assert "AUTH_500" in str(exc_info.value) or exc_info.value.code == "AUTH_500"
         assert "无权限访问" in str(exc_info.value)
 
     @pytest.mark.asyncio

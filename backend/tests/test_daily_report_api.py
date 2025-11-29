@@ -30,7 +30,8 @@ class TestDailyReportAPI:
         data = response.json()
         assert data["success"] is True
         assert data["data"]["report_date"] == "2024-01-15"
-        assert data["data"]["status"] == "pending"
+        # P1-DR-001 修复：状态应为 raw_submitted（STATE_MACHINE.md v2.6 第8章）
+        assert data["data"]["status"] == "raw_submitted"
         assert data["data"]["campaign_name"] == "测试广告系列"
 
     def test_create_daily_report_unauthorized(self, client, sample_daily_report_data):
@@ -77,8 +78,9 @@ class TestDailyReportAPI:
 
     def test_list_daily_reports_with_filters(self, client, auth_headers_user):
         """测试带筛选条件获取日报列表"""
+        # P1-DR-001 修复：使用 SoT 定义的状态值 raw_submitted
         response = client.get(
-            "/api/v1/daily-reports?status=pending&page=1&page_size=10",
+            "/api/v1/daily-reports?status=raw_submitted&page=1&page_size=10",
             headers=auth_headers_user
         )
 
@@ -121,7 +123,9 @@ class TestDailyReportAPI:
         assert response.status_code == 404
         data = response.json()
         assert data["success"] is False
-        assert data["error"]["code"] == "SYS_004"
+        # P1 修复：SYS_004 是"请求过于频繁"(429)，不是"资源不存在"
+        # 资源不存在应使用 BIZ_002（资源不存在, 404）- ERROR_CODES_SOT.md v2.1
+        assert data["error"]["code"] == "BIZ_002"
 
     def test_update_daily_report_success(self, client, auth_headers_user, test_ad_account, sample_daily_report_data):
         """测试成功更新日报"""
@@ -225,7 +229,11 @@ class TestDailyReportAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert data["data"]["status"] == "approved"
+        # P1 修复：审核通过后状态应为 final_confirmed（STATE_MACHINE.md v2.6 第8章）
+        # 8状态机流程：raw_submitted → trend_pending → trend_ok → final_pending → final_confirmed
+        # /approve 端点执行审核，预期将状态推进到 final_confirmed
+        # 注意：根据实际实现，可能停留在中间状态
+        assert data["data"]["status"] == "final_confirmed"
         assert data["data"]["audit_notes"] == "数据准确，审核通过"
 
     def test_approve_daily_report_permission_denied(self, client, auth_headers_user, test_ad_account, sample_daily_report_data):
@@ -277,7 +285,11 @@ class TestDailyReportAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["success"] is True
-        assert data["data"]["status"] == "rejected"
+        # P1 修复：驳回后状态应为 raw_submitted（STATE_MACHINE.md v2.6 第8章）
+        # 8状态机中不存在 "rejected" 状态
+        # 业务语义：驳回 = 要求投手重新提交 = 回退到 raw_submitted
+        # 或者是 trend_flagged（标记异常需复核），见第8.2节 "trend_flagged → raw_submitted (运营要求投手重新提交)"
+        assert data["data"]["status"] == "raw_submitted"
         assert data["data"]["audit_notes"] == "数据有误，请重新提交"
 
     def test_batch_import_success(self, client, auth_headers_operator, sample_batch_import_data):
@@ -451,9 +463,9 @@ class TestDailyReportAPI:
         data = response.json()
         assert data["success"] is True
 
-        # 按状态搜索
+        # 按状态搜索 - P1-DR-001 修复：使用 SoT 定义的状态值
         response = client.get(
-            "/api/v1/daily-reports?status=pending",
+            "/api/v1/daily-reports?status=raw_submitted",
             headers=auth_headers_user
         )
         assert response.status_code == 200

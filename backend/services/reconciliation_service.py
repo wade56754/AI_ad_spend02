@@ -31,7 +31,12 @@ from backend.schemas.reconciliation import (
 )
 from backend.utils.id_generator import generate_request_no
 # Note: Response helpers moved to routers layer
-from backend.exceptions import ValidationException, ResourceNotFoundException, AuthorizationException
+from backend.exceptions.custom_exceptions import (
+    ValidationError,
+    ResourceNotFoundError,
+    PermissionDeniedError,
+    BusinessLogicError
+)
 
 
 class ReconciliationService:
@@ -52,9 +57,9 @@ class ReconciliationService:
         ).first()
 
         if existing:
-            raise ValidationError(
-                "BIZ_302",
-                "该日期已存在对账批次"
+            raise BusinessLogicError(
+                message="该日期已存在对账批次",
+                error_code="BIZ_302"
             )
 
         # 生成批次号
@@ -132,7 +137,10 @@ class ReconciliationService:
         ).first()
 
         if not batch:
-            raise NotFoundError("SYS_004", "对账批次不存在")
+            raise ResourceNotFoundError(
+                message="对账批次不存在",
+                error_code="SYS_004"
+            )
 
         # 权限检查
         if user_role in ["account_manager", "media_buyer"]:
@@ -150,7 +158,10 @@ class ReconciliationService:
                 )
 
             if not has_permission.first():
-                raise PermissionError("BIZ_303", "无权限访问此对账批次")
+                raise PermissionDeniedError(
+                    message="无权限访问此对账批次",
+                    error_code="BIZ_303"
+                )
 
         return batch
 
@@ -164,7 +175,10 @@ class ReconciliationService:
 
         # 检查状态 - 只能从 draft 或 pending_review 状态执行对账
         if batch.status not in [ReconciliationBatchStatus.DRAFT.value, ReconciliationBatchStatus.PENDING_REVIEW.value]:
-            raise ValidationError("BIZ_306", "只能对草稿或待审核的批次执行对账")
+            raise BusinessLogicError(
+                message="只能对草稿或待审核的批次执行对账",
+                error_code="BIZ_306"
+            )
 
         # 更新批次状态为 pending_review
         batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
@@ -298,11 +312,17 @@ class ReconciliationService:
         ).first()
 
         if not detail:
-            raise NotFoundError("SYS_004", "对账详情不存在")
+            raise ResourceNotFoundError(
+                message="对账详情不存在",
+                error_code="SYS_004"
+            )
 
         # 对账详情状态检查 - pending, manual_review, exception 可审核
         if detail.match_status not in ["pending", "manual_review", "exception"]:
-            raise ValidationError("BIZ_306", "只能审核待处理或异常的对账详情")
+            raise BusinessLogicError(
+                message="只能审核待处理或异常的对账详情",
+                error_code="BIZ_306"
+            )
 
         # 更新审核信息
         detail.reviewed_by = current_user_id
@@ -346,7 +366,10 @@ class ReconciliationService:
         ).first()
 
         if not detail:
-            raise NotFoundError("SYS_004", "对账详情不存在")
+            raise ResourceNotFoundError(
+                message="对账详情不存在",
+                error_code="SYS_004"
+            )
 
         # 计算调整后金额
         adjusted_amount = request.original_amount + request.adjustment_amount

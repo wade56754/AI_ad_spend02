@@ -2,6 +2,7 @@
 Supabase MCP tool wrapper.
 
 # Fix: P1-02 - 改进 SupabaseTool 提示，提供清晰的"未配置"状态
+# Fix: P1-06 - 统一返回结构为 SkillResult，与 Agent 层协议对齐
 
 当前状态：占位实现，需要配置 Supabase MCP 才能使用。
 配置方式：
@@ -12,6 +13,8 @@ Supabase MCP tool wrapper.
 
 from typing import Optional, Any, List, Dict
 import logging
+
+from .types import SkillResult
 
 logger = logging.getLogger(__name__)
 
@@ -103,82 +106,82 @@ class SupabaseTool:
         if not self._mcp_configured:
             raise SupabaseNotConfiguredError(operation)
 
-    def execute_sql(self, query: str, project_id: Optional[str] = None) -> Dict[str, Any]:
+    def execute_sql(self, query: str, project_id: Optional[str] = None) -> SkillResult:
         """
         Execute SQL query.
 
         # Fix: P1-02 - 返回结构化结果而非直接抛异常
+        # Fix: P1-06 - 返回类型改为 SkillResult
 
         Args:
             query: SQL query to execute
             project_id: Optional project ID override
 
         Returns:
-            {
-                "success": False,
-                "error": str,
-                "data": None,
-                "hint": str  # 配置提示
-            }
+            SkillResult: 统一返回结构
+                - success: bool
+                - data: 查询结果或 None
+                - error: 错误信息或 None
+                - raw: 调试信息（包含 query_preview, hint 等）
         """
         pid = self._require_project_id(project_id)
 
         # Fix: P1-02 - MCP 未配置时返回结构化错误
+        # Fix: P1-06 - 使用 SkillResult 结构
         if not self._mcp_configured:
             logger.warning(f"execute_sql called but MCP not configured (project: {pid[:8]}...)")
-            return {
-                "success": False,
-                "error": "Supabase MCP 未配置",
-                "data": None,
-                "hint": "请先配置 Supabase MCP server，然后调用 SupabaseTool.set_configured(True)",
-                "query_preview": query[:100] + "..." if len(query) > 100 else query,
-            }
+            return SkillResult(
+                success=False,
+                data=None,
+                error="Supabase MCP 未配置。请先配置 Supabase MCP server，然后调用 SupabaseTool.set_configured(True)",
+                raw=f"query_preview: {query[:100]}{'...' if len(query) > 100 else ''}",
+            )
 
         # TODO: 实际集成 Supabase MCP (mcp__supabase__execute_sql)
         raise NotImplementedError("Supabase MCP integration pending")
 
     def apply_migration(
         self, name: str, query: str, project_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> SkillResult:
         """
         Apply database migration.
 
         # Fix: P1-02 - 返回结构化结果
+        # Fix: P1-06 - 返回类型改为 SkillResult
         """
         pid = self._require_project_id(project_id)
 
         if not self._mcp_configured:
             logger.warning(f"apply_migration called but MCP not configured")
-            return {
-                "success": False,
-                "error": "Supabase MCP 未配置",
-                "data": None,
-                "hint": "请先配置 Supabase MCP server",
-                "migration_name": name,
-            }
+            return SkillResult(
+                success=False,
+                data=None,
+                error="Supabase MCP 未配置。请先配置 Supabase MCP server",
+                raw=f"migration_name: {name}",
+            )
 
         # TODO: 实际集成 Supabase MCP
         raise NotImplementedError("Supabase MCP integration pending")
 
     def list_tables(
         self, project_id: Optional[str] = None, schemas: Optional[List[str]] = None
-    ) -> Dict[str, Any]:
+    ) -> SkillResult:
         """
         List database tables.
 
         # Fix: P1-02 - 返回结构化结果
+        # Fix: P1-06 - 返回类型改为 SkillResult
         """
         pid = self._require_project_id(project_id)
 
         if not self._mcp_configured:
             logger.warning(f"list_tables called but MCP not configured")
-            return {
-                "success": False,
-                "error": "Supabase MCP 未配置",
-                "data": None,
-                "hint": "请先配置 Supabase MCP server",
-                "schemas_requested": schemas or ["public"],
-            }
+            return SkillResult(
+                success=False,
+                data=None,
+                error="Supabase MCP 未配置。请先配置 Supabase MCP server",
+                raw=f"schemas_requested: {schemas or ['public']}",
+            )
 
         # TODO: 实际集成 Supabase MCP
         raise NotImplementedError("Supabase MCP integration pending")

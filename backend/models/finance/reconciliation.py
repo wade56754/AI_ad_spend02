@@ -118,6 +118,60 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
     # ========== 业务属性（5状态机）==========
 
     @property
+    def total_platform_spend(self):
+        """
+        向后兼容别名：返回 total_system_spend 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 total_system_spend
+        """
+        return self.total_system_spend
+
+    @total_platform_spend.setter
+    def total_platform_spend(self, value):
+        """
+        向后兼容别名：设置 total_system_spend 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 total_system_spend
+        """
+        self.total_system_spend = value
+
+    @property
+    def total_internal_spend(self):
+        """
+        向后兼容别名：返回 total_actual_spend 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 total_actual_spend
+        """
+        return self.total_actual_spend
+
+    @total_internal_spend.setter
+    def total_internal_spend(self, value):
+        """
+        向后兼容别名：设置 total_actual_spend 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 total_actual_spend
+        """
+        self.total_actual_spend = value
+
+    @property
+    def total_difference(self):
+        """
+        向后兼容别名：返回 discrepancy 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 discrepancy
+        """
+        return self.discrepancy
+
+    @total_difference.setter
+    def total_difference(self, value):
+        """
+        向后兼容别名：设置 discrepancy 的值
+
+        注意：此属性为向后兼容保留，新代码应使用 discrepancy
+        """
+        self.discrepancy = value
+
+    @property
     def status_enum(self) -> ReconciliationBatchStatus:
         """返回状态枚举对象"""
         return ReconciliationBatchStatus(self.status)

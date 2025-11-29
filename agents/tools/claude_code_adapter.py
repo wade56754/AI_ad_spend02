@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import re
+import time
 from typing import Optional, Dict, Any
 from pathlib import Path
 
@@ -22,13 +23,23 @@ logger = logging.getLogger(__name__)
 
 # Claude Code CLI 配置
 # Fix: P2-10 - 增加默认超时时间，LLM 调用可能需要较长时间
+# Fix: P1-02 - 添加重试机制配置
 CLAUDE_CODE_CONFIG = {
     "command": "claude",  # Claude Code CLI 命令
     "timeout": 300,  # 默认超时时间（秒）- 5分钟
     "timeout_simple": 120,  # 简单请求超时（秒）- 2分钟
     "timeout_complex": 600,  # 复杂请求超时（秒）- 10分钟
     "max_retries": 2,  # 最大重试次数
+    "retry_delay": 2.0,  # 重试初始延迟（秒）
+    "retry_backoff": 2.0,  # 重试延迟倍数（指数退避）
 }
+
+
+# Fix: P1-02 - 可重试的错误类型
+_RETRYABLE_ERRORS = (
+    subprocess.TimeoutExpired,  # 超时
+    OSError,  # 进程启动失败等
+)
 
 
 def _find_claude_cli() -> Optional[str]:
@@ -110,22 +121,27 @@ def call_claude_code(
     output_format: str = "text",
     working_dir: Optional[Path] = None,
     timeout: Optional[int] = None,
+    max_retries: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
-    通过 Claude Code CLI 调用 Claude 模型。
+    通过 Claude Code CLI 调用 Claude 模型（带重试机制）。
+
+    Fix: P1-02 - 添加重试机制，处理临时性错误
 
     Args:
         prompt: 发送给 Claude 的提示词
         output_format: 期望的输出格式 ("text" 或 "json")
         working_dir: 工作目录（默认当前目录）
         timeout: 超时时间（秒），默认使用配置值
+        max_retries: 最大重试次数，默认使用配置值
 
     Returns:
         {
             "success": bool,
             "content": str,  # 原始响应内容
             "data": Any,     # 如果 output_format="json"，解析后的数据
-            "error": Optional[str]
+            "error": Optional[str],
+            "retries": int,  # 实际重试次数
         }
     """
     claude_cli = _find_claude_cli()
@@ -135,103 +151,140 @@ def call_claude_code(
             "content": "",
             "data": None,
             "error": "Claude Code CLI 未找到。请确保已安装 Claude Code 并添加到 PATH。",
+            "retries": 0,
         }
 
     timeout = timeout or CLAUDE_CODE_CONFIG["timeout"]
+    max_retries = max_retries if max_retries is not None else CLAUDE_CODE_CONFIG["max_retries"]
+    retry_delay = CLAUDE_CODE_CONFIG["retry_delay"]
+    retry_backoff = CLAUDE_CODE_CONFIG["retry_backoff"]
     cwd = str(working_dir) if working_dir else None
 
-    logger.info(f"Calling Claude Code CLI: timeout={timeout}s")
+    logger.info(f"Calling Claude Code CLI: timeout={timeout}s, max_retries={max_retries}")
     logger.debug(f"Prompt length: {len(prompt)} chars")
 
-    try:
-        # 使用 -p 参数传递提示词（print mode，非交互）
-        # Note: For very long prompts, consider using stdin instead
-        cmd = [
-            claude_cli,
-            "-p", prompt,  # 直接传递提示词
-            "--output-format", "text",  # 纯文本输出
-        ]
-
-        # Windows 上，对于 .cmd 和 .bat 文件，或者简单的命令名（需要 PATH 解析），使用 shell=True
-        # 对于简单的命令名（如 "claude"），在 Windows 上也需要 shell=True 来正确解析 PATH
-        # 如果路径不是绝对路径，或者文件不存在（需要通过 PATH 解析），使用 shell=True
-        use_shell = False
-        if os.name == "nt":  # Windows
-            if claude_cli.endswith((".cmd", ".bat")):
+    # Windows 上，对于 .cmd 和 .bat 文件，或者简单的命令名（需要 PATH 解析），使用 shell=True
+    use_shell = False
+    if os.name == "nt":  # Windows
+        if claude_cli.endswith((".cmd", ".bat")):
+            use_shell = True
+        elif not os.path.isabs(claude_cli):
+            if not os.path.exists(claude_cli):
                 use_shell = True
-            elif not os.path.isabs(claude_cli):
-                # 对于相对路径或命令名，检查是否是绝对路径或文件是否存在
-                if not os.path.exists(claude_cli):
-                    # 需要通过 PATH 解析，使用 shell=True
-                    use_shell = True
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            cwd=cwd,
-            encoding="utf-8",
-            shell=use_shell,
-        )
+    cmd = [
+        claude_cli,
+        "-p", prompt,  # 直接传递提示词
+        "--output-format", "text",  # 纯文本输出
+    ]
 
-        if result.returncode != 0:
-            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-            logger.error(f"Claude CLI error (exit code {result.returncode}): {error_msg}")
+    last_error: Optional[str] = None
+    retries = 0
+
+    for attempt in range(max_retries + 1):
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                cwd=cwd,
+                encoding="utf-8",
+                shell=use_shell,
+            )
+
+            if result.returncode != 0:
+                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                # 非零退出码，部分情况可重试（如临时网络问题）
+                # 但大部分非零退出码是永久性错误，不重试
+                logger.error(f"Claude CLI error (exit code {result.returncode}): {error_msg}")
+                return {
+                    "success": False,
+                    "content": result.stdout,
+                    "data": None,
+                    "error": f"Claude CLI 返回错误 (exit {result.returncode}): {error_msg[:200]}",
+                    "retries": retries,
+                }
+
+            content = result.stdout.strip()
+            logger.debug(f"Claude response received: {len(content)} chars (attempt {attempt + 1})")
+
+            # 解析 JSON（如果需要）
+            data = None
+            parse_error = None
+            if output_format == "json":
+                try:
+                    data = _extract_json(content)
+                except json.JSONDecodeError as e:
+                    parse_error = str(e)
+                    logger.warning(f"JSON parsing failed: {e}. Content preview: {content[:100]}...")
+
             return {
-                "success": False,
-                "content": result.stdout,
-                "data": None,
-                "error": f"Claude CLI 返回错误 (exit {result.returncode}): {error_msg[:200]}",
+                "success": True,
+                "content": content,
+                "data": data,
+                "error": None,
+                "parse_warning": parse_error,
+                "retries": retries,
             }
 
-        content = result.stdout.strip()
-        logger.debug(f"Claude response received: {len(content)} chars")
+        except subprocess.TimeoutExpired:
+            last_error = f"Claude CLI 超时（{timeout}秒）"
+            retries = attempt
+            if attempt < max_retries:
+                delay = retry_delay * (retry_backoff ** attempt)
+                logger.warning(
+                    f"Claude CLI timeout (attempt {attempt + 1}/{max_retries + 1}), "
+                    f"retrying in {delay:.1f}s..."
+                )
+                time.sleep(delay)
+            else:
+                logger.error(f"Claude CLI timeout after {max_retries + 1} attempts")
 
-        # 解析 JSON（如果需要）
-        data = None
-        parse_error = None
-        if output_format == "json":
-            try:
-                # 尝试从响应中提取 JSON
-                data = _extract_json(content)
-            except json.JSONDecodeError as e:
-                parse_error = str(e)
-                logger.warning(f"JSON parsing failed: {e}. Content preview: {content[:100]}...")
-                # 不返回错误，保留原始内容供调用者处理
+        except FileNotFoundError:
+            # 不可重试：CLI 不存在
+            logger.error(f"Claude CLI not found at: {claude_cli}")
+            return {
+                "success": False,
+                "content": "",
+                "data": None,
+                "error": f"Claude CLI 可执行文件未找到: {claude_cli}。请确保已正确安装。",
+                "retries": retries,
+            }
 
-        return {
-            "success": True,
-            "content": content,
-            "data": data,
-            "error": None,
-            "parse_warning": parse_error,  # 新增：JSON 解析警告
-        }
+        except OSError as e:
+            # 可重试：进程启动失败等
+            last_error = f"Claude CLI OSError: {e}"
+            retries = attempt
+            if attempt < max_retries:
+                delay = retry_delay * (retry_backoff ** attempt)
+                logger.warning(
+                    f"Claude CLI OSError (attempt {attempt + 1}/{max_retries + 1}): {e}, "
+                    f"retrying in {delay:.1f}s..."
+                )
+                time.sleep(delay)
+            else:
+                logger.error(f"Claude CLI OSError after {max_retries + 1} attempts: {e}")
 
-    except subprocess.TimeoutExpired:
-        logger.error(f"Claude CLI timeout after {timeout}s")
-        return {
-            "success": False,
-            "content": "",
-            "data": None,
-            "error": f"Claude CLI 超时（{timeout}秒）。考虑增加 timeout 参数或简化 prompt。",
-        }
-    except FileNotFoundError:
-        logger.error(f"Claude CLI not found at: {claude_cli}")
-        return {
-            "success": False,
-            "content": "",
-            "data": None,
-            "error": f"Claude CLI 可执行文件未找到: {claude_cli}。请确保已正确安装。",
-        }
-    except Exception as e:
-        logger.error(f"Claude CLI exception: {type(e).__name__}: {e}")
-        return {
-            "success": False,
-            "content": "",
-            "data": None,
-            "error": f"Claude CLI 异常 ({type(e).__name__}): {str(e)[:200]}",
-        }
+        except Exception as e:
+            # 其他异常：不重试
+            logger.error(f"Claude CLI exception: {type(e).__name__}: {e}")
+            return {
+                "success": False,
+                "content": "",
+                "data": None,
+                "error": f"Claude CLI 异常 ({type(e).__name__}): {str(e)[:200]}",
+                "retries": retries,
+            }
+
+    # 所有重试都失败
+    return {
+        "success": False,
+        "content": "",
+        "data": None,
+        "error": f"{last_error}。已重试 {max_retries} 次。考虑增加 timeout 参数或简化 prompt。",
+        "retries": retries,
+    }
 
 
 def _extract_json(text: str) -> Any:

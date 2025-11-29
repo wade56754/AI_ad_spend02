@@ -150,3 +150,65 @@ class TestCheckClaudeCodeAvailable:
         """Available field should be boolean."""
         result = check_claude_code_available()
         assert isinstance(result["available"], bool)
+
+
+class TestRetryMechanism:
+    """Tests for call_claude_code retry mechanism (P1-02 fix)."""
+
+    def test_config_has_retry_settings(self):
+        """Config should have retry-related settings."""
+        assert "max_retries" in CLAUDE_CODE_CONFIG
+        assert "retry_delay" in CLAUDE_CODE_CONFIG
+        assert "retry_backoff" in CLAUDE_CODE_CONFIG
+
+    def test_retry_config_values_reasonable(self):
+        """Retry config values should be reasonable."""
+        assert CLAUDE_CODE_CONFIG["max_retries"] >= 0
+        assert CLAUDE_CODE_CONFIG["max_retries"] <= 5
+        assert CLAUDE_CODE_CONFIG["retry_delay"] >= 0.5
+        assert CLAUDE_CODE_CONFIG["retry_backoff"] >= 1.0
+
+    def test_call_claude_code_returns_retries_count(self, monkeypatch):
+        """call_claude_code should return retries count in result."""
+        from agents.tools import claude_code_adapter
+
+        # Mock _find_claude_cli to return None (CLI not found)
+        monkeypatch.setattr(claude_code_adapter, "_find_claude_cli", lambda: None)
+
+        from agents.tools.claude_code_adapter import call_claude_code
+        result = call_claude_code("test prompt")
+
+        assert "retries" in result
+        assert isinstance(result["retries"], int)
+        assert result["retries"] == 0  # No retries when CLI not found
+
+    def test_non_retryable_error_returns_immediately(self, monkeypatch):
+        """Non-retryable errors (CLI not found) should not retry."""
+        from agents.tools import claude_code_adapter
+
+        call_count = {"value": 0}
+
+        def mock_find_cli():
+            call_count["value"] += 1
+            return None  # CLI not found
+
+        monkeypatch.setattr(claude_code_adapter, "_find_claude_cli", mock_find_cli)
+
+        from agents.tools.claude_code_adapter import call_claude_code
+        result = call_claude_code("test prompt", max_retries=3)
+
+        assert result["success"] is False
+        assert call_count["value"] == 1  # Only called once, no retries
+
+    def test_result_includes_error_on_failure(self, monkeypatch):
+        """Failed calls should include error message."""
+        from agents.tools import claude_code_adapter
+        monkeypatch.setattr(claude_code_adapter, "_find_claude_cli", lambda: None)
+
+        from agents.tools.claude_code_adapter import call_claude_code
+        result = call_claude_code("test prompt")
+
+        assert result["success"] is False
+        assert result["error"] is not None
+        assert isinstance(result["error"], str)
+        assert len(result["error"]) > 0
