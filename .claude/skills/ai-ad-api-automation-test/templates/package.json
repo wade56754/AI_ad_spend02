@@ -1,0 +1,40 @@
+{
+  "name": "ai-ad-spend-api-tests",
+  "version": "1.0.0",
+  "description": "API automation tests for AI Ad Spend system using Newman",
+  "main": "newman_runner.js",
+  "scripts": {
+    "test": "node newman_runner.js",
+    "test:daily-report": "node newman_runner.js daily_report_api.json local.json",
+    "test:topup": "node newman_runner.js topup_api.json local.json",
+    "test:ledger": "node newman_runner.js ledger_api.json local.json",
+    "test:auth": "node newman_runner.js auth_api.json local.json",
+    "test:all": "npm run test:auth && npm run test:daily-report && npm run test:topup && npm run test:ledger",
+    "test:local": "API_BASE_URL=http://localhost:8000 npm test",
+    "test:staging": "API_BASE_URL=https://staging.example.com npm test",
+    "test:production": "API_BASE_URL=https://api.example.com npm test",
+    "test:ci": "npm run test:all -- --bail",
+    "report:clean": "rm -rf reports/*.html reports/*.json",
+    "setup": "npm install && mkdir -p collections environments reports"
+  },
+  "keywords": [
+    "api-testing",
+    "newman",
+    "postman",
+    "automation",
+    "ai-ad-spend"
+  ],
+  "author": "AI Ad Spend Team",
+  "license": "MIT",
+  "devDependencies": {
+    "newman": "^6.0.0",
+    "newman-reporter-htmlextra": "^1.22.11"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/AI_ad_spend02"
+  }
+}

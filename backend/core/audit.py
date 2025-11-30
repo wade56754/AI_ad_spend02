@@ -40,10 +40,16 @@ class AuditLevel(str, Enum):
     CRITICAL = "critical"
 
 
-# 审计日志表
-class AuditLog(Base):
-    """审计日志表"""
-    __tablename__ = "audit_logs"
+# 审计日志表（Core 模块版本 - 重命名以避免与 models/audit/audit_log.py 冲突）
+class CoreAuditLog(Base):
+    """
+    Core 模块审计日志表
+
+    注意：此类名从 AuditLog 改为 CoreAuditLog 以避免与
+    backend/models/audit/audit_log.py 中的 AuditLog 冲突。
+    推荐使用 backend/models/audit/audit_log.py 中的 AuditLog 作为主要审计模型。
+    """
+    __tablename__ = "core_audit_logs"  # 使用不同表名避免冲突
     __table_args__ = {'extend_existing': True}  # 允许扩展已存在的表
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -109,11 +115,11 @@ class AuditLogger:
         user_agent: str = None,
         level: AuditLevel = AuditLevel.MEDIUM,
         description: str = None
-    ) -> AuditLog:
+    ) -> CoreAuditLog:
         """记录审计日志"""
         try:
             # 创建审计记录
-            audit_log = AuditLog(
+            audit_log = CoreAuditLog(
                 user_id=user_id,
                 action=action.value,
                 table_name=table_name,
@@ -485,19 +491,19 @@ class AuditQuery:
         start_date: datetime = None,
         end_date: datetime = None,
         action: AuditAction = None
-    ) -> List[AuditLog]:
+    ) -> List[CoreAuditLog]:
         """获取用户操作记录"""
         with get_db_session() as session:
-            query = session.query(AuditLog).filter(AuditLog.user_id == user_id)
+            query = session.query(CoreAuditLog).filter(CoreAuditLog.user_id == user_id)
 
             if start_date:
-                query = query.filter(AuditLog.created_at >= start_date)
+                query = query.filter(CoreAuditLog.created_at >= start_date)
             if end_date:
-                query = query.filter(AuditLog.created_at <= end_date)
+                query = query.filter(CoreAuditLog.created_at <= end_date)
             if action:
-                query = query.filter(AuditLog.action == action.value)
+                query = query.filter(CoreAuditLog.action == action.value)
 
-            return query.order_by(AuditLog.created_at.desc()).all()
+            return query.order_by(CoreAuditLog.created_at.desc()).all()
 
     @staticmethod
     def get_table_actions(
@@ -505,19 +511,19 @@ class AuditQuery:
         start_date: datetime = None,
         end_date: datetime = None,
         action: AuditAction = None
-    ) -> List[AuditLog]:
+    ) -> List[CoreAuditLog]:
         """获取表操作记录"""
         with get_db_session() as session:
-            query = session.query(AuditLog).filter(AuditLog.table_name == table_name)
+            query = session.query(CoreAuditLog).filter(CoreAuditLog.table_name == table_name)
 
             if start_date:
-                query = query.filter(AuditLog.created_at >= start_date)
+                query = query.filter(CoreAuditLog.created_at >= start_date)
             if end_date:
-                query = query.filter(AuditLog.created_at <= end_date)
+                query = query.filter(CoreAuditLog.created_at <= end_date)
             if action:
-                query = query.filter(AuditLog.action == action.value)
+                query = query.filter(CoreAuditLog.action == action.value)
 
-            return query.order_by(AuditLog.created_at.desc()).all()
+            return query.order_by(CoreAuditLog.created_at.desc()).all()
 
     @staticmethod
     def get_security_events(

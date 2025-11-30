@@ -1,0 +1,670 @@
+{
+  "info": {
+    "_postman_id": "ai-ad-spend-daily-report-api",
+    "name": "AI Ad Spend - Daily Report API Tests",
+    "description": "API contract tests for Daily Report module\n\nSoT References:\n- docs/2.sot/STATE_MACHINE.md v2.6 Section 8 (DailyReport 8-state machine)\n- docs/2.sot/API_SOT.md v9.0 (API endpoints)\n- docs/2.sot/ERROR_CODES_SOT.md v2.1 (error codes)\n- docs/2.sot/AUTH_SPEC.md v2.0 (permissions)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{BASE_URL}}/api/{{API_VERSION}}"
+    },
+    {
+      "key": "report_id",
+      "value": ""
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Setup",
+      "description": "Authentication and setup requests",
+      "item": [
+        {
+          "name": "Login as Media Buyer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Validate response structure",
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success=true', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Response contains access_token', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.have.property('access_token');",
+                  "});",
+                  "",
+                  "// Store token for subsequent requests",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('media_buyer_token', json.data.access_token);",
+                  "pm.environment.set('access_token', json.data.access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{media_buyer_email}}\",\n  \"password\": \"{{media_buyer_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login as Data Operator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('data_operator_token', json.data.access_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{data_operator_email}}\",\n  \"password\": \"{{data_operator_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Happy Path",
+      "description": "Complete successful flow: raw_submitted -> ... -> final_locked\n\nSoT: STATE_MACHINE.md v2.6 Section 8.2",
+      "item": [
+        {
+          "name": "Step 1: Create Daily Report (raw_submitted)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set access token to media buyer",
+                  "pm.environment.set('access_token', pm.environment.get('media_buyer_token'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Contract test: API_SOT.md v9.0 - POST /daily-reports/",
+                  "pm.test('Status code is 201 Created', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has success=true', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Response has data.id', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.have.property('id');",
+                  "});",
+                  "",
+                  "// STATE_MACHINE.md v2.6: Initial state is raw_submitted",
+                  "pm.test('Status is raw_submitted (STATE_MACHINE.md 8.2)', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data.status).to.equal('raw_submitted');",
+                  "});",
+                  "",
+                  "// Store report_id for subsequent tests",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('report_id', json.data.id);",
+                  "console.log('Created report with ID:', json.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad_account_id\": \"test-account-001\",\n  \"report_date\": \"{{$isoTimestamp}}\",\n  \"conversions_raw\": 100,\n  \"raw_spend\": \"1000.00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", ""]
+            }
+          }
+        },
+        {
+          "name": "Step 2: Trigger Trend Check (trend_pending)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Use data operator token for system operations",
+                  "pm.environment.set('access_token', pm.environment.get('data_operator_token'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// STATE_MACHINE.md v2.6: raw_submitted -> trend_pending",
+                  "pm.test('Status transitions correctly', function() {",
+                  "    const json = pm.response.json();",
+                  "    const validStatuses = ['trend_pending', 'trend_ok'];",
+                  "    pm.expect(validStatuses).to.include(json.data.status);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}/trigger-trend-check",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}", "trigger-trend-check"]
+            }
+          }
+        },
+        {
+          "name": "Step 3: Complete Trend Check (trend_ok)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// STATE_MACHINE.md v2.6: trend_pending -> trend_ok",
+                  "pm.test('Status is trend_ok', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data.status).to.equal('trend_ok');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"result\": \"ok\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}/complete-trend-check",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}", "complete-trend-check"]
+            }
+          }
+        },
+        {
+          "name": "Step 4: Input Real Spend (final_pending)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// STATE_MACHINE.md v2.6: trend_ok -> final_pending",
+                  "pm.test('Status is final_pending', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data.status).to.equal('final_pending');",
+                  "});",
+                  "",
+                  "pm.test('Real spend is recorded', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data.real_spend).to.equal('980.00');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"real_spend\": \"980.00\",\n  \"conversions_final\": 95\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}/input-real-spend",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}", "input-real-spend"]
+            }
+          }
+        },
+        {
+          "name": "Step 5: Confirm Final (final_confirmed)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// STATE_MACHINE.md v2.6: final_pending -> final_confirmed",
+                  "pm.test('Status is final_confirmed', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data.status).to.equal('final_confirmed');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}/confirm-final",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}", "confirm-final"]
+            }
+          }
+        },
+        {
+          "name": "Step 6: Lock Report (final_locked)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// STATE_MACHINE.md v2.6: final_confirmed -> final_locked (TERMINAL)",
+                  "pm.test('Status is final_locked (terminal state)', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data.status).to.equal('final_locked');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}/lock",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}", "lock"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Permission Tests",
+      "description": "Permission boundary tests\n\nSoT: AUTH_SPEC.md v2.0 Section 3",
+      "item": [
+        {
+          "name": "Media Buyer cannot input real_spend (AUTH_501)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('access_token', pm.environment.get('media_buyer_token'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// AUTH_SPEC.md v2.0: media_buyer cannot input real_spend",
+                  "pm.test('Status code is 403 Forbidden', function() {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "// ERROR_CODES_SOT.md v2.1: AUTH_501",
+                  "pm.test('Error code is AUTH_501', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.code).to.equal('AUTH_501');",
+                  "});",
+                  "",
+                  "pm.test('Response has success=false', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"real_spend\": \"980.00\",\n  \"conversions_final\": 95\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}/input-real-spend",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}", "input-real-spend"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "State Machine Violation Tests",
+      "description": "Illegal state transition tests\n\nSoT: STATE_MACHINE.md v2.6 Section 8.2 (whitelist)",
+      "item": [
+        {
+          "name": "Cannot skip from raw_submitted to final_pending (STATE_001)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('access_token', pm.environment.get('data_operator_token'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// STATE_MACHINE.md v2.6: raw_submitted can only -> trend_pending",
+                  "pm.test('Status code is 400 Bad Request', function() {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "// ERROR_CODES_SOT.md v2.1: STATE_001",
+                  "pm.test('Error code is STATE_001', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.code).to.equal('STATE_001');",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions invalid transition', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.message.toLowerCase()).to.include('invalid');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"real_spend\": \"980.00\",\n  \"conversions_final\": 95\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}/input-real-spend",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}", "input-real-spend"]
+            },
+            "description": "Attempt to input real_spend on a report in raw_submitted state (should fail)"
+          }
+        },
+        {
+          "name": "Terminal state cannot be modified (STATE_100)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// STATE_MACHINE.md v2.6: final_locked is TERMINAL",
+                  "pm.test('Status code is 403 Forbidden', function() {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "// ERROR_CODES_SOT.md v2.1: STATE_100 (terminal state protection)",
+                  "pm.test('Error code is STATE_100', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.code).to.equal('STATE_100');",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions terminal state', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.message.toLowerCase()).to.include('terminal');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"conversions_final\": 999\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/{{report_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", "{{report_id}}"]
+            },
+            "description": "Attempt to modify a report in final_locked state (should fail)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Code Tests",
+      "description": "Error code validation tests\n\nSoT: ERROR_CODES_SOT.md v2.1",
+      "item": [
+        {
+          "name": "Negative amount returns BIZ_100",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('access_token', pm.environment.get('media_buyer_token'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// ERROR_CODES_SOT.md v2.1: BIZ_100 - Amount must be positive",
+                  "pm.test('Status code is 400 Bad Request', function() {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is BIZ_100', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.code).to.equal('BIZ_100');",
+                  "});",
+                  "",
+                  "pm.test('Error message mentions positive', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.message.toLowerCase()).to.include('positive');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad_account_id\": \"test-account-001\",\n  \"report_date\": \"{{$isoTimestamp}}\",\n  \"conversions_raw\": 100,\n  \"raw_spend\": \"-1000.00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", ""]
+            }
+          }
+        },
+        {
+          "name": "Missing required field returns VALIDATION_001",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set('access_token', pm.environment.get('media_buyer_token'));"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// ERROR_CODES_SOT.md v2.1: VALIDATION_001 - Missing required field",
+                  "pm.test('Status code is 400 Bad Request', function() {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_001', function() {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.code).to.equal('VALIDATION_001');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ad_account_id\": \"test-account-001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/daily-reports/",
+              "host": ["{{base_url}}"],
+              "path": ["daily-reports", ""]
+            },
+            "description": "Missing report_date, conversions_raw, raw_spend"
+          }
+        }
+      ]
+    }
+  ]
+}
