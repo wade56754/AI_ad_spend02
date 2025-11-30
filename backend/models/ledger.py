@@ -52,12 +52,15 @@ class LedgerEntryType(str, PyEnum):
     账本分录类型枚举
 
     必须与 LEDGER_SOT.md v1.1 第2.2节保持严格一致。
-    PROJECT账本: REVENUE, RECHARGE, REVERSAL
-    SUPPLIER账本: COST, RECHARGE, TRANSFER_OUT, TRANSFER_IN, REVERSAL
+    PROJECT账本: REVENUE, TOPUP, REVERSAL
+    SUPPLIER账本: COST, TOPUP, TRANSFER_OUT, TRANSFER_IN, REVERSAL
+
+    NOTE: TOPUP 是 SoT 官方命名，RECHARGE 保留为向后兼容别名
     """
     # PROJECT 账本分录类型
     REVENUE = "REVENUE"              # 项目收入（基于 daily_reports 锁定后生成）
-    RECHARGE = "RECHARGE"            # 项目充值（topup_requests 到账后生成）
+    TOPUP = "TOPUP"                  # 充值（SoT 官方命名，两账本通用）
+    RECHARGE = "TOPUP"               # 向后兼容别名，实际值等于 TOPUP
 
     # SUPPLIER 账本分录类型
     COST = "COST"                    # 供应商成本（基于 daily_reports 锁定后生成）
@@ -155,7 +158,7 @@ class LedgerTransaction(Base, TimestampMixin):
     currency = Column(
         String(10),
         nullable=False,
-        default="USD",
+        default="CNY",  # DATA_SCHEMA v5.2: 默认货币为 CNY
         comment="货币类型"
     )
 

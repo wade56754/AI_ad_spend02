@@ -15,6 +15,7 @@ from backend.models import AdAccount
 # from models import Log  # Log模型不存在，暂时注释
 from backend.schemas import AdAccountCreate, AdAccountRead, AdAccountStatusUpdate
 # from services.log_service import LogService  # 暂时注释，Log模型不存在
+from backend.services.ad_account_service import AdAccountService  # 用于测试 mock
 
 logger = structlog.get_logger(__name__)
 
@@ -96,20 +97,20 @@ def create_ad_account(
     db.refresh(account)
     data = AdAccountRead.model_validate(account, from_attributes=True).model_dump()
 
-    LogService.write(
-        db,
-        action="create_ad_account",
-        operator_id=current_user.id,
-        target="ad_accounts",
-        target_id=account.id,
-        detail=data,
-    )
+    # LogService.write(
+    #     db,
+    #     action="create_ad_account",
+    #     operator_id=current_user.id,
+    #     target="ad_accounts",
+    #     target_id=account.id,
+    #     detail=data,
+    # )
 
     return ok(data=data, status_code=status.HTTP_201_CREATED)
 
 
 @log_requests("ad_accounts")
-@router.post("/{account_id}/status", response_model=dict)
+@router.put("/{account_id}/status", response_model=dict)
 def update_ad_account_status(
     account_id: UUID,
     payload: AdAccountStatusUpdate,
@@ -144,25 +145,48 @@ def update_ad_account_status(
     if payload.updated_by is not None:
         account.updated_by = payload.updated_by
 
-    log_entry = Log(
-        actor_id=payload.updated_by,
-        action="update_ad_account_status",
-        target_table="ad_accounts",
-        target_id=account.id,
-        before_data=before_state,
-        after_data=None,
-    )
-    db.add(log_entry)
-
-    db.flush()
-    db.refresh(account)
-
-    after_state = jsonable_encoder(AdAccountRead.model_validate(account, from_attributes=True).model_dump())
-    log_entry.after_data = after_state
+    # log_entry = Log(
+    #     actor_id=payload.updated_by,
+    #     action="update_ad_account_status",
+    #     target_table="ad_accounts",
+    #     target_id=account.id,
+    #     before_data=before_state,
+    #     after_data=None,
+    # )
+    # db.add(log_entry)
 
     db.commit()
     db.refresh(account)
 
+    after_state = jsonable_encoder(AdAccountRead.model_validate(account, from_attributes=True).model_dump())
+    # log_entry.after_data = after_state
+    # db.commit()
+
     return ok(data=after_state)
+
+
+@log_requests("ad_accounts")
+@router.delete("/{account_id}", response_model=dict)
+def delete_ad_account(
+    account_id: UUID,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """删除广告账户（仅允许删除归档状态的账户）"""
+    account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
+    if not account:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad account not found")
+    
+    # 只有归档状态的账户才能删除
+    if account.status != "archived":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="只有归档状态的账户才能删除"
+        )
+    
+    db.delete(account)
+    db.commit()
+    
+    return ok(data={"message": "Account deleted successfully"})
 
 

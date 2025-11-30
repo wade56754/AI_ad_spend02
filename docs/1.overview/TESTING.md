@@ -281,6 +281,8 @@ class TestAPIResponse:
 
 ## 第七章 Mock 与 Fixture 规范
 
+> **后端单测环境健康度与兼容性说明**: 见 [docs/testing/BACKEND_TEST_ENV_HEALTH_v1.0.md](../testing/BACKEND_TEST_ENV_HEALTH_v1.0.md)
+
 ### 7.1 Mock 使用原则
 
 | 原则 | 级别 | 说明 |

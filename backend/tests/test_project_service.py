@@ -1,23 +1,22 @@
 """
 项目管理服务层测试
-Version: 1.0
-Author: Claude协作开发
+Version: 1.1
+Author: Claude Code (full_pipeline)
 
-NOTE: This module is temporarily skipped due to User model field name changes.
-The User model uses 'username' instead of 'nickname', and UUID instead of int for id.
-TODO: Update fixtures to use correct field names and UUIDs.
+Aligned with SoT:
+- User model uses UUID id and 'username' field
+- Fixtures updated to match current User model structure
 """
 
 import pytest
-
-# 暂时跳过整个模块 - User 模型字段名需要更新 (nickname -> username, id: int -> UUID)
-pytestmark = pytest.mark.skip(reason="User model fixtures need update: nickname->username, id needs UUID")
+from uuid import uuid4
 from decimal import Decimal
 from datetime import date, datetime
 from unittest.mock import Mock, patch
 
 from backend.models import Project, ProjectMember, ProjectExpense
 from backend.models import User
+from backend.models.base import UserRole
 from backend.schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,
@@ -43,28 +42,34 @@ class TestProjectService:
 
     @pytest.fixture
     def admin_user(self, db_session):
-        """创建管理员用户"""
+        """创建管理员用户（UUID id, username 字段）"""
         user = User(
-            id=1,
-            email="admin@example.com",
-            nickname="管理员",
-            role="admin"
+            id=uuid4(),
+            email="admin_project@example.com",
+            username="admin_project_user",
+            hashed_password="$2b$12$test_hashed_password_placeholder",
+            role=UserRole.ADMIN,
+            is_active=True,
         )
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
         return user
 
     @pytest.fixture
     def account_manager(self, db_session):
-        """创建账户管理员"""
+        """创建账户管理员（UUID id, username 字段）"""
         user = User(
-            id=2,
-            email="manager@example.com",
-            nickname="账户经理",
-            role="account_manager"
+            id=uuid4(),
+            email="manager_project@example.com",
+            username="account_manager_user",
+            hashed_password="$2b$12$test_hashed_password_placeholder",
+            role=UserRole.ACCOUNT_MANAGER,
+            is_active=True,
         )
         db_session.add(user)
         db_session.commit()
+        db_session.refresh(user)
         return user
 
     @pytest.fixture
@@ -244,12 +249,14 @@ class TestProjectService:
 
         def test_assign_member_success(self, project_service, sample_project, admin_user, db_session):
             """测试成功分配项目成员"""
-            # 创建媒体买家用户
+            # 创建媒体买家用户（UUID id, username 字段）
             media_buyer = User(
-                id=3,
+                id=uuid4(),
                 email="buyer@example.com",
-                nickname="媒体买家",
-                role="media_buyer"
+                username="media_buyer_user",
+                hashed_password="$2b$12$test_hashed_password_placeholder",
+                role=UserRole.MEDIA_BUYER,
+                is_active=True,
             )
             db_session.add(media_buyer)
             db_session.commit()
@@ -302,9 +309,23 @@ class TestProjectService:
 
         def test_get_project_members_success(self, project_service, sample_project, admin_user, db_session):
             """测试获取项目成员列表"""
-            # 添加多个成员
-            user1 = User(id=4, email="user1@example.com", nickname="用户1", role="media_buyer")
-            user2 = User(id=5, email="user2@example.com", nickname="用户2", role="analyst")
+            # 添加多个成员（UUID id, username 字段）
+            user1 = User(
+                id=uuid4(),
+                email="user1@example.com",
+                username="user1_media_buyer",
+                hashed_password="$2b$12$test_hashed_password_placeholder",
+                role=UserRole.MEDIA_BUYER,
+                is_active=True,
+            )
+            user2 = User(
+                id=uuid4(),
+                email="user2@example.com",
+                username="user2_analyst",
+                hashed_password="$2b$12$test_hashed_password_placeholder",
+                role=UserRole.ANALYST,
+                is_active=True,
+            )
             db_session.add_all([user1, user2])
             db_session.flush()
 
@@ -411,10 +432,12 @@ class TestProjectService:
         def test_media_buyer_cannot_create_project(self, project_service):
             """测试媒体买家不能创建项目"""
             media_buyer = User(
-                id=6,
+                id=uuid4(),
                 email="buyer2@example.com",
-                nickname="媒体买家2",
-                role="media_buyer"
+                username="media_buyer2_user",
+                hashed_password="$2b$12$test_hashed_password_placeholder",
+                role=UserRole.MEDIA_BUYER,
+                is_active=True,
             )
 
             request = ProjectCreateRequest(

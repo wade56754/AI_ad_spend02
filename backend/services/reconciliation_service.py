@@ -38,11 +38,6 @@ from backend.exceptions.custom_exceptions import (
     BusinessLogicError
 )
 
-# 别名定义，与代码中使用的名称对齐
-ValidationError = ValidationException
-NotFoundError = ResourceNotFoundException
-PermissionError = AuthorizationException
-
 
 class ReconciliationService:
     """对账管理服务类"""

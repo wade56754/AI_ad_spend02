@@ -119,3 +119,12 @@ class User(Base, TimestampMixin, SerializableMixin):
         lazy="dynamic",
         doc="用户参与的所有项目成员关系"
     )
+
+    # 一对多：用户 -> 审计日志
+    audit_logs = relationship(
+        "AuditLog",
+        foreign_keys="AuditLog.user_id",
+        back_populates="user",
+        lazy="dynamic",
+        doc="用户的操作审计日志"
+    )

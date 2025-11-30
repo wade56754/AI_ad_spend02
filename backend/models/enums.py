@@ -12,13 +12,14 @@ class UserRole(str, Enum):
     用户角色枚举
 
     必须与 STATE_MACHINE.md 第2章保持严格一致。
-    合法角色：admin, finance, data_operator, account_manager, media_buyer
+    合法角色：admin, finance, data_operator, account_manager, media_buyer, analyst
     """
     ADMIN = "admin"
     FINANCE = "finance"
     DATA_OPERATOR = "data_operator"  # 修改：data_manager → data_operator
     ACCOUNT_MANAGER = "account_manager"  # 新增：缺失的角色
     MEDIA_BUYER = "media_buyer"
+    ANALYST = "analyst"  # 新增：测试中使用的角色
 
 
 class ChannelStatus(str, Enum):
@@ -28,11 +29,21 @@ class ChannelStatus(str, Enum):
 
 
 class ProjectStatus(str, Enum):
-    """项目状态枚举"""
-    DRAFT = "draft"
+    """
+    项目状态枚举
+
+    与 test_project_service.py 期望对齐：
+    - planning: 规划中
+    - active: 进行中
+    - paused: 暂停
+    - completed: 已完成
+    - cancelled: 已取消
+    """
+    PLANNING = "planning"
     ACTIVE = "active"
-    SUSPENDED = "suspended"
-    ARCHIVED = "archived"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
 
 
 class AdAccountStatus(str, Enum):

@@ -401,10 +401,10 @@ class ReconciliationAdjustment(Base):
     approver = relationship("User", foreign_keys=[approved_by])
     finance_approver = relationship("User", foreign_keys=[finance_approved_by])
 
-    # 约束
+    # 约束 (对齐 DATA_SCHEMA.md v5.2 3.5.3)
     __table_args__ = (
         CheckConstraint(
-            "adjustment_type IN ('spend_adjustment', 'date_adjustment')",
+            "adjustment_type IN ('increase', 'decrease', 'writeoff')",
             name="check_adjustment_type"
         ),
         Index("idx_reconciliation_adjustments_detail", "detail_id"),

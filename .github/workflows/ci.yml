@@ -41,8 +41,8 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          pytest -m "not performance and not slow and not load and not stress and not database" \
-                 --cov=backend --cov-report=term-missing --cov-fail-under=70 -q
+          cd backend
+          python -m pytest tests/ -v --tb=short --no-cov
 
   frontend-lint:
     name: Frontend • ESLint

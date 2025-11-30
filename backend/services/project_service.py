@@ -25,7 +25,8 @@ from backend.schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,
     ProjectMemberAssignRequest,
-    ProjectExpenseRequest
+    ProjectExpenseRequest,
+    ProjectStatisticsResponse
 )
 
 
@@ -48,13 +49,17 @@ class ProjectService:
         if self.db.query(Project).filter(Project.name == request.name).first():
             raise ResourceConflictError(f"项目名称 '{request.name}' 已存在")
 
+        # 验证日期范围
+        if request.start_date and request.end_date and request.end_date < request.start_date:
+            raise BusinessLogicError("结束日期不能早于开始日期")
+
         # 创建项目
         project = Project(
             name=request.name,
             client_name=request.client_name,
             client_company=request.client_company,
             description=request.description,
-            budget=request.budget,
+            budget=request.budget or Decimal('0'),
             currency=request.currency,
             start_date=request.start_date,
             end_date=request.end_date,
@@ -110,8 +115,9 @@ class ProjectService:
 
     def get_project(self, project_id: int, current_user: User) -> Project:
         """获取项目详情"""
+        # 注意：account_manager 是 @property 而非 relationship，不能用于 eager loading
+        # 只加载真正的 ORM relationship 属性
         project = self.db.query(Project).options(
-            joinedload(Project.account_manager),
             joinedload(Project.creator),
             joinedload(Project.members),
             joinedload(Project.expenses)
@@ -130,6 +136,9 @@ class ProjectService:
         project.total_spent = sum(e.amount for e in project.expenses) if hasattr(project, 'expenses') else 0
 
         return project
+
+    # 有效的项目状态列表
+    VALID_STATUSES = ['planning', 'active', 'paused', 'completed', 'cancelled']
 
     def update_project(
         self,
@@ -151,14 +160,15 @@ class ProjectService:
             ).first():
                 raise ResourceConflictError(f"项目名称 '{request.name}' 已存在")
 
+        # 验证状态值
+        if request.status and request.status not in self.VALID_STATUSES:
+            raise BusinessLogicError(f"无效的项目状态: {request.status}")
+
         # 更新字段
         update_data = request.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             if hasattr(project, field):
                 setattr(project, field, value)
-
-        project.updated_by = current_user.id
-        project.updated_at = datetime.utcnow()
 
         # 记录审计日志
         self._create_audit_log(
@@ -181,13 +191,16 @@ class ProjectService:
         if hasattr(project, 'ad_accounts') and len(project.ad_accounts) > 0:
             raise BusinessLogicError("项目下还有广告账户，无法删除")
 
+        # 检查是否有关联的费用记录
+        expense_count = self.db.query(ProjectExpense).filter(
+            ProjectExpense.project_id == project_id
+        ).count()
+        if expense_count > 0:
+            raise BusinessLogicError("项目有关联的费用记录，无法删除")
+
         # 删除相关记录
         self.db.query(ProjectMember).filter(
             ProjectMember.project_id == project_id
-        ).delete()
-
-        self.db.query(ProjectExpense).filter(
-            ProjectExpense.project_id == project_id
         ).delete()
 
         # 删除项目
@@ -255,6 +268,9 @@ class ProjectService:
 
         return True
 
+    # 有效的费用类型列表
+    VALID_EXPENSE_TYPES = ['media_spend', 'service_fee', 'other']
+
     def add_expense(
         self,
         project_id: int,
@@ -266,6 +282,10 @@ class ProjectService:
 
         if not self._can_user_add_expense(current_user, project):
             raise PermissionDeniedError("无权限添加项目费用")
+
+        # 验证费用类型
+        if request.expense_type not in self.VALID_EXPENSE_TYPES:
+            raise BusinessLogicError(f"无效的费用类型: {request.expense_type}")
 
         expense = ProjectExpense(
             project_id=project_id,
@@ -312,7 +332,7 @@ class ProjectService:
 
         return expenses, total
 
-    def get_project_statistics(self, current_user: User) -> Dict[str, Any]:
+    def get_project_statistics(self, current_user: User) -> ProjectStatisticsResponse:
         """获取项目统计信息"""
         query = self.db.query(Project)
 
@@ -332,24 +352,25 @@ class ProjectService:
             func.count(Project.id).label('count')
         ).group_by(Project.status).all()
 
-        # 构建结果
-        result = {
-            'total_projects': stats.total_projects or 0,
-            'active_projects': next((s.count for s in status_stats if s.status == 'active'), 0),
-            'paused_projects': next((s.count for s in status_stats if s.status == 'paused'), 0),
-            'completed_projects': next((s.count for s in status_stats if s.status == 'completed'), 0),
-            'cancelled_projects': next((s.count for s in status_stats if s.status == 'cancelled'), 0),
-            'total_budget': stats.total_budget or Decimal('0'),
-            'total_clients': stats.total_clients or 0,
-            'avg_project_value': (stats.total_budget or Decimal('0')) / max(stats.total_projects or 1, 1)
-        }
+        total_projects = stats.total_projects or 0
+        total_budget = stats.total_budget or Decimal('0')
 
         # 计算总消耗（从费用表）
-        if current_user.role in ['admin', 'finance', 'data_operator']:
-            total_spent = self.db.query(func.sum(ProjectExpense.amount)).scalar() or Decimal('0')
-            result['total_spent'] = total_spent
+        total_spent = self.db.query(func.sum(ProjectExpense.amount)).scalar() or Decimal('0')
 
-        return result
+        # 构建响应对象
+        return ProjectStatisticsResponse(
+            total_projects=total_projects,
+            active_projects=next((s.count for s in status_stats if s.status == 'active'), 0),
+            paused_projects=next((s.count for s in status_stats if s.status == 'paused'), 0),
+            completed_projects=next((s.count for s in status_stats if s.status == 'completed'), 0),
+            cancelled_projects=next((s.count for s in status_stats if s.status == 'cancelled'), 0),
+            total_budget=total_budget,
+            total_spent=total_spent,
+            total_clients=stats.total_clients or 0,
+            avg_project_value=total_budget / max(total_projects, 1),
+            top_performers=[]
+        )
 
     # 私有方法
     def _apply_permission_filter(self, query, current_user: User):

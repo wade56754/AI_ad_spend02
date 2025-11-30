@@ -194,7 +194,8 @@ class TopupService:
         )
 
         if not request:
-            raise ResourceNotFoundError("充值申请不存在", error_code="SYS_004")
+            # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
+            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ_002")
 
         # 检查访问权限
         self._check_request_access(request, current_user)

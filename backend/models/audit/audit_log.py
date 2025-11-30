@@ -67,6 +67,7 @@ class AuditLog(Base, SerializableMixin):
     user = relationship(
         "User",
         foreign_keys=[user_id],
+        back_populates="audit_logs",
         lazy="selectin",
         doc="操作用户"
     )

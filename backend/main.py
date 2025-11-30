@@ -20,6 +20,8 @@ from backend.routers import (
     channels,
     topup,  # ✅ 充值管理API (已修复)
     daily_reports,  # ✅ 日报管理API (已修复)
+    suppliers,  # ✅ 供应商管理API (full_pipeline v2)
+    settlements,  # ✅ 结算管理API (full_pipeline v2)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # reports,  # ✅ 报表生成API (需要Reconciliation模型修复)
     # import_jobs,  # ✅ 数据导入API (缺失ImportJob模型)
@@ -56,6 +58,8 @@ app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)  # 广告账户
 app.include_router(channels.router, prefix=API_V1_PREFIX)  # 渠道管理
 app.include_router(topup.router, prefix=API_V1_PREFIX)  # 充值管理
 app.include_router(daily_reports.router, prefix=API_V1_PREFIX)  # 日报管理 ✅ 新启用
+app.include_router(suppliers.router, prefix=API_V1_PREFIX)  # 供应商管理 ✅ full_pipeline v2
+app.include_router(settlements.router, prefix=API_V1_PREFIX)  # 结算管理 ✅ full_pipeline v2
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表生成 ✅ 新启用
 # app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 新启用

@@ -149,126 +149,30 @@ class CreatedAtMixin:
 
 
 # =====================================================================
-# Enum 枚举类型
+# Enum 枚举类型 - 从 enums.py 统一导入，保持单一权威定义
 # =====================================================================
 
-class UserRole(str, PyEnum):
-    """
-    用户角色枚举
-
-    必须与 STATE_MACHINE.md v2.6 第2章、AUTH_SPEC.md v2.0 第2.2节保持严格一致。
-    合法角色：admin, finance, data_operator, account_manager, media_buyer
-    """
-    ADMIN = "admin"                       # L5 系统管理员
-    FINANCE = "finance"                   # L4 财务
-    DATA_OPERATOR = "data_operator"       # L3 数据操作员/户管
-    ACCOUNT_MANAGER = "account_manager"   # L2 客户经理
-    MEDIA_BUYER = "media_buyer"           # L1 投手/媒体采购
-
-
-class ChannelStatus(str, PyEnum):
-    """渠道状态枚举"""
-    ACTIVE = "active"
-    INACTIVE = "inactive"
+from backend.models.enums import (
+    UserRole,
+    ChannelStatus,
+    ProjectStatus,
+    AdAccountStatus,
+    DailyReportStatus,
+    TopupRequestStatus as TopupStatus,
+    LedgerEntryType,
+    ReconciliationBatchStatus,
+    ReconciliationDetailStatus,
+    AccountAlertStatus,
+)
 
 
-class ProjectStatus(str, PyEnum):
-    """项目状态枚举"""
-    DRAFT = "draft"
-    ACTIVE = "active"
-    SUSPENDED = "suspended"
-    ARCHIVED = "archived"
-
-
+# 为了向后兼容，保留这些枚举的别名
 class ReviewStatus(str, PyEnum):
     """评审状态枚举（用于 ChannelReview 和 ChannelAccountRequest）"""
     DRAFT = "draft"
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
-
-
-class AdAccountStatus(str, PyEnum):
-    """广告账户状态枚举"""
-    NEW = "new"
-    TESTING = "testing"
-    ACTIVE = "active"
-    SUSPENDED = "suspended"
-    DEAD = "dead"
-    ARCHIVED = "archived"
-
-
-class DailyReportStatus(str, PyEnum):
-    """
-    日报状态枚举（粉数确认状态机）
-
-    必须与 STATE_MACHINE.md v2.6 第8章保持严格一致。
-    8 状态流程：raw_submitted → trend_pending → trend_ok/trend_flagged
-    → trend_resolved → final_pending → final_confirmed → final_locked
-    """
-    RAW_SUBMITTED = "raw_submitted"       # 投手提交原始粉数
-    TREND_PENDING = "trend_pending"       # 等待趋势风控检查
-    TREND_OK = "trend_ok"                 # 趋势正常
-    TREND_FLAGGED = "trend_flagged"       # 趋势异常,需人工复核
-    TREND_RESOLVED = "trend_resolved"     # 运营确认异常已解决
-    FINAL_PENDING = "final_pending"       # 等待最终粉数确认
-    FINAL_CONFIRMED = "final_confirmed"   # 最终粉数已确认
-    FINAL_LOCKED = "final_locked"         # 已进入计费,锁定(终态)
-
-
-class TopupStatus(str, PyEnum):
-    """充值申请状态枚举"""
-    DRAFT = "draft"
-    PENDING_REVIEW = "pending_review"
-    FINANCE_APPROVE = "finance_approve"
-    PAID = "paid"
-    COMPLETED = "completed"
-    REJECTED = "rejected"
-    CANCELLED = "cancelled"
-
-
-class LedgerEntryType(str, PyEnum):
-    """
-    总账分录类型枚举
-
-    必须与 LEDGER_SOT.md v1.1 第2.2节保持严格一致。
-    PROJECT账本: REVENUE, TOPUP, REVERSAL
-    SUPPLIER账本: COST, TOPUP, TRANSFER_OUT, TRANSFER_IN, REVERSAL
-    """
-    REVENUE = "REVENUE"              # 项目收入（PROJECT账本）
-    COST = "COST"                    # 供应商成本（SUPPLIER账本）
-    TOPUP = "TOPUP"                  # 充值（两账本通用）
-    TRANSFER_OUT = "TRANSFER_OUT"    # 转出（SUPPLIER账本）
-    TRANSFER_IN = "TRANSFER_IN"      # 转入（SUPPLIER账本）
-    REVERSAL = "REVERSAL"            # 红冲（两账本通用）
-
-
-class ReconciliationBatchStatus(str, PyEnum):
-    """
-    对账批次状态枚举
-
-    必须与 STATE_MACHINE.md v2.6 第4章（全局状态一览表）保持严格一致。
-    流程: draft → pending_review → approved/needs_adjustment → completed
-    """
-    DRAFT = "draft"                         # 草稿
-    PENDING_REVIEW = "pending_review"       # 待审核
-    APPROVED = "approved"                   # 已批准
-    NEEDS_ADJUSTMENT = "needs_adjustment"   # 需调整
-    COMPLETED = "completed"                 # 已完成（终态）
-
-
-class ReconciliationDetailStatus(str, PyEnum):
-    """对账明细状态枚举"""
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    ADJUSTED = "adjusted"
-
-
-class AccountAlertStatus(str, PyEnum):
-    """账户预警状态枚举"""
-    OPEN = "open"
-    ACK = "ack"  # acknowledged
-    RESOLVED = "resolved"
 
 
 class AccountAlertSeverity(str, PyEnum):

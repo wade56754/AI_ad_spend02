@@ -25,10 +25,27 @@ from dotenv import load_dotenv
 env_path = os.path.join(os.path.dirname(__file__), '..', '.env.test')
 load_dotenv(env_path, override=True)
 
-from sqlalchemy import create_engine, TypeDecorator, CHAR, event, Text, JSON
+from sqlalchemy import create_engine, TypeDecorator, CHAR, event, Text, JSON, Integer, BigInteger
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB as PG_JSONB
+from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.compiler import compiles
+
+
+# ============================================================================
+# SQLite BigInteger → INTEGER 编译器（必须在导入模型之前注册！）
+# 解决 SQLite 中 BigInteger 主键的 autoincrement 问题
+# SQLite 只支持 INTEGER PRIMARY KEY AUTOINCREMENT，不支持 BIGINT
+# ============================================================================
+
+@compiles(BigInteger, 'sqlite')
+def compile_biginteger_sqlite(element, compiler, **kw):
+    """
+    在 SQLite 中将 BigInteger 编译为 INTEGER
+    这允许 autoincrement 正常工作（SQLite 要求 INTEGER PRIMARY KEY 才能自增）
+    """
+    return "INTEGER"
 
 
 # ============================================================================
@@ -627,6 +644,8 @@ class DailyReportStateHelper:
         DailyReportStatus.FINAL_LOCKED: [],
     }
 
+    TERMINAL_STATES = [DailyReportStatus.FINAL_LOCKED]
+
     @classmethod
     def is_valid_transition(cls, from_status: DailyReportStatus, to_status: DailyReportStatus) -> bool:
         return to_status in cls.VALID_TRANSITIONS.get(from_status, [])
@@ -650,17 +669,57 @@ class DailyReportStateHelper:
             DailyReportStatus.FINAL_LOCKED,
         ]
 
+    @classmethod
+    def get_exception_paths(cls) -> dict:
+        """获取异常路径（STATE_MACHINE.md v2.6 第8章）"""
+        return {
+            "trend_flagged_then_resolved": [
+                DailyReportStatus.RAW_SUBMITTED,
+                DailyReportStatus.TREND_PENDING,
+                DailyReportStatus.TREND_FLAGGED,
+                DailyReportStatus.TREND_RESOLVED,
+                DailyReportStatus.FINAL_PENDING,
+                DailyReportStatus.FINAL_CONFIRMED,
+                DailyReportStatus.FINAL_LOCKED,
+            ],
+            "trend_flagged_then_resubmit": [
+                DailyReportStatus.RAW_SUBMITTED,
+                DailyReportStatus.TREND_PENDING,
+                DailyReportStatus.TREND_FLAGGED,
+                DailyReportStatus.RAW_SUBMITTED,
+                DailyReportStatus.TREND_PENDING,
+                DailyReportStatus.TREND_OK,
+                DailyReportStatus.FINAL_PENDING,
+                DailyReportStatus.FINAL_CONFIRMED,
+                DailyReportStatus.FINAL_LOCKED,
+            ],
+        }
+
+    @classmethod
+    def get_invalid_transitions(cls) -> list:
+        """获取所有非法流转（用于测试）"""
+        all_states = cls.get_all_states()
+        invalid = []
+        for from_state in all_states:
+            valid_targets = cls.VALID_TRANSITIONS.get(from_state, [])
+            for to_state in all_states:
+                if to_state != from_state and to_state not in valid_targets:
+                    invalid.append((from_state, to_state))
+        return invalid
+
 
 class ReconciliationStateHelper:
-    """对账批次5状态机测试辅助类"""
+    """对账批次5状态机测试辅助类（STATE_MACHINE.md v2.6 第11章）"""
 
     VALID_TRANSITIONS = {
         ReconciliationBatchStatus.DRAFT: [ReconciliationBatchStatus.PENDING_REVIEW],
         ReconciliationBatchStatus.PENDING_REVIEW: [ReconciliationBatchStatus.APPROVED, ReconciliationBatchStatus.NEEDS_ADJUSTMENT],
         ReconciliationBatchStatus.APPROVED: [ReconciliationBatchStatus.COMPLETED],
-        ReconciliationBatchStatus.NEEDS_ADJUSTMENT: [ReconciliationBatchStatus.PENDING_REVIEW],
+        ReconciliationBatchStatus.NEEDS_ADJUSTMENT: [ReconciliationBatchStatus.APPROVED],  # 修复：needs_adjustment → approved（不是 pending_review）
         ReconciliationBatchStatus.COMPLETED: [],
     }
+
+    TERMINAL_STATES = [ReconciliationBatchStatus.COMPLETED]
 
     @classmethod
     def is_valid_transition(cls, from_status: ReconciliationBatchStatus, to_status: ReconciliationBatchStatus) -> bool:
@@ -669,6 +728,45 @@ class ReconciliationStateHelper:
     @classmethod
     def is_terminal_state(cls, status: ReconciliationBatchStatus) -> bool:
         return status == ReconciliationBatchStatus.COMPLETED
+
+    @classmethod
+    def get_all_states(cls) -> list:
+        return list(ReconciliationBatchStatus)
+
+    @classmethod
+    def get_happy_path(cls) -> list:
+        """正常流程：draft → pending_review → approved → completed"""
+        return [
+            ReconciliationBatchStatus.DRAFT,
+            ReconciliationBatchStatus.PENDING_REVIEW,
+            ReconciliationBatchStatus.APPROVED,
+            ReconciliationBatchStatus.COMPLETED,
+        ]
+
+    @classmethod
+    def get_exception_paths(cls) -> dict:
+        """获取异常路径（STATE_MACHINE.md v2.6 第11章）"""
+        return {
+            "needs_adjustment_then_approve": [
+                ReconciliationBatchStatus.DRAFT,
+                ReconciliationBatchStatus.PENDING_REVIEW,
+                ReconciliationBatchStatus.NEEDS_ADJUSTMENT,
+                ReconciliationBatchStatus.APPROVED,
+                ReconciliationBatchStatus.COMPLETED,
+            ],
+        }
+
+    @classmethod
+    def get_invalid_transitions(cls) -> list:
+        """获取所有非法流转（用于测试）"""
+        all_states = cls.get_all_states()
+        invalid = []
+        for from_state in all_states:
+            valid_targets = cls.VALID_TRANSITIONS.get(from_state, [])
+            for to_state in all_states:
+                if to_state != from_state and to_state not in valid_targets:
+                    invalid.append((from_state, to_state))
+        return invalid
 
 
 class LedgerInvariantHelper:
@@ -699,6 +797,84 @@ class LedgerInvariantHelper:
 def daily_report_state_helper():
     """日报状态机辅助类"""
     return DailyReportStateHelper
+
+
+class TopupStateHelper:
+    """充值申请7状态机测试辅助类（STATE_MACHINE.md v2.6 第9章）"""
+
+    VALID_TRANSITIONS = {
+        TopupStatus.DRAFT: [TopupStatus.PENDING_REVIEW, TopupStatus.CANCELLED],
+        TopupStatus.PENDING_REVIEW: [TopupStatus.FINANCE_APPROVE, TopupStatus.REJECTED],
+        TopupStatus.FINANCE_APPROVE: [TopupStatus.PAID, TopupStatus.REJECTED],
+        TopupStatus.PAID: [TopupStatus.COMPLETED],
+        TopupStatus.COMPLETED: [],
+        TopupStatus.REJECTED: [],
+        TopupStatus.CANCELLED: [],
+    }
+
+    TERMINAL_STATES = [TopupStatus.COMPLETED, TopupStatus.REJECTED, TopupStatus.CANCELLED]
+
+    @classmethod
+    def is_valid_transition(cls, from_status: TopupStatus, to_status: TopupStatus) -> bool:
+        return to_status in cls.VALID_TRANSITIONS.get(from_status, [])
+
+    @classmethod
+    def is_terminal_state(cls, status: TopupStatus) -> bool:
+        return status in cls.TERMINAL_STATES
+
+    @classmethod
+    def get_all_states(cls) -> list:
+        return list(TopupStatus)
+
+    @classmethod
+    def get_happy_path(cls) -> list:
+        """正常流程：draft → pending_review → finance_approve → paid → completed"""
+        return [
+            TopupStatus.DRAFT,
+            TopupStatus.PENDING_REVIEW,
+            TopupStatus.FINANCE_APPROVE,
+            TopupStatus.PAID,
+            TopupStatus.COMPLETED,
+        ]
+
+    @classmethod
+    def get_exception_paths(cls) -> dict:
+        """获取异常路径（STATE_MACHINE.md v2.6 第9章）"""
+        return {
+            "data_review_reject": [
+                TopupStatus.DRAFT,
+                TopupStatus.PENDING_REVIEW,
+                TopupStatus.REJECTED,
+            ],
+            "finance_reject": [
+                TopupStatus.DRAFT,
+                TopupStatus.PENDING_REVIEW,
+                TopupStatus.FINANCE_APPROVE,
+                TopupStatus.REJECTED,
+            ],
+            "user_cancel": [
+                TopupStatus.DRAFT,
+                TopupStatus.CANCELLED,
+            ],
+        }
+
+    @classmethod
+    def get_invalid_transitions(cls) -> list:
+        """获取所有非法流转（用于测试）"""
+        all_states = cls.get_all_states()
+        invalid = []
+        for from_state in all_states:
+            valid_targets = cls.VALID_TRANSITIONS.get(from_state, [])
+            for to_state in all_states:
+                if to_state != from_state and to_state not in valid_targets:
+                    invalid.append((from_state, to_state))
+        return invalid
+
+
+@pytest.fixture(scope="session")
+def topup_state_helper():
+    """充值状态机辅助类"""
+    return TopupStateHelper
 
 
 @pytest.fixture(scope="session")

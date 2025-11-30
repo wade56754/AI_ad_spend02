@@ -54,6 +54,7 @@ from .accounts.account_request import ChannelAccountRequest
 # 广告账户模块
 from .accounts.ad_account import AdAccount
 from .accounts.account_history import AccountStatusHistory, AccountAlert
+from .accounts.account_extras import AccountPerformance, AccountDocument, AccountNote
 
 # 报告模块
 from .workflow.daily_report import DailyReport
@@ -73,6 +74,13 @@ from .finance import (
     LedgerEntry,
     ReconciliationBatch,
     ReconciliationDetail,
+    Supplier,
+    SupplierStatus,
+    PaymentMethod,
+    Settlement,
+    SettlementStatus,
+    SettlementType,
+    PaymentStatus,
 )
 
 # 审计模块
@@ -121,6 +129,9 @@ __all__ = [
     'AdAccount',
     'AccountStatusHistory',
     'AccountAlert',
+    'AccountPerformance',
+    'AccountDocument',
+    'AccountNote',
     'DailyReport',
     'AdSpendDaily',
     'TopupRequest',
@@ -129,6 +140,13 @@ __all__ = [
     'LedgerEntry',
     'ReconciliationBatch',
     'ReconciliationDetail',
+    'Supplier',
+    'SupplierStatus',
+    'PaymentMethod',
+    'Settlement',
+    'SettlementStatus',
+    'SettlementType',
+    'PaymentStatus',
     'AuditLog',
     'Log',
 ]

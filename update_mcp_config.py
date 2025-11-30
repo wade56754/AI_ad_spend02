@@ -42,9 +42,9 @@ if "context7" not in config["mcpServers"]:
 with open(mcp_config_path, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2, ensure_ascii=False)
 
-print(f"✅ MCP 配置已更新: {mcp_config_path}")
-print(f"✅ 已配置的 MCP 服务器:")
+print(f"[OK] MCP config updated: {mcp_config_path}")
+print(f"[OK] Configured MCP servers:")
 for server_name in sorted(config["mcpServers"].keys()):
-    status = "✅" if server_name in ["sequential-thinking", "context7"] else "  "
+    status = "[OK]" if server_name in ["sequential-thinking", "context7"] else "    "
     print(f"   {status} {server_name}")
 

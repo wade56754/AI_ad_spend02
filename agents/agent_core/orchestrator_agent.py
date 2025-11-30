@@ -272,16 +272,22 @@ class OrchestratorAgent:
             logger.warning(error_msg)
 
         # 3. Test (optional via test_enabled)
+        # Full pipeline defaults to backend pytest tests (mode="backend")
+        # Caller can override to "db" for database invariant tests
         test_enabled = bool(request.get("test_enabled", True))
         test_success = True
+        test_mode = "backend"  # Default mode for full_pipeline
         if test_enabled:
             # TestAgent currently only generates prompt, actual execution via MCP
             test_req: Dict[str, Any] = request.get("test_request") or {}
-            logger.info("Orchestrator: test step started")
+            # Set default mode to "backend" if not explicitly specified
+            test_req.setdefault("mode", "backend")
+            test_mode = test_req.get("mode", "backend")
+            logger.info(f"Orchestrator: test step started (mode={test_mode})")
             test_result = self._test_agent.handle_request(test_req)
             steps["test"] = test_result
             test_success = test_result.get("success", False)
-            logger.info(f"Orchestrator: test step finished (success={test_success})")
+            logger.info(f"Orchestrator: test step finished (mode={test_mode}, success={test_success})")
 
             if not test_success:
                 error_msg = f"Test step failed: {test_result.get('error')}"
@@ -298,6 +304,10 @@ class OrchestratorAgent:
         else:
             message = f"Full pipeline completed with {len(errors)} error(s)"
             notes.append(f"Pipeline finished with errors: {len(errors)} step(s) failed")
+
+        # Add test mode to notes for visibility
+        if test_enabled:
+            notes.append(f"Test step mode: {test_mode}")
 
         return OrchestratorResult(
             success=all_success,

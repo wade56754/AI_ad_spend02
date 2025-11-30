@@ -149,7 +149,7 @@ class ProjectExpense(Base):
 
     # 主键：BIGSERIAL
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="费用ID")
-    
+
     project_id = Column(
         BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
@@ -159,10 +159,7 @@ class ProjectExpense(Base):
     expense_type = Column(String(50), nullable=False, comment="费用类型")
     amount = Column(Numeric(15, 2), nullable=False, comment="金额")
     currency = Column(String(10), nullable=True, comment="货币类型")
-    occurred_at = Column(DateTime(timezone=True), server_default=func.now(),
-        nullable=False,
-        comment="发生时间"
-    )
+    expense_date = Column(Date, nullable=False, comment="费用日期")
     description = Column(Text, nullable=True, comment="费用说明")
     created_by = Column(
         UUID(as_uuid=True),
@@ -178,7 +175,7 @@ class ProjectExpense(Base):
     # 索引
     __table_args__ = (
         Index('idx_expenses_project', 'project_id'),
-        Index('idx_expenses_date', 'occurred_at'),
+        Index('idx_expenses_date', 'expense_date'),
         Index('idx_expenses_type', 'expense_type'),
         {'comment': '项目费用记录表'}
     )
