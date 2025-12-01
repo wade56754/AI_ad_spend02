@@ -1,0 +1,224 @@
+# CI 测试覆盖率配置
+# 基准文档: AUTOMATION_TEST_SPEC_v1.4.md 第 5 章
+# SoT 依赖: CI_PIPELINE_SPEC.md
+
+name: Test Coverage
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - 'backend/**'
+      - 'tests/**'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'backend/**'
+      - 'tests/**'
+
+env:
+  PYTHON_VERSION: '3.11'
+  # 覆盖率阈值 (AUTOMATION_TEST_SPEC_v1.4.md 第 5.2 节)
+  COVERAGE_THRESHOLD_TOTAL: 80
+  COVERAGE_THRESHOLD_UNIT: 90
+  COVERAGE_THRESHOLD_INTEGRATION: 70
+  COVERAGE_THRESHOLD_API: 60
+
+jobs:
+  # ============================================================================
+  # L0: 单元测试
+  # ============================================================================
+  unit-tests:
+    name: L0 Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run unit tests
+        run: |
+          cd backend
+          pytest tests/unit -v \
+            --cov=. \
+            --cov-report=xml:coverage-unit.xml \
+            --cov-report=term-missing \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_UNIT }} \
+            -m unit
+
+      - name: Upload unit coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: backend/coverage-unit.xml
+
+  # ============================================================================
+  # L1: 集成测试
+  # ============================================================================
+  integration-tests:
+    name: L1 Integration Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run integration tests
+        run: |
+          cd backend
+          pytest tests/integration -v \
+            --cov=. \
+            --cov-report=xml:coverage-integration.xml \
+            --cov-report=term-missing \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_INTEGRATION }} \
+            -m integration
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET: test_secret_for_ci
+          ENVIRONMENT: test
+
+      - name: Upload integration coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: backend/coverage-integration.xml
+
+  # ============================================================================
+  # L2: API 测试
+  # ============================================================================
+  api-tests:
+    name: L2 API Tests
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov pytest-asyncio httpx
+
+      - name: Run API tests
+        run: |
+          cd backend
+          pytest tests/api -v \
+            --cov=. \
+            --cov-report=xml:coverage-api.xml \
+            --cov-report=term-missing \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_API }} \
+            -m api
+        env:
+          DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET: test_secret_for_ci
+          ENVIRONMENT: test
+
+      - name: Upload API coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api
+          path: backend/coverage-api.xml
+
+  # ============================================================================
+  # 覆盖率汇总
+  # ============================================================================
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, api-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install coverage tool
+        run: pip install coverage
+
+      - name: Combine coverage reports
+        run: |
+          coverage combine coverage-*.xml || true
+          coverage report --fail-under=${{ env.COVERAGE_THRESHOLD_TOTAL }}
+          coverage xml -o coverage-combined.xml
+
+      - name: Upload combined coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage-combined.xml
+          fail_ci_if_error: false
+          verbose: true
+
+  # ============================================================================
+  # Newman 契约测试 (可选)
+  # ============================================================================
+  newman-tests:
+    name: Newman Contract Tests
+    runs-on: ubuntu-latest
+    needs: api-tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Newman
+        run: |
+          npm install -g newman
+          npm install -g newman-reporter-htmlextra
+
+      - name: Run Newman tests
+        run: |
+          if [ -f collections/ai-ad-api-collection.json ]; then
+            newman run collections/ai-ad-api-collection.json \
+              -e environments/local.json \
+              --reporters cli,htmlextra \
+              --reporter-htmlextra-export newman-report.html
+          else
+            echo "No Postman collection found, skipping Newman tests"
+          fi
+        continue-on-error: true
+
+      - name: Upload Newman report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: newman-report
+          path: newman-report.html

@@ -1,7 +1,7 @@
 ---
 name: ai-ad-api-automation-test
-version: "1.0"
-status: ready_for_production
+version: "1.1"
+status: beta
 layer: skill
 owner: wade
 last_reviewed: 2025-12-01
@@ -56,11 +56,14 @@ baseline:
   </sot_documents>
 
   <external_references>
-    | Reference | URL | Purpose |
-    |-----------|-----|---------|
-    | sanbercode-api-automation-boilerplate | https://github.com/jfrelis/sanbercode-api-automation-boilerplate | Newman/Postman patterns |
-    | Newman | https://www.npmjs.com/package/newman | Postman CLI runner |
-    | newman-reporter-htmlextra | https://www.npmjs.com/package/newman-reporter-htmlextra | HTML report generation |
+    | Reference | URL | Purpose | Status |
+    |-----------|-----|---------|--------|
+    | sanbercode-api-automation-boilerplate | https://github.com/jfrelis/sanbercode-api-automation-boilerplate | Newman/Postman patterns | Reference Only |
+    | Newman | https://www.npmjs.com/package/newman | Postman CLI runner | Active |
+    | newman-reporter-htmlextra | https://www.npmjs.com/package/newman-reporter-htmlextra | HTML report generation | Active |
+
+    Note: External URLs are reference-only and may change. The patterns and practices
+    have been internalized in this skill and AUTOMATION_TEST_SPEC_v1.4.md.
   </external_references>
 </dependencies>
 
@@ -790,6 +793,37 @@ baseline:
      12. Version Notes
 ====================================================== -->
 <VERSION_NOTES>
+
+  ### v1.1 (2025-12-01)
+
+  **P0/P1/P2 Audit Fixes - Status: beta**
+
+  Infrastructure Created:
+  - Created backend/tests/common/ directory with utility files:
+    - factories.py: Test data factory functions
+    - state_asserts.py: State machine assertion helpers
+    - error_helpers.py: Error code validation helpers
+  - Created test layer directories:
+    - backend/tests/unit/ (L0)
+    - backend/tests/integration/ (L1)
+    - backend/tests/api/ (L2)
+    - backend/tests/e2e/ (L3)
+  - Created Newman directories:
+    - scripts/newman/
+    - collections/
+    - environments/
+
+  Configuration Updates:
+  - Updated pytest.ini with e2e and smoke markers
+  - Created .github/workflows/test-coverage.yml for CI
+  - Added coverage thresholds per test level
+
+  Status Changes:
+  - Changed status from ready_for_production to beta
+  - Added Status column to external_references table
+  - Added external URL availability note
+
+  ---
 
   ### v1.0 (2025-12-01)
 
