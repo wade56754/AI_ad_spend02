@@ -1,6 +1,6 @@
 ---
 name: ai-ad-api-automation-test
-version: "1.1"
+version: "1.2"
 status: beta
 layer: skill
 owner: wade
@@ -17,7 +17,7 @@ baseline:
 
 <skill>
 <name>ai-ad-api-automation-test</name>
-<version>v1.0</version>
+<version>v1.2</version>
 <domain>AI_AD_SYSTEM / API Automation Testing</domain>
 <profile>API-Test-Orchestrator / Newman-Integration / pytest-Generation</profile>
 
@@ -78,11 +78,21 @@ baseline:
   }
 
   Optional Input:
-  - target_module: string (e.g., "daily_report", "topup_request", "ledger")
+  - target_module: string
+    Valid values:
+      - "daily_report" - DailyReport 8 状态机相关测试
+      - "topup_request" - 充值申请状态机相关测试
+      - "reconciliation" - 对账状态机相关测试
+      - "ledger" - 账本分录相关测试
+      - "auth" - 认证授权相关测试
+      - "all" - 全模块测试（默认）
   - test_level: "L0" | "L1" | "L2" | "L3" (default: "L2")
   - collection_path: string (Postman collection JSON path, for NEWMAN mode)
   - environment_path: string (Postman environment JSON path)
   - output_format: "cli" | "html" | "json" (for reports)
+  - dry_run: boolean (default: false) - 预览模式，不实际写入文件或执行命令
+  - output_dir: string (default: "backend/tests/<level>/") - 测试文件输出目录
+  - overwrite: boolean (default: false) - 是否覆盖已存在的文件
 
   Mode Behaviors:
 
@@ -325,6 +335,20 @@ baseline:
     Execute pytest tests with specified markers and generate reports.
   </description>
 
+  <prerequisites>
+    Python Dependencies (requirements-test.txt):
+    | Package | Version | Purpose |
+    |---------|---------|---------|
+    | pytest | >=7.0.0 | Test framework |
+    | pytest-cov | >=4.0.0 | Coverage reporting |
+    | pytest-asyncio | >=0.21.0 | Async test support |
+    | pytest-timeout | >=2.2.0 | Test timeout enforcement |
+    | httpx | >=0.25.0 | Async HTTP client for API tests |
+    | factory_boy | >=3.3.0 | Test data factories (optional) |
+
+    Install: pip install -r backend/requirements-test.txt
+  </prerequisites>
+
   <commands>
     | Scenario | Command | Description |
     |----------|---------|-------------|
@@ -335,17 +359,31 @@ baseline:
     | E2E only | pytest -m e2e | L3 tests |
     | Quick CI | pytest -m "not e2e" | Exclude E2E |
     | Coverage | pytest --cov=backend --cov-report=html | With coverage |
+    | With timeout | pytest --timeout=5 | Per-test 5s timeout |
     | Specific file | pytest backend/tests/api/test_X.py | Single file |
   </commands>
 
-  <coverage_thresholds>
-    | Level | Target | Description |
-    |-------|--------|-------------|
-    | L0 Unit | 80% | Core business logic |
-    | L1 Integration | 70% | State machine flows |
-    | L2 API | 60% | Core API endpoints |
-    | Overall | 70% | CI blocking threshold |
-  </coverage_thresholds>
+  <thresholds>
+    Coverage Thresholds (% of code covered):
+    | Level | Coverage Target | CI Blocking | Description |
+    |-------|-----------------|-------------|-------------|
+    | L0 Unit | 90% | Yes | Core business logic |
+    | L1 Integration | 70% | Yes | State machine flows |
+    | L2 API | 60% | Yes | Core API endpoints |
+    | Overall | 80% | Yes | Combined threshold |
+
+    Execution Time Limits (per test case, AUTOMATION_TEST_SPEC_v1.4.md 第 2 章):
+    | Level | Max Time | Timeout Action | Description |
+    |-------|----------|----------------|-------------|
+    | L0 Unit | < 100ms | Fail | No external dependencies |
+    | L1 Integration | < 500ms | Fail | Uses test database |
+    | L2 API | < 1s | Warn | HTTP interface tests |
+    | L3 E2E | < 5s | Warn | Complete business flows |
+
+    Note: Coverage thresholds and execution time limits are independent metrics.
+    - Coverage: Measured via pytest-cov, enforced by --cov-fail-under
+    - Execution time: Measured per test, enforced by pytest-timeout
+  </thresholds>
 
   <output_format>
     ```markdown
@@ -677,47 +715,120 @@ baseline:
 <common_utilities>
   <factories>
     Location: backend/tests/common/factories.py
+    SoT Ref: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6
 
-    Available factories:
-    - create_user(db_session, role="media_buyer", **kwargs)
-    - create_daily_report(db_session, user, status="raw_submitted", **kwargs)
-    - create_topup_request(db_session, user, status="draft", amount=Decimal("1000.00"), **kwargs)
+    Available factories (all use keyword-only arguments):
+    - create_test_project(*, name, owner_id, status, **kwargs) → Dict
+    - create_test_channel(*, name, channel_type, **kwargs) → Dict
+    - create_test_ad_account(*, project_id, channel_id, account_name, platform_account_id, balance, **kwargs) → Dict
+    - create_test_daily_report(*, ad_account_id, report_date, status, spend, impressions, clicks, conversions, **kwargs) → Dict
+    - create_test_topup_request(*, ad_account_id, amount, status, requested_by, **kwargs) → Dict
+
+    Usage:
+    ```python
+    from backend.tests.common.factories import create_test_daily_report
+    report = create_test_daily_report(status="raw_submitted", spend=Decimal("100.00"))
+    ```
 
     MUST use factories instead of ad-hoc data creation.
   </factories>
 
   <state_asserts>
     Location: backend/tests/common/state_asserts.py
+    SoT Ref: STATE_MACHINE.md v2.6
 
     Available assertions:
-    - assert_status_transition(entity, expected_status, sot_ref=None)
-    - assert_valid_transition(entity_type, from_status, to_status)
-    - assert_terminal_state(entity, entity_type)
+    - assert_daily_report_state(entity, expected_state, msg=None) - DailyReport 8 状态机
+    - assert_topup_state(entity, expected_state, msg=None) - Topup 状态机
+    - assert_reconciliation_state(entity, expected_state, msg=None) - Reconciliation 状态机
+    - assert_state_transition_valid(entity_type, from_state, to_state, msg=None) - 验证状态转换合法性
 
     State whitelist constants:
-    - DAILY_REPORT_TRANSITIONS
-    - TOPUP_REQUEST_TRANSITIONS
+    - DAILY_REPORT_STATES, DAILY_REPORT_TRANSITIONS, DAILY_REPORT_TERMINAL_STATES
+    - TOPUP_STATES, TOPUP_TRANSITIONS, TOPUP_TERMINAL_STATES
+    - RECONCILIATION_STATES, RECONCILIATION_TRANSITIONS, RECONCILIATION_TERMINAL_STATES
+
+    Usage:
+    ```python
+    from backend.tests.common.state_asserts import (
+        assert_daily_report_state,
+        assert_state_transition_valid,
+        DAILY_REPORT_TRANSITIONS
+    )
+    assert_daily_report_state(report, "trend_pending")
+    assert_state_transition_valid("daily_report", "raw_submitted", "trend_pending")
+    ```
   </state_asserts>
 
   <error_helpers>
     Location: backend/tests/common/error_helpers.py
+    SoT Ref: ERROR_CODES_SOT.md v2.1
 
     Available helpers:
-    - assert_error_response(response, expected_code, expected_http_status, message_contains=None)
-    - assert_success_response(response, expected_http_status=200)
+    - assert_error_code(response, expected_code, msg=None) - 断言特定错误码
+    - assert_validation_error(response, expected_code=None, msg=None) - 断言 VAL-xxx 错误
+    - assert_auth_error(response, expected_code=None, msg=None) - 断言 AUTH-xxx 错误
+    - assert_business_error(response, expected_code=None, msg=None) - 断言 BIZ-xxx 错误
 
-    Common error codes:
-    - STATE_001: Invalid state transition
-    - STATE_100: Terminal state protection
-    - AUTH_501: Permission denied
-    - BIZ_100: Invalid amount
-    - VALIDATION_001: Missing required field
+    Error code constants:
+    - ERROR_CODE_PREFIXES: {"VAL", "AUTH", "PERM", "BIZ", "SYS", "DATA", "EXT", "LED", "RPT", "TOP", "REC"}
+    - VALIDATION_ERROR_CODES: {"VAL-001", "VAL-002", "VAL-003", "VAL-004", "VAL-005"}
+    - AUTH_ERROR_CODES: {"AUTH-001", "AUTH-002", "AUTH-003", "AUTH-004", "AUTH-005"}
+    - BUSINESS_ERROR_CODES: {"BIZ-001", "BIZ-002", "BIZ-003", "BIZ-004", "BIZ-005"}
+
+    Usage:
+    ```python
+    from backend.tests.common.error_helpers import assert_error_code, assert_validation_error
+    assert_error_code(response, "VAL-001")
+    assert_validation_error(response)  # Any VAL-xxx error
+    ```
   </error_helpers>
 </common_utilities>
 
 
 <!-- ======================================================
-     10. Usage Examples
+     10. Safety Constraints
+====================================================== -->
+<safety_constraints>
+  <sot_policy>
+    **SoT Read-Only Policy (MANDATORY)**
+
+    This skill operates in READ-ONLY mode for all SoT documents:
+    - ✅ MAY read SoT documents for reference and validation
+    - ✅ MAY generate test code that references SoT documents
+    - ✅ MAY validate test results against SoT specifications
+    - ❌ MUST NOT modify any files in docs/2.sot/*
+    - ❌ MUST NOT propose changes to SoT documents
+    - ❌ MUST NOT add/remove/rename SoT definitions
+
+    If SoT inconsistencies are detected:
+    1. Log the inconsistency with exact SoT reference
+    2. Report to user for manual SoT governance process
+    3. Continue test execution with current SoT values
+  </sot_policy>
+
+  <file_permissions>
+    | Directory | Permission | Reason |
+    |-----------|------------|--------|
+    | docs/2.sot/* | READ-ONLY | SoT governance |
+    | backend/services/* | READ-ONLY | Business logic immutable |
+    | backend/api/* | READ-ONLY | API layer immutable |
+    | backend/tests/* | READ-WRITE | Test code generation target |
+    | collections/* | READ-WRITE | Newman collection output |
+    | reports/* | READ-WRITE | Test report output |
+  </file_permissions>
+
+  <dry_run_mode>
+    When dry_run=true:
+    - Generate test code but do not write files
+    - Show commands but do not execute
+    - Preview report structure without data
+  </dry_run_mode>
+</safety_constraints>
+
+
+<!-- ======================================================
+     11. Usage Examples
 ====================================================== -->
 <usage>
   Example 1: Generate L2 API tests for Daily Report module
@@ -768,24 +879,54 @@ baseline:
 <error_handling>
   Scenario 1: Target module not found
   - Report: "Error: Module '<name>' not found in backend/"
-  - Suggest: List available modules
+  - Suggest: List available modules from valid values enumeration
+  - Action: Abort operation
 
   Scenario 2: SoT document not found
   - Report: "Warning: SoT document '<path>' not found"
   - Fallback: Continue with available SoT references
+  - Action: Log warning, proceed with caution
 
   Scenario 3: Test execution fails
   - Report: Detailed error with stack trace
-  - Include: Failed assertion details
+  - Include: Failed assertion details, SoT reference
   - Suggest: Potential fixes based on error type
+  - Action: Mark test as FAILED, continue suite
 
   Scenario 4: Newman collection invalid
   - Report: "Error: Invalid Postman collection format"
-  - Suggest: Validate JSON structure
+  - Suggest: Validate JSON structure against Postman schema
+  - Action: Abort Newman execution
 
   Scenario 5: Coverage below threshold
   - Report: "Warning: Coverage XX% below threshold YY%"
   - List: Uncovered modules/functions
+  - Action: Mark build as FAILED if CI blocking
+
+  Scenario 6: Output directory not writable
+  - Report: "Error: Cannot write to '<output_dir>'"
+  - Suggest: Check directory permissions, use alternative path
+  - Action: Abort operation
+
+  Scenario 7: File already exists (overwrite=false)
+  - Report: "Warning: File '<path>' already exists"
+  - Suggest: Set overwrite=true or use different output_dir
+  - Action: Skip file, continue with next
+
+  Scenario 8: Newman/Node.js not available
+  - Report: "Error: Newman CLI not found"
+  - Suggest: Run 'npm install -g newman newman-reporter-htmlextra'
+  - Action: Abort NEWMAN mode
+
+  Scenario 9: Execution timeout exceeded
+  - Report: "Error: Test '<name>' exceeded timeout limit"
+  - Include: Test level, configured timeout, actual duration
+  - Action: Mark test as TIMEOUT, continue suite
+
+  Scenario 10: Environment variables missing
+  - Report: "Error: Required environment variable '<var>' not set"
+  - Suggest: Check environments/*.json or set via shell
+  - Action: Abort operation
 </error_handling>
 
 
@@ -793,6 +934,28 @@ baseline:
      12. Version Notes
 ====================================================== -->
 <VERSION_NOTES>
+
+  ### v1.2 (2025-12-01)
+
+  **P0/P1 Pre-Launch Remediation - Status: beta**
+
+  P0 Fixes:
+  - Fixed version inconsistency (YAML/XML both v1.2)
+  - Added Safety Constraints section with SoT read-only declaration
+  - Fixed coverage_thresholds to include execution time limits
+  - Aligned thresholds with AUTOMATION_TEST_SPEC_v1.4.md 第 2 章
+
+  P1 Fixes:
+  - Added target_module valid values enumeration
+  - Added dry_run, output_dir, overwrite parameters
+  - Added pytest prerequisites/dependencies section
+  - Updated common_utilities to match actual implementations:
+    - factories.py: create_test_* functions
+    - state_asserts.py: assert_*_state, assert_state_transition_valid
+    - error_helpers.py: assert_error_code, assert_*_error
+  - Extended error_handling from 5 to 10 scenarios
+
+  ---
 
   ### v1.1 (2025-12-01)
 

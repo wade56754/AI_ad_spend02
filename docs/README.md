@@ -1,10 +1,10 @@
 ---
-version: v1.1
+version: v1.2
 status: ready_for_production
 layer: documentation-index
 owner: wade
-last_reviewed: 2025-11-27
-baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0
+last_reviewed: 2025-12-01
+baseline: MASTER.md v3.6, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0, OpenSpec v1.0
 ---
 
 # AI广告代投系统 - Documentation Center
@@ -314,6 +314,61 @@ ai-ad-doc-fixer 修复 docs/3.dev-guides/API_DEVELOPMENT_FLOW.md 中的 P1-001 �
 
 ---
 
+## 🔐 SoT 变更纪律 (OpenSpec Integration)
+
+### 唯一变更入口
+
+**所有 SoT 文档的修改必须通过 OpenSpec change 流程**：
+
+```
+openspec/changes/<change-id>/
+├── proposal.md        # 变更提案：为什么、改什么、影响范围
+├── tasks.md           # 实施清单
+├── design.md          # 技术设计（可选）
+└── specs/             # Spec deltas
+    └── <capability>/
+        └── spec.md    # ADDED/MODIFIED/REMOVED requirements
+```
+
+### 变更追溯规则
+
+| 要求 | 说明 | 违规处理 |
+|------|------|---------|
+| **change-id 必填** | 每次 SoT 变更必须关联唯一 change-id | 发现无 change-id 的 SoT 修改 → revert |
+| **禁止直编 specs/** | `openspec/specs/` 仅由 `openspec archive` 更新 | 直接编辑 → revert |
+| **审批前禁实施** | 未获批准的 change 不得开始实施 | 未审批实施 → 代码回滚 |
+
+### SoT Baseline 定义
+
+**当前冻结基线**：
+- SoT Layer: Freeze v2.6（2025-11-26）
+- 包含 10 个 SoT 文档 + 1 个 Freeze Manifest
+
+**演进方式**：
+1. 创建 OpenSpec change（`openspec/changes/<id>/`）
+2. 编写 spec deltas，引用受影响的 SoT 文档
+3. 验证通过：`openspec validate <id> --strict`
+4. 获得审批 → 实施 → 归档
+5. Baseline 版本递增（如 v2.6 → v2.7）
+
+### 快速命令
+
+```bash
+# 查看当前 specs
+openspec list --specs
+
+# 查看进行中的 changes
+openspec list
+
+# 验证变更
+openspec validate <change-id> --strict
+
+# 归档已完成的变更
+openspec archive <change-id> --yes
+```
+
+---
+
 ## 🔍 Quick Search
 
 ### By Role
@@ -352,4 +407,4 @@ ai-ad-doc-fixer 修复 docs/3.dev-guides/API_DEVELOPMENT_FLOW.md 中的 P1-001 �
 
 ---
 
-**Last Updated**: 2025-11-27 | **ASDD Framework Version**: 6-Layer Complete ✅
+**Last Updated**: 2025-12-01 | **ASDD Framework Version**: 6-Layer Complete ✅ | **OpenSpec Integrated**: v1.0

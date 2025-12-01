@@ -19,6 +19,7 @@
 
 const newman = require("newman");
 const path = require("path");
+const fs = require("fs");
 
 // ============================================================
 // Configuration
@@ -97,6 +98,64 @@ const config = {
   // Ignore SSL errors (for local development)
   insecure: process.env.NODE_ENV !== "production",
 };
+
+// ============================================================
+// Pre-flight Checks
+// ============================================================
+
+function preflight() {
+  const errors = [];
+  const warnings = [];
+
+  // Check if collection file exists
+  if (!fs.existsSync(config.collection)) {
+    errors.push(`Collection file not found: ${config.collection}`);
+  }
+
+  // Check if environment file exists (warning only, not blocking)
+  if (!fs.existsSync(config.environment)) {
+    warnings.push(`Environment file not found: ${config.environment} (will use defaults)`);
+    // Remove environment from config if not found
+    delete config.environment;
+  }
+
+  // Check if reports directory exists, create if not
+  if (!fs.existsSync(reportsDir)) {
+    try {
+      fs.mkdirSync(reportsDir, { recursive: true });
+      console.log(`[INFO] Created reports directory: ${reportsDir}`);
+    } catch (err) {
+      errors.push(`Cannot create reports directory: ${reportsDir} - ${err.message}`);
+    }
+  }
+
+  // Check reports directory is writable
+  if (fs.existsSync(reportsDir)) {
+    try {
+      const testFile = path.join(reportsDir, ".write_test");
+      fs.writeFileSync(testFile, "test");
+      fs.unlinkSync(testFile);
+    } catch (err) {
+      errors.push(`Reports directory is not writable: ${reportsDir}`);
+    }
+  }
+
+  // Print warnings
+  if (warnings.length > 0) {
+    console.log("\n[WARNINGS]");
+    warnings.forEach(w => console.log(`  - ${w}`));
+  }
+
+  // Exit if there are errors
+  if (errors.length > 0) {
+    console.error("\n[PRE-FLIGHT CHECK FAILED]");
+    errors.forEach(e => console.error(`  - ${e}`));
+    console.error("\nPlease fix the above issues before running tests.\n");
+    process.exit(1);
+  }
+}
+
+preflight();
 
 // ============================================================
 // Runner

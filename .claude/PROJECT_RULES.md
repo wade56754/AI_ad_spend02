@@ -1,10 +1,10 @@
 # AI 广告代投系统 - 项目规则总纲 (Project Constitution)
 
-> **文档版本**: v3.2 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0)
+> **文档版本**: v3.3 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0 + OpenSpec v1.0)
 > **文档类型**: Claude/SuperClaude 的"世界观" - SoT 体系的裁判规则
 > **适用范围**: 所有开发/重构/代码生成工作
 > **规范级别**: 🔴 强制执行 (CI/CD 验证)
-> **生效日期**: 2025-11-27
+> **生效日期**: 2025-12-01
 > **维护责任**: AI Architecture Team
 > **Freeze 基准**:
 >   - FREEZE_MANIFEST_v1.0.md (Overview Layer Freeze v1.0)
@@ -766,7 +766,100 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
 
 ---
 
-## 🔐 十四、规则总纲生效声明
+## 🔄 十四、OpenSpec 集成规则
+
+### OpenSpec 唯一变更通道
+
+**从 v3.3 起，所有 SoT 变更必须通过 OpenSpec 流程**：
+
+```
+openspec/changes/<change-id>/
+├── proposal.md        # 变更提案
+├── tasks.md           # 实施清单
+├── design.md          # 技术设计（可选）
+└── specs/             # Spec deltas
+    └── <capability>/
+        └── spec.md    # ADDED/MODIFIED/REMOVED
+```
+
+### 必须走 OpenSpec 的场景
+
+| 变更类型 | 示例 | 相关 SoT | 必须走 OpenSpec |
+|---------|------|----------|-----------------|
+| 状态机修改 | 新增 `trend_review` 状态 | STATE_MACHINE.md | ✅ 强制 |
+| 错误码变更 | 新增 `BIZ-010` | ERROR_CODES_SOT.md | ✅ 强制 |
+| API 契约变更 | 新增 `/api/v1/transfers` | API_SOT.md | ✅ 强制 |
+| 数据库结构变更 | 新增 `audit_logs` 表 | DATA_SCHEMA.md | ✅ 强制 |
+| 业务规则变更 | 新增 BR-LED-005 | BUSINESS_RULES.md | ✅ 强制 |
+| Bug 修复 | 恢复既有行为 | - | ❌ 可跳过 |
+| 文档 typo | 拼写修正 | - | ❌ 可跳过 |
+
+### Claude/SuperClaude OpenSpec 检查清单
+
+**每次涉及 SoT 变更前**：
+
+```markdown
+□ 是否已创建 OpenSpec change？
+  change-id: ____________ → openspec/changes/<id>/ 存在: ✅/❌
+
+□ 是否已编写 spec deltas？
+  检查: openspec/changes/<id>/specs/*/spec.md 存在: ✅/❌
+
+□ 是否通过验证？
+  运行: openspec validate <id> --strict → 结果: ✅/❌
+
+□ 是否已获得审批？
+  proposal.md 状态: ✅ Approved / ❌ Pending
+```
+
+### 禁止操作
+
+1. ❌ **直接编辑 openspec/specs/**
+   - 该目录仅由 `openspec archive` 更新
+   - 手动编辑将被 revert
+
+2. ❌ **无 change-id 的 SoT 修改**
+   - 所有 SoT 变更必须关联 change-id
+   - Commit message 必须包含 `[<change-id>]`
+
+3. ❌ **未审批即实施**
+   - proposal.md 未获批准前不得开始编码
+   - 违规实施将被代码回滚
+
+### 分支命名规范
+
+```bash
+# OpenSpec change 实施分支
+feature/<change-id>
+
+# 示例
+feature/add-transfer-v2
+feature/update-state-machine-v3
+```
+
+### Commit message 规范
+
+```bash
+# 格式
+<type>(<scope>): <description> [<change-id>]
+
+# 示例
+feat(api): add transfer endpoint [add-transfer-v2]
+docs(sot): update STATE_MACHINE for 9-state [update-state-machine-v3]
+```
+
+### OpenSpec 与 ASDD 映射
+
+| OpenSpec 概念 | ASDD 等价物 |
+|---------------|------------|
+| `openspec/specs/` | `docs/2.sot/` (SoT Layer) |
+| `proposal.md` | RFC in `docs/1.overview/` |
+| `design.md` | Architecture views in `docs/4.architecture/` |
+| `tasks.md` | Dev-Guides 实施清单 |
+
+---
+
+## 🔐 十五、规则总纲生效声明
 
 **本文档自 v3.0 起生效，具有以下法律效力**:
 
@@ -786,13 +879,14 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
 
 ---
 
-**规则总纲版本**: v3.2 (基于 ASDD 4层 Freeze: Overview v1.0 + SoT v2.6 + Dev-Guides v2.1 + Architecture v1.0)
-**生效日期**: 2025-11-27
-**最后更新**: 2025-11-27
+**规则总纲版本**: v3.3 (基于 ASDD 4层 Freeze: Overview v1.0 + SoT v2.6 + Dev-Guides v2.1 + Architecture v1.0 + OpenSpec v1.0)
+**生效日期**: 2025-12-01
+**最后更新**: 2025-12-01
 **下次审查**: Freeze Manifest 变更时或每季度
 **维护责任人**: AI Architecture Team
 
 **版本变更历史**:
+- v3.3 (2025-12-01): 新增第十四章「OpenSpec 集成规则」，确立 OpenSpec 为唯一变更通道，添加 Claude/SuperClaude OpenSpec 检查清单
 - v3.2 (2025-11-27): 新增 ASDD 4层架构合规性章节，更新 Freeze 基准为 4层 Freeze Manifests，更新文档路径索引为 4层架构
 - v3.1 (2025-11-25): 基于 ASDD Freeze v1.0 + SoT Freeze v1.0
 - v3.0 (2025-11-24): 初始版本

@@ -3,11 +3,11 @@
 > **文档性质**: 系统唯一入口，所有代码实现的最高裁决依据
 > **约束级别**: 强制执行，违反本文档定义的不变量视为 P0 缺陷
 > **裁判优先级**: 本文档 > 所有 SoT 文档 > 所有开发指南
-> **版本**: v3.5
+> **版本**: v3.6
 > **status**: frozen
-> **基准**: SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Layer Freeze v1.0, PROJECT.md v1.2
+> **基准**: SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Layer Freeze v1.0, PROJECT.md v1.2, OpenSpec v1.0
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
+> **last_reviewed**: 2025-12-01
 
 ---
 
@@ -445,6 +445,64 @@ Freeze 是治理机制，不是建议。
 
 ---
 
+## 第五章附录 规范变更管理 (OpenSpec)
+
+### OS-01 OpenSpec 唯一变更通道
+
+涉及以下内容的变更，**必须**先通过 OpenSpec change 流程（PROPOSE → IMPLEMENT → ARCHIVE）：
+
+| 变更类型 | 示例 | 必须走 OpenSpec |
+|---------|------|-----------------|
+| 状态机修改 | 新增状态、修改流转规则 | ✅ 强制 |
+| 错误码变更 | 新增/修改错误码定义 | ✅ 强制 |
+| 账本规则变更 | 分录类型、余额计算公式 | ✅ 强制 |
+| API 契约变更 | 新增端点、修改请求/响应格式 | ✅ 强制 |
+| 数据库结构变更 | 新增/修改表、字段、约束 | ✅ 强制 |
+| 业务规则变更 | 新增/修改 BR-* 规则 | ✅ 强制 |
+| Bug 修复 | 恢复到既有 spec 行为 | ❌ 可跳过 |
+| 文档 typo | 拼写错误、格式调整 | ❌ 可跳过 |
+| 依赖更新 | 非破坏性版本升级 | ❌ 可跳过 |
+
+### OS-02 SoT 投影与禁止直接编辑
+
+**禁止操作**：
+- ❌ 直接编辑 `openspec/specs/` 目录下的任何文件
+- ❌ 在 commit 中不包含 change-id 而修改 SoT 文档
+
+**强制路径**：
+1. 创建 OpenSpec change（`openspec/changes/<change-id>/`）
+2. 编写 spec deltas（使用 `## ADDED|MODIFIED|REMOVED Requirements`）
+3. 验证通过（`openspec validate <change-id> --strict`）
+4. 获得审批后实施
+5. 归档变更（`openspec archive <change-id>`）→ 自动更新 `openspec/specs/`
+
+### OS-03 裁判链与 OpenSpec 对齐
+
+OpenSpec 的 spec deltas 必须与 SoT 裁判链保持一致：
+
+```
+MASTER.md (本文档) > STATE_MACHINE.md > DATA_SCHEMA.md > API_SOT.md
+> ERROR_CODES_SOT.md > BUSINESS_RULES.md > AUTH_SPEC.md > LEDGER_SOT.md
+```
+
+**约束**：
+- OpenSpec change 不得违反高优先级文档的定义
+- 若需修改高优先级文档，必须同时更新所有受影响的下游文档
+- 冲突解决：以裁判链高优先级文档为准
+
+### OS-04 变更追溯要求
+
+**每次 SoT 变更必须包含**：
+- `change-id`：OpenSpec 变更标识（如 `add-topup-v2`）
+- `affected_specs`：受影响的 SoT 文档列表
+- `commit message`：包含 `[change-id]` 标记
+
+**违规检测**：
+- 发现直接修改 SoT 且 commit 中无 change-id → 视为违规变更
+- 违规变更将被 revert，需重新走 OpenSpec 流程
+
+---
+
 ## 第六章 SoT 裁判链
 
 当多份文档对同一概念有不同定义时，按以下优先级解决冲突：
@@ -650,11 +708,12 @@ Freeze 是治理机制，不是建议。
 | v3.3 | 2025-11-25 | 对齐 CLAUDE.md v3.0，完善裁判链 | 系统架构师 |
 | v3.4 | 2025-11-25 | 整合 PROJECT.md v1.2：业务不可变量、永久禁止行为、Freeze 机制 | Master Architect |
 | v3.5 | 2025-11-27 | 扩展至 6 层架构：新增 Agent Layer（第 6 层），扩展裁判链至 13 项，更新文档索引 | Master Architect |
+| v3.6 | 2025-12-01 | 新增第五章附录「规范变更管理 (OpenSpec)」：OS-01 至 OS-04，确立 OpenSpec 为唯一变更通道 | Master Architect |
 
 ---
 
-**文档版本**: v3.5
-**最后更新**: 2025-11-27
+**文档版本**: v3.6
+**最后更新**: 2025-12-01
 **对齐文档**: PROJECT.md v1.2, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Layer Freeze v1.0, CLAUDE.md v3.0
 **维护者**: 系统架构师
 **变更审批**: 所有修改必须经过 RFC 流程

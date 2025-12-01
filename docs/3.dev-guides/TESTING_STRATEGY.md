@@ -1,10 +1,10 @@
 ---
-version: v1.0
+version: v1.2
 status: ready_for_production
 layer: dev-guide
 owner: wade
-last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+last_reviewed: 2025-12-01
+baseline: MASTER.md v3.6, SoT Freeze v2.6, OpenSpec v1.0
 ---
 
 # TESTING_STRATEGY.md - AI广告代投系统测试策略
@@ -25,6 +25,7 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6
 10. [覆盖率要求](#10-覆盖率要求)
 11. [测试最佳实践](#11-测试最佳实践)
 12. [附录：SoT引用索引](#12-附录sot引用索引)
+13. [OpenSpec 测试约定](#13-openspec-测试约定)
 
 ---
 
@@ -1993,6 +1994,115 @@ def test_dual_ledger():
 def test_complete_topup_flow():
     """端到端测试"""
     pass
+```
+
+---
+
+## 13. OpenSpec 测试约定
+
+### 13.1 Change-ID 关联
+
+由 OpenSpec change 引入的新功能，测试必须关联 change-id：
+
+```python
+# tests/integration/test_transfer_flow.py
+
+class TestTransferFlow:
+    """
+    OpenSpec Change: add-transfer-v2
+    测试目标: 验证转账功能符合 TRANSFER_SOT.md v1.0
+    引用: openspec/changes/add-transfer-v2/proposal.md
+    """
+
+    def test_transfer_success(self, db_session, test_project):
+        """
+        [add-transfer-v2] 场景: 成功转账
+        Given: 源账户余额充足
+        When: 执行转账
+        Then: 双账本同时更新
+        """
+        # ... 测试实现
+```
+
+**命名约定**：
+- 测试类 docstring：`OpenSpec Change: <change-id>`
+- 测试方法前缀：`[<change-id>]`（可选，推荐用于核心测试）
+
+### 13.2 Freeze 前验证流程
+
+在大版本合并或 Freeze 前，执行以下验证：
+
+```bash
+# Step 1: 验证所有进行中的 changes
+openspec validate --strict
+
+# Step 2: 运行关联测试
+pytest tests/ -m "change_id" -v
+
+# Step 3: 检查 specs 一致性
+openspec list --specs
+rg -n "Requirement:|Scenario:" openspec/specs/
+
+# Step 4: 确认无冲突
+openspec list  # 确认所有 changes 已归档或待审批
+```
+
+### 13.3 测试与 Spec Delta 对齐
+
+每个 `## ADDED Requirements` 应有对应测试：
+
+```markdown
+## ADDED Requirements in openspec/changes/add-2fa/specs/auth/spec.md
+
+### Requirement: Two-Factor Authentication
+Users MUST provide a second factor during login.
+
+#### Scenario: OTP required
+- **WHEN** valid credentials are provided
+- **THEN** an OTP challenge is required
+```
+
+对应测试：
+
+```python
+# tests/integration/test_auth.py
+
+@pytest.mark.change_id("add-2fa")
+def test_otp_required_after_valid_credentials():
+    """
+    [add-2fa] Scenario: OTP required
+    引用: openspec/changes/add-2fa/specs/auth/spec.md
+    """
+    # Given: valid credentials
+    response = client.post("/api/v1/auth/login", json=valid_credentials)
+
+    # Then: OTP challenge required
+    assert response.status_code == 200
+    assert response.json()["requires_2fa"] is True
+```
+
+### 13.4 测试标记
+
+```python
+# conftest.py
+
+import pytest
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "change_id(id): 关联 OpenSpec change-id"
+    )
+
+# 使用示例
+@pytest.mark.change_id("add-transfer-v2")
+def test_transfer_creates_ledger_entries():
+    pass
+```
+
+运行特定 change 的测试：
+
+```bash
+pytest -m "change_id" -k "add-transfer-v2"
 ```
 
 ---

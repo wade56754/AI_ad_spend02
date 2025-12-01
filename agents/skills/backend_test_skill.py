@@ -7,6 +7,7 @@ Backend Test Skill：生成后端 pytest 测试执行提示词。
 - 不直接执行测试，只生成 prompt 供 MCP / Claude 执行
 
 改动历史：
+- v1.2: 添加 timeout 参数支持 (AUTOMATION_TEST_SPEC_v1.4.md 第 2 章)
 - v1.1: 移除硬编码路径，改为相对路径描述；增加 quick 模式命令；处理 None 值
 """
 from typing import Dict, Any
@@ -18,13 +19,19 @@ from ..tools.types import SkillResult
 logger = logging.getLogger(__name__)
 
 
-def backend_test_skill(scope: str = "all", level: str = "full") -> SkillResult:
+def backend_test_skill(scope: str = "all", level: str = "full", timeout: int = None) -> SkillResult:
     """
     后端测试 Skill：生成「Backend 测试环境健康度报告」的执行提示词。
 
     Args:
         scope: "ledger" | "topups" | "daily_reports" | "reconciliation" | "all"
         level: "quick" (仅 service+api) | "full" (全部测试文件)
+        timeout: 测试超时时间（秒），None 表示使用默认值
+                 默认值参考 AUTOMATION_TEST_SPEC_v1.4.md 第 2 章:
+                 - L0 Unit: 1s (100ms per test, buffer for setup)
+                 - L1 Integration: 5s (500ms per test, buffer for DB)
+                 - L2 API: 10s (1s per test, buffer for HTTP)
+                 - L3 E2E: 30s (5s per test, buffer for full flow)
 
     Returns:
         SkillResult with prompt in data.prompt
@@ -32,6 +39,12 @@ def backend_test_skill(scope: str = "all", level: str = "full") -> SkillResult:
 
     scope = (scope or "all").lower()
     level = (level or "full").lower()
+
+    # 默认超时配置 (秒) - 基于 AUTOMATION_TEST_SPEC_v1.4.md 第 2 章
+    # 使用保守值以允许 setup/teardown 开销
+    default_timeout = 10 if level == "quick" else 30
+    timeout_value = timeout if timeout is not None else default_timeout
+    timeout_flag = f"--timeout={timeout_value}"
 
     # 可选：加载 TESTING / MASTER 文档做上下文（不存在也没关系）
     # 处理 None 值，避免在 prompt 中出现 "None" 字符串
@@ -84,6 +97,7 @@ use context7
 当前测试范围:
 - scope = "{scope}"
 - level = "{level}"
+- timeout = {timeout_value}s (per test)
 
 部分 SoT 上下文（可选，若为空则忽略）：
 <MASTER_MD>
@@ -101,17 +115,19 @@ use context7
 工作目录：
 - 先切换到 backend 目录：cd backend
 
-根据 scope 和 level 选择测试命令：
+根据 scope 和 level 选择测试命令（包含 {timeout_flag}）：
 
-┌─────────────────┬─────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────┐
-│ scope           │ level="full" (完整测试)                                                 │ level="quick" (仅 service + api，跳过 permissions/performance/invariants)           │
-├─────────────────┼─────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────┤
-│ ledger          │ python -m pytest tests/ledger -v --tb=short --no-cov                    │ python -m pytest tests/ledger/test_ledger_service.py -v --tb=short --no-cov          │
-│ topups          │ python -m pytest tests/test_topup_*.py -v --tb=short --no-cov           │ python -m pytest tests/test_topup_service.py tests/test_topup_api.py -v --tb=short --no-cov │
-│ daily_reports   │ python -m pytest tests/test_daily_report_*.py -v --tb=short --no-cov    │ python -m pytest tests/test_daily_report_service.py tests/test_daily_report_api.py -v --tb=short --no-cov │
-│ reconciliation  │ python -m pytest tests/test_reconciliation_*.py -v --tb=short --no-cov  │ python -m pytest tests/test_reconciliation_service.py tests/test_reconciliation_api.py -v --tb=short --no-cov │
-│ all             │ python -m pytest tests/ -v --tb=short --no-cov                          │ python -m pytest tests/ledger/test_ledger_service.py tests/test_topup_service.py tests/test_topup_api.py tests/test_daily_report_service.py tests/test_daily_report_api.py tests/test_reconciliation_service.py tests/test_reconciliation_api.py -v --tb=short --no-cov │
-└─────────────────┴─────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────────┘
+注意：需要安装 pytest-timeout 插件（pip install pytest-timeout）
+
+┌─────────────────┬─────────────────────────────────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ scope           │ level="full" (完整测试)                                                                  │ level="quick" (仅 service + api，跳过 permissions/performance/invariants)                                    │
+├─────────────────┼─────────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ledger          │ python -m pytest tests/ledger -v --tb=short --no-cov {timeout_flag}                     │ python -m pytest tests/ledger/test_ledger_service.py -v --tb=short --no-cov {timeout_flag}                   │
+│ topups          │ python -m pytest tests/test_topup_*.py -v --tb=short --no-cov {timeout_flag}            │ python -m pytest tests/test_topup_service.py tests/test_topup_api.py -v --tb=short --no-cov {timeout_flag}   │
+│ daily_reports   │ python -m pytest tests/test_daily_report_*.py -v --tb=short --no-cov {timeout_flag}     │ python -m pytest tests/test_daily_report_service.py tests/test_daily_report_api.py -v --tb=short --no-cov {timeout_flag} │
+│ reconciliation  │ python -m pytest tests/test_reconciliation_*.py -v --tb=short --no-cov {timeout_flag}   │ python -m pytest tests/test_reconciliation_service.py tests/test_reconciliation_api.py -v --tb=short --no-cov {timeout_flag} │
+│ all             │ python -m pytest tests/ -v --tb=short --no-cov {timeout_flag}                           │ python -m pytest tests/ledger/test_ledger_service.py tests/test_topup_service.py tests/test_topup_api.py tests/test_daily_report_service.py tests/test_daily_report_api.py tests/test_reconciliation_service.py tests/test_reconciliation_api.py -v --tb=short --no-cov {timeout_flag} │
+└─────────────────┴─────────────────────────────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 你需要：
 1. 进入 backend 目录（cd backend）；

@@ -1,10 +1,10 @@
 ---
-version: v0.1
+version: v2.1
 status: ready_for_production
 layer: dev-guide
-last_reviewed: 2025-11-27
+last_reviewed: 2025-12-01
 owner: wade
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+baseline: MASTER.md v3.6, SoT Freeze v2.6, OpenSpec v1.0
 ---
 
 # API Development Flow
@@ -400,6 +400,75 @@ class DailyReportService:
 3. **OpenAPI 文档同步**：
    - 确保 FastAPI 自动生成的 `/docs` 包含完整描述
    - 验证 schema 示例正确
+
+## 3.8 何时必须创建 OpenSpec Proposal
+
+### 3.8.1 必须创建 Proposal 的场景
+
+| 场景 | 示例 | 相关 SoT |
+|------|------|----------|
+| **新增 API 端点** | `POST /api/v1/transfers` | API_SOT.md |
+| **修改状态机** | 新增状态 `trend_review` | STATE_MACHINE.md |
+| **数据库结构变更** | 新增 `audit_logs` 表 | DATA_SCHEMA.md |
+| **新业务规则** | 添加 BR-LED-005 | BUSINESS_RULES.md |
+| **错误码变更** | 新增 `BIZ-010` | ERROR_CODES_SOT.md |
+| **Breaking change** | 修改 API 响应格式 | API_SOT.md |
+| **权限变更** | 新增 `reconciliation:approve` | AUTH_SPEC.md |
+
+### 3.8.2 可跳过 Proposal 的场景
+
+| 场景 | 说明 |
+|------|------|
+| **Bug 修复** | 恢复到既有 spec 定义的行为 |
+| **补充测试** | 为现有功能增加测试覆盖 |
+| **文档 typo** | 拼写错误、格式调整、示例修正 |
+| **依赖更新** | 非破坏性的库版本升级 |
+| **代码重构** | 不改变外部行为的内部优化 |
+
+### 3.8.3 分支与提交命名规范
+
+**分支命名**：
+```bash
+# 实现 OpenSpec change
+feature/<change-id>
+
+# 示例
+feature/add-transfer-v2
+feature/update-daily-report-states
+```
+
+**Commit message 规范**：
+```bash
+# 格式
+<type>(<scope>): <description> [<change-id>]
+
+# 示例
+feat(api): add transfer endpoint [add-transfer-v2]
+fix(service): correct state transition [fix-trend-flow]
+docs(sot): update STATE_MACHINE for 9-state [update-state-machine-v3]
+```
+
+### 3.8.4 OpenSpec 工作流
+
+```mermaid
+graph TD
+    A[识别变更需求] --> B{是否涉及 SoT?}
+    B -->|是| C[创建 OpenSpec change]
+    B -->|否| D[直接开发]
+    C --> E[编写 proposal.md]
+    E --> F[编写 spec deltas]
+    F --> G[openspec validate --strict]
+    G -->|失败| F
+    G -->|通过| H[请求审批]
+    H --> I{审批通过?}
+    I -->|否| E
+    I -->|是| J[开始实施]
+    J --> K[按 tasks.md 完成]
+    K --> L[openspec archive]
+    L --> M[specs/ 自动更新]
+```
+
+---
 
 ## 4. Error Handling
 

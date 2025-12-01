@@ -14,8 +14,8 @@
     "test:staging": "API_BASE_URL=https://staging.example.com npm test",
     "test:production": "API_BASE_URL=https://api.example.com npm test",
     "test:ci": "npm run test:all -- --bail",
-    "report:clean": "rm -rf reports/*.html reports/*.json",
-    "setup": "npm install && mkdir -p collections environments reports"
+    "report:clean": "node -e \"const fs=require('fs');const path=require('path');const dir='reports';if(fs.existsSync(dir)){fs.readdirSync(dir).filter(f=>/\\.(html|json)$/.test(f)).forEach(f=>fs.unlinkSync(path.join(dir,f)));}\"",
+    "setup": "node -e \"['collections','environments','reports'].forEach(d=>{if(!require('fs').existsSync(d))require('fs').mkdirSync(d,{recursive:true});})\" && npm install"
   },
   "keywords": [
     "api-testing",
