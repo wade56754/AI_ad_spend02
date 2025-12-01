@@ -27,9 +27,9 @@ def run_command(cmd, description):
     result = subprocess.run(cmd, capture_output=False, text=True)
 
     if result.returncode == 0:
-        print(f"\n✅ {description} - 成功")
+        print(f"\n[PASS] {description} - 成功")
     else:
-        print(f"\n❌ {description} - 失败 (退出码: {result.returncode})")
+        print(f"\n[FAIL] {description} - 失败 (退出码: {result.returncode})")
 
     return result.returncode == 0
 
@@ -107,6 +107,37 @@ def run_smoke_tests(verbose=False):
     return run_command(cmd, "冒烟测试")
 
 
+def run_regression_tests(verbose=False):
+    """运行回归测试套件（五连拍）"""
+    test_suites = [
+        ("backend/tests/api/test_daily_report_flow_generated.py", "Daily Reports API"),
+        ("backend/tests/api/test_trend_risk_flow_generated.py", "Trend Risk API"),
+        ("backend/tests/ledger", "Ledger"),
+        ("backend/tests/ad_accounts", "Ad Accounts"),
+        ("backend/tests/test_topup_api.py", "Topup API"),
+    ]
+
+    all_success = True
+
+    for test_path, description in test_suites:
+        cmd = ["python", "-m", "pytest", "-q", "-p", "no:pytest_postgresql"]
+
+        if verbose:
+            cmd = ["python", "-m", "pytest", "-v", "--tb=short", "-p", "no:pytest_postgresql"]
+
+        # Topup 测试需要排除 skip 标记
+        if "topup" in test_path.lower():
+            cmd.extend(["-k", "not skip"])
+
+        cmd.append(test_path)
+
+        success = run_command(cmd, description)
+        if not success:
+            all_success = False
+
+    return all_success
+
+
 def run_all_tests(verbose=False, coverage=False, html_report=False):
     """运行所有测试"""
     cmd = ["python", "-m", "pytest"]
@@ -181,9 +212,9 @@ def check_test_dependencies():
     for package in required_packages:
         try:
             __import__(package.replace("-", "_"))
-            print(f"✅ {package}")
+            print(f"[OK] {package}")
         except ImportError:
-            print(f"❌ {package} - 未安装")
+            print(f"[MISSING] {package} - 未安装")
             missing_packages.append(package)
 
     if missing_packages:
@@ -201,7 +232,7 @@ def main():
     parser.add_argument(
         "--type", "-t",
         choices=["unit", "integration", "functional", "security",
-                "performance", "smoke", "database", "all"],
+                "performance", "smoke", "database", "regression", "all"],
         default="all",
         help="要运行的测试类型"
     )
@@ -269,6 +300,8 @@ def main():
         success = run_performance_tests(args.verbose)
     elif args.type == "smoke":
         success = run_smoke_tests(args.verbose)
+    elif args.type == "regression":
+        success = run_regression_tests(args.verbose)
     elif args.type == "database":
         success = run_database_tests(args.verbose)
     elif args.type == "all":
@@ -277,10 +310,10 @@ def main():
     # 输出总结
     print(f"\n{'='*60}")
     if success:
-        print("✅ 所有测试通过")
+        print("[PASS] 所有测试通过")
         exit_code = 0
     else:
-        print("❌ 部分测试失败")
+        print("[FAIL] 部分测试失败")
         exit_code = 1
     print(f"{'='*60}")
 
