@@ -1,12 +1,9 @@
 """
-llm_client.py - LLM 客户端统一管理（纯 API Key 模式）
+llm_client.py - LLM 客户端统一管理（Anthropic API + Claude Code CLI 双后端）
 
-提供线程安全的 LLM 客户端单例，使用 Anthropic 官方 API。
-
-重构变更：
-- 移除 Claude Code CLI 支持
-- 强制要求 ANTHROPIC_API_KEY 环境变量
-- 支持可选的 ANTHROPIC_BASE_URL（代理支持）
+提供线程安全的 LLM 客户端单例，按优先级选择后端：
+1) 如果设置了 ANTHROPIC_API_KEY，则使用 Anthropic 官方 API
+2) 否则回退到 Claude Code CLI（面向 Claude Max 订阅场景）
 
 基准对齐：
 - Agent Layer Freeze v1.0
@@ -14,6 +11,7 @@ llm_client.py - LLM 客户端统一管理（纯 API Key 模式）
 """
 
 from typing import Any, List, Optional
+import importlib.util
 import logging
 import os
 import threading
@@ -27,7 +25,7 @@ _client_lock = threading.Lock()
 
 def get_llm_client() -> Any:
     """
-    获取 Anthropic API 客户端单例（线程安全）。
+    获取 LLM 客户端单例（线程安全）。
 
     环境变量：
         - ANTHROPIC_API_KEY (必需): Anthropic API密钥
@@ -36,11 +34,15 @@ def get_llm_client() -> Any:
     Thread Safety:
         使用双重检查锁定模式，确保线程安全的单例初始化。
 
+    Backend Priority:
+        1) Anthropic API（当 ANTHROPIC_API_KEY 存在）
+        2) Claude Code CLI（当未设置 API Key 时自动回退）
+
     Returns:
-        Anthropic 客户端实例
+        Anthropic 或 ClaudeCodeClient 客户端实例
 
     Raises:
-        RuntimeError: ANTHROPIC_API_KEY 未设置
+        RuntimeError: 未找到可用的 LLM 后端
     """
     global _client
 
@@ -53,39 +55,61 @@ def get_llm_client() -> Any:
         if _client is not None:
             return _client
 
-        # 检查 API Key
         api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "ANTHROPIC_API_KEY 环境变量未设置。"
-                "请设置 API Key 后重试。"
-            )
-
-        # 检查可选的代理 URL
         base_url = os.environ.get("ANTHROPIC_BASE_URL")
 
-        # 创建 Anthropic 客户端
-        try:
-            from anthropic import Anthropic
-
-            kwargs = {}
-            if base_url:
-                kwargs["base_url"] = base_url
-                logger.info(f"Using Anthropic API with custom base URL: {base_url}")
-            else:
-                logger.info("Using Anthropic API (official endpoint)")
-
-            _client = Anthropic(api_key=api_key, **kwargs)
-            logger.debug(f"Anthropic client initialized (key: {api_key[:10]}...)")
-
-        except ImportError:
-            raise RuntimeError(
-                "anthropic 包未安装。请运行: pip install anthropic"
-            )
-        except Exception as e:
-            raise RuntimeError(f"初始化 Anthropic 客户端失败: {e}")
+        # 1) 优先使用 Anthropic API
+        if api_key:
+            _client = _init_anthropic_client(api_key=api_key, base_url=base_url)
+            logger.info("LLM backend initialized: anthropic_api")
+        else:
+            # 2) 回退 Claude Code CLI
+            _client = _init_claude_code_client()
+            logger.info("LLM backend initialized: claude_code (fallback)")
 
     return _client
+
+
+def _init_anthropic_client(api_key: str, base_url: Optional[str]) -> Any:
+    """初始化 Anthropic 官方客户端。"""
+
+    if importlib.util.find_spec("anthropic") is None:
+        raise RuntimeError("anthropic 包未安装。请运行: pip install anthropic")
+
+    from anthropic import Anthropic
+
+    try:
+        kwargs = {}
+        if base_url:
+            kwargs["base_url"] = base_url
+            logger.info(f"Using Anthropic API with custom base URL: {base_url}")
+        else:
+            logger.info("Using Anthropic API (official endpoint)")
+
+        client = Anthropic(api_key=api_key, **kwargs)
+        logger.debug(f"Anthropic client initialized (key: {api_key[:10]}...)")
+        return client
+    except Exception as e:
+        raise RuntimeError(f"初始化 Anthropic 客户端失败: {e}")
+
+
+def _init_claude_code_client() -> Any:
+    """初始化 Claude Code CLI 客户端。"""
+
+    from .claude_code_adapter import (
+        ClaudeCodeClient,
+        check_claude_code_available,
+    )
+
+    status = check_claude_code_available()
+    if not status.get("available"):
+        raise RuntimeError(
+            "Claude Code CLI 不可用："
+            f"{status.get('error') or '未找到可执行文件'}"
+        )
+
+    logger.info("Using Claude Code CLI (fallback backend)")
+    return ClaudeCodeClient()
 
 
 def extract_response_text(resp: Any) -> str:

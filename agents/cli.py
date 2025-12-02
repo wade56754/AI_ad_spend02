@@ -199,7 +199,9 @@ def main() -> None:
             old_args.command = "run"
             cmd_run(old_args)
         else:
+            # 未提供有效命令时，输出帮助信息并返回非零状态以提醒调用者
             parser.print_help()
+            sys.exit(1)
     else:
         parser.print_help()
 

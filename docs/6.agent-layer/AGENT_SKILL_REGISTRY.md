@@ -46,6 +46,10 @@ Agent (协调层) → Skill (执行层)
 | **Test Skill** | 测试生成/执行 | `db_test_skill` |
 | **Guard Skill** | SoT 守护/验证 | `sot_guard_skill` |
 
+> ⚠️ **Doc/Review Skill 现状**：`doc_skill` / `review_skill` 目前仅作为占位符，调用会抛出
+> `NotImplementedError`。文档生成/审核逻辑集中在 `DocAgent` / `CodeReviewAgent` 内部实现，暂不建议直接调
+> 用这两个 Skill，待后续抽象完成后再启用。
+
 **按层级分类**:
 
 | 层级 | 描述 | 示例 |

@@ -74,6 +74,15 @@ orchestrator.handle_request({
 
 ---
 
+## 1.4 Auto-Fix 流水线现状（提醒）
+
+- auto_fix 流程的“测试/验证”步骤目前由 TestAgent 生成测试/校验 prompt，不会自动运行 pytest/
+  lint。只要 prompt 生成成功就视为通过，因此通常停留在首轮迭代。
+- 若需要真正的“自动修复”，仍需人工执行测试命令并把失败日志反馈给 Agent，或者扩展 TestAgent 以
+  支持真实执行。
+
+---
+
 ## 2. 编排模式
 
 ### 2.1 串行模式（Sequential）

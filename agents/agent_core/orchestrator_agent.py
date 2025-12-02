@@ -711,6 +711,11 @@ class OrchestratorAgent:
            - Re-run step 1 with fix context
         4. Return final result (success if tests pass, partial if max retries exceeded)
 
+        Known limitations (2025-12):
+        - TestAgent 目前只生成测试/校验 prompt，不会真正执行测试命令。
+          只要 prompt 生成成功就视为“验证通过”，通常停留在首轮迭代。
+        - auto_fix 仍需人工运行/校验测试结果；本函数主要提供生成+提示骨架。
+
         Returns:
             OrchestratorResult with iteration details in steps.
         """

@@ -22,7 +22,13 @@ class TestGetLlmClient:
 
         mock_client = MagicMock()
         # Fix: ClaudeCodeClient is imported inside get_llm_client(), patch at source
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
+        with patch(
+            "agents.tools.claude_code_adapter.ClaudeCodeClient",
+            return_value=mock_client,
+        ), patch(
+            "agents.tools.claude_code_adapter.check_claude_code_available",
+            return_value={"available": True, "path": "claude", "version": "1.0"},
+        ):
             from agents.tools.llm_client import get_llm_client
             client = get_llm_client()
 
@@ -37,12 +43,39 @@ class TestGetLlmClient:
 
         mock_client = MagicMock()
         # Fix: ClaudeCodeClient is imported inside get_llm_client(), patch at source
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
+        with patch(
+            "agents.tools.claude_code_adapter.ClaudeCodeClient",
+            return_value=mock_client,
+        ), patch(
+            "agents.tools.claude_code_adapter.check_claude_code_available",
+            return_value={"available": True, "path": "claude", "version": "1.0"},
+        ):
             from agents.tools.llm_client import get_llm_client
             client1 = get_llm_client()
             client2 = get_llm_client()
 
         assert client1 is client2
+
+    def test_get_llm_client_prefers_anthropic_when_api_key_set(self, monkeypatch):
+        """When API key exists, Anthropic client should be used instead of CLI."""
+        from agents.tools import llm_client
+        llm_client.reset_client()
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+
+        mock_api_client = MagicMock(name="AnthropicClient")
+        with patch(
+            "anthropic.Anthropic",
+            return_value=mock_api_client,
+        ) as mock_anthropic, patch(
+            "agents.tools.claude_code_adapter.ClaudeCodeClient",
+        ) as mock_cli:
+            from agents.tools.llm_client import get_llm_client
+            client = get_llm_client()
+
+        assert client is mock_api_client
+        mock_anthropic.assert_called_once()
+        mock_cli.assert_not_called()
 
 
 class TestExtractResponseText:
@@ -194,13 +227,25 @@ class TestResetClient:
 
         mock_client1 = MagicMock()
         # Fix: Patch at source module
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client1):
+        with patch(
+            "agents.tools.claude_code_adapter.ClaudeCodeClient",
+            return_value=mock_client1,
+        ), patch(
+            "agents.tools.claude_code_adapter.check_claude_code_available",
+            return_value={"available": True, "path": "claude", "version": "1.0"},
+        ):
             client1 = llm_client.get_llm_client()
 
         llm_client.reset_client()
 
         mock_client2 = MagicMock()
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client2):
+        with patch(
+            "agents.tools.claude_code_adapter.ClaudeCodeClient",
+            return_value=mock_client2,
+        ), patch(
+            "agents.tools.claude_code_adapter.check_claude_code_available",
+            return_value={"available": True, "path": "claude", "version": "1.0"},
+        ):
             client2 = llm_client.get_llm_client()
 
         assert client1 is not client2
@@ -218,7 +263,13 @@ class TestBackendDetection:
 
         mock_client = MagicMock()
         # Fix: Patch at source module
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
+        with patch(
+            "agents.tools.claude_code_adapter.ClaudeCodeClient",
+            return_value=mock_client,
+        ), patch(
+            "agents.tools.claude_code_adapter.check_claude_code_available",
+            return_value={"available": True, "path": "claude", "version": "1.0"},
+        ):
             client = llm_client.get_llm_client()
 
         assert client is mock_client
