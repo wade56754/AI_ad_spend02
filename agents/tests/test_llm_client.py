@@ -14,15 +14,17 @@ class TestGetLlmClient:
     """Tests for get_llm_client function."""
 
     def test_get_llm_client_returns_instance(self, monkeypatch):
-        """get_llm_client should return a client instance."""
+        """get_llm_client should return a client instance (fallback to ClaudeCodeClient)."""
         from agents.tools import llm_client
         llm_client.reset_client()
 
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         mock_client = MagicMock()
-        # Fix: ClaudeCodeClient is imported inside get_llm_client(), patch at source
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
+        mock_cli_status = {"available": True, "path": "/mock/claude", "version": "1.0.0"}
+        # Patch both ClaudeCodeClient and check_claude_code_available
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client), \
+             patch("agents.tools.claude_code_adapter.check_claude_code_available", return_value=mock_cli_status):
             from agents.tools.llm_client import get_llm_client
             client = get_llm_client()
 
@@ -36,8 +38,10 @@ class TestGetLlmClient:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         mock_client = MagicMock()
-        # Fix: ClaudeCodeClient is imported inside get_llm_client(), patch at source
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
+        mock_cli_status = {"available": True, "path": "/mock/claude", "version": "1.0.0"}
+        # Patch both ClaudeCodeClient and check_claude_code_available
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client), \
+             patch("agents.tools.claude_code_adapter.check_claude_code_available", return_value=mock_cli_status):
             from agents.tools.llm_client import get_llm_client
             client1 = get_llm_client()
             client2 = get_llm_client()
@@ -192,15 +196,19 @@ class TestResetClient:
 
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
+        mock_cli_status = {"available": True, "path": "/mock/claude", "version": "1.0.0"}
+
         mock_client1 = MagicMock()
-        # Fix: Patch at source module
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client1):
+        # Patch both ClaudeCodeClient and check_claude_code_available
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client1), \
+             patch("agents.tools.claude_code_adapter.check_claude_code_available", return_value=mock_cli_status):
             client1 = llm_client.get_llm_client()
 
         llm_client.reset_client()
 
         mock_client2 = MagicMock()
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client2):
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client2), \
+             patch("agents.tools.claude_code_adapter.check_claude_code_available", return_value=mock_cli_status):
             client2 = llm_client.get_llm_client()
 
         assert client1 is not client2
@@ -217,8 +225,49 @@ class TestBackendDetection:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         mock_client = MagicMock()
-        # Fix: Patch at source module
-        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client):
+        mock_cli_status = {"available": True, "path": "/mock/claude", "version": "1.0.0"}
+        # Patch both ClaudeCodeClient and check_claude_code_available
+        with patch("agents.tools.claude_code_adapter.ClaudeCodeClient", return_value=mock_client), \
+             patch("agents.tools.claude_code_adapter.check_claude_code_available", return_value=mock_cli_status):
             client = llm_client.get_llm_client()
+            backend = llm_client.get_backend_type()
 
         assert client is mock_client
+        assert backend == "claude_code"
+
+    def test_uses_anthropic_when_api_key_set(self, monkeypatch):
+        """Should use Anthropic API when ANTHROPIC_API_KEY is set."""
+        from agents.tools import llm_client
+        llm_client.reset_client()
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-api-key-12345")
+
+        mock_anthropic_client = MagicMock()
+        mock_anthropic_class = MagicMock(return_value=mock_anthropic_client)
+
+        # Create a mock anthropic module
+        mock_anthropic_module = MagicMock()
+        mock_anthropic_module.Anthropic = mock_anthropic_class
+
+        import sys
+        with patch.dict(sys.modules, {"anthropic": mock_anthropic_module}):
+            client = llm_client.get_llm_client()
+            backend = llm_client.get_backend_type()
+
+        assert client is mock_anthropic_client
+        assert backend == "anthropic_api"
+
+    def test_raises_error_when_no_backend_available(self, monkeypatch):
+        """Should raise RuntimeError when neither backend is available."""
+        from agents.tools import llm_client
+        llm_client.reset_client()
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+
+        mock_cli_status = {"available": False, "error": "CLI not found"}
+        with patch("agents.tools.claude_code_adapter.check_claude_code_available", return_value=mock_cli_status):
+            with pytest.raises(RuntimeError) as exc_info:
+                llm_client.get_llm_client()
+
+        assert "无法初始化 LLM 客户端" in str(exc_info.value)
+        assert "ANTHROPIC_API_KEY" in str(exc_info.value)

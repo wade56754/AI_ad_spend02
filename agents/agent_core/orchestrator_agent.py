@@ -5,6 +5,11 @@ Global Orchestrator Agent.
 - Does not generate code directly; coordinates BEAgent / FEAgent / TestAgent.
 - Executes different flows in sequence to build an automation pipeline.
 - Supports frontend_restructure flow for SC-ORCH pipeline.
+
+Phase 3.0B: Migrated to AgentProtocol + Registry system.
+- Implements AgentProtocol with handle_request(request, context)
+- Uses AgentContext for consistent run_id tracking across sub-agents
+- Supports be_then_test flow as minimum viable workflow
 """
 
 from __future__ import annotations
@@ -14,6 +19,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Callable
 import logging
 
+from agent_platform.core.protocol import AgentProtocol, AgentContext
+from agent_platform.core.registry import create_agent as platform_create_agent
+from agent_platform.core.logging_utils import log_event, ErrorKind, derive_error_kind
 from ..tools.types import AgentResponse
 
 logger = logging.getLogger(__name__)
@@ -30,11 +38,14 @@ class OrchestratorResult:
     notes: List[str] = field(default_factory=list)   # Fix: P2-05 - 记录执行备注
 
 
-class OrchestratorAgent:
+class OrchestratorAgent(AgentProtocol):
     """
     Orchestrator Agent: Coordinates BE/FE/Test agents in defined workflows.
 
+    Phase 3.0B: Implements AgentProtocol with AgentContext support.
+
     Supported flows:
+        - "be_then_test": (Phase 3.0B) Runs BEAgent → TestAgent with context passthrough
         - "backend_only": Runs only backend code generation
         - "frontend_only": Runs only frontend code generation
         - "full_pipeline": Runs backend → frontend → test (sequentially)
@@ -44,7 +55,10 @@ class OrchestratorAgent:
 
     Request format:
         {
-            "flow": "full_pipeline",  # Required: one of the flows above
+            "flow": "be_then_test",    # Required: one of the flows above
+            "task": "...",             # Task description for agents
+            "target_files": [...],     # Files to process
+            "module": "...",           # Optional module name
             "backend_request": {...},  # Passed to be_agent.handle_request()
             "frontend_request": {...}, # Passed to fe_agent.handle_request()
             "test_request": {...},     # (Optional) Passed to test_agent.handle_request()
@@ -54,7 +68,22 @@ class OrchestratorAgent:
     Returns:
         AgentResponse with data.steps containing results from each executed agent.
         If any step fails, pipeline stops and returns partial results.
+        data.meta.run_id is consistent across all called agents.
     """
+
+    # Supported flows (Phase 3.0B adds be_then_test, Phase 3.1 adds plan/execute)
+    SUPPORTED_FLOWS = [
+        "be_then_test",  # Phase 3.0B: minimal viable flow
+        "backend_only",
+        "frontend_only",
+        "full_pipeline",
+        "frontend_restructure",
+        "gen_backend",
+        "auto_fix",
+    ]
+
+    # Phase 3.1: Execution modes
+    EXECUTION_MODES = ["plan", "execute"]
 
     def __init__(
         self,
@@ -69,6 +98,7 @@ class OrchestratorAgent:
             if base_path is not None
             else Path(__file__).resolve().parent.parent.parent
         )
+        self._supabase_project_id = supabase_project_id
 
         # 这里用 agents_config.create_agent 统一创建子 Agent
         self._backend_agent = create_agent("be", base_path=self.base_path)
@@ -95,69 +125,166 @@ class OrchestratorAgent:
         }
 
     # ------------------------------------------------------------------ #
-    # 对外主入口
+    # AgentProtocol Properties (Phase 3.0B)
     # ------------------------------------------------------------------ #
 
-    def handle_request(self, request: Dict[str, Any]) -> AgentResponse:
+    @property
+    def name(self) -> str:
+        """Agent unique identifier."""
+        return "orch"
+
+    @property
+    def description(self) -> str:
+        """Agent description."""
+        return "Multi-Agent workflow orchestrator (backend/frontend/test coordination)"
+
+    @property
+    def version(self) -> str:
+        """Agent version."""
+        return "1.0.0"
+
+    # ------------------------------------------------------------------ #
+    # 对外主入口 (Phase 3.0B: AgentProtocol compatible)
+    # ------------------------------------------------------------------ #
+
+    def handle_request(
+        self,
+        request: Dict[str, Any],
+        context: Optional[AgentContext] = None,
+    ) -> AgentResponse:
         """
-        Orchestrator 入口。
+        Orchestrator 入口 (Phase 3.0B: AgentProtocol 兼容)。
 
         Args:
             request: 请求字典，包含 "flow" 或 "action" 字段（兼容 HTTP/CLI 两种调用方式）
+            context: Optional execution context for tracing (auto-created if None)
 
         Returns:
+            AgentResponse with:
             {
               "success": bool,
               "data": {
                 "flow": str,
                 "message": str,
-                "steps": {
-                  "backend": { ... },
-                  "frontend": { ... },
-                  "test": { ... }
+                "steps": {...},
+                "backend_result": {...},  # For be_then_test flow
+                "test_result": {...},     # For be_then_test flow
+                "meta": {
+                  "run_id": str,
+                  "called_agents": [...],
+                  "agent": "orch",
+                  "version": "1.0.0"
                 }
               },
               "error": Optional[str],
             }
         """
+        # Phase 3.0B: Ensure context exists for tracing across all sub-agents
+        context = context or AgentContext()
+        run_id = context.run_id
+
+        # Phase 3.1: Support plan/execute mode
+        # mode="plan" returns execution plan without running
+        # mode="execute" (default) runs the flow
+        mode = request.get("mode", "execute").lower()
+        if mode not in self.EXECUTION_MODES:
+            return self._error_response(
+                run_id=run_id,
+                error_msg=f"Invalid mode: {mode}. Supported modes: {self.EXECUTION_MODES}",
+                flow="",
+                called_agents=[],
+                error_kind=ErrorKind.VALIDATION_ERROR,
+            )
+
         # 兼容 "flow" 和 "action" 两种 key（HTTP API 常用 action，CLI 常用 flow）
         flow = (request.get("flow") or request.get("action") or "").strip()
         if not flow:
-            logger.warning("Orchestrator request missing 'flow' field")
-            return {
-                "success": False,
-                "data": None,
-                "error": "Missing 'flow' in orchestrator request",
-            }
+            logger.warning(f"[run_id={run_id}] Orchestrator request missing 'flow' field")
+            return self._error_response(
+                run_id=run_id,
+                error_msg="Missing 'flow' in orchestrator request",
+                flow="",
+                called_agents=[],
+                error_kind=ErrorKind.VALIDATION_ERROR,
+            )
 
+        # Phase 3.1: Plan mode returns execution plan without running
+        if mode == "plan":
+            return self._generate_plan(flow, request, run_id)
+
+        # Phase 3.0B: Handle be_then_test flow with context passthrough
+        if flow == "be_then_test":
+            return self._run_be_then_test(request, context, run_id)
+
+        # Legacy flows (use internal flow handlers)
         handler = self._flow_handlers.get(flow)
         if handler is None:
-            logger.error(f"Unknown flow: '{flow}'")
-            return {
-                "success": False,
-                "data": {"flow": flow, "steps": {}},
-                "error": f"Unknown flow: {flow}",
-            }
+            logger.error(f"[run_id={run_id}] Unknown flow: '{flow}'")
+            return self._error_response(
+                run_id=run_id,
+                error_msg=f"Unsupported flow: {flow}. Supported flows: {self.SUPPORTED_FLOWS}",
+                flow=flow,
+                called_agents=[],
+                error_kind=ErrorKind.VALIDATION_ERROR,
+            )
 
-        logger.info(f"Orchestrator starting flow: '{flow}'")
+        logger.info(f"[run_id={run_id}] Orchestrator starting flow: '{flow}'")
+
+        # Phase 3.1: Log flow start event
+        log_event(
+            run_id=run_id,
+            agent_name=self.name,
+            flow=flow,
+            stage="start",
+            success=True,
+            error_kind=ErrorKind.OK,
+            message=f"Starting orchestration flow: {flow}",
+        )
 
         try:
             result = handler(request)
         except Exception as exc:
-            logger.exception(f"Orchestrator flow '{flow}' crashed: {exc}")
-            return {
-                "success": False,
-                "data": {"flow": flow, "steps": {}},
-                "error": f"Orchestrator flow '{flow}' failed: {exc}",
-            }
+            logger.exception(f"[run_id={run_id}] Orchestrator flow '{flow}' crashed: {exc}")
+            # Phase 3.1: Derive error_kind from exception
+            error_kind = derive_error_kind(exc)
+            return self._error_response(
+                run_id=run_id,
+                error_msg=f"Orchestrator flow '{flow}' failed: {exc}",
+                flow=flow,
+                called_agents=[],
+                error_kind=error_kind,
+            )
 
         if result.success:
-            logger.info(f"Orchestrator flow '{flow}' completed successfully")
+            logger.info(f"[run_id={run_id}] Orchestrator flow '{flow}' completed successfully")
+            # Phase 3.1: Log flow completion
+            log_event(
+                run_id=run_id,
+                agent_name=self.name,
+                flow=flow,
+                stage="end",
+                success=True,
+                error_kind=ErrorKind.OK,
+                message=f"Orchestration flow '{flow}' completed successfully",
+            )
         else:
-            logger.error(f"Orchestrator flow '{flow}' failed: {result.message}")
+            logger.error(f"[run_id={run_id}] Orchestrator flow '{flow}' failed: {result.message}")
+            # Phase 3.1: Log flow failure
+            log_event(
+                run_id=run_id,
+                agent_name=self.name,
+                flow=flow,
+                stage="end",
+                success=False,
+                error_kind=ErrorKind.AGENT_ERROR,
+                message=result.message,
+                extra={"errors": result.errors},
+            )
 
         # dataclass → dict
         # Fix: P2-05 - 包含 errors 和 notes 字段
+        # Phase 3.0B: 包含 meta 字段
+        # Phase 3.1: 包含 error_kind 字段
         return {
             "success": result.success,
             "data": {
@@ -166,8 +293,573 @@ class OrchestratorAgent:
                 "steps": result.steps,
                 "errors": result.errors,  # Fix: P2-05 - 记录所有步骤错误
                 "notes": result.notes,    # Fix: P2-05 - 记录执行备注
+                "meta": {
+                    "run_id": run_id,
+                    "called_agents": list(result.steps.keys()),
+                    "agent": self.name,
+                    "version": self.version,
+                },
             },
             "error": None if result.success else result.message,
+            "error_kind": ErrorKind.OK.value if result.success else ErrorKind.AGENT_ERROR.value,
+        }
+
+    # ------------------------------------------------------------------ #
+    # Phase 3.0B: be_then_test flow with AgentContext passthrough
+    # ------------------------------------------------------------------ #
+
+    def _run_be_then_test(
+        self,
+        request: Dict[str, Any],
+        context: AgentContext,
+        run_id: str,
+    ) -> AgentResponse:
+        """
+        Execute be_then_test flow: BEAgent → TestAgent with context passthrough.
+
+        Phase 3.0B: Minimal viable workflow for multi-agent coordination.
+
+        Flow logic:
+        1. Call BEAgent with task/target_files, passing context
+        2. If BEAgent fails, return immediately with backend_result
+        3. If BEAgent succeeds, call TestAgent with same context
+        4. Return aggregated results with consistent run_id
+
+        Args:
+            request: Original request dict with:
+                - task: Task description for BEAgent
+                - target_files: List of files to process
+                - module: Optional module name for TestAgent scope
+            context: AgentContext with consistent run_id
+            run_id: Run ID for logging
+
+        Returns:
+            AgentResponse with backend_result, test_result, and meta
+        """
+        called_agents: List[str] = []
+        backend_result: Optional[Dict[str, Any]] = None
+        test_result: Optional[Dict[str, Any]] = None
+
+        task = request.get("task", "")
+        target_files = request.get("target_files", [])
+        module = request.get("module")
+
+        # Phase 3.1: Log flow start
+        log_event(
+            run_id=run_id,
+            agent_name=self.name,
+            flow="be_then_test",
+            stage="start",
+            success=True,
+            error_kind=ErrorKind.OK,
+            message="Starting be_then_test flow",
+            extra={"task": task[:100] if task else "", "target_files": target_files},
+        )
+
+        # Step 1: Call BEAgent
+        logger.info(f"[run_id={run_id}] Orchestrator calling BEAgent")
+        called_agents.append("be")
+
+        # Phase 3.1: Log step start
+        log_event(
+            run_id=run_id,
+            agent_name=self.name,
+            flow="be_then_test",
+            stage="step:backend",
+            success=True,
+            error_kind=ErrorKind.OK,
+            message="Calling BEAgent",
+        )
+
+        try:
+            be_request = {
+                "task": task,
+                "target_files": target_files,
+            }
+            # Phase 3.0B: Pass context for run_id tracking
+            be_response = self._backend_agent.handle_request(be_request, context)
+            backend_result = self._extract_agent_summary(be_response, "be")
+        except Exception as e:
+            logger.error(f"[run_id={run_id}] BEAgent call failed: {e}")
+            backend_result = {
+                "success": False,
+                "error": str(e),
+                "agent": "be",
+                "run_id": run_id,
+            }
+            # Phase 3.1: Log exception
+            log_event(
+                run_id=run_id,
+                agent_name=self.name,
+                flow="be_then_test",
+                stage="step:backend",
+                success=False,
+                error_kind=derive_error_kind(e),
+                message=f"BEAgent exception: {e}",
+            )
+
+        # Check if BEAgent succeeded
+        be_success = backend_result.get("success", False)
+
+        if not be_success:
+            logger.warning(
+                f"[run_id={run_id}] BEAgent failed, skipping TestAgent. "
+                f"Error: {backend_result.get('error')}"
+            )
+            # Phase 3.1: Log early termination
+            log_event(
+                run_id=run_id,
+                agent_name=self.name,
+                flow="be_then_test",
+                stage="end",
+                success=False,
+                error_kind=ErrorKind.AGENT_ERROR,
+                message=f"BEAgent failed, skipping TestAgent: {backend_result.get('error')}",
+            )
+            return {
+                "success": False,
+                "data": {
+                    "flow": "be_then_test",
+                    "backend_result": backend_result,
+                    "test_result": None,
+                    "meta": {
+                        "run_id": run_id,
+                        "called_agents": called_agents,
+                        "agent": self.name,
+                        "version": self.version,
+                    },
+                },
+                "error": f"BEAgent failed: {backend_result.get('error', 'Unknown error')}",
+                "error_kind": ErrorKind.AGENT_ERROR.value,
+            }
+
+        # Step 2: Call TestAgent (BEAgent succeeded)
+        logger.info(f"[run_id={run_id}] Orchestrator calling TestAgent")
+        called_agents.append("test")
+
+        # Phase 3.1: Log step start
+        log_event(
+            run_id=run_id,
+            agent_name=self.name,
+            flow="be_then_test",
+            stage="step:test",
+            success=True,
+            error_kind=ErrorKind.OK,
+            message="Calling TestAgent",
+        )
+
+        try:
+            test_request = {
+                "mode": "backend",  # Use backend pytest mode
+                "scope": module if module else "all",
+                "level": "quick",
+                "target_module": module,
+            }
+            # Phase 3.0B: Pass context for run_id tracking
+            test_response = self._test_agent.handle_request(test_request, context)
+            test_result = self._extract_agent_summary(test_response, "test")
+        except Exception as e:
+            logger.error(f"[run_id={run_id}] TestAgent call failed: {e}")
+            test_result = {
+                "success": False,
+                "error": str(e),
+                "agent": "test",
+                "run_id": run_id,
+            }
+            # Phase 3.1: Log exception
+            log_event(
+                run_id=run_id,
+                agent_name=self.name,
+                flow="be_then_test",
+                stage="step:test",
+                success=False,
+                error_kind=derive_error_kind(e),
+                message=f"TestAgent exception: {e}",
+            )
+
+        # Determine overall success
+        test_success = test_result.get("success", False)
+        overall_success = be_success and test_success
+
+        logger.info(
+            f"[run_id={run_id}] Orchestrator completed be_then_test flow. "
+            f"Overall success: {overall_success} (be={be_success}, test={test_success})"
+        )
+
+        # Phase 3.1: Log flow completion
+        log_event(
+            run_id=run_id,
+            agent_name=self.name,
+            flow="be_then_test",
+            stage="end",
+            success=overall_success,
+            error_kind=ErrorKind.OK if overall_success else ErrorKind.AGENT_ERROR,
+            message=f"be_then_test completed: be={be_success}, test={test_success}",
+            extra={"called_agents": called_agents},
+        )
+
+        return {
+            "success": overall_success,
+            "data": {
+                "flow": "be_then_test",
+                "backend_result": backend_result,
+                "test_result": test_result,
+                "meta": {
+                    "run_id": run_id,
+                    "called_agents": called_agents,
+                    "agent": self.name,
+                    "version": self.version,
+                },
+            },
+            "error": None if overall_success else self._format_flow_error(
+                backend_result, test_result
+            ),
+            "error_kind": ErrorKind.OK.value if overall_success else ErrorKind.AGENT_ERROR.value,
+        }
+
+    def _extract_agent_summary(
+        self, response: Dict[str, Any], agent_name: str
+    ) -> Dict[str, Any]:
+        """
+        Extract a summary from agent response for orchestrator results.
+
+        Extracts key fields without including full content (e.g., generated code).
+
+        Args:
+            response: Full AgentResponse from agent
+            agent_name: Name of the agent for identification
+
+        Returns:
+            Summary dict with success, error, agent, and key metadata
+        """
+        data = response.get("data", {})
+        meta = data.get("meta", {}) if data else {}
+
+        summary = {
+            "success": response.get("success", False),
+            "error": response.get("error"),
+            "agent": agent_name,
+            "run_id": meta.get("run_id"),
+        }
+
+        # Add agent-specific summary fields
+        if agent_name == "be":
+            changes = data.get("changes", {}) if data else {}
+            summary["files_generated"] = len(changes)
+            summary["files"] = list(changes.keys()) if changes else []
+
+        elif agent_name == "fe":
+            changes = data.get("changes", {}) if data else {}
+            summary["files_generated"] = len(changes)
+            summary["files"] = list(changes.keys()) if changes else []
+
+        elif agent_name == "test":
+            summary["mode"] = data.get("mode") if data else None
+            summary["status"] = data.get("status") if data else None
+            summary["executed"] = data.get("executed", False) if data else False
+            summary["scope"] = data.get("scope") if data else None
+
+        return summary
+
+    def _error_response(
+        self,
+        run_id: str,
+        error_msg: str,
+        flow: str,
+        called_agents: List[str],
+        error_kind: ErrorKind = ErrorKind.AGENT_ERROR,
+    ) -> AgentResponse:
+        """
+        Create standardized error response.
+
+        Args:
+            run_id: Run ID for tracing
+            error_msg: Error message
+            flow: Flow identifier (may be empty if not provided)
+            called_agents: List of agents called before error
+            error_kind: Error classification (default AGENT_ERROR)
+
+        Returns:
+            AgentResponse with error information and error_kind
+        """
+        # Log the error event
+        log_event(
+            run_id=run_id,
+            agent_name=self.name,
+            flow=flow or "unknown",
+            stage="error",
+            success=False,
+            error_kind=error_kind,
+            message=error_msg,
+            extra={"called_agents": called_agents},
+        )
+
+        return {
+            "success": False,
+            "data": {
+                "flow": flow,
+                "meta": {
+                    "run_id": run_id,
+                    "called_agents": called_agents,
+                    "agent": self.name,
+                    "version": self.version,
+                },
+            },
+            "error": error_msg,
+            "error_kind": error_kind.value,
+        }
+
+    def _format_flow_error(
+        self,
+        backend_result: Optional[Dict[str, Any]],
+        test_result: Optional[Dict[str, Any]],
+    ) -> str:
+        """
+        Format error message for flow with partial failures.
+
+        Args:
+            backend_result: BEAgent result summary
+            test_result: TestAgent result summary
+
+        Returns:
+            Formatted error string
+        """
+        errors = []
+
+        if backend_result and not backend_result.get("success", False):
+            errors.append(f"BEAgent: {backend_result.get('error', 'failed')}")
+
+        if test_result and not test_result.get("success", False):
+            errors.append(f"TestAgent: {test_result.get('error', 'failed')}")
+
+        if not errors:
+            return "Unknown flow error"
+
+        return "; ".join(errors)
+
+    # ------------------------------------------------------------------ #
+    # Phase 3.1: Plan Mode Support
+    # ------------------------------------------------------------------ #
+
+    def _generate_plan(
+        self,
+        flow: str,
+        request: Dict[str, Any],
+        run_id: str,
+    ) -> AgentResponse:
+        """
+        Generate execution plan without running the flow.
+
+        Phase 3.1: Plan mode allows users to preview what will happen
+        before committing to execution.
+
+        Args:
+            flow: The flow to plan
+            request: Original request dict
+            run_id: Run ID for tracing
+
+        Returns:
+            AgentResponse with plan details
+        """
+        logger.info(f"[run_id={run_id}] Generating plan for flow: '{flow}'")
+
+        # Log plan generation
+        log_event(
+            run_id=run_id,
+            agent_name=self.name,
+            flow=flow,
+            stage="plan",
+            success=True,
+            error_kind=ErrorKind.OK,
+            message=f"Generating execution plan for flow: {flow}",
+        )
+
+        # Define flow plans
+        flow_plans: Dict[str, Dict[str, Any]] = {
+            "be_then_test": {
+                "description": "Backend code generation followed by test validation",
+                "steps": [
+                    {
+                        "step": 1,
+                        "agent": "be",
+                        "action": "Generate backend code",
+                        "inputs": ["task", "target_files"],
+                        "outputs": ["changes (file_path -> content)"],
+                        "blocking": True,
+                    },
+                    {
+                        "step": 2,
+                        "agent": "test",
+                        "action": "Generate test prompts",
+                        "inputs": ["mode=backend", "scope", "level"],
+                        "outputs": ["prompt", "executed"],
+                        "blocking": False,
+                        "condition": "step 1 succeeds",
+                    },
+                ],
+                "estimated_agents": ["be", "test"],
+                "auto_write": False,
+            },
+            "backend_only": {
+                "description": "Backend code generation only",
+                "steps": [
+                    {
+                        "step": 1,
+                        "agent": "be",
+                        "action": "Generate backend code",
+                        "inputs": ["backend_request"],
+                        "outputs": ["changes"],
+                        "blocking": True,
+                    },
+                ],
+                "estimated_agents": ["be"],
+                "auto_write": False,
+            },
+            "frontend_only": {
+                "description": "Frontend code generation only",
+                "steps": [
+                    {
+                        "step": 1,
+                        "agent": "fe",
+                        "action": "Generate frontend code",
+                        "inputs": ["frontend_request"],
+                        "outputs": ["changes"],
+                        "blocking": True,
+                    },
+                ],
+                "estimated_agents": ["fe"],
+                "auto_write": False,
+            },
+            "full_pipeline": {
+                "description": "Full backend → frontend → test pipeline",
+                "steps": [
+                    {
+                        "step": 1,
+                        "agent": "be",
+                        "action": "Generate backend code",
+                        "inputs": ["backend_request"],
+                        "outputs": ["changes"],
+                        "blocking": False,
+                    },
+                    {
+                        "step": 2,
+                        "agent": "fe",
+                        "action": "Generate frontend code",
+                        "inputs": ["frontend_request"],
+                        "outputs": ["changes"],
+                        "blocking": False,
+                    },
+                    {
+                        "step": 3,
+                        "agent": "test",
+                        "action": "Run test validation",
+                        "inputs": ["test_request"],
+                        "outputs": ["prompt", "executed"],
+                        "blocking": False,
+                        "condition": "test_enabled=True (default)",
+                    },
+                ],
+                "estimated_agents": ["be", "fe", "test"],
+                "auto_write": False,
+            },
+            "frontend_restructure": {
+                "description": "SC-ORCH 7-step frontend restructure pipeline",
+                "steps": [
+                    {"step": 1, "action": "Analyze SoT documents"},
+                    {"step": 2, "action": "Design spec outline"},
+                    {"step": 3, "agent": "doc", "action": "Generate FRONTEND_STRUCTURE_SPEC.md"},
+                    {"step": 4, "agent": "fe", "action": "Generate frontend structure"},
+                    {"step": 5, "agent": "doc", "action": "Generate FRONTEND_FREEZE_MANIFEST.md"},
+                    {"step": 6, "agent": "review", "action": "Run SoT Guard review"},
+                    {"step": 7, "action": "Generate summary and optionally write files"},
+                ],
+                "estimated_agents": ["doc", "fe", "review"],
+                "auto_write": request.get("auto_write", False),
+            },
+            "gen_backend": {
+                "description": "Batch generate multiple backend modules",
+                "steps": [
+                    {
+                        "step": "1-N",
+                        "agent": "be",
+                        "action": "Generate module (per module in task list)",
+                        "inputs": ["task (comma-separated modules)"],
+                        "outputs": ["changes per module"],
+                        "blocking": False,
+                    },
+                ],
+                "estimated_agents": ["be"],
+                "auto_write": request.get("auto_write", False),
+                "modules": [m.strip() for m in request.get("task", "").split(",") if m.strip()],
+            },
+            "auto_fix": {
+                "description": "Generate → Test → Fix → Retry loop",
+                "steps": [
+                    {
+                        "step": "1",
+                        "action": "Generate code (BEAgent or FEAgent)",
+                        "inputs": ["target", "task", "target_files"],
+                    },
+                    {
+                        "step": "2",
+                        "action": "Run test/lint validation",
+                        "inputs": ["changes"],
+                    },
+                    {
+                        "step": "3",
+                        "action": "Analyze errors and generate fix context",
+                        "condition": "test fails",
+                    },
+                    {
+                        "step": "4",
+                        "action": "Retry from step 1 with fix context",
+                        "condition": "retries remaining",
+                    },
+                ],
+                "estimated_agents": [request.get("target", "backend"), "test"],
+                "max_retries": request.get("max_retries", 3),
+                "auto_write": request.get("auto_write", False),
+            },
+        }
+
+        # Get plan for the requested flow
+        if flow not in flow_plans:
+            return self._error_response(
+                run_id=run_id,
+                error_msg=f"Unsupported flow for planning: {flow}. Supported flows: {list(flow_plans.keys())}",
+                flow=flow,
+                called_agents=[],
+                error_kind=ErrorKind.VALIDATION_ERROR,
+            )
+
+        plan = flow_plans[flow]
+
+        # Add request-specific context
+        plan["request_context"] = {
+            "task": request.get("task", "")[:200] if request.get("task") else None,
+            "target_files": request.get("target_files", []),
+            "module": request.get("module"),
+            "auto_write": request.get("auto_write", False),
+        }
+
+        return {
+            "success": True,
+            "data": {
+                "mode": "plan",
+                "flow": flow,
+                "plan": plan,
+                "meta": {
+                    "run_id": run_id,
+                    "agent": self.name,
+                    "version": self.version,
+                },
+                "notes": [
+                    f"Plan generated for flow: {flow}",
+                    "Use mode='execute' to run this flow",
+                ],
+            },
+            "error": None,
+            "error_kind": ErrorKind.OK.value,
         }
 
     # ------------------------------------------------------------------ #

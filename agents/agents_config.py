@@ -300,9 +300,9 @@ def _test_agent_factory(
         - 不传则只解析/生成 SQL & 用例，不真正执行
     """
     from .agent_core.test_agent import TestAgent
+    # Phase 3.0A: TestAgent only accepts base_path, not project_id
     return TestAgent(
         base_path=base_path or _default_base_path(),
-        project_id=supabase_project_id,
     )
 
 

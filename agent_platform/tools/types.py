@@ -4,13 +4,11 @@ Common type definitions for agents and skills.
 Provides standardized return structures to ensure consistent API contracts
 across Agent and Skill layers.
 
-基准对齐：
-- Agent Layer Freeze v1.0 (SUBAGENT_PROTOCOL.md)
-- MASTER.md v3.5
+This is a copy from agents/tools/types.py for agent_platform independence.
 """
 
 from typing import Any, Optional, Dict, List
-from typing_extensions import TypedDict  # Fix: Python 3.11 兼容
+from typing_extensions import TypedDict
 
 
 class AgentResponseData(TypedDict, total=False):
@@ -52,18 +50,14 @@ class AgentResponseData(TypedDict, total=False):
     meta: Dict[str, Any]
 
 
-# Fix: P1-07 - 使用继承方式区分必需和可选字段
 class _AgentResponseRequired(TypedDict):
-    """AgentResponse 必需字段（内部使用）"""
+    """AgentResponse required fields (internal use)"""
     success: bool
 
 
 class AgentResponse(_AgentResponseRequired, total=False):
     """
     Standard response structure for all Agent.handle_request() calls.
-
-    # Fix: P1-07 - success 现在是真正的必需字段
-    # Phase 3.1: 新增 error_kind 字段用于错误分类
 
     All agents MUST return responses conforming to this structure.
 
@@ -73,14 +67,6 @@ class AgentResponse(_AgentResponseRequired, total=False):
     Optional Fields:
         data: Operation result (structure varies by agent type, see AgentResponseData)
         error: Error message if success=False, None otherwise
-        error_kind: Error classification (Phase 3.1), one of:
-            - "OK": No error
-            - "VALIDATION_ERROR": Input validation failed
-            - "SOT_VIOLATION": SoT rule violation
-            - "LLM_ERROR": LLM API error
-            - "INFRA_ERROR": Infrastructure error
-            - "AGENT_ERROR": Agent execution error
-            - "UNKNOWN": Unclassified error
 
     Usage Examples:
         # Success response
@@ -91,32 +77,22 @@ class AgentResponse(_AgentResponseRequired, total=False):
                 "notes": ["Generated 1 file"],
                 "meta": {"model": "claude-3-5-sonnet"}
             },
-            "error": None,
-            "error_kind": "OK"
+            "error": None
         }
 
         # Error response
         {
             "success": False,
             "data": None,
-            "error": "Missing required parameter: task",
-            "error_kind": "VALIDATION_ERROR"
+            "error": "Missing required parameter: task"
         }
-
-    Alignment:
-        - SUBAGENT_PROTOCOL.md: AgentProtocol.handle_request() return type
-        - AGENT_ORCHESTRATION_PIPELINE.md: Step result structure
-        - AGENT_PLATFORM_OBSERVABILITY_SOT.md: error_kind enumeration
     """
-
-    data: Any  # Should conform to AgentResponseData when present
+    data: Any
     error: Optional[str]
-    error_kind: str  # Phase 3.1: Error classification
 
 
-# Fix: P1-07 - 使用继承方式区分必需和可选字段
 class _SkillResultRequired(TypedDict):
-    """SkillResult 必需字段（内部使用）"""
+    """SkillResult required fields (internal use)"""
     success: bool
 
 
@@ -124,10 +100,7 @@ class SkillResult(_SkillResultRequired, total=False):
     """
     Standard response structure for Skill functions.
 
-    # Fix: P1-07 - success 现在是真正的必需字段
-
     Similar to AgentResponse but allows optional 'raw' field for debugging.
-    Used when skills need to preserve raw API responses for error diagnosis.
 
     Required Fields:
         success: Whether the skill execution succeeded (MUST be present)
@@ -136,12 +109,7 @@ class SkillResult(_SkillResultRequired, total=False):
         data: Skill output (e.g., generated code, prompts, analysis results)
         error: Error message if success=False, None otherwise
         raw: Raw response text from external APIs for debugging
-
-    Usage:
-        Skills are called by Agents and return SkillResult.
-        Agents wrap this into AgentResponse before returning to callers.
     """
-
     data: Any
     error: Optional[str]
     raw: str

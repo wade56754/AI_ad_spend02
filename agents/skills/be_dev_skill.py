@@ -6,8 +6,8 @@ from ..agents_config import SOT_FILES, BACKEND_DIR, LLM_CONFIG, read_optional
 from ..tools.fs_tool import read_files
 from ..tools.validation import validate_task_and_files
 from ..tools.types import SkillResult
-# Fix: P1-03 - 使用统一的 LLM 客户端模块，移除重复代码
-from ..tools.llm_client import get_llm_client, extract_response_text
+# Phase 2: 使用 agent_platform.llm 统一入口
+from agent_platform.llm import get_llm_client, extract_response_text
 from ..tools.claude_code_adapter import _extract_json
 
 logger = logging.getLogger(__name__)
