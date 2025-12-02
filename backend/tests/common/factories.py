@@ -118,23 +118,27 @@ def create_test_daily_report(
     ad_account_id: Optional[str] = None,
     report_date: Optional[date] = None,
     status: str = "raw_submitted",
-    spend: Decimal = Decimal("100.00"),
+    conversions_raw: int = 5,
+    raw_spend: Decimal = Decimal("100.00"),
     impressions: int = 1000,
     clicks: int = 50,
-    conversions: int = 5,
     **kwargs
 ) -> Dict[str, Any]:
     """
     创建测试日报数据
 
+    字段命名对齐 SoT:
+    - conversions_raw: 原始粉数 (raw 数据流)
+    - raw_spend: 原始消耗 (raw 数据流)
+
     Args:
         ad_account_id: 关联广告账户 ID
         report_date: 报告日期（默认今天）
         status: 日报状态（默认 raw_submitted）
-        spend: 消耗金额
+        conversions_raw: 原始粉数（raw 数据流）
+        raw_spend: 原始消耗（raw 数据流）
         impressions: 展示次数
         clicks: 点击次数
-        conversions: 转化次数
         **kwargs: 其他字段覆盖
 
     Returns:
@@ -142,6 +146,7 @@ def create_test_daily_report(
 
     SoT Ref:
         - DATA_SCHEMA.md v5.2 第 2.4 节
+        - API_SOT.md v9.0 第 9.2 节
         - STATE_MACHINE.md v2.6 第 8 章 (DailyReport 8 状态机)
 
     状态枚举（8 状态机）:
@@ -153,10 +158,12 @@ def create_test_daily_report(
         "ad_account_id": ad_account_id or str(uuid4()),
         "report_date": report_date or date.today(),
         "status": status,
-        "spend": spend,
+        # raw 数据流字段 (SoT-aligned)
+        "conversions_raw": conversions_raw,
+        "raw_spend": raw_spend,
+        # 指标字段
         "impressions": impressions,
         "clicks": clicks,
-        "conversions": conversions,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
         **kwargs

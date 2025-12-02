@@ -152,6 +152,10 @@ from backend.models import (
     TopupRequest,
     AdSpendDaily,
 )
+from backend.models.finance.reconciliation import (
+    ReconciliationBatch,
+    ReconciliationDetail,
+)
 from backend.models.base import (
     UserRole,
     DailyReportStatus,
@@ -489,6 +493,12 @@ def account_manager_token(account_manager_user):
     return create_access_token(token_data)
 
 
+@pytest.fixture(scope="function")
+def account_manager_headers(account_manager_token):
+    """客户经理请求头"""
+    return {"Authorization": f"Bearer {account_manager_token}"}
+
+
 # ============================================================================
 # 业务数据 Fixtures
 # ============================================================================
@@ -527,7 +537,7 @@ def test_channel(db_session):
 
 
 @pytest.fixture(scope="function")
-def test_ad_account(db_session, test_project, test_channel):
+def test_ad_account(db_session, test_project, test_channel, media_buyer_user):
     """创建测试广告账户"""
     account = AdAccount(
         id=1,
@@ -536,6 +546,25 @@ def test_ad_account(db_session, test_project, test_channel):
         status="active",
         project_id=test_project.id,
         channel_id=test_channel.id,
+        assigned_to=media_buyer_user.id,  # 分配给 media_buyer_user，以便权限检查通过
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def test_ad_account_2(db_session, test_project, test_channel, media_buyer_user):
+    """创建第二个测试广告账户（用于迁移测试）"""
+    account = AdAccount(
+        id=2,
+        account_code="ACT_TEST_002",
+        account_name="测试广告账户2",
+        status="active",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        assigned_to=media_buyer_user.id,
     )
     db_session.add(account)
     db_session.commit()
@@ -545,14 +574,24 @@ def test_ad_account(db_session, test_project, test_channel):
 
 @pytest.fixture(scope="function")
 def test_daily_report(db_session, test_ad_account, test_user):
-    """创建测试日报"""
+    """
+    创建测试日报
+
+    字段命名对齐 SoT:
+    - conversions_raw: 原始粉数 (raw 数据流)
+    - raw_spend: 原始消耗 (raw 数据流)
+
+    引用: API_SOT.md v9.0 第 9.2 节, STATE_MACHINE.md v2.6 第8章
+    """
     report = DailyReport(
         id=1,
         ad_account_id=test_ad_account.id,
         report_date=date.today(),
         status=DailyReportStatus.RAW_SUBMITTED.value,
-        fans_gained=50,
-        spend_amount=Decimal("100.00"),
+        # raw 数据流字段 (SoT-aligned)
+        conversions_raw=50,
+        raw_spend=Decimal("100.00"),
+        # 其他字段
         submitted_by=test_user.id,
         notes="测试日报",
     )
@@ -560,6 +599,71 @@ def test_daily_report(db_session, test_ad_account, test_user):
     db_session.commit()
     db_session.refresh(report)
     return report
+
+
+@pytest.fixture(scope="function")
+def test_reconciliation_batch(db_session, test_user, admin_user):
+    """
+    创建测试对账批次
+    
+    状态: draft (初始状态，符合 STATE_MACHINE.md v2.6)
+    引用: STATE_MACHINE.md v2.6 第 11.1 章
+    """
+    from datetime import date, timedelta
+    
+    batch = ReconciliationBatch(
+        batch_code=f"REC{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        period_start=date.today() - timedelta(days=7),
+        period_end=date.today(),
+        status=ReconciliationBatchStatus.DRAFT.value,
+        total_system_spend=Decimal("10000.00"),
+        total_actual_spend=Decimal("9500.00"),
+        discrepancy=Decimal("500.00"),
+        created_by=test_user.id,
+        reviewed_by=None,
+        closed_at=None,
+        version=1,
+    )
+    db_session.add(batch)
+    db_session.commit()
+    db_session.refresh(batch)
+    return batch
+
+
+@pytest.fixture(scope="function")
+def test_reconciliation_detail(db_session, test_reconciliation_batch, test_ad_account):
+    """
+    创建测试对账明细
+    
+    状态: pending (初始状态，符合 STATE_MACHINE.md v2.6)
+    引用: STATE_MACHINE.md v2.6 第 11.2 章
+    """
+    detail = ReconciliationDetail(
+        batch_id=test_reconciliation_batch.id,
+        ad_account_id=test_ad_account.id,
+        system_spend=Decimal("1000.00"),
+        actual_spend=Decimal("950.00"),
+        discrepancy=Decimal("50.00"),
+        status=ReconciliationDetailStatus.PENDING.value,
+        notes="测试对账明细",
+        version=1,
+    )
+    db_session.add(detail)
+    db_session.commit()
+    db_session.refresh(detail)
+    return detail
+
+
+@pytest.fixture(scope="function")
+def sample_reconciliation_batch_id(test_reconciliation_batch):
+    """提供对账批次 ID（向后兼容）"""
+    return test_reconciliation_batch.id
+
+
+@pytest.fixture(scope="function")
+def sample_reconciliation_detail_id(test_reconciliation_detail):
+    """提供对账明细 ID（向后兼容）"""
+    return test_reconciliation_detail.id
 
 
 # ============================================================================
@@ -890,6 +994,108 @@ def ledger_invariant_helper():
 
 
 # ============================================================================
+# Projects 模块测试 Fixtures
+# ============================================================================
+
+@pytest.fixture(scope="function")
+def sample_project_id(test_project):
+    """返回示例项目 ID"""
+    return test_project.id
+
+
+@pytest.fixture(scope="function")
+def media_buyer_user_id(media_buyer_user):
+    """返回投手用户 ID"""
+    return media_buyer_user.id
+
+
+@pytest.fixture(scope="function")
+def account_manager_project(db_session, account_manager_user):
+    """创建由客户经理管理的项目"""
+    # 注意：created_by 是 UUID 类型，SQLite 需要字符串
+    # account_manager_id 是 BigInteger，这里用简单的整数
+    from uuid import UUID
+
+    created_by_value = account_manager_user.id
+    if isinstance(created_by_value, UUID):
+        created_by_value = str(created_by_value)
+
+    # account_manager_id 是 BigInteger，但 account_manager_user.id 是 UUID
+    # 在测试环境中，我们需要确保 account_manager_id 与 account_manager_user.id 匹配
+    # 由于类型不匹配，我们使用 account_manager_user.id 的整数哈希值作为 account_manager_id
+    # 但这样会导致权限检查失败，因为 service 层检查 project.account_manager_id == user.id
+    # 所以我们需要修改 service 层的检查逻辑，或者使用一个映射
+    # 为了简化，我们直接使用 account_manager_user.id，让 SQLAlchemy 处理类型转换
+    # 但 account_manager_id 是 BigInteger，不能直接存储 UUID
+    # 解决方案：在 service 层，我们需要将 UUID 转换为整数进行比较
+    # 或者，我们可以使用 account_manager_user.id 的整数表示
+    account_manager_id_value = account_manager_user.id
+    if isinstance(account_manager_id_value, UUID):
+        # 使用 UUID 的整数表示（取绝对值以避免负数）
+        account_manager_id_value = abs(account_manager_id_value.int) % (2**63)
+    
+    project = Project(
+        name="Account Manager Project",  # 使用 name 而非 project_name
+        client_name="AM Client",
+        status="active",
+        created_by=created_by_value,
+        account_manager_id=account_manager_id_value,  # 使用 account_manager_user.id 的整数表示
+    )
+    db_session.add(project)
+    db_session.commit()
+    db_session.refresh(project)
+    return project
+
+
+@pytest.fixture(scope="function")
+def account_manager_project_id(account_manager_project):
+    """返回客户经理管理的项目 ID"""
+    return account_manager_project.id
+
+
+@pytest.fixture(scope="function")
+def media_buyer_project(db_session, test_user, media_buyer_user):
+    """创建投手参与的项目（通过 ProjectMember 关联）"""
+    from backend.models import ProjectMember
+    from uuid import UUID
+
+    # 处理 UUID 兼容性
+    created_by_value = test_user.id
+    if isinstance(created_by_value, UUID):
+        created_by_value = str(created_by_value)
+
+    user_id_value = media_buyer_user.id
+    if isinstance(user_id_value, UUID):
+        user_id_value = str(user_id_value)
+
+    project = Project(
+        name="Media Buyer Project",  # 使用 name 而非 project_name
+        client_name="MB Client",
+        status="active",
+        created_by=created_by_value,
+    )
+    db_session.add(project)
+    db_session.flush()
+
+    # 添加投手为项目成员
+    member = ProjectMember(
+        project_id=project.id,
+        user_id=user_id_value,
+        role="media_buyer"
+    )
+    db_session.add(member)
+    db_session.commit()
+    db_session.refresh(project)
+    return project
+
+
+@pytest.fixture(scope="function")
+def media_buyer_project_id(media_buyer_project):
+    """返回投手参与的项目 ID"""
+    return media_buyer_project.id
+
+
+# ============================================================================
 # 别名 Fixtures（向后兼容）
 # ============================================================================
 
@@ -947,21 +1153,37 @@ def auth_headers_operator(data_operator_headers):
 
 @pytest.fixture(scope="function")
 def sample_daily_report_data(test_ad_account, test_user):
-    """示例日报数据（用于 API 测试）"""
+    """
+    示例日报数据（用于 API 测试）
+
+    字段命名对齐 SoT:
+    - conversions_raw: 原始粉数 (raw 数据流)
+    - raw_spend: 原始消耗 (raw 数据流)
+
+    引用: API_SOT.md v9.0 第 9.2 节
+    """
     return {
         "ad_account_id": test_ad_account.id,
         "report_date": date.today().isoformat(),
-        "status": DailyReportStatus.RAW_SUBMITTED.value,
-        "fans_gained": 50,
-        "spend_amount": "100.00",
-        "submitted_by": str(test_user.id),
+        # raw 数据流字段 (SoT-aligned)
+        "conversions_raw": 50,
+        "raw_spend": "100.00",
+        # 可选字段
         "notes": "测试日报数据",
     }
 
 
 @pytest.fixture(scope="function")
 def mock_daily_reports(db_session, test_ad_account, test_user):
-    """创建多条模拟日报记录（用于分页测试）"""
+    """
+    创建多条模拟日报记录（用于分页测试）
+
+    字段命名对齐 SoT:
+    - conversions_raw: 原始粉数 (raw 数据流)
+    - raw_spend: 原始消耗 (raw 数据流)
+
+    引用: API_SOT.md v9.0 第 9.2 节, STATE_MACHINE.md v2.6 第8章
+    """
     reports = []
     base_date = date.today()
 
@@ -971,8 +1193,10 @@ def mock_daily_reports(db_session, test_ad_account, test_user):
             ad_account_id=test_ad_account.id,
             report_date=report_date,
             status=DailyReportStatus.RAW_SUBMITTED.value,
-            fans_gained=50 + i,
-            spend_amount=Decimal(f"{100 + i * 10}.00"),
+            # raw 数据流字段 (SoT-aligned)
+            conversions_raw=50 + i,
+            raw_spend=Decimal(f"{100 + i * 10}.00"),
+            # 其他字段
             submitted_by=test_user.id,
             notes=f"测试日报 {i+1}",
         )

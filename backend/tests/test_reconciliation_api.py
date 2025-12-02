@@ -14,8 +14,7 @@ from decimal import Decimal
 from datetime import date, timedelta
 
 
-# 由于 reconciliation 相关 fixtures 尚未实现，暂时跳过需要这些 fixtures 的测试
-pytestmark = pytest.mark.skip(reason="Reconciliation fixtures (sample_reconciliation_batch_id, sample_reconciliation_detail_id) not yet implemented")
+# Reconciliation fixtures 已实现，测试可以正常执行
 
 
 class TestReconciliationAPI:

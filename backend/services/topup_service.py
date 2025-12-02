@@ -87,19 +87,13 @@ class TopupService:
         )
 
         # 5. 创建充值申请
-        request_no = generate_request_no("TOP")
-
         topup_request = TopupRequest(
-            request_no=request_no,
             ad_account_id=request_data.ad_account_id,
-            project_id=ad_account.project_id,
-            requested_amount=request_data.requested_amount,
-            currency=request_data.currency,
-            urgency_level=request_data.urgency_level.value,
-            reason=request_data.reason,
-            notes=request_data.notes,
-            expected_date=request_data.expected_date,
-            requested_by=current_user.id
+            amount=request_data.requested_amount,
+            status=TopupStatus.DRAFT.value,
+            request_notes=request_data.reason or request_data.notes or "",
+            requested_by=current_user.id,
+            requested_at=datetime.now()
         )
 
         self.db.add(topup_request)
@@ -163,10 +157,9 @@ class TopupService:
             query
             .options(
                 joinedload(TopupRequest.ad_account),
-                joinedload(TopupRequest.project),
                 joinedload(TopupRequest.requester),
-                joinedload(TopupRequest.data_reviewer),
-                joinedload(TopupRequest.finance_approver)
+                joinedload(TopupRequest.reviewer),
+                joinedload(TopupRequest.approver)
             )
             .order_by(desc(TopupRequest.created_at))
             .offset((page - 1) * page_size)
@@ -182,12 +175,9 @@ class TopupService:
             self.db.query(TopupRequest)
             .options(
                 joinedload(TopupRequest.ad_account),
-                joinedload(TopupRequest.project),
                 joinedload(TopupRequest.requester),
-                joinedload(TopupRequest.data_reviewer),
-                joinedload(TopupRequest.finance_approver),
-                selectinload(TopupRequest.transactions),
-                selectinload(TopupRequest.approval_logs).joinedload(TopupApprovalLog.actor)
+                joinedload(TopupRequest.reviewer),
+                joinedload(TopupRequest.approver)
             )
             .filter(TopupRequest.id == request_id)
             .first()
@@ -407,8 +397,8 @@ class TopupService:
 
         logs = (
             self.db.query(TopupApprovalLog)
-            .options(joinedload(TopupApprovalLog.actor))
-            .filter(TopupApprovalLog.request_id == request_id)
+            .options(joinedload(TopupApprovalLog.operator))
+            .filter(TopupApprovalLog.topup_request_id == request_id)
             .order_by(TopupApprovalLog.created_at)
             .all()
         )
@@ -604,7 +594,7 @@ class TopupService:
 
         # 计算已充值金额
         paid_amount = (
-            self.db.query(func.coalesce(func.sum(TopupTransaction.amount), 0))
+            self.db.query(func.coalesce(func.sum(TopupTransaction.paid_amount), 0))
             .join(TopupRequest)
             .filter(
                 and_(
@@ -619,7 +609,7 @@ class TopupService:
 
         return AdAccountBalance(
             ad_account_id=ad_account_id,
-            ad_account_name=ad_account.name,
+            ad_account_name=ad_account.account_name or ad_account.account_code,
             current_balance=paid_amount,
             currency="USD",
             max_balance=self.MAX_ACCOUNT_BALANCE,
@@ -664,24 +654,24 @@ class TopupService:
         export_data = []
         for req in requests:
             export_data.append({
-                "申请单号": req.request_no,
-                "项目名称": req.project.name if req.project else "",
-                "广告账户": req.ad_account.name if req.ad_account else "",
-                "申请金额": float(req.requested_amount),
-                "实际金额": float(req.actual_amount) if req.actual_amount else "",
-                "货币": req.currency,
+                "申请单号": str(req.id),
+                "项目名称": req.ad_account.project.name if req.ad_account and req.ad_account.project else "",
+                "广告账户": req.ad_account.account_name or req.ad_account.account_code if req.ad_account else "",
+                "申请金额": float(req.amount),
+                "实际金额": "",
+                "货币": "CNY",
                 "状态": req.status,
-                "紧急程度": req.urgency_level,
-                "申请人": req.requester.nickname if req.requester else "",
-                "数据审核人": req.data_reviewer.nickname if req.data_reviewer else "",
-                "财务审批人": req.finance_approver.nickname if req.finance_approver else "",
-                "申请时间": req.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "数据审核时间": req.data_reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if req.data_reviewed_at else "",
-                "财务审批时间": req.finance_approved_at.strftime("%Y-%m-%d %H:%M:%S") if req.finance_approved_at else "",
+                "紧急程度": "",
+                "申请人": req.requester.username if req.requester else "",
+                "数据审核人": req.reviewer.username if req.reviewer else "",
+                "财务审批人": req.approver.username if req.approver else "",
+                "申请时间": req.created_at.strftime("%Y-%m-%d %H:%M:%S") if req.created_at else "",
+                "数据审核时间": req.reviewed_at.strftime("%Y-%m-%d %H:%M:%S") if req.reviewed_at else "",
+                "财务审批时间": req.approved_at.strftime("%Y-%m-%d %H:%M:%S") if req.approved_at else "",
                 "打款时间": req.paid_at.strftime("%Y-%m-%d %H:%M:%S") if req.paid_at else "",
                 "完成时间": req.completed_at.strftime("%Y-%m-%d %H:%M:%S") if req.completed_at else "",
-                "支付方式": req.payment_method or "",
-                "交易流水号": req.transaction_id or ""
+                "支付方式": "",
+                "交易流水号": ""
             })
 
         return export_data
@@ -715,7 +705,7 @@ class TopupService:
         """检查账户余额上限"""
         # 计算当前已充值金额
         current_balance = (
-            self.db.query(func.coalesce(func.sum(TopupTransaction.amount), 0))
+            self.db.query(func.coalesce(func.sum(TopupTransaction.paid_amount), 0))
             .join(TopupRequest)
             .filter(
                 and_(
@@ -825,15 +815,12 @@ class TopupService:
     ):
         """创建审批日志"""
         log = TopupApprovalLog(
-            request_id=request_id,
+            topup_request_id=request_id,
             action=action,
-            actor_id=actor.id,
-            actor_role=actor.role,
-            notes=notes,
-            previous_status=previous_status,
-            new_status=new_status,
-            ip_address=ip_address,
-            user_agent=user_agent
+            operator_id=actor.id,
+            from_status=previous_status,
+            to_status=new_status,
+            comments=notes
         )
         self.db.add(log)
 

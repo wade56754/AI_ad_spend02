@@ -81,7 +81,7 @@ class ProjectResponse(BaseModel):
     total_spent: Decimal
     total_accounts: int
     active_accounts: int
-    created_by: int
+    created_by: Optional[str]  # 修改为 Optional[str] 以支持 UUID（模型中是 UUID 类型）
     created_by_name: str
     created_at: datetime
     updated_at: datetime
@@ -106,7 +106,7 @@ class ProjectMemberResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    user_id: int
+    user_id: str  # 改为 str 以支持 UUID 字符串
     user_name: str
     user_email: str
     user_role: str

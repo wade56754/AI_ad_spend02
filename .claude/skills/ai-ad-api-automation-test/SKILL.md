@@ -1,10 +1,11 @@
 ---
 name: ai-ad-api-automation-test
-version: "1.2"
+version: "1.3"
 status: beta
 layer: skill
 owner: wade
 last_reviewed: 2025-12-01
+last_updated: 2025-12-01
 baseline:
   - MASTER.md v3.5
   - SoT Freeze v2.6
@@ -17,7 +18,7 @@ baseline:
 
 <skill>
 <name>ai-ad-api-automation-test</name>
-<version>v1.2</version>
+<version>v1.3</version>
 <domain>AI_AD_SYSTEM / API Automation Testing</domain>
 <profile>API-Test-Orchestrator / Newman-Integration / pytest-Generation</profile>
 
@@ -84,6 +85,10 @@ baseline:
       - "topup_request" - 充值申请状态机相关测试
       - "reconciliation" - 对账状态机相关测试
       - "ledger" - 账本分录相关测试
+      - "ad_accounts" - 广告账户管理相关测试
+      - "suppliers" - 供应商管理相关测试
+      - "settlements" - 结算管理相关测试
+      - "projects" - 项目管理相关测试
       - "auth" - 认证授权相关测试
       - "all" - 全模块测试（默认）
   - test_level: "L0" | "L1" | "L2" | "L3" (default: "L2")
@@ -710,7 +715,154 @@ baseline:
 
 
 <!-- ======================================================
-     9. Common Utilities Integration
+     9. Module Mapping Configuration
+====================================================== -->
+<module_mapping>
+  <description>
+    Complete module definitions for all supported API modules.
+    Each module includes router, service, SoT documents, and test output paths.
+  </description>
+
+  <supported_modules>
+    | Module | Router Path | Service Path | SoT Documents | State Machine | Test Output Path |
+    |--------|------------|--------------|---------------|---------------|------------------|
+    | daily_report | backend/routers/daily_reports.py | backend/services/daily_report_service.py | docs/2.sot/DAILY_REPORT_SOT.md v1.0, docs/2.sot/STATE_MACHINE.md v2.6 Section 8 | STATE_MACHINE.md v2.6 Section 8 (8-state machine) | backend/tests/api/test_daily_report_flow_generated.py |
+    | topup_request | backend/routers/topup.py | backend/services/topup_service.py | docs/2.sot/TOPUP_SOT.md v1.0, docs/2.sot/STATE_MACHINE.md v2.6 Section 9 | STATE_MACHINE.md v2.6 Section 9 (7-state machine) | backend/tests/api/test_topup_request_flow_generated.py |
+    | reconciliation | backend/routers/reconciliation.py | backend/services/reconciliation_service.py | docs/2.sot/RECONCILIATION_SOT.md v1.0, docs/2.sot/STATE_MACHINE.md v2.6 Section 11 | STATE_MACHINE.md v2.6 Section 11 (5-state machine) | backend/tests/api/test_reconciliation_flow_generated.py |
+    | ledger | backend/routers/ledger.py | backend/services/ledger_service.py | docs/2.sot/LEDGER_SOT.md v1.1, docs/2.sot/DATA_SCHEMA.md v5.2 | N/A (no state machine) | backend/tests/api/test_ledger_flow_generated.py |
+    | ad_accounts | backend/routers/ad_accounts.py | backend/services/ad_account_service.py | docs/2.sot/API_SOT.md v9.0 Section 7, docs/2.sot/STATE_MACHINE.md v2.6 Section 7.1 | STATE_MACHINE.md v2.6 Section 7.1 (ad_accounts.status) | backend/tests/api/test_ad_accounts_flow_generated.py |
+    | suppliers | backend/routers/suppliers.py | backend/services/supplier_service.py | docs/2.sot/API_SOT.md v9.0, docs/2.sot/DATA_SCHEMA.md v5.2 | N/A (no state machine) | backend/tests/api/test_suppliers_flow_generated.py |
+    | settlements | backend/routers/settlements.py | backend/services/settlement_service.py | docs/2.sot/API_SOT.md v9.0, docs/2.sot/LEDGER_SOT.md v1.1 | N/A (no state machine) | backend/tests/api/test_settlements_flow_generated.py |
+    | projects | backend/routers/projects.py | backend/services/project_service.py | docs/2.sot/API_SOT.md v9.0 Section 6, docs/2.sot/STATE_MACHINE.md v2.6 Section 5 | STATE_MACHINE.md v2.6 Section 5 (projects.status) | backend/tests/api/test_projects_flow_generated.py |
+    | auth | backend/routers/authentication.py | backend/services/supabase_auth_service.py | docs/2.sot/AUTH_SPEC.md v2.0, docs/2.sot/API_SOT.md v9.0 | N/A (no state machine) | backend/tests/api/test_auth_flow_generated.py |
+  </supported_modules>
+
+  <module_details>
+    <module name="daily_report">
+      <router>backend/routers/daily_reports.py</router>
+      <service>backend/services/daily_report_service.py</service>
+      <sot_documents>
+        - docs/2.sot/DAILY_REPORT_SOT.md v1.0
+        - docs/2.sot/STATE_MACHINE.md v2.6 Section 8
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/API_SOT.md v9.0
+      </sot_documents>
+      <state_machine>STATE_MACHINE.md v2.6 Section 8 (8-state: raw_submitted → trend_pending → trend_ok/trend_flagged → final_pending → final_confirmed → final_locked)</state_machine>
+      <test_path>backend/tests/api/test_daily_report_flow_generated.py</test_path>
+    </module>
+
+    <module name="topup_request">
+      <router>backend/routers/topup.py</router>
+      <service>backend/services/topup_service.py</service>
+      <sot_documents>
+        - docs/2.sot/TOPUP_SOT.md v1.0
+        - docs/2.sot/STATE_MACHINE.md v2.6 Section 9
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/API_SOT.md v9.0
+      </sot_documents>
+      <state_machine>STATE_MACHINE.md v2.6 Section 9 (7-state: draft → pending_review → finance_approve → paid → completed)</state_machine>
+      <test_path>backend/tests/api/test_topup_request_flow_generated.py</test_path>
+    </module>
+
+    <module name="reconciliation">
+      <router>backend/routers/reconciliation.py</router>
+      <service>backend/services/reconciliation_service.py</service>
+      <sot_documents>
+        - docs/2.sot/RECONCILIATION_SOT.md v1.0
+        - docs/2.sot/STATE_MACHINE.md v2.6 Section 11
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/API_SOT.md v9.0
+      </sot_documents>
+      <state_machine>STATE_MACHINE.md v2.6 Section 11 (5-state: draft → pending_review → approved/needs_adjustment → completed)</state_machine>
+      <test_path>backend/tests/api/test_reconciliation_flow_generated.py</test_path>
+    </module>
+
+    <module name="ledger">
+      <router>backend/routers/ledger.py</router>
+      <service>backend/services/ledger_service.py</service>
+      <sot_documents>
+        - docs/2.sot/LEDGER_SOT.md v1.1
+        - docs/2.sot/DATA_SCHEMA.md v5.2
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/API_SOT.md v9.0
+      </sot_documents>
+      <state_machine>N/A (no state machine, ledger entries are immutable records)</state_machine>
+      <test_path>backend/tests/api/test_ledger_flow_generated.py</test_path>
+    </module>
+
+    <module name="ad_accounts">
+      <router>backend/routers/ad_accounts.py</router>
+      <service>backend/services/ad_account_service.py</service>
+      <sot_documents>
+        - docs/2.sot/API_SOT.md v9.0 Section 7
+        - docs/2.sot/STATE_MACHINE.md v2.6 Section 7.1
+        - docs/2.sot/DATA_SCHEMA.md v5.2
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/AUTH_SPEC.md v2.0
+      </sot_documents>
+      <state_machine>STATE_MACHINE.md v2.6 Section 7.1 (ad_accounts.status: new → testing → active → suspended → dead → archived)</state_machine>
+      <test_path>backend/tests/api/test_ad_accounts_flow_generated.py</test_path>
+    </module>
+
+    <module name="suppliers">
+      <router>backend/routers/suppliers.py</router>
+      <service>backend/services/supplier_service.py</service>
+      <sot_documents>
+        - docs/2.sot/API_SOT.md v9.0
+        - docs/2.sot/DATA_SCHEMA.md v5.2
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/AUTH_SPEC.md v2.0
+        - docs/2.sot/LEDGER_SOT.md v1.1 (SUPPLIER ledger)
+      </sot_documents>
+      <state_machine>N/A (no state machine, suppliers.status is simple active/inactive)</state_machine>
+      <test_path>backend/tests/api/test_suppliers_flow_generated.py</test_path>
+    </module>
+
+    <module name="settlements">
+      <router>backend/routers/settlements.py</router>
+      <service>backend/services/settlement_service.py</service>
+      <sot_documents>
+        - docs/2.sot/API_SOT.md v9.0
+        - docs/2.sot/LEDGER_SOT.md v1.1 (ledger integration)
+        - docs/2.sot/DATA_SCHEMA.md v5.2
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/AUTH_SPEC.md v2.0
+      </sot_documents>
+      <state_machine>N/A (no state machine, settlements may have approval workflow but not defined in STATE_MACHINE.md)</state_machine>
+      <test_path>backend/tests/api/test_settlements_flow_generated.py</test_path>
+    </module>
+
+    <module name="projects">
+      <router>backend/routers/projects.py</router>
+      <service>backend/services/project_service.py</service>
+      <sot_documents>
+        - docs/2.sot/API_SOT.md v9.0 Section 6
+        - docs/2.sot/STATE_MACHINE.md v2.6 Section 5
+        - docs/2.sot/DATA_SCHEMA.md v5.2
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+        - docs/2.sot/AUTH_SPEC.md v2.0
+      </sot_documents>
+      <state_machine>STATE_MACHINE.md v2.6 Section 5 (projects.status: draft → active → suspended → archived)</state_machine>
+      <test_path>backend/tests/api/test_projects_flow_generated.py</test_path>
+    </module>
+
+    <module name="auth">
+      <router>backend/routers/authentication.py</router>
+      <service>backend/services/supabase_auth_service.py</service>
+      <sot_documents>
+        - docs/2.sot/AUTH_SPEC.md v2.0
+        - docs/2.sot/API_SOT.md v9.0
+        - docs/2.sot/ERROR_CODES_SOT.md v2.1
+      </sot_documents>
+      <state_machine>N/A (no state machine, authentication is stateless)</state_machine>
+      <test_path>backend/tests/api/test_auth_flow_generated.py</test_path>
+    </module>
+  </module_details>
+</module_mapping>
+
+
+<!-- ======================================================
+     10. Common Utilities Integration
 ====================================================== -->
 <common_utilities>
   <factories>
@@ -841,6 +993,26 @@ baseline:
   Generate complete test file following AUTOMATION_TEST_SPEC_v1.4.
   ```
 
+  Example 1b: Generate L2 API tests for Ad Accounts module
+  ```
+  Use ai-ad-api-automation-test,
+  mode = GENERATE,
+  target_module = "ad_accounts",
+  test_level = "L2".
+
+  Generate complete test file for ad_accounts module.
+  ```
+
+  Example 1c: Generate L2 API tests for Suppliers module
+  ```
+  Use ai-ad-api-automation-test,
+  mode = GENERATE,
+  target_module = "suppliers",
+  test_level = "L2".
+
+  Generate complete test file for suppliers module.
+  ```
+
   Example 2: Run all L2 API tests
   ```
   Use ai-ad-api-automation-test,
@@ -934,6 +1106,35 @@ baseline:
      12. Version Notes
 ====================================================== -->
 <VERSION_NOTES>
+
+  ### v1.3 (2025-12-01)
+
+  **Module Mapping Enhancement - Status: beta**
+
+  P0 Enhancements:
+  - Added complete module mapping configuration section (Section 9)
+  - Extended target_module valid values from 5 to 9 modules:
+    - Added: ad_accounts, suppliers, settlements, projects
+    - Existing: daily_report, topup_request, reconciliation, ledger, auth
+  - Added comprehensive module definitions table with router/service/SoT/test paths
+  - Added detailed module_details XML blocks for each of 9 modules
+
+  Module Coverage:
+  - All 9 modules now have complete configuration:
+    - Router file paths (backend/routers/*.py)
+    - Service file paths (backend/services/*_service.py)
+    - SoT document references (docs/2.sot/*.md)
+    - State machine references (STATE_MACHINE.md sections)
+    - Test output paths (backend/tests/api/test_*_flow_generated.py)
+
+  Configuration Alignment:
+  - All module names consistent across:
+    - target_module valid values enumeration
+    - supported_modules table
+    - module_details XML blocks
+    - Usage examples
+
+  ---
 
   ### v1.2 (2025-12-01)
 

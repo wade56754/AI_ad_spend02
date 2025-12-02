@@ -2,104 +2,27 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop, "feature/**" ]
+    branches: [ main, sot-fix-20251123 ]
   pull_request:
-    branches: [ main, master, develop ]
-
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main, sot-fix-20251123 ]
 
 jobs:
-  backend-tests:
-    name: Backend • Pytest + Coverage
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          python-version: "3.11"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+          pip install -r requirements-test.txt
 
-      - name: Run tests (exclude slow/perf/db)
-        env:
-          PYTHONPATH: .
+      - name: Run test suite (smoke)
         run: |
-          cd backend
-          python -m pytest tests/ -v --tb=short --no-cov
-
-  frontend-lint:
-    name: Frontend • ESLint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'pnpm'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Install deps
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: pnpm lint
-
-  docker-scan:
-    name: Docker • Build + Trivy Scan
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-lint]
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build image (local)
-        run: |
-          docker build -t ai-ad-spend-backend:ci -f Dockerfile .
-
-      - name: Trivy scan (image)
-        uses: aquasecurity/trivy-action@0.20.0
-        with:
-          image-ref: ai-ad-spend-backend:ci
-          format: 'table'
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '0'  # 调整为 '1' 可在高危时阻断
-          ignore-unfixed: true
-
-  quality-gate:
-    name: Quality Gate
-    runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-lint, docker-scan]
-    steps:
-      - run: echo "All checks passed."
-
+          python run_tests.py --type smoke

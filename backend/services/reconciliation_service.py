@@ -13,15 +13,19 @@ from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, select
 
-from backend.models.reconciliation import (
-    ReconciliationBatch, ReconciliationDetail,
-    ReconciliationAdjustment, ReconciliationReport
+from backend.models import (
+    ReconciliationBatch, ReconciliationDetail, ReconciliationAdjustment
 )
+# ReconciliationReport 可能尚未完全实现
+try:
+    from backend.models.reconciliation import ReconciliationReport
+except (ImportError, AttributeError):
+    ReconciliationReport = None
 from backend.models import AdAccount
 from backend.models import Project
 from backend.models import Channel
 from backend.models import User
-from backend.models.base import ReconciliationBatchStatus, UserRole
+from backend.models.base import ReconciliationBatchStatus, ReconciliationDetailStatus, UserRole
 from backend.schemas.reconciliation import (
     ReconciliationBatchCreateRequest,
     ReconciliationDetailReviewRequest,
@@ -39,6 +43,47 @@ from backend.exceptions.custom_exceptions import (
 )
 
 
+def _safe_decimal(value, default: Decimal = Decimal('0.00')) -> Decimal:
+    """
+    安全地将值转换为 Decimal，防止 MagicMock 静默通过
+
+    Args:
+        value: 需要转换的值（None, str, int, float, Decimal）
+        default: 默认值
+
+    Returns:
+        Decimal: 转换后的 Decimal 值
+
+    Raises:
+        TypeError: 如果 value 是 MagicMock 或其他不支持的类型
+    """
+    if value is None:
+        return default
+
+    # 检测 MagicMock（来自 unittest.mock）
+    # MagicMock 会有 _mock_name 属性
+    if hasattr(value, '_mock_name') or hasattr(value, '_mock_children'):
+        raise TypeError(
+            f"_safe_decimal 不接受 MagicMock 对象: {type(value).__name__}. "
+            "请确保测试正确 mock 了数据库查询结果。"
+        )
+
+    if isinstance(value, Decimal):
+        return value
+
+    if isinstance(value, (int, float)):
+        return Decimal(str(value))
+
+    if isinstance(value, str):
+        try:
+            return Decimal(value)
+        except Exception:
+            return default
+
+    # 其他不支持的类型
+    raise TypeError(f"_safe_decimal 不支持的类型: {type(value).__name__}")
+
+
 class ReconciliationService:
     """对账管理服务类"""
 
@@ -52,8 +97,9 @@ class ReconciliationService:
     ) -> ReconciliationBatch:
         """创建对账批次"""
         # 检查是否已存在相同日期的对账
+        # 使用 period_end 进行查询（reconciliation_date 是 period_end 的属性别名）
         existing = self.db.query(ReconciliationBatch).filter(
-            ReconciliationBatch.reconciliation_date == request.reconciliation_date
+            ReconciliationBatch.period_end == request.reconciliation_date
         ).first()
 
         if existing:
@@ -63,16 +109,18 @@ class ReconciliationService:
             )
 
         # 生成批次号
-        batch_no = generate_request_no("REC")
+        batch_code = generate_request_no("REC")
 
         # 创建对账批次 - 使用 ReconciliationBatchStatus 枚举 (STATE_MACHINE.md v2.6)
+        # 注意：使用 batch_code 和 period_start/period_end 作为模型字段名
         batch = ReconciliationBatch(
-            batch_no=batch_no,
-            reconciliation_date=request.reconciliation_date,
+            batch_code=batch_code,
+            period_start=request.reconciliation_date,
+            period_end=request.reconciliation_date,
             status=ReconciliationBatchStatus.DRAFT.value,  # 初始状态为 draft
-            auto_match=request.auto_match,
             created_by=current_user_id,
-            notes=request.notes
+            # 注意：auto_match 和 notes 字段在模型中不存在
+            # 如果需要存储 auto_match 逻辑，应在业务逻辑中处理而非持久化
         )
 
         self.db.add(batch)
@@ -111,9 +159,10 @@ class ReconciliationService:
         if status:
             query = query.filter(ReconciliationBatch.status == status)
         if date_from:
-            query = query.filter(ReconciliationBatch.reconciliation_date >= date_from)
+            # 使用 period_end 进行过滤（reconciliation_date 是其属性别名）
+            query = query.filter(ReconciliationBatch.period_end >= date_from)
         if date_to:
-            query = query.filter(ReconciliationBatch.reconciliation_date <= date_to)
+            query = query.filter(ReconciliationBatch.period_end <= date_to)
 
         # 计算总数
         total = query.count()
@@ -182,7 +231,6 @@ class ReconciliationService:
 
         # 更新批次状态为 pending_review
         batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
-        batch.started_at = datetime.utcnow()
         self.db.commit()
 
         try:
@@ -190,11 +238,6 @@ class ReconciliationService:
             ad_accounts = self.db.query(AdAccount).filter(
                 AdAccount.status == "active"
             ).all()
-
-            total_accounts = len(ad_accounts)
-            matched_count = 0
-            mismatched_count = 0
-            auto_matched_count = 0
 
             platform_total = Decimal('0.00')
             internal_total = Decimal('0.00')
@@ -204,61 +247,39 @@ class ReconciliationService:
             for account in ad_accounts:
                 # TODO: 从平台API获取消耗数据
                 platform_spend = Decimal('0.00')  # 临时值
-                platform_data_date = date.today()
 
                 # TODO: 从内部记录获取消耗数据
                 internal_spend = Decimal('0.00')  # 临时值
-                internal_data_date = date.today()
 
                 # 计算差异
                 spend_difference = platform_spend - internal_spend
                 is_matched = abs(spend_difference) < Decimal('0.01')
 
-                # 判断匹配状态
-                if is_matched:
-                    match_status = "auto_matched" if batch.auto_match else "matched"
-                    if batch.auto_match:
-                        auto_matched_count += 1
-                    matched_count += 1
-                else:
-                    match_status = "manual_review"
-                    mismatched_count += 1
-
                 # 创建对账详情
+                # 注意：ReconciliationDetail 模型字段：system_spend, actual_spend, discrepancy, status
                 detail = ReconciliationDetail(
                     batch_id=batch_id,
                     ad_account_id=account.id,
-                    project_id=account.project_id,
-                    channel_id=account.channel_id,
-                    platform_spend=platform_spend,
-                    platform_data_date=platform_data_date,
-                    internal_spend=internal_spend,
-                    internal_data_date=internal_data_date,
-                    spend_difference=spend_difference,
-                    is_matched=is_matched,
-                    match_status=match_status,
-                    auto_confidence=Decimal('1.00') if is_matched else Decimal('0.00')
+                    system_spend=platform_spend,
+                    actual_spend=internal_spend,
+                    discrepancy=spend_difference,
+                    status=ReconciliationDetailStatus.CONFIRMED.value if is_matched else ReconciliationDetailStatus.PENDING.value,
+                    notes=f"自动匹配" if is_matched else f"需要人工审核，差异: {spend_difference}"
                 )
 
                 self.db.add(detail)
 
-                # 累计统计
+                # 累计统计（用于更新 batch 汇总字段）
                 platform_total += platform_spend
                 internal_total += internal_spend
                 difference_total += spend_difference
 
-            # 更新批次统计信息
-            batch.total_accounts = total_accounts
-            batch.matched_accounts = matched_count
-            batch.mismatched_accounts = mismatched_count
-            batch.auto_matched = auto_matched_count
-            batch.manual_reviewed = mismatched_count
-            batch.total_platform_spend = platform_total
-            batch.total_internal_spend = internal_total
-            batch.total_difference = difference_total
+            # 更新批次汇总金额字段（这些字段在模型中存在）
+            batch.total_system_spend = platform_total
+            batch.total_actual_spend = internal_total
+            batch.discrepancy = difference_total
             # 对账完成后状态为 approved（需人工审核后才 completed）
             batch.status = ReconciliationBatchStatus.APPROVED.value
-            batch.completed_at = datetime.utcnow()
 
             self.db.commit()
 
@@ -287,8 +308,9 @@ class ReconciliationService:
         )
 
         # 应用过滤条件
+        # 注意：ReconciliationDetail 使用 status 字段，不是 match_status
         if match_status:
-            query = query.filter(ReconciliationDetail.match_status == match_status)
+            query = query.filter(ReconciliationDetail.status == match_status)
 
         # 计算总数
         total = query.count()
@@ -317,34 +339,42 @@ class ReconciliationService:
                 error_code="SYS_004"
             )
 
-        # 对账详情状态检查 - pending, manual_review, exception 可审核
-        if detail.match_status not in ["pending", "manual_review", "exception"]:
+        # 对账详情状态检查 - pending, confirmed, adjusted 可审核
+        # 注意：使用 status 字段，而不是 match_status
+        if detail.status not in [ReconciliationDetailStatus.PENDING.value, ReconciliationDetailStatus.CONFIRMED.value, ReconciliationDetailStatus.ADJUSTED.value]:
             raise BusinessLogicError(
                 message="只能审核待处理或异常的对账详情",
                 error_code="BIZ_306"
             )
 
         # 更新审核信息
-        detail.reviewed_by = current_user_id
-        detail.reviewed_at = datetime.utcnow()
-        detail.review_notes = request.review_notes
-        detail.auto_confidence = request.auto_confidence or detail.auto_confidence
-        detail.difference_type = request.difference_type
-        detail.difference_reason = request.difference_reason
+        # 注意：ReconciliationDetail 模型只有 notes 字段，没有 reviewed_by, reviewed_at, review_notes 等字段
+        # 将审核信息存储在 notes 字段中
+        review_info = f"审核人: {current_user_id}, 时间: {datetime.utcnow().isoformat()}"
+        if request.review_notes:
+            review_info += f", 备注: {request.review_notes}"
+        detail.notes = review_info
 
         # 更新匹配状态
+        # 注意：ReconciliationDetail 模型没有 is_matched, match_status, auto_confidence, difference_type, difference_reason 字段
+        # 使用 status 字段来表示匹配状态：confirmed = 匹配，adjusted = 不匹配，pending = 待审核
         if request.action == "approve" and request.is_matched:
-            detail.match_status = "matched"
-            detail.is_matched = True
+            detail.status = ReconciliationDetailStatus.CONFIRMED.value
         elif request.action == "reject":
-            detail.match_status = "exception"
-            detail.is_matched = False
+            detail.status = ReconciliationDetailStatus.ADJUSTED.value
         elif request.action == "investigate":
-            detail.match_status = "manual_review"
+            # 保持 pending 状态，等待人工审核
+            detail.status = ReconciliationDetailStatus.PENDING.value
 
-        # 如果指定了最终状态
+        # 如果指定了最终状态，映射到 status 字段
         if request.match_status:
-            detail.match_status = request.match_status
+            # 将 match_status 映射到 status 枚举值
+            status_map = {
+                "matched": ReconciliationDetailStatus.CONFIRMED.value,
+                "exception": ReconciliationDetailStatus.ADJUSTED.value,
+                "manual_review": ReconciliationDetailStatus.PENDING.value,
+            }
+            detail.status = status_map.get(request.match_status, detail.status)
 
         self.db.commit()
         self.db.refresh(detail)
@@ -371,34 +401,23 @@ class ReconciliationService:
                 error_code="SYS_004"
             )
 
-        # 计算调整后金额
-        adjusted_amount = request.original_amount + request.adjustment_amount
-
-        # 创建调整记录
+        # 创建调整记录 - 使用 SoT DATA_SCHEMA.md v5.2 定义的字段
+        # 字段：detail_id, adjustment_type, amount, reason, created_by
         adjustment = ReconciliationAdjustment(
             detail_id=detail_id,
-            batch_id=detail.batch_id,
             adjustment_type=request.adjustment_type,
-            original_amount=request.original_amount,
-            adjustment_amount=request.adjustment_amount,
-            adjusted_amount=adjusted_amount,
-            adjustment_reason=request.adjustment_reason,
-            detailed_reason=request.detailed_reason,
-            evidence_url=request.evidence_url,
-            approved_by=current_user_id,
-            approved_at=datetime.utcnow()
+            amount=request.adjustment_amount,
+            reason=request.detailed_reason or request.adjustment_reason,
+            created_by=current_user_id
         )
 
         self.db.add(adjustment)
         self.db.commit()
         self.db.refresh(adjustment)
 
-        # 更新对账详情状态
-        detail.resolved_by = current_user_id
-        detail.resolved_at = datetime.utcnow()
-        detail.resolution_method = "adjust"
-        detail.resolution_notes = f"调整金额: {request.adjustment_amount}"
-        detail.match_status = "resolved"
+        # 更新对账详情状态为已调整
+        detail.status = ReconciliationDetailStatus.ADJUSTED.value
+        detail.notes = f"调整金额: {request.adjustment_amount}, 原因: {request.adjustment_reason}"
 
         self.db.commit()
 
@@ -429,11 +448,11 @@ class ReconciliationService:
                     AdAccount.assigned_user_id == current_user_id
                 )
 
-        # 应用日期过滤
+        # 应用日期过滤（使用 period_end，reconciliation_date 是其属性别名）
         if date_from:
-            query = query.filter(ReconciliationBatch.reconciliation_date >= date_from)
+            query = query.filter(ReconciliationBatch.period_end >= date_from)
         if date_to:
-            query = query.filter(ReconciliationBatch.reconciliation_date <= date_to)
+            query = query.filter(ReconciliationBatch.period_end <= date_to)
 
         # 总体统计 - 使用 ReconciliationBatchStatus 枚举 (STATE_MACHINE.md v2.6)
         total_batches = query.count()
@@ -461,39 +480,61 @@ class ReconciliationService:
                 )
 
         total_accounts = details_query.count()
+        # 注意：ReconciliationDetail 模型没有 is_matched 字段
+        # 使用 discrepancy 接近 0 来判断是否匹配（容忍 0.01 的误差）
         matched_accounts = details_query.filter(
-            ReconciliationDetail.is_matched == True
+            func.abs(ReconciliationDetail.discrepancy) < Decimal('0.01')
         ).count()
         mismatched_accounts = total_accounts - matched_accounts
 
         # 金额统计
         from sqlalchemy import cast, Numeric
         batch_stats = query.with_entities(
-            func.sum(cast(ReconciliationBatch.total_platform_spend, Numeric(15, 2))).label('platform_total'),
-            func.sum(cast(ReconciliationBatch.total_internal_spend, Numeric(15, 2))).label('internal_total'),
-            func.sum(cast(ReconciliationBatch.total_difference, Numeric(15, 2))).label('difference_total')
+            func.sum(cast(ReconciliationBatch.total_system_spend, Numeric(15, 2))).label('platform_total'),
+            func.sum(cast(ReconciliationBatch.total_actual_spend, Numeric(15, 2))).label('internal_total'),
+            func.sum(cast(ReconciliationBatch.discrepancy, Numeric(15, 2))).label('difference_total')
         ).first()
 
-        total_platform_spend = batch_stats.platform_total or Decimal('0.00')
-        total_internal_spend = batch_stats.internal_total or Decimal('0.00')
-        total_difference = batch_stats.difference_total or Decimal('0.00')
+        # 安全处理空值和类型转换，防止 MagicMock 静默通过
+        if batch_stats is None:
+            total_platform_spend = Decimal('0.00')
+            total_internal_spend = Decimal('0.00')
+            total_difference = Decimal('0.00')
+        else:
+            total_platform_spend = _safe_decimal(
+                getattr(batch_stats, 'platform_total', None),
+                Decimal('0.00')
+            )
+            total_internal_spend = _safe_decimal(
+                getattr(batch_stats, 'internal_total', None),
+                Decimal('0.00')
+            )
+            total_difference = _safe_decimal(
+                getattr(batch_stats, 'difference_total', None),
+                Decimal('0.00')
+            )
 
         # 调整金额统计
-        adjustments_query = self.db.query(ReconciliationAdjustment)
-        if user_role in ["account_manager", "media_buyer"]:
-            adjustments_query = adjustments_query.join(ReconciliationDetail).join(ReconciliationBatch)
-            if user_role == "account_manager":
-                adjustments_query = adjustments_query.join(AdAccount).join(Project).filter(
-                    Project.account_manager_id == current_user_id
-                )
-            else:
-                adjustments_query = adjustments_query.join(AdAccount).filter(
-                    AdAccount.assigned_user_id == current_user_id
-                )
+        # 注意：如果 ReconciliationAdjustment 不存在，返回 0
+        if ReconciliationAdjustment is None:
+            total_adjustments = Decimal('0.00')
+        else:
+            adjustments_query = self.db.query(ReconciliationAdjustment)
+            if user_role in ["account_manager", "media_buyer"]:
+                adjustments_query = adjustments_query.join(ReconciliationDetail).join(ReconciliationBatch)
+                if user_role == "account_manager":
+                    adjustments_query = adjustments_query.join(AdAccount).join(Project).filter(
+                        Project.account_manager_id == current_user_id
+                    )
+                else:
+                    adjustments_query = adjustments_query.join(AdAccount).filter(
+                        AdAccount.assigned_user_id == current_user_id
+                    )
 
-        total_adjustments = adjustments_query.with_entities(
-            func.sum(cast(ReconciliationAdjustment.adjustment_amount, Numeric(15, 2)))
-        ).scalar() or Decimal('0.00')
+            adjustments_scalar = adjustments_query.with_entities(
+                func.sum(cast(ReconciliationAdjustment.amount, Numeric(15, 2)))
+            ).scalar()
+            total_adjustments = _safe_decimal(adjustments_scalar, Decimal('0.00'))
 
         # 效率统计
         if total_accounts > 0:
@@ -508,16 +549,17 @@ class ReconciliationService:
         resolution_rate = (resolved_batches / total_batches * 100) if total_batches > 0 else 0
 
         # 平均处理时间（小时）
+        # 注意：ReconciliationBatch 使用 created_at 和 closed_at，而不是 started_at 和 completed_at
         avg_processing_time = self.db.query(
             func.avg(
                 func.extract(
                     'epoch',
-                    ReconciliationBatch.completed_at - ReconciliationBatch.started_at
+                    ReconciliationBatch.closed_at - ReconciliationBatch.created_at
                 ) / 3600
             )
         ).filter(
-            ReconciliationBatch.started_at.isnot(None),
-            ReconciliationBatch.completed_at.isnot(None)
+            ReconciliationBatch.created_at.isnot(None),
+            ReconciliationBatch.closed_at.isnot(None)
         ).scalar() or 0
 
         # 净差异（调整后）
@@ -583,9 +625,10 @@ class ReconciliationService:
         if batch_id:
             query = query.filter(ReconciliationDetail.batch_id == batch_id)
         if date_from:
-            query = query.filter(ReconciliationBatch.reconciliation_date >= date_from)
+            # 使用 period_end（reconciliation_date 是其属性别名）
+            query = query.filter(ReconciliationBatch.period_end >= date_from)
         if date_to:
-            query = query.filter(ReconciliationBatch.reconciliation_date <= date_to)
+            query = query.filter(ReconciliationBatch.period_end <= date_to)
 
         # 获取数据
         details = query.all()
@@ -593,26 +636,32 @@ class ReconciliationService:
         # 转换为导出格式
         export_data = []
         for detail in details:
+            # 通过 ad_account 关系访问 project 和 channel
             export_data.append({
                 "batch_no": detail.batch.batch_no,
                 "reconciliation_date": detail.batch.reconciliation_date.isoformat(),
                 "ad_account_name": detail.ad_account.account_name,
-                "project_name": detail.project.name,
-                "channel_name": detail.channel.name,
-                "platform_spend": float(detail.platform_spend),
-                "internal_spend": float(detail.internal_spend),
-                "spend_difference": float(detail.spend_difference),
-                "is_matched": detail.is_matched,
-                "match_status": detail.match_status,
-                "difference_type": detail.difference_type,
-                "difference_reason": detail.difference_reason,
+                "project_name": detail.ad_account.project.name if detail.ad_account.project else None,
+                "channel_name": detail.ad_account.channel.name if detail.ad_account.channel else None,
+                "platform_spend": float(detail.system_spend),
+                "internal_spend": float(detail.actual_spend),
+                "spend_difference": float(detail.discrepancy),
+                "is_matched": abs(detail.discrepancy) < Decimal('0.01'),  # 基于 discrepancy 计算
+                "match_status": detail.status,  # 使用 status 字段
+                "difference_type": None,  # 模型中没有此字段
+                "difference_reason": detail.notes,  # 使用 notes 字段
                 "created_at": detail.created_at.isoformat()
             })
 
         return export_data
 
     async def _update_batch_statistics(self, batch_id: int):
-        """更新批次统计信息"""
+        """更新批次统计信息
+
+        注意：根据 SoT spec，统计字段如 total_accounts, matched_accounts 等
+        应从 ReconciliationDetail 记录按需计算，不存储在数据库中。
+        仅更新批次的汇总金额字段：total_system_spend, total_actual_spend, discrepancy
+        """
         batch = self.db.query(ReconciliationBatch).filter(
             ReconciliationBatch.id == batch_id
         ).first()
@@ -620,18 +669,14 @@ class ReconciliationService:
         if not batch:
             return
 
-        # 重新计算统计信息
+        # 重新计算汇总金额
         details = self.db.query(ReconciliationDetail).filter(
             ReconciliationDetail.batch_id == batch_id
         ).all()
 
-        batch.total_accounts = len(details)
-        batch.matched_accounts = sum(1 for d in details if d.is_matched)
-        batch.mismatched_accounts = batch.total_accounts - batch.matched_accounts
-        batch.total_platform_spend = sum(d.platform_spend for d in details)
-        batch.total_internal_spend = sum(d.internal_spend for d in details)
-        batch.total_difference = sum(d.spend_difference for d in details)
-        batch.auto_matched = sum(1 for d in details if d.match_status == "auto_matched")
-        batch.manual_reviewed = sum(1 for d in details if d.match_status == "manual_review")
+        # 仅更新模型中存在的汇总金额字段
+        batch.total_system_spend = sum(d.system_spend for d in details) if details else Decimal('0.00')
+        batch.total_actual_spend = sum(d.actual_spend for d in details) if details else Decimal('0.00')
+        batch.discrepancy = sum(d.discrepancy for d in details) if details else Decimal('0.00')
 
         self.db.commit()

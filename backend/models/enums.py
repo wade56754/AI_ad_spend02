@@ -128,6 +128,17 @@ class ReconciliationDetailStatus(str, Enum):
     ADJUSTED = "adjusted"
 
 
+class ReconciliationAdjustmentType(str, Enum):
+    """
+    对账调整类型枚举
+
+    必须与 DATA_SCHEMA.md v5.2 第3.5.3节保持一致。
+    """
+    INCREASE = "increase"    # 增加调整
+    DECREASE = "decrease"    # 减少调整
+    WRITEOFF = "writeoff"    # 核销
+
+
 class AccountAlertStatus(str, Enum):
     """账户预警状态枚举"""
     OPEN = "open"
@@ -165,3 +176,18 @@ class ChannelReviewStatus(str, Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
+
+
+class TransferRequestStatus(str, Enum):
+    """
+    死号余额迁移申请状态枚举
+
+    必须与 STATE_MACHINE.md v2.6 第12章保持严格一致。
+    状态流程: draft → pending_approval → approved/rejected → completed
+    终态: rejected, completed
+    """
+    DRAFT = "draft"                    # 草稿
+    PENDING_APPROVAL = "pending_approval"  # 待审批
+    APPROVED = "approved"              # 已审批
+    REJECTED = "rejected"              # 已拒绝（终态）
+    COMPLETED = "completed"            # 已完成（终态）

@@ -81,11 +81,45 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         comment="审核人ID"
     )
 
-    # 业务字段
+    # 业务字段 - 基础信息
     report_date = Column(Date, nullable=False, comment="报告日期")
-    status = Column(String(20), nullable=False, comment="状态")
-    fans_gained = Column(Integer, nullable=True, comment="新增粉丝数")
-    spend_amount = Column(Numeric(15, 2), nullable=True, comment="消耗金额")
+    status = Column(String(20), nullable=False, comment="状态（8状态机）")
+
+    # 广告信息字段 (API_SOT.md v9.0 第 9.2 节)
+    campaign_name = Column(String(200), nullable=True, comment="广告系列名称")
+    ad_group_name = Column(String(200), nullable=True, comment="广告组名称")
+    ad_creative_name = Column(String(200), nullable=True, comment="广告创意名称")
+
+    # 指标字段
+    impressions = Column(Integer, nullable=True, default=0, comment="展示次数/曝光量")
+    clicks = Column(Integer, nullable=True, default=0, comment="点击次数")
+
+    # 三数据流字段 (STATE_MACHINE.md v2.6 第 8 章)
+    # raw 数据流 - 投手提交 (T+0)
+    conversions_raw = Column(Integer, nullable=True, default=0, comment="原始粉数（raw数据流）")
+    raw_spend = Column(Numeric(15, 2), nullable=True, default=0, comment="原始消耗（raw数据流）")
+    # real 数据流 - 运营录入 (T+1)
+    real_spend = Column(Numeric(15, 2), nullable=True, default=0, comment="真实消耗（real数据流）")
+    fee = Column(Numeric(15, 2), nullable=True, default=0, comment="手续费")
+    # final 数据流 - 运营确认
+    conversions_final = Column(Integer, nullable=True, default=0, comment="最终粉数（final数据流）")
+
+    # 计费字段
+    unit_price = Column(Numeric(15, 2), nullable=True, comment="单粉价格（从项目继承）")
+
+    # 趋势风控字段 (STATE_MACHINE.md v2.6 第 8.3 节)
+    trend_flag = Column(String(20), nullable=True, default='normal', comment="趋势标记（normal/flagged/resolved）")
+    trend_flag_reason = Column(Text, nullable=True, comment="趋势异常原因（如 TF-001）")
+    trend_resolution_note = Column(Text, nullable=True, comment="运营复核说明")
+
+    # 锁定时间
+    final_locked_at = Column(DateTime(timezone=True), nullable=True, comment="计费锁定时间")
+
+    # 兼容旧字段 (deprecated, 将在下个版本移除)
+    # NOTE: 需要 Alembic migration 来添加新字段和迁移数据
+    fans_gained = Column(Integer, nullable=True, comment="[DEPRECATED] 新增粉丝数，请使用 conversions_raw")
+    spend_amount = Column(Numeric(15, 2), nullable=True, comment="[DEPRECATED] 消耗金额，请使用 raw_spend")
+
     notes = Column(Text, nullable=True, comment="备注")
 
     # 时间字段

@@ -12,8 +12,8 @@ Author: Claude协作开发
 
 import pytest
 
-# Skip all tests due to test isolation issues
-pytestmark = pytest.mark.skip(reason="TEST-ISOLATION: AuditLog.user relationship error corrupts database session")
+# Note: Tests can run now - API tests are passing, permission tests should work
+# If AuditLog issues occur, they will be handled by the test framework
 
 
 class TestReconciliationPermissions:

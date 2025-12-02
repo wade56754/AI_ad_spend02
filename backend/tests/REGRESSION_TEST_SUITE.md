@@ -27,6 +27,9 @@ python -m pytest backend/tests/ad_accounts -q
 
 # 5. Topup API 测试（充值模块）
 python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
+
+# 6. Transfers API 测试（死号余额迁移）
+python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
 ```
 
 ## 🚀 快速执行
@@ -40,6 +43,7 @@ python -m pytest backend/tests/api/test_trend_risk_flow_generated.py -q
 python -m pytest backend/tests/ledger -q
 python -m pytest backend/tests/ad_accounts -q
 python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
+python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
 ```
 
 ### Linux/macOS (Bash)
@@ -50,7 +54,8 @@ python -m pytest backend/tests/api/test_daily_report_flow_generated.py -q && \
 python -m pytest backend/tests/api/test_trend_risk_flow_generated.py -q && \
 python -m pytest backend/tests/ledger -q && \
 python -m pytest backend/tests/ad_accounts -q && \
-python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
+python -m pytest backend/tests/test_topup_api.py -q -k "not skip" && \
+python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
 ```
 
 ## 📊 测试覆盖模块
@@ -62,6 +67,7 @@ python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
 | Ledger | `backend/tests/ledger/` | 37+ | ✅ |
 | Ad Accounts | `backend/tests/ad_accounts/` | - | ✅ |
 | Topup | `test_topup_api.py` | 22+ | ✅ |
+| Transfers | `test_transfers_flow_generated.py` | 17 | ✅ |
 
 ## 🔍 测试内容
 
@@ -89,6 +95,13 @@ python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
 ### 5. Topup
 - API 流程测试: 创建、提交、审批、完成
 - 权限和状态机验证
+
+### 6. Transfers (死号余额迁移)
+- Happy Path: 创建、提交、审批、完成（draft → pending_approval → approved → completed）
+- Validation: 金额校验、源目标账户不能相同
+- Permissions: media_buyer 无创建权限、account_manager 无审批权限、finance 无完成权限
+- Error Codes: BIZ_002、STATE_001 错误码验证
+- State Machine: 5 状态机流转测试（对齐 STATE_MACHINE.md v2.6 第 12 章）
 
 ## 📝 使用说明
 
@@ -139,4 +152,5 @@ python -m pytest backend/tests/api/test_trend_risk_flow_generated.py -q
 
 **维护者**: AI_ad_spend02 团队  
 **最后审查**: 2025-01-22
+
 

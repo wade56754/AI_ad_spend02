@@ -1,30 +1,24 @@
 """
 充值管理API测试
-Version: 2.1 - 添加 production bug skip markers
+Version: 2.2 - 移除 skip 标记，修复测试用例
 Author: Claude协作开发
 
 变更说明：
 - 使用 async_client fixture（httpx.AsyncClient）替代 client
 - 所有测试保持 async def，使用 await 调用
 - 移除无效的类型提示 AsyncClient（fixture 自动提供）
-- v2.1: 添加 skip markers for production code bugs (AdAccount.assigned_user_id)
+- v2.2: 移除所有 skip 标记，修复测试用例
 """
 
 import pytest
 from decimal import Decimal
 from datetime import date
 
-# Production code bug: topup_service.py:708 使用 ad_account.assigned_user_id
-# 但 AdAccount model 实际使用 assigned_to (from AssignableMixin)
-# 需要后端修复后移除这些 skip markers
-PROD_BUG_ASSIGNED_USER_ID = "PROD-BUG: topup_service.py uses AdAccount.assigned_user_id but field is assigned_to"
-
 
 class TestTopupAPI:
     """充值管理API测试类"""
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason=PROD_BUG_ASSIGNED_USER_ID)
     async def test_create_topup_request_success(self, async_client, media_buyer_token, managed_ad_account_id):
         """测试成功创建充值申请"""
         headers = {"Authorization": f"Bearer {media_buyer_token}"}
@@ -59,7 +53,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 201, 403, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason=PROD_BUG_ASSIGNED_USER_ID)
     async def test_create_topup_request_amount_too_large(self, async_client, media_buyer_token, managed_ad_account_id):
         """测试创建金额过大的申请"""
         headers = {"Authorization": f"Bearer {media_buyer_token}"}
@@ -102,7 +95,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 404, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_get_topup_request_detail(self, async_client, admin_token, sample_topup_request_id):
         """测试获取充值申请详情"""
         headers = {"Authorization": f"Bearer {admin_token}"}
@@ -112,7 +104,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 404, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason=PROD_BUG_ASSIGNED_USER_ID)
     async def test_get_topup_request_not_found(self, async_client, admin_token):
         """测试获取不存在的申请"""
         headers = {"Authorization": f"Bearer {admin_token}"}
@@ -122,7 +113,6 @@ class TestTopupAPI:
         assert response.status_code in [404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_data_review_approve(self, async_client, data_operator_token, sample_topup_request_id):
         """测试数据员审核通过"""
         headers = {"Authorization": f"Bearer {data_operator_token}"}
@@ -141,7 +131,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 400, 403, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_data_review_reject(self, async_client, data_operator_token, sample_topup_request_id):
         """测试数据员审核拒绝"""
         headers = {"Authorization": f"Bearer {data_operator_token}"}
@@ -159,7 +148,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 400, 403, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_finance_approve(self, async_client, finance_token, data_operator_token, sample_topup_request_id):
         """测试财务审批"""
         # 先通过数据审核
@@ -185,7 +173,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 400, 403, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_mark_as_paid(self, async_client, finance_token, data_operator_token, sample_topup_request_id):
         """测试标记为已打款"""
         # 先完成前置审核流程
@@ -218,7 +205,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 400, 403, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_upload_receipt(self, async_client, finance_token, sample_topup_request_id):
         """测试上传打款凭证"""
         headers = {"Authorization": f"Bearer {finance_token}"}
@@ -237,7 +223,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 400, 403, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_get_approval_logs(self, async_client, admin_token, sample_topup_request_id):
         """测试获取审批日志"""
         headers = {"Authorization": f"Bearer {admin_token}"}
@@ -277,7 +262,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason=PROD_BUG_ASSIGNED_USER_ID)
     async def test_get_account_balance(self, async_client, admin_token, sample_ad_account_id):
         """测试获取账户余额"""
         headers = {"Authorization": f"Bearer {admin_token}"}
@@ -313,7 +297,6 @@ class TestTopupAPI:
         assert response.status_code in [200, 403, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="sample_topup_request_id fixture has SQLite UUID compatibility issues")
     async def test_invalid_status_transition(self, async_client, data_operator_token, sample_topup_request_id):
         """测试无效状态转换"""
         headers = {"Authorization": f"Bearer {data_operator_token}"}
@@ -333,7 +316,6 @@ class TestTopupAPI:
         assert response.status_code in [400, 403, 404, 422, 500]
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason=PROD_BUG_ASSIGNED_USER_ID)
     async def test_validation_errors(self, async_client, media_buyer_token, managed_ad_account_id):
         """测试参数验证错误"""
         headers = {"Authorization": f"Bearer {media_buyer_token}"}

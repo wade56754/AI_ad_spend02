@@ -36,7 +36,8 @@ from backend.schemas.daily_report import (
     DailyReportAuditRequest,
     DailyReportBatchImportRequest,
     DailyReportQueryParams,
-    DailyReportImportError
+    DailyReportImportError,
+    RealSpendRequest,
 )
 
 # 创建logger实例
@@ -85,39 +86,73 @@ class DailyReportService:
             f"date={request.report_date}, user={current_user.id} ({current_user.role})"
         )
 
+        # BIZ_201: 报表日期不能是未来日期
+        if request.report_date > date.today():
+            logger.warning(
+                f"Future date rejected: report_date={request.report_date}, today={date.today()}"
+            )
+            raise BusinessLogicError(
+                f"报表日期 {request.report_date} 不能大于今天 {date.today()}",
+                error_code="BIZ_201"
+            )
+
         # 验证用户是否有权限操作该广告账户
         ad_account = self.db.query(AdAccount).filter(
             AdAccount.id == request.ad_account_id
         ).first()
 
         if not ad_account:
+            # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
             logger.error(f"Ad account {request.ad_account_id} not found")
-            raise ResourceNotFoundError(f"广告账户 {request.ad_account_id} 不存在")
+            raise ResourceNotFoundError(
+                f"广告账户 {request.ad_account_id} 不存在",
+                error_code="BIZ_002"
+            )
 
         # 账户权限检查
         if not self._can_user_access_account(current_user, ad_account):
             raise PermissionDeniedError(
-                f"无权限操作广告账户 {ad_account.name}（ID: {ad_account.id}）"
+                f"无权限操作广告账户 {ad_account.account_name or ad_account.account_code}（ID: {ad_account.id}）"
+            )
+
+        # BIZ_003: 检查日报是否已存在（ad_account_id + report_date 唯一约束）
+        existing_report = self.db.query(DailyReport).filter(
+            DailyReport.ad_account_id == request.ad_account_id,
+            DailyReport.report_date == request.report_date
+        ).first()
+
+        if existing_report:
+            logger.warning(
+                f"Duplicate report rejected: account_id={request.ad_account_id}, "
+                f"date={request.report_date}, existing_id={existing_report.id}"
+            )
+            raise ResourceConflictError(
+                f"账户 {request.ad_account_id} 在 {request.report_date} 的日报已存在",
+                error_code="BIZ_003"
             )
 
         with self.transaction():
             try:
                 # 创建日报记录
+                # 字段对齐 SoT: API_SOT.md v9.0 第 9.2 节, DATA_SCHEMA.md v5.2
                 daily_report = DailyReport(
                     report_date=request.report_date,
                     ad_account_id=request.ad_account_id,
+                    # 广告信息字段
                     campaign_name=request.campaign_name,
                     ad_group_name=request.ad_group_name,
                     ad_creative_name=request.ad_creative_name,
+                    # 指标字段
                     impressions=request.impressions,
                     clicks=request.clicks,
-                    spend=request.spend,
-                    conversions=request.conversions,
-                    new_follows=request.new_follows,
-                    cpa=request.cpa,
-                    roas=request.roas,
+                    # raw 数据流字段 (STATE_MACHINE.md v2.6 第8章)
+                    conversions_raw=request.conversions_raw,
+                    raw_spend=request.raw_spend,
+                    # 初始状态
+                    status=DailyReportStatus.RAW_SUBMITTED.value,
+                    # 其他字段
                     notes=request.notes,
-                    created_by=current_user.id
+                    submitted_by=current_user.id
                 )
 
                 self.db.add(daily_report)
@@ -175,8 +210,8 @@ class DailyReportService:
 
         query = self.db.query(DailyReport).options(
             joinedload(DailyReport.ad_account),
-            joinedload(DailyReport.creator),
-            joinedload(DailyReport.auditor)
+            joinedload(DailyReport.submitter),
+            joinedload(DailyReport.reviewer)
         )
 
         # 构建查询条件
@@ -282,12 +317,13 @@ class DailyReportService:
         """
         report = self.db.query(DailyReport).options(
             joinedload(DailyReport.ad_account),
-            joinedload(DailyReport.creator),
-            joinedload(DailyReport.auditor)
+            joinedload(DailyReport.submitter),
+            joinedload(DailyReport.reviewer)
         ).filter(DailyReport.id == report_id).first()
 
         if not report:
-            raise ResourceNotFoundError(f"日报 {report_id} 不存在")
+            # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
+            raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ_002")
 
         # 权限检查：验证当前用户是否有权限查看该日报
         if not self._can_user_view_report(current_user, report):
@@ -513,6 +549,79 @@ class DailyReportService:
             audit_request=request,
             current_user=current_user
         )
+
+    def update_real_spend(
+        self,
+        report_id: int,
+        request: RealSpendRequest,
+        current_user: User
+    ) -> DailyReport:
+        """
+        录入 real 消耗数据 (API_SOT.md v9.0 第 9.5 节)
+
+        PUT /api/v1/daily-reports/{report_id}/real-spend
+
+        状态流转 (STATE_MACHINE.md v2.6 第8章):
+        trend_ok/trend_resolved → final_pending
+
+        Args:
+            report_id: 日报ID
+            request: RealSpendRequest (real_spend, fee)
+            current_user: 当前用户
+
+        Returns:
+            DailyReport: 更新后的日报对象
+
+        Raises:
+            ResourceNotFoundError: 日报不存在
+            PermissionDeniedError: 无权限（非 data_operator/admin）
+            BusinessLogicError: 状态不允许录入 real_spend
+        """
+        logger.info(
+            f"Updating real spend: report_id={report_id}, user={current_user.id} ({current_user.role}), "
+            f"real_spend={request.real_spend}, fee={request.fee}"
+        )
+
+        # 权限检查 - 仅 data_operator/admin 可录入
+        if current_user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
+            raise PermissionDeniedError("无权限录入真实消耗，仅 data_operator 或 admin 可操作")
+
+        report = self.get_daily_report(report_id, current_user)
+
+        # 状态检查 - 仅 trend_ok/trend_resolved 状态可录入
+        allowed_statuses = [DailyReportStatus.TREND_OK.value, DailyReportStatus.TREND_RESOLVED.value]
+        if report.status not in allowed_statuses:
+            raise BusinessLogicError(
+                f"当前状态 {report.status} 不允许录入真实消耗。"
+                f"仅 trend_ok 或 trend_resolved 状态可操作"
+            )
+
+        with self.transaction():
+            # 更新 real 数据流字段
+            report.real_spend = request.real_spend
+            report.fee = request.fee
+            # 状态流转到 final_pending
+            report.status = DailyReportStatus.FINAL_PENDING.value
+            report.updated_at = datetime.utcnow()
+
+            # 记录审计日志
+            self._create_audit_log(
+                daily_report_id=report_id,
+                action="real_spend_updated",
+                audit_user_id=current_user.id,
+                old_status=report.status,
+                new_status=DailyReportStatus.FINAL_PENDING.value,
+                audit_notes=f"real_spend={request.real_spend}, fee={request.fee}",
+                ip_address=getattr(current_user, 'ip_address', None),
+                user_agent=getattr(current_user, 'user_agent', None)
+            )
+
+            logger.info(
+                f"Real spend updated: report_id={report_id}, "
+                f"real_spend={request.real_spend}, fee={request.fee}, "
+                f"new_status=final_pending"
+            )
+            return report
 
     def batch_import_daily_reports(
         self,

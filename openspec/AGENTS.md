@@ -55,6 +55,7 @@ Track these steps as TODOs and complete them one by one.
 5. **Confirm completion** - Ensure every item in `tasks.md` is finished before updating statuses
 6. **Update checklist** - After all work is done, set every task to `- [x]` so the list reflects reality
 7. **Approval gate** - Do not start implementation until the proposal is reviewed and approved
+8. **Regression test gate** - If change affects backend/services/*, backend/routers/*, docs/2.sot/*, or .claude/skills/ai-ad-api-automation-test/*, MUST pass regression tests before merge (see Backend Regression Gate rules)
 
 ### Stage 3: Archiving Changes
 After deployment, create separate PR to:
@@ -62,6 +63,7 @@ After deployment, create separate PR to:
 - Update `specs/` if capabilities changed
 - Use `openspec archive <change-id> --skip-specs --yes` for tooling-only changes (always pass the change ID explicitly)
 - Run `openspec validate --strict` to confirm the archived change passes checks
+- **Regression test requirement**: If change affects DailyReports/TrendRisk/Ledger/AdAccounts/Topups modules, PR MUST include regression test results (screenshot/log + commit id) in PR description
 
 ## Before Any Task
 
@@ -71,6 +73,7 @@ After deployment, create separate PR to:
 - [ ] Read `openspec/project.md` for conventions
 - [ ] Run `openspec list` to see active changes
 - [ ] Run `openspec list --specs` to see existing capabilities
+- [ ] If change affects backend/services/*, backend/routers/*, docs/2.sot/*, or .claude/skills/ai-ad-api-automation-test/*, check Backend Regression Gate requirements (see PROJECT_RULES.md §13)
 
 **Before Creating Specs:**
 - Always check if capability already exists

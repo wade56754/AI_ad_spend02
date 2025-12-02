@@ -43,7 +43,7 @@ class ProjectService:
     ) -> Project:
         """创建项目"""
         if current_user.role != "admin":
-            raise PermissionDeniedError("只有管理员可以创建项目")
+            raise PermissionDeniedError("权限不足：只有管理员可以创建项目")
 
         # 检查项目名称是否已存在
         if self.db.query(Project).filter(Project.name == request.name).first():
@@ -128,7 +128,7 @@ class ProjectService:
 
         # 检查权限
         if not self._can_user_access_project(current_user, project):
-            raise PermissionDeniedError("无权限查看该项目")
+            raise PermissionDeniedError("权限不足：无权限查看该项目")
 
         # 计算统计信息
         project.total_accounts = len(project.ad_accounts) if hasattr(project, 'ad_accounts') else 0
@@ -151,7 +151,7 @@ class ProjectService:
 
         # 检查权限
         if not self._can_user_update_project(current_user, project):
-            raise PermissionDeniedError("无权限更新该项目")
+            raise PermissionDeniedError("权限不足：无权限更新该项目")
 
         # 检查项目名称是否重复
         if request.name and request.name != project.name:
@@ -183,7 +183,7 @@ class ProjectService:
     def delete_project(self, project_id: int, current_user: User) -> bool:
         """删除项目"""
         if current_user.role != "admin":
-            raise PermissionDeniedError("只有管理员可以删除项目")
+            raise PermissionDeniedError("权限不足：只有管理员可以删除项目")
 
         project = self.get_project(project_id, current_user)
 
@@ -217,7 +217,7 @@ class ProjectService:
     ) -> ProjectMember:
         """分配项目成员"""
         if current_user.role not in ["admin", "account_manager"]:
-            raise PermissionDeniedError("无权限分配项目成员")
+            raise PermissionDeniedError("权限不足：无权限分配项目成员")
 
         project = self.get_project(project_id, current_user)
 
@@ -247,9 +247,30 @@ class ProjectService:
 
         return member
 
-    def remove_member(self, project_id: int, user_id: int, current_user: User) -> bool:
-        """移除项目成员"""
+    def remove_member(self, project_id: int, user_id, current_user: User) -> bool:
+        """移除项目成员
+        
+        Args:
+            project_id: 项目ID
+            user_id: 用户ID（UUID 对象或 UUID 字符串）
+            current_user: 当前用户
+        """
+        from uuid import UUID
+        
         project = self.get_project(project_id, current_user)
+
+        # 将 user_id 转换为 UUID 对象（如果还不是）
+        if isinstance(user_id, str):
+            try:
+                user_id = UUID(user_id)
+            except ValueError:
+                raise ResourceNotFoundError("Invalid user_id format")
+        elif not isinstance(user_id, UUID):
+            # 如果不是 UUID 也不是字符串，尝试转换
+            try:
+                user_id = UUID(str(user_id))
+            except (ValueError, AttributeError):
+                raise ResourceNotFoundError("Invalid user_id format")
 
         member = self.db.query(ProjectMember).filter(
             ProjectMember.project_id == project_id,
@@ -261,7 +282,7 @@ class ProjectService:
 
         # 不能移除项目经理
         if member.role == "account_manager" and current_user.role != "admin":
-            raise PermissionDeniedError("只有管理员可以移除项目经理")
+            raise PermissionDeniedError("权限不足：只有管理员可以移除项目经理")
 
         self.db.delete(member)
         self.db.commit()
@@ -281,7 +302,7 @@ class ProjectService:
         project = self.get_project(project_id, current_user)
 
         if not self._can_user_add_expense(current_user, project):
-            raise PermissionDeniedError("无权限添加项目费用")
+            raise PermissionDeniedError("权限不足：无权限添加项目费用")
 
         # 验证费用类型
         if request.expense_type not in self.VALID_EXPENSE_TYPES:
@@ -334,6 +355,11 @@ class ProjectService:
 
     def get_project_statistics(self, current_user: User) -> ProjectStatisticsResponse:
         """获取项目统计信息"""
+        # 权限检查：只有 admin, finance, data_operator 可以查看统计
+        allowed_roles = ["admin", "finance", "data_operator"]
+        if current_user.role not in allowed_roles:
+            raise PermissionDeniedError("权限不足：无权限查看项目统计")
+
         query = self.db.query(Project)
 
         # 应用权限过滤
@@ -391,7 +417,15 @@ class ProjectService:
         if user.role == "admin":
             return True
         elif user.role == "account_manager":
-            return project.account_manager_id == user.id
+            # account_manager_id 是 BigInteger，user.id 是 UUID
+            # 需要处理类型不匹配的情况
+            from uuid import UUID
+            if isinstance(user.id, UUID):
+                # 将 UUID 转换为整数进行比较
+                user_id_int = abs(user.id.int) % (2**63)
+                return project.account_manager_id == user_id_int
+            else:
+                return project.account_manager_id == user.id
         elif user.role == "media_buyer":
             return any(m.user_id == user.id for m in project.members)
         else:
@@ -402,7 +436,15 @@ class ProjectService:
         if user.role == "admin":
             return True
         elif user.role == "account_manager":
-            return project.account_manager_id == user.id
+            # account_manager_id 是 BigInteger，user.id 是 UUID
+            # 需要处理类型不匹配的情况
+            from uuid import UUID
+            if isinstance(user.id, UUID):
+                # 将 UUID 转换为整数进行比较
+                user_id_int = abs(user.id.int) % (2**63)
+                return project.account_manager_id == user_id_int
+            else:
+                return project.account_manager_id == user.id
         else:
             return False
 

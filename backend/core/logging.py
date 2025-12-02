@@ -176,9 +176,19 @@ def log_requests(request_id_param: str = "request_id"):
             request_id = None
 
             # 尝试从kwargs或request中获取request_id
+            # 注意：需要检查 request 是否是真正的 FastAPI Request 对象，而不是 Pydantic 模型
             if "request" in kwargs:
                 request = kwargs["request"]
-                request_id = getattr(request.state, "request_id", None)
+                # 检查是否是 FastAPI Request 对象（有 state 和 method 属性）
+                # Pydantic 模型不会有 method 属性，所以这是区分的关键
+                if hasattr(request, 'state') and hasattr(request, 'method') and hasattr(request, 'url'):
+                    # 这是真正的 FastAPI Request 对象（来自 starlette.requests.Request）
+                    try:
+                        request_id = getattr(request.state, "request_id", None)
+                    except AttributeError:
+                        # 如果 state 不存在或无法访问，跳过
+                        request_id = None
+                # 否则，request 可能是 Pydantic 模型或其他对象，跳过访问 state
 
             # 如果没有request_id，从参数中获取
             if not request_id and request_id_param in kwargs:

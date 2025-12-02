@@ -10,7 +10,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from backend.models.base import Base, TimestampMixin
-from backend.models.enums import ReconciliationBatchStatus, ReconciliationDetailStatus, UserRole
+from backend.models.enums import ReconciliationBatchStatus, ReconciliationDetailStatus, ReconciliationAdjustmentType, UserRole
 from backend.models.mixins.serializable import SerializableMixin
 
 
@@ -101,6 +101,16 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
         doc="对账明细"
     )
 
+    # 注意：adjustments 关系暂时注释，因为 ReconciliationAdjustment 可能尚未完全实现
+    # 一对多：批次 -> 调整记录（如果 ReconciliationAdjustment 存在）
+    # adjustments = relationship(
+    #     "ReconciliationAdjustment",
+    #     back_populates="batch",
+    #     cascade="all, delete-orphan",
+    #     lazy="dynamic",
+    #     doc="调整记录"
+    # )
+
     # 约束和索引 - 必须与 STATE_MACHINE.md v2.6 第4章保持一致
     __table_args__ = (
         CheckConstraint(
@@ -116,6 +126,53 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
         return f"<ReconciliationBatch(id={self.id}, code='{self.batch_code}', status='{self.status}')>"
 
     # ========== 业务属性（5状态机）==========
+
+    # ========== SoT 字段别名（DATA_SCHEMA.md 对齐）==========
+
+    @property
+    def batch_no(self):
+        """
+        SoT 别名：返回 batch_code 的值
+
+        DATA_SCHEMA.md 使用 batch_no，模型使用 batch_code
+        """
+        return self.batch_code
+
+    @batch_no.setter
+    def batch_no(self, value):
+        """SoT 别名：设置 batch_code 的值"""
+        self.batch_code = value
+
+    @property
+    def approved_by(self):
+        """
+        SoT 别名：返回 reviewed_by 的值
+
+        DATA_SCHEMA.md 使用 approved_by，模型使用 reviewed_by
+        """
+        return self.reviewed_by
+
+    @approved_by.setter
+    def approved_by(self, value):
+        """SoT 别名：设置 reviewed_by 的值"""
+        self.reviewed_by = value
+
+    @property
+    def reconciliation_date(self):
+        """
+        计算属性：返回对账日期（使用 period_end）
+
+        服务层使用单日期，模型使用日期范围
+        """
+        return self.period_end
+
+    @reconciliation_date.setter
+    def reconciliation_date(self, value):
+        """设置对账日期（同时设置 period_start 和 period_end）"""
+        self.period_start = value
+        self.period_end = value
+
+    # ========== 向后兼容别名 ==========
 
     @property
     def total_platform_spend(self):
@@ -334,6 +391,16 @@ class ReconciliationDetail(Base, TimestampMixin, SerializableMixin):
         doc="所属广告账户"
     )
 
+    # 注意：adjustments 关系暂时注释，因为 ReconciliationAdjustment 可能尚未完全实现
+    # 一对多：明细 -> 调整记录（如果 ReconciliationAdjustment 存在）
+    # adjustments = relationship(
+    #     "ReconciliationAdjustment",
+    #     back_populates="detail",
+    #     cascade="all, delete-orphan",
+    #     lazy="dynamic",
+    #     doc="调整记录"
+    # )
+
     # 约束和索引
     __table_args__ = (
         CheckConstraint(
@@ -376,3 +443,87 @@ class ReconciliationDetail(Base, TimestampMixin, SerializableMixin):
         """标记为需要调整"""
         self.status = ReconciliationDetailStatus.ADJUSTED.value
         self.notes = notes
+
+
+class ReconciliationAdjustment(Base, TimestampMixin, SerializableMixin):
+    """
+    对账调整记录表
+
+    必须与 DATA_SCHEMA.md v5.2 第3.5.3节保持严格一致。
+
+    字段：
+    - id: 主键
+    - detail_id: 明细ID（外键）
+    - adjustment_type: 调整类型（increase/decrease/writeoff）
+    - amount: 调整金额
+    - reason: 调整原因
+    - created_by: 创建人ID（外键）
+    - created_at/updated_at: 时间戳（自动管理）
+    """
+    __tablename__ = 'reconciliation_adjustments'
+
+    # 序列化配置
+    __json_include_relationships__ = ['detail', 'creator']
+
+    # 主键
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="调整ID")
+
+    # 外键
+    detail_id = Column(
+        BigInteger,
+        ForeignKey('reconciliation_details.id', ondelete='CASCADE'),
+        nullable=False,
+        comment="明细ID"
+    )
+    created_by = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="创建人ID"
+    )
+
+    # 业务字段（SoT DATA_SCHEMA.md v5.2）
+    adjustment_type = Column(String(20), nullable=False, comment="调整类型")
+    amount = Column(Numeric(15, 2), nullable=False, comment="调整金额")
+    reason = Column(Text, nullable=True, comment="调整原因")
+
+    # 并发控制
+    version = Column(Integer, nullable=False, server_default='1', comment="乐观锁版本号")
+
+    # ========== 关系定义 ==========
+
+    # 多对一：调整 -> 明细
+    detail = relationship(
+        "ReconciliationDetail",
+        foreign_keys=[detail_id],
+        lazy="joined",
+        doc="所属对账明细"
+    )
+
+    # 多对一：调整 -> 创建人
+    creator = relationship(
+        "User",
+        foreign_keys=[created_by],
+        lazy="selectin",
+        doc="创建人"
+    )
+
+    # 约束和索引
+    __table_args__ = (
+        CheckConstraint(
+            "adjustment_type IN ('increase', 'decrease', 'writeoff')",
+            name='chk_reconciliation_adjustments_type'
+        ),
+        Index('idx_reconciliation_adjustments_detail_id', 'detail_id'),
+        Index('idx_reconciliation_adjustments_created_by', 'created_by'),
+    )
+
+    def __repr__(self):
+        return f"<ReconciliationAdjustment(id={self.id}, detail_id={self.detail_id}, type='{self.adjustment_type}')>"
+
+    # ========== 业务属性 ==========
+
+    @property
+    def type_enum(self) -> ReconciliationAdjustmentType:
+        """返回调整类型枚举对象"""
+        return ReconciliationAdjustmentType(self.adjustment_type)

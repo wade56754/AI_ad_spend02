@@ -1,18 +1,17 @@
 """
-项目管理 API 测试
-Version: 1.1 - Skip due to test isolation issues
+项目管理 API 测试 (同步测试)
+Version: 2.0 - Fixed fixture conflicts
 Author: Claude Code
 
 变更说明：
-- v1.1: Skip all tests due to issues:
-  - Creates own admin_user fixture conflicting with conftest
-  - Test isolation corrupts database state
+- v2.0: 修复 fixture 冲突
+  - 移除本地 admin_user/test_project/admin_headers fixture（使用 conftest 提供的）
+  - 使用 conftest 的 admin_headers 替代 admin_headers
+  - 移除 pytestmark skip
+- v1.1: Skip all tests due to test isolation issues
 """
 
 import pytest
-
-# Skip all tests due to test isolation issues
-pytestmark = pytest.mark.skip(reason="TEST-ISOLATION: Creates conflicting fixtures, corrupts database state")
 from decimal import Decimal
 from datetime import date
 from uuid import uuid4
@@ -20,74 +19,12 @@ from uuid import uuid4
 from backend.models import Project, User
 
 
-def get_password_hash(password: str) -> str:
-    """简化的测试密码哈希"""
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest()
-
-
-@pytest.fixture
-def admin_user(db_session):
-    """创建管理员用户"""
-    user = User(
-        id=uuid4(),
-        email="admin@example.com",
-        username="adminuser",
-        hashed_password=get_password_hash("admin123"),
-        role="admin",
-        is_active=True,
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
-
-
-@pytest.fixture
-def test_project(db_session, admin_user):
-    """创建测试项目"""
-    # 使用 SQL 直接插入，因为 SQLite autoincrement 有问题
-    from sqlalchemy import text
-    result = db_session.execute(
-        text("""
-            INSERT INTO projects (project_name, project_code, client_name, status, created_by)
-            VALUES (:name, :code, :client, :status, :creator)
-        """),
-        {
-            "name": "Test Project",
-            "code": "TEST001",
-            "client": "Test Client",
-            "status": "active",
-            "creator": str(admin_user.id)
-        }
-    )
-    db_session.commit()
-
-    # 查询刚创建的项目
-    project = db_session.query(Project).filter(
-        Project.project_code == "TEST001"
-    ).first()
-    return project
-
-
-@pytest.fixture
-def auth_headers(admin_user):
-    """创建认证头"""
-    from backend.core.security import jwt_manager
-    token = jwt_manager.create_access_token({
-        "sub": str(admin_user.id),
-        "email": admin_user.email,
-        "role": admin_user.role,
-    })
-    return {"Authorization": f"Bearer {token}"}
-
-
 class TestProjectsAPI:
     """项目管理 API 测试"""
 
-    def test_list_projects(self, client, test_project, auth_headers):
+    def test_list_projects(self, client, test_project, admin_headers):
         """测试获取项目列表"""
-        response = client.get("/api/v1/projects", headers=auth_headers)
+        response = client.get("/api/v1/projects", headers=admin_headers)
 
         assert response.status_code == 200
 
@@ -98,11 +35,11 @@ class TestProjectsAPI:
         if "meta" in data["data"]:
             assert "pagination" in data["data"]["meta"]
 
-    def test_get_project_detail(self, client, test_project, auth_headers):
+    def test_get_project_detail(self, client, test_project, admin_headers):
         """测试获取项目详情"""
         response = client.get(
             f"/api/v1/projects/{test_project.id}",
-            headers=auth_headers
+            headers=admin_headers
         )
 
         # 可能返回 200 或因为字段不匹配而返回错误
@@ -131,11 +68,11 @@ class TestProjectsAPI:
         # 应该返回 401 或 403（未认证）
         assert response.status_code in [401, 403]
 
-    def test_update_project(self, client, test_project, auth_headers):
+    def test_update_project(self, client, test_project, admin_headers):
         """测试更新项目"""
         response = client.put(
             f"/api/v1/projects/{test_project.id}",
-            headers=auth_headers,
+            headers=admin_headers,
             json={
                 "status": "active",
             }
@@ -147,11 +84,11 @@ class TestProjectsAPI:
         data = response.json()
         assert "success" in data
 
-    def test_delete_project(self, client, test_project, auth_headers):
+    def test_delete_project(self, client, test_project, admin_headers):
         """测试删除项目"""
         response = client.delete(
             f"/api/v1/projects/{test_project.id}",
-            headers=auth_headers
+            headers=admin_headers
         )
 
         # 可能成功（204）或失败
@@ -161,15 +98,15 @@ class TestProjectsAPI:
             # 验证项目已被删除
             response = client.get(
                 f"/api/v1/projects/{test_project.id}",
-                headers=auth_headers
+                headers=admin_headers
             )
             assert response.status_code == 404
 
-    def test_get_nonexistent_project(self, client, auth_headers):
+    def test_get_nonexistent_project(self, client, admin_headers):
         """测试获取不存在的项目"""
         response = client.get(
             "/api/v1/projects/99999",
-            headers=auth_headers
+            headers=admin_headers
         )
 
         assert response.status_code == 404

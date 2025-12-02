@@ -4,7 +4,7 @@ Version: 1.0
 Author: Claude协作开发
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from enum import Enum
@@ -41,9 +41,10 @@ class ReconciliationBatchStatus(str, Enum):
 
 
 class AdjustmentType(str, Enum):
-    """调整类型枚举"""
-    SPEND_ADJUSTMENT = "spend_adjustment"
-    DATE_ADJUSTMENT = "date_adjustment"
+    """调整类型枚举 - 对齐 DATA_SCHEMA.md v5.2"""
+    INCREASE = "increase"    # 增加调整
+    DECREASE = "decrease"    # 减少调整
+    WRITEOFF = "writeoff"    # 核销
 
 
 class AdjustmentReason(str, Enum):
@@ -120,14 +121,15 @@ class ReconciliationDetailReviewRequest(BaseModel):
 
 
 class ReconciliationAdjustmentCreateRequest(BaseModel):
-    """创建调整记录请求"""
+    """创建调整记录请求 - 对齐 DATA_SCHEMA.md v5.2"""
     model_config = ConfigDict(from_attributes=True)
 
-    adjustment_type: str = Field(..., pattern="^(spend_adjustment|date_adjustment)$", description="调整类型")
-    original_amount: Decimal = Field(..., decimal_places=2, description="原始金额")
+    adjustment_type: str = Field(..., pattern="^(increase|decrease|writeoff)$", description="调整类型")
     adjustment_amount: Decimal = Field(..., decimal_places=2, description="调整金额")
     adjustment_reason: str = Field(..., max_length=100, description="调整原因")
-    detailed_reason: str = Field(..., min_length=1, max_length=1000, description="详细原因说明")
+    detailed_reason: Optional[str] = Field(None, max_length=1000, description="详细原因说明")
+    # 以下字段为向后兼容保留，但不再是必填
+    original_amount: Optional[Decimal] = Field(None, decimal_places=2, description="原始金额（可选）")
     evidence_url: Optional[str] = Field(None, max_length=500, description="证据文件URL")
     notes: Optional[str] = Field(None, max_length=1000, description="备注")
 
@@ -138,8 +140,6 @@ class ReconciliationAdjustmentCreateRequest(BaseModel):
         if v.as_tuple().exponent < -2:
             raise ValueError('调整金额最多保留2位小数')
         return v
-
-    # adjusted_amount 字段验证器已移除，因为该字段在类中不存在
 
 
 class ReconciliationReportGenerateRequest(BaseModel):

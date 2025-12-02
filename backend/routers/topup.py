@@ -17,7 +17,7 @@ from backend.core.response import (
     error_response,
     StandardResponse
 )
-from backend.core.error_codes import SystemErrorCodes
+from backend.core.error_codes import SystemErrorCodes, BusinessErrorCodes
 from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
@@ -46,6 +46,43 @@ router = APIRouter(prefix="/topups", tags=["topups"])
 def get_topup_service(db: Session = Depends(get_db)) -> TopupService:
     """获取充值服务实例"""
     return TopupService(db)
+
+
+def _build_topup_request_response(topup_request) -> TopupRequestResponse:
+    """构建充值申请响应，映射模型字段到 schema 字段"""
+    return TopupRequestResponse(
+        id=topup_request.id,
+        request_no=str(topup_request.id),  # 使用 id 作为 request_no
+        ad_account_id=topup_request.ad_account_id,
+        ad_account_name=topup_request.ad_account.account_name or topup_request.ad_account.account_code if topup_request.ad_account else "",
+        project_id=topup_request.ad_account.project_id if topup_request.ad_account and topup_request.ad_account.project else None,
+        project_name=topup_request.ad_account.project.name if topup_request.ad_account and topup_request.ad_account.project else "",
+        requested_amount=topup_request.amount,
+        actual_amount=None,
+        currency="CNY",  # 默认货币
+        urgency_level="normal",  # 默认紧急程度
+        reason=topup_request.request_notes or "",
+        notes=topup_request.request_notes or "",
+        status=topup_request.status,
+        requested_by=0,  # Schema 期望 int，但模型使用 UUID，暂时使用 0 作为占位符
+        requested_by_name=topup_request.requester.username if topup_request.requester else "",
+        data_reviewed_by=0 if topup_request.reviewed_by else None,
+        data_reviewed_by_name=topup_request.reviewer.username if topup_request.reviewer else None,
+        data_reviewed_at=topup_request.reviewed_at,
+        data_review_notes=None,
+        finance_approved_by=0 if topup_request.approved_by else None,
+        finance_approved_by_name=topup_request.approver.username if topup_request.approver else None,
+        finance_approved_at=topup_request.approved_at,
+        finance_approve_notes=None,
+        paid_at=topup_request.paid_at,
+        completed_at=topup_request.completed_at,
+        expected_date=None,
+        payment_method=None,
+        transaction_id=None,
+        receipt_url=None,
+        created_at=topup_request.created_at,
+        updated_at=topup_request.updated_at
+    )
 
 
 @router.get(
@@ -83,7 +120,7 @@ async def list_topup_requests(
 
         # 转换为响应格式
         request_responses = [
-            TopupRequestResponse.model_validate(req)
+            _build_topup_request_response(req)
             for req in requests
         ]
 
@@ -134,7 +171,7 @@ async def create_topup_request(
             user_agent=user_agent
         )
 
-        response = TopupRequestResponse.model_validate(topup_request)
+        response = _build_topup_request_response(topup_request)
 
         return success_response(
             data=response,
@@ -169,13 +206,13 @@ async def get_topup_request(
     """获取充值申请详情API"""
     try:
         request = service.get_request_by_id(request_id, current_user)
-        response = TopupRequestResponse.model_validate(request)
+        response = _build_topup_request_response(request)
 
         return success_response(data=response)
 
     except ResourceNotFoundError as e:
         return error_response(
-            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -212,7 +249,7 @@ async def data_review_request(
             user_agent=user_agent
         )
 
-        response = TopupRequestResponse.model_validate(request)
+        response = _build_topup_request_response(request)
 
         return success_response(
             data=response,
@@ -221,7 +258,7 @@ async def data_review_request(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -258,7 +295,7 @@ async def finance_approve_request(
             user_agent=user_agent
         )
 
-        response = TopupRequestResponse.model_validate(request)
+        response = _build_topup_request_response(request)
 
         return success_response(
             data=response,
@@ -267,7 +304,7 @@ async def finance_approve_request(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -304,7 +341,7 @@ async def mark_as_paid(
             user_agent=user_agent
         )
 
-        response = TopupRequestResponse.model_validate(request)
+        response = _build_topup_request_response(request)
 
         return success_response(
             data=response,
@@ -313,7 +350,7 @@ async def mark_as_paid(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -350,7 +387,7 @@ async def upload_receipt(
             user_agent=user_agent
         )
 
-        response = TopupRequestResponse.model_validate(request)
+        response = _build_topup_request_response(request)
 
         return success_response(
             data=response,
@@ -359,7 +396,7 @@ async def upload_receipt(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -396,7 +433,7 @@ async def get_approval_logs(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -481,7 +518,7 @@ async def get_account_balance(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code=SystemErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )

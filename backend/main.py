@@ -2,14 +2,15 @@ from datetime import datetime, timezone
 from typing import Dict, Tuple
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from backend.core.config import get_settings
 from backend.core.db import get_engine
-from backend.core.response import fail, ok, success_response, StandardResponse
-from backend.core.error_codes import SystemErrorCodes
+from backend.core.response import fail, ok, success_response, error_response, StandardResponse
+from backend.core.error_codes import SystemErrorCodes, ValidationErrorCodes
 # 导入核心路由模块
 from backend.routers import (
     health,
@@ -22,6 +23,7 @@ from backend.routers import (
     daily_reports,  # ✅ 日报管理API (已修复)
     suppliers,  # ✅ 供应商管理API (full_pipeline v2)
     settlements,  # ✅ 结算管理API (full_pipeline v2)
+    transfers,  # ✅ 死号余额迁移API (新增)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # reports,  # ✅ 报表生成API (需要Reconciliation模型修复)
     # import_jobs,  # ✅ 数据导入API (缺失ImportJob模型)
@@ -60,6 +62,7 @@ app.include_router(topup.router, prefix=API_V1_PREFIX)  # 充值管理
 app.include_router(daily_reports.router, prefix=API_V1_PREFIX)  # 日报管理 ✅ 新启用
 app.include_router(suppliers.router, prefix=API_V1_PREFIX)  # 供应商管理 ✅ full_pipeline v2
 app.include_router(settlements.router, prefix=API_V1_PREFIX)  # 结算管理 ✅ full_pipeline v2
+app.include_router(transfers.router, prefix=API_V1_PREFIX)  # 死号余额迁移 ✅ 新增
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表生成 ✅ 新启用
 # app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 新启用
@@ -134,6 +137,39 @@ def _extract_error(detail: object, status_code: int) -> Tuple[str, str]:
 async def handle_http_exception(_: Request, exc: HTTPException) -> JSONResponse:
     code, message = _extract_error(exc.detail, exc.status_code)
     return fail(code=code, message=message, status_code=exc.status_code)
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_validation_exception(_: Request, exc: RequestValidationError) -> JSONResponse:
+    """
+    处理 Pydantic 验证错误，返回符合 SoT 约定的 StandardResponse 格式
+
+    SoT Ref: ERROR_CODES_SOT.md v2.1 第 1.3 节 (Envelope 格式)
+    错误码: VALIDATION_001 (必填字段缺失) / VALIDATION_002 (格式无效)
+    """
+    errors = exc.errors()
+    if errors:
+        first_error = errors[0]
+        error_type = first_error.get("type", "")
+        error_msg = first_error.get("msg", "参数验证失败")
+        loc = first_error.get("loc", [])
+        field_name = ".".join(str(x) for x in loc[1:]) if len(loc) > 1 else str(loc[0]) if loc else "unknown"
+
+        if "missing" in error_type or "required" in error_type:
+            code = ValidationErrorCodes.REQUIRED_FIELD_MISSING.code
+            message = f"必填字段缺失: {field_name}"
+        else:
+            code = ValidationErrorCodes.INVALID_FORMAT.code
+            message = f"格式无效: {field_name} - {error_msg}"
+    else:
+        code = ValidationErrorCodes.INVALID_FORMAT.code
+        message = "参数验证失败"
+
+    return error_response(
+        code=code,
+        message=message,
+        status_code=422
+    )
 
 
 @app.exception_handler(Exception)

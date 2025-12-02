@@ -18,13 +18,21 @@ from sqlalchemy.sql import func
 from backend.models.base import Base
 
 # 从 finance 模块导入正式的模型类（向后兼容）
-from backend.models.finance.reconciliation import (
-    ReconciliationBatch,
-    ReconciliationDetail,
-)
+try:
+    from backend.models.finance.reconciliation import (
+        ReconciliationBatch,
+        ReconciliationDetail,
+        ReconciliationAdjustment,
+    )
+except ImportError:
+    # 如果导入失败，使用占位符
+    from backend.models.finance.reconciliation import (
+        ReconciliationBatch,
+        ReconciliationDetail,
+    )
+    ReconciliationAdjustment = None
 
 # 占位符类，用于向后兼容
-ReconciliationAdjustment = None  # TODO: 待实现
 ReconciliationReport = None      # TODO: 待实现
 
 
@@ -301,9 +309,12 @@ class ReconciliationDetail(Base):
     )
 
 
-class ReconciliationAdjustment(Base):
-    """对账调整记录表"""
-    __tablename__ = "reconciliation_adjustments"
+# ⚠️ DEPRECATED: ReconciliationAdjustment 已在 backend/models/finance/reconciliation.py 中定义
+# 保留仅用于参考，已禁用表定义以避免重复注册
+class _ReconciliationAdjustmentLegacy(Base):
+    """对账调整记录表（已废弃）"""
+    # __tablename__ = "reconciliation_adjustments"  # 已注释掉，避免重复定义表
+    __abstract__ = True  # 标记为抽象类，不会创建表
 
     id = Column(Integer, primary_key=True, index=True)
     detail_id = Column(
@@ -396,8 +407,12 @@ class ReconciliationAdjustment(Base):
     notes = Column(Text, nullable=True, comment="备注")
 
     # 关联关系
-    detail = relationship("ReconciliationDetail", back_populates="adjustments")
-    batch = relationship("ReconciliationBatch", back_populates="adjustments")
+    # 注意：暂时注释 back_populates，因为 ReconciliationDetail 和 ReconciliationBatch 在 finance.reconciliation 中
+    # 而 ReconciliationAdjustment 在此文件中，关系可能无法正确建立
+    # detail = relationship("ReconciliationDetail", back_populates="adjustments")
+    # batch = relationship("ReconciliationBatch", back_populates="adjustments")
+    detail = relationship("ReconciliationDetail", foreign_keys=[detail_id])
+    batch = relationship("ReconciliationBatch", foreign_keys=[batch_id])
     approver = relationship("User", foreign_keys=[approved_by])
     finance_approver = relationship("User", foreign_keys=[finance_approved_by])
 
@@ -462,7 +477,9 @@ class ReconciliationReport(Base):
     )
 
     # 关联关系
-    batch = relationship("ReconciliationBatch", back_populates="reports")
+    # 注意：暂时注释 back_populates，因为 ReconciliationBatch 在 finance.reconciliation 中
+    # batch = relationship("ReconciliationBatch", back_populates="reports")
+    batch = relationship("ReconciliationBatch", foreign_keys=[batch_id])
     generator = relationship("User")
 
     # 约束

@@ -153,12 +153,58 @@ def success_response(data: Any = None, message: str = "操作成功", code: str 
 
 def error_response(message: str, code: str = "INTERNAL_ERROR", status_code: int = 400, **kwargs) -> JSONResponse:
     """错误响应函数"""
-    return StandardResponse.error(message=message, code=code, status_code=status_code, **kwargs)
+    # 构建符合测试期望的错误响应格式：{"success": False, "error": {"code": "...", "message": "..."}}
+    content = {
+        "success": False,
+        "data": None,
+        "error": {
+            "code": code,
+            "message": message
+        },
+        "request_id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    if kwargs:
+        content.update(kwargs)
+    
+    return JSONResponse(
+        status_code=status_code,
+        content=content
+    )
 
 
-def paginated_response(data: Any, page: int, page_size: int, total: int, **kwargs) -> JSONResponse:
+def paginated_response(data: Any = None, items: Any = None, page: int = 1, page_size: int = 20, total: int = 0, **kwargs) -> JSONResponse:
     """分页响应函数"""
-    return StandardResponse.paginated(data=data, page=page, page_size=page_size, total=total, **kwargs)
+    # 支持 items 和 data 两种参数名（向后兼容）
+    actual_data = items if items is not None else data
+    
+    # 直接实现分页逻辑，避免 Pydantic V2 的 @staticmethod 问题
+    total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+    pagination = {
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1
+    }
+    
+    # 直接构建响应内容，不依赖 StandardResponse.success()
+    content = {
+        "success": True,
+        "data": jsonable_encoder(actual_data),
+        "message": "获取成功",
+        "code": "OK",
+        "request_id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow().isoformat(),
+        "meta": {"pagination": pagination}
+    }
+    
+    return JSONResponse(
+        status_code=200,
+        content=content
+    )
 
 
 # 新增的Pydantic模型类，用于API响应

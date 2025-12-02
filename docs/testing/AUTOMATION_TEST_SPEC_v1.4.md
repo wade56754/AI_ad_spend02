@@ -1,9 +1,10 @@
 # AI_ad_spend02 自动化测试规范
 
-> **版本**: v1.4
+> **版本**: v1.5
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-01
+> **last_reviewed**: 2025-12-02
+> **last_updated**: 2025-12-02
 > **baseline**: SoT Freeze v2.6, Dev-Guides Freeze vFinal, ASDD 6-Layer v1.0
 
 ---
@@ -17,6 +18,15 @@
 | **SoT 定位** | Layer 3 Dev-Guides 下位规范 |
 | **Owner** | Testing SoT Owner（后端技术负责人） |
 | **强制级别** | 新增测试 **MUST**；存量测试 **SHOULD** 逐步迁移 |
+
+### v1.5 变更摘要
+
+| 变更项 | 说明 |
+|--------|------|
+| 新增回归测试门槛 | 新增第 11 章「后端回归测试门槛」，定义强制回归测试规则 |
+| 五连拍测试套件 | 明确回归测试套件包含 5 个核心模块（Daily Reports, Trend Risk, Ledger, Ad Accounts, Topup） |
+| CI/CD 强制规则 | 规定 GitHub Actions Backend Regression Tests workflow 必须通过，否则禁止合并 |
+| 违规处理流程 | 明确回归测试失败的违规处理流程和例外情况 |
 
 ### v1.4 变更摘要
 
@@ -1988,7 +1998,89 @@ pytest --strict-markers -m "unknown_marker" 2>&1 | grep -q "Unknown pytest.mark"
 
 ---
 
-## 11. 版本演进路线
+## 11. 后端回归测试门槛 (Backend Regression Gate)
+
+### 11.1 强制回归测试规则
+
+**任何修改以下范围的变更，MUST 在合并前通过回归测试套件**：
+
+| 变更范围 | 触发条件 | 验证命令 |
+|---------|---------|---------|
+| `backend/services/*` | 修改任何 service 文件 | `python run_tests.py --type regression` |
+| `backend/routers/*` | 修改任何 router 文件 | `python run_tests.py --type regression` |
+| `docs/2.sot/*` | 修改任何 SoT 文档 | `python run_tests.py --type regression` |
+| `.claude/skills/ai-ad-api-automation-test/*` | 修改测试自动化 skill | `python run_tests.py --type regression` |
+
+### 11.2 回归测试套件定义
+
+**回归测试套件（Regression Test Suite）**：见 `backend/tests/REGRESSION_TEST_SUITE.md`
+
+**五连拍测试套件**：
+1. **Daily Reports API** - `backend/tests/api/test_daily_report_flow_generated.py` (33+ 测试用例)
+2. **Trend Risk API** - `backend/tests/api/test_trend_risk_flow_generated.py` (17 测试用例)
+3. **Ledger** - `backend/tests/ledger/` (37+ 测试用例)
+4. **Ad Accounts** - `backend/tests/ad_accounts/` (51+ 测试用例)
+5. **Topup API** - `backend/tests/test_topup_api.py` (22+ 测试用例)
+
+**总计**: 177+ 测试用例，覆盖核心业务模块的 API 流程。
+
+### 11.3 CI/CD 强制规则
+
+**GitHub Actions 规则**：
+- `.github/workflows/backend-regression.yml` workflow **MUST** 通过
+- 任何 PR 如果修改了上述范围，Backend Regression Tests job **MUST** 显示 ✅ 通过
+- 如果回归测试失败，**禁止合并**（block merge）
+
+### 11.4 本地验证命令
+
+```bash
+# 方式 1: 使用 run_tests.py（推荐）
+python run_tests.py --type regression
+
+# 方式 2: 使用批处理脚本（Windows）
+run_regression_tests.bat
+
+# 方式 3: 使用 Shell 脚本（Linux/macOS）
+./run_regression_tests.sh
+
+# 方式 4: 手动执行（五连拍）
+python -m pytest backend/tests/api/test_daily_report_flow_generated.py -q
+python -m pytest backend/tests/api/test_trend_risk_flow_generated.py -q
+python -m pytest backend/tests/ledger -q
+python -m pytest backend/tests/ad_accounts -q
+python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
+```
+
+### 11.5 违规处理
+
+**如果 PR 修改了上述范围但未通过回归测试**：
+1. ❌ **CI 自动阻止合并**（GitHub Actions 失败）
+2. 🔴 **Reviewer 必须拒绝 PR**（在 PR 评论中标注 "Regression tests failed"）
+3. 📝 **开发者必须修复**（修复代码或测试，重新提交）
+
+**例外情况**（需明确说明）：
+- 如果回归测试失败是因为测试本身的问题（而非代码问题），需在 PR 中说明并附上修复测试的计划
+- 如果修改是纯文档更新（不涉及业务逻辑），可申请豁免（需 Reviewer 批准）
+
+### 11.6 测试覆盖模块详情
+
+| 模块 | 测试文件 | 测试用例数 | 覆盖场景 |
+|------|---------|-----------|---------|
+| Daily Reports | `test_daily_report_flow_generated.py` | 33+ | Happy Path, Validation, Permissions, Error Codes, State Machine (8-state) |
+| Trend Risk | `test_trend_risk_flow_generated.py` | 17 | Happy Path, Validation, Permissions, Error Codes (TREND_*), State Machine (trend_pending → trend_flagged → trend_resolved) |
+| Ledger | `backend/tests/ledger/` | 37+ | Service CRUD, Invariants (LEDGER_SOT.md) |
+| Ad Accounts | `backend/tests/ad_accounts/` | 51+ | API CRUD, Status Updates, Permissions |
+| Topup | `test_topup_api.py` | 22+ | API Flow, Permissions, State Machine (7-state) |
+
+**SoT 引用**：
+- STATE_MACHINE.md v2.6
+- API_SOT.md v9.0
+- ERROR_CODES_SOT.md v2.1
+- LEDGER_SOT.md v1.1
+
+---
+
+## 12. 版本演进路线
 
 | 版本 | 重点 | 状态 |
 |------|------|------|
@@ -1996,8 +2088,9 @@ pytest --strict-markers -m "unknown_marker" 2>&1 | grep -q "Unknown pytest.mark"
 | **v1.1** | 结构调整，增加 L1/L2 说明 | Superseded |
 | **v1.2** | 结构重组，增强可执行性，补充 Agent 协作指南 | Superseded |
 | **v1.3** | RFC 2119 规范化、SoT 路径精确化、示范测试用例、CI/CD 完整配置 | Superseded |
-| **v1.4** | 补全 API_SOT SoT 依赖、显式记录外部 Boilerplate 来源、修正示例代码 | **Current** |
-| v1.5 | 引入 UI 自动化（L3），绑定 Playwright 框架 | Planned |
+| **v1.4** | 补全 API_SOT SoT 依赖、显式记录外部 Boilerplate 来源、修正示例代码 | Superseded |
+| **v1.5** | 新增后端回归测试门槛（Backend Regression Gate），强制回归测试规则，CI/CD 集成 | **Current** |
+| v1.6 | 引入 UI 自动化（L3），绑定 Playwright 框架 | Planned |
 | v2.0 | 测试体系纳入自动化 Agent 流水线 | Future |
 
 ---

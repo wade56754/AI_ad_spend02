@@ -1,10 +1,10 @@
 # AI 广告代投系统 - 项目规则总纲 (Project Constitution)
 
-> **文档版本**: v3.3 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0 + OpenSpec v1.0)
+> **文档版本**: v3.4 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0 + OpenSpec v1.0)
 > **文档类型**: Claude/SuperClaude 的"世界观" - SoT 体系的裁判规则
 > **适用范围**: 所有开发/重构/代码生成工作
 > **规范级别**: 🔴 强制执行 (CI/CD 验证)
-> **生效日期**: 2025-12-01
+> **生效日期**: 2025-12-02
 > **维护责任**: AI Architecture Team
 > **Freeze 基准**:
 >   - FREEZE_MANIFEST_v1.0.md (Overview Layer Freeze v1.0)
@@ -766,6 +766,70 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
 
 ---
 
+## 🧪 十三、后端回归测试门槛 (Backend Regression Gate)
+
+### 强制回归测试规则
+
+**任何修改以下范围的变更，MUST 在合并前通过回归测试套件**：
+
+| 变更范围 | 触发条件 | 验证命令 |
+|---------|---------|---------|
+| `backend/services/*` | 修改任何 service 文件 | `python run_tests.py --type regression` |
+| `backend/routers/*` | 修改任何 router 文件 | `python run_tests.py --type regression` |
+| `docs/2.sot/*` | 修改任何 SoT 文档 | `python run_tests.py --type regression` |
+| `.claude/skills/ai-ad-api-automation-test/*` | 修改测试自动化 skill | `python run_tests.py --type regression` |
+
+### 回归测试套件定义
+
+**回归测试套件（Regression Test Suite）**：见 `backend/tests/REGRESSION_TEST_SUITE.md`
+
+**五连拍测试套件**：
+1. Daily Reports API (`test_daily_report_flow_generated.py`)
+2. Trend Risk API (`test_trend_risk_flow_generated.py`)
+3. Ledger (`backend/tests/ledger/`)
+4. Ad Accounts (`backend/tests/ad_accounts/`)
+5. Topup API (`test_topup_api.py`)
+
+### CI/CD 强制规则
+
+**GitHub Actions 规则**：
+- `.github/workflows/backend-regression.yml` workflow **MUST** 通过
+- 任何 PR 如果修改了上述范围，Backend Regression Tests job **MUST** 显示 ✅ 通过
+- 如果回归测试失败，**禁止合并**（block merge）
+
+### 本地验证命令
+
+```bash
+# 方式 1: 使用 run_tests.py
+python run_tests.py --type regression
+
+# 方式 2: 使用批处理脚本（Windows）
+run_regression_tests.bat
+
+# 方式 3: 使用 Shell 脚本（Linux/macOS）
+./run_regression_tests.sh
+
+# 方式 4: 手动执行（五连拍）
+python -m pytest backend/tests/api/test_daily_report_flow_generated.py -q
+python -m pytest backend/tests/api/test_trend_risk_flow_generated.py -q
+python -m pytest backend/tests/ledger -q
+python -m pytest backend/tests/ad_accounts -q
+python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
+```
+
+### 违规处理
+
+**如果 PR 修改了上述范围但未通过回归测试**：
+1. ❌ **CI 自动阻止合并**（GitHub Actions 失败）
+2. 🔴 **Reviewer 必须拒绝 PR**（在 PR 评论中标注 "Regression tests failed"）
+3. 📝 **开发者必须修复**（修复代码或测试，重新提交）
+
+**例外情况**（需明确说明）：
+- 如果回归测试失败是因为测试本身的问题（而非代码问题），需在 PR 中说明并附上修复测试的计划
+- 如果修改是纯文档更新（不涉及业务逻辑），可申请豁免（需 Reviewer 批准）
+
+---
+
 ## 🔄 十四、OpenSpec 集成规则
 
 ### OpenSpec 唯一变更通道
@@ -848,6 +912,41 @@ feat(api): add transfer endpoint [add-transfer-v2]
 docs(sot): update STATE_MACHINE for 9-state [update-state-machine-v3]
 ```
 
+### OpenSpec Change 回归测试要求
+
+**任意 OpenSpec change，只要涉及以下模块，MUST 在合并前附带回归测试结果**：
+
+| 模块 | 相关能力 | 回归测试要求 |
+|------|---------|------------|
+| DailyReports | `daily_reports` capability | ✅ 必须通过 `test_daily_report_flow_generated.py` |
+| TrendRisk | `trend_risk` / `daily_reports.trend_*` | ✅ 必须通过 `test_trend_risk_flow_generated.py` |
+| Ledger | `ledger` capability | ✅ 必须通过 `backend/tests/ledger/` |
+| AdAccounts | `ad_accounts` capability | ✅ 必须通过 `backend/tests/ad_accounts/` |
+| Topups | `topup_requests` capability | ✅ 必须通过 `test_topup_api.py` |
+
+**合并前检查清单**：
+- [ ] 回归测试全部通过（本地或 CI）
+- [ ] 在 PR 描述中附上回归测试结果截图/日志
+- [ ] 在 PR 描述中注明 commit id（用于追溯）
+- [ ] 如果回归测试失败，说明原因并附上修复计划
+
+**示例 PR 描述格式**：
+```markdown
+## Regression Test Results
+
+✅ All regression tests passed
+
+- Daily Reports API: 33 passed
+- Trend Risk API: 17 passed
+- Ledger: 54 passed (3 skipped)
+- Ad Accounts: 51 passed
+- Topup API: 22 passed
+
+**Commit**: `ac2335c`
+**Test Command**: `python run_tests.py --type regression`
+**CI Status**: ✅ [Backend Regression Tests](https://github.com/.../actions/runs/...)
+```
+
 ### OpenSpec 与 ASDD 映射
 
 | OpenSpec 概念 | ASDD 等价物 |
@@ -879,13 +978,14 @@ docs(sot): update STATE_MACHINE for 9-state [update-state-machine-v3]
 
 ---
 
-**规则总纲版本**: v3.3 (基于 ASDD 4层 Freeze: Overview v1.0 + SoT v2.6 + Dev-Guides v2.1 + Architecture v1.0 + OpenSpec v1.0)
-**生效日期**: 2025-12-01
-**最后更新**: 2025-12-01
+**规则总纲版本**: v3.4 (基于 ASDD 4层 Freeze: Overview v1.0 + SoT v2.6 + Dev-Guides v2.1 + Architecture v1.0 + OpenSpec v1.0)
+**生效日期**: 2025-12-02
+**最后更新**: 2025-12-02
 **下次审查**: Freeze Manifest 变更时或每季度
 **维护责任人**: AI Architecture Team
 
 **版本变更历史**:
+- v3.4 (2025-12-02): 新增第十三章「后端回归测试门槛」，强制回归测试规则，CI/CD 集成要求，OpenSpec change 回归测试要求
 - v3.3 (2025-12-01): 新增第十四章「OpenSpec 集成规则」，确立 OpenSpec 为唯一变更通道，添加 Claude/SuperClaude OpenSpec 检查清单
 - v3.2 (2025-11-27): 新增 ASDD 4层架构合规性章节，更新 Freeze 基准为 4层 Freeze Manifests，更新文档路径索引为 4层架构
 - v3.1 (2025-11-25): 基于 ASDD Freeze v1.0 + SoT Freeze v1.0

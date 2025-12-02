@@ -87,6 +87,29 @@ RECONCILIATION_TRANSITIONS: Dict[str, Set[str]] = {
 
 RECONCILIATION_TERMINAL_STATES: Set[str] = {"closed"}
 
+# ============================================================================
+# Transfer 状态机定义
+# SoT Ref: STATE_MACHINE.md v2.6 第 12 章
+# ============================================================================
+
+TRANSFER_STATES: Set[str] = {
+    "draft",
+    "pending_approval",
+    "approved",
+    "rejected",
+    "completed",
+}
+
+TRANSFER_TRANSITIONS: Dict[str, Set[str]] = {
+    "draft": {"pending_approval", "rejected"},
+    "pending_approval": {"approved", "rejected"},
+    "approved": {"completed"},
+    "rejected": set(),  # 终态
+    "completed": set(),  # 终态
+}
+
+TRANSFER_TERMINAL_STATES: Set[str] = {"rejected", "completed"}
+
 
 # ============================================================================
 # 断言函数
@@ -215,6 +238,7 @@ def assert_state_transition_valid(
         "daily_report": DAILY_REPORT_TRANSITIONS,
         "topup": TOPUP_TRANSITIONS,
         "reconciliation": RECONCILIATION_TRANSITIONS,
+        "transfer_requests": TRANSFER_TRANSITIONS,
     }
 
     if entity_type not in transitions_map:

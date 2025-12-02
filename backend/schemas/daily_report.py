@@ -14,51 +14,44 @@ from backend.schemas.response import PaginationMeta, DateRange
 
 
 class DailyReportCreateRequest(BaseModel):
-    """日报创建请求"""
+    """
+    日报创建请求 - 对齐 API_SOT.md v9.0 第 9.2 节
+
+    字段命名遵循 SoT 三数据流规范:
+    - conversions_raw / raw_spend: raw 数据流（投手提交）
+    - real_spend: real 数据流（运营录入）
+    - conversions_final: final 数据流（运营确认）
+    """
     model_config = ConfigDict(from_attributes=True)
 
-    report_date: date = Field(..., description="报表日期")
+    # 必填字段
+    report_date: date = Field(..., description="报表日期（≤今天）")
     ad_account_id: int = Field(..., gt=0, description="广告账户ID")
+    conversions_raw: int = Field(..., ge=0, description="原始粉数（raw数据流）")
+    raw_spend: Decimal = Field(..., ge=0, description="原始消耗（raw数据流）DECIMAL(15,2)")
+
+    # 可选字段
     campaign_name: Optional[str] = Field(None, max_length=200, description="广告系列名称")
     ad_group_name: Optional[str] = Field(None, max_length=200, description="广告组名称")
     ad_creative_name: Optional[str] = Field(None, max_length=200, description="广告创意名称")
-    impressions: int = Field(0, ge=0, description="展示次数")
+    impressions: int = Field(0, ge=0, description="展示次数/曝光量")
     clicks: int = Field(0, ge=0, description="点击次数")
-    spend: Decimal = Field(0, ge=0, decimal_places=2, description="消耗金额")
-    conversions: int = Field(0, ge=0, description="转化次数")
-    new_follows: int = Field(0, ge=0, description="新增粉丝数")
-    cpa: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="CPA")
-    roas: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="ROAS")
     notes: Optional[str] = Field(None, max_length=1000, description="备注说明")
 
-    @field_validator('report_date')
-    def validate_report_date(cls, v):
-        """验证报表日期"""
-        from datetime import timedelta
-        if v > date.today():
-            raise ValueError('报表日期不能是未来日期')
-        # 允许修改过去30天的数据
-        if v < date.today() - timedelta(days=30):
-            raise ValueError('报表日期不能超过30天前')
-        return v
+    # NOTE: 报表日期验证（BIZ_201）移至 service 层，以返回正确的 HTTP 状态码和错误码
+    # Pydantic 验证会返回 422，而业务规则要求返回 400 + BIZ_201
 
     @field_validator('clicks')
     def validate_clicks_vs_impressions(cls, v, info):
         """验证点击次数不能大于展示次数"""
-        if 'impressions' in info.data and v > info.data['impressions']:
-            raise ValueError('点击次数不能大于展示次数')
-        return v
-
-    @field_validator('conversions')
-    def validate_conversions_vs_clicks(cls, v, info):
-        """验证转化次数不能大于点击次数"""
-        if 'clicks' in info.data and v > info.data['clicks']:
-            raise ValueError('转化次数不能大于点击次数')
+        if 'impressions' in info.data and info.data['impressions'] is not None:
+            if v > info.data['impressions']:
+                raise ValueError('点击次数不能大于展示次数')
         return v
 
 
 class DailyReportUpdateRequest(BaseModel):
-    """日报更新请求"""
+    """日报更新请求 - 仅允许更新 raw 数据流字段"""
     model_config = ConfigDict(from_attributes=True)
 
     campaign_name: Optional[str] = Field(None, max_length=200)
@@ -66,11 +59,8 @@ class DailyReportUpdateRequest(BaseModel):
     ad_creative_name: Optional[str] = Field(None, max_length=200)
     impressions: Optional[int] = Field(None, ge=0)
     clicks: Optional[int] = Field(None, ge=0)
-    spend: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    conversions: Optional[int] = Field(None, ge=0)
-    new_follows: Optional[int] = Field(None, ge=0)
-    cpa: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    roas: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    conversions_raw: Optional[int] = Field(None, ge=0, description="原始粉数（raw数据流）")
+    raw_spend: Optional[Decimal] = Field(None, ge=0, description="原始消耗（raw数据流）")
     notes: Optional[str] = Field(None, max_length=1000)
 
     @field_validator('clicks')
@@ -81,13 +71,17 @@ class DailyReportUpdateRequest(BaseModel):
                 raise ValueError('点击次数不能大于展示次数')
         return v
 
-    @field_validator('conversions')
-    def validate_conversions_vs_clicks(cls, v, info):
-        """验证转化次数不能大于点击次数"""
-        if v is not None and 'clicks' in info.data and info.data['clicks'] is not None:
-            if v > info.data['clicks']:
-                raise ValueError('转化次数不能大于点击次数')
-        return v
+
+class RealSpendRequest(BaseModel):
+    """
+    录入 real 消耗请求 - API_SOT.md v9.0 第 9.5 节
+
+    PUT /api/v1/daily-reports/{report_id}/real-spend
+    """
+    model_config = ConfigDict(from_attributes=True)
+
+    real_spend: Decimal = Field(..., ge=0, description="真实消耗（从供应商后台获取）")
+    fee: Decimal = Field(Decimal("0.00"), ge=0, description="手续费（默认0.00）")
 
 
 class DailyReportAuditRequest(BaseModel):
@@ -126,34 +120,61 @@ class DailyReportQueryParams(BaseModel):
 
 
 class DailyReportResponse(BaseModel):
-    """日报响应"""
+    """
+    日报响应 - 对齐 API_SOT.md v9.0 第 9.2 节 Response Schema
+
+    包含三数据流字段:
+    - conversions_raw / raw_spend: raw 数据流
+    - real_spend: real 数据流
+    - conversions_final: final 数据流
+    """
     model_config = ConfigDict(from_attributes=True)
 
+    # 基础字段
     id: int
     report_date: date
     ad_account_id: int
-    ad_account_name: str
-    ad_account_number: str
-    campaign_name: Optional[str]
-    ad_group_name: Optional[str]
-    ad_creative_name: Optional[str]
-    impressions: int
-    clicks: int
-    spend: Decimal
-    conversions: int
-    new_follows: int
-    cpa: Optional[Decimal]
-    roas: Optional[Decimal]
-    status: str  # pending, approved, rejected
-    notes: Optional[str]
-    audit_notes: Optional[str]
-    audit_user_id: Optional[int]
-    audit_user_name: Optional[str]
-    audit_time: Optional[datetime]
-    created_by: int
-    created_by_name: str
-    created_at: datetime
-    updated_at: datetime
+    status: str  # 8状态机状态
+
+    # 聚合字段（可选，JOIN 查询时填充）
+    ad_account_name: Optional[str] = None
+    project_id: Optional[int] = None
+    project_name: Optional[str] = None
+
+    # 广告信息
+    campaign_name: Optional[str] = None
+    ad_group_name: Optional[str] = None
+    ad_creative_name: Optional[str] = None
+
+    # 指标字段
+    impressions: int = 0
+    clicks: int = 0
+
+    # 三数据流字段
+    conversions_raw: int = 0  # raw 数据流 - 原始粉数
+    raw_spend: Decimal = Decimal("0.00")  # raw 数据流 - 原始消耗
+    real_spend: Decimal = Decimal("0.00")  # real 数据流 - 真实消耗
+    fee: Decimal = Decimal("0.00")  # 手续费
+    conversions_final: int = 0  # final 数据流 - 最终粉数
+
+    # 计费字段
+    unit_price: Optional[Decimal] = None
+
+    # 趋势风控字段
+    trend_flag: Optional[str] = "normal"
+    trend_flag_reason: Optional[str] = None
+    trend_resolution_note: Optional[str] = None
+
+    # 备注
+    notes: Optional[str] = None
+
+    # 用户信息
+    created_by: Optional[str] = None  # UUID
+    created_by_name: Optional[str] = None
+
+    # 时间戳
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     @computed_field
     @property
@@ -169,7 +190,7 @@ class DailyReportResponse(BaseModel):
         """计算单次点击成本"""
         if self.clicks == 0:
             return None
-        return self.spend / Decimal(self.clicks)
+        return self.raw_spend / Decimal(self.clicks)
 
     @computed_field
     @property
@@ -177,7 +198,7 @@ class DailyReportResponse(BaseModel):
         """计算转化率"""
         if self.clicks == 0:
             return Decimal('0')
-        return Decimal(self.conversions) / Decimal(self.clicks) * 100
+        return Decimal(self.conversions_raw) / Decimal(self.clicks) * 100
 
 
 class DailyReportListResponse(BaseModel):

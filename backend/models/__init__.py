@@ -32,9 +32,11 @@ from .base import (
     AdAccountStatus,
     DailyReportStatus,
     TopupStatus,
+    TransferRequestStatus,
     LedgerEntryType,
     ReconciliationBatchStatus,
     ReconciliationDetailStatus,
+    ReconciliationAdjustmentType,
     AccountAlertStatus,
     AccountAlertSeverity,
 )
@@ -62,6 +64,7 @@ from .workflow.ad_spend import AdSpendDaily
 
 # 业务流程模块
 from .workflow.topup_request import TopupRequest
+from .workflow.transfer_request import TransferRequest
 
 # 充值相关辅助表（来自 topup.py）
 from .topup import (
@@ -74,6 +77,7 @@ from .finance import (
     LedgerEntry,
     ReconciliationBatch,
     ReconciliationDetail,
+    ReconciliationAdjustment,
     Supplier,
     SupplierStatus,
     PaymentMethod,
@@ -111,9 +115,11 @@ __all__ = [
     'AdAccountStatus',
     'DailyReportStatus',
     'TopupStatus',
+    'TransferRequestStatus',
     'LedgerEntryType',
     'ReconciliationBatchStatus',
     'ReconciliationDetailStatus',
+    'ReconciliationAdjustmentType',
     'AccountAlertStatus',
     'AccountAlertSeverity',
 
@@ -135,11 +141,13 @@ __all__ = [
     'DailyReport',
     'AdSpendDaily',
     'TopupRequest',
+    'TransferRequest',
     'TopupTransaction',
     'TopupApprovalLog',
     'LedgerEntry',
     'ReconciliationBatch',
     'ReconciliationDetail',
+    'ReconciliationAdjustment',
     'Supplier',
     'SupplierStatus',
     'PaymentMethod',

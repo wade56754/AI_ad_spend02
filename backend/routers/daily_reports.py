@@ -58,7 +58,8 @@ from backend.schemas.daily_report import (
     DailyReportExportResponse,
     DailyReportBatchImportResponse,
     DailyReportImportError,
-    DailyReportAuditLogResponse
+    DailyReportAuditLogResponse,
+    RealSpendRequest,
 )
 from backend.services.daily_report_service import DailyReportService
 
@@ -296,6 +297,7 @@ async def list_daily_reports(
             status_code=status.HTTP_400_BAD_REQUEST
         )
     except Exception as e:
+        logger.exception(f"Unexpected error in list_daily_reports: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
@@ -313,10 +315,17 @@ async def list_daily_reports(
 async def create_daily_report(
     request: DailyReportCreateRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["media_buyer", "admin", "data_operator"]))
+    # AUTH_SPEC.md v2.0: 仅 media_buyer 和 admin 可创建日报，data_operator 禁止创建
+    current_user: User = Depends(require_role(["media_buyer", "admin"]))
 ):
     """
     创建日报API
+
+    错误码映射 (ERROR_CODES_SOT v2.1):
+    - BIZ_002: 广告账户不存在 → 404
+    - BIZ_003: 日报已存在（重复） → 409
+    - BIZ_201: 报表日期为未来日期 → 400
+    - AUTH_500: 无权限 → 403
     """
     try:
         # 创建日报
@@ -331,7 +340,22 @@ async def create_daily_report(
             status_code=status.HTTP_201_CREATED
         )
 
-    except (ResourceConflictError, BusinessLogicError) as e:
+    except ResourceConflictError as e:
+        # BIZ_003: 日报已存在 → 409
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_003",
+            message=str(e),
+            status_code=status.HTTP_409_CONFLICT
+        )
+    except ResourceNotFoundError as e:
+        # BIZ_002: 广告账户不存在 → 404
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_002",
+            message=str(e),
+            status_code=status.HTTP_404_NOT_FOUND
+        )
+    except BusinessLogicError as e:
+        # BIZ_201: 报表日期为未来日期 → 400
         return error_response(
             code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
             message=str(e),
@@ -344,6 +368,7 @@ async def create_daily_report(
             status_code=status.HTTP_403_FORBIDDEN
         )
     except Exception as e:
+        logger.exception(f"Unexpected error in create_daily_report: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
@@ -375,10 +400,11 @@ async def get_daily_report(
         return success_response(data=report_response)
 
     except ResourceNotFoundError as e:
+        # BIZ_002: 日报不存在 → 404
         return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_002",
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=status.HTTP_404_NOT_FOUND
         )
     except PermissionDeniedError as e:
         return error_response(
@@ -387,6 +413,7 @@ async def get_daily_report(
             status_code=status.HTTP_403_FORBIDDEN
         )
     except Exception as e:
+        logger.exception(f"Unexpected error in get_daily_report: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
@@ -549,6 +576,49 @@ async def resolve_trend_anomaly(
         return success_response(
             data=report_response,
             message="趋势异常已解决"
+        )
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.put(
+    "/{report_id}/real-spend",
+    response_model=StandardResponse[DailyReportResponse],
+    summary="录入 real 消耗",
+    description="运营录入真实消耗数据 (trend_ok/trend_resolved → final_pending)"
+)
+async def update_real_spend(
+    report_id: int,
+    request: RealSpendRequest,
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
+):
+    """
+    录入 real 消耗 API (API_SOT.md v9.0 第 9.5 节)
+    trend_ok/trend_resolved → final_pending
+    """
+    try:
+        report = service.update_real_spend(report_id, request, current_user)
+        report_response = DailyReportResponse.model_validate(report)
+        return success_response(
+            data=report_response,
+            message="真实消耗已录入，等待确认final粉数"
         )
     except ResourceNotFoundError as e:
         return error_response(
