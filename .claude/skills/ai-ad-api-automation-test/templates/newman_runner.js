@@ -107,9 +107,34 @@ function preflight() {
   const errors = [];
   const warnings = [];
 
+  // Check Node.js version (minimum v16)
+  const nodeVersion = process.versions.node;
+  const majorVersion = parseInt(nodeVersion.split('.')[0], 10);
+  if (majorVersion < 16) {
+    errors.push(`Node.js version ${nodeVersion} is not supported. Minimum required: v16.0.0`);
+  }
+
+  // Check if Newman is available
+  try {
+    require.resolve("newman");
+  } catch (err) {
+    errors.push("Newman not installed. Run: npm install newman newman-reporter-htmlextra");
+  }
+
+  // Check if collections directory exists
+  if (!fs.existsSync(collectionsDir)) {
+    errors.push(`Collections directory not found: ${collectionsDir}`);
+    console.log(`[HINT] Create directory and add collection files: mkdir -p ${collectionsDir}`);
+  }
+
   // Check if collection file exists
   if (!fs.existsSync(config.collection)) {
     errors.push(`Collection file not found: ${config.collection}`);
+  }
+
+  // Check if environments directory exists (warning only)
+  if (!fs.existsSync(environmentsDir)) {
+    warnings.push(`Environments directory not found: ${environmentsDir} (will use defaults)`);
   }
 
   // Check if environment file exists (warning only, not blocking)

@@ -136,7 +136,10 @@
       "Bash(/Users/wade/Desktop/AI_Ads/.venv311/bin/python:*)",
       "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python:*)",
       "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/pytest:*)",
-      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python3.11:*)"
+      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python3.11:*)",
+      "Bash(alembic history:*)",
+      "Bash(git -C /e/AI/AI2/AI_ad_spend02 status --short)",
+      "Bash(git -C /e/AI/AI2/AI_ad_spend02 add -A)"
     ],
     "deny": [],
     "ask": []

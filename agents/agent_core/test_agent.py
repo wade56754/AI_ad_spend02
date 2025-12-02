@@ -20,8 +20,13 @@ class TestAgent:
     返回值中的 executed 字段始终为 False。
     """
 
-    def __init__(self, base_path: Optional[Path] = None) -> None:
+    def __init__(
+        self,
+        base_path: Optional[Path] = None,
+        project_id: Optional[str] = None,
+    ) -> None:
         self.base_path = base_path or Path(__file__).resolve().parent.parent.parent
+        self.project_id = project_id
 
     def handle_request(self, request: Dict[str, Any]) -> AgentResponse:
         """

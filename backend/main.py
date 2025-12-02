@@ -24,6 +24,7 @@ from backend.routers import (
     suppliers,  # ✅ 供应商管理API (full_pipeline v2)
     settlements,  # ✅ 结算管理API (full_pipeline v2)
     transfers,  # ✅ 死号余额迁移API (新增)
+    finance_profit,  # ✅ 财务利润报表API (PROFIT_SOT.md v1.1)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # reports,  # ✅ 报表生成API (需要Reconciliation模型修复)
     # import_jobs,  # ✅ 数据导入API (缺失ImportJob模型)
@@ -63,6 +64,7 @@ app.include_router(daily_reports.router, prefix=API_V1_PREFIX)  # 日报管理 �
 app.include_router(suppliers.router, prefix=API_V1_PREFIX)  # 供应商管理 ✅ full_pipeline v2
 app.include_router(settlements.router, prefix=API_V1_PREFIX)  # 结算管理 ✅ full_pipeline v2
 app.include_router(transfers.router, prefix=API_V1_PREFIX)  # 死号余额迁移 ✅ 新增
+app.include_router(finance_profit.router, prefix=API_V1_PREFIX)  # 财务利润报表 ✅ PROFIT_SOT.md v1.1
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表生成 ✅ 新启用
 # app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 新启用

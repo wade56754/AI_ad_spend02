@@ -573,6 +573,72 @@ def test_ad_account_2(db_session, test_project, test_channel, media_buyer_user):
 
 
 @pytest.fixture(scope="function")
+def funded_ad_account(db_session, test_ad_account):
+    """
+    创建有余额的测试广告账户（用于转账测试）
+    
+    为 test_ad_account 设置初始余额 10000.00，确保转账测试可以正常进行。
+    """
+    from decimal import Decimal
+    from backend.models.finance.ledger import LedgerEntry
+    from backend.models.enums import LedgerEntryType
+    from datetime import datetime
+    
+    # 设置账户余额
+    test_ad_account.balance = Decimal("10000.00")
+    db_session.add(test_ad_account)
+    
+    # 创建对应的 LedgerEntry 记录（保持数据一致性）
+    ledger_entry = LedgerEntry(
+        ad_account_id=test_ad_account.id,
+        entry_type=LedgerEntryType.TOPUP.value,
+        amount=Decimal("10000.00"),
+        balance_after=Decimal("10000.00"),
+        reference_type="test_fixture",
+        notes="测试 fixture 初始化余额",
+        entry_date=datetime.utcnow(),
+    )
+    db_session.add(ledger_entry)
+    db_session.commit()
+    db_session.refresh(test_ad_account)
+    
+    return test_ad_account
+
+
+@pytest.fixture(scope="function")
+def funded_ad_account_2(db_session, test_ad_account_2):
+    """
+    创建有余额的第二个测试广告账户（用于转账测试）
+    
+    为 test_ad_account_2 设置初始余额 10000.00。
+    """
+    from decimal import Decimal
+    from backend.models.finance.ledger import LedgerEntry
+    from backend.models.enums import LedgerEntryType
+    from datetime import datetime
+    
+    # 设置账户余额
+    test_ad_account_2.balance = Decimal("10000.00")
+    db_session.add(test_ad_account_2)
+    
+    # 创建对应的 LedgerEntry 记录
+    ledger_entry = LedgerEntry(
+        ad_account_id=test_ad_account_2.id,
+        entry_type=LedgerEntryType.TOPUP.value,
+        amount=Decimal("10000.00"),
+        balance_after=Decimal("10000.00"),
+        reference_type="test_fixture",
+        notes="测试 fixture 初始化余额",
+        entry_date=datetime.utcnow(),
+    )
+    db_session.add(ledger_entry)
+    db_session.commit()
+    db_session.refresh(test_ad_account_2)
+    
+    return test_ad_account_2
+
+
+@pytest.fixture(scope="function")
 def test_daily_report(db_session, test_ad_account, test_user):
     """
     创建测试日报

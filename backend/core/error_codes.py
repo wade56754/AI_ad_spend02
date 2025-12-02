@@ -573,6 +573,68 @@ class ValidationErrorCodes:
 
 
 # ============================================
+# 利润报表错误码 (PROFIT_xxx)
+# 对齐 PROFIT_SOT.md v1.1 §5
+# ============================================
+
+class ProfitErrorCodes:
+    """利润报表错误码 (PROFIT_SOT.md v1.1)"""
+
+    # 参数校验错误 (001-002)
+    INVALID_PERIOD_PARAMS = ErrorCode(
+        "PROFIT_001",
+        "周期参数无效",
+        400
+    )
+
+    FUTURE_START_DATE = ErrorCode(
+        "PROFIT_002",
+        "开始日期不能是未来",
+        400
+    )
+
+    # 资源不存在 (003, 005, 007)
+    PROJECT_NOT_FOUND = ErrorCode(
+        "PROFIT_003",
+        "项目不存在",
+        404
+    )
+
+    PERIOD_DATA_NOT_FOUND = ErrorCode(
+        "PROFIT_005",
+        "指定周期无数据",
+        404
+    )
+
+    ACCOUNT_NOT_FOUND = ErrorCode(
+        "PROFIT_007",
+        "账户不存在",
+        404
+    )
+
+    # 冲突错误 (004)
+    PERIOD_LOCKED = ErrorCode(
+        "PROFIT_004",
+        "周期已锁定，无法刷新",
+        409
+    )
+
+    # 权限错误 (006)
+    MANUAL_UPDATE_FORBIDDEN = ErrorCode(
+        "PROFIT_006",
+        "禁止手工修改聚合数据",
+        403
+    )
+
+    # 范围限制 (008)
+    DATE_RANGE_EXCEEDED = ErrorCode(
+        "PROFIT_008",
+        "日期范围超出限制",
+        400
+    )
+
+
+# ============================================
 # 错误码字典 (用于快速查找)
 # ============================================
 
@@ -667,6 +729,16 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "VALIDATION_103": ValidationErrorCodes.TYPE_CONVERSION_ERROR,
     "VALIDATION_104": ValidationErrorCodes.PARSE_ERROR,
     "VALIDATION_105": ValidationErrorCodes.VALIDATION_ERROR,
+
+    # 利润报表错误 (PROFIT_SOT.md v1.1)
+    "PROFIT_001": ProfitErrorCodes.INVALID_PERIOD_PARAMS,
+    "PROFIT_002": ProfitErrorCodes.FUTURE_START_DATE,
+    "PROFIT_003": ProfitErrorCodes.PROJECT_NOT_FOUND,
+    "PROFIT_004": ProfitErrorCodes.PERIOD_LOCKED,
+    "PROFIT_005": ProfitErrorCodes.PERIOD_DATA_NOT_FOUND,
+    "PROFIT_006": ProfitErrorCodes.MANUAL_UPDATE_FORBIDDEN,
+    "PROFIT_007": ProfitErrorCodes.ACCOUNT_NOT_FOUND,
+    "PROFIT_008": ProfitErrorCodes.DATE_RANGE_EXCEEDED,
 }
 
 

@@ -21,3 +21,15 @@ elif sys.path[0] != project_root_str:
 
 # 设置 PYTHONPATH 环境变量
 os.environ.setdefault("PYTHONPATH", project_root_str)
+# agents/tests/conftest.py
+
+import pytest
+
+@pytest.fixture(autouse=True)
+def _set_dummy_anthropic_env(monkeypatch):
+    """
+    为 agents 层所有测试自动注入假 Anthropic 环境变量，
+    避免因本地未配置 API Key/BASE_URL 导致单测直接失败。
+    """
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy-test-key")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://example.com")
