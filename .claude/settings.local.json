@@ -136,7 +136,9 @@
       "Bash(/Users/wade/Desktop/AI_Ads/.venv311/bin/python:*)",
       "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python:*)",
       "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/pytest:*)",
-      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python3.11:*)"
+      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python3.11:*)",
+      "Bash(d:)",
+      "Bash(py -c:*)"
     ],
     "deny": [],
     "ask": []

@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import time
+import shutil
 from typing import Optional, Dict, Any
 from pathlib import Path
 
@@ -42,44 +43,190 @@ _RETRYABLE_ERRORS = (
 )
 
 
+def _run_cli(
+    cli_path: str,
+    args: list[str],
+    *,
+    timeout: Optional[int] = None,
+    cwd: Optional[str] = None,
+    input: Optional[str] = None,
+    capture_output: bool = True,
+    text: bool = True,
+) -> subprocess.CompletedProcess:
+    """
+    统一的 CLI 执行助手。
+
+    使用列表形式的命令参数，shell=False，确保与 check_claude_code_available()
+    使用完全相同的调用方式。
+
+    Args:
+        cli_path: 已解析的 CLI 绝对路径
+        args: 命令参数列表（不包含 CLI 路径本身）
+        timeout: 超时时间（秒）
+        cwd: 工作目录
+        input: 输入内容（传递给 stdin）
+        capture_output: 是否捕获输出
+        text: 是否以文本模式处理输出
+
+    Returns:
+        subprocess.CompletedProcess 对象
+
+    Raises:
+        FileNotFoundError: CLI 文件不存在
+        subprocess.TimeoutExpired: 超时
+        OSError: 其他执行错误
+    """
+    # 构建完整命令列表：cli_path + args
+    cmd = [cli_path] + args
+
+    # 记录执行的命令（不包含敏感内容如完整 prompt）
+    logger.debug(f"Executing CLI command: {cmd[:3]}... (total {len(cmd)} args)")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            input=input,
+            capture_output=capture_output,
+            text=text,
+            timeout=timeout,
+            cwd=cwd,
+            encoding="utf-8",
+            errors="replace",  # 防御性编码处理
+            shell=False,  # 统一使用 shell=False，避免 Windows 上的路径问题
+        )
+        return result
+    except (FileNotFoundError, OSError) as e:
+        # Windows 上可能出现 WinError 206（文件名或扩展名太长）
+        # 需要先检查是否是 WinError 206，因为它在 Windows 上可能被作为 FileNotFoundError 或 OSError 抛出
+        error_code = None
+        if hasattr(e, 'winerror'):
+            error_code = e.winerror
+        elif hasattr(e, 'errno') and os.name == 'nt':
+            # Windows 上 errno 206 对应 WinError 206
+            if e.errno == 206:
+                error_code = 206
+        
+        if error_code == 206:
+            logger.error(
+                f"Claude CLI command too long (WinError 206). "
+                f"CLI path: {cli_path}, Args count: {len(args)}"
+            )
+            raise RuntimeError(
+                f"Claude CLI 命令过长（Windows 限制）。请简化 prompt 或使用 Anthropic API。"
+            ) from e
+        
+        # 对于 FileNotFoundError（非 WinError 206），认为是文件不存在
+        if isinstance(e, FileNotFoundError):
+            logger.error(
+                f"Claude CLI not found at: {cli_path}. "
+                f"Command: {cmd[:3]}..., Error: {e}"
+            )
+            raise RuntimeError(
+                f"Claude CLI 可执行文件未找到: {cli_path}。请确保已正确安装。"
+            ) from e
+        
+        # 对于其他 OSError，转换为 RuntimeError 以保持一致性
+        logger.error(f"Claude CLI OSError: {e}. Command: {cmd[:3]}...")
+        raise RuntimeError(
+            f"Claude CLI 执行失败: {e}"
+        ) from e
+    except subprocess.TimeoutExpired as e:
+        logger.error(f"Claude CLI timeout after {timeout}s. Command: {cmd[:3]}...")
+        raise
+
+
+def _resolve_cli_path(cli_path: str) -> Optional[str]:
+    """
+    解析 CLI 可执行文件路径。
+
+    支持两种模式：
+    1. 绝对路径或显式文件路径（包含路径分隔符或显式后缀）：
+       - 直接检查文件是否存在
+    2. 命令名（如 "claude"）：
+       - 使用 shutil.which 在 PATH 中查找
+
+    Args:
+        cli_path: CLI 路径或命令名
+
+    Returns:
+        解析后的绝对路径，或 None（未找到）
+    """
+    path_obj = Path(cli_path)
+
+    # 判断是否为文件路径模式（绝对路径、包含路径分隔符、或显式后缀）
+    is_file_path = (
+        path_obj.is_absolute()
+        or os.sep in cli_path
+        or os.altsep in cli_path if os.altsep else False
+        or cli_path.lower().endswith(('.exe', '.cmd', '.bat', '.ps1', '.sh'))
+    )
+
+    if is_file_path:
+        # 文件路径模式：检查文件是否存在
+        if path_obj.exists():
+            resolved = str(path_obj.resolve())
+            logger.debug(f"Resolved CLI path (file): {cli_path} -> {resolved}")
+            return resolved
+        else:
+            logger.debug(f"CLI file path not found: {cli_path}")
+            return None
+    else:
+        # 命令名模式：使用 shutil.which 在 PATH 中查找
+        resolved = shutil.which(cli_path)
+        if resolved:
+            # 确保返回绝对路径
+            resolved_path = Path(resolved).resolve()
+            logger.debug(f"Resolved CLI path (command): {cli_path} -> {resolved_path}")
+            return str(resolved_path)
+        else:
+            logger.debug(f"CLI command not found in PATH: {cli_path}")
+            return None
+
+
 def _find_claude_cli() -> Optional[str]:
     """
     查找 claude CLI 可执行文件路径。
 
+    优先使用 PATH 解析，然后尝试常见安装路径。
+
     Returns:
-        claude CLI 路径，或 None（未找到）
+        claude CLI 绝对路径，或 None（未找到）
     """
-    # Windows: 尝试常见路径
-    possible_paths = [
-        "claude",  # 在 PATH 中（最高优先级）
-        "claude.exe",
-        "claude.cmd",  # npm 安装的 cmd 包装器
-    ]
-    
-    # 添加 Windows 特定路径
+    # 优先级 1: 环境变量指定的路径
+    env_path = os.environ.get("CLAUDE_CLI_PATH")
+    if env_path:
+        resolved = _resolve_cli_path(env_path)
+        if resolved:
+            return resolved
+
+    # 优先级 2: 命令名 "claude"（通过 PATH 解析）
+    resolved = _resolve_cli_path("claude")
+    if resolved:
+        return resolved
+
+    # 优先级 3: 尝试常见路径（Windows 特定）
     if os.name == "nt":  # Windows
         appdata = os.environ.get("APPDATA", "")
         localappdata = os.environ.get("LOCALAPPDATA", "")
         userprofile = os.environ.get("USERPROFILE", "")
         current_dir = os.getcwd()
-        
+
         windows_paths = [
-            # npm 全局安装路径（优先）
             os.path.join(appdata, "npm", "claude.cmd"),
             os.path.join(appdata, "npm", "claude"),
-            # 用户本地 bin
             os.path.join(userprofile, ".local", "bin", "claude.exe"),
-            # 项目目录下的批处理文件
             os.path.join(current_dir, "claude.bat"),
-            # 常见安装路径
             os.path.expanduser("~/.claude/claude.exe"),
             os.path.join(localappdata, "Programs", "claude", "claude.exe"),
             os.path.join(localappdata, "Claude", "claude.exe"),
-            # Program Files
             "C:\\Program Files\\Claude\\claude.exe",
             "C:\\Program Files (x86)\\Claude\\claude.exe",
         ]
-        possible_paths.extend(windows_paths)
+
+        for path in windows_paths:
+            resolved = _resolve_cli_path(path)
+            if resolved:
+                return resolved
     else:
         # Unix-like 系统
         unix_paths = [
@@ -88,30 +235,11 @@ def _find_claude_cli() -> Optional[str]:
             "/usr/local/bin/claude",
             "/usr/bin/claude",
         ]
-        possible_paths.extend(unix_paths)
 
-    for path in possible_paths:
-        try:
-            # Windows 上，对于 .cmd 和 .bat 文件，可能需要使用 shell=True
-            use_shell = os.name == "nt" and (
-                path.endswith(".cmd") or 
-                path.endswith(".bat") or 
-                path.endswith(".exe")
-            )
-            
-            result = subprocess.run(
-                [path, "--version"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-                shell=use_shell,
-            )
-            if result.returncode == 0:
-                logger.debug(f"Found claude CLI at: {path}")
-                return path
-        except (subprocess.SubprocessError, FileNotFoundError, OSError) as e:
-            logger.debug(f"Failed to test path {path}: {e}")
-            continue
+        for path in unix_paths:
+            resolved = _resolve_cli_path(path)
+            if resolved:
+                return resolved
 
     return None
 
@@ -154,6 +282,8 @@ def call_claude_code(
             "retries": 0,
         }
 
+    # claude_cli 现在已经是解析后的绝对路径
+
     timeout = timeout or CLAUDE_CODE_CONFIG["timeout"]
     max_retries = max_retries if max_retries is not None else CLAUDE_CODE_CONFIG["max_retries"]
     retry_delay = CLAUDE_CODE_CONFIG["retry_delay"]
@@ -163,17 +293,8 @@ def call_claude_code(
     logger.info(f"Calling Claude Code CLI: timeout={timeout}s, max_retries={max_retries}")
     logger.debug(f"Prompt length: {len(prompt)} chars")
 
-    # Windows 上，对于 .cmd 和 .bat 文件，或者简单的命令名（需要 PATH 解析），使用 shell=True
-    use_shell = False
-    if os.name == "nt":  # Windows
-        if claude_cli.endswith((".cmd", ".bat")):
-            use_shell = True
-        elif not os.path.isabs(claude_cli):
-            if not os.path.exists(claude_cli):
-                use_shell = True
-
-    cmd = [
-        claude_cli,
+    # 构建命令参数列表（统一使用列表形式，shell=False）
+    cmd_args = [
         "-p", prompt,  # 直接传递提示词
         "--output-format", "text",  # 纯文本输出
     ]
@@ -183,21 +304,40 @@ def call_claude_code(
 
     for attempt in range(max_retries + 1):
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
+            # 使用统一的 _run_cli() 方法
+            result = _run_cli(
+                cli_path=claude_cli,
+                args=cmd_args,
                 timeout=timeout,
                 cwd=cwd,
-                encoding="utf-8",
-                shell=use_shell,
+                capture_output=True,
+                text=True,
             )
 
             if result.returncode != 0:
-                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                # 收集错误信息：优先 stderr，其次 stdout（某些 CLI 可能将错误输出到 stdout）
+                error_msg = result.stderr.strip() if result.stderr else ""
+                if not error_msg and result.stdout:
+                    # 检查 stdout 是否包含错误信息
+                    stdout_lines = result.stdout.strip().split('\n')
+                    error_lines = [line for line in stdout_lines if any(keyword in line.lower() for keyword in ['error', '失败', '错误', 'failed', 'invalid', 'fix'])]
+                    if error_lines:
+                        error_msg = '\n'.join(error_lines)
+                
+                if not error_msg:
+                    # 如果仍然没有错误信息，使用 stdout 的前几行作为错误信息
+                    if result.stdout:
+                        error_msg = result.stdout.strip().split('\n')[0][:200]
+                    else:
+                        error_msg = "Unknown error (no stderr or stdout output)"
+                
                 # 非零退出码，部分情况可重试（如临时网络问题）
                 # 但大部分非零退出码是永久性错误，不重试
-                logger.error(f"Claude CLI error (exit code {result.returncode}): {error_msg}")
+                logger.error(
+                    f"Claude CLI error (exit code {result.returncode}): {error_msg[:500]}\n"
+                    f"Stdout: {result.stdout[:200] if result.stdout else 'None'}\n"
+                    f"Stderr: {result.stderr[:200] if result.stderr else 'None'}"
+                )
                 return {
                     "success": False,
                     "content": result.stdout,
@@ -241,14 +381,15 @@ def call_claude_code(
             else:
                 logger.error(f"Claude CLI timeout after {max_retries + 1} attempts")
 
-        except FileNotFoundError:
-            # 不可重试：CLI 不存在
-            logger.error(f"Claude CLI not found at: {claude_cli}")
+        except RuntimeError as e:
+            # 不可重试：CLI 不存在（_run_cli 已转换为 RuntimeError）
+            error_msg = str(e)
+            logger.error(f"Claude CLI execution failed: {error_msg}")
             return {
                 "success": False,
                 "content": "",
                 "data": None,
-                "error": f"Claude CLI 可执行文件未找到: {claude_cli}。请确保已正确安装。",
+                "error": error_msg,
                 "retries": retries,
             }
 
@@ -357,11 +498,13 @@ def check_claude_code_available() -> Dict[str, Any]:
         }
 
     try:
-        result = subprocess.run(
-            [claude_cli, "--version"],
+        # 使用统一的 _run_cli() 方法
+        result = _run_cli(
+            cli_path=claude_cli,
+            args=["--version"],
+            timeout=5,
             capture_output=True,
             text=True,
-            timeout=5,
         )
         version = result.stdout.strip() if result.returncode == 0 else None
 
@@ -470,6 +613,9 @@ class _MockResponse:
 
     def __init__(self, text: str):
         self.content = [_MockTextBlock(text)]
+        self.model = "claude-code"
+        # 添加 usage 属性以兼容 Anthropic API 响应格式
+        self.usage = _MockUsage()
 
 
 class _MockTextBlock:
@@ -478,6 +624,15 @@ class _MockTextBlock:
     def __init__(self, text: str):
         self.type = "text"
         self.text = text
+
+
+class _MockUsage:
+    """模拟 Anthropic API 响应中的 usage 对象"""
+
+    def __init__(self):
+        # Claude Code CLI 不提供 token 使用信息，返回 0
+        self.input_tokens = 0
+        self.output_tokens = 0
 
 
 # 导出

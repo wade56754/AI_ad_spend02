@@ -69,6 +69,35 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_list_presets(args: argparse.Namespace) -> int:
+    """List all available flow presets."""
+    try:
+        from agents.config import list_available_presets, load_preset
+        presets = list_available_presets()
+        if not presets:
+            print("No presets found in agents/config/")
+            return 0
+
+        print(f"Available presets ({len(presets)}):")
+        print("-" * 60)
+        for preset_name in presets:
+            try:
+                preset = load_preset(preset_name)
+                flow = preset.get("flow", "?")
+                module = preset.get("module", "?")
+                files_count = len(preset.get("target_files", []))
+                print(f"  {preset_name:30} flow={flow:15} module={module:20} files={files_count}")
+            except Exception as e:
+                print(f"  {preset_name:30} (error loading: {e})")
+        print("-" * 60)
+        print("\nUsage:")
+        print("  python -m agent_platform.cli orch --preset <preset_name> --mode execute")
+        return 0
+    except Exception as e:
+        print(f"Error: Failed to list presets: {e}")
+        return 1
+
+
 def cmd_info(args: argparse.Namespace) -> int:
     """Show detailed info for a specific agent."""
     _ensure_agents_registered()
@@ -144,20 +173,46 @@ def cmd_orch(args: argparse.Namespace) -> int:
     """Run OrchestratorAgent with specified flow."""
     _ensure_agents_registered()
 
-    flow = args.flow
-    task = args.task or ""
-    target_files = args.target_files or []
-    module = args.module
+    # Load preset if specified
+    preset_config: Dict[str, Any] = {}
+    if args.preset:
+        try:
+            from agents.config import load_preset, merge_preset_with_overrides
+            preset_config = load_preset(args.preset)
+            logger.info(f"Loaded preset '{args.preset}': {preset_config.get('flow')}")
+        except (ValueError, FileNotFoundError) as e:
+            print(f"Error: Failed to load preset '{args.preset}': {e}")
+            return 1
 
-    # Build orchestrator request
-    request: Dict[str, Any] = {
-        "flow": flow,
-        "task": task,
-        "target_files": target_files,
-    }
+    # Build overrides from CLI arguments
+    overrides: Dict[str, Any] = {}
+    if args.flow:
+        overrides["flow"] = args.flow
+    if args.task:
+        overrides["task"] = args.task
+    if args.target_files:
+        overrides["target_files"] = args.target_files
+    if args.module:
+        overrides["module"] = args.module
 
-    if module:
-        request["module"] = module
+    # Merge preset with overrides (overrides take precedence)
+    if preset_config:
+        from agents.config import merge_preset_with_overrides
+        request = merge_preset_with_overrides(preset_config, overrides)
+    else:
+        # No preset: use CLI arguments directly
+        request: Dict[str, Any] = {
+            "flow": args.flow or "",
+            "task": args.task or "",
+            "target_files": args.target_files or [],
+        }
+        if args.module:
+            request["module"] = args.module
+
+    # Ensure flow is set (required)
+    if not request.get("flow"):
+        print("Error: 'flow' is required. Specify --flow or use --preset.")
+        return 1
 
     # Mode-specific options
     if args.mode == "execute":
@@ -184,8 +239,12 @@ def cmd_orch(args: argparse.Namespace) -> int:
     context = AgentContext()
     run_id = context.run_id
 
+    # Get flow from request (for display)
+    flow = request.get("flow", "unknown")
+
     if args.verbose:
-        print(f"[run_id={run_id}] Running orchestrator flow '{flow}' with request:")
+        preset_info = f" (preset: {args.preset})" if args.preset else ""
+        print(f"[run_id={run_id}] Running orchestrator flow '{flow}'{preset_info} with request:")
         print_json(request)
         print("-" * 40)
 
@@ -207,7 +266,7 @@ def _print_human_result(result: Dict[str, Any], agent_name: str, run_id: str) ->
     error = result.get("error")
     data = result.get("data", {})
 
-    status = "✓ SUCCESS" if success else "✗ FAILED"
+    status = "[OK] SUCCESS" if success else "[FAIL] FAILED"
     print(f"\n{status} [{agent_name}] run_id={run_id}")
 
     if error:
@@ -241,7 +300,7 @@ def _print_orch_result(result: Dict[str, Any], flow: str, run_id: str) -> None:
     error = result.get("error")
     data = result.get("data", {})
 
-    status = "✓ SUCCESS" if success else "✗ FAILED"
+    status = "[OK] SUCCESS" if success else "[FAIL] FAILED"
     print(f"\n{status} [orch/{flow}] run_id={run_id}")
 
     if error:
@@ -259,12 +318,12 @@ def _print_orch_result(result: Dict[str, Any], flow: str, run_id: str) -> None:
             test_result = data.get("test_result", {})
 
             if be_result:
-                be_status = "✓" if be_result.get("success") else "✗"
+                be_status = "[OK]" if be_result.get("success") else "[FAIL]"
                 files = be_result.get("files_generated", 0)
                 print(f"  Backend:  {be_status} ({files} files)")
 
             if test_result:
-                test_status = "✓" if test_result.get("success") else "✗"
+                test_status = "[OK]" if test_result.get("success") else "[FAIL]"
                 mode = test_result.get("mode", "?")
                 executed = test_result.get("executed", False)
                 exec_str = "executed" if executed else "prompt only"
@@ -306,11 +365,18 @@ Examples:
   # List all agents
   python -m agent_platform.cli list
 
-  # Run orchestrator with be_then_test flow
+  # Run orchestrator with preset (recommended)
+  python -m agent_platform.cli orch --preset finance_profit_backend_full --mode execute
+
+  # Run orchestrator with be_then_test flow (manual)
   python -m agent_platform.cli orch --flow be_then_test \\
     --task "Implement finance_profit API" \\
     --module finance_profit \\
     --target-files backend/routers/finance_profit.py
+
+  # Override preset task
+  python -m agent_platform.cli orch --preset finance_profit_backend_full \\
+    --task "Custom task description" --mode execute
 
   # Run backend agent directly
   python -m agent_platform.cli run be \\
@@ -347,6 +413,13 @@ Examples:
     list_parser = subparsers.add_parser("list", help="List registered agents")
     list_parser.set_defaults(func=cmd_list)
 
+    # list-presets command
+    list_presets_parser = subparsers.add_parser(
+        "list-presets",
+        help="List available flow presets",
+    )
+    list_presets_parser.set_defaults(func=cmd_list_presets)
+
     # info command
     info_parser = subparsers.add_parser("info", help="Show agent info")
     info_parser.add_argument("agent", help="Agent name")
@@ -373,8 +446,11 @@ Examples:
     # orch command (orchestrator-specific)
     orch_parser = subparsers.add_parser("orch", help="Run OrchestratorAgent")
     orch_parser.add_argument(
+        "--preset", "-p",
+        help="Load preset configuration (e.g., finance_profit_backend_full)",
+    )
+    orch_parser.add_argument(
         "--flow", "-F",
-        required=True,
         choices=[
             "be_then_test",
             "backend_only",
@@ -384,7 +460,7 @@ Examples:
             "gen_backend",
             "auto_fix",
         ],
-        help="Orchestrator flow to execute",
+        help="Orchestrator flow to execute (required if --preset not used)",
     )
     orch_parser.add_argument(
         "--task", "-t",
