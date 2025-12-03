@@ -11,10 +11,19 @@ Agent Platform LLM Module
 - extract_response_text: 从响应中提取文本
 - reset_client: 重置客户端单例
 - get_backend_type: 获取当前后端类型
+- is_mcp_mode: 检查是否在 MCP 工具模式
+- get_platform_mode: 获取当前平台模式
 """
 
 from .base import LLMClient, LLMResponse, DummyLLMClient
-from .factory import get_llm_client, reset_client, get_backend_type, extract_response_text
+from .factory import (
+    get_llm_client,
+    reset_client,
+    get_backend_type,
+    extract_response_text,
+    is_mcp_mode,
+    get_platform_mode,
+)
 
 __all__ = [
     "LLMClient",
@@ -24,4 +33,6 @@ __all__ = [
     "extract_response_text",
     "reset_client",
     "get_backend_type",
+    "is_mcp_mode",
+    "get_platform_mode",
 ]

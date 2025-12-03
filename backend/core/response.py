@@ -151,19 +151,20 @@ def success_response(data: Any = None, message: str = "操作成功", code: str 
     )
 
 
-def error_response(message: str, code: str = "INTERNAL_ERROR", status_code: int = 400, **kwargs) -> JSONResponse:
+def error_response(message: str, code: str = "INTERNAL_ERROR", status_code: int = 400, details: Optional[Dict[str, Any]] = None, **kwargs) -> JSONResponse:
     """错误响应函数"""
-    # 构建符合测试期望的错误响应格式：{"success": False, "error": {"code": "...", "message": "..."}}
+    # 构建符合测试期望的错误响应格式：{"success": False, "data": None, "message": "...", "code": "..."}
     content = {
         "success": False,
         "data": None,
-        "error": {
-            "code": code,
-            "message": message
-        },
+        "message": message,
+        "code": code,
         "request_id": str(uuid.uuid4()),
         "timestamp": datetime.utcnow().isoformat()
     }
+    
+    if details:
+        content["details"] = details
     
     if kwargs:
         content.update(kwargs)

@@ -1,28 +1,39 @@
 {
-  "mcpServers": {
-    "sequential-thinking": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
-    },
-    "puppeteer": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-puppeteer"
-      ]
-    },
-    "magic": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@21st-dev/magic@latest"
-      ],
-      "env": {
-        "API_KEY": ""
-      }
+    "mcpServers": {
+        "sequential-thinking": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-sequential-thinking"
+            ]
+        },
+        "puppeteer": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-puppeteer"
+            ]
+        },
+        "magic": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@21st-dev/magic@latest"
+            ],
+            "env": {
+                "API_KEY": ""
+            }
+        },
+        "ai-ad-agents": {
+            "command": "python",
+            "args": [
+                "-m",
+                "agent_platform.mcp.server"
+            ],
+            "env": {
+                "AGENT_PLATFORM_MODE": "mcp",
+                "PYTHONPATH": "D:\\\\git\\\\1108\\\\AI_ad_spend02"
+            }
+        }
     }
-  }
 }

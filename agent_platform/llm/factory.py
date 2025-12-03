@@ -15,6 +15,11 @@ LLM Client Factory - LLM 客户端工厂
 支持的配置项：
 - ANTHROPIC_API_KEY: Anthropic API 密钥
 - ANTHROPIC_BASE_URL: API 端点 URL（用于第三方代理，如 deeprouter.top）
+
+MCP 模式 (Phase 3.1):
+- 设置 AGENT_PLATFORM_MODE=mcp 启用 MCP 工具模式
+- MCP 模式下，agent_platform 作为纯工具箱运行，不主动调用 LLM
+- Claude 作为唯一的 LLM，直接使用 agent_platform 提供的工具
 """
 
 import json
@@ -37,6 +42,58 @@ _backend_type: Optional[str] = None  # "anthropic_api" | "claude_code" | "dummy"
 
 # 仓库根目录（基于 factory.py 位置推导: llm/ -> agent_platform/ -> repo root）
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+# MCP 模式环境变量名
+# 设置 AGENT_PLATFORM_MODE=mcp 启用纯工具模式（不调用 LLM）
+_MCP_MODE_ENV_VAR = "AGENT_PLATFORM_MODE"
+
+
+def is_mcp_mode() -> bool:
+    """
+    检查是否运行在 MCP 工具模式。
+
+    MCP 模式下：
+    - agent_platform 作为纯工具箱运行
+    - Claude 是唯一的 LLM，直接使用工具
+    - 调用 get_llm_client() 会抛出 LLMNotConfiguredError
+
+    Note (Phase 3.2 Fix P1-01):
+        此函数现在实时读取环境变量，而非使用模块加载时的缓存值。
+        这确保了在运行时修改 AGENT_PLATFORM_MODE 后，检查结果会立即更新。
+        例如 mcp/server.py 在模块顶部设置 os.environ["AGENT_PLATFORM_MODE"] = "mcp"，
+        即使 factory.py 先于 server.py 导入，MCP 模式检查也会生效。
+
+    Returns:
+        True: MCP 工具模式（AGENT_PLATFORM_MODE=mcp）
+        False: CLI 模式（默认，agent 可主动调用 LLM）
+
+    Example:
+        if is_mcp_mode():
+            # 纯工具逻辑，不调用 LLM
+            return tool_result
+        else:
+            # CLI 模式，可以调用 LLM
+            client = get_llm_client()
+            ...
+    """
+    # Phase 3.2: 实时读取环境变量，修复 P1-01
+    mode = os.environ.get(_MCP_MODE_ENV_VAR, "cli").strip().lower()
+    return mode == "mcp"
+
+
+def get_platform_mode() -> str:
+    """
+    获取当前平台运行模式。
+
+    Note (Phase 3.2):
+        此函数现在实时读取环境变量，与 is_mcp_mode() 保持一致。
+
+    Returns:
+        "mcp": MCP 工具模式
+        "cli": CLI 命令行模式（默认）
+    """
+    # Phase 3.2: 实时读取环境变量
+    return os.environ.get(_MCP_MODE_ENV_VAR, "cli").strip().lower()
 
 
 def _load_anthropic_api_key() -> Tuple[Optional[str], Optional[str]]:
@@ -226,6 +283,10 @@ def get_llm_client(allow_dummy: bool = True) -> LLMClient:
             2. Claude Code CLI 适配器（如果 CLI 已安装）
             3. DummyLLMClient（如果 allow_dummy=True）
 
+    MCP 模式：
+        - 如果 AGENT_PLATFORM_MODE=mcp，直接抛出 LLMNotConfiguredError
+        - MCP 模式下 Claude 是唯一的 LLM，agent_platform 只提供工具
+
     Args:
         allow_dummy: 当前两种后端都不可用时，是否返回 DummyClient
             - True: 返回 DummyLLMClient（开发/测试用）
@@ -235,9 +296,17 @@ def get_llm_client(allow_dummy: bool = True) -> LLMClient:
         LLMClient 实例
 
     Raises:
-        LLMNotConfiguredError: 所有后端都不可用且 allow_dummy=False
+        LLMNotConfiguredError: MCP 模式下调用，或所有后端都不可用且 allow_dummy=False
     """
     global _client, _backend_type
+
+    # MCP 模式检查：拒绝 LLM 调用
+    if is_mcp_mode():
+        raise LLMNotConfiguredError(
+            "MCP 工具模式下不允许调用 LLM。"
+            "在此模式下，Claude 是唯一的 LLM，agent_platform 仅提供工具。"
+            "如需使用 CLI 模式，请移除 AGENT_PLATFORM_MODE 环境变量或设置为 'cli'。"
+        )
 
     # Fast path: 客户端已初始化
     if _client is not None:
@@ -715,6 +784,8 @@ __all__ = [
     "get_backend_type",
     "reset_client",
     "extract_response_text",
+    "is_mcp_mode",
+    "get_platform_mode",
     "AnthropicLLMClient",
     "ClaudeCodeLLMClient",
     "DeepRouterLLMClient",

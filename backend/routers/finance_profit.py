@@ -32,7 +32,7 @@ from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user, require_role
-from backend.core.response import StandardResponse
+from backend.core.response import success_response, error_response
 from backend.core.error_codes import (
     AuthErrorCodes,
     BusinessErrorCodes,
@@ -102,7 +102,7 @@ def _get_error_response(error_code: str, details: dict = None):
         "message": "未知错误",
         "status_code": 400
     })
-    return StandardResponse.error(
+    return error_response(
         message=error_info["message"],
         code=error_code,
         status_code=error_info["status_code"],
@@ -119,14 +119,14 @@ def _handle_service_exception(e: Exception):
     elif isinstance(e, ResourceConflictError):
         return _get_error_response(e.error_code, getattr(e, 'details', None))
     elif isinstance(e, PermissionDeniedError):
-        return StandardResponse.error(
+        return error_response(
             message=str(e),
             code=AuthErrorCodes.PERMISSION_DENIED.code,
             status_code=403
         )
     else:
         logger.exception(f"Unexpected error: {e}")
-        return StandardResponse.error(
+        return error_response(
             message="系统内部错误",
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             status_code=500
@@ -171,7 +171,7 @@ async def generate_profit_aggregates(
 
     # force_refresh 仅 admin 可用 (BR-PROFIT-004)
     if request.force_refresh and current_user.role != "admin":
-        return StandardResponse.error(
+        return error_response(
             message="强制刷新仅管理员可用",
             code=AuthErrorCodes.PERMISSION_DENIED.code,
             status_code=403
@@ -206,7 +206,7 @@ async def generate_profit_aggregates(
             )
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
             message="利润聚合生成成功",
             code="SUCCESS"
@@ -312,7 +312,7 @@ async def get_monthly_profit(
             by_project=by_project_items,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
             message="ok",
             code="SUCCESS"
@@ -413,7 +413,7 @@ async def get_daily_profit(
             pages=pages,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
             message="ok",
             code="SUCCESS"
@@ -474,7 +474,7 @@ async def get_project_profit(
     # 权限检查: account_manager 仅可访问自己管理的项目
     if current_user.role == "account_manager":
         if not hasattr(project, 'account_manager_id') or project.account_manager_id != current_user.id:
-            return StandardResponse.error(
+            return error_response(
                 message="无权限访问该项目",
                 code=AuthErrorCodes.PERMISSION_DENIED.code,
                 status_code=403
@@ -548,7 +548,7 @@ async def get_project_profit(
             by_account=by_account,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
             message="ok",
             code="SUCCESS"
@@ -611,7 +611,7 @@ async def get_account_profit(
         project = db.query(Project).filter(Project.id == account.project_id).first()
         if project and hasattr(project, 'account_manager_id'):
             if project.account_manager_id != current_user.id:
-                return StandardResponse.error(
+                return error_response(
                     message="无权限访问该账户",
                     code=AuthErrorCodes.PERMISSION_DENIED.code,
                     status_code=403
@@ -624,7 +624,7 @@ async def get_account_profit(
             DailyReport.submitted_by == current_user.id
         ).first()
         if not has_report:
-            return StandardResponse.error(
+            return error_response(
                 message="无权限访问该账户",
                 code=AuthErrorCodes.PERMISSION_DENIED.code,
                 status_code=403
@@ -689,7 +689,7 @@ async def get_account_profit(
             daily_trend=daily_trend,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
             message="ok",
             code="SUCCESS"
@@ -786,7 +786,7 @@ async def get_profit_summary(
             is_locked=result.get("is_locked", False),
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
             message="ok",
             code="SUCCESS"

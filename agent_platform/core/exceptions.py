@@ -60,11 +60,14 @@ class LLMClientError(AgentPlatformError):
 
 
 class LLMNotConfiguredError(LLMClientError):
-    """LLM 未配置"""
+    """LLM 未配置或在 MCP 模式下被禁用"""
 
-    def __init__(self):
-        super().__init__(
+    def __init__(self, message: str | None = None):
+        default_message = (
             "No LLM backend available. "
-            "Set ANTHROPIC_API_KEY or install Claude Code CLI.",
+            "Set ANTHROPIC_API_KEY or install Claude Code CLI."
+        )
+        super().__init__(
+            message or default_message,
             provider=None,
         )

@@ -139,7 +139,14 @@
       "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads /Users/wade/Desktop/AI_Ads/.venv311/bin/python3.11:*)",
       "Bash(alembic history:*)",
       "Bash(git -C /e/AI/AI2/AI_ad_spend02 status --short)",
-      "Bash(git -C /e/AI/AI2/AI_ad_spend02 add -A)"
+      "Bash(git -C /e/AI/AI2/AI_ad_spend02 add -A)",
+      "Bash(if not exist:*)",
+      "Bash(py -m pytest agent_platformteststest_llm_factory.py -v --tb=short)",
+      "Bash(py -m pytest agent_platform/tests/test_llm_factory.py -v --tb=short)",
+      "Bash(py -m pytest agent_platform/tests/test_llm_factory.py::test_is_mcp_mode_default -v)",
+      "Bash(py test_mcp_patch.py)",
+      "Bash(py:*)",
+      "Bash(claude mcp list:*)"
     ],
     "deny": [],
     "ask": []

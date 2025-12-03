@@ -75,7 +75,7 @@ class TestFinanceProfitHappyPath:
     """
 
     def test_generate_profit_aggregates__returns_200_and_summary(
-        self, client, finance_headers, sample_project
+        self, client, finance_headers, test_project
     ):
         """
         TC-PROFIT-HP-001: 成功生成月度聚合 - 返回 200 和摘要
@@ -179,7 +179,7 @@ class TestFinanceProfitHappyPath:
             assert "page" in data["data"]
 
     def test_get_project_profit__returns_200_and_detail(
-        self, client, finance_headers, sample_project
+        self, client, finance_headers, test_project
     ):
         """
         TC-PROFIT-HP-004: 查询项目利润明细 - 返回 200 和明细
@@ -187,10 +187,13 @@ class TestFinanceProfitHappyPath:
         SoT Ref: PROFIT_SOT.md v1.1 §3.5
         """
         today = date.today()
-        start_date = today - timedelta(days=30)
+        # 对于月度粒度，开始日期必须是月份的第一天
+        start_date = today.replace(day=1) - timedelta(days=30)
+        # 确保是月份的第一天
+        start_date = start_date.replace(day=1)
 
         response = client.get(
-            profit_project_url(sample_project.id),
+            profit_project_url(test_project.id),
             params={
                 "start_date": str(start_date),
                 "end_date": str(today),
@@ -211,7 +214,7 @@ class TestFinanceProfitHappyPath:
             assert "summary" in data["data"]
 
     def test_get_account_profit__returns_200_and_detail(
-        self, client, finance_headers, sample_ad_account
+        self, client, finance_headers, test_ad_account
     ):
         """
         TC-PROFIT-HP-005: 查询账户消耗明细 - 返回 200 和明细
@@ -222,7 +225,7 @@ class TestFinanceProfitHappyPath:
         start_date = today - timedelta(days=30)
 
         response = client.get(
-            profit_account_url(sample_ad_account.id),
+            profit_account_url(test_ad_account.id),
             params={
                 "start_date": str(start_date),
                 "end_date": str(today),
@@ -523,28 +526,17 @@ class TestFinanceProfitErrorCodes:
 
 
 # ============================================================================
-# Fixtures Placeholder
+# Fixtures - 使用 conftest.py 中已定义的 fixtures
 # ============================================================================
-
-@pytest.fixture
-def sample_project(db_session):
-    """创建测试项目 fixture (需在 conftest.py 中实现)"""
-    from backend.models import Project
-    project = db_session.query(Project).first()
-    if project:
-        return project
-    # 如果没有项目，跳过测试
-    pytest.skip("No sample project available")
-
-
-@pytest.fixture
-def sample_ad_account(db_session):
-    """创建测试广告账户 fixture (需在 conftest.py 中实现)"""
-    from backend.models import AdAccount
-    account = db_session.query(AdAccount).first()
-    if account:
-        return account
-    pytest.skip("No sample ad account available")
+#
+# 本测试文件使用以下来自 conftest.py 的 fixtures：
+# - client: TestClient
+# - finance_headers: finance 角色的 Authorization 头
+# - media_buyer_headers: media_buyer 角色的 Authorization 头
+# - test_project: 测试用项目
+# - test_ad_account: 测试用广告账户
+# - db_session: SQLAlchemy Session
+#
 
 
 # ============================================================================
@@ -571,11 +563,11 @@ def sample_ad_account(db_session):
 | TC-PROFIT-ERR-001 | 项目不存在 PROFIT_003 | ✅ |
 | TC-PROFIT-ERR-002 | 账户不存在 PROFIT_007 | ✅ |
 
-依赖 fixtures (需在 conftest.py 中实现):
+依赖 fixtures (来自 conftest.py):
 - client: TestClient
 - finance_headers: finance 角色的 Authorization 头
 - media_buyer_headers: media_buyer 角色的 Authorization 头
-- sample_project: 测试用项目
-- sample_ad_account: 测试用广告账户
+- test_project: 测试用项目 (已修复: sample_project → test_project)
+- test_ad_account: 测试用广告账户 (已修复: sample_ad_account → test_ad_account)
 - db_session: SQLAlchemy Session
 """

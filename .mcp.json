@@ -1,31 +1,15 @@
 {
     "mcpServers": {
-        "supabase": {
-            "command": "cmd",
+        "ai-ad-agents": {
+            "command": "python",
             "args": [
-                "/c",
-                "npx",
-                "-y",
-                "@supabase/mcp-server-supabase@latest",
-                "--access-token",
-                "sbp_e64f59f761e35d6f89b8df7fd8c1a80a1c70a13a",
-                "--project-ref",
-                "jzmcoivxhiyidizncyq"
-            ]
-        },
-        "sequential-thinking": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-sequential-thinking"
-            ]
-        },
-        "context7": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@upstash/context7-mcp"
-            ]
+                "-m",
+                "agent_platform.mcp.server"
+            ],
+            "env": {
+                "AGENT_PLATFORM_MODE": "mcp",
+                "PYTHONPATH": "D:\\\\git\\\\1108\\\\AI_ad_spend02"
+            }
         }
     }
 }

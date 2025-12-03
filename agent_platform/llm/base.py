@@ -143,6 +143,10 @@ class LLMClient(ABC):
     - 可测试性：支持 Mock 实现
     - 兼容性：提供 messages.create() 兼容接口
 
+    MCP 模式 (Phase 3.2):
+    - 当 AGENT_PLATFORM_MODE=mcp 时，禁止创建 LLM 客户端实例
+    - MCP 模式下 Claude 是唯一的 LLM，agent_platform 仅提供工具
+
     使用示例：
     ```python
     # 新接口（推荐）
@@ -160,9 +164,41 @@ class LLMClient(ABC):
     ```
     """
 
-    def __init__(self):
+    def __init__(self, *, _skip_mcp_check: bool = False):
+        """
+        初始化 LLM 客户端。
+
+        Args:
+            _skip_mcp_check: 内部参数，跳过 MCP 模式检查（仅用于 DummyLLMClient）
+
+        Raises:
+            LLMNotConfiguredError: 在 MCP 模式下尝试创建 LLM 客户端
+        """
+        # MCP 模式检查：禁止在 MCP 模式下创建 LLM 客户端
+        if not _skip_mcp_check:
+            self._check_mcp_mode()
+
         # 提供 messages.create() 兼容接口
         self._messages_api: Optional[MessagesAPI] = None
+
+    def _check_mcp_mode(self) -> None:
+        """
+        检查 MCP 模式并在必要时抛出异常。
+
+        MCP 模式下，agent_platform 作为纯工具箱运行，
+        Claude 是唯一的 LLM，不允许创建其他 LLM 客户端。
+
+        Phase 3.2 Fix P1-03: 使用 factory.is_mcp_mode() 统一检查逻辑
+        """
+        # 延迟导入避免循环依赖
+        from .factory import is_mcp_mode
+        if is_mcp_mode():
+            from ..core.exceptions import LLMNotConfiguredError
+            raise LLMNotConfiguredError(
+                "MCP 工具模式下禁止创建 LLM 客户端。"
+                "在此模式下，Claude 是唯一的 LLM，agent_platform 仅提供工具。"
+                "如需使用 CLI 模式，请移除 AGENT_PLATFORM_MODE 环境变量或设置为 'cli'。"
+            )
 
     @property
     def messages(self) -> MessagesAPI:
@@ -290,7 +326,8 @@ class DummyLLMClient(LLMClient):
                 - 设置后 generate() 将抛出此异常
                 - 优先级高于 mock_response
         """
-        super().__init__()  # 初始化 messages 兼容层
+        # DummyLLMClient 跳过 MCP 模式检查，允许在测试中使用
+        super().__init__(_skip_mcp_check=True)
         self._raise_on_call = raise_on_call
         self._mock_response = mock_response
         self._mock_error = mock_error

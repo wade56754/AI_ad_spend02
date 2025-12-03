@@ -24,6 +24,9 @@ python-multipart>=0.0.6,<1.0.0
 httpx>=0.25.0,<0.30.0
 requests>=2.31.0,<3.0.0
 
+# Model Context Protocol (MCP) SDK
+mcp>=1.22.0
+
 # 缓存
 redis>=5.0.0,<6.0.0
 hiredis>=2.2.0,<3.0.0
