@@ -55,7 +55,10 @@ Track these steps as TODOs and complete them one by one.
 5. **Confirm completion** - Ensure every item in `tasks.md` is finished before updating statuses
 6. **Update checklist** - After all work is done, set every task to `- [x]` so the list reflects reality
 7. **Approval gate** - Do not start implementation until the proposal is reviewed and approved
-8. **Regression test gate** - If change affects backend/services/*, backend/routers/*, docs/2.sot/*, or .claude/skills/ai-ad-api-automation-test/*, MUST pass regression tests before merge (see Backend Regression Gate rules)
+8. **Regression test gate** - If change affects backend/services/*, backend/routers/*, docs/2.sot/*, or .claude/skills/ai-ad-api-automation-test/*, **MUST** include regression test task in tasks.md and pass regression tests before merge:
+   - Add task: "Run `python run_tests.py --type regression` and verify all tests pass (compare with baseline v1.0)"
+   - Baseline reference: `docs/4.testing/BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md`
+   - See AUTOMATION_TEST_SPEC_v1.4 Section 11 for Backend Regression Gate rules
 
 ### Stage 3: Archiving Changes
 After deployment, create separate PR to:
@@ -205,6 +208,18 @@ If multiple capabilities are affected, create multiple delta files under `change
 - [ ] 1.2 Implement API endpoint
 - [ ] 1.3 Add frontend component
 - [ ] 1.4 Write tests
+
+## 2. Regression Test Verification (MANDATORY for API/State Machine changes)
+- [ ] 2.1 Run regression test suite: `python run_tests.py --type regression`
+- [ ] 2.2 Verify all tests pass (compare with baseline v1.0)
+- [ ] 2.3 Document any new failures or skipped tests
+- [ ] 2.4 If tests fail, fix code or update baseline (with approval)
+
+Note: Regression test task is MANDATORY if change affects:
+- backend/routers/* (any router changes)
+- backend/services/* (any service changes)
+- docs/2.sot/* (any SoT document changes, especially API_SOT, STATE_MACHINE)
+- .claude/skills/ai-ad-api-automation-test/* (test automation skill changes)
 ```
 
 5. **Create design.md when needed:**

@@ -1,0 +1,50 @@
+name: Backend Regression Tests
+
+on:
+  push:
+    branches:
+      - main
+      - 'sot-fix-*'
+  pull_request:
+    branches:
+      - main
+      - 'sot-fix-*'
+
+jobs:
+  regression-tests:
+    name: Run Backend Regression Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+      
+      - name: Install backend dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements-test.txt
+      
+      - name: Run regression tests
+        run: |
+          python run_tests.py --type regression
+      
+      - name: Upload test results (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test_reports/
+            htmlcov/
+          if-no-files-found: ignore
+

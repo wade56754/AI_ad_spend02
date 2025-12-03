@@ -1,6 +1,6 @@
 # AI_ad_spend02 自动化测试规范
 
-> **版本**: v1.5
+> **版本**: v1.6
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2025-12-02
@@ -18,6 +18,14 @@
 | **SoT 定位** | Layer 3 Dev-Guides 下位规范 |
 | **Owner** | Testing SoT Owner（后端技术负责人） |
 | **强制级别** | 新增测试 **MUST**；存量测试 **SHOULD** 逐步迁移 |
+
+### v1.6 变更摘要
+
+| 变更项 | 说明 |
+|--------|------|
+| 新增回归基线管理 | 新增第 11.7 节「回归基线管理」，定义 Backend Regression Baseline v1.0 和基线对比方法 |
+| 基线版本管理 | 明确基线更新条件和版本管理规则 |
+| 基线文档引用 | 引用 `BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md` 作为正式基线文档 |
 
 ### v1.5 变更摘要
 
@@ -2078,6 +2086,52 @@ python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
 - ERROR_CODES_SOT.md v2.1
 - LEDGER_SOT.md v1.1
 
+### 11.7 回归基线管理
+
+#### 11.7.1 基线定义
+
+**Backend Regression Baseline v1.0**：
+- **建立日期**: 2025-12-02
+- **测试结果**: 198 passed, 3 deselected, 0 failed
+- **覆盖模块**: 6 个核心模块（Daily Reports, Trend Risk, Ledger, Ad Accounts, Topup, Transfers）
+- **基线报告**: `docs/4.testing/BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md`
+- **执行命令**: `python run_tests.py --type regression`
+
+#### 11.7.2 基线用途
+
+回归基线 v1.0 用于：
+
+1. **版本对比**: 后续版本回归测试结果与本基线对比，识别回归问题
+2. **CI/CD 标准**: 作为持续集成流水线的通过标准
+3. **发布前验证**: 作为发布前的回归验证基准
+4. **问题追踪**: 作为问题复现和修复验证的参考基准
+
+#### 11.7.3 基线对比方法
+
+**对比步骤**：
+1. 运行回归测试：`python run_tests.py --type regression`
+2. 对比测试结果：
+   - 新增失败用例 → 识别回归问题
+   - 新增跳过用例 → 评估是否需要修复
+   - 用例数量变化 → 确认测试覆盖变化
+3. 记录对比结果：在 PR 或 change 文档中记录与基线的差异
+
+#### 11.7.4 基线维护
+
+**基线更新条件**：
+- 测试套件发生重大变更（新增模块、大规模重构）
+- 测试用例数量显著变化（±20%）
+- 测试覆盖范围扩展（新增核心业务模块）
+
+**基线版本管理**：
+- 使用语义化版本号（v1.0, v1.1, v1.2, ...）
+- 每次基线更新需创建新的冻结报告
+- 更新 AUTOMATION_TEST_SPEC 中的基线版本号
+
+**基线文档位置**：
+- 基线报告：`docs/4.testing/BACKEND_REGRESSION_FREEZE_REPORT_v*.md`
+- 基线变更记录：`openspec/changes/backend-regression-baseline-v*/`
+
 ---
 
 ## 12. 版本演进路线
@@ -2089,8 +2143,9 @@ python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
 | **v1.2** | 结构重组，增强可执行性，补充 Agent 协作指南 | Superseded |
 | **v1.3** | RFC 2119 规范化、SoT 路径精确化、示范测试用例、CI/CD 完整配置 | Superseded |
 | **v1.4** | 补全 API_SOT SoT 依赖、显式记录外部 Boilerplate 来源、修正示例代码 | Superseded |
-| **v1.5** | 新增后端回归测试门槛（Backend Regression Gate），强制回归测试规则，CI/CD 集成 | **Current** |
-| v1.6 | 引入 UI 自动化（L3），绑定 Playwright 框架 | Planned |
+| **v1.6** | 新增回归基线管理（Backend Regression Baseline v1.0），基线对比方法，基线版本管理 | **Current** |
+| v1.5 | 新增后端回归测试门槛（Backend Regression Gate），强制回归测试规则，CI/CD 集成 | Superseded |
+| v1.7 | 引入 UI 自动化（L3），绑定 Playwright 框架 | Planned |
 | v2.0 | 测试体系纳入自动化 Agent 流水线 | Future |
 
 ---

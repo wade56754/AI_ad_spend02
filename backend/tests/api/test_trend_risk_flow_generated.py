@@ -429,7 +429,10 @@ class TestTrendRiskErrorCodes:
         # Assert
         assert response.status_code == 404
         data = response.json()
-        assert data.get("code") == "BIZ_002" or "not found" in data.get("message", "").lower()
+        assert data.get("success") is False
+        error = data.get("error", {})
+        assert error.get("code") == "BIZ_002"
+        assert "not found" in error.get("message", "").lower() or "不存在" in error.get("message", "")
 
     def test_resolve_nonexistent_report__returns_404_biz_002(
         self, client, data_operator_headers
@@ -449,7 +452,10 @@ class TestTrendRiskErrorCodes:
         # Assert
         assert response.status_code == 404
         data = response.json()
-        assert data.get("code") == "BIZ_002" or "not found" in data.get("message", "").lower()
+        assert data.get("success") is False
+        error = data.get("error", {})
+        assert error.get("code") == "BIZ_002"
+        assert "not found" in error.get("message", "").lower() or "不存在" in error.get("message", "")
 
     def test_flag_wrong_status__returns_400_trend_002(
         self, client, data_operator_headers, test_ad_account, db_session

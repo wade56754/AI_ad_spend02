@@ -46,6 +46,10 @@ def backend_test_skill(scope: str = "all", level: str = "full", timeout: int = N
     timeout_value = timeout if timeout is not None else default_timeout
     timeout_flag = f"--timeout={timeout_value}"
 
+    # 日志增强：打印最终执行参数（P1-CODE-002 修复）
+    logger.info(f"[BackendTestSkill] 执行参数: scope={scope}, level={level}, timeout={timeout_value}s")
+    logger.info(f"[BackendTestSkill] pytest timeout flag: {timeout_flag}")
+
     # 可选：加载 TESTING / MASTER 文档做上下文（不存在也没关系）
     # 处理 None 值，避免在 prompt 中出现 "None" 字符串
     testing_md = read_optional(SOT_FILES.get("TESTING")) or ""

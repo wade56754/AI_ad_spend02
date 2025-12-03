@@ -1,105 +1,61 @@
-"""
-TestAgent - Test Generation and Execution Prompt Agent
-
-Phase 3.0A: Migrated to AgentProtocol + Registry system.
-
-Orchestrates test prompt generation by delegating to db_test_skill or backend_test_skill.
-Does NOT directly execute tests; generates prompts for MCP/shell/human execution.
-
-Returns:
-    success=True indicates prompt was generated successfully (NOT that tests passed).
-    Check data.executed and data.status for actual execution state.
-"""
-
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Dict, Any, Optional
 import logging
 
-from agent_platform.core.protocol import AgentProtocol, AgentContext
 from ..tools.types import AgentResponse
 
 logger = logging.getLogger(__name__)
 
 
-class TestAgent(AgentProtocol):
+class TestAgent:
     """
-    Test Generation and Execution Prompt Agent.
+    TestAgent：统一对接两类测试 Skill
 
-    Unified interface for two types of test skills:
-    - mode="db" (default): Generates Supabase MCP database invariant test prompts
-    - mode="backend": Generates backend pytest execution prompts
+    - mode="db"（默认）：
+        生成 Supabase MCP 使用的数据库不变量测试提示词（db_test_skill）
+    - mode="backend"：
+        生成后端 pytest 测试流程的提示词（backend_test_skill）
 
-    Request Fields:
-        - mode: "db" | "backend" (default: "db")
-        - scope: Backend test scope, e.g., "ledger" | "topups" | "all" (backend mode only)
-        - level: Backend test level, "quick" | "full" (backend mode only)
-        - target_module: Optional target module name for focused testing
-        - target_tests: Optional list of specific test files/functions
-
-    Response Fields:
-        - data.prompt: Generated prompt for MCP/shell/human execution
-        - data.status: "prompt_generated" | "executed" | "failed"
-        - data.executed: Whether tests were actually executed (always False in current version)
-        - data.reason: Human-readable explanation of status
-        - data.meta: Metadata including run_id, agent, version
-
-    Note:
-        success=True means prompt generation succeeded, NOT that tests passed.
-        Check data.executed and data.status for actual execution state.
+    注意：本 Agent 不直接执行测试，只负责生成提示词。
+    返回值中的 executed 字段始终为 False。
     """
 
-    def __init__(self, base_path: Optional[Path] = None) -> None:
-        """
-        Initialize Test Agent.
-
-        Args:
-            base_path: Project root directory (defaults to auto-detected path)
-        """
-        self.base_path = (
-            base_path
-            if base_path is not None
-            else Path(__file__).resolve().parent.parent.parent
-        )
-
-    @property
-    def name(self) -> str:
-        """Agent unique identifier."""
-        return "test"
-
-    @property
-    def description(self) -> str:
-        """Agent description."""
-        return "Test prompt generation for pytest and database invariant validation"
-
-    @property
-    def version(self) -> str:
-        """Agent version."""
-        return "1.0.0"
-
-    def handle_request(
+    def __init__(
         self,
-        request: Dict[str, Any],
-        context: Optional[AgentContext] = None,
-    ) -> AgentResponse:
+        base_path: Optional[Path] = None,
+        project_id: Optional[str] = None,
+    ) -> None:
+        self.base_path = base_path or Path(__file__).resolve().parent.parent.parent
+        self.project_id = project_id
+
+    def handle_request(self, request: Dict[str, Any]) -> AgentResponse:
         """
-        Process test generation request.
+        处理测试请求（符合 AgentProtocol）。
 
         Args:
-            request: Request dictionary with fields:
-                - mode: "db" | "backend" (default: "db")
-                - scope: Backend test scope (backend mode only)
-                - level: Backend test level (backend mode only)
-                - target_module: Optional target module
-                - target_tests: Optional list of test files
-            context: Optional execution context for tracing (auto-created if None)
+            request: 请求字典，可包含：
+                - mode: "db" | "backend"（默认 "db"）
+                - scope: backend 测试范围（仅 mode="backend" 时使用）
+                - level: backend 测试级别（仅 mode="backend" 时使用）
 
         Returns:
-            AgentResponse with generated prompt and metadata
-        """
-        # Phase 3.0A: Ensure context exists for tracing
-        context = context or AgentContext()
-        run_id = context.run_id
+            {
+                "success": bool,        # True = prompt 生成成功，不代表测试已执行或通过
+                "data": {
+                    "prompt": str,       # 给 MCP / 人类使用的提示词
+                    "status": str,       # "prompt_generated" | "executed" | "failed"
+                    "executed": bool,    # 是否已执行测试（当前版本始终为 False）
+                    "reason": str,       # 未执行原因说明（人类可读）
+                    ...                  # 其他元信息（mode/scope/level）
+                },
+                "error": Optional[str]
+            }
 
+        Note:
+            当前版本只生成 prompt，不直接执行测试。
+            success=True 表示「prompt 生成成功」，而非「测试通过」。
+            调用方应检查 data.status 和 data.executed 字段判断实际状态。
+        """
         mode = (
             request.get("mode")
             or request.get("kind")
@@ -108,63 +64,55 @@ class TestAgent(AgentProtocol):
         )
         mode = str(mode).lower().strip()
 
-        logger.info(f"[run_id={run_id}] Test Agent processing mode: {mode}")
-
         if mode in ("db", "db_test", "db_invariants"):
-            return self._handle_db_test(request, run_id)
+            return self._handle_db_test(request)
         elif mode in ("backend", "backend_tests", "backend_pytest"):
-            return self._handle_backend_test(request, run_id)
+            return self._handle_backend_test(request)
         else:
             msg = f"Unsupported test mode: {mode}"
-            logger.error(f"[run_id={run_id}] {msg}")
+            logger.error(msg)
             return {
                 "success": False,
-                "data": {
-                    "meta": {
-                        "run_id": run_id,
-                        "agent": self.name,
-                        "version": self.version,
-                        "skill_used": None,
-                    },
-                },
+                "data": None,
                 "error": msg,
             }
 
-    def _handle_db_test(self, request: Dict[str, Any], run_id: str) -> AgentResponse:
-        """Handle DB invariant test prompt generation."""
+    # ------- DB 测试（原有逻辑抽出来） -------
+
+    def _handle_db_test(self, request: Dict[str, Any]) -> AgentResponse:
         from ..skills.db_test_skill import db_test_skill
 
-        logger.info(f"[run_id={run_id}] Test Agent generating DB test prompt")
+        logger.info("Test Agent generating DB test prompt")
 
+        # TODO: 预留参数透传位点，未来可扩展 db_test_skill 签名
+        # target = request.get("target")  # e.g., "supabase" | "local"
+        # env = request.get("env")        # e.g., "test" | "staging"
+        # result = db_test_skill(target=target, env=env)
         result = db_test_skill()
 
+        # Clarify that tests were NOT executed (only prompt was generated)
+        # success=True 仅表示 prompt 生成成功，不代表测试已执行或通过
         if result["success"]:
             prompt = result["data"]["prompt"]
             prompt_len = len(prompt)
-            logger.info(f"[run_id={run_id}] Test Agent completed: DB test prompt ({prompt_len} chars)")
-
+            logger.info(f"Test Agent completed: DB test prompt generated ({prompt_len} chars)")
             return {
                 "success": True,
                 "data": {
                     "prompt": prompt,
+                    # status 字段：明确语义，避免 success=True 被误解为「测试通过」
                     "status": "prompt_generated",
-                    "executed": False,
+                    "executed": False,  # Always False until actual MCP integration
                     "reason": (
                         "[NOT EXECUTED] DB 测试 prompt 已生成，但测试尚未执行。"
                         "需要配置 Supabase MCP 或手动运行 prompt 中的 SQL 查询。"
                     ),
                     "mode": "db",
-                    "meta": {
-                        "run_id": run_id,
-                        "agent": self.name,
-                        "version": self.version,
-                        "skill_used": "db_test_skill",
-                    },
                 },
                 "error": None,
             }
         else:
-            logger.error(f"[run_id={run_id}] DB Test Skill failed: {result.get('error')}")
+            logger.error(f"DB Test Skill failed: {result.get('error')}")
             return {
                 "success": False,
                 "data": {
@@ -172,44 +120,38 @@ class TestAgent(AgentProtocol):
                     "executed": False,
                     "reason": "DB test skill 执行失败，prompt 未生成",
                     "mode": "db",
-                    "meta": {
-                        "run_id": run_id,
-                        "agent": self.name,
-                        "version": self.version,
-                        "skill_used": "db_test_skill",
-                    },
                 },
                 "error": result.get("error") or "db_test_skill failed",
             }
 
-    def _handle_backend_test(self, request: Dict[str, Any], run_id: str) -> AgentResponse:
-        """Handle backend pytest prompt generation."""
+    # ------- Backend pytest 测试（新逻辑） -------
+
+    def _handle_backend_test(self, request: Dict[str, Any]) -> AgentResponse:
         from ..skills.backend_test_skill import backend_test_skill
 
         scope = (request.get("scope") or "all").lower()
         level = (request.get("level") or "full").lower()
-        target_module = request.get("target_module")
-        target_tests = request.get("target_tests", [])
 
         logger.info(
-            f"[run_id={run_id}] Test Agent generating Backend pytest prompt "
+            f"Test Agent generating Backend pytest test prompt "
             f"(scope={scope}, level={level})"
         )
 
         result = backend_test_skill(scope=scope, level=level)
 
+        # success=True 仅表示 prompt 生成成功，不代表测试已执行或通过
         if result["success"]:
             prompt = result["data"]["prompt"]
             prompt_len = len(prompt)
             logger.info(
-                f"[run_id={run_id}] Test Agent completed: Backend test prompt "
+                f"Test Agent completed: Backend test prompt generated "
                 f"({prompt_len} chars, scope={scope}, level={level})"
             )
-
             return {
                 "success": True,
                 "data": {
                     "prompt": prompt,
+                    # status 字段：明确语义，避免 success=True 被误解为「测试通过」
                     "status": "prompt_generated",
                     "executed": False,
                     "reason": (
@@ -219,19 +161,11 @@ class TestAgent(AgentProtocol):
                     "mode": "backend",
                     "scope": scope,
                     "level": level,
-                    "target_module": target_module,
-                    "target_tests": target_tests,
-                    "meta": {
-                        "run_id": run_id,
-                        "agent": self.name,
-                        "version": self.version,
-                        "skill_used": "backend_test_skill",
-                    },
                 },
                 "error": None,
             }
         else:
-            logger.error(f"[run_id={run_id}] Backend Test Skill failed: {result.get('error')}")
+            logger.error(f"Backend Test Skill failed: {result.get('error')}")
             return {
                 "success": False,
                 "data": {
@@ -241,12 +175,6 @@ class TestAgent(AgentProtocol):
                     "mode": "backend",
                     "scope": scope,
                     "level": level,
-                    "meta": {
-                        "run_id": run_id,
-                        "agent": self.name,
-                        "version": self.version,
-                        "skill_used": "backend_test_skill",
-                    },
                 },
                 "error": result.get("error") or "backend_test_skill failed",
             }

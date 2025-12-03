@@ -85,6 +85,12 @@ from .finance import (
     SettlementStatus,
     SettlementType,
     PaymentStatus,
+    # Profit module (PROFIT_SOT.md v1.1)
+    ProfitAggregate,
+    ProfitReportSnapshot,
+    ProfitPeriodType,
+    ProfitReportType,
+    ProfitReportStatus,
 )
 
 # 审计模块
@@ -157,4 +163,10 @@ __all__ = [
     'PaymentStatus',
     'AuditLog',
     'Log',
+    # Profit module (PROFIT_SOT.md v1.1)
+    'ProfitAggregate',
+    'ProfitReportSnapshot',
+    'ProfitPeriodType',
+    'ProfitReportType',
+    'ProfitReportStatus',
 ]
