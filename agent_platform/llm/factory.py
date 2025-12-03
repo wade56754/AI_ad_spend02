@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Optional, Tuple
 
 from .base import LLMClient, LLMResponse, DummyLLMClient
+from .deeprouter_client import DeepRouterLLMClient
 from ..core.exceptions import LLMClientError, LLMNotConfiguredError
 
 logger = logging.getLogger(__name__)
@@ -218,10 +219,12 @@ def get_llm_client(allow_dummy: bool = True) -> LLMClient:
     """
     获取 LLM 客户端实例（线程安全）。
 
-    后端优先级：
-        1. Anthropic 官方 API（如果 ANTHROPIC_API_KEY 存在）
-        2. Claude Code CLI 适配器（如果 CLI 已安装）
-        3. DummyLLMClient（如果 allow_dummy=True）
+    后端选择：
+        - 如果 LLM_BACKEND="deeprouter"，使用 DeepRouter LLM Client
+        - 否则按优先级选择：
+            1. Anthropic 官方 API（如果 ANTHROPIC_API_KEY 存在）
+            2. Claude Code CLI 适配器（如果 CLI 已安装）
+            3. DummyLLMClient（如果 allow_dummy=True）
 
     Args:
         allow_dummy: 当前两种后端都不可用时，是否返回 DummyClient
@@ -244,6 +247,21 @@ def get_llm_client(allow_dummy: bool = True) -> LLMClient:
         # 双重检查
         if _client is not None:
             return _client
+
+        # 检查显式指定的后端类型
+        backend_type = os.environ.get("LLM_BACKEND", "anthropic_api").strip().lower()
+
+        # 策略 0: DeepRouter 后端（显式指定）
+        if backend_type == "deeprouter":
+            try:
+                _client = _create_deeprouter_client()
+                _backend_type = "deeprouter"
+                return _client
+            except Exception as e:
+                logger.warning(f"Failed to create DeepRouter client: {e}")
+                if not allow_dummy:
+                    raise LLMNotConfiguredError() from e
+                # 继续尝试其他后端
 
         # 策略 1: 检查 Anthropic API Key（多来源优先级链）
         api_key, key_source = _load_anthropic_api_key()
@@ -352,6 +370,27 @@ def _create_anthropic_client(api_key: str) -> LLMClient:
 
     # 返回包装器
     return AnthropicLLMClient(native_client)
+
+
+def _create_deeprouter_client() -> LLMClient:
+    """
+    创建 DeepRouter LLM 客户端。
+
+    Returns:
+        DeepRouterLLMClient 实例
+
+    Raises:
+        LLMClientError: 如果配置缺失或创建失败
+    """
+    try:
+        return DeepRouterLLMClient()
+    except LLMClientError:
+        raise
+    except Exception as e:
+        raise LLMClientError(
+            f"Failed to create DeepRouter client: {e}",
+            provider="deeprouter",
+        ) from e
 
 
 def _create_claude_code_client() -> LLMClient:
@@ -575,6 +614,7 @@ def get_backend_type() -> Optional[str]:
     获取当前使用的 LLM 后端类型。
 
     Returns:
+        "deeprouter" - DeepRouter 代理 API
         "anthropic_api" - Anthropic 官方 API
         "claude_code" - Claude Code CLI
         "dummy" - 占位客户端
@@ -677,4 +717,5 @@ __all__ = [
     "extract_response_text",
     "AnthropicLLMClient",
     "ClaudeCodeLLMClient",
+    "DeepRouterLLMClient",
 ]
