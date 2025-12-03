@@ -215,9 +215,13 @@ def cmd_orch(args: argparse.Namespace) -> int:
         return 1
 
     # Mode-specific options
-    if args.mode == "execute":
+    if args.mode == "plan":
+        request["mode"] = "plan"
+    elif args.mode == "execute":
+        request["mode"] = "execute"
         request["auto_write"] = True
     elif args.mode == "dry-run":
+        request["mode"] = "execute"  # dry-run 仍然执行，但不写入文件
         request["auto_write"] = False
 
     # Extra JSON params
@@ -300,6 +304,11 @@ def _print_orch_result(result: Dict[str, Any], flow: str, run_id: str) -> None:
     error = result.get("error")
     data = result.get("data", {})
 
+    # Check if this is a plan mode result
+    if data.get("mode") == "plan":
+        _print_plan_result(result, flow, run_id)
+        return
+
     status = "[OK] SUCCESS" if success else "[FAIL] FAILED"
     print(f"\n{status} [orch/{flow}] run_id={run_id}")
 
@@ -342,6 +351,66 @@ def _print_orch_result(result: Dict[str, Any], flow: str, run_id: str) -> None:
                 print(f"    • {note}")
             if len(notes) > 5:
                 print(f"    ... and {len(notes) - 5} more")
+
+
+def _print_plan_result(result: Dict[str, Any], flow: str, run_id: str) -> None:
+    """Print plan mode result in human-readable format."""
+    data = result.get("data", {})
+    plan = data.get("plan", {})
+    
+    print(f"\n[PLAN] [orch/{flow}] run_id={run_id}")
+    print("=" * 60)
+    
+    if plan:
+        description = plan.get("description", "")
+        if description:
+            print(f"\n描述: {description}")
+        
+        steps = plan.get("steps", [])
+        if steps:
+            print(f"\n执行步骤 ({len(steps)} 步):")
+            print("-" * 60)
+            for step in steps:
+                step_num = step.get("step", "?")
+                agent = step.get("agent", "")
+                action = step.get("action", "")
+                inputs = step.get("inputs", [])
+                outputs = step.get("outputs", [])
+                
+                agent_str = f"[{agent}]" if agent else ""
+                print(f"  步骤 {step_num}: {agent_str} {action}")
+                if inputs:
+                    print(f"    输入: {', '.join(inputs)}")
+                if outputs:
+                    print(f"    输出: {', '.join(outputs)}")
+                if step.get("blocking"):
+                    print(f"    阻塞: 是")
+                if step.get("condition"):
+                    print(f"    条件: {step.get('condition')}")
+        
+        estimated_agents = plan.get("estimated_agents", [])
+        if estimated_agents:
+            print(f"\n预计调用的 Agent: {', '.join(estimated_agents)}")
+        
+        request_context = plan.get("request_context", {})
+        if request_context:
+            print(f"\n请求上下文:")
+            if request_context.get("task"):
+                task_preview = request_context["task"][:100]
+                print(f"  任务: {task_preview}{'...' if len(request_context.get('task', '')) > 100 else ''}")
+            if request_context.get("target_files"):
+                files = request_context["target_files"]
+                print(f"  目标文件: {len(files)} 个")
+                for f in files[:5]:
+                    print(f"    - {f}")
+                if len(files) > 5:
+                    print(f"    ... 还有 {len(files) - 5} 个文件")
+            if request_context.get("module"):
+                print(f"  模块: {request_context['module']}")
+            print(f"  自动写入: {'是' if request_context.get('auto_write') else '否'}")
+    
+    print("=" * 60)
+    print("提示: 使用 --mode execute 执行此计划")
 
 
 def _ensure_agents_registered() -> None:
@@ -477,9 +546,9 @@ Examples:
     )
     orch_parser.add_argument(
         "--mode",
-        choices=["dry-run", "execute"],
+        choices=["plan", "dry-run", "execute"],
         default="dry-run",
-        help="Execution mode (default: dry-run)",
+        help="Execution mode: plan (0-cost preview), dry-run (no write), execute (default: dry-run)",
     )
     orch_parser.add_argument(
         "--json", "-j",

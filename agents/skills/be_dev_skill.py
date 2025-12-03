@@ -154,6 +154,23 @@ def be_dev_skill(task: str, target_files: List[str]) -> SkillResult:
     existing = read_files(BACKEND_DIR, target_files)
     prompt = _build_be_prompt(task, existing)
 
+    # 从 prompt 中提取 system 和 user 部分（支持 DeepRouter 等代理 API）
+    # prompt 格式: <SYSTEM>...</SYSTEM>\n\n<CONTEXT>...</CONTEXT>...
+    system_prompt = ""
+    user_prompt = prompt
+    
+    if "<SYSTEM>" in prompt and "</SYSTEM>" in prompt:
+        system_start = prompt.find("<SYSTEM>") + len("<SYSTEM>")
+        system_end = prompt.find("</SYSTEM>")
+        if system_end > system_start:
+            system_prompt = prompt[system_start:system_end].strip()
+            # user_prompt 从 </SYSTEM> 之后开始
+            user_prompt = prompt[system_end + len("</SYSTEM>"):].strip()
+    
+    # 如果提取不到 system，使用默认值（避免 DeepRouter 报错）
+    if not system_prompt:
+        system_prompt = "你是后端开发 Agent，负责在 FastAPI + SQLAlchemy + Pydantic v2 项目中实现/重构接口和 Service。"
+
     # Fix: P1-03 - 使用统一的 LLM 客户端
     try:
         client = get_llm_client()
@@ -162,7 +179,8 @@ def be_dev_skill(task: str, target_files: List[str]) -> SkillResult:
             model=LLM_CONFIG["model"],
             max_tokens=LLM_CONFIG["max_tokens"],
             temperature=LLM_CONFIG["temperature"],
-            messages=[{"role": "user", "content": prompt}],
+            system=system_prompt,  # 传递 system 参数（DeepRouter 要求非空）
+            messages=[{"role": "user", "content": user_prompt}],
         )
     except Exception as e:
         logger.error(f"LLM API error: {e}")
@@ -175,16 +193,33 @@ def be_dev_skill(task: str, target_files: List[str]) -> SkillResult:
     # Fix: P1-03 - 使用统一的响应提取函数
     text = extract_response_text(resp)
     logger.debug(f"API response received: {len(text)} chars")
+    # 调试：检查响应文本格式
+    if text:
+        logger.debug(f"Response text starts with: {text[:100]}")
+        logger.debug(f"Response text ends with: {text[-100:]}")
+        # 检查是否包含代码块标记
+        has_start_marker = "```" in text[:20]
+        has_end_marker = "```" in text[-20:]
+        logger.debug(f"Has start marker (```): {has_start_marker}, Has end marker (```): {has_end_marker}")
 
     # 解析 JSON
     try:
         data = json.loads(text)
+        logger.debug("JSON parsed directly from text")
     except json.JSONDecodeError as parse_error:
         # Try to extract JSON from markdown code blocks or embedded JSON
+        logger.debug(f"Direct JSON parse failed: {parse_error}, trying _extract_json...")
         try:
             data = _extract_json(text)
-        except json.JSONDecodeError:
+            logger.debug("JSON successfully extracted using _extract_json")
+        except json.JSONDecodeError as extract_error:
+            # 输出实际响应内容的前 2000 字符用于调试
+            raw_preview = text[:2000] if text else "(empty response)"
             logger.error(f"JSON parsing failed: {parse_error}")
+            logger.error(f"_extract_json also failed: {extract_error}")
+            logger.error(f"Raw response preview (first 2000 chars):\n{raw_preview}")
+            if len(text) > 2000:
+                logger.error(f"... (truncated, total length: {len(text)} chars)")
             return {
                 "success": False,
                 "data": None,

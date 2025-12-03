@@ -447,6 +447,7 @@ def _extract_json(text: str) -> Any:
         json.JSONDecodeError: 无法解析 JSON
     """
     text = text.strip()
+    logger.debug(f"_extract_json: input text length={len(text)}, first 100 chars: {text[:100]}")
 
     # 1. 尝试直接解析
     try:
@@ -454,23 +455,114 @@ def _extract_json(text: str) -> Any:
     except json.JSONDecodeError:
         pass
 
-    # 2. 尝试提取 Markdown 代码块
-    code_block_pattern = r"```(?:json)?\s*\n?([\s\S]*?)\n?```"
-    matches = re.findall(code_block_pattern, text)
-    for match in matches:
+    # 2. 尝试提取 Markdown 代码块（改进：支持多行和更灵活的匹配）
+    # 匹配 ```json 或 ``` 开头的代码块，非贪婪匹配到第一个 ```
+    code_block_pattern = r"```(?:json)?\s*\n([\s\S]*?)\n```"
+    matches = re.findall(code_block_pattern, text, re.MULTILINE | re.DOTALL)
+    logger.debug(f"_extract_json: pattern 1 found {len(matches)} matches")
+    for i, match in enumerate(matches):
         try:
-            return json.loads(match.strip())
-        except json.JSONDecodeError:
+            cleaned = match.strip()
+            if cleaned:
+                logger.debug(f"_extract_json: trying to parse match {i+1}, length={len(cleaned)}")
+                return json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            logger.debug(f"_extract_json: match {i+1} parse failed: {e}")
+            continue
+    
+    # 2.1 尝试更宽松的代码块匹配（不要求换行）
+    code_block_pattern_loose = r"```(?:json)?\s*([\s\S]*?)```"
+    matches = re.findall(code_block_pattern_loose, text)
+    logger.debug(f"_extract_json: pattern 2 (loose) found {len(matches)} matches")
+    for i, match in enumerate(matches):
+        try:
+            cleaned = match.strip()
+            if cleaned:
+                logger.debug(f"_extract_json: trying to parse loose match {i+1}, length={len(cleaned)}")
+                return json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            logger.debug(f"_extract_json: loose match {i+1} parse failed: {e}, first 200 chars: {cleaned[:200]}")
             continue
 
-    # 3. 尝试提取 {...} 或 [...]
-    brace_pattern = r"(\{[\s\S]*\}|\[[\s\S]*\])"
-    matches = re.findall(brace_pattern, text)
-    for match in matches:
+    # 2.2 如果代码块匹配失败，尝试直接查找代码块标记之间的内容
+    # 查找第一个 ```json 或 ``` 到最后一个 ``` 之间的内容
+    start_marker = text.find("```")
+    if start_marker != -1:
+        # 找到开始标记后的内容
+        content_start = text.find("\n", start_marker)
+        if content_start == -1:
+            content_start = text.find("```", start_marker + 3)
+            if content_start != -1:
+                content_start += 3
+        else:
+            content_start += 1
+        
+        # 从后往前找最后一个 ```
+        end_marker = text.rfind("```")
+        if end_marker != -1 and end_marker > content_start:
+            json_content = text[content_start:end_marker].strip()
+            if json_content:
+                try:
+                    logger.debug(f"_extract_json: trying to parse content between markers, length={len(json_content)}")
+                    return json.loads(json_content)
+                except json.JSONDecodeError:
+                    pass
+
+    # 2.3 最简单的方法：直接查找第一个 { 和最后一个 }，尝试解析
+    # 这样可以处理任何格式的 JSON，包括代码块中的
+    first_brace = text.find('{')
+    last_brace = text.rfind('}')
+    if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+        json_candidate = text[first_brace:last_brace+1]
         try:
-            return json.loads(match)
-        except json.JSONDecodeError:
-            continue
+            logger.debug(f"_extract_json: trying to parse from first {{ to last }}, length={len(json_candidate)}")
+            parsed = json.loads(json_candidate)
+            logger.info(f"_extract_json: Successfully parsed JSON using first-last brace method, length={len(json_candidate)}")
+            return parsed
+        except json.JSONDecodeError as e:
+            logger.warning(f"_extract_json: first-last brace method failed: {e}")
+            logger.warning(f"_extract_json: JSON candidate first 500 chars: {json_candidate[:500]}")
+            logger.warning(f"_extract_json: JSON candidate last 500 chars: {json_candidate[-500:]}")
+            # 尝试使用 raw_decode 来找到 JSON 的实际结束位置
+            try:
+                decoder = json.JSONDecoder()
+                parsed, idx = decoder.raw_decode(text, first_brace)
+                logger.info(f"_extract_json: Successfully parsed JSON using raw_decode, ended at position {idx}")
+                return parsed
+            except json.JSONDecodeError as e2:
+                logger.warning(f"_extract_json: raw_decode also failed: {e2}")
+
+    # 3. 尝试提取 {...} 或 [...]（改进：从第一个 { 或 [ 开始，匹配到对应的结束符）
+    # 先尝试找到第一个 { 或 [
+    first_brace = text.find('{')
+    first_bracket = text.find('[')
+    
+    if first_brace != -1 and (first_bracket == -1 or first_brace < first_bracket):
+        # 从第一个 { 开始提取
+        brace_count = 0
+        for i in range(first_brace, len(text)):
+            if text[i] == '{':
+                brace_count += 1
+            elif text[i] == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    try:
+                        return json.loads(text[first_brace:i+1])
+                    except json.JSONDecodeError:
+                        break
+    elif first_bracket != -1:
+        # 从第一个 [ 开始提取
+        bracket_count = 0
+        for i in range(first_bracket, len(text)):
+            if text[i] == '[':
+                bracket_count += 1
+            elif text[i] == ']':
+                bracket_count -= 1
+                if bracket_count == 0:
+                    try:
+                        return json.loads(text[first_bracket:i+1])
+                    except json.JSONDecodeError:
+                        break
 
     # 无法提取，抛出异常
     raise json.JSONDecodeError("No valid JSON found in text", text, 0)

@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Optional, Tuple
 
 from .base import LLMClient, LLMResponse, DummyLLMClient
+from .anthropic_client import AnthropicLLMClient
 from .deeprouter_client import DeepRouterLLMClient
 from ..core.exceptions import LLMClientError, LLMNotConfiguredError
 
@@ -84,6 +85,22 @@ def _load_anthropic_api_key() -> Tuple[Optional[str], Optional[str]]:
         except Exception as e:
             logger.warning(f"Failed to parse anthropic.json: {e}")
 
+    # 策略 4: 自动转换 DEEPROUTER_CLAUDE_TOKEN（兼容性支持）
+    # 如果找不到 ANTHROPIC_API_KEY，尝试从 DEEPROUTER_CLAUDE_TOKEN 读取
+    deeprouter_token = os.environ.get("DEEPROUTER_CLAUDE_TOKEN")
+    if not deeprouter_token:
+        # 尝试从 .env.local 读取
+        env_local_path = _REPO_ROOT / ".env.local"
+        if env_local_path.is_file():
+            try:
+                deeprouter_token = _parse_env_file(env_local_path, "DEEPROUTER_CLAUDE_TOKEN")
+            except Exception:
+                pass
+    
+    if deeprouter_token:
+        logger.info("Auto-converting DEEPROUTER_CLAUDE_TOKEN to ANTHROPIC_API_KEY for DeepRouter compatibility")
+        return deeprouter_token, "deeprouter_token_auto_convert"
+
     # 未找到任何 key
     return None, None
 
@@ -134,6 +151,22 @@ def _load_anthropic_base_url() -> Tuple[Optional[str], Optional[str]]:
                 return base_url, "anthropic.json"
         except Exception as e:
             logger.warning(f"Failed to parse anthropic.json for base_url: {e}")
+
+    # 策略 4: 自动转换 DEEPROUTER_BASE_URL（兼容性支持）
+    # 如果找不到 ANTHROPIC_BASE_URL，尝试从 DEEPROUTER_BASE_URL 读取
+    deeprouter_base_url = os.environ.get("DEEPROUTER_BASE_URL")
+    if not deeprouter_base_url:
+        # 尝试从 .env.local 读取
+        env_local_path = _REPO_ROOT / ".env.local"
+        if env_local_path.is_file():
+            try:
+                deeprouter_base_url = _parse_env_file(env_local_path, "DEEPROUTER_BASE_URL")
+            except Exception:
+                pass
+    
+    if deeprouter_base_url:
+        logger.info("Auto-converting DEEPROUTER_BASE_URL to ANTHROPIC_BASE_URL for DeepRouter compatibility")
+        return deeprouter_base_url, "deeprouter_base_url_auto_convert"
 
     # 未找到 base_url（使用官方端点）
     return None, None
@@ -251,19 +284,41 @@ def get_llm_client(allow_dummy: bool = True) -> LLMClient:
         # 检查显式指定的后端类型
         backend_type = os.environ.get("LLM_BACKEND", "anthropic_api").strip().lower()
 
-        # 策略 0: DeepRouter 后端（显式指定）
+        # 策略 0: DeepRouter 后端（显式指定 LLM_BACKEND=deeprouter）
+        # 注意：如果同时有 ANTHROPIC_API_KEY + ANTHROPIC_BASE_URL（指向 DeepRouter），
+        # 应该优先使用 Anthropic API 风格（策略 1），而不是直接使用 DeepRouterLLMClient
         if backend_type == "deeprouter":
-            try:
-                _client = _create_deeprouter_client()
-                _backend_type = "deeprouter"
-                return _client
-            except Exception as e:
-                logger.warning(f"Failed to create DeepRouter client: {e}")
-                if not allow_dummy:
-                    raise LLMNotConfiguredError() from e
-                # 继续尝试其他后端
+            # 检查是否同时配置了 ANTHROPIC_API_KEY（可能指向 DeepRouter）
+            api_key, _ = _load_anthropic_api_key()
+            base_url, _ = _load_anthropic_base_url()
+            
+            if api_key and base_url and "deeprouter" in base_url.lower():
+                # 有 API key 和 DeepRouter base_url，优先使用 Anthropic API 风格
+                logger.info(
+                    "LLM_BACKEND=deeprouter but ANTHROPIC_API_KEY+ANTHROPIC_BASE_URL found. "
+                    "Using Anthropic API format via DeepRouter proxy (recommended)."
+                )
+                # 继续到策略 1，使用 Anthropic API 风格
+            else:
+                # 没有 API key，尝试直接使用 DeepRouterLLMClient
+                # 但注意：DeepRouter 可能要求使用 ANTHROPIC_API_KEY 方式
+                try:
+                    _client = _create_deeprouter_client()
+                    _backend_type = "deeprouter"
+                    logger.warning(
+                        "Using DeepRouterLLMClient (direct). "
+                        "Note: DeepRouter may require ANTHROPIC_API_KEY format. "
+                        "Consider setting ANTHROPIC_API_KEY=<deeprouter_token> and ANTHROPIC_BASE_URL=https://deeprouter.top"
+                    )
+                    return _client
+                except Exception as e:
+                    logger.warning(f"Failed to create DeepRouter client: {e}")
+                    if not allow_dummy:
+                        raise LLMNotConfiguredError() from e
+                    # 继续尝试其他后端
 
         # 策略 1: 检查 Anthropic API Key（多来源优先级链）
+        # 优先使用 Anthropic API 风格（支持 DeepRouter 代理），而不是回退到 Claude Code CLI
         api_key, key_source = _load_anthropic_api_key()
         if api_key:
             try:
@@ -275,47 +330,66 @@ def get_llm_client(allow_dummy: bool = True) -> LLMClient:
                 # 加载 base_url（支持第三方代理，如 deeprouter.top）
                 base_url, url_source = _load_anthropic_base_url()
                 
-                # 检测不兼容的代理 API（仅对根路径进行跳过，/v1 路径可能可用）
-                if base_url and "deeprouter.top" in base_url.lower():
-                    # 如果只是根路径（没有 /v1），则跳过（不支持标准格式）
-                    if base_url.rstrip('/').endswith('deeprouter.top'):
-                        logger.warning(
-                            f"Detected deeprouter.top root URL which does not support standard Anthropic API format. "
-                            f"Skipping Anthropic API, will fallback to Claude Code CLI. "
-                            f"Tip: Try using https://deeprouter.top/v1 instead."
-                        )
-                        # 跳过 Anthropic API，直接尝试 Claude Code CLI
-                        raise Exception("Incompatible proxy API detected, skip to Claude Code CLI")
-                    else:
-                        # /v1 路径可能可用，允许尝试
-                        logger.info(
-                            f"Detected deeprouter.top with path: {base_url}. "
-                            f"Attempting to use this proxy API."
-                        )
+                # 检测 DeepRouter 代理
+                is_deeprouter = base_url and "deeprouter.top" in base_url.lower()
                 
-                if base_url and url_source != "env":
-                    # 注入环境变量，_create_anthropic_client 会从 os.environ 读取
-                    os.environ["ANTHROPIC_BASE_URL"] = base_url
-                    logger.info(f"Loaded ANTHROPIC_BASE_URL from {url_source}: {base_url}")
+                if is_deeprouter:
+                    # DeepRouter 代理：规范化 base_url
+                    if base_url.rstrip('/').endswith('deeprouter.top'):
+                        # 根路径，需要添加 /v1（Anthropic SDK 会自动添加 /messages）
+                        normalized_base_url = base_url.rstrip('/')
+                        logger.info(
+                            f"Detected DeepRouter proxy: {normalized_base_url}. "
+                            f"Using Anthropic API format via DeepRouter."
+                        )
+                    else:
+                        # 已包含路径，规范化处理
+                        normalized_base_url = base_url.rstrip('/')
+                        if normalized_base_url.endswith('/v1'):
+                            normalized_base_url = normalized_base_url[:-3].rstrip('/')
+                        logger.info(
+                            f"Detected DeepRouter proxy with path: {base_url}. "
+                            f"Normalized to: {normalized_base_url}. "
+                            f"Using Anthropic API format via DeepRouter."
+                        )
+                    
+                    if url_source != "env":
+                        os.environ["ANTHROPIC_BASE_URL"] = normalized_base_url
+                        logger.info(f"Set ANTHROPIC_BASE_URL from {url_source}: {normalized_base_url}")
+                    else:
+                        # 环境变量已设置，但需要规范化
+                        os.environ["ANTHROPIC_BASE_URL"] = normalized_base_url
+                elif base_url:
+                    # 其他代理或官方 API
+                    if url_source != "env":
+                        os.environ["ANTHROPIC_BASE_URL"] = base_url
+                        logger.info(f"Loaded ANTHROPIC_BASE_URL from {url_source}: {base_url}")
+                    logger.info(f"Using Anthropic API with base URL: {base_url}")
+                else:
+                    # 官方 API（无 base_url）
+                    logger.info("Using Anthropic API (official endpoint: https://api.anthropic.com)")
 
                 _client = _create_anthropic_client(api_key)
                 _backend_type = "anthropic_api"
+                
+                # 记录后端类型信息（不打印 key）
+                backend_info = "DeepRouter proxy" if is_deeprouter else "Anthropic official API"
+                logger.info(f"LLM backend initialized: {backend_info} (backend_type={_backend_type})")
+                
                 return _client
             except Exception as e:
-                # 如果是已知的不兼容代理，不记录为错误，直接回退
-                if "Incompatible proxy API" in str(e):
-                    logger.info("Skipping Anthropic API due to incompatible proxy, trying Claude Code CLI")
-                else:
-                    logger.warning(f"Failed to create Anthropic client: {e}")
+                logger.warning(f"Failed to create Anthropic API client: {e}")
+                # 继续尝试其他后端，不立即回退
 
-        # 策略 2: 回退到 Claude Code CLI
-        logger.info("ANTHROPIC_API_KEY not found in env/.env.local/anthropic.json, trying Claude Code CLI")
-        try:
-            _client = _create_claude_code_client()
-            _backend_type = "claude_code"
-            return _client
-        except Exception as e:
-            logger.warning(f"Claude Code CLI not available: {e}")
+        # 策略 2: 回退到 Claude Code CLI（仅在无 API key 时）
+        if not api_key:
+            logger.info("ANTHROPIC_API_KEY not found in env/.env.local/anthropic.json, trying Claude Code CLI")
+            try:
+                _client = _create_claude_code_client()
+                _backend_type = "claude_code"
+                return _client
+            except Exception as e:
+                logger.warning(f"Claude Code CLI not available: {e}")
 
         # 策略 3: 回退到 DummyClient
         if allow_dummy:
@@ -427,135 +501,6 @@ def _create_claude_code_client() -> LLMClient:
             "Claude Code adapter not available",
             provider="claude_code",
         )
-
-
-class AnthropicLLMClient(LLMClient):
-    """
-    Anthropic API 客户端包装器。
-
-    将 Anthropic 原生客户端包装为 LLMClient 接口。
-    支持代理 API 兼容性处理（如 deeprouter.top）。
-    """
-
-    DEFAULT_MODEL = "claude-sonnet-4-20250514"
-
-    def __init__(self, native_client: Any):
-        super().__init__()  # 初始化 messages 兼容层
-        self._client = native_client
-        # 检测是否使用代理 API（通过 base_url）
-        self._is_proxy_api = self._detect_proxy_api()
-
-    def _detect_proxy_api(self) -> bool:
-        """
-        检测是否使用代理 API。
-
-        某些代理 API（如 deeprouter.top）需要特殊的参数格式。
-        通过检查 base_url 来判断是否使用代理。
-
-        Returns:
-            True 如果使用代理 API，False 如果使用官方 API
-        """
-        base_url = getattr(self._client, "base_url", None)
-        if not base_url:
-            return False
-        
-        # 检查是否是已知的代理 API 域名
-        proxy_domains = [
-            "deeprouter.top",
-            "deeprouter.com",
-            "api.deeprouter",
-            "claudelike.online",
-            "claudelike.com",
-        ]
-        
-        base_url_str = str(base_url).lower()
-        return any(domain in base_url_str for domain in proxy_domains)
-
-    def _normalize_system_param(self, system: str) -> Any:
-        """
-        规范化 system 参数格式。
-
-        某些代理 API（如 deeprouter.top）期望 system 参数为数组格式：
-        [{"type": "text", "text": "..."}]
-
-        官方 API 接受字符串格式。
-
-        Args:
-            system: 系统提示词（字符串）
-
-        Returns:
-            规范化后的 system 参数（字符串或数组）
-        """
-        if self._is_proxy_api:
-            # 代理 API：转换为数组格式
-            # 注意：某些代理可能还需要其他格式调整
-            return [{"type": "text", "text": system}]
-        else:
-            # 官方 API：保持字符串格式
-            return system
-
-    def generate(
-        self,
-        system: str,
-        user: str,
-        *,
-        model: Optional[str] = None,
-        max_tokens: int = 4096,
-        temperature: float = 0.0,
-        **kwargs: Any,
-    ) -> LLMResponse:
-        """调用 Anthropic API"""
-        model = model or self.DEFAULT_MODEL
-
-        # 规范化 system 参数（代理 API 兼容性处理）
-        normalized_system = self._normalize_system_param(system)
-
-        try:
-            response = self._client.messages.create(
-                model=model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                system=normalized_system,
-                messages=[{"role": "user", "content": user}],
-                **kwargs,
-            )
-
-            # 提取文本
-            text = ""
-            for block in response.content:
-                if getattr(block, "type", None) == "text":
-                    text += block.text
-
-            return LLMResponse(
-                text=text,
-                model=response.model,
-                usage={
-                    "input_tokens": response.usage.input_tokens,
-                    "output_tokens": response.usage.output_tokens,
-                },
-                raw=response,
-            )
-
-        except Exception as e:
-            error_msg = str(e)
-            
-            # 检测代理 API 不支持的错误
-            if self._is_proxy_api and ("不支持" in error_msg or "not supported" in error_msg.lower() or "claude code" in error_msg.lower()):
-                base_url = getattr(self._client, "base_url", "unknown")
-                logger.warning(
-                    f"Proxy API ({base_url}) does not support standard Anthropic API format. "
-                    f"Error: {error_msg[:200]}"
-                )
-                raise LLMClientError(
-                    f"代理 API ({base_url}) 不支持标准 Anthropic API 格式。\n"
-                    f"解决方案：\n"
-                    f"  1. 移除 ANTHROPIC_BASE_URL 配置以使用官方 API\n"
-                    f"  2. 或移除 ANTHROPIC_API_KEY 以自动使用 Claude Code CLI\n"
-                    f"原始错误: {error_msg[:200]}",
-                    provider="anthropic"
-                )
-            
-            raise LLMClientError(f"Anthropic API call failed: {e}", provider="anthropic")
 
 
 class ClaudeCodeLLMClient(LLMClient):

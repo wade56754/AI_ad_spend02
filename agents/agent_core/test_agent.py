@@ -2,12 +2,13 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
 
+from agent_platform.core.protocol import AgentProtocol, AgentContext
 from ..tools.types import AgentResponse
 
 logger = logging.getLogger(__name__)
 
 
-class TestAgent:
+class TestAgent(AgentProtocol):
     """
     TestAgent：统一对接两类测试 Skill
 
@@ -28,7 +29,26 @@ class TestAgent:
         self.base_path = base_path or Path(__file__).resolve().parent.parent.parent
         self.project_id = project_id
 
-    def handle_request(self, request: Dict[str, Any]) -> AgentResponse:
+    @property
+    def name(self) -> str:
+        """Agent unique identifier."""
+        return "test"
+
+    @property
+    def description(self) -> str:
+        """Agent description."""
+        return "Test prompt generation for pytest and database invariant validation"
+
+    @property
+    def version(self) -> str:
+        """Agent version."""
+        return "1.0.0"
+
+    def handle_request(
+        self,
+        request: Dict[str, Any],
+        context: Optional[AgentContext] = None,
+    ) -> AgentResponse:
         """
         处理测试请求（符合 AgentProtocol）。
 

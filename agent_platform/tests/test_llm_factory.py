@@ -430,16 +430,45 @@ class TestGetBackendType:
             assert factory.get_backend_type() == "deeprouter"
             mock_client_class.assert_called_once()
 
-    def test_deeprouter_backend_priority(self, monkeypatch):
-        """DeepRouter backend should be selected when LLM_BACKEND=deeprouter."""
+    def test_deeprouter_backend_priority_with_anthropic_key(self, monkeypatch, tmp_path):
+        """
+        When LLM_BACKEND=deeprouter but ANTHROPIC_API_KEY+ANTHROPIC_BASE_URL exist,
+        should use Anthropic API format (recommended) instead of DeepRouterLLMClient.
+        """
         from agent_platform.llm import factory
         factory.reset_client()
 
-        # Set DeepRouter backend explicitly
+        # Set DeepRouter backend explicitly, but also provide ANTHROPIC_API_KEY + base_url
+        monkeypatch.setenv("LLM_BACKEND", "deeprouter")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-deeprouter-token")
+        monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://deeprouter.top")
+
+        # Mock Anthropic SDK
+        mock_anthropic_client = MagicMock()
+        mock_anthropic_class = MagicMock(return_value=mock_anthropic_client)
+        mock_anthropic_module = MagicMock()
+        mock_anthropic_module.Anthropic = mock_anthropic_class
+
+        with patch.object(factory, "_REPO_ROOT", tmp_path), \
+             patch.dict(sys.modules, {"anthropic": mock_anthropic_module}):
+            client = factory.get_llm_client()
+
+            # Should use anthropic_api backend (via DeepRouter proxy), not deeprouter
+            assert factory.get_backend_type() == "anthropic_api"
+            assert client.__class__.__name__ == "AnthropicLLMClient"
+            mock_anthropic_class.assert_called_once()
+
+    def test_deeprouter_backend_without_anthropic_key(self, monkeypatch):
+        """
+        When LLM_BACKEND=deeprouter but no ANTHROPIC_API_KEY,
+        should use DeepRouterLLMClient directly.
+        """
+        from agent_platform.llm import factory
+        factory.reset_client()
+
         monkeypatch.setenv("LLM_BACKEND", "deeprouter")
         monkeypatch.setenv("DEEPROUTER_CLAUDE_TOKEN", "test-token")
-        # Even if ANTHROPIC_API_KEY exists, should use DeepRouter
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "anthropic-key")
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
         with patch("agent_platform.llm.factory.DeepRouterLLMClient") as mock_client_class:
             mock_client_instance = MagicMock()
@@ -449,5 +478,4 @@ class TestGetBackendType:
 
             assert factory.get_backend_type() == "deeprouter"
             assert client == mock_client_instance
-            # Should not try to create Anthropic client
             mock_client_class.assert_called_once()

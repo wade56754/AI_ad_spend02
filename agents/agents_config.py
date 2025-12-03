@@ -180,8 +180,14 @@ def _warn_if_critical_missing(path: Path) -> None:
 
 # === LLM 配置常量 ===
 
+# 模型名称优先级：环境变量 DEEPROUTER_MODEL > 默认值
+# 支持通过环境变量动态配置，适配 DeepRouter 等代理服务
+import os
+_DEFAULT_MODEL = "claude-sonnet-4-20250514"  # DeepRouter 默认模型
+_MODEL_FROM_ENV = os.environ.get("DEEPROUTER_MODEL", _DEFAULT_MODEL)
+
 LLM_CONFIG: Dict[str, Any] = {
-    "model": "claude-3-5-sonnet-latest",
+    "model": _MODEL_FROM_ENV,  # 从环境变量读取，支持 DeepRouter 配置
     "max_tokens": 8000,
     "temperature": 0,
 }

@@ -7,6 +7,26 @@ DeepRouter LLM Client - DeepRouter Claude 代理 API 客户端
 - DEEPROUTER_CLAUDE_TOKEN: DeepRouter API Token（必填）
 - DEEPROUTER_BASE_URL: API 端点 URL（可选，默认 https://deeprouter.top）
 - DEEPROUTER_MODEL: 模型名称（可选，默认 claude-sonnet-4-20250514）
+
+模型设置方式：
+1. 环境变量（全局默认）：
+   在 .env.local 中设置: DEEPROUTER_MODEL=claude-opus-4-20250514
+
+2. 代码中临时指定（单次调用）：
+   client.generate(..., model='claude-opus-4-20250514')
+
+3. 创建客户端时指定：
+   client = DeepRouterLLMClient(model='claude-opus-4-20250514')
+
+支持的模型名称示例：
+- claude-sonnet-4-20250514 (默认)
+- claude-opus-4-20250514
+- claude-3-5-sonnet-20241022
+- claude-3-opus-20240229
+- claude-3-haiku-20240307
+
+注意：具体可用的模型取决于你的 DeepRouter 账户配置和购买的渠道。
+如果遇到 "无可用渠道" 错误，请联系 DeepRouter 客服开通相应模型的权限。
 """
 
 import logging
@@ -107,14 +127,24 @@ class DeepRouterLLMClient(LLMClient):
 
         model = model or self._model
 
-        # 构建请求体（Claude Messages 风格）
+        # 构建请求体（Anthropic Messages API 格式）
+        # DeepRouter 要求 system 和 messages[].content 都必须是数组格式
         request_body: Dict[str, Any] = {
             "model": model,
-            "system": system,
-            "messages": [{"role": "user", "content": user}],
+            "system": [{"type": "text", "text": system}] if system else None,  # system 也必须是数组
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": user}]  # content 必须是数组
+                }
+            ],
             "max_tokens": max_tokens,
             "stream": False,  # 当前仅支持非流式
         }
+        
+        # 如果 system 为空，移除该字段
+        if not system:
+            request_body.pop("system", None)
 
         # 添加 temperature（如果非默认值）
         if temperature != 0.0:
