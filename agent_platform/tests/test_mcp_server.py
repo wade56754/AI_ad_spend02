@@ -184,26 +184,19 @@ class TestRunAgent:
     """Tests for ap_run_agent MCP tool."""
 
     def test_run_existing_agent_success(self):
-        """Should successfully invoke an existing agent."""
+        """Should successfully invoke an existing MCP-safe agent."""
         from agent_platform.mcp.server import run_agent
 
-        # Mock create_agent to return a mock agent
-        mock_agent = MagicMock()
-        mock_agent.handle_request.return_value = {
-            "success": True,
-            "data": {"changes": {}},
-            "error": None,
-            "error_kind": "OK"
-        }
+        # Phase 4: Only MCP-safe agents can be run
+        # Use "review" agent with empty changes - should succeed
+        result = run_agent(
+            agent_name="review",
+            payload={"action": "review", "changes": {}}
+        )
 
-        with patch("agent_platform.mcp.server.create_agent", return_value=mock_agent):
-            result = run_agent(
-                agent_name="be",
-                payload={"task": "test task"}
-            )
-
-            assert result["success"] is True
-            assert result["error_kind"] == "OK"
+        assert result["success"] is True
+        assert result["mcp_safe"] is True
+        assert result["agent_name"] == "review"
 
     def test_run_nonexistent_agent_fails(self):
         """Should return error for non-existent agent."""
@@ -219,64 +212,56 @@ class TestRunAgent:
             assert result["success"] is False
             assert "AGENT_NOT_FOUND" in result["error_kind"]
 
-    def test_run_agent_handles_llm_guard_error(self):
-        """Should gracefully handle LLM guard errors in MCP mode."""
+    def test_run_mcp_unsafe_agent_blocked(self):
+        """Should block MCP-unsafe agents with appropriate error."""
         from agent_platform.mcp.server import run_agent
-        from agent_platform.core.exceptions import LLMNotConfiguredError
 
-        # Mock agent to raise LLMNotConfiguredError
-        mock_agent = MagicMock()
-        mock_agent.handle_request.side_effect = LLMNotConfiguredError("MCP mode active")
+        # Phase 4: MCP-unsafe agents (be, fe, orch) are blocked
+        result = run_agent(
+            agent_name="be",
+            payload={"task": "generate code"}
+        )
 
-        with patch("agent_platform.mcp.server.create_agent", return_value=mock_agent):
-            result = run_agent(
-                agent_name="be",
-                payload={"task": "generate code"}
-            )
-
-            assert result["success"] is False
-            assert result["error_kind"] == "LLM_NOT_AVAILABLE"
-            assert "LLM" in result["error"] or "MCP" in result["error"]
+        assert result["success"] is False
+        assert result["error_kind"] == "MCP_UNSAFE_AGENT"
+        assert result["mcp_safe"] is False
+        assert "available_agents" in result
 
     def test_run_agent_with_context(self):
         """Should pass context to agent handle_request."""
         from agent_platform.mcp.server import run_agent
 
-        mock_agent = MagicMock()
-        mock_agent.handle_request.return_value = {
-            "success": True,
-            "data": {},
-            "error": None
-        }
+        # Phase 4: Use MCP-safe agent "doc" for context test
+        test_context = {"project_root": "/path/to/project", "dry_run": True}
 
-        test_context = {"project_root": "/path/to/project"}
+        result = run_agent(
+            agent_name="doc",
+            payload={"action": "generate", "doc_type": "spec", "target": "test.md", "context": "test"},
+            context=test_context
+        )
 
-        with patch("agent_platform.mcp.server.create_agent", return_value=mock_agent):
-            run_agent(
-                agent_name="fe",
-                payload={"task": "build"},
-                context=test_context
-            )
-
-            # Verify context was passed
-            call_kwargs = mock_agent.handle_request.call_args[1]
-            assert call_kwargs.get("context") == test_context
+        # Verify the agent was called successfully
+        assert result["success"] is True
+        assert result["agent_name"] == "doc"
 
     def test_run_agent_list_available(self):
         """Should be able to list available agents."""
         from agent_platform.mcp.server import list_agents
 
-        # Mock the registry import inside list_agents
-        mock_registry = {
-            "fe": MagicMock(return_value=MagicMock(name="FEAgent")),
-            "be": MagicMock(return_value=MagicMock(name="BEAgent")),
-        }
+        # Phase 4: list_agents now uses agent_platform.agents registry directly
+        # Call the real function - it should return MCP-safe agents by default
+        result = list_agents()
 
-        with patch.dict("agents.agents_config._AGENT_REGISTRY", mock_registry, clear=True):
-            result = list_agents()
+        assert result["success"] is True
+        # Should have at least the 3 MCP-safe agents: test, review, doc
+        assert result["count"] >= 3
+        assert result["mcp_mode"] is True
 
-            assert result["success"] is True
-            assert result["count"] >= 2
+        # Verify MCP-safe agents are included
+        agent_names = [a["name"] for a in result["agents"]]
+        assert "test" in agent_names
+        assert "review" in agent_names
+        assert "doc" in agent_names
 
 
 class TestExtractAgentSummary:

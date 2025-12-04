@@ -71,3 +71,29 @@ class LLMNotConfiguredError(LLMClientError):
             message or default_message,
             provider=None,
         )
+
+
+# ============================================================
+# Skill 相关异常 (Phase 3)
+# ============================================================
+
+
+class SkillNotFoundError(AgentPlatformError):
+    """Skill 未找到"""
+
+    def __init__(self, skill_name: str, available: list[str] | None = None):
+        self.skill_name = skill_name
+        self.available = available or []
+        message = f"Skill '{skill_name}' not found"
+        if self.available:
+            message += f". Available: {', '.join(self.available)}"
+        super().__init__(message, code="SKILL_NOT_FOUND")
+
+
+class SkillExecutionError(AgentPlatformError):
+    """Skill 执行失败"""
+
+    def __init__(self, skill_name: str, reason: str):
+        self.skill_name = skill_name
+        message = f"Skill '{skill_name}' execution failed: {reason}"
+        super().__init__(message, code="SKILL_EXECUTION_ERROR")

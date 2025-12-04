@@ -17,9 +17,46 @@ from backend.models import Base
 
 # 延迟获取配置，避免模块导入时的问题
 def get_db_settings():
+    import logging
+    import os
+    logger = logging.getLogger(__name__)
+    
     try:
         return get_settings()
-    except:
+    except Exception as e:
+        # 检查是否为测试环境
+        is_test = os.getenv("PYTEST_CURRENT_TEST") is not None
+        env_name = os.getenv("ENV_NAME", "development").lower()
+        is_production = env_name == "production"
+        
+        if is_production:
+            # 生产环境：记录错误并重新抛出
+            logger.error(
+                f"生产环境数据库配置加载失败: {e}",
+                exc_info=True,
+                extra={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "env_name": env_name
+                }
+            )
+            raise RuntimeError(
+                f"生产环境数据库配置加载失败: {e}\n"
+                "请检查数据库环境变量配置。"
+            ) from e
+        
+        # 开发/测试环境：记录警告并使用内存 SQLite
+        logger.warning(
+            f"数据库配置加载失败，回退到内存 SQLite: {e}",
+            exc_info=not is_test,  # 测试环境不记录完整堆栈
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "env_name": env_name,
+                "fallback_to_memory_sqlite": True
+            }
+        )
+        
         # 返回测试环境默认配置
         from types import SimpleNamespace
         return SimpleNamespace(

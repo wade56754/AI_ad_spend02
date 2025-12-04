@@ -1,8 +1,43 @@
 {
   "mcpServers": {
-    "supabase": {
+    "ai-ad-agents": {
+      "command": "D:\\git\\1108\\AI_ad_spend02\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "agent_platform.mcp.server"],
+      "cwd": "D:\\git\\1108\\AI_ad_spend02",
+      "env": {
+        "AGENT_PLATFORM_MODE": "mcp"
+      }
+    },
+
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-next-devtools"],
+      "cwd": "D:\\git\\1108\\AI_ad_spend02\\frontend"
+    },
+
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-chrome-devtools"],
+      "env": {
+        "CHROME_PATH": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+      }
+    },
+
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+
+    "eslint": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-eslint"],
+      "cwd": "D:\\git\\1108\\AI_ad_spend02\\frontend"
+    },
+
+    "graphiti": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=jzmcoivxhiyidizncyaq"
+      "url": "http://localhost:8000/mcp/",
+      "disabled": true
     }
   }
 }

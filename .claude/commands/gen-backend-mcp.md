@@ -71,7 +71,10 @@
   2) 用 ap_read_sot_file + context7 看相关 SoT 和目录结构；
   3) 设计生成/修改计划（列出要新建/修改的文件清单）；
   4) 依次用 ap_write_file 写入或 patch 文件；
-  5) 用 ap_run_pytest 跑相关测试，解析结果；
+  5) 在本轮任务中，必须通过 ai-ad-agents 的 ap_run_pytest 工具
+     实际运行 backend/tests/api/test_finance_profit_flow_generated.py
+   - 如果 ap_run_pytest 报错，需贴出完整错误结构并解释原因，
+     不允许仅给出“建议命令”而不实际调用。
   6) 若失败，分析失败原因 → 再改代码 → 再跑测试（最多 1~3 轮）；
   7) 最后汇总改动 + 测试结果 + 剩余 TODO。
 </thinking>

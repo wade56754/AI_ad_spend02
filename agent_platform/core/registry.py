@@ -17,13 +17,20 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AgentMeta:
-    """Agent 元信息"""
+    """
+    Agent 元信息
+
+    Phase 2: 新增 mcp_safe 字段
+    - mcp_safe=True: Agent 不调用 LLM，可在 MCP 模式下安全运行
+    - mcp_safe=False: Agent 可能调用 LLM，MCP 模式下禁用
+    """
 
     name: str
     factory: Callable[..., AgentProtocol]
     description: str = ""
     version: str = "1.0.0"
     tags: List[str] = field(default_factory=list)
+    mcp_safe: bool = False  # Phase 2: 默认不安全，需显式声明
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -31,6 +38,7 @@ class AgentMeta:
             "description": self.description,
             "version": self.version,
             "tags": self.tags,
+            "mcp_safe": self.mcp_safe,
         }
 
 
@@ -85,6 +93,7 @@ class AgentRegistry:
         description: str = "",
         version: str = "1.0.0",
         tags: Optional[List[str]] = None,
+        mcp_safe: bool = False,
         override: bool = False,
     ) -> None:
         """
@@ -96,6 +105,7 @@ class AgentRegistry:
             description: 描述
             version: 版本号
             tags: 标签（用于分类筛选）
+            mcp_safe: (Phase 2) 是否 MCP 安全（不调用 LLM）
             override: 是否允许覆盖已注册的同名 Agent
 
         Raises:
@@ -114,8 +124,9 @@ class AgentRegistry:
                 description=description,
                 version=version,
                 tags=tags or [],
+                mcp_safe=mcp_safe,
             )
-            logger.info(f"Registered agent: {name} (v{version})")
+            logger.info(f"Registered agent: {name} (v{version}, mcp_safe={mcp_safe})")
 
     def unregister(self, name: str) -> bool:
         """
@@ -172,17 +183,44 @@ class AgentRegistry:
                 f"Agent creation failed: {type(e).__name__}: {e}",
             ) from e
 
-    def list_agents(self, tag: Optional[str] = None) -> List[AgentMeta]:
+    def list_agents(
+        self, tag: Optional[str] = None, mcp_safe_only: bool = False
+    ) -> List[AgentMeta]:
         """
         列出已注册的 Agent。
 
         Args:
             tag: 按标签筛选（可选）
+            mcp_safe_only: (Phase 2) 仅返回 mcp_safe=True 的 Agent
         """
         agents = list(self._agents.values())
         if tag:
             agents = [a for a in agents if tag in a.tags]
+        if mcp_safe_only:
+            agents = [a for a in agents if a.mcp_safe]
         return agents
+
+    def list_mcp_safe_agents(self) -> List[AgentMeta]:
+        """
+        (Phase 2) 列出所有 MCP 安全的 Agent。
+
+        MCP 模式下，只有 mcp_safe=True 的 Agent 可被调用。
+        """
+        return self.list_agents(mcp_safe_only=True)
+
+    def is_mcp_safe(self, name: str) -> bool:
+        """
+        (Phase 2) 检查 Agent 是否 MCP 安全。
+
+        Args:
+            name: Agent 名称
+
+        Returns:
+            True 如果 mcp_safe=True，否则 False
+            Agent 不存在时也返回 False
+        """
+        meta = self._agents.get(name)
+        return meta.mcp_safe if meta else False
 
     def has(self, name: str) -> bool:
         """检查 Agent 是否已注册"""
@@ -214,12 +252,16 @@ def register_agent(
     description: str = "",
     version: str = "1.0.0",
     tags: Optional[List[str]] = None,
+    mcp_safe: bool = False,
     override: bool = False,
 ) -> None:
     """
     注册 Agent（便捷函数）。
 
     等价于 `get_registry().register(...)`
+
+    Args:
+        mcp_safe: (Phase 2) 是否 MCP 安全，默认 False
     """
     get_registry().register(
         name,
@@ -227,6 +269,7 @@ def register_agent(
         description=description,
         version=version,
         tags=tags,
+        mcp_safe=mcp_safe,
         override=override,
     )
 
@@ -240,10 +283,29 @@ def create_agent(name: str, **kwargs: Any) -> AgentProtocol:
     return get_registry().create(name, **kwargs)
 
 
-def list_agents(tag: Optional[str] = None) -> List[AgentMeta]:
+def list_agents(
+    tag: Optional[str] = None, mcp_safe_only: bool = False
+) -> List[AgentMeta]:
     """
     列出已注册的 Agent（便捷函数）。
 
     等价于 `get_registry().list_agents(...)`
+
+    Args:
+        mcp_safe_only: (Phase 2) 仅返回 mcp_safe=True 的 Agent
     """
-    return get_registry().list_agents(tag)
+    return get_registry().list_agents(tag=tag, mcp_safe_only=mcp_safe_only)
+
+
+def list_mcp_safe_agents() -> List[AgentMeta]:
+    """
+    (Phase 2) 列出所有 MCP 安全的 Agent（便捷函数）。
+    """
+    return get_registry().list_mcp_safe_agents()
+
+
+def is_agent_mcp_safe(name: str) -> bool:
+    """
+    (Phase 2) 检查 Agent 是否 MCP 安全（便捷函数）。
+    """
+    return get_registry().is_mcp_safe(name)

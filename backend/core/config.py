@@ -146,6 +146,80 @@ class Settings(BaseSettings):
             raise ValueError('备用Supabase URL格式不正确')
         return v
 
+    @field_validator('jwt_secret')
+    def validate_jwt_secret_strength(cls, v, info):
+        """验证JWT密钥强度和安全性"""
+        import warnings
+        
+        # 检查长度要求
+        if len(v) < 64:
+            raise ValueError('JWT密钥长度必须至少64字符')
+        
+        # 检查是否使用了不安全的默认值
+        weak_patterns = [
+            'dev_secret', 'test_secret', 'example_secret', 'sample_secret',
+            'your_64_character', 'changeme', 'password', 'secret123',
+            '1234567890abcdefghijklmnopqrstuvwxyz'
+        ]
+        
+        for pattern in weak_patterns:
+            if pattern.lower() in v.lower():
+                if info.data.get('env_name') == 'production':
+                    raise ValueError('生产环境不能使用弱JWT密钥')
+                else:
+                    warnings.warn(
+                        f'检测到弱JWT密钥模式: {pattern}。建议使用openssl rand -hex 32生成强密钥',
+                        UserWarning
+                    )
+        
+        return v
+
+    @field_validator('encryption_key')
+    def validate_encryption_key_strength(cls, v, info):
+        """验证加密密钥强度和安全性"""
+        import warnings
+        
+        # 检查长度要求
+        if len(v) < 32:
+            raise ValueError('加密密钥长度必须至少32字符')
+        
+        # 检查是否使用了不安全的默认值
+        weak_patterns = [
+            'dev_encryption', 'test_encryption', 'example_encryption',
+            'your_32_character', 'changeme', 'password', 'key123',
+            '12345678901234567890123456789012'
+        ]
+        
+        for pattern in weak_patterns:
+            if pattern.lower() in v.lower():
+                if info.data.get('env_name') == 'production':
+                    raise ValueError('生产环境不能使用弱加密密钥')
+                else:
+                    warnings.warn(
+                        f'检测到弱加密密钥模式: {pattern}。建议使用openssl rand -hex 16生成强密钥',
+                        UserWarning
+                    )
+        
+        return v
+
+    @field_validator('database_url')
+    def validate_database_url_security(cls, v, info):
+        """验证数据库URL安全性"""
+        import warnings
+        
+        # 检查是否在生产环境使用SQLite
+        if v.startswith('sqlite://') and info.data.get('env_name') == 'production':
+            raise ValueError('生产环境必须使用PostgreSQL，不能使用SQLite')
+        
+        # 检查数据库URL中是否包含明文密码
+        if ':' in v and '@' in v and 'password' in v.lower():
+            warnings.warn(
+                '数据库URL中可能包含明文密码。建议使用环境变量或连接池',
+                UserWarning
+            )
+        
+        return v
+
     def _validate_consistency(self):
         """验证配置一致性"""
         # 检查生产环境配置安全性
@@ -270,10 +344,43 @@ def get_settings() -> Settings:
         return settings
 
     except Exception as e:
-        print(f"ERROR: 配置加载失败: {e}")
-        print("RETRY: 使用安全默认配置...")
-
-        # 提供默认配置（所有环境）- 使用生成的临时密钥
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # 检查是否为生产环境
+        env_name = os.getenv("ENV_NAME", "development").lower()
+        is_production = env_name == "production"
+        is_test = os.getenv("PYTEST_CURRENT_TEST") is not None or "test" in env_name
+        
+        if is_production:
+            # 生产环境：配置加载失败必须快速失败
+            logger.error(
+                f"生产环境配置加载失败，拒绝启动: {e}",
+                exc_info=True,
+                extra={
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "env_name": env_name
+                }
+            )
+            raise RuntimeError(
+                f"生产环境配置加载失败，应用无法启动: {e}\n"
+                "请检查环境变量配置是否正确。"
+            ) from e
+        
+        # 开发/测试环境：允许使用不安全的默认值，但记录警告
+        logger.warning(
+            f"配置加载失败，使用开发环境默认配置: {e}",
+            exc_info=not is_test,  # 测试环境不记录完整堆栈
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "env_name": env_name,
+                "fallback_to_defaults": True
+            }
+        )
+        
+        # 仅在开发/测试环境提供默认配置
         return Settings(
             app_name="AI广告代投系统",
             debug=True,
@@ -294,77 +401,3 @@ def get_settings() -> Settings:
 # 配置验证
 # if not validate_environment():
 #     raise ValueError("环境配置验证失败，请检查配置文件")
-
-    @field_validator('jwt_secret')
-    def validate_jwt_secret_strength(cls, v, info):
-        """验证JWT密钥强度和安全性"""
-        import warnings
-        
-        # 检查长度要求
-        if len(v) < 64:
-            raise ValueError('JWT密钥长度必须至少64字符')
-        
-        # 检查是否使用了不安全的默认值
-        weak_patterns = [
-            'dev_secret', 'test_secret', 'example_secret', 'sample_secret',
-            'your_64_character', 'changeme', 'password', 'secret123',
-            '1234567890abcdefghijklmnopqrstuvwxyz'
-        ]
-        
-        for pattern in weak_patterns:
-            if pattern.lower() in v.lower():
-                if info.data.get('env_name') == 'production':
-                    raise ValueError('生产环境不能使用弱JWT密钥')
-                else:
-                    warnings.warn(
-                        f'检测到弱JWT密钥模式: {pattern}。建议使用openssl rand -hex 32生成强密钥',
-                        UserWarning
-                    )
-        
-        return v
-
-    @field_validator('encryption_key')
-    def validate_encryption_key_strength(cls, v, info):
-        """验证加密密钥强度和安全性"""
-        import warnings
-        
-        # 检查长度要求
-        if len(v) < 32:
-            raise ValueError('加密密钥长度必须至少32字符')
-        
-        # 检查是否使用了不安全的默认值
-        weak_patterns = [
-            'dev_encryption', 'test_encryption', 'example_encryption',
-            'your_32_character', 'changeme', 'password', 'key123',
-            '12345678901234567890123456789012'
-        ]
-        
-        for pattern in weak_patterns:
-            if pattern.lower() in v.lower():
-                if info.data.get('env_name') == 'production':
-                    raise ValueError('生产环境不能使用弱加密密钥')
-                else:
-                    warnings.warn(
-                        f'检测到弱加密密钥模式: {pattern}。建议使用openssl rand -hex 16生成强密钥',
-                        UserWarning
-                    )
-        
-        return v
-
-    @field_validator('database_url')
-    def validate_database_url_security(cls, v, info):
-        """验证数据库URL安全性"""
-        import warnings
-        
-        # 检查是否在生产环境使用SQLite
-        if v.startswith('sqlite://') and info.data.get('env_name') == 'production':
-            raise ValueError('生产环境必须使用PostgreSQL，不能使用SQLite')
-        
-        # 检查数据库URL中是否包含明文密码
-        if ':' in v and '@' in v and 'password' in v.lower():
-            warnings.warn(
-                '数据库URL中可能包含明文密码。建议使用环境变量或连接池',
-                UserWarning
-            )
-        
-        return v

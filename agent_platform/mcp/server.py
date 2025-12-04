@@ -9,6 +9,10 @@ This server exposes agent_platform tools as MCP tools that Claude can invoke.
 Phase 3.1: MCP tool mode support
 Phase 3.2: Added path security (REPO_ROOT) and ap_run_pytest tool
 Phase 3.3: P2-01 whitelist mode for pytest args, P2-02 ap_run_agent tool
+Phase 4.0: MCP 工具重构 - 使用 agent_platform.agents/skills registry
+         - ap_list_agents/ap_run_agent 重构，只暴露 mcp_safe=True 的 Agent
+         - 新增 ap_list_skills/ap_run_skill 工具
+         - 强制 mcp_safe 过滤，非安全 Agent/Skill 返回明确错误
 
 Environment Variables:
     AGENT_PLATFORM_MODE: Set to "mcp" to enable MCP tool mode (auto-set by this module)
@@ -19,6 +23,7 @@ Security:
     - Path traversal attacks (../) are blocked
     - Only relative paths are accepted for file operations
     - Pytest extra_args filtered by whitelist (Phase 3.3)
+    - MCP mode only exposes mcp_safe=True agents and skills (Phase 4)
 """
 
 import json
@@ -285,40 +290,58 @@ _registry = MCPToolRegistry()
 
 @_registry.register(
     name="ap_list_agents",
-    description="List all available agents in the agent platform",
+    description=(
+        "List all available agents in the agent platform. "
+        "In MCP mode, only mcp_safe=True agents are available (test, review, doc). "
+        "Use include_all=true to see all agents including LLM-dependent ones."
+    ),
     input_schema={
         "type": "object",
-        "properties": {},
+        "properties": {
+            "include_all": {
+                "type": "boolean",
+                "description": (
+                    "If true, list ALL agents including LLM-dependent ones. "
+                    "Default is false (MCP-safe agents only)."
+                ),
+            },
+        },
         "required": [],
     },
 )
-def list_agents() -> Dict[str, Any]:
-    """List all registered agents"""
+def list_agents(include_all: bool = False) -> Dict[str, Any]:
+    """
+    List registered agents.
+
+    Phase 4: 使用 agent_platform.agents registry，默认只返回 mcp_safe=True 的 Agent。
+    """
     try:
-        from agents.agents_config import _AGENT_REGISTRY
+        # Phase 4: 使用新的 agent_platform.agents registry
+        from agent_platform.agents import list_agents as ap_list_agents
+        from agent_platform.agents import list_mcp_safe_agents
+
+        if include_all:
+            agent_metas = ap_list_agents()
+        else:
+            agent_metas = list_mcp_safe_agents()
 
         agents = []
-        for key, meta in _AGENT_REGISTRY.items():
-            # Try to get agent instance for metadata
-            try:
-                agent = meta.factory()
-                agents.append({
-                    "key": key,
-                    "name": agent.name,
-                    "description": getattr(agent, "description", ""),
-                })
-            except Exception as e:
-                # Fallback to AgentMeta metadata if agent creation fails
-                agents.append({
-                    "key": key,
-                    "name": meta.name,
-                    "description": meta.description or f"(unavailable: {e})",
-                })
+        for meta in agent_metas:
+            agents.append({
+                "key": meta.name,
+                "name": meta.name,
+                "description": meta.description,
+                "version": meta.version,
+                "mcp_safe": meta.mcp_safe,
+                "tags": meta.tags,
+            })
 
         return {
             "success": True,
             "agents": agents,
             "count": len(agents),
+            "mcp_mode": True,
+            "filter": "mcp_safe_only" if not include_all else "all",
         }
     except Exception as e:
         return {
@@ -344,7 +367,8 @@ def list_agents() -> Dict[str, Any]:
 def read_sot_file(sot_key: str) -> Dict[str, Any]:
     """Read a SoT file by key"""
     try:
-        from agents.agents_config import SOT_FILES
+        # Phase 1 迁移：从 agent_platform.config 导入 SOT_FILES
+        from agent_platform.config.sot_files import SOT_FILES
 
         if sot_key not in SOT_FILES:
             return {
@@ -398,7 +422,8 @@ def read_sot_file(sot_key: str) -> Dict[str, Any]:
 def list_sot_files() -> Dict[str, Any]:
     """List all SoT file keys"""
     try:
-        from agents.agents_config import SOT_FILES
+        # Phase 1 迁移：从 agent_platform.config 导入 SOT_FILES
+        from agent_platform.config.sot_files import SOT_FILES
 
         return {
             "success": True,
@@ -800,16 +825,16 @@ def _extract_pytest_failures(output: str, max_failures: int) -> List[Dict[str, s
 
 
 # ============================================================================
-# ap_run_agent MCP Tool (Phase 3.3 P2-02)
+# ap_run_agent MCP Tool (Phase 4: 使用新 registry + mcp_safe 过滤)
 # ============================================================================
 
 @_registry.register(
     name="ap_run_agent",
     description=(
         "Run an agent from the agent platform. "
-        "Available agents: fe (frontend), be (backend), test, orch (orchestrator), doc, review. "
-        "The agent will process the payload and return structured results. "
-        "Note: In MCP mode, agents cannot call LLM APIs directly."
+        "In MCP mode, only mcp_safe=True agents can be run: test, review, doc. "
+        "These agents perform pure logic operations without calling LLM APIs. "
+        "LLM-dependent agents (fe, be, orch) are NOT available in MCP mode."
     ),
     input_schema={
         "type": "object",
@@ -817,16 +842,21 @@ def _extract_pytest_failures(output: str, max_failures: int) -> List[Dict[str, s
             "agent_name": {
                 "type": "string",
                 "description": (
-                    "Agent name/key to run. Available: "
-                    "'fe' (frontend), 'be' (backend), 'test', 'orch' (orchestrator), 'doc', 'review'"
+                    "Agent name to run. MCP-safe agents: "
+                    "'test' (generate test prompts), "
+                    "'review' (SoT code review), "
+                    "'doc' (document generation)"
                 ),
-                "enum": ["fe", "be", "test", "orch", "doc", "review"],
+                "enum": ["test", "review", "doc"],
             },
             "payload": {
                 "type": "object",
                 "description": (
                     "Request payload to pass to agent.handle_request(). "
-                    "Structure varies by agent type. Common fields: 'task', 'flow', 'files'."
+                    "Structure varies by agent type:\n"
+                    "- test: {'mode': 'db'|'backend', ...}\n"
+                    "- review: {'action': 'review'|'quick_check', 'changes': {...}}\n"
+                    "- doc: {'action': 'generate'|'review'|'sync', 'doc_type': '...', 'target': '...'}"
                 ),
             },
             "context": {
@@ -848,28 +878,57 @@ def run_agent(
     """
     Run an agent and return its response.
 
-    Phase 3.3 P2-02: MCP tool for invoking agents.
-
-    Note: In MCP mode, agents cannot call LLM APIs. The LLM guard in
-    agent_platform.llm.base.LLMClient will raise LLMNotConfiguredError
-    if any agent attempts to create an LLM client.
+    Phase 4: 使用 agent_platform.agents registry，只允许 mcp_safe=True 的 Agent。
     """
     try:
-        from agents.agents_config import create_agent, list_agents
+        # Phase 4: 使用新的 agent_platform.agents registry
+        from agent_platform.agents import (
+            create_agent,
+            is_agent_mcp_safe,
+            list_mcp_safe_agents,
+            get_registry,
+        )
+        from agent_platform.core.exceptions import AgentNotFoundError
 
-        # Validate agent_name
-        available_agents = list_agents()
-        if agent_name.lower() not in available_agents:
+        # Check if agent exists in registry
+        registry = get_registry()
+        agent_meta = registry.get(agent_name)
+
+        if agent_meta is None:
+            safe_agents = [a.name for a in list_mcp_safe_agents()]
             return {
                 "success": False,
                 "error": f"Unknown agent '{agent_name}'",
                 "error_kind": "AGENT_NOT_FOUND",
-                "available_agents": list(available_agents.keys()),
+                "available_agents": safe_agents,
+                "hint": "In MCP mode, only mcp_safe=True agents are available.",
+            }
+
+        # Enforce mcp_safe check
+        if not is_agent_mcp_safe(agent_name):
+            safe_agents = [a.name for a in list_mcp_safe_agents()]
+            return {
+                "success": False,
+                "error": (
+                    f"Agent '{agent_name}' is not MCP-safe (mcp_safe=False). "
+                    f"This agent requires LLM access which is not available in MCP mode. "
+                    f"In MCP mode, Claude is the only LLM."
+                ),
+                "error_kind": "MCP_UNSAFE_AGENT",
+                "agent_name": agent_name,
+                "mcp_safe": False,
+                "available_agents": safe_agents,
             }
 
         # Create agent instance
         try:
             agent = create_agent(agent_name)
+        except AgentNotFoundError as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "error_kind": "AGENT_NOT_FOUND",
+            }
         except Exception as e:
             return {
                 "success": False,
@@ -887,38 +946,22 @@ def run_agent(
 
         # Execute agent
         try:
-            # Note: In MCP mode, if the agent tries to call LLM,
-            # it will get LLMNotConfiguredError from the LLM guard
             result = agent.handle_request(payload, context or {})
         except Exception as e:
-            # Check if this is an LLM-related error (MCP mode guard)
             error_str = str(e)
-            if "MCP" in error_str or "LLM" in error_str or "工具模式" in error_str:
-                return {
-                    "success": False,
-                    "error": (
-                        f"Agent '{agent_name}' attempted to call LLM in MCP mode. "
-                        f"In MCP mode, Claude is the only LLM. "
-                        f"Original error: {error_str[:200]}"
-                    ),
-                    "error_kind": "LLM_NOT_ALLOWED",
-                    "agent_name": agent_name,
-                }
-            else:
-                return {
-                    "success": False,
-                    "error": f"Agent execution failed: {error_str[:500]}",
-                    "error_kind": "AGENT_EXECUTION_ERROR",
-                    "agent_name": agent_name,
-                }
+            return {
+                "success": False,
+                "error": f"Agent execution failed: {error_str[:500]}",
+                "error_kind": "AGENT_EXECUTION_ERROR",
+                "agent_name": agent_name,
+            }
 
         # Wrap and return result
-        # The agent should return AgentResponse structure
         return {
             "success": result.get("success", False),
             "agent_name": agent_name,
+            "mcp_safe": True,
             "agent_result": result,
-            # Extract summary for convenience
             "summary": _extract_agent_summary(agent_name, result),
         }
 
@@ -982,6 +1025,183 @@ def _extract_agent_summary(agent_name: str, result: Dict[str, Any]) -> str:
 
 
 # ============================================================================
+# Skills MCP Tools (Phase 4)
+# ============================================================================
+
+@_registry.register(
+    name="ap_list_skills",
+    description=(
+        "List all available skills in the agent platform. "
+        "In MCP mode, only mcp_safe=True skills are available (db_test, backend_test, sot_guard). "
+        "Use include_all=true to see all skills including LLM-dependent ones."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "include_all": {
+                "type": "boolean",
+                "description": (
+                    "If true, list ALL skills including LLM-dependent ones. "
+                    "Default is false (MCP-safe skills only)."
+                ),
+            },
+        },
+        "required": [],
+    },
+)
+def list_skills(include_all: bool = False) -> Dict[str, Any]:
+    """
+    List registered skills.
+
+    Phase 4: 使用 agent_platform.skills registry，默认只返回 mcp_safe=True 的 Skill。
+    """
+    try:
+        from agent_platform.skills import list_skills as ap_list_skills
+        from agent_platform.skills import list_mcp_safe_skills
+
+        if include_all:
+            skill_metas = ap_list_skills()
+        else:
+            skill_metas = list_mcp_safe_skills()
+
+        skills = []
+        for meta in skill_metas:
+            skills.append({
+                "name": meta.name,
+                "description": meta.description,
+                "version": meta.version,
+                "mcp_safe": meta.mcp_safe,
+                "tags": meta.tags,
+            })
+
+        return {
+            "success": True,
+            "skills": skills,
+            "count": len(skills),
+            "mcp_mode": True,
+            "filter": "mcp_safe_only" if not include_all else "all",
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+        }
+
+
+@_registry.register(
+    name="ap_run_skill",
+    description=(
+        "Run a skill from the agent platform. "
+        "In MCP mode, only mcp_safe=True skills can be run: db_test, backend_test, sot_guard. "
+        "These skills perform pure logic operations without calling LLM APIs."
+    ),
+    input_schema={
+        "type": "object",
+        "properties": {
+            "skill_name": {
+                "type": "string",
+                "description": (
+                    "Skill name to run. MCP-safe skills:\n"
+                    "- 'db_test': Generate database test prompt for Supabase MCP\n"
+                    "- 'backend_test': Generate pytest execution prompt\n"
+                    "- 'sot_guard': Validate code against SoT rules"
+                ),
+                "enum": ["db_test", "backend_test", "sot_guard"],
+            },
+            "params": {
+                "type": "object",
+                "description": (
+                    "Parameters to pass to the skill. Structure varies by skill:\n"
+                    "- db_test: {} (no params needed)\n"
+                    "- backend_test: {'scope': 'all'|'ledger'|'topups'|..., 'level': 'quick'|'full'}\n"
+                    "- sot_guard: {'changes': {'file.py': 'code content...'}}"
+                ),
+            },
+        },
+        "required": ["skill_name"],
+    },
+)
+def run_skill(
+    skill_name: str,
+    params: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Run a skill and return its response.
+
+    Phase 4: 使用 agent_platform.skills registry，只允许 mcp_safe=True 的 Skill。
+    """
+    try:
+        from agent_platform.skills import (
+            invoke_skill,
+            is_skill_mcp_safe,
+            list_mcp_safe_skills,
+            get_registry,
+        )
+        from agent_platform.core.exceptions import SkillNotFoundError
+
+        # Check if skill exists in registry
+        registry = get_registry()
+        skill_meta = registry.get(skill_name)
+
+        if skill_meta is None:
+            safe_skills = [s.name for s in list_mcp_safe_skills()]
+            return {
+                "success": False,
+                "error": f"Unknown skill '{skill_name}'",
+                "error_kind": "SKILL_NOT_FOUND",
+                "available_skills": safe_skills,
+                "hint": "In MCP mode, only mcp_safe=True skills are available.",
+            }
+
+        # Enforce mcp_safe check
+        if not is_skill_mcp_safe(skill_name):
+            safe_skills = [s.name for s in list_mcp_safe_skills()]
+            return {
+                "success": False,
+                "error": (
+                    f"Skill '{skill_name}' is not MCP-safe (mcp_safe=False). "
+                    f"This skill requires LLM access which is not available in MCP mode."
+                ),
+                "error_kind": "MCP_UNSAFE_SKILL",
+                "skill_name": skill_name,
+                "mcp_safe": False,
+                "available_skills": safe_skills,
+            }
+
+        # Execute skill
+        try:
+            result = invoke_skill(skill_name, **(params or {}))
+        except SkillNotFoundError as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "error_kind": "SKILL_NOT_FOUND",
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Skill execution failed: {str(e)[:500]}",
+                "error_kind": "SKILL_EXECUTION_ERROR",
+                "skill_name": skill_name,
+            }
+
+        return {
+            "success": result.get("success", True) if isinstance(result, dict) else True,
+            "skill_name": skill_name,
+            "mcp_safe": True,
+            "skill_result": result,
+        }
+
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "error_kind": "UNKNOWN",
+            "skill_name": skill_name,
+        }
+
+
+# ============================================================================
 # MCP Server Implementation
 # ============================================================================
 
@@ -995,27 +1215,65 @@ def create_mcp_server() -> MCPToolRegistry:
     return _registry
 
 
-def handle_mcp_request(request: Dict[str, Any]) -> Dict[str, Any]:
+def handle_mcp_request(request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
-    Handle an MCP request.
+    Handle an MCP request following the MCP protocol specification.
 
     Args:
         request: MCP request with "method" and "params"
 
     Returns:
-        MCP response
+        MCP response (None for notifications that don't require response)
     """
     method = request.get("method", "")
     params = request.get("params", {})
     request_id = request.get("id")
 
-    if method == "tools/list":
+    # Helper to build JSON-RPC 2.0 response
+    def success_response(result: Any) -> Dict[str, Any]:
         return {
+            "jsonrpc": "2.0",
             "id": request_id,
-            "result": {
-                "tools": _registry.list_tools(),
+            "result": result,
+        }
+
+    def error_response(code: int, message: str) -> Dict[str, Any]:
+        return {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "error": {
+                "code": code,
+                "message": message,
             },
         }
+
+    # MCP Protocol: initialize handshake
+    if method == "initialize":
+        logger.info("Received initialize request from MCP client")
+        return success_response({
+            "protocolVersion": "2024-11-05",
+            "capabilities": {
+                "tools": {},  # We support tools
+            },
+            "serverInfo": {
+                "name": "ai-ad-agents",
+                "version": "0.1.0",
+            },
+        })
+
+    # MCP Protocol: initialized notification (no response needed)
+    if method == "notifications/initialized":
+        logger.info("MCP client initialized successfully")
+        return None  # Notifications don't get responses
+
+    # Handle ping for keepalive
+    if method == "ping":
+        return success_response({})
+
+    if method == "tools/list":
+        return success_response({
+            "tools": _registry.list_tools(),
+        })
 
     elif method == "tools/call":
         tool_name = params.get("name", "")
@@ -1023,44 +1281,23 @@ def handle_mcp_request(request: Dict[str, Any]) -> Dict[str, Any]:
 
         tool = _registry.get_tool(tool_name)
         if not tool:
-            return {
-                "id": request_id,
-                "error": {
-                    "code": -32601,
-                    "message": f"Unknown tool: {tool_name}",
-                },
-            }
+            return error_response(-32601, f"Unknown tool: {tool_name}")
 
         try:
             result = tool.handler(**tool_args)
-            return {
-                "id": request_id,
-                "result": {
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": json.dumps(result, ensure_ascii=False, indent=2),
-                        }
-                    ],
-                },
-            }
+            return success_response({
+                "content": [
+                    {
+                        "type": "text",
+                        "text": json.dumps(result, ensure_ascii=False, indent=2),
+                    }
+                ],
+            })
         except Exception as e:
-            return {
-                "id": request_id,
-                "error": {
-                    "code": -32603,
-                    "message": str(e),
-                },
-            }
+            return error_response(-32603, str(e))
 
     else:
-        return {
-            "id": request_id,
-            "error": {
-                "code": -32601,
-                "message": f"Unknown method: {method}",
-            },
-        }
+        return error_response(-32601, f"Unknown method: {method}")
 
 
 def run_stdio_server() -> None:
@@ -1081,9 +1318,13 @@ def run_stdio_server() -> None:
         try:
             request = json.loads(line)
             response = handle_mcp_request(request)
-            print(json.dumps(response), flush=True)
+            # Only send response if not None (notifications don't get responses)
+            if response is not None:
+                print(json.dumps(response), flush=True)
         except json.JSONDecodeError as e:
             error_response = {
+                "jsonrpc": "2.0",
+                "id": None,
                 "error": {
                     "code": -32700,
                     "message": f"Parse error: {e}",
@@ -1093,8 +1334,10 @@ def run_stdio_server() -> None:
 
 
 if __name__ == "__main__":
+    # Critical: All logs must go to stderr, stdout is reserved for MCP JSON-RPC
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[logging.StreamHandler(sys.stderr)],
     )
     run_stdio_server()

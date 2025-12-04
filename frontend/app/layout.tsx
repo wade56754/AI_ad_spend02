@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import "../styles/design-system.css"
+import { Providers } from "@/components/layout/providers"
+import { ErrorBoundary } from "@/components/common/ErrorBoundary"
 
 export const metadata: Metadata = {
   title: "AI广告代投系统",
@@ -13,9 +15,13 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        {children}
+        <ErrorBoundary>
+          <Providers>
+            {children}
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   )

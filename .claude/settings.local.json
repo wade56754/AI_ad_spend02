@@ -146,7 +146,16 @@
       "Bash(py -m pytest agent_platform/tests/test_llm_factory.py::test_is_mcp_mode_default -v)",
       "Bash(py test_mcp_patch.py)",
       "Bash(py:*)",
-      "Bash(claude mcp list:*)"
+      "Bash(claude mcp list:*)",
+      "Bash(pnpm build:*)",
+      "Bash(npx next build)",
+      "Bash(npm run build:*)",
+      "Bash(pnpm next build:*)",
+      "Bash(node -e \"require(''child_process'').execSync(''pnpm next build'', {stdio: ''inherit''})\")",
+      "Bash(D:\\git\\1108\\AI_ad_spend02\\.venv\\Scripts\\python.exe:*)",
+      "Bash(\".venv\\Scripts\\python.exe\" -c \"import agent_platform.mcp.server; print(''MCP server module imported successfully'')\")",
+      "Bash(\".venv\\Scripts\\python.exe\" -c \"import sys; sys.path.insert(0, ''.''); from agent_platform.mcp.server import _registry, handle_mcp_request; import json; req = {''method'': ''tools/list'', ''id'': 1}; resp = handle_mcp_request(req); print(json.dumps(resp, indent=2))\")",
+      "Bash(D:git1108AI_ad_spend02.venvScriptspython.exe -c \"print(''hello'')\")"
     ],
     "deny": [],
     "ask": []

@@ -97,7 +97,34 @@ async def login(
             message=e.detail,
             status_code=e.status_code
         )
+    except (ValidationError, AuthenticationError) as e:
+        # 预期的业务异常，记录为警告级别
+        logger.warning(
+            "登录验证失败",
+            exc_info=False,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "identifier": request.identifier[:3] + "***" if len(request.identifier) > 3 else "***"
+            }
+        )
+        return error_response(
+            code=AuthErrorCodes.INVALID_CREDENTIALS.code,
+            message="用户名或密码错误",
+            status_code=401
+        )
     except Exception as e:
+        # 未预期的异常，记录为错误级别，包含关键上下文
+        logger.error(
+            "登录时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "identifier_prefix": request.identifier[:3] if len(request.identifier) > 3 else "***",
+                "request_id": getattr(request_obj, "state", {}).get("request_id", "unknown") if request_obj else "unknown"
+            }
+        )
         return error_response(
             code=AuthErrorCodes.LOGIN_FAILED.code,
             message="登录失败，请稍后重试",
@@ -139,7 +166,34 @@ async def register(
             message=e.detail,
             status_code=e.status_code
         )
+    except ValidationError as e:
+        # 预期的验证异常
+        logger.warning(
+            "注册验证失败",
+            exc_info=False,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "email_prefix": request.email.split("@")[0][:3] + "***" if "@" in request.email else "***"
+            }
+        )
+        return error_response(
+            code=ValidationErrorCodes.INVALID_INPUT.code,
+            message=str(e),
+            status_code=400
+        )
     except Exception as e:
+        # 未预期的异常
+        logger.error(
+            "注册时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "email_prefix": request.email.split("@")[0][:3] + "***" if "@" in request.email else "***",
+                "username": request.username[:3] + "***" if len(request.username) > 3 else "***"
+            }
+        )
         return error_response(
             code=AuthErrorCodes.REGISTER_FAILED.code,
             message="注册失败，请稍后重试",
@@ -171,7 +225,33 @@ async def refresh_token(
             message=e.detail,
             status_code=e.status_code
         )
+    except ValidationError as e:
+        # 预期的验证异常
+        logger.warning(
+            "令牌刷新验证失败",
+            exc_info=False,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "token_prefix": request.refresh_token[:10] + "***" if len(request.refresh_token) > 10 else "***"
+            }
+        )
+        return error_response(
+            code=AuthErrorCodes.TOKEN_REFRESH_FAILED.code,
+            message="刷新令牌无效或已过期",
+            status_code=401
+        )
     except Exception as e:
+        # 未预期的异常
+        logger.error(
+            "令牌刷新时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "token_prefix": request.refresh_token[:10] + "***" if len(request.refresh_token) > 10 else "***"
+            }
+        )
         return error_response(
             code=AuthErrorCodes.TOKEN_REFRESH_FAILED.code,
             message="令牌刷新失败",
@@ -205,7 +285,23 @@ async def logout(
             message="登出成功"
         )
 
+    except HTTPException as e:
+        return error_response(
+            code=AuthErrorCodes.LOGOUT_FAILED.code,
+            message=e.detail,
+            status_code=e.status_code
+        )
     except Exception as e:
+        # 未预期的异常
+        logger.error(
+            "登出时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "user_id": user_id if 'user_id' in locals() else None
+            }
+        )
         return error_response(
             code=AuthErrorCodes.LOGOUT_FAILED.code,
             message="登出失败",
@@ -244,7 +340,23 @@ async def logout_all(
                 message="已从所有设备登出"
             )
 
+    except HTTPException as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message=e.detail,
+            status_code=e.status_code
+        )
     except Exception as e:
+        # 未预期的异常
+        logger.error(
+            "全设备登出时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "user_id": current_user.id if 'current_user' in locals() else None
+            }
+        )
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="全设备登出失败",
@@ -280,7 +392,23 @@ async def get_current_user_info(
             }
         )
 
+    except HTTPException as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message=e.detail,
+            status_code=e.status_code
+        )
     except Exception as e:
+        # 未预期的异常
+        logger.error(
+            "获取用户信息时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "user_id": current_user.get("user", {}).get("id") if current_user else None
+            }
+        )
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取用户信息失败",
@@ -317,7 +445,33 @@ async def change_password(
             message=e.detail,
             status_code=e.status_code
         )
+    except ValidationError as e:
+        # 预期的验证异常
+        logger.warning(
+            "密码修改验证失败",
+            exc_info=False,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "user_id": current_user.get("user", {}).get("id") if current_user else None
+            }
+        )
+        return error_response(
+            code=ValidationErrorCodes.INVALID_INPUT.code,
+            message=str(e),
+            status_code=400
+        )
     except Exception as e:
+        # 未预期的异常
+        logger.error(
+            "密码修改时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "user_id": current_user.get("user", {}).get("id") if current_user else None
+            }
+        )
         return error_response(
             code=AuthErrorCodes.PASSWORD_CHANGE_FAILED.code,
             message="密码修改失败",
@@ -368,12 +522,30 @@ async def reset_password(
             )
 
     except ValidationError as e:
+        logger.warning(
+            "密码重置验证失败",
+            exc_info=False,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "token_prefix": request.token[:10] + "***" if len(request.token) > 10 else "***"
+            }
+        )
         return error_response(
             code=ValidationErrorCodes.INVALID_INPUT.code,
             message=str(e),
             status_code=ValidationErrorCodes.INVALID_INPUT.status_code
         )
     except Exception as e:
+        logger.error(
+            "密码重置时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "token_prefix": request.token[:10] + "***" if len(request.token) > 10 else "***"
+            }
+        )
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="密码重置失败",
@@ -403,7 +575,31 @@ async def verify_email(
                 status_code=400
             )
 
+    except ValidationError as e:
+        logger.warning(
+            "邮箱验证失败",
+            exc_info=False,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "token_prefix": token[:10] + "***" if len(token) > 10 else "***"
+            }
+        )
+        return error_response(
+            code=AuthErrorCodes.TOKEN_INVALID.code,
+            message="验证链接无效或已过期",
+            status_code=400
+        )
     except Exception as e:
+        logger.error(
+            "邮箱验证时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "token_prefix": token[:10] + "***" if len(token) > 10 else "***"
+            }
+        )
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="邮箱验证失败",
@@ -433,7 +629,22 @@ async def resend_verification(
                 status_code=400
             )
 
+    except HTTPException as e:
+        return error_response(
+            code=BusinessErrorCodes.OPERATION_FAILED.code,
+            message=e.detail,
+            status_code=e.status_code
+        )
     except Exception as e:
+        logger.error(
+            "发送验证邮件时发生未预期错误",
+            exc_info=True,
+            extra={
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "user_id": current_user.id if 'current_user' in locals() else None
+            }
+        )
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="发送验证邮件失败",
