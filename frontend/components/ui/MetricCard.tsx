@@ -34,32 +34,32 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   onClick,
   className = ''
 }) => {
-  // 获取颜色配置 - 使用更简洁的灰度和淡色系
+  // 获取颜色配置 - 区分不同状态颜色
   const getColorClasses = () => {
     switch (color) {
       case 'success':
         return {
-          bg: 'bg-slate-100',
-          icon: 'text-slate-600',
-          border: 'border-slate-200'
+          bg: 'bg-emerald-50',
+          icon: 'text-emerald-600',
+          border: 'border-emerald-200'
         };
       case 'warning':
         return {
-          bg: 'bg-slate-100',
-          icon: 'text-slate-600',
-          border: 'border-slate-200'
+          bg: 'bg-amber-50',
+          icon: 'text-amber-600',
+          border: 'border-amber-200'
         };
       case 'error':
         return {
-          bg: 'bg-slate-100',
-          icon: 'text-slate-600',
-          border: 'border-slate-200'
+          bg: 'bg-red-50',
+          icon: 'text-red-600',
+          border: 'border-red-200'
         };
       case 'info':
         return {
-          bg: 'bg-slate-100',
-          icon: 'text-slate-600',
-          border: 'border-slate-200'
+          bg: 'bg-blue-50',
+          icon: 'text-blue-600',
+          border: 'border-blue-200'
         };
       default:
         return {

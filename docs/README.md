@@ -267,6 +267,26 @@ ai-ad-doc-fixer 修复 docs/3.dev-guides/API_DEVELOPMENT_FLOW.md 中的 P1-001 �
 
 ---
 
+## 🖥️ Frontend SoT Documents（前端 SoT 文档）
+
+> **所有新前端模块必须同时对齐以下两份 SoT 文档，以及 Dashboard 样板实现。  
+> 若出现冲突：以 SoT 文档为最高优先级，Dashboard 仅作为参考实现。**
+
+| 文档类型            | 版本  | 路径                                                         | 职责                         |
+|---------------------|-------|--------------------------------------------------------------|------------------------------|
+| 🧩 工程结构 SoT     | v1.0  | `docs/frontend/FRONTEND_MODULE_SHELL_PATTERN_v1.0.md`       | 目录结构、Shell 模式、9 步流程 |
+| 🎨 UI / 布局 SoT    | v2.3  | `docs/3.dev-guides/FRONTEND_STYLE_GUIDE_v2.3.md`            | Token、布局、附录 B（Dashboard Shell） |
+
+**样板实现（参考）：**
+
+- 页面入口（Page 层）：`frontend/app/dashboard/page.tsx`  
+
+- Shell 组件：`frontend/src/modules/dashboard/DashboardShell.tsx`  
+
+- Dashboard Hooks：`frontend/src/modules/dashboard/hooks/*`
+
+---
+
 ## 📊 Freeze Status Summary
 
 | Layer | Documents | Freeze Version | Freeze Date | Health Score | Status |

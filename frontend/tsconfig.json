@@ -17,16 +17,18 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    // 逐步启用严格模式
     "noImplicitAny": true,
     "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./*"],
       "@/components/*": ["./components/*"],
-      "@/lib/*": ["./src/lib/*"],
+      "@/lib/*": ["./src/lib/*", "./lib/*"],
       "@/modules/*": ["./src/modules/*"],
-      "@/types/*": ["./src/types/*"]
+      "@/types/*": ["./types/*"],
+      "@/constants/*": ["./constants/*"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/styles/*": ["./styles/*"]
     },
     "plugins": [
       {

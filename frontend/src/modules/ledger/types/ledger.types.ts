@@ -33,6 +33,9 @@ export interface LedgerEntry {
   tenant_id: UUID;
   entry_type: LedgerEntryType;
 
+  // Display fields (computed from relations)
+  ad_account_name?: string;
+
   // Amount (always positive, direction determined by entry_type)
   amount: Money;
 
@@ -106,6 +109,15 @@ export const ENTRY_TYPE_CONFIG: Record<LedgerEntryType, { label: string; variant
   TRANSFER: { label: '转账', variant: 'info', direction: 'neutral' },
   ADJUSTMENT: { label: '调整', variant: 'warning', direction: 'neutral' },
   REFUND: { label: '退款', variant: 'success', direction: 'in' },
+};
+
+// Alias for component compatibility
+export const LEDGER_ENTRY_TYPE_CONFIG: Record<LedgerEntryType, { label: string; color: string }> = {
+  RECHARGE: { label: '充值', color: 'text-success' },
+  CONSUMPTION: { label: '消耗', color: 'text-danger' },
+  TRANSFER: { label: '转账', color: 'text-info' },
+  ADJUSTMENT: { label: '调整', color: 'text-warning' },
+  REFUND: { label: '退款', color: 'text-success' },
 };
 
 // === Invariants (LEDGER_SOT.md v1.1 Section 5) ===

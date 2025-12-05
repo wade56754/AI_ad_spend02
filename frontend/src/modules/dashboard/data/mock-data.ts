@@ -1,58 +1,86 @@
 /**
  * Dashboard Mock 数据
- *
- * 模拟后端 API 返回结构，便于未来无缝对接
- * 数据结构参考 daily_reports / finance_profit 业务模型
  */
 
-import type {
-  KpiMetric,
-  TrendChartData,
-  TodoTask,
-  ProjectOption,
-  DashboardData
-} from '../types';
+import { Wallet, CheckCircle2, TrendingUp, AlertTriangle } from 'lucide-react';
+import type { KpiMetric, TrendChartData, RiskAlert, TodoTask, FundsOverview } from '../types';
 
-// 项目列表 mock
-export const mockProjects: ProjectOption[] = [
-  { id: 'all', name: '全部项目' },
-  { id: 'proj-001', name: 'ABC公司Q4投放' },
-  { id: 'proj-002', name: 'XYZ科技推广' },
-  { id: 'proj-003', name: 'DEF品牌营销' },
-  { id: 'proj-004', name: 'GHI电商活动' },
+// 图表数据
+export const MOCK_CHART_DATA: TrendChartData[] = [
+  { date: '11-27', spend: 1200, roi: 1.8 },
+  { date: '11-28', spend: 1800, roi: 2.1 },
+  { date: '11-29', spend: 1600, roi: 2.4 },
+  { date: '11-30', spend: 2200, roi: 3.2 },
+  { date: '12-01', spend: 2100, roi: 3.1 },
+  { date: '12-02', spend: 1950, roi: 2.8 },
+  { date: '12-03', spend: 2400, roi: 3.4 },
 ];
 
-// KPI 指标 mock
-export const mockKpiMetrics: KpiMetric[] = [
+// 风险预警数据
+export const MOCK_ALERTS: RiskAlert[] = [
+  { 
+    id: 1, 
+    account: 'FB_Acc_092', 
+    type: '余额不足', 
+    level: 'critical', 
+    msg: '余额 < $50，已暂停',
+    project: 'ABC公司Q4项目',
+    timestamp: '2024-12-03 10:30'
+  },
+  { 
+    id: 2, 
+    account: 'Google_Ads_11', 
+    type: 'ROI异常', 
+    level: 'warning', 
+    msg: '今日 ROI 0.5 (跌幅 80%)',
+    project: 'XYZ科技投放',
+    timestamp: '2024-12-03 09:15'
+  },
+  { 
+    id: 3, 
+    account: 'FB_Acc_104', 
+    type: '账户被封', 
+    level: 'critical', 
+    msg: '检测到 Policy Violation',
+    project: 'DEF品牌推广',
+    timestamp: '2024-12-03 08:00'
+  },
+];
+
+// KPI 指标数据（区分 Primary 和 Secondary）
+export const MOCK_KPI_METRICS: KpiMetric[] = [
   {
     id: 'spend_today',
-    title: '今日消耗',
-    value: '¥12,845',
+    title: '今日总消耗',
+    value: '$12,845',
     change: 8.2,
     changeType: 'up',
     description: '相比昨日',
-    icon: 'DollarSign',
-    color: 'primary'
-  },
-  {
-    id: 'active_projects',
-    title: '活跃项目',
-    value: '24',
-    change: 3,
-    changeType: 'up',
-    description: '本周新增',
-    icon: 'Target',
-    color: 'success'
+    icon: Wallet,
+    color: 'primary',
+    priority: 'primary' // 主要指标
   },
   {
     id: 'roi',
-    title: 'ROI',
+    title: '整体 ROI',
     value: '3.24',
     change: 4.6,
     changeType: 'up',
     description: '投资回报率',
-    icon: 'TrendingUp',
-    color: 'info'
+    icon: TrendingUp,
+    color: 'info',
+    priority: 'primary' // 主要指标
+  },
+  {
+    id: 'active_projects',
+    title: '活跃项目数',
+    value: '24',
+    change: 3,
+    changeType: 'up',
+    description: '个新立项',
+    icon: CheckCircle2,
+    color: 'success',
+    priority: 'secondary' // 次要指标
   },
   {
     id: 'pending_reports',
@@ -60,52 +88,15 @@ export const mockKpiMetrics: KpiMetric[] = [
     value: '18',
     change: -5,
     changeType: 'down',
-    description: '需要审核',
-    icon: 'FileText',
-    color: 'warning'
+    description: '需优先处理',
+    icon: AlertTriangle,
+    color: 'warning',
+    priority: 'secondary' // 次要指标，但需要高亮
   }
 ];
 
-// 消耗趋势 mock（7天）
-export const mockSpendTrend: TrendChartData = {
-  title: '消耗趋势',
-  description: '近7天投放消耗',
-  trend: {
-    value: 12.5,
-    isPositive: true
-  },
-  dataPoints: [
-    { label: '11-27', value: 65 },
-    { label: '11-28', value: 72 },
-    { label: '11-29', value: 58 },
-    { label: '11-30', value: 80 },
-    { label: '12-01', value: 75 },
-    { label: '12-02', value: 88 },
-    { label: '12-03', value: 92 }
-  ]
-};
-
-// ROI 趋势 mock
-export const mockRoiTrend: TrendChartData = {
-  title: 'ROI 趋势',
-  description: '近7天投资回报率',
-  trend: {
-    value: 5.2,
-    isPositive: true
-  },
-  dataPoints: [
-    { label: '11-27', value: 45 },
-    { label: '11-28', value: 52 },
-    { label: '11-29', value: 48 },
-    { label: '11-30', value: 60 },
-    { label: '12-01', value: 55 },
-    { label: '12-02', value: 68 },
-    { label: '12-03', value: 72 }
-  ]
-};
-
-// 待办任务 mock（对齐 daily_report 状态流转）
-export const mockTodoTasks: TodoTask[] = [
+// 今日待办数据
+export const MOCK_TODO_TASKS: TodoTask[] = [
   {
     id: 'task-001',
     title: '审核5个项目的日报',
@@ -128,7 +119,7 @@ export const mockTodoTasks: TodoTask[] = [
   },
   {
     id: 'task-003',
-    title: '跟进异常账户处理',
+    title: '跟进异常账户解封',
     priority: 'high',
     status: 'in_progress',
     assignee: '王户管',
@@ -155,22 +146,16 @@ export const mockTodoTasks: TodoTask[] = [
   }
 ];
 
-// 完整 Dashboard 数据
-export const mockDashboardData: DashboardData = {
-  kpiMetrics: mockKpiMetrics,
-  spendTrend: mockSpendTrend,
-  roiTrend: mockRoiTrend,
-  todoTasks: mockTodoTasks,
-  lastUpdated: new Date().toISOString()
+// 资金概览数据
+export const MOCK_FUNDS_OVERVIEW: FundsOverview = {
+  totalBalance: 1234567,
+  availableBalance: 987654,
+  pendingTopups: {
+    count: 3,
+    totalAmount: 50000
+  },
+  recentTransactions: [
+    { id: 'tx-001', type: '充值', amount: 100000, timestamp: '2024-12-03 10:00' },
+    { id: 'tx-002', type: '消耗', amount: -50000, timestamp: '2024-12-03 09:30' }
+  ]
 };
-
-// 模拟 API 调用延迟
-export async function fetchDashboardData(): Promise<DashboardData> {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  return mockDashboardData;
-}
-
-export async function fetchProjects(): Promise<ProjectOption[]> {
-  await new Promise(resolve => setTimeout(resolve, 300));
-  return mockProjects;
-}

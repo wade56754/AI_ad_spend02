@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <ErrorBoundary>
           <Providers>
             {children}

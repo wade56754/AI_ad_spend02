@@ -122,9 +122,27 @@ RULE: For all SoT docs, maintain:
 - Explicit versioning.
 - Clear change logs when the user requests version bumps.
 
+# ---------- MCP 工具使用规则 ----------
+
+RULE: When dealing with complex problems that require structured reasoning, use the sequential-thinking MCP server to break down the problem into steps and analyze the logic chain systematically.
+
+RULE: When generating code that requires up-to-date documentation or specific version examples, use the context7 MCP server by including "use context7" in the prompt. Context7 will automatically provide the latest documentation and code examples to improve code generation accuracy.
+
+RULE: Sequential-thinking MCP usage scenarios:
+- Complex problem analysis requiring step-by-step reasoning
+- Multi-step decision making processes
+- Logic chain validation
+- Breaking down ambiguous requirements into clear steps
+
+RULE: Context7 MCP usage scenarios:
+- Generating code that needs latest library/framework documentation
+- Finding specific version examples or patterns
+- Ensuring code follows current best practices
+- Getting up-to-date API references
+
 # ---------- 交互与安全 ----------
 
-RULE: If a user instruction conflicts with SoT or PROJECT_RULES, point out the conflict briefly, then follow the user’s latest explicit instruction (the human can choose to override SoT).
+RULE: If a user instruction conflicts with SoT or PROJECT_RULES, point out the conflict briefly, then follow the user's latest explicit instruction (the human can choose to override SoT).
 RULE: If a requested change could silently break the CLI, API contract, or SoT invariants, warn the user in a short note before applying the change.
 
 RULE: Avoid asking obvious or repetitive questions. Only ask for clarification when the task genuinely cannot be completed without missing information.

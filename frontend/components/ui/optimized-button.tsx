@@ -1,3 +1,11 @@
+/**
+ * @deprecated This component is deprecated. Please use the standard `Button` component from `@/components/ui/button` instead.
+ * This optimized version was an experimental implementation and is no longer maintained.
+ * 
+ * Migration guide:
+ * - Replace `OptimizedButton` with `Button` from `@/components/ui/button`
+ * - The standard Button component supports all the same variants and features
+ */
 "use client";
 
 import React, { useState, forwardRef, ButtonHTMLAttributes, ReactNode } from "react";

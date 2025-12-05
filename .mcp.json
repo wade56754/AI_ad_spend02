@@ -1,0 +1,45 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--browser-url=http://127.0.0.1:9222"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    },
+    "ai-ad-agents": {
+      "command": "D:\\\\git\\\\1108\\\\AI_ad_spend02\\\\.venv\\\\Scripts\\\\python.exe",
+      "args": [
+        "-m",
+        "agent_platform.mcp.server"
+      ],
+      "cwd": "D:\\\\git\\\\1108\\\\AI_ad_spend02",
+      "env": {
+        "AGENT_PLATFORM_MODE": "mcp"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking@latest"
+      ]
+    }
+  }
+}
+

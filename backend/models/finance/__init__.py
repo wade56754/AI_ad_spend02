@@ -1,5 +1,5 @@
-"""财务模型"""
-from .ledger import LedgerEntry
+"""财务模型 (LEDGER_SOT.md v1.1)"""
+from .ledger import LedgerEntry, LedgerBookType
 from .reconciliation import ReconciliationBatch, ReconciliationDetail, ReconciliationAdjustment
 from .supplier import Supplier, SupplierStatus, PaymentMethod
 from .settlement import Settlement, SettlementStatus, SettlementType, PaymentStatus
@@ -12,13 +12,18 @@ from .profit import (
 )
 
 __all__ = [
+    # Ledger module (LEDGER_SOT.md v1.1)
     "LedgerEntry",
+    "LedgerBookType",
+    # Reconciliation module
     "ReconciliationBatch",
     "ReconciliationDetail",
     "ReconciliationAdjustment",
+    # Supplier module
     "Supplier",
     "SupplierStatus",
     "PaymentMethod",
+    # Settlement module
     "Settlement",
     "SettlementStatus",
     "SettlementType",

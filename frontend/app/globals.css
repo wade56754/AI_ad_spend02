@@ -4,66 +4,104 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* ============================================
+     * SEMANTIC COLOR TOKEN SYSTEM v1.0
+     *
+     * Naming Convention:
+     * - Use semantic names (surface, text, border, accent)
+     * - Avoid appearance names (dark, light, black, white)
+     * - Use levels (primary, secondary, tertiary) for hierarchy
+     * ============================================ */
+
+    /* === SURFACE TOKENS (Background Layers) === */
+    --surface-shell: 222 47% 7%;        /* Page background: #0A0E1A equivalent */
+    --surface-primary: 222 40% 9%;      /* Card background: #131825 equivalent */
+    --surface-elevated: 220 35% 15%;    /* Hover/Active: #1A2332 equivalent */
+
+    /* === TEXT TOKENS (Typography Hierarchy) === */
+    --text-primary: 210 40% 98%;        /* Strong text: #F8FAFC */
+    --text-secondary: 215 25% 80%;      /* Body text: #CBD5E1 */
+    --text-tertiary: 215 20% 65%;       /* Muted text: #94A3B8 */
+    --text-quaternary: 215 16% 47%;     /* Subtle text: #64748B */
+
+    /* === BORDER TOKENS === */
+    --border-primary: 220 20% 18%;      /* Default borders: #1E293B */
+    --border-secondary: 215 20% 30%;    /* Muted borders: #334155 */
+    --border-focus: 217 91% 60%;        /* Focus rings */
+
+    /* === ACCENT TOKENS (Brand/Primary Action) === */
+    --accent-primary: 217 91% 60%;      /* Primary accent: #3B82F6 */
+    --accent-primary-hover: 217 91% 70%;/* Accent hover: #60A5FA */
+    --accent-primary-active: 217 91% 50%;/* Accent active: #2563EB */
+
+    /* === STATUS TOKENS (Semantic Colors) === */
+    --status-success: 160 84% 39%;      /* Success: #10B981 */
+    --status-success-emphasis: 160 80% 45%;/* Success hover: #34D399 */
+    --status-success-muted: 160 84% 39% / 0.1;/* Success bg */
+
+    --status-warning: 38 92% 50%;       /* Warning: #F59E0B */
+    --status-warning-emphasis: 43 96% 56%;/* Warning hover: #FBBF24 */
+    --status-warning-muted: 38 92% 50% / 0.1;/* Warning bg */
+
+    --status-danger: 0 84% 60%;         /* Danger: #EF4444 */
+    --status-danger-emphasis: 0 91% 71%;/* Danger hover: #F87171 */
+    --status-danger-muted: 0 84% 60% / 0.1;/* Danger bg */
+
+    --status-info: 189 94% 43%;         /* Info: #06B6D4 */
+    --status-info-emphasis: 187 92% 50%;/* Info hover: #22D3EE */
+    --status-info-muted: 189 94% 43% / 0.1;/* Info bg */
+
+    /* === CHART TOKENS (Data Visualization) === */
+    --chart-grid: 220 20% 18%;          /* Grid lines */
+    --chart-axis: 215 20% 65%;          /* Axis text */
+    --chart-series-1: 217 91% 60%;      /* Primary series (accent) */
+    --chart-series-2: 160 84% 39%;      /* Secondary series (success) */
+    --chart-series-3: 38 92% 50%;       /* Tertiary series (warning) */
+    --chart-series-4: 0 84% 60%;        /* Quaternary series (danger) */
+
+    /* === LAYOUT TOKENS === */
     --radius: 0.5rem;
-    /* Sidebar variables */
-    --sidebar: 0 0% 98%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 222.2 47.4% 11.2%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222.2 84% 4.9%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 222.2 84% 4.9%;
+    --sidebar-width: 15rem;
+    --sidebar-width-icon: 4.5rem;
+
+    /* === SHADCN/UI COMPATIBILITY TOKENS === */
+    /* These map to our semantic tokens for shadcn component compatibility */
+    --background: var(--surface-shell);
+    --foreground: var(--text-primary);
+    --card: var(--surface-primary);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface-primary);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--accent-primary);
+    --primary-foreground: var(--text-primary);
+    --secondary: var(--surface-elevated);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--surface-elevated);
+    --muted-foreground: var(--text-tertiary);
+    --accent: var(--surface-elevated);
+    --accent-foreground: var(--text-primary);
+    --destructive: var(--status-danger);
+    --destructive-foreground: var(--text-primary);
+    --border: var(--border-primary);
+    --input: var(--surface-elevated);
+    --ring: var(--border-focus);
+
+    /* === SIDEBAR TOKENS === */
+    --sidebar: var(--surface-shell);
+    --sidebar-foreground: var(--text-secondary);
+    --sidebar-primary: var(--accent-primary);
+    --sidebar-primary-foreground: var(--text-primary);
+    --sidebar-accent: var(--accent-primary);
+    --sidebar-accent-foreground: var(--text-primary);
+    --sidebar-border: var(--border-primary);
+    --sidebar-ring: var(--accent-primary);
   }
 
+  /* Dark theme class - currently same as :root since we only support one theme */
+  /* When implementing theme switching, override semantic tokens here */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    /* Sidebar variables (dark mode) */
-    --sidebar: 222.2 47.4% 11.2%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+    /* Currently inherits from :root - no overrides needed */
+    /* Future light theme would invert these values */
   }
 }
 

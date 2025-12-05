@@ -344,14 +344,14 @@ export default function DailyReviewsPage() {
                     mode="single"
                     selected={filters.date_from ? new Date(filters.date_from) : undefined}
                     onSelect={(date) => {
-                      if (date) {
+                      if (date && !Array.isArray(date)) {
                         setFilters({
                           ...filters,
                           date_from: format(date, "yyyy-MM-dd"),
                         });
                       }
                     }}
-                    locale={zhCN}
+                    locale="zh-CN"
                   />
                 </PopoverContent>
               </Popover>
@@ -381,14 +381,14 @@ export default function DailyReviewsPage() {
                     mode="single"
                     selected={filters.date_to ? new Date(filters.date_to) : undefined}
                     onSelect={(date) => {
-                      if (date) {
+                      if (date && !Array.isArray(date)) {
                         setFilters({
                           ...filters,
                           date_to: format(date, "yyyy-MM-dd"),
                         });
                       }
                     }}
-                    locale={zhCN}
+                    locale="zh-CN"
                   />
                 </PopoverContent>
               </Popover>

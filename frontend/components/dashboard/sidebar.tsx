@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-
 interface MenuItem {
   id: string;
   label: string;
@@ -39,11 +37,11 @@ export function Sidebar({
   bottomMenuItems = DEFAULT_BOTTOM_MENU_ITEMS
 }: SidebarProps) {
   return (
-    <aside className="flex w-[280px] flex-col bg-[#0B1437] text-white">
+    <aside className="flex w-[var(--sidebar-width)] flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
-      <div className="border-b border-gray-700/30 p-6">
+      <div className="border-b border-sidebar-border p-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1E3A8A] text-lg font-bold">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sidebar-primary text-sidebar-primary-foreground text-lg font-bold">
             M
           </div>
           <div className="text-sm font-semibold">广告投放管理系统</div>
@@ -58,8 +56,8 @@ export function Sidebar({
             onClick={() => onMenuChange(item.id)}
             className={`relative flex w-full items-center justify-between px-4 py-3 text-left transition-all rounded-xl mb-1 ${
               activeMenu === item.id
-                ? 'bg-[#1E3A8A] text-white'
-                : 'text-gray-400 hover:bg-gray-700/30 hover:text-white'
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -67,7 +65,7 @@ export function Sidebar({
               <span className="text-sm font-medium">{item.label}</span>
             </div>
             {item.badge && (
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F59E0B] text-xs font-bold text-white">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-warning text-xs font-bold text-white">
                 {item.badge}
               </div>
             )}
@@ -76,15 +74,15 @@ export function Sidebar({
       </nav>
 
       {/* Bottom Menu */}
-      <div className="border-t border-gray-700/30 px-4 py-4">
+      <div className="border-t border-sidebar-border px-4 py-4">
         {bottomMenuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => onMenuChange(item.id)}
             className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all mb-1 ${
               item.highlight
-                ? 'text-[#F59E0B] hover:bg-[#F59E0B]/10'
-                : 'text-gray-400 hover:bg-gray-700/30 hover:text-white'
+                ? 'text-warning hover:bg-warning/10'
+                : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
             }`}
           >
             <span className="text-base">{item.icon}</span>

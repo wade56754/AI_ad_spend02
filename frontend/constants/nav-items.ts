@@ -1,12 +1,15 @@
 import type { NavItem } from '@/types/nav.types';
 import {
   LayoutDashboard,
+  FolderKanban,
   Users,
   FileText,
   DollarSign,
   CheckSquare,
   BookOpen,
   Settings,
+  Repeat,
+  ShieldAlert,
 } from 'lucide-react';
 
 export const navItems: NavItem[] = [
@@ -19,7 +22,7 @@ export const navItems: NavItem[] = [
   {
     title: '项目管理',
     url: '/dashboard/projects',
-    icon: LayoutDashboard,
+    icon: FolderKanban,
   },
   {
     title: '渠道账户',
@@ -45,6 +48,16 @@ export const navItems: NavItem[] = [
     title: '账本查询',
     url: '/dashboard/ledger',
     icon: BookOpen,
+  },
+  {
+    title: '余额迁移',
+    url: '/dashboard/transfer',
+    icon: Repeat,
+  },
+  {
+    title: '风险控制',
+    url: '/dashboard/risk-control',
+    icon: ShieldAlert,
   },
   {
     title: '系统设置',

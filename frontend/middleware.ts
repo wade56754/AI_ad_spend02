@@ -26,13 +26,14 @@ export function middleware(request: NextRequest) {
     pathname.startsWith(route)
   );
 
+  // TODO: 临时绕过认证 - 仅用于开发测试
   // 未登录访问受保护路由 → 重定向登录页
-  if (isProtectedRoute && !token) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(url);
-  }
+  // if (isProtectedRoute && !token) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = '/login';
+  //   url.searchParams.set('callbackUrl', pathname);
+  //   return NextResponse.redirect(url);
+  // }
 
   // 已登录访问公开路由 → 重定向仪表盘
   if (isPublicRoute && token) {

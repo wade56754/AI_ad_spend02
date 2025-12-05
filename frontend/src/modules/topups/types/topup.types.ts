@@ -32,6 +32,10 @@ export interface TopupRequest {
   amount: Money;
   status: TopupStatus;
 
+  // Display fields (computed from relations)
+  ad_account_id?: string;
+  ad_account_name?: string;
+
   // Request details
   requested_by: UUID;
   requested_at: ISODateString;
@@ -110,3 +114,6 @@ export const TOPUP_TRANSITIONS = {
   completed: [],
   cancelled: [],
 } as const;
+
+// Alias for component compatibility
+export type Topup = TopupRequest;

@@ -155,13 +155,19 @@
       "Bash(D:\\git\\1108\\AI_ad_spend02\\.venv\\Scripts\\python.exe:*)",
       "Bash(\".venv\\Scripts\\python.exe\" -c \"import agent_platform.mcp.server; print(''MCP server module imported successfully'')\")",
       "Bash(\".venv\\Scripts\\python.exe\" -c \"import sys; sys.path.insert(0, ''.''); from agent_platform.mcp.server import _registry, handle_mcp_request; import json; req = {''method'': ''tools/list'', ''id'': 1}; resp = handle_mcp_request(req); print(json.dumps(resp, indent=2))\")",
-      "Bash(D:git1108AI_ad_spend02.venvScriptspython.exe -c \"print(''hello'')\")"
+      "Bash(D:git1108AI_ad_spend02.venvScriptspython.exe -c \"print(''hello'')\")",
+      "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" diff frontend/components/dashboard/sidebar.tsx frontend/app/globals.css)",
+      "Bash(start chrome --remote-debugging-port=9222 --user-data-dir=\"C:\\chrome-debug-profile\" \"http://localhost:3000/dashboard\")"
     ],
     "deny": [],
     "ask": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "supabase"
+    "chrome-devtools",
+    "context7",
+    "supabase",
+    "ai-ad-agents",
+    "sequential-thinking"
   ]
 }

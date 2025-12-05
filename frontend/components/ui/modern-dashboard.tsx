@@ -1,3 +1,11 @@
+/**
+ * @deprecated This component is deprecated. Please use the standard dashboard components from `@/modules/dashboard` instead.
+ * This modern dashboard was an experimental implementation and is no longer maintained.
+ * 
+ * Migration guide:
+ * - Use `DashboardFilters`, `KpiCards`, `TrendSection` from `@/modules/dashboard`
+ * - Use `MetricCard` from `@/components/ui/MetricCard` for metric displays
+ */
 "use client";
 
 import React from "react";

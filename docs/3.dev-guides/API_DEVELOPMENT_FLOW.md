@@ -1,8 +1,8 @@
 ---
-version: v2.1
+version: v2.2
 status: ready_for_production
 layer: dev-guide
-last_reviewed: 2025-12-01
+last_reviewed: 2025-12-05
 owner: wade
 baseline: MASTER.md v3.6, SoT Freeze v2.6, OpenSpec v1.0
 ---
@@ -141,7 +141,7 @@ graph TD
 
 **核心规范**：
 
-#### 3.4.1 不可变量检查（MASTER.md v3.4 定义）
+#### 3.4.1 不可变量检查（MASTER.md v3.6 定义）
 
 所有 Service 层代码必须显式检查以下不可变量：
 
@@ -164,14 +164,18 @@ graph TD
 
 - **INV-002: 终态不可逆**
   ```python
+  from backend.exceptions import BusinessLogicError
+
   def submit_report(report_id: int):
       report = db.query(DailyReport).get(report_id)
 
       # 检查终态（final_locked, cancelled）
       if report.status in ['final_locked', 'cancelled']:
-          raise ValueError(
-              f"报表已处于终态 {report.status}，不可修改",
-              error_code='VAL-001'  # ERROR_CODES_SOT v2.1
+          raise BusinessLogicError(
+              message=f"报表已处于终态 {report.status}，不可修改",
+              error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
+              status_code=400,
+              details={'report_id': report_id, 'current_status': report.status}
           )
 
       # 状态转换
@@ -193,9 +197,11 @@ graph TD
       }
 
       if target not in allowed_transitions.get(current, []):
-          raise ValueError(
-              f"非法状态转换: {current} → {target}",
-              error_code='STATE-001'  # ERROR_CODES_SOT v2.1
+          raise BusinessLogicError(
+              message=f"非法状态转换: {current} → {target}",
+              error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
+              status_code=400,
+              details={'current_status': current, 'target_status': target}
           )
   ```
 
@@ -206,7 +212,7 @@ graph TD
 from sqlalchemy.orm import Session
 from backend.models.daily_report import DailyReport
 from backend.schemas.daily_report import DailyReportSubmitRequest
-from backend.core.errors import ValidationError
+from backend.exceptions import ValidationError, BusinessLogicError, ResourceNotFoundError
 
 class DailyReportService:
     def __init__(self, db: Session):
@@ -218,16 +224,20 @@ class DailyReportService:
         # 1. 获取报表
         report = self.db.query(DailyReport).get(report_id)
         if not report:
-            raise ValidationError(
-                code='VAL-002',  # ERROR_CODES_SOT v2.1
-                message=f"报表 {report_id} 不存在"
+            raise ResourceNotFoundError(
+                message=f"报表 {report_id} 不存在",
+                error_code='BIZ_404',  # RESOURCE_NOT_FOUND
+                status_code=404,
+                details={'report_id': report_id}
             )
 
         # 2. 检查不可变量 INV-002
         if report.status in ['final_locked', 'cancelled']:
-            raise ValidationError(
-                code='VAL-001',
-                message=f"报表已处于终态 {report.status}，不可修改"
+            raise BusinessLogicError(
+                message=f"报表已处于终态 {report.status}，不可修改",
+                error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
+                status_code=400,
+                details={'report_id': report_id, 'current_status': report.status}
             )
 
         # 3. 验证状态转换 INV-003
@@ -301,7 +311,7 @@ class DailyReportService:
    # tests/test_daily_report_service.py
    import pytest
    from backend.services.daily_report_service import DailyReportService
-   from backend.core.errors import ValidationError
+   from backend.exceptions import ValidationError, BusinessLogicError, ResourceNotFoundError
 
    def test_submit_report_success(db_session, sample_report):
        """测试正常提交流程"""
@@ -321,16 +331,16 @@ class DailyReportService:
    def test_submit_locked_report_fails(db_session, locked_report):
        """测试 INV-002: 终态不可逆"""
        service = DailyReportService(db_session)
-       with pytest.raises(ValidationError) as exc:
+       with pytest.raises(BusinessLogicError) as exc:
            service.submit_report(locked_report.id, ...)
-       assert exc.value.code == 'VAL-001'
+       assert exc.value.error_code == 'BIZ_301'
 
    def test_invalid_status_transition(db_session, pending_report):
        """测试 INV-003: 非法状态转换"""
        service = DailyReportService(db_session)
-       with pytest.raises(ValidationError) as exc:
+       with pytest.raises(BusinessLogicError) as exc:
            service._validate_transition('final_confirmed', 'draft')
-       assert exc.value.code == 'STATE-001'
+       assert exc.value.error_code == 'BIZ_301'
    ```
 
 2. **集成测试**（API 端点）：
@@ -474,28 +484,58 @@ graph TD
 
 ### 4.1 错误码使用规范
 
-所有错误必须使用 `ERROR_CODES_SOT.md` v2.1 定义的错误码：
+所有错误必须使用 `ERROR_CODES_SOT.md` v2.1 和 `backend/core/error_codes.py` 定义的错误码：
 
 ```python
-from backend.core.errors import ValidationError, StateTransitionError
-
-# 验证错误
-raise ValidationError(
-    code='VAL-001',  # 来自 ERROR_CODES_SOT v2.1
-    message="报表已处于终态，不可修改"
+from backend.exceptions import (
+    ValidationError,
+    BusinessLogicError,
+    ResourceNotFoundError,
+    PermissionDeniedError,
+    AuthenticationError
 )
 
-# 状态转换错误
-raise StateTransitionError(
-    code='STATE-001',
-    message=f"非法状态转换: {current} → {target}"
+# 验证错误（字段校验失败）
+raise ValidationError(
+    message="平台必须是 fb/google/tiktok 之一",
+    error_code='VALIDATION_001',  # INVALID_INPUT
+    status_code=422,
+    details={'field': 'platform', 'value': platform}
+)
+
+# 业务逻辑错误（状态转换、终态检查）
+raise BusinessLogicError(
+    message=f"报表已处于终态 {status}，不可修改",
+    error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
+    status_code=400,
+    details={'current_status': status}
+)
+
+# 资源不存在
+raise ResourceNotFoundError(
+    message=f"报表 {report_id} 不存在",
+    error_code='BIZ_404',  # RESOURCE_NOT_FOUND
+    status_code=404,
+    details={'report_id': report_id}
 )
 
 # 权限错误
-raise PermissionError(
-    code='AUTH-001',
-    message="缺少 daily_report:submit 权限"
+raise PermissionDeniedError(
+    message="缺少 daily_report:submit 权限",
+    error_code='AUTH_003',  # INSUFFICIENT_PERMISSIONS
+    status_code=403,
+    details={'required_permission': 'daily_report:submit'}
 )
+```
+
+**异常类层级结构**（`backend/exceptions/custom_exceptions.py`）：
+```
+BaseCustomException
+├── ValidationError (status_code=422)
+├── BusinessLogicError (status_code=400)
+├── ResourceNotFoundError (status_code=404)
+├── PermissionDeniedError (status_code=403)
+└── AuthenticationError (status_code=401)
 ```
 
 ### 4.2 错误响应格式
@@ -515,7 +555,7 @@ raise PermissionError(
 
 ## 5. Relation to SoT
 
-本文档依赖以下 SoT 文档（SoT Freeze v1.0）：
+本文档依赖以下 SoT 文档（SoT Freeze v2.6）：
 
 | SoT 文档 | 版本 | 用途 |
 |---------|------|------|
@@ -539,7 +579,7 @@ STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
 
 ## 6. Invariants Checkpoints
 
-开发过程中必须检查以下不可变量（MASTER.md v3.4 定义）：
+开发过程中必须检查以下不可变量（MASTER.md v3.6 定义）：
 
 - **INV-001**: 账务只追加，不修改
   - ❌ 禁止: 直接修改 `balance` 字段
@@ -553,10 +593,83 @@ STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
   - ❌ 禁止: 从 `final_confirmed` 回退到 `draft`
   - ✅ 必须: 使用 STATE_MACHINE v2.6 定义的合法转换路径
 
-## 7. References
+## 7. MCP 自动化开发流程
 
-- [MASTER.md](../1.overview/MASTER.md) v3.4 - 文档架构和不可变量定义
-- [SoT 文档集](../2.sot/) - 完整 SoT Freeze v1.0 规范
+### 7.1 ai-ad-agents MCP 工具集成
+
+本项目支持通过 `ai-ad-agents` MCP 服务器进行自动化开发。在 MCP 模式下，可使用以下工具：
+
+**文件操作**:
+- `ap_read_file(path)` - 读取项目文件
+- `ap_write_file(path, content)` - 写入项目文件
+- `ap_read_sot_file(sot_key)` - 读取 SoT 文档（如 `DATA_SCHEMA`, `STATE_MACHINE`）
+- `ap_list_sot_files()` - 列出所有可用 SoT 文档
+
+**测试执行**:
+- `ap_run_pytest(test_paths, markers, extra_args)` - 执行 pytest 测试
+- `ap_run_skill("backend_test", params)` - 生成后端测试执行指令
+
+**SoT 守护**:
+- `ap_run_skill("sot_guard", {"changes": {...}})` - 验证代码是否符合 SoT 规范
+
+### 7.2 gen-backend-mcp 自动化命令
+
+使用 `/gen-backend-mcp` 命令启动 MCP 辅助的后端开发流程：
+
+```bash
+# 在 Claude Code 中执行
+/gen-backend-mcp
+```
+
+**命令功能**：
+1. 自动检测当前任务类型（CRUD / State Machine / Query）
+2. 调用 `ap_read_sot_file` 获取相关 SoT 规范
+3. 使用 `ap_run_skill("sot_guard")` 验证生成代码
+4. 调用 `ap_run_pytest` 执行测试验证
+
+**MCP-Safe Agents（可在 MCP 模式下运行）**：
+| Agent | 功能 |
+|-------|------|
+| `test` | 生成测试提示词 |
+| `review` | SoT 代码审查 |
+| `doc` | 文档生成 |
+
+**MCP-Safe Skills**:
+| Skill | 功能 |
+|-------|------|
+| `db_test` | 生成 Supabase MCP 测试提示词 |
+| `backend_test` | 生成 pytest 执行提示词 |
+| `sot_guard` | 验证代码符合 SoT 规范（8-state 状态机、分录类型等） |
+
+### 7.3 MCP 模式 vs 非 MCP 模式
+
+| 场景 | MCP 模式 | 非 MCP 模式 |
+|------|----------|-------------|
+| **SoT 读取** | `ap_read_sot_file("STATE_MACHINE")` | `Read docs/2.sot/STATE_MACHINE.md` |
+| **测试执行** | `ap_run_pytest(["tests/"])` | `Bash pytest tests/` |
+| **代码验证** | `ap_run_skill("sot_guard")` | 手动检查 + PR Review |
+| **Agent 调用** | 仅 MCP-Safe Agents | 所有 Agents |
+
+**重要**：MCP 模式下的 Agents 不调用外部 LLM API，仅执行纯逻辑操作。
+
+---
+
+## 8. References
+
+- [MASTER.md](../1.overview/MASTER.md) v3.6 - 文档架构和不可变量定义
+- [SoT 文档集](../2.sot/) - 完整 SoT Freeze v2.6 规范
 - [PROJECT_RULES.md](../../.claude/PROJECT_RULES.md) v3.1 - Claude Code 项目规则
+- [gen-backend-mcp.md](../../.claude/commands/gen-backend-mcp.md) - MCP 后端开发命令
 - [FastAPI 官方文档](https://fastapi.tiangolo.com/) - 路由和依赖注入
 - [Pydantic 官方文档](https://docs.pydantic.dev/) - Schema 定义规范
+
+---
+
+## Appendix A: Change Log
+
+| Version | Date | Changes |
+|---------|------|---------|
+| v2.2 | 2025-12-05 | 修复版本引用 (v3.4→v3.6, v1.0→v2.6)；统一错误处理示例使用 backend.exceptions；新增 MCP 自动化开发流程章节 |
+| v2.1 | 2025-12-01 | 添加 OpenSpec 工作流，完善 6 步开发流程 |
+| v2.0 | 2025-11-27 | 重构为 6 步标准流程，对齐 SoT Freeze v2.6 |
+| v1.0 | 2025-11-20 | 初始版本 |

@@ -1,13 +1,13 @@
 ---
-version: v2.1
+version: v2.3
 status: candidate_freeze
 layer: dev-guide
 owner: wade
-last_reviewed: 2025-12-03
+last_reviewed: 2025-12-05
 baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal
 ---
 
-# FRONTEND_STYLE_GUIDE_v2.1
+# FRONTEND_STYLE_GUIDE_v2.3
 
 > **面向对象**: 前端工程师 + FE Agent（自动化代码生成工具）
 >
@@ -224,19 +224,113 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 | 组件名 | 物理路径 | 职责 |
 |--------|----------|------|
-| `PageContainer` | `@/modules/shared/components/layout/PageContainer.tsx` | 页面内容区包装器 |
-| `PageHeader` | `@/modules/shared/components/layout/PageHeader.tsx` | 页面标题栏（含返回、操作按钮） |
-| `Header` | `@/modules/shared/components/layout/Header.tsx` | 应用顶部导航栏 |
-| `Sidebar` | `@/modules/shared/components/layout/Sidebar.tsx` | 侧边菜单导航 |
-| `DataTable` | `@/modules/shared/components/data-display/DataTable.tsx` | 通用数据表格 |
-| `FilterBar` | `@/modules/shared/components/data-display/FilterBar.tsx` | 筛选条件栏 |
-| `Pagination` | `@/modules/shared/components/data-display/Pagination.tsx` | 分页控件 |
-| `LoadingSpinner` | `@/modules/shared/components/feedback/LoadingSpinner.tsx` | 加载指示器 |
-| `ErrorDisplay` | `@/modules/shared/components/feedback/ErrorDisplay.tsx` | 错误展示 |
-| `StatusBadge` | `@/modules/shared/components/ui/StatusBadge.tsx` | 状态标签 |
-| `Button` | `@/modules/shared/components/ui/Button.tsx` | 按钮（shadcn 封装） |
+| `PageContainer` | `@/components/layout/page-container.tsx` | 页面内容区包装器 |
+| `Header` | `@/components/layout/Header.tsx` | 应用顶部导航栏 |
+| `Sidebar` | `@/components/ui/sidebar.tsx` | 侧边菜单导航 |
+| `DataStateManager` | `@/components/ui/data-state/DataStateManager.tsx` | 数据状态管理（loading/success/error/empty） |
+| `LoadingState` | `@/components/ui/data-state/LoadingState.tsx` | 加载状态组件 |
+| `EmptyState` | `@/components/ui/data-state/EmptyState.tsx` | 空状态组件 |
+| `ErrorState` | `@/components/ui/data-state/ErrorState.tsx` | 错误状态组件 |
+| `Button` | `@/components/ui/button.tsx` | 按钮（shadcn/ui） |
+| `Card` | `@/components/ui/card.tsx` | 卡片容器（shadcn/ui） |
+| `Badge` | `@/components/ui/badge.tsx` | 徽章组件（shadcn/ui） |
+| `Progress` | `@/components/ui/progress.tsx` | 进度条组件（shadcn/ui） |
 
 > **FE Agent 注意**：生成页面时应优先导入上表中的组件，避免重复造轮子。
+
+### 3.3 Dashboard 布局规范
+
+> **重要 v2.3**：本节描述 Dashboard 首页的具体布局规则，基于当前实际实现。
+
+#### 规则：Dashboard 12 栅格布局
+
+Dashboard 页面使用 12 栅格系统，通过 `grid-cols-12` 实现：
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ Header: 标题 + 筛选器 + 快捷操作                                   │
+├──────────────────────────────────────────────────────────────────┤
+│ KPI Row: Primary (4+4 栅格) + Secondary (2+2 栅格) = 12 栅格        │
+├─────────────────────────────────────────┬────────────────────────┤
+│ 趋势图表 (lg:col-span-8)                │ 风险预警 (lg:col-span-4)│
+├─────────────────────────────────────────┼────────────────────────┤
+│ 今日待办 (lg:col-span-8)                │ 资金概览 (lg:col-span-4)│
+└─────────────────────────────────────────┴────────────────────────┘
+```
+
+#### 规则：Dashboard 组件布局
+
+| 区域 | 组件名 | 栅格占比 | 说明 |
+|------|--------|----------|------|
+| KPI 主指标 | `DashboardKpiRow` | 每个 4 栅格 | Primary 级指标，字号 `text-2xl` |
+| KPI 次指标 | `DashboardKpiRow` | 每个 2 栅格 | Secondary 级指标，字号 `text-xl` |
+| 趋势图表 | `DashboardTrendSection` | 8 栅格 | 组合图（柱状图 + 折线图） |
+| 风险预警 | `DashboardRiskPanel` | 4 栅格 | 紧凑列表，左侧彩色边框 |
+| 今日待办 | `DashboardTodayTasks` | 8 栅格 | 双列布局 `grid-cols-2` |
+| 资金概览 | `DashboardFundsOverview` | 4 栅格 | 嵌套卡片布局 |
+
+#### 规则：Dashboard 间距
+
+| 元素 | 间距值 | Tailwind 类 |
+|------|--------|-------------|
+| 页面容器内边距 | 24px | `py-6` |
+| 区域间距 | 24px | `gap-6` |
+| 栅格单元间距 | 16px | `gap-4` |
+| 卡片内边距 | 16px | `p-4` |
+| 嵌套卡片内边距 | 16px | `p-4` |
+
+#### 示例：Dashboard 页面结构
+
+```tsx
+// app/dashboard/page.tsx
+export default function DashboardPage() {
+  return (
+    <div className="min-h-screen bg-shell text-text-body antialiased">
+      <PageContainer>
+        <div className="flex flex-col gap-6 w-full py-6">
+          {/* Header */}
+          <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-text-strong">
+                概览 Dashboard
+              </h1>
+              <p className="text-text-muted text-sm mt-1">
+                欢迎回来。今日系统运行平稳...
+              </p>
+            </div>
+            {/* 筛选器 + 快捷操作 */}
+          </header>
+
+          {/* KPI 指标卡片区 - 12 栅格 */}
+          <DashboardKpiRow metrics={kpiMetrics} />
+
+          {/* 中段核心区：图表 (8 栅格) + 预警 (4 栅格) */}
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-12 lg:col-span-8">
+              <DashboardTrendSection data={chartData} />
+            </div>
+            <div className="col-span-12 lg:col-span-4">
+              <DashboardRiskPanel alerts={alerts} />
+            </div>
+          </div>
+
+          {/* 底部区域：今日待办 (8 栅格) + 资金概览 (4 栅格) */}
+          <div className="grid grid-cols-12 gap-4">
+            <div className="col-span-12 lg:col-span-8">
+              <DataStateManager status="success" data={tasks}>
+                {(tasks) => <DashboardTodayTasks tasks={tasks} />}
+              </DataStateManager>
+            </div>
+            <div className="col-span-12 lg:col-span-4">
+              <DashboardFundsOverview data={fundsData} />
+            </div>
+          </div>
+        </div>
+      </PageContainer>
+    </div>
+  );
+}
+```
 
 ---
 
@@ -400,33 +494,213 @@ export * from './types'
 
 ## 5. 设计系统：颜色、排版、间距
 
-### 5.1 颜色系统
+### 5.1 颜色 Token 规范 (Semantic Color Token System v1.0)
 
-#### 规则：使用 CSS 变量定义颜色
+> **重要更新 v2.2**：引入语义化颜色 Token 系统，为未来多主题支持奠定基础。
 
-常规 UI 元素必须通过 Tailwind 配置中的 CSS 变量（设计 token）使用颜色，禁止硬编码十六进制值。
+#### 规则：颜色命名约定
+
+所有颜色 Token **必须使用语义名称**，**禁止使用外观名称**：
+
+| 允许 | 禁止 |
+|------|------|
+| `surface-primary`, `text-secondary` | `dark-bg`, `light-text` |
+| `accent-hover`, `status-danger` | `black`, `white`, `gray-900` |
+| `border-focus`, `chart-series-1` | `dark-mode-border` |
+
+#### 规则：CSS 变量定义位置
+
+所有颜色 Token 必须在 `frontend/app/globals.css` 的 `:root` 中定义：
+
+```css
+/* frontend/app/globals.css */
+:root {
+  /* === SURFACE TOKENS (背景层级) === */
+  --surface-shell: 222 47% 7%;      /* 页面背景 #0a0f1a */
+  --surface-primary: 222 40% 9%;    /* 卡片背景 #111827 */
+  --surface-elevated: 220 35% 15%;  /* 悬浮/高亮背景 #1e293b */
+
+  /* === TEXT TOKENS (文本层级) === */
+  --text-primary: 210 40% 98%;      /* 强调文本 #f8fafc */
+  --text-secondary: 215 25% 80%;    /* 正文文本 #cbd5e1 */
+  --text-tertiary: 215 20% 65%;     /* 辅助文本 #94a3b8 */
+  --text-quaternary: 215 16% 47%;   /* 次要文本 #64748b */
+
+  /* === BORDER TOKENS === */
+  --border-primary: 220 20% 18%;    /* 默认边框 #2d3748 */
+  --border-secondary: 215 20% 30%;  /* 次要边框 */
+  --border-focus: 217 91% 60%;      /* 焦点边框 #3b82f6 */
+
+  /* === ACCENT TOKENS (品牌色/主操作) === */
+  --accent-primary: 217 91% 60%;    /* #3b82f6 */
+  --accent-primary-hover: 217 91% 53%;
+  --accent-primary-active: 217 91% 48%;
+
+  /* === STATUS TOKENS (状态色) === */
+  --status-success: 142 71% 45%;    /* #22c55e */
+  --status-warning: 38 92% 50%;     /* #f59e0b */
+  --status-danger: 0 84% 60%;       /* #ef4444 */
+  --status-info: 217 91% 60%;       /* #3b82f6 */
+
+  /* === CHART TOKENS (图表) === */
+  --chart-grid: 217 33% 17%;        /* #1e293b */
+  --chart-axis: 215 16% 47%;        /* #64748b */
+  --chart-series-1: 217 91% 60%;    /* Blue */
+  --chart-series-2: 142 71% 45%;    /* Green */
+  --chart-series-3: 38 92% 50%;     /* Amber */
+  --chart-series-4: 262 83% 58%;    /* Purple */
+}
+```
+
+#### 规则：Dashboard 背景层级
+
+Dashboard 使用三层背景深度系统：
+
+| 层级 | Tailwind 类 | HSL 值 | 用途 |
+|------|-------------|--------|------|
+| Shell | `bg-shell` | 222 47% 7% | 页面根背景 |
+| Card | `bg-card-bg` | 222 40% 9% | 卡片背景 |
+| Elevated | `bg-elevated` | 220 35% 15% | 悬浮元素、嵌套卡片、hover 状态 |
+
+```tsx
+// ✅ 正确：使用背景层级
+<div className="min-h-screen bg-shell">          {/* 页面背景 */}
+  <Card className="bg-card-bg">                   {/* 卡片背景 */}
+    <div className="p-4 bg-elevated rounded-lg">  {/* 嵌套卡片 */}
+    </div>
+  </Card>
+</div>
+
+// ❌ 禁止：硬编码背景色
+<div className="min-h-screen bg-[#0a0f1a]">
+  <Card className="bg-gray-900">
+```
+
+#### 规则：Tailwind 配置映射
+
+Tailwind 配置 (`tailwind.config.ts`) 必须通过 CSS 变量引用颜色，禁止硬编码：
+
+```tsx
+// ❌ 禁止：硬编码颜色值
+colors: {
+  shell: "#0A0E1A",
+  success: "#10B981",
+}
+
+// ✅ 正确：通过 CSS 变量
+colors: {
+  shell: "hsl(var(--surface-shell))",
+  success: {
+    DEFAULT: "hsl(var(--status-success))",
+    emphasis: "hsl(var(--status-success-emphasis))",
+  },
+}
+```
+
+#### 规则：组件中使用颜色
 
 ```tsx
 // ❌ 禁止：硬编码十六进制颜色
 <div className="bg-[#1a1a2e] text-[#eee]">
+<div style={{ color: '#3B82F6' }}>
 
-// ✅ 正确：使用设计 token
-<div className="bg-background text-foreground">
+// ✅ 正确：使用 Tailwind 语义类
+<div className="bg-shell text-text-strong">
+<div className="bg-surface-primary text-text-secondary">
+<div className="border-border-default text-accent">
 ```
 
-#### 规则：语义化颜色 Token
+#### 规则：Recharts/图表库中使用颜色
 
-| Token | 用途 | CSS 变量 |
-|-------|------|----------|
-| `background` | 页面/卡片背景 | `--background` |
-| `foreground` | 主要文本 | `--foreground` |
-| `primary` | 主要操作按钮 | `--primary` |
-| `secondary` | 次要操作 | `--secondary` |
-| `muted` | 禁用/辅助文本 | `--muted` |
-| `accent` | 强调/高亮 | `--accent` |
-| `destructive` | 删除/危险操作 | `--destructive` |
+图表库（Recharts 等）不支持 Tailwind 类，必须通过 `@/lib/theme-colors.ts` 获取颜色：
 
-#### 规则：状态颜色集中管理
+```tsx
+// frontend/lib/theme-colors.ts
+export const TOKENS = {
+  surface: {
+    shell: 'hsl(var(--surface-shell))',
+    primary: 'hsl(var(--surface-primary))',
+  },
+  accent: {
+    primary: 'hsl(var(--accent-primary))',
+  },
+  status: {
+    success: 'hsl(var(--status-success))',
+    danger: 'hsl(var(--status-danger))',
+  },
+  chart: {
+    grid: 'hsl(var(--chart-grid))',
+    axis: 'hsl(var(--chart-axis))',
+  },
+} as const
+```
+
+```tsx
+// 组件中使用
+import { TOKENS } from '@/lib/theme-colors'
+
+<CartesianGrid stroke={TOKENS.chart.grid} />
+<XAxis tick={{ fill: TOKENS.text.tertiary }} />
+<Line stroke={TOKENS.status.success} />
+```
+
+### 5.2 多主题约束 (Multi-Theme Constraints)
+
+> **当前状态**：系统目前仅支持深色主题，但架构已为未来多主题支持做好准备。
+
+#### 规则：主题切换地基
+
+1. **所有颜色通过 CSS 变量**：组件不直接使用颜色值，通过变量间接引用
+2. **语义化命名**：变量名描述用途而非外观（`surface-primary` 而非 `dark-bg`）
+3. **单一定义点**：颜色变量只在 `globals.css` 定义，全局统一
+
+#### 规则：禁止的主题相关操作
+
+```tsx
+// ❌ 禁止：在变量名中使用 dark/light
+--dark-background: ...
+--light-text: ...
+
+// ❌ 禁止：硬编码主题判断
+className={isDark ? 'bg-gray-900' : 'bg-white'}
+
+// ❌ 禁止：绕过 CSS 变量直接设置颜色
+style={{ backgroundColor: '#0A0E1A' }}
+
+// ✅ 正确：使用语义化 Token
+className="bg-surface-primary text-text-secondary"
+```
+
+#### 规则：未来主题扩展方式
+
+当需要添加浅色主题时，在 `globals.css` 中覆盖变量值：
+
+```css
+/* 深色主题（当前默认） */
+:root {
+  --surface-shell: 222 47% 7%;
+  --text-primary: 210 40% 98%;
+  /* ... */
+}
+
+/* 浅色主题（未来扩展） */
+[data-theme="light"] {
+  --surface-shell: 0 0% 100%;
+  --text-primary: 222 47% 11%;
+  /* ... 只需覆盖变量值，组件代码无需修改 */
+}
+```
+
+#### 规则：主题切换不涉及的文件
+
+实现主题切换时，以下文件**不应修改**：
+- 任何 `.tsx` 组件文件（颜色已通过变量抽象）
+- `tailwind.config.ts`（已通过变量引用）
+- `lib/theme-colors.ts`（已通过变量引用）
+
+只需修改 `globals.css` 添加主题变量覆盖。
+
+### 5.3 状态颜色集中管理
 
 > **说明**：状态颜色是"禁止硬编码颜色"规则的**例外场景**。
 > 状态颜色通过 `STATUS_VARIANT_MAP` 常量集中管理，在单一位置定义，全局复用。
@@ -434,12 +708,12 @@ export * from './types'
 
 | 状态语义 | Variant Key | 对应的 Tailwind 类组合 |
 |----------|-------------|------------------------|
-| 成功/通过 | `success` | `bg-green-100 text-green-800 border-green-200` |
-| 警告/待处理 | `warning` | `bg-yellow-100 text-yellow-800 border-yellow-200` |
-| 错误/异常 | `error` | `bg-red-100 text-red-800 border-red-200` |
-| 信息/草稿 | `info` | `bg-blue-100 text-blue-800 border-blue-200` |
-| 标记/需关注 | `flagged` | `bg-orange-100 text-orange-800 border-orange-200` |
-| 终态/锁定 | `locked` | `bg-gray-100 text-gray-800 border-gray-200` |
+| 成功/通过 | `success` | `bg-success/10 text-success border-success/20` |
+| 警告/待处理 | `warning` | `bg-warning/10 text-warning border-warning/20` |
+| 错误/异常 | `error` | `bg-danger/10 text-danger border-danger/20` |
+| 信息/草稿 | `info` | `bg-accent/10 text-accent border-accent/20` |
+| 标记/需关注 | `flagged` | `bg-warning/10 text-warning border-warning/20` |
+| 终态/锁定 | `locked` | `bg-elevated text-text-muted border-border-default` |
 
 #### 规则：状态颜色常量位置
 
@@ -448,12 +722,12 @@ export * from './types'
 ```tsx
 // @/modules/shared/utils/statusColors.ts（唯一定义位置）
 export const STATUS_VARIANT_MAP = {
-  success: 'bg-green-100 text-green-800 border-green-200',
-  warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  error: 'bg-red-100 text-red-800 border-red-200',
-  info: 'bg-blue-100 text-blue-800 border-blue-200',
-  flagged: 'bg-orange-100 text-orange-800 border-orange-200',
-  locked: 'bg-gray-100 text-gray-800 border-gray-200',
+  success: 'bg-success/10 text-success border-success/20',
+  warning: 'bg-warning/10 text-warning border-warning/20',
+  error: 'bg-danger/10 text-danger border-danger/20',
+  info: 'bg-accent/10 text-accent border-accent/20',
+  flagged: 'bg-warning/10 text-warning border-warning/20',
+  locked: 'bg-elevated text-text-muted border-border-default',
 } as const
 
 export type StatusVariant = keyof typeof STATUS_VARIANT_MAP
@@ -476,27 +750,51 @@ import { getStatusClasses } from '@/modules/shared/utils/statusColors'
 <StatusBadge variant="success">成功</StatusBadge>
 ```
 
-### 5.2 排版系统
+### 5.4 排版系统
 
 #### 规则：字体使用
 
 | 用途 | 字体 | Tailwind 类 |
 |------|------|-------------|
 | 正文 | Inter | `font-sans` (默认) |
-| 代码 | JetBrains Mono | `font-mono` |
+| 代码/数字 | JetBrains Mono | `font-mono` |
 
 #### 规则：字号层级
 
-| 语义 | 大小 | Tailwind 类 | 用途 |
-|------|------|-------------|------|
-| h1 | 30px | `text-3xl font-bold` | 页面主标题 |
-| h2 | 24px | `text-2xl font-semibold` | 区块标题 |
-| h3 | 20px | `text-xl font-semibold` | 卡片标题 |
-| h4 | 16px | `text-base font-medium` | 小标题 |
-| body | 14px | `text-sm` | 正文内容 |
-| caption | 12px | `text-xs` | 辅助说明 |
+| 语义 | 大小 | Tailwind 类 | 颜色类 | 用途示例 |
+|------|------|-------------|--------|----------|
+| 页面标题 | 24px | `text-2xl font-bold tracking-tight` | `text-text-strong` | Dashboard 标题 |
+| 卡片标题 | 16px | `text-base font-semibold` | `text-text-strong` | Card 标题 |
+| KPI 主数值 | 24px | `text-2xl font-bold` | `text-text-strong` | Primary KPI 数字 |
+| KPI 次数值 | 20px | `text-xl font-bold` | `text-text-strong` | Secondary KPI 数字 |
+| 正文 | 14px | `text-sm` | `text-text-body` | 列表项、描述 |
+| 标签 | 12px | `text-xs font-medium uppercase tracking-wider` | `text-text-muted` | KPI 标题 |
+| 辅助说明 | 12px | `text-xs` | `text-text-muted` | 时间戳、副标题 |
+| 极小文字 | 10px | `text-[10px]` | `text-text-subtle` | Badge、进度百分比 |
 
-### 5.3 间距系统
+#### 规则：Dashboard 文本层级
+
+Dashboard 组件中的文本必须遵循以下语义化颜色层级：
+
+| 颜色类 | HSL 值 | 用途 |
+|--------|--------|------|
+| `text-text-strong` | 210 40% 98% | 标题、重要数值、强调文本 |
+| `text-text-body` | 215 25% 80% | 正文、列表项、可交互文本 |
+| `text-text-muted` | 215 20% 65% | 辅助说明、标签、次要信息 |
+| `text-text-subtle` | 215 16% 47% | 时间戳、极次要信息 |
+
+```tsx
+// ✅ 正确：使用语义化文本颜色
+<h1 className="text-2xl font-bold text-text-strong">概览 Dashboard</h1>
+<p className="text-sm text-text-muted">欢迎回来</p>
+<span className="text-xs text-text-subtle">12:30 更新</span>
+
+// ❌ 禁止：使用硬编码颜色
+<h1 className="text-2xl font-bold text-white">概览 Dashboard</h1>
+<p className="text-sm text-gray-400">欢迎回来</p>
+```
+
+### 5.5 间距系统
 
 #### 规则：间距比例
 
@@ -1178,11 +1476,157 @@ Page → Layout → Feature → Shared → UI
 
 ---
 
-**文档版本**: v2.1
+## 附录 B：页面模板 - Dashboard-Shell 布局模式
+
+> **完整规范**: 参见 `FRONTEND_MODULE_SHELL_PATTERN_v1.0.md`
+
+### B.1 适用页面类型
+
+| 类型 | 适用性 | 说明 |
+|------|--------|------|
+| **控制台首页** | ✅ 强制 | Dashboard、Overview 类型页面 |
+| **管理列表页** | ✅ 推荐 | 充值管理、日报管理、账户管理 |
+| **数据报表页** | ✅ 推荐 | 账本查询、对账报表、审计日志 |
+| **详情页** | ⚠️ 可选 | 单实体详情可简化，无需完整 Shell |
+| **表单页** | ⚠️ 可选 | 新建/编辑页面可使用简化版 |
+| **登录/错误页** | ❌ 不适用 | 这些页面有独立布局 |
+
+### B.2 布局区域定义
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Header: 标题 + 筛选器 + 快捷操作                            │
+│  bg-card, py-4, border-b border-border                      │
+├─────────────────────────────────────────────────────────────┤
+│  KPI 区: 12 栅格 (4+4+2+2 或 3+3+3+3)                        │
+│  gap-4, 卡片 bg-card rounded-lg shadow-sm                   │
+├───────────────────────────────────┬─────────────────────────┤
+│  主区域 (8 栅格)                   │  侧栏 (4 栅格)          │
+│  - 趋势图表                        │  - 风险预警             │
+│  - 数据表格                        │  - 快捷入口             │
+│  min-h-[400px]                    │  sticky top-6           │
+├───────────────────────────────────┼─────────────────────────┤
+│  底部主区 (8 栅格)                 │  底部侧栏 (4 栅格)      │
+│  - 今日待办                        │  - 资金概览             │
+│  - 操作日志                        │  - 系统状态             │
+└───────────────────────────────────┴─────────────────────────┘
+```
+
+### B.3 区域 Token 绑定
+
+#### 背景层级
+
+| 区域 | Token | CSS 变量 | 用途 |
+|------|-------|----------|------|
+| 页面底层 | `bg-shell` | `--color-shell` | 最底层背景 |
+| 卡片/面板 | `bg-card` | `--color-card` | 内容容器背景 |
+| 悬浮/弹出 | `bg-elevated` | `--color-elevated` | Modal/Dropdown |
+
+#### 间距规范
+
+| 位置 | Token | 值 | 说明 |
+|------|-------|-----|------|
+| 页面内边距 | `py-6` | 24px | Shell 顶部/底部 |
+| 区域间距 | `gap-6` | 24px | Header/KPI/主区域之间 |
+| 栅格间距 | `gap-4` | 16px | 栅格列之间 |
+| 卡片内边距 | `p-4` / `p-6` | 16px/24px | 内容区域 |
+
+#### 文本层级
+
+| 用途 | Token | 示例 |
+|------|-------|------|
+| 页面标题 | `text-2xl font-semibold text-text-strong` | "运营全景" |
+| 卡片标题 | `text-lg font-medium text-text-strong` | "风险预警" |
+| 正文内容 | `text-sm text-text-body` | 列表项、描述 |
+| 辅助信息 | `text-xs text-text-muted` | 时间戳、次要标签 |
+
+### B.4 响应式断点
+
+| 断点 | 宽度 | 布局调整 |
+|------|------|----------|
+| `default` | < 1024px | 所有区域 12 栅格（单列） |
+| `lg` | ≥ 1024px | 主区域 8 栅格 + 侧栏 4 栅格 |
+| `xl` | ≥ 1280px | 可选增加侧边导航宽度 |
+
+### B.5 Shell 组件职责边界
+
+```tsx
+// ✅ Shell 组件应该做的
+- 调用 hooks 获取数据和状态
+- 处理用户事件（路由跳转、刷新等）
+- 编排子组件的布局
+- 管理加载/错误/空状态
+
+// ❌ Shell 组件不应该做的
+- 直接操作 DOM
+- 定义业务类型（放 types/）
+- 实现数据获取逻辑（放 hooks/）
+- 包含可复用的 UI 逻辑（放 components/）
+```
+
+### B.6 代码示例：标准 Shell 结构
+
+```tsx
+// src/modules/{module-name}/{ModuleName}Shell.tsx
+export function {ModuleName}Shell({ className }: {ModuleName}ShellProps) {
+  const router = useRouter();
+
+  // 1. Hooks 调用
+  const { filters, setFilters } = use{ModuleName}Filters();
+  const { data, loading, error, refresh } = use{ModuleName}Data(filters);
+
+  // 2. 事件处理
+  const handleRowClick = (item: ItemType) => {
+    router.push(`/dashboard/{module-name}/${item.id}`);
+  };
+
+  // 3. 状态处理（加载/错误）
+  if (loading && !data.items.length) {
+    return <LoadingState />;
+  }
+  if (error) {
+    return <ErrorState onRetry={refresh} />;
+  }
+
+  // 4. 主渲染
+  return (
+    <div className={className}>
+      <div className="flex flex-col gap-6 w-full py-6">
+        <{ModuleName}Header ... />
+        <{ModuleName}KpiRow ... />
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-12 lg:col-span-8">...</div>
+          <div className="col-span-12 lg:col-span-4">...</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+**文档版本**: v2.3
 **状态**: candidate_freeze（待验证）
-**最后更新**: 2025-12-03
+**最后更新**: 2025-12-05
 **维护者**: wade
 **基准**: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal
+
+> **变更说明 (v2.2 → v2.3)**:
+> - 新增 3.3 Dashboard 布局规范（12 栅格系统、组件布局、间距规则）
+> - 更新基础组件物理位置表，反映实际 shadcn/ui 路径
+> - 新增 Dashboard 背景层级说明（shell/card/elevated 三层系统）
+> - 更新 5.4 排版系统，新增 Dashboard 文本层级表
+> - 更新颜色 Token HSL 值与实际 globals.css 对齐
+> - 新增文本颜色层级说明（text-strong/body/muted/subtle）
+> - 所有 CSS 变量添加对应 HEX 值注释
+
+> **变更说明 (v2.1 → v2.2)**:
+> - 新增 5.1 颜色 Token 规范 (Semantic Color Token System v1.0)
+> - 新增 5.2 多主题约束 (Multi-Theme Constraints)
+> - 状态颜色更新为使用语义化 Token（success/warning/danger/accent）
+> - 新增 `lib/theme-colors.ts` 规范用于 Recharts 等图表库
+> - 明确禁止在变量名中使用 dark/light/black/white
 
 > **变更说明 (v2.0 → v2.1)**:
 > - 技术栈版本改为"以 package.json 为准"

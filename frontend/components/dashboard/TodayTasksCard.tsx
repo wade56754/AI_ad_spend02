@@ -1,92 +1,18 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Clock, CheckCircle, AlertTriangle, User, MoreHorizontal } from 'lucide-react';
-
-interface Task {
-  id: string;
-  title: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'pending' | 'in_progress' | 'completed';
-  assignee?: string;
-  project?: string;
-  dueTime?: string;
-}
+import { Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import type { TodoTask } from '@/modules/dashboard/types';
 
 interface TodayTasksCardProps {
   title?: string;
-  tasks?: Task[];
+  tasks?: TodoTask[];
   className?: string;
 }
 
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    title: '审核5个项目的日报',
-    priority: 'high',
-    status: 'pending',
-    assignee: '张数据员',
-    project: 'ABC公司Q4项目',
-    dueTime: '14:00'
-  },
-  {
-    id: '2',
-    title: '处理3个充值申请',
-    priority: 'medium',
-    status: 'pending',
-    assignee: '李财务',
-    project: 'XYZ科技投放',
-    dueTime: '16:00'
-  },
-  {
-    id: '3',
-    title: '跟进异常账户处理',
-    priority: 'high',
-    status: 'in_progress',
-    assignee: '王户管',
-    project: 'DEF品牌推广',
-    dueTime: '15:00'
-  },
-  {
-    id: '4',
-    title: '生成月度ROI报告',
-    priority: 'low',
-    status: 'pending',
-    assignee: '赵经理',
-    project: 'GHI电商活动',
-    dueTime: '18:00'
-  },
-  {
-    id: '5',
-    title: '更新广告投放策略',
-    priority: 'medium',
-    status: 'completed',
-    assignee: '钱投手',
-    project: 'JKL新品发布',
-    dueTime: '13:00'
-  }
-];
-
-const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case 'high': return 'bg-red-500';
-    case 'medium': return 'bg-amber-500';
-    case 'low': return 'bg-green-500';
-    default: return 'bg-gray-500';
-  }
-};
-
-const getPriorityVariant = (priority: string) => {
-  switch (priority) {
-    case 'high': return 'destructive' as const;
-    case 'medium': return 'secondary' as const;
-    case 'low': return 'outline' as const;
-    default: return 'outline' as const;
-  }
-};
+// Mock data removed - use external mock data from @/modules/dashboard/data/mock-data
 
 const getStatusIcon = (status: string) => {
   switch (status) {
@@ -98,12 +24,24 @@ const getStatusIcon = (status: string) => {
 
 export function TodayTasksCard({
   title = "今日待办",
-  tasks = mockTasks,
+  tasks = [],
   className
 }: TodayTasksCardProps) {
+  const router = useRouter();
   const pendingCount = tasks.filter(t => t.status === 'pending').length;
   const inProgressCount = tasks.filter(t => t.status === 'in_progress').length;
   const completedCount = tasks.filter(t => t.status === 'completed').length;
+
+  // 点击任务跳转到对应详情页
+  const handleTaskClick = useCallback((task: TodoTask) => {
+    const routeMap: Record<string, string> = {
+      daily_report: '/dashboard/daily-reports',
+      topup_request: '/dashboard/topup',
+      reconciliation: '/dashboard/reconciliation',
+    };
+    const route = task.relatedEntityType ? routeMap[task.relatedEntityType] : '/dashboard';
+    router.push(task.relatedEntityId ? `${route}/${task.relatedEntityId}` : route);
+  }, [router]);
 
   return (
     <Card className={`rounded-2xl shadow-sm border-slate-200/60 bg-white ${className}`}>
@@ -123,11 +61,11 @@ export function TodayTasksCard({
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y divide-slate-100">
-          {tasks.map((task, index) => (
+          {tasks.map((task) => (
             <div
               key={task.id}
               className="group flex items-center gap-3 px-5 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer"
-              onClick={() => console.log('Task clicked:', task.title)}
+              onClick={() => handleTaskClick(task)}
             >
               {/* 状态指示器 */}
               <div className="flex-shrink-0">
@@ -178,7 +116,7 @@ export function TodayTasksCard({
           <div className="w-full bg-slate-100 rounded-full h-0.5">
             <div
               className="bg-blue-500 h-0.5 rounded-full transition-all duration-300"
-              style={{ width: `${(completedCount / tasks.length) * 100}%` }}
+              style={{ width: `${tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0}%` }}
             />
           </div>
         </div>

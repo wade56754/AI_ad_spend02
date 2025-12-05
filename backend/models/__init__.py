@@ -72,9 +72,10 @@ from .topup import (
     TopupApprovalLog,
 )
 
-# 财务模块
+# 财务模块 (LEDGER_SOT.md v1.1)
 from .finance import (
     LedgerEntry,
+    LedgerBookType,
     ReconciliationBatch,
     ReconciliationDetail,
     ReconciliationAdjustment,
@@ -151,6 +152,7 @@ __all__ = [
     'TopupTransaction',
     'TopupApprovalLog',
     'LedgerEntry',
+    'LedgerBookType',
     'ReconciliationBatch',
     'ReconciliationDetail',
     'ReconciliationAdjustment',

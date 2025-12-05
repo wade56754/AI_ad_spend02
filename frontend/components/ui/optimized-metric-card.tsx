@@ -1,3 +1,11 @@
+/**
+ * @deprecated This component is deprecated. Please use the standard `MetricCard` component from `@/components/ui/MetricCard` instead.
+ * This optimized version was an experimental implementation and is no longer maintained.
+ * 
+ * Migration guide:
+ * - Replace `OptimizedMetricCard` with `MetricCard` from `@/components/ui/MetricCard`
+ * - The standard MetricCard component provides the same functionality with better maintainability
+ */
 "use client";
 
 import React, { useState } from "react";

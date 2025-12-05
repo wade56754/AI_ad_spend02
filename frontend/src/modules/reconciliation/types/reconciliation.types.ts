@@ -136,3 +136,22 @@ export const RECONCILIATION_TYPE_CONFIG: Record<ReconciliationType, { label: str
   monthly: { label: '月结', description: '月度结算对账' },
   ad_hoc: { label: '手动对账', description: '临时手动触发' },
 };
+
+// Simplified batch type for DataTable
+export interface ReconciliationBatch {
+  id: UUID;
+  batch_id: string;
+  reconciliation_date: DateString;
+  ad_account_name: string;
+  status: 'pending' | 'matched' | 'has_diff' | 'resolved';
+  platform_amount: Money;
+  system_amount: Money;
+  created_at: ISODateString;
+}
+
+export const RECONCILIATION_BATCH_STATUS_CONFIG: Record<ReconciliationBatch['status'], { label: string; variant: 'default' | 'success' | 'warning' | 'error' | 'info' }> = {
+  pending: { label: '待对账', variant: 'default' },
+  matched: { label: '已匹配', variant: 'success' },
+  has_diff: { label: '有差异', variant: 'warning' },
+  resolved: { label: '已解决', variant: 'info' },
+};
