@@ -67,6 +67,7 @@
 | `daily_reports` | 日报 | BIGSERIAL | implemented |
 | `daily_report_audit_logs` | 日报审计日志 | BIGSERIAL | implemented |
 | `ad_spend_daily` | 外部导入日消耗 | UUID | implemented |
+| `import_jobs` | 数据导入任务（内部工具） | UUID | implemented |
 | `topup_requests` | 充值申请 | BIGSERIAL | implemented |
 | `topup_transactions` | 充值到账流水 | BIGSERIAL | implemented |
 | `topup_approval_logs` | 充值审批操作记录 | BIGSERIAL | implemented |
@@ -335,6 +336,28 @@
 
 字段：`id` (UUID PK), `source_platform`, `ad_account_code`, `spend_date`, `spend_amount DECIMAL(15,2)`, `currency`, `raw_payload JSONB`, `imported_by`, `imported_at`。
 
+#### 3.3.4 `import_jobs`（implemented）
+
+**说明**：
+- 数据导入任务表，用于追踪 CSV/Excel 文件导入操作的状态和结果
+- 属于内部工具模块（API_SOT 标记为 `internal/experimental`）
+- 状态字段为简化的生命周期标记，非审批流状态机
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | UUID | PK | 任务唯一标识 |
+| `type` | VARCHAR(50) | NOT NULL, DEFAULT 'finance' | 导入类型，固定枚举 `finance/ad_spend/leads` |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'pending' | 任务状态，固定枚举 `pending/processing/completed/failed`，详见 STATE_MACHINE.md |
+| `file_path` | VARCHAR(500) | 可空 | 原始文件名/路径 |
+| `file_hash` | VARCHAR(64) | 可空, INDEX | 文件 SHA256 哈希，用于去重检测 |
+| `error_log` | JSON | 可空, DEFAULT `[]` | 错误日志，格式: `[{row: int, error: str}, ...]` |
+| `created_by` | UUID | 可空, INDEX | FK → `users.id`，创建者用户 ID |
+| `updated_by` | UUID | 可空 | FK → `users.id`，最后更新者用户 ID |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间（TimestampMixin） |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间（TimestampMixin） |
+
+索引：`idx_import_jobs_status`, `idx_import_jobs_type`, `idx_import_jobs_created_at`, `idx_import_jobs_file_hash`（file_hash 列单独索引）。
+
 ---
 
 ### 3.4 充值与资金
@@ -561,6 +584,14 @@
 ---
 
 **文档版本**: v5.2
-**最后审阅**: 2025-01-22
-**维护责任**: 数据库规范守门人（与系统架构团队共管）  
+**最后审阅**: 2025-12-07
+**维护责任**: 数据库规范守门人（与系统架构团队共管）
 **附注**: 若实现规范、状态机或 API 流程更新，必须同步更新本文件；否则任何生成代码/Schema 迁移将被拒绝。
+
+---
+
+## 变更记录
+
+| 版本 | 日期 | 变更内容 |
+| --- | --- | --- |
+| v5.2 | 2025-12-07 | **【补录】import_jobs 表定义**：<br>• §2 表清单新增 `import_jobs` 行（数据导入任务，UUID 主键，implemented）<br>• §3.3.4 新增 `import_jobs` 表结构详情（type/status/file_path/file_hash/error_log 等字段）<br>• 对齐现有代码 `backend/models/workflow/import_job.py` |

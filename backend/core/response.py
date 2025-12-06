@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional, TypeVar, Generic
+from typing import Any, Dict, Optional, TypeVar, Generic, Union
 import uuid
 
 from fastapi.encoders import jsonable_encoder
@@ -106,18 +106,45 @@ class StandardResponse(BaseModel, Generic[T]):
 # 保持向后兼容的函数
 def ok(data: Any = None, status_code: int = 200, meta: Optional[Dict[str, Any]] = None) -> JSONResponse:
     """兼容旧版本的ok函数"""
-    return StandardResponse.success(
-        data=data,
+    # 直接构建响应内容，避免 Pydantic Generic 类的问题
+    content = {
+        "success": True,
+        "data": jsonable_encoder(data),
+        "message": "操作成功",
+        "code": "OK",
+        "request_id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    if meta:
+        content["meta"] = meta
+    
+    return JSONResponse(
         status_code=status_code,
-        meta=meta
+        content=content
     )
 
 
-def fail(code: str, message: str, status_code: int = 400, meta: Optional[Dict[str, Any]] = None) -> JSONResponse:
-    """兼容旧版本的fail函数"""
+def fail(code: Union[str, Any], message: str, status_code: int = 400, meta: Optional[Dict[str, Any]] = None) -> JSONResponse:
+    """兼容旧版本的fail函数
+    
+    支持 ErrorCode 对象或字符串作为 code 参数
+    """
+    # 如果 code 是 ErrorCode 对象，提取其 code 属性
+    if hasattr(code, 'code'):
+        code_str = code.code
+        # 如果 message 为空，使用 ErrorCode 的 message
+        if not message and hasattr(code, 'message'):
+            message = code.message
+        # 如果 status_code 未指定，使用 ErrorCode 的 status_code
+        if status_code == 400 and hasattr(code, 'status_code'):
+            status_code = code.status_code
+    else:
+        code_str = str(code)
+    
     return StandardResponse.error(
         message=message,
-        code=code,
+        code=code_str,
         status_code=status_code,
         meta=meta
     )

@@ -7,7 +7,7 @@ from datetime import date
 from decimal import Decimal
 from typing import Optional
 
-from sqlalchemy import Column, BigInteger, String, Text, Numeric, Date, Index, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Text, Numeric, Date, DateTime, Index, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, INET
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -87,13 +87,13 @@ class TopupRequest(Base):
         comment="更新人ID"
     )
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"
     )
     updated_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
@@ -145,7 +145,7 @@ class TopupTransaction(Base):
     
     # 时间信息
     paid_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="打款时间"
@@ -163,7 +163,7 @@ class TopupTransaction(Base):
         comment="创建人ID"
     )
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"
@@ -210,7 +210,7 @@ class TopupApprovalLog(Base):
     
     # 时间
     created_at = Column(
-        func.now(),
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         comment="创建时间"

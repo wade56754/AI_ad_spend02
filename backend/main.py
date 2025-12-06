@@ -27,9 +27,9 @@ from backend.routers import (
     finance_profit,  # ✅ 财务利润报表API (PROFIT_SOT.md v1.1)
     ledger,  # ✅ 财务总账API (LEDGER_SOT.md v1.1)
     dashboard,  # ✅ Dashboard API (前端联调)
+    import_jobs,  # ✅ 数据导入API (ImportJob模型已实现)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # reports,  # ✅ 报表生成API (需要Reconciliation模型修复)
-    # import_jobs,  # ✅ 数据导入API (缺失ImportJob模型)
     # reconciliation_extended,  # 对账管理API
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
@@ -68,9 +68,9 @@ app.include_router(transfers.router, prefix=API_V1_PREFIX)  # 死号余额迁移
 app.include_router(finance_profit.router, prefix=API_V1_PREFIX)  # 财务利润报表 ✅ PROFIT_SOT.md v1.1
 app.include_router(ledger.router, prefix=API_V1_PREFIX)  # 财务总账 ✅ LEDGER_SOT.md v1.1
 app.include_router(dashboard.router, prefix=API_V1_PREFIX)  # Dashboard API ✅ 前端联调
+app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ ImportJob模型已实现
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表生成 ✅ 新启用
-# app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 新启用
 # app.include_router(reconciliation_extended.router, prefix=API_V1_PREFIX)  # 对账管理
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 

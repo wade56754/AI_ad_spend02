@@ -65,6 +65,7 @@ from .workflow.ad_spend import AdSpendDaily
 # 业务流程模块
 from .workflow.topup_request import TopupRequest
 from .workflow.transfer_request import TransferRequest
+from .workflow.import_job import ImportJob, ImportJobType, ImportJobStatus
 
 # 充值相关辅助表（来自 topup.py）
 from .topup import (
@@ -171,4 +172,8 @@ __all__ = [
     'ProfitPeriodType',
     'ProfitReportType',
     'ProfitReportStatus',
+    # Import module
+    'ImportJob',
+    'ImportJobType',
+    'ImportJobStatus',
 ]

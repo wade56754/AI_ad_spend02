@@ -26,11 +26,11 @@ class LogService:
         except (TypeError, ValueError):
             return
         entry = Log(
-            id=uuid4(),
-            actor_id=operator_uuid,
+            id=str(uuid4()),
+            actor_id=str(operator_uuid),
             action=action,
             target_table=target,
-            target_id=target_id,
+            target_id=str(target_id) if target_id else None,
             before_data=None,
             after_data=jsonable_encoder(detail),
             created_at=datetime.now(timezone.utc),
