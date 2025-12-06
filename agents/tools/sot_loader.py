@@ -139,7 +139,7 @@ class SoTLoader:
         "AGENT_WORKFLOW": "docs/3.dev-guides/AGENT_WORKFLOW_GUIDE.md",
     }
 
-    # Skill 依赖预设
+    # Skill 依赖预设 (对齐 AI_CODE_FACTORY_DEV_GUIDE_v2.0)
     SKILL_DEPENDENCIES: Dict[str, SoTDependency] = {
         "be-gen": SoTDependency(
             required=["DATA_SCHEMA", "STATE_MACHINE", "API_SOT", "BUSINESS_RULES", "ERROR_CODES"],
@@ -151,7 +151,7 @@ class SoTLoader:
         ),
         "fe-gen": SoTDependency(
             required=["API_SOT", "STATE_MACHINE"],
-            optional=["FRONTEND_RULES", "UI_DESIGN_SYSTEM", "UI_FLOW_SPEC"]
+            optional=["FRONTEND_RULES", "UI_DESIGN_SYSTEM", "UI_FLOW_SPEC", "DATA_SCHEMA"]
         ),
         "sot-check": SoTDependency(
             required=["STATE_MACHINE", "DATA_SCHEMA", "API_SOT", "ERROR_CODES", "LEDGER_SOT", "AUTH_SPEC"],
