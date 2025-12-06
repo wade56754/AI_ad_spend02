@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
 
 from backend.models import TopupRequest
-from backend.models.topup import TopupTransaction, TopupApprovalLog
+from backend.models.topup_fixed import TopupTransaction, TopupApprovalLog
 from backend.models import User
 from backend.models import AdAccount
 from backend.models import Project
@@ -595,4 +595,275 @@ class TestTopupService:
                 topup_service.get_account_balance(
                     sample_ad_account.id,
                     media_buyer_user
+                )
+
+    class TestRejectRequest:
+        """拒绝充值申请测试 - STATE_MACHINE.md v2.6 §9"""
+
+        def test_reject_from_pending_review_success(self, topup_service, data_operator_user, sample_ad_account, admin_user, db_session):
+            """测试从 pending_review 状态拒绝成功"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="pending_review",
+                requested_by=admin_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            result = topup_service.reject_request(
+                request_id=request.id,
+                current_user=data_operator_user,
+                reason="数据不符合要求"
+            )
+
+            assert result.status == "rejected"
+
+        def test_reject_from_finance_approve_success(self, topup_service, finance_user, sample_ad_account, admin_user, db_session):
+            """测试从 finance_approve 状态拒绝成功"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="finance_approve",
+                requested_by=admin_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            result = topup_service.reject_request(
+                request_id=request.id,
+                current_user=finance_user,
+                reason="财务审核不通过"
+            )
+
+            assert result.status == "rejected"
+
+        def test_reject_from_invalid_status_fails(self, topup_service, finance_user, sample_ad_account, admin_user, db_session):
+            """测试从无效状态拒绝失败"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="paid",  # 已打款状态不能拒绝
+                requested_by=admin_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            with pytest.raises(BusinessLogicError) as exc:
+                topup_service.reject_request(
+                    request_id=request.id,
+                    current_user=finance_user,
+                    reason="测试拒绝"
+                )
+
+            assert "STATE-002" in str(exc.value) or "不能执行拒绝操作" in str(exc.value)
+
+        def test_reject_permission_denied(self, topup_service, media_buyer_user, sample_ad_account, admin_user, db_session):
+            """测试无权限拒绝失败"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="pending_review",
+                requested_by=admin_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            with pytest.raises(PermissionDeniedError):
+                topup_service.reject_request(
+                    request_id=request.id,
+                    current_user=media_buyer_user,
+                    reason="测试拒绝"
+                )
+
+    class TestCancelRequest:
+        """取消充值申请测试 - STATE_MACHINE.md v2.6 §9"""
+
+        def test_cancel_own_draft_request_success(self, topup_service, media_buyer_user, sample_ad_account, db_session):
+            """测试申请人取消自己的 draft 状态申请成功"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="draft",
+                requested_by=media_buyer_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            result = topup_service.cancel_request(
+                request_id=request.id,
+                current_user=media_buyer_user,
+                reason="不需要了"
+            )
+
+            assert result.status == "cancelled"
+
+        def test_cancel_own_pending_review_success(self, topup_service, media_buyer_user, sample_ad_account, db_session):
+            """测试申请人取消自己的 pending_review 状态申请成功"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="pending_review",
+                requested_by=media_buyer_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            result = topup_service.cancel_request(
+                request_id=request.id,
+                current_user=media_buyer_user,
+                reason="撤回申请"
+            )
+
+            assert result.status == "cancelled"
+
+        def test_admin_cancel_others_request_success(self, topup_service, admin_user, media_buyer_user, sample_ad_account, db_session):
+            """测试管理员取消他人的申请成功"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="pending_review",
+                requested_by=media_buyer_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            result = topup_service.cancel_request(
+                request_id=request.id,
+                current_user=admin_user,
+                reason="管理员取消"
+            )
+
+            assert result.status == "cancelled"
+
+        def test_cancel_from_invalid_status_fails(self, topup_service, media_buyer_user, sample_ad_account, db_session):
+            """测试从无效状态取消失败"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="finance_approve",  # 已进入财务审批不能取消
+                requested_by=media_buyer_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            with pytest.raises(BusinessLogicError) as exc:
+                topup_service.cancel_request(
+                    request_id=request.id,
+                    current_user=media_buyer_user,
+                    reason="测试取消"
+                )
+
+            assert "STATE-002" in str(exc.value) or "不能取消" in str(exc.value)
+
+        def test_cancel_others_request_permission_denied(self, topup_service, data_operator_user, media_buyer_user, sample_ad_account, db_session):
+            """测试非申请人非管理员取消他人申请失败"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="draft",
+                requested_by=media_buyer_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            with pytest.raises(PermissionDeniedError):
+                topup_service.cancel_request(
+                    request_id=request.id,
+                    current_user=data_operator_user,  # 数据员不是申请人
+                    reason="测试取消"
+                )
+
+    class TestConfirmPaid:
+        """确认收款测试 - STATE_MACHINE.md v2.6 §9"""
+
+        def test_confirm_paid_success(self, topup_service, finance_user, sample_ad_account, admin_user, db_session):
+            """测试从 paid 状态确认收款成功"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="paid",
+                requested_by=admin_user.id,
+                paid_at=datetime.utcnow()
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            result = topup_service.confirm_paid(
+                request_id=request.id,
+                current_user=finance_user,
+                transaction_id="TXN_20251206_001",
+                notes="已确认到账"
+            )
+
+            assert result.status == "completed"
+            assert result.completed_at is not None
+
+        def test_confirm_paid_with_admin(self, topup_service, admin_user, sample_ad_account, db_session):
+            """测试管理员确认收款成功"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("2000.00"),
+                status="paid",
+                requested_by=admin_user.id,
+                paid_at=datetime.utcnow()
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            result = topup_service.confirm_paid(
+                request_id=request.id,
+                current_user=admin_user
+            )
+
+            assert result.status == "completed"
+
+        def test_confirm_paid_from_invalid_status_fails(self, topup_service, finance_user, sample_ad_account, admin_user, db_session):
+            """测试从无效状态确认收款失败"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="finance_approve",  # 还未打款
+                requested_by=admin_user.id
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            with pytest.raises(BusinessLogicError) as exc:
+                topup_service.confirm_paid(
+                    request_id=request.id,
+                    current_user=finance_user
+                )
+
+            assert "STATE-002" in str(exc.value) or "不能确认收款" in str(exc.value)
+
+        def test_confirm_paid_permission_denied(self, topup_service, data_operator_user, sample_ad_account, admin_user, db_session):
+            """测试无权限确认收款失败"""
+            request = TopupRequest(
+                ad_account_id=sample_ad_account.id,
+                amount=Decimal("1000.00"),
+                status="paid",
+                requested_by=admin_user.id,
+                paid_at=datetime.utcnow()
+            )
+            db_session.add(request)
+            db_session.commit()
+            db_session.refresh(request)
+
+            with pytest.raises(PermissionDeniedError):
+                topup_service.confirm_paid(
+                    request_id=request.id,
+                    current_user=data_operator_user  # 数据员无权确认
                 )

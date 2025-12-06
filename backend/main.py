@@ -24,10 +24,11 @@ from backend.routers import (
     suppliers,  # ✅ 供应商管理API (full_pipeline v2)
     settlements,  # ✅ 结算管理API (full_pipeline v2)
     transfers,  # ✅ 死号余额迁移API (新增)
+    ledger,  # ✅ 财务总账API (启用 - finance_profit bugfix)
+    finance_profit,  # ✅ 财务利润API (从 ledger 迁出)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # reports,  # ✅ 报表生成API (需要Reconciliation模型修复)
     # import_jobs,  # ✅ 数据导入API (缺失ImportJob模型)
-    # ledger,  # 财务总账API
     # reconciliation_extended,  # 对账管理API
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
@@ -63,10 +64,11 @@ app.include_router(daily_reports.router, prefix=API_V1_PREFIX)  # 日报管理 �
 app.include_router(suppliers.router, prefix=API_V1_PREFIX)  # 供应商管理 ✅ full_pipeline v2
 app.include_router(settlements.router, prefix=API_V1_PREFIX)  # 结算管理 ✅ full_pipeline v2
 app.include_router(transfers.router, prefix=API_V1_PREFIX)  # 死号余额迁移 ✅ 新增
+app.include_router(ledger.router, prefix=API_V1_PREFIX)  # 财务总账 ✅ 启用 (finance_profit bugfix)
+app.include_router(finance_profit.router, prefix=API_V1_PREFIX)  # 财务利润 ✅ 从 ledger 迁出
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表生成 ✅ 新启用
 # app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 新启用
-# app.include_router(ledger.router, prefix=API_V1_PREFIX)  # 财务总账
 # app.include_router(reconciliation_extended.router, prefix=API_V1_PREFIX)  # 对账管理
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 

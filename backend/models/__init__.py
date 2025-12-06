@@ -66,8 +66,8 @@ from .workflow.ad_spend import AdSpendDaily
 from .workflow.topup_request import TopupRequest
 from .workflow.transfer_request import TransferRequest
 
-# 充值相关辅助表（来自 topup.py）
-from .topup import (
+# 充值相关辅助表（来自 topup_fixed.py）
+from .topup_fixed import (
     TopupTransaction,
     TopupApprovalLog,
 )

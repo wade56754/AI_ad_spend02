@@ -1,6 +1,6 @@
 # Backend 测试体系 Freeze 报告
 
-**版本** v1.3 | **状态** Frozen | **日期** 2025-11-30
+**版本** v1.4 | **状态** Frozen | **日期** 2025-12-06
 
 ---
 
@@ -31,11 +31,11 @@
 
 | 指标 | 数值 |
 |------|------|
-| 测试文件数 | 31 |
-| 测试函数数 | 486 |
-| Freeze 范围 | 9 核心文件 / 170 测试函数 |
-| API Endpoint 总数 | 126 |
-| 已覆盖 Endpoint | 47 (37.3%) |
+| 测试文件数 | 32 |
+| 测试函数数 | 499 |
+| Freeze 范围 | 10 核心文件 / 183 测试函数 |
+| API Endpoint 总数 | 127 |
+| 已覆盖 Endpoint | 48 (37.8%) |
 
 ### 模块覆盖率
 
@@ -44,6 +44,7 @@
 | daily_reports | 12 | 10 | 83% | Frozen |
 | topup | 13 | 8 | 62% | Frozen |
 | reconciliation | 12 | 9 | 75% | Frozen |
+| **finance_profit** | **1** | **1** | **100%** | **Frozen (v1.4新增)** |
 | authentication | 13 | 6 | 46% | 部分覆盖 |
 | projects | 12 | 5 | 42% | 部分覆盖 |
 | channels | 4 | 2 | 50% | 部分覆盖 |
@@ -211,6 +212,7 @@
 | v1.1 | 2025-11-30 | 结构重构 |
 | v1.2 | 2025-11-30 | 精简主文档，增加风险评估与 Owner |
 | v1.3 | 2025-11-30 | 添加覆盖率数据、API 覆盖清单、风险 Ledger |
+| v1.4 | 2025-12-06 | 新增 Finance Profit API 模块测试基线（13 用例），更新覆盖率统计 |
 
 ---
 
@@ -228,7 +230,8 @@ backend/tests/
 ├── test_daily_report_service.py
 ├── test_topup_api.py
 ├── test_reconciliation_api.py
-└── test_reconciliation_service.py
+├── test_reconciliation_service.py
+└── test_finance_profit_api.py         # v1.4 新增
 ```
 
 ---
@@ -546,3 +549,29 @@ jobs:
 | /ai-analytics/history | GET | No |
 | /ai-analytics/alerts | GET | No |
 | /ai-analytics/recommendations | GET | No |
+
+### H.8 Finance Profit 模块 (v1.4 新增)
+
+| Endpoint | 方法 | 测试覆盖 | 异常路径 |
+|----------|------|---------|---------|
+| /finance/profit/summary | GET | Yes | 401, 403, 404, 400 |
+
+**测试文件**: `backend/tests/test_finance_profit_api.py`
+
+**测试用例清单** (13 用例):
+
+| 测试类 | 测试用例 | 场景类型 | SoT 引用 |
+|--------|----------|----------|----------|
+| `TestFinanceProfitApiSmoke` | `test_profit_summary_no_project_id_returns_all` | Happy Path | API_SOT 11A |
+| `TestFinanceProfitApiSmoke` | `test_profit_summary_with_project_id` | Happy Path | API_SOT 11A |
+| `TestFinanceProfitApiSmoke` | `test_profit_summary_invalid_project_returns_404` | 错误码校验 | ERROR_CODES BIZ_002 |
+| `TestFinanceProfitApiSmoke` | `test_profit_summary_invalid_date_range_returns_400` | 错误码校验 | ERROR_CODES BIZ_001 |
+| `TestFinanceProfitApiSmoke` | `test_profit_summary_unauthorized_returns_403` | 权限校验 | AUTH_SPEC v2.0 |
+| `TestFinanceProfitApiAuthorization` | `test_admin_can_access` | 权限校验 | AUTH_SPEC v2.0 |
+| `TestFinanceProfitApiAuthorization` | `test_finance_can_access` | 权限校验 | AUTH_SPEC v2.0 |
+| `TestFinanceProfitApiAuthorization` | `test_data_operator_can_access` | 权限校验 | AUTH_SPEC v2.0 |
+| `TestFinanceProfitApiAuthorization` | `test_no_token_returns_401` | 认证校验 | ERROR_CODES AUTH_400 |
+| `TestFinanceProfitApiDateFilters` | `test_with_start_date_only` | 日期过滤 | API_SOT 11A |
+| `TestFinanceProfitApiDateFilters` | `test_with_end_date_only` | 日期过滤 | API_SOT 11A |
+| `TestFinanceProfitApiDateFilters` | `test_with_valid_date_range` | 日期过滤 | API_SOT 11A |
+| `TestFinanceProfitApiResponseFormat` | `test_response_contains_required_fields` | 响应格式 | schemas/finance.py |

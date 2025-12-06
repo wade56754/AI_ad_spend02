@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, func, desc, extract
 
 from backend.models import TopupRequest
-from backend.models.topup import TopupTransaction, TopupApprovalLog
+from backend.models.topup_fixed import TopupTransaction, TopupApprovalLog
 from backend.models import User
 from backend.models import AdAccount
 from backend.models import Project
@@ -276,6 +276,212 @@ class TopupService:
             previous_status=old_status,
             new_status=new_status,
             notes=approval_data.notes,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        self.db.commit()
+        return request
+
+    def reject_request(
+        self,
+        request_id: int,
+        current_user: User,
+        reason: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> TopupRequest:
+        """
+        拒绝充值申请
+
+        状态机流转 (STATE_MACHINE.md v2.6 §9):
+        - pending_review → rejected (数据员拒绝)
+        - finance_approve → rejected (财务拒绝)
+
+        权限: data_operator, finance, admin
+        """
+        request = self.get_request_by_id(request_id, current_user)
+
+        # 验证权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        allowed_roles = [UserRole.DATA_OPERATOR.value, UserRole.FINANCE.value, UserRole.ADMIN.value]
+        if current_user.role not in allowed_roles:
+            raise PermissionDeniedError(
+                "只有数据员、财务或管理员可以拒绝充值申请",
+                error_code="AUTH-003"
+            )
+
+        # 检查状态流转 - 只能从 pending_review 或 finance_approve 拒绝
+        valid_statuses = [TopupStatus.PENDING_REVIEW.value, TopupStatus.FINANCE_APPROVE.value]
+        if request.status not in valid_statuses:
+            raise BusinessLogicError(
+                f"当前状态({request.status})不能执行拒绝操作，只能从 pending_review 或 finance_approve 状态拒绝",
+                error_code="STATE-002"
+            )
+
+        old_status = request.status
+        new_status = TopupStatus.REJECTED.value
+
+        # 更新状态
+        request.status = new_status
+        request.rejected_at = datetime.utcnow()
+        request.rejected_by = current_user.id
+        request.rejection_reason = reason
+
+        # 记录审批日志 [AUDIT]
+        self._create_approval_log(
+            request_id=request_id,
+            action="rejected",
+            actor=current_user,
+            previous_status=old_status,
+            new_status=new_status,
+            notes=reason,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        self.db.commit()
+        return request
+
+    def cancel_request(
+        self,
+        request_id: int,
+        current_user: User,
+        reason: str,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> TopupRequest:
+        """
+        取消充值申请
+
+        状态机流转 (STATE_MACHINE.md v2.6 §9):
+        - draft → cancelled (申请人取消)
+        - pending_review → cancelled (申请人取消)
+
+        权限: 申请人本人, admin
+        """
+        request = self.get_request_by_id(request_id, current_user)
+
+        # 验证权限 - 只有申请人本人或管理员可以取消
+        is_owner = request.requested_by == current_user.id
+        is_admin = current_user.role == UserRole.ADMIN.value
+
+        if not is_owner and not is_admin:
+            raise PermissionDeniedError(
+                "只有申请人本人或管理员可以取消充值申请",
+                error_code="AUTH-003"
+            )
+
+        # 检查状态流转 - 只能从 draft 或 pending_review 取消
+        valid_statuses = [TopupStatus.DRAFT.value, TopupStatus.PENDING_REVIEW.value]
+        if request.status not in valid_statuses:
+            raise BusinessLogicError(
+                f"当前状态({request.status})不能取消，只能在 draft 或 pending_review 状态取消",
+                error_code="STATE-002"
+            )
+
+        old_status = request.status
+        new_status = TopupStatus.CANCELLED.value
+
+        # 更新状态
+        request.status = new_status
+        request.cancelled_at = datetime.utcnow()
+        request.cancelled_by = current_user.id
+        request.cancellation_reason = reason
+
+        # 记录审批日志 [AUDIT]
+        self._create_approval_log(
+            request_id=request_id,
+            action="cancelled",
+            actor=current_user,
+            previous_status=old_status,
+            new_status=new_status,
+            notes=reason,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        self.db.commit()
+        return request
+
+    def confirm_paid(
+        self,
+        request_id: int,
+        current_user: User,
+        transaction_id: Optional[str] = None,
+        notes: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> TopupRequest:
+        """
+        确认收款完成，标记充值申请为 completed
+
+        状态机流转 (STATE_MACHINE.md v2.6 §9):
+        - paid → completed (确认到账)
+
+        权限: finance, admin
+        业务规则:
+        - BR-FIN-005: 必须同时创建 ledger_entry (LEDGER_SOT.md v1.1)
+        """
+        request = self.get_request_by_id(request_id, current_user)
+
+        # 验证权限 - 只有财务或管理员可以确认收款
+        allowed_roles = [UserRole.FINANCE.value, UserRole.ADMIN.value]
+        if current_user.role not in allowed_roles:
+            raise PermissionDeniedError(
+                "只有财务或管理员可以确认收款",
+                error_code="AUTH-003"
+            )
+
+        # 检查状态流转 - 只能从 paid 确认
+        if request.status != TopupStatus.PAID.value:
+            raise BusinessLogicError(
+                f"当前状态({request.status})不能确认收款，只能从 paid 状态确认",
+                error_code="STATE-002"
+            )
+
+        old_status = request.status
+        new_status = TopupStatus.COMPLETED.value
+
+        # 更新状态
+        request.status = new_status
+        request.completed_at = datetime.utcnow()
+        if transaction_id:
+            request.transaction_id = transaction_id
+
+        # 创建交易记录
+        transaction = TopupTransaction(
+            request_id=request_id,
+            transaction_no=transaction_id or f"TXN_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{request_id}",
+            amount=request.actual_amount or request.amount,
+            currency="CNY",
+            payment_method=request.payment_method or "bank_transfer",
+            transaction_date=request.paid_at or datetime.utcnow(),
+            notes=notes,
+            created_by=current_user.id
+        )
+        self.db.add(transaction)
+
+        # TODO: BR-FIN-005 - 创建 ledger_entry 记录 (LEDGER_SOT.md v1.1)
+        # ledger_entry = LedgerEntry(
+        #     ledger_type="ACCOUNT",
+        #     ad_account_id=request.ad_account_id,
+        #     entry_type="TOPUP",
+        #     amount=request.actual_amount or request.amount,
+        #     balance_after=current_balance + amount,
+        #     reference_type="topup_request",
+        #     reference_id=request_id,
+        #     operator_id=current_user.id
+        # )
+        # self.db.add(ledger_entry)
+
+        # 记录审批日志 [AUDIT]
+        self._create_approval_log(
+            request_id=request_id,
+            action="confirmed_paid",
+            actor=current_user,
+            previous_status=old_status,
+            new_status=new_status,
+            notes=notes or "确认收款完成",
             ip_address=ip_address,
             user_agent=user_agent
         )
