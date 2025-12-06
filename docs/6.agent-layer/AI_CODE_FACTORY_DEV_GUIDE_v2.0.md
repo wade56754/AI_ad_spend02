@@ -1,6 +1,6 @@
 # AI 代码工厂开发指南
 
-> **版本**: v2.0
+> **版本**: v2.1
 > **状态**: active
 > **层级**: Tier-3 平台规范
 > **Owner**: wade
@@ -202,6 +202,37 @@
 | **ruff/black** | 不允许新增 lint error |
 | **tsc (前端)** | 必须通过编译 |
 | **ESLint (前端)** | 不允许新增 error |
+| **目录边界校验** | 禁区写入检测必须通过 |
+
+#### 目录边界校验 (v2.1 新增)
+
+**检测命令**:
+```bash
+python tools/guard_paths.py --mode ci
+```
+
+**目录白名单** (允许写入):
+| 目录 | 说明 |
+|------|------|
+| `backend/schemas/**` | Pydantic 模型 |
+| `backend/services/**` | 业务逻辑 |
+| `backend/routers/**` | API 路由 |
+| `backend/tests/**` | 测试用例 |
+| `frontend/src/modules/**` | 前端模块 |
+| `docs/reports/**` | 报告输出 |
+
+**目录黑名单** (禁止写入，触碰立即 fail):
+| 目录 | 原因 |
+|------|------|
+| `backend/models/**` | 需 DBA 审核 |
+| `migrations/**` | 需 DBA 审核 |
+| `.env*` | 安全敏感 |
+| `.github/workflows/**` | CI 基础设施 |
+| `docs/2.sot/**` | SoT 只读 |
+
+**CI 阻断规则**:
+- 任何对黑名单目录的写入尝试 → 立即 fail，阻断流水线
+- 形成"先校验后修复"流程
 
 #### 分阶段执行策略
 
@@ -271,7 +302,20 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Step 1: 需求 → SoT 映射
+### 4.2 Step 0: 目录边界校验 (v2.1 新增)
+
+**在任何代码生成前，先运行目录守卫脚本**:
+
+```bash
+python tools/guard_paths.py --mode ci
+```
+
+**Checklist**:
+- [ ] 目标文件均在白名单目录内
+- [ ] 无黑名单目录触碰
+- [ ] 校验通过后方可进入 Step 1
+
+### 4.3 Step 1: SoT 完整性扫描 (v2.1 增强)
 
 **必读 SoT (只读)**：
 
@@ -284,9 +328,37 @@
 | `BUSINESS_RULES.md` | 业务规则 |
 | `ERROR_CODES_SOT.md` | 错误码定义 |
 
+#### SoT 完整性检查器 (v2.1 新增)
+
+在生成 Plan **之前**，必须运行 SoT 完整性扫描：
+
+```bash
+python tools/sot_scanner.py --module <module_name>
+```
+
+**输出示例**:
+```json
+{
+  "module": "topup_approval",
+  "sot_coverage": {
+    "STATE_MACHINE.md#topup": "found",
+    "LEDGER_SOT.md#topup": "found",
+    "AUTH_SPEC.md#topup": "missing",
+    "ERROR_CODES_SOT.md#TOPUP_*": "partial"
+  },
+  "blocking_gaps": ["AUTH_SPEC.md#topup"],
+  "can_proceed": false
+}
+```
+
+**阻断规则**:
+- 若 `can_proceed: false` → 阻断代码生成，要求先补 SoT
+- 若 `blocking_gaps` 非空 → 列出缺失段落，人工补充后重试
+- 实现"先补 SoT 再编码"强制流程
+
 **关键判断**: 若 SoT 不完整 → 先人工补 SoT，再允许写代码
 
-### 4.3 Step 2: 生成实现计划
+### 4.4 Step 2: 生成实现计划
 
 **产出**: `PLAN_{module}_vX.Y.md`
 
@@ -313,7 +385,7 @@
 - 账本分录需要事务保证
 ```
 
-### 4.4 Step 3: Schema 层实现
+### 4.5 Step 3: Schema 层实现
 
 **位置**: `backend/schemas/{module}.py`
 
@@ -345,7 +417,7 @@ class TopupApproveResponse(BaseModel):
     approved_at: datetime
 ```
 
-### 4.5 Step 4: Service 层实现
+### 4.6 Step 4: Service 层实现
 
 **位置**: `backend/services/{module}_service.py`
 
@@ -396,7 +468,7 @@ async def approve_topup(
     return topup
 ```
 
-### 4.6 Step 5: Router 层实现
+### 4.7 Step 5: Router 层实现
 
 **位置**: `backend/routers/{module}.py`
 
@@ -435,7 +507,7 @@ async def approve_topup_endpoint(
 app.include_router(topups_router, prefix="/api/v1/topups", tags=["topups"])
 ```
 
-### 4.7 Step 6: 测试实现
+### 4.8 Step 6: 测试实现
 
 #### Service 层测试
 
@@ -517,7 +589,7 @@ async def test_topup_ledger_balance():
     ...
 ```
 
-### 4.8 Step 7: 测试执行 & 自动修复
+### 4.9 Step 7: 测试执行 & 自动修复
 
 ```bash
 # 执行相关测试
@@ -530,7 +602,7 @@ pytest backend/tests/test_state_machine_transitions.py -k "topup" -v
 - 最多 2 轮自动修复
 - 第 3 次失败 → 生成 `FAILURE_REPORT`
 
-### 4.9 Step 8: Freeze 报告
+### 4.10 Step 8: Freeze 报告
 
 **产出**: `{MODULE}_TEST_FREEZE_REPORT_vX.Y.md`
 
@@ -719,9 +791,13 @@ export function useTopupData(filters: TopupFilters) {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    API 开发流程 (5 步)                       │
+│                    API 开发流程 (6 步)                       │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
+│  ⓪ SoT 完整性扫描 ─────────────────────────────── [自动]    │
+│     确认 STATE_MACHINE/AUTH 段落完整后方可继续              │
+│              │                                               │
+│              ▼                                               │
 │  ① 确定 API 边界 & 资源 ───────────────────────── [人工]    │
 │     "这是对哪个资源/视图的操作？"                            │
 │              │                                               │
@@ -743,6 +819,21 @@ export function useTopupData(filters: TopupFilters) {
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### 6.1.1 Step 0: SoT 完整性扫描 (v2.1 新增)
+
+在定义 API 契约前，先确认相关 SoT 段落完整：
+
+```bash
+python tools/sot_scanner.py --module <module_name> --scope api
+```
+
+**检查范围**:
+- `STATE_MACHINE.md#<entity>` - 确认状态转换规则
+- `AUTH_SPEC.md#<entity>` - 确认权限矩阵
+- `ERROR_CODES_SOT.md#<PREFIX>_*` - 确认错误码前缀
+
+**阻断规则**: 若缺失关键 SoT 段落 → 阻断流程，人工补充后重试
 
 ### 6.2 API 契约文档格式
 
@@ -933,7 +1024,49 @@ pytest backend/tests/api/test_topups_api.py -v
 pytest backend/tests -v
 ```
 
-### 7.5 自动修复循环
+### 7.5 quick-check 可观测性规范 (v2.1 新增)
+
+**执行命令**:
+```bash
+python super_review_agent.py quick-check \
+  --doc <doc_path> \
+  --codex-prompt <prompt_path>
+```
+
+**退出码规范**:
+| 退出码 | 含义 |
+|--------|------|
+| 0 | 成功，无 P0/P1 缺陷 |
+| 1 | 发现 P0/P1 缺陷 |
+| 2+ | 执行错误 |
+
+**日志输出规范**:
+```
+📊 Quick Check 结果: P0=<count>, P1=<count>
+✓ 文档质量良好，无 P0/P1 缺陷
+# 或
+⚠️  发现 <p0> 个 P0 缺陷和 <p1> 个 P1 缺陷，需要修复
+```
+
+**JSON 日志片段** (用于 CI 解析):
+```json
+{
+  "mode": "quick-check",
+  "p0_count": 3,
+  "p1_count": 6,
+  "passed": false,
+  "failures": ["P0-LEDGER-001", "P0-STATE-002"],
+  "exit_code": 1
+}
+```
+
+**上线门禁集成**:
+```bash
+# CI 中使用退出码阻断
+python super_review_agent.py quick-check ... || exit 1
+```
+
+### 7.6 自动修复循环
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -953,15 +1086,44 @@ pytest backend/tests -v
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 7.6 质量门槛判断
+**自动修复日志输出规范** (v2.1 新增):
+```json
+{
+  "mode": "auto-fix",
+  "rounds_executed": 2,
+  "max_rounds": 2,
+  "final_passed": false,
+  "rounds": [
+    {
+      "round": 1,
+      "files_changed": ["backend/services/topup.py"],
+      "lines_changed": 15,
+      "risk_tags": ["other"],
+      "test_result": "failed"
+    },
+    {
+      "round": 2,
+      "files_changed": ["backend/services/topup.py"],
+      "lines_changed": 8,
+      "risk_tags": ["state_machine"],
+      "test_result": "failed"
+    }
+  ],
+  "failure_report": "FAILURE_REPORT_topup_20251206.md",
+  "exit_code": 1
+}
+```
+
+### 7.7 质量门槛判断
 
 | 检查项 | 要求 |
 |--------|------|
 | 本次改动测试 | 100% 通过 |
 | 全局 pytest | 不得新增失败 |
 | SoT 审计 | P0=0, P1=0 |
+| quick-check 退出码 | 必须为 0 |
 
-### 7.7 测试 Freeze 报告
+### 7.8 测试 Freeze 报告
 
 **产出**: `{MODULE}_TEST_FREEZE_REPORT_vX.Y.md`
 
@@ -1044,6 +1206,45 @@ pytest backend/tests -v
 - 测试覆盖表
 - P0/P1/P2 问题与 Freeze 评级
 - 回滚策略
+- **证据清单** (v2.1 新增)
+
+#### Freeze 报告证据清单 (v2.1 新增)
+
+发布前必须填写以下证据字段，确保上线审计闭环：
+
+```markdown
+## 6. 证据清单 (v2.1 必填)
+
+### 6.1 测试命令
+```bash
+pytest backend/tests/services/test_topup_service.py -v
+pytest backend/tests/api/test_topups_api.py -v
+```
+
+### 6.2 日志路径
+- 测试日志: `logs/test_topup_20251206.log`
+- CI 日志: `https://github.com/.../actions/runs/xxxxx`
+
+### 6.3 关联 Commit
+- 主提交: `abc123def` - feat: implement topup approval
+- 测试修复: `456789ghi` - fix: topup state validation
+
+### 6.4 Plan 文件
+- `docs/reports/PLAN_TOPUP_APPROVAL_v1.0.md`
+
+### 6.5 自动修复轮次摘要
+| 轮次 | 改动文件 | 改动行数 | 结果 |
+|------|---------|---------|------|
+| 1 | topup_service.py | 12 | 失败 |
+| 2 | topup_service.py | 5 | 成功 |
+
+### 6.6 quick-check 结果
+```json
+{"p0_count": 0, "p1_count": 0, "passed": true, "exit_code": 0}
+```
+```
+
+**必填检查**: 若证据清单字段缺失 → 禁止发布
 
 ### 8.4 变更记录 (OpenSpec)
 
@@ -1544,12 +1745,57 @@ git push origin feature/topup-approval
 - 建议修复方向
 ```
 
-### 12.2 失败后的处理流程
+### 12.2 自动修复安全阈值 (v2.1 新增)
+
+为防止自动修复引入不可控风险，规定以下阈值：
+
+#### 每轮记录字段
+
+每轮自动修复必须记录：
+| 字段 | 说明 |
+|------|------|
+| `files_changed` | 本轮改动文件列表 |
+| `lines_changed` | 本轮改动行数 |
+| `risk_tags` | 风险标签 (见下表) |
+
+#### 风险标签定义
+
+| 风险标签 | 含义 | 阈值 |
+|---------|------|------|
+| `state_machine` | 涉及状态转换 | 立即停止 |
+| `ledger` | 涉及账本分录 | 立即停止 |
+| `auth` | 涉及权限逻辑 | 立即停止 |
+| `other` | 其他业务逻辑 | 允许继续 |
+
+#### 停止阈值
+
+| 条件 | 动作 |
+|------|------|
+| 单轮改动 > 30 行 | 立即停止，生成 FAILURE_REPORT |
+| 触及 `state_machine` / `ledger` / `auth` 标签 | 立即停止，生成 FAILURE_REPORT |
+| 累计改动 > 50 行 | 立即停止，生成 FAILURE_REPORT |
+
+**FAILURE_REPORT 新增字段** (v2.1):
+```markdown
+## 5. 自动修复风险评估
+
+| 轮次 | 改动文件 | 改动行数 | 风险标签 | 停止原因 |
+|------|---------|---------|---------|---------|
+| 1 | topup_service.py | 15 | other | 继续 |
+| 2 | topup_service.py | 22 | state_machine | **触及状态机，强制停止** |
+
+**总改动行数**: 37
+**触发阈值**: state_machine 风险标签
+```
+
+### 12.3 失败后的处理流程
 
 ```
 失败报告生成后:
   ↓
 人工查看 FAILURE_REPORT
+  ↓
+检查风险评估章节 (v2.1 新增)
   ↓
 选择:
   A) 手动修复 → 重新运行 /agent test
@@ -1615,8 +1861,8 @@ git push origin feature/topup-approval
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| v2.1 | 2025-12-06 | 新增组织架构框架：六层架构模型、层级职责矩阵、数据流图、现状与目标对比、差距分析 |
-| v2.0 | 2025-12-06 | 完整重构：边界定义 + 五大开发流程 + 自动化策略 |
+| v2.1 | 2025-12-06 | **可观测性与安全增强**: <br>- §3.2 新增目录边界校验 (白名单/黑名单) <br>- §4/§6 新增 SoT 完整性扫描前置步骤 <br>- §7.5 新增 quick-check 退出码与 JSON 日志规范 <br>- §8 新增 Freeze 报告证据清单 (必填) <br>- §12.2 新增自动修复安全阈值 (30行/风险标签停止) |
+| v2.0 | 2025-12-06 | 完整重构：边界定义 + 五大开发流程 + 自动化策略 + 六层架构模型 |
 | v1.0 | 2025-12-01 | 初始版本 |
 
 ---
