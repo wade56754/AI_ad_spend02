@@ -80,6 +80,32 @@ class OrchestratorAgent(AgentProtocol):
         "frontend_restructure",
         "gen_backend",
         "auto_fix",
+        "api_dev",  # Phase API-3a: API development pipeline
+    ]
+
+    # API Dev flow: Supported module enums (from API_SOT.md v9.0)
+    API_DEV_MODULES = [
+        "daily_reports", "topup_requests", "ledger", "reconciliation",
+        "ad_accounts", "projects", "channels", "transfers", "finance_profit",
+        "suppliers", "settlements", "trend_risk", "auth",
+    ]
+
+    # API Dev flow: change_type enums
+    API_DEV_CHANGE_TYPES = [
+        "schema",         # Pydantic schema / DTO only
+        "router",         # FastAPI router layer only
+        "schema+router",  # Both schema and router
+        "tests",          # Test supplements only
+        "full_feature",   # New feature (schema + router + service + tests)
+        "bugfix",         # Bug fix
+    ]
+
+    # API Dev flow: mode enums
+    API_DEV_MODES = [
+        "plan",       # Generate plan only (no code changes)
+        "impl",       # Code implementation (optional auto_write)
+        "impl+test",  # Code + tests (default)
+        "refactor",   # Pure refactoring (no behavior change)
     ]
 
     # Phase 3.1: Execution modes
@@ -122,6 +148,7 @@ class OrchestratorAgent(AgentProtocol):
             "frontend_restructure": self._run_frontend_restructure,
             "gen_backend": self._run_backend_gen,  # 多模块后端生成
             "auto_fix": self._run_auto_fix,  # Fix: P1-01 - 自动修复流水线
+            "api_dev": self._run_api_dev,  # Phase API-3a: API 开发流水线
         }
 
     # ------------------------------------------------------------------ #
@@ -1580,6 +1607,448 @@ class OrchestratorAgent(AgentProtocol):
         return OrchestratorResult(
             success=overall_success,
             flow="auto_fix",
+            message=message,
+            steps=steps,
+            errors=errors,
+            notes=notes,
+        )
+
+    def _run_api_dev(self, request: Dict[str, Any]) -> OrchestratorResult:
+        """
+        API Development Pipeline (Phase API-3a).
+
+        Aligned with ai-ad-api-dev-orchestrator Skill v1.2.0 and API_DEVELOPMENT_FLOW v2.3.
+
+        Pipeline flow:
+        1. Validate inputs (module, change_type, api_mode)
+        2. Generate API development plan based on module file mapping
+        3. Call BEAgent to implement the code
+        4. Optionally call TestAgent based on run_tests parameter
+        5. Return structured result with suggested_tests for downstream consumption
+
+        Request format:
+            {
+                "flow": "api_dev",
+                "module": str,           # Required: one of API_DEV_MODULES
+                "change_type": str,      # Required: one of API_DEV_CHANGE_TYPES
+                "api_mode": str,         # Optional: one of API_DEV_MODES (default: "impl+test")
+                "task": str,             # Required: task description
+                "endpoint": str,         # Optional: target endpoint (e.g., "GET /api/v1/xxx")
+                "auto_write": bool,      # Optional: default False
+                "run_tests": str,        # Optional: "none" | "smoke" | "full" (default: "smoke")
+            }
+
+        Returns:
+            OrchestratorResult with:
+            - plan: development plan details
+            - impl_result: BEAgent result
+            - test_result: TestAgent result (if run_tests != "none")
+            - suggested_tests: array for downstream CLI/automation
+        """
+        steps: Dict[str, Dict[str, Any]] = {}
+        errors: List[str] = []
+        notes: List[str] = []
+        all_changes: Dict[str, str] = {}
+
+        # Parse and validate input parameters
+        module = request.get("module", "").strip()
+        change_type = request.get("change_type", "").strip()
+        api_mode = request.get("api_mode", "impl+test").strip()
+        task = request.get("task", "").strip()
+        endpoint = request.get("endpoint", "").strip()
+        auto_write = bool(request.get("auto_write", False))
+        run_tests = request.get("run_tests", "smoke").strip().lower()
+
+        # Validate module
+        if not module:
+            return OrchestratorResult(
+                success=False,
+                flow="api_dev",
+                message="Missing required field: 'module'",
+                steps=steps,
+                errors=["Missing 'module' field"],
+                notes=["Error: module is required for api_dev flow"],
+            )
+
+        if module not in self.API_DEV_MODULES:
+            return OrchestratorResult(
+                success=False,
+                flow="api_dev",
+                message=f"Invalid module: '{module}'. Must be one of: {self.API_DEV_MODULES}",
+                steps=steps,
+                errors=[f"Invalid module: {module}"],
+                notes=[f"Valid modules: {', '.join(self.API_DEV_MODULES)}"],
+            )
+
+        # Validate change_type
+        if not change_type:
+            return OrchestratorResult(
+                success=False,
+                flow="api_dev",
+                message="Missing required field: 'change_type'",
+                steps=steps,
+                errors=["Missing 'change_type' field"],
+                notes=["Error: change_type is required for api_dev flow"],
+            )
+
+        if change_type not in self.API_DEV_CHANGE_TYPES:
+            return OrchestratorResult(
+                success=False,
+                flow="api_dev",
+                message=f"Invalid change_type: '{change_type}'. Must be one of: {self.API_DEV_CHANGE_TYPES}",
+                steps=steps,
+                errors=[f"Invalid change_type: {change_type}"],
+                notes=[f"Valid change_types: {', '.join(self.API_DEV_CHANGE_TYPES)}"],
+            )
+
+        # Validate api_mode
+        if api_mode not in self.API_DEV_MODES:
+            return OrchestratorResult(
+                success=False,
+                flow="api_dev",
+                message=f"Invalid api_mode: '{api_mode}'. Must be one of: {self.API_DEV_MODES}",
+                steps=steps,
+                errors=[f"Invalid api_mode: {api_mode}"],
+                notes=[f"Valid api_modes: {', '.join(self.API_DEV_MODES)}"],
+            )
+
+        # Validate task
+        if not task:
+            return OrchestratorResult(
+                success=False,
+                flow="api_dev",
+                message="Missing required field: 'task'",
+                steps=steps,
+                errors=["Missing 'task' field"],
+                notes=["Error: task description is required"],
+            )
+
+        # Validate run_tests
+        valid_run_tests = ["none", "smoke", "full"]
+        if run_tests not in valid_run_tests:
+            return OrchestratorResult(
+                success=False,
+                flow="api_dev",
+                message=f"Invalid run_tests: '{run_tests}'. Must be one of: {valid_run_tests}",
+                steps=steps,
+                errors=[f"Invalid run_tests: {run_tests}"],
+                notes=[f"Valid run_tests options: {', '.join(valid_run_tests)}"],
+            )
+
+        logger.info(
+            f"Orchestrator: api_dev started (module={module}, change_type={change_type}, "
+            f"api_mode={api_mode}, run_tests={run_tests}, auto_write={auto_write})"
+        )
+        notes.append(f"Mode: {'auto_write' if auto_write else 'dry-run (preview only)'}")
+        notes.append(f"Module: {module}, Change type: {change_type}, API mode: {api_mode}")
+
+        # ================================================================
+        # Step 1: Generate API Development Plan
+        # ================================================================
+        logger.info("Orchestrator: api_dev Step 1 - Generating development plan")
+        notes.append("--- Step 1: Generate Development Plan ---")
+
+        # Module to file mapping (aligned with API_SOT.md v9.0)
+        module_file_map: Dict[str, Dict[str, List[str]]] = {
+            "daily_reports": {
+                "schema": ["schemas/daily_report.py"],
+                "router": ["routers/daily_reports.py"],
+                "schema+router": ["schemas/daily_report.py", "routers/daily_reports.py"],
+                "full_feature": [
+                    "schemas/daily_report.py",
+                    "services/daily_report_service.py",
+                    "routers/daily_reports.py",
+                ],
+                "bugfix": ["routers/daily_reports.py", "services/daily_report_service.py"],
+                "tests": ["tests/api/test_daily_report_flow_generated.py"],
+            },
+            "topup_requests": {
+                "schema": ["schemas/topup.py"],
+                "router": ["routers/topup.py"],
+                "schema+router": ["schemas/topup.py", "routers/topup.py"],
+                "full_feature": [
+                    "schemas/topup.py",
+                    "services/topup_service.py",
+                    "routers/topup.py",
+                ],
+                "bugfix": ["routers/topup.py", "services/topup_service.py"],
+                "tests": ["tests/api/test_topup_flow_generated.py"],
+            },
+            "ledger": {
+                "schema": ["schemas/ledger.py"],
+                "router": ["routers/ledger.py"],
+                "schema+router": ["schemas/ledger.py", "routers/ledger.py"],
+                "full_feature": [
+                    "schemas/ledger.py",
+                    "services/ledger_service.py",
+                    "routers/ledger.py",
+                ],
+                "bugfix": ["routers/ledger.py", "services/ledger_service.py"],
+                "tests": ["tests/api/test_ledger_flow_generated.py"],
+            },
+            "reconciliation": {
+                "schema": ["schemas/reconciliation.py"],
+                "router": ["routers/reconciliation.py"],
+                "schema+router": ["schemas/reconciliation.py", "routers/reconciliation.py"],
+                "full_feature": [
+                    "schemas/reconciliation.py",
+                    "services/reconciliation_service.py",
+                    "routers/reconciliation.py",
+                ],
+                "bugfix": ["routers/reconciliation.py", "services/reconciliation_service.py"],
+                "tests": ["tests/api/test_reconciliation_flow_generated.py"],
+            },
+            "finance_profit": {
+                "schema": ["schemas/finance_profit.py"],
+                "router": ["routers/finance_profit.py"],
+                "schema+router": ["schemas/finance_profit.py", "routers/finance_profit.py"],
+                "full_feature": [
+                    "schemas/finance_profit.py",
+                    "services/finance_profit_service.py",
+                    "routers/finance_profit.py",
+                ],
+                "bugfix": ["routers/finance_profit.py", "services/finance_profit_service.py"],
+                "tests": ["tests/api/test_finance_profit_flow_generated.py"],
+            },
+        }
+
+        # Default file patterns for unknown modules
+        def get_default_files(mod: str, ct: str) -> List[str]:
+            base_files = {
+                "schema": [f"schemas/{mod}.py"],
+                "router": [f"routers/{mod}.py"],
+                "schema+router": [f"schemas/{mod}.py", f"routers/{mod}.py"],
+                "full_feature": [
+                    f"schemas/{mod}.py",
+                    f"services/{mod}_service.py",
+                    f"routers/{mod}.py",
+                ],
+                "bugfix": [f"routers/{mod}.py", f"services/{mod}_service.py"],
+                "tests": [f"tests/api/test_{mod}_flow_generated.py"],
+            }
+            return base_files.get(ct, [f"routers/{mod}.py"])
+
+        # Get target files
+        if module in module_file_map and change_type in module_file_map[module]:
+            target_files = module_file_map[module][change_type]
+        else:
+            target_files = get_default_files(module, change_type)
+            notes.append(f"[INFO] Using default file pattern for module '{module}'")
+
+        # Add test files if api_mode includes tests
+        test_files = []
+        if api_mode in ["impl+test"] and change_type != "tests":
+            test_file = f"tests/api/test_{module}_flow_generated.py"
+            test_files = [test_file]
+            if test_file not in target_files:
+                target_files = target_files + test_files
+
+        # Create development plan
+        plan = {
+            "module": module,
+            "change_type": change_type,
+            "api_mode": api_mode,
+            "endpoint": endpoint or f"(endpoints in {module} module)",
+            "files_to_touch": target_files,
+            "test_files": test_files,
+            "dev_steps": [
+                {"step": 1, "phase": "sot_review", "action": f"Review SoT for {module} module"},
+                {"step": 2, "phase": change_type, "action": f"Implement {change_type} changes"},
+            ],
+            "sot_references": [
+                {"doc": "API_SOT.md", "version": "v9.0"},
+                {"doc": "STATE_MACHINE.md", "version": "v2.6"},
+                {"doc": "DATA_SCHEMA.md", "version": "v5.2"},
+            ],
+        }
+
+        steps["plan"] = {"success": True, "data": plan, "error": None}
+        notes.append(f"Plan generated: {len(target_files)} files to touch")
+
+        # If api_mode is "plan", return early with just the plan
+        if api_mode == "plan":
+            logger.info("Orchestrator: api_dev completed (plan mode only)")
+            notes.append("Plan mode: returning plan without implementation")
+
+            return OrchestratorResult(
+                success=True,
+                flow="api_dev",
+                message=f"API development plan generated for {module} ({change_type})",
+                steps=steps,
+                errors=errors,
+                notes=notes,
+            )
+
+        # ================================================================
+        # Step 2: Call BEAgent for Implementation
+        # ================================================================
+        logger.info("Orchestrator: api_dev Step 2 - Calling BEAgent")
+        notes.append("--- Step 2: Code Implementation (BEAgent) ---")
+
+        # Build task description for BEAgent
+        be_task = f"[API Dev: {module}/{change_type}] {task}"
+        if endpoint:
+            be_task = f"{be_task}\nTarget endpoint: {endpoint}"
+
+        be_request = {
+            "task": be_task,
+            "target_files": target_files,
+            "module": module,
+        }
+
+        # P1-API-001: Add try-except for BEAgent call to prevent flow crash
+        try:
+            be_result = self._backend_agent.handle_request(be_request)
+        except Exception as e:
+            logger.error(f"Orchestrator: api_dev Step 2 - BEAgent exception: {e}")
+            be_result = {
+                "success": False,
+                "error": f"BEAgent exception: {e}",
+                "data": {},
+            }
+            errors.append(f"BEAgent exception: {e}")
+            notes.append(f"[ERROR] BEAgent crashed: {e}")
+
+        steps["impl"] = be_result
+
+        impl_success = be_result.get("success", False)
+        if impl_success:
+            be_changes = be_result.get("data", {}).get("changes", {})
+            all_changes.update(be_changes)
+            notes.append(f"Step 2 completed: {len(be_changes)} files generated")
+            logger.info(f"Orchestrator: api_dev Step 2 - BEAgent generated {len(be_changes)} files")
+        else:
+            error_msg = f"Step 2 failed: BEAgent error - {be_result.get('error')}"
+            errors.append(error_msg)
+            notes.append(f"[WARN] {error_msg}")
+            logger.warning(error_msg)
+
+        # ================================================================
+        # Step 3: Optional Test Phase
+        # ================================================================
+        test_result: Optional[Dict[str, Any]] = None
+        test_success = True
+
+        if run_tests != "none" and impl_success:
+            logger.info(f"Orchestrator: api_dev Step 3 - Running tests (level={run_tests})")
+            notes.append(f"--- Step 3: Test Phase (level={run_tests}) ---")
+
+            test_scope = "all" if run_tests == "full" else "smoke"
+            test_request = {
+                "mode": "backend",
+                "scope": test_scope,
+                "level": run_tests,
+                "target_module": module,
+            }
+
+            # P1-API-002: Add try-except for TestAgent call to prevent flow crash
+            try:
+                test_result = self._test_agent.handle_request(test_request)
+            except Exception as e:
+                logger.error(f"Orchestrator: api_dev Step 3 - TestAgent exception: {e}")
+                test_result = {
+                    "success": False,
+                    "error": f"TestAgent exception: {e}",
+                    "data": {},
+                }
+                errors.append(f"TestAgent exception: {e}")
+                notes.append(f"[ERROR] TestAgent crashed: {e}")
+
+            steps["test"] = test_result
+
+            test_success = test_result.get("success", False)
+            if test_success:
+                notes.append(f"Step 3 completed: Tests passed (scope={test_scope})")
+                logger.info("Orchestrator: api_dev Step 3 - Tests passed")
+            else:
+                error_msg = f"Step 3 failed: TestAgent error - {test_result.get('error')}"
+                errors.append(error_msg)
+                notes.append(f"[WARN] {error_msg}")
+                logger.warning(error_msg)
+        elif run_tests == "none":
+            notes.append("Step 3 skipped: run_tests=none")
+        elif not impl_success:
+            notes.append("Step 3 skipped: Implementation failed")
+
+        # ================================================================
+        # Step 4: Write Files (if auto_write and successful)
+        # ================================================================
+        files_written = 0
+        overall_success = impl_success and test_success
+
+        if auto_write and all_changes and overall_success:
+            logger.info(f"Orchestrator: api_dev - Writing {len(all_changes)} files")
+            for file_path, content in all_changes.items():
+                try:
+                    full_path = self.base_path / "backend" / file_path
+                    full_path.parent.mkdir(parents=True, exist_ok=True)
+                    full_path.write_text(content, encoding="utf-8")
+                    files_written += 1
+                except Exception as e:
+                    logger.error(f"Failed to write {file_path}: {e}")
+                    notes.append(f"Warning: Failed to write {file_path}")
+            notes.append(f"Wrote {files_written}/{len(all_changes)} files to disk")
+        elif auto_write and not overall_success:
+            notes.append("auto_write skipped: pipeline did not complete successfully")
+        else:
+            notes.append("Dry-run mode - no files written")
+
+        # ================================================================
+        # Generate suggested_tests for downstream consumption
+        # (Aligned with TEST_AUTOMATION_SOT v1.0.1)
+        # ================================================================
+        suggested_tests = []
+
+        # Module-level test
+        suggested_tests.append({
+            "skill": "ai-ad-api-automation-test",
+            "mode": "RUN",
+            "scope": "module",
+            "target": module,
+            "reason": f"{change_type} 变更需验证模块实现",
+        })
+
+        # Regression test for full_feature or schema+router
+        if change_type in ["full_feature", "schema+router"]:
+            suggested_tests.append({
+                "skill": "ai-ad-api-automation-test",
+                "mode": "REGRESSION",
+                "scope": "smoke",
+                "target": None,
+                "reason": "大规模变更需回归测试基线",
+            })
+
+        # ================================================================
+        # Build Summary
+        # ================================================================
+        summary = {
+            "module": module,
+            "change_type": change_type,
+            "api_mode": api_mode,
+            "endpoint": endpoint,
+            "files_generated": len(all_changes),
+            "files_written": files_written,
+            "auto_write": auto_write,
+            "run_tests": run_tests,
+            "test_passed": test_success if run_tests != "none" else None,
+            "suggested_tests": suggested_tests,
+            "orchestrator_version": "ai-ad-api-dev-orchestrator v1.2.0 / API_DEVELOPMENT_FLOW v2.3",
+        }
+        steps["summary"] = {"success": overall_success, "data": summary, "error": None}
+
+        # Final message
+        mode_msg = f"(wrote {files_written} files)" if auto_write else "(dry-run)"
+        test_msg = f", tests: {'passed' if test_success else 'failed'}" if run_tests != "none" else ""
+        if overall_success:
+            message = f"API dev completed for {module}/{change_type}: {len(all_changes)} files {mode_msg}{test_msg}"
+        else:
+            message = f"API dev partial for {module}/{change_type}: {len(errors)} error(s) {mode_msg}{test_msg}"
+
+        logger.info(f"Orchestrator: api_dev finished - {message}")
+
+        return OrchestratorResult(
+            success=overall_success,
+            flow="api_dev",
             message=message,
             steps=steps,
             errors=errors,

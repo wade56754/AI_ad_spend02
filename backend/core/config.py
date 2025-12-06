@@ -120,7 +120,7 @@ class Settings(BaseSettings):
     @field_validator('database_url')
     def validate_database_url(cls, v):
         """验证数据库连接URL格式"""
-        if not v.startswith(('postgresql://', 'mysql://', 'sqlite:///')):
+        if not v.startswith(('postgresql://', 'postgresql+psycopg://', 'mysql://', 'sqlite:///')):
             raise ValueError('数据库URL格式不正确')
 
         # 在所有环境中都不允许使用明显的弱密码

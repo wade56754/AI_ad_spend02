@@ -1,5 +1,5 @@
 ---
-version: v2.2
+version: v2.3
 status: ready_for_production
 layer: dev-guide
 last_reviewed: 2025-12-05
@@ -96,7 +96,7 @@ graph TD
 1. **Request Schema 规范**：
    ```python
    # backend/schemas/daily_report.py
-   from pydantic import BaseModel, Field, validator
+   from pydantic import BaseModel, Field, field_validator
    from datetime import date
 
    class DailyReportSubmitRequest(BaseModel):
@@ -107,13 +107,19 @@ graph TD
        raw_spend: float = Field(..., ge=0, description="原始花费（CNY）")
        raw_conversions: int = Field(..., ge=0, description="转化数")
 
-       @validator('platform')
+       @field_validator('platform')
        def validate_platform(cls, v):
            allowed = ['fb', 'google', 'tiktok']
            if v not in allowed:
                raise ValueError(f"平台必须是 {allowed} 之一")
            return v
    ```
+
+   **Schema Validator 与错误码转换规则**：
+   - 字段级校验由 Pydantic Schema 负责，`field_validator` 内可以抛 `ValueError` 或 Pydantic 自带异常
+   - 全局异常处理中间层（`backend/exceptions/handlers.py`）负责把这些错误统一转换为 `ValidationError(error_code="VALIDATION_001", ...)` 再交给 `error_response` 输出
+   - 业务代码不要为了塞 `error_code` 而到处手写 `ValidationError`
+   - 转换流程：`validator -> ValueError -> 全局异常转换 -> ValidationError + error_code -> Envelope 错误响应`
 
 2. **Response Schema 规范**：
    ```python
@@ -164,7 +170,7 @@ graph TD
 
 - **INV-002: 终态不可逆**
   ```python
-  from backend.exceptions import BusinessLogicError
+  from backend.exceptions.custom_exceptions import BusinessLogicError
 
   def submit_report(report_id: int):
       report = db.query(DailyReport).get(report_id)
@@ -173,8 +179,7 @@ graph TD
       if report.status in ['final_locked', 'cancelled']:
           raise BusinessLogicError(
               message=f"报表已处于终态 {report.status}，不可修改",
-              error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
-              status_code=400,
+              error_code="BIZ_301",  # STATUS_TRANSITION_NOT_ALLOWED，来自 ERROR_CODES_SOT.md
               details={'report_id': report_id, 'current_status': report.status}
           )
 
@@ -184,6 +189,8 @@ graph TD
 
 - **INV-003: 日报状态单向流转**
   ```python
+  from backend.exceptions.custom_exceptions import BusinessLogicError
+
   def validate_status_transition(current: str, target: str):
       # STATE_MACHINE v2.6 定义的合法转换
       allowed_transitions = {
@@ -199,8 +206,7 @@ graph TD
       if target not in allowed_transitions.get(current, []):
           raise BusinessLogicError(
               message=f"非法状态转换: {current} → {target}",
-              error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
-              status_code=400,
+              error_code="BIZ_301",  # STATUS_TRANSITION_NOT_ALLOWED，来自 ERROR_CODES_SOT.md
               details={'current_status': current, 'target_status': target}
           )
   ```
@@ -212,7 +218,11 @@ graph TD
 from sqlalchemy.orm import Session
 from backend.models.daily_report import DailyReport
 from backend.schemas.daily_report import DailyReportSubmitRequest
-from backend.exceptions import ValidationError, BusinessLogicError, ResourceNotFoundError
+from backend.exceptions.custom_exceptions import (
+    ValidationError,
+    BusinessLogicError,
+    ResourceNotFoundError
+)
 
 class DailyReportService:
     def __init__(self, db: Session):
@@ -226,8 +236,7 @@ class DailyReportService:
         if not report:
             raise ResourceNotFoundError(
                 message=f"报表 {report_id} 不存在",
-                error_code='BIZ_404',  # RESOURCE_NOT_FOUND
-                status_code=404,
+                error_code="BIZ_002",  # RESOURCE_NOT_FOUND，来自 ERROR_CODES_SOT.md
                 details={'report_id': report_id}
             )
 
@@ -235,8 +244,7 @@ class DailyReportService:
         if report.status in ['final_locked', 'cancelled']:
             raise BusinessLogicError(
                 message=f"报表已处于终态 {report.status}，不可修改",
-                error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
-                status_code=400,
+                error_code="BIZ_301",  # STATUS_TRANSITION_NOT_ALLOWED，来自 ERROR_CODES_SOT.md
                 details={'report_id': report_id, 'current_status': report.status}
             )
 
@@ -284,7 +292,7 @@ class DailyReportService:
        report_id: int,
        request: DailyReportSubmitRequest,
        service: DailyReportService = Depends(get_service),
-       current_user = Depends(require_permission('daily_report:submit'))  # AUTH_SPEC v2.0
+       current_user = Depends(require_permission('daily_report:submit'))  # AUTH_SPEC v2.0：权限检查使用 require_permission('xxx:yyy') 格式
    ):
        return service.submit_report(report_id, request)
    ```
@@ -311,7 +319,7 @@ class DailyReportService:
    # tests/test_daily_report_service.py
    import pytest
    from backend.services.daily_report_service import DailyReportService
-   from backend.exceptions import ValidationError, BusinessLogicError, ResourceNotFoundError
+   from backend.exceptions.custom_exceptions import ValidationError, BusinessLogicError, ResourceNotFoundError
 
    def test_submit_report_success(db_session, sample_report):
        """测试正常提交流程"""
@@ -362,13 +370,15 @@ class DailyReportService:
            headers=auth_headers
        )
        assert response.status_code == 200
-       assert response.json()['status'] == 'raw_submitted'
+       json_data = response.json()
+       assert json_data['success'] == True
+       assert json_data['data']['status'] == 'raw_submitted'
 
    def test_submit_without_permission(client: TestClient):
        """测试权限检查（AUTH_SPEC v2.0）"""
        response = client.post("/api/v1/daily-reports/1/submit", ...)
        assert response.status_code == 403
-       assert response.json()['code'] == 'AUTH-001'  # ERROR_CODES_SOT v2.1
+       assert response.json()['error']['code'] == 'AUTH_500'  # PERMISSION_DENIED，来自 ERROR_CODES_SOT v2.1
    ```
 
 3. **测试覆盖率要求**：
@@ -398,8 +408,8 @@ class DailyReportService:
    **响应**: 200 OK + DailyReportResponse
 
    **错误码**:
-   - VAL-001: 终态报表不可修改
-   - STATE-001: 非法状态转换
+   - BIZ_301: 终态报表不可修改（STATUS_TRANSITION_NOT_ALLOWED）
+   - STATE_400: 非法状态转换（FORBIDDEN_TRANSITION）
    ```
 
 2. **DEVELOPMENT_PROGRESS_REPORT.md 更新**：
@@ -421,7 +431,7 @@ class DailyReportService:
 | **修改状态机** | 新增状态 `trend_review` | STATE_MACHINE.md |
 | **数据库结构变更** | 新增 `audit_logs` 表 | DATA_SCHEMA.md |
 | **新业务规则** | 添加 BR-LED-005 | BUSINESS_RULES.md |
-| **错误码变更** | 新增 `BIZ-010` | ERROR_CODES_SOT.md |
+| **错误码变更** | 新增 `BIZ_010` | ERROR_CODES_SOT.md |
 | **Breaking change** | 修改 API 响应格式 | API_SOT.md |
 | **权限变更** | 新增 `reconciliation:approve` | AUTH_SPEC.md |
 
@@ -487,7 +497,7 @@ graph TD
 所有错误必须使用 `ERROR_CODES_SOT.md` v2.1 和 `backend/core/error_codes.py` 定义的错误码：
 
 ```python
-from backend.exceptions import (
+from backend.exceptions.custom_exceptions import (
     ValidationError,
     BusinessLogicError,
     ResourceNotFoundError,
@@ -498,35 +508,36 @@ from backend.exceptions import (
 # 验证错误（字段校验失败）
 raise ValidationError(
     message="平台必须是 fb/google/tiktok 之一",
-    error_code='VALIDATION_001',  # INVALID_INPUT
-    status_code=422,
+    error_code="VALIDATION_001",  # 来自 ERROR_CODES_SOT.md
     details={'field': 'platform', 'value': platform}
 )
 
 # 业务逻辑错误（状态转换、终态检查）
 raise BusinessLogicError(
     message=f"报表已处于终态 {status}，不可修改",
-    error_code='BIZ_301',  # STATUS_TRANSITION_NOT_ALLOWED
-    status_code=400,
+    error_code="BIZ_301",  # STATUS_TRANSITION_NOT_ALLOWED，来自 ERROR_CODES_SOT.md
     details={'current_status': status}
 )
 
 # 资源不存在
 raise ResourceNotFoundError(
     message=f"报表 {report_id} 不存在",
-    error_code='BIZ_404',  # RESOURCE_NOT_FOUND
-    status_code=404,
+    error_code="BIZ_002",  # RESOURCE_NOT_FOUND，来自 ERROR_CODES_SOT.md
     details={'report_id': report_id}
 )
 
 # 权限错误
 raise PermissionDeniedError(
     message="缺少 daily_report:submit 权限",
-    error_code='AUTH_003',  # INSUFFICIENT_PERMISSIONS
-    status_code=403,
+    error_code="AUTH_500",  # PERMISSION_DENIED，来自 ERROR_CODES_SOT.md
     details={'required_permission': 'daily_report:submit'}
 )
 ```
+
+**错误码命名规范**：
+- 错误码命名必须以 `ERROR_CODES_SOT.md` v2.1 + `backend/core/error_codes.py` 为准
+- 禁止发明缩写短码（如 `VAL-001`、`STATE-001`）
+- 所有错误码必须使用下划线格式：`VALIDATION_001`、`STATE_400`、`BIZ_301` 等
 
 **异常类层级结构**（`backend/exceptions/custom_exceptions.py`）：
 ```
@@ -540,18 +551,29 @@ BaseCustomException
 
 ### 4.2 错误响应格式
 
-统一使用以下 JSON 格式（API_SOT v9.0 Section 5）：
+统一使用以下 Envelope 格式（API_SOT v9.0 Section 4.3）：
 
 ```json
 {
-  "code": "VAL-001",
-  "message": "报表已处于终态 final_locked，不可修改",
-  "details": {
-    "report_id": 123,
-    "current_status": "final_locked"
-  }
+  "success": false,
+  "error": {
+    "code": "BIZ_301",
+    "message": "报表已处于终态 final_locked，不可修改",
+    "details": {
+      "report_id": 123,
+      "current_status": "final_locked"
+    }
+  },
+  "request_id": "550e8400-e29b-41d4-a716-446655440000",
+  "timestamp": "2025-01-22T10:00:00Z"
 }
 ```
+
+**重要说明**：
+- 业务代码不手写 JSON 响应，只抛出自定义异常（如 `BusinessLogicError`, `ValidationError` 等）
+- 由全局异常处理器（`backend/exceptions/handlers.py`）统一转换为 API_SOT 定义的错误 Envelope
+- `request_id` 和 `timestamp` 由全局中间件统一注入，业务 Handler 无需手动设置
+- 字段完整形态见 API_SOT.md 4.3 节，本处为简化示例（实际响应中 `request_id` 和 `timestamp` 始终存在）
 
 ## 5. Relation to SoT
 
@@ -563,7 +585,7 @@ BaseCustomException
 | `DATA_SCHEMA.md` | v5.2 | 数据模型字段定义 |
 | `BUSINESS_RULES.md` | v3.1 | 业务规则编号（BR-XXX-001） |
 | `API_SOT.md` | v9.0 | API 端点路径、权限、响应码规范 |
-| `ERROR_CODES_SOT.md` | v2.1 | 错误码定义（VAL-001, STATE-001 等） |
+| `ERROR_CODES_SOT.md` | v2.1 | 错误码定义（VALIDATION_001, STATE_400, BIZ_301 等） |
 | `AUTH_SPEC.md` | v2.0 | 权限模型、鉴权规范 |
 | `LEDGER_SOT.md` | v1.1 | 账本系统规范（账务操作相关 API） |
 | `DAILY_REPORT_SOT.md` | v1.0 | 日报专项规范 |
@@ -669,7 +691,8 @@ STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
 
 | Version | Date | Changes |
 |---------|------|---------|
-| v2.2 | 2025-12-05 | 修复版本引用 (v3.4→v3.6, v1.0→v2.6)；统一错误处理示例使用 backend.exceptions；新增 MCP 自动化开发流程章节 |
+| v2.3 | 2025-12-05 | 精准补丁修订：修正集成测试示例断言 Envelope 格式；统一错误码为下划线形式（BIZ-010→BIZ_010）；统一异常导入路径为 backend.exceptions.custom_exceptions；修正错误 Envelope 示例语义一致性（终态不可改使用 BIZ_301） |
+| v2.2 | 2025-12-05 | 修复版本引用 (v3.4→v3.6, v1.0→v2.6)；统一错误处理示例使用 backend.exceptions.custom_exceptions；新增 MCP 自动化开发流程章节 |
 | v2.1 | 2025-12-01 | 添加 OpenSpec 工作流，完善 6 步开发流程 |
 | v2.0 | 2025-11-27 | 重构为 6 步标准流程，对齐 SoT Freeze v2.6 |
 | v1.0 | 2025-11-20 | 初始版本 |

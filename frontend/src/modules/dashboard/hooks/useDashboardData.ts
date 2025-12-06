@@ -4,7 +4,7 @@
  * Dashboard 数据获取与状态管理
  * - 统一管理所有 Dashboard 数据
  * - 支持筛选器联动
- * - 预留 API 接入点
+ * - 已接入真实 API（替换 Mock 数据）
  *
  * @see FRONTEND_STYLE_GUIDE v2.3 - Data Fetching 规范
  * @see STATE_MACHINE.md v2.6 - 状态映射规则
@@ -21,13 +21,7 @@ import type {
   TodoTask,
   FundsOverview,
 } from '../types';
-import {
-  MOCK_CHART_DATA,
-  MOCK_ALERTS,
-  MOCK_KPI_METRICS,
-  MOCK_TODO_TASKS,
-  MOCK_FUNDS_OVERVIEW,
-} from '../data/mock-data';
+import { dashboardApi } from '../services/dashboardApi';
 
 // 数据状态类型
 export type DataStatus = 'idle' | 'loading' | 'success' | 'error';

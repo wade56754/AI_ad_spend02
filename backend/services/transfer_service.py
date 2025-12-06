@@ -27,8 +27,10 @@ from backend.exceptions.custom_exceptions import (
     PermissionDeniedError,
     ResourceConflictError
 )
-from backend.models import AdAccount, User, TransferRequest
+from backend.models import AdAccount, User, TransferRequest, Supplier
 from backend.models.enums import TransferRequestStatus, UserRole
+from backend.services.ledger_entry_service import LedgerEntryService
+from backend.models.finance.ledger import LedgerEntry
 from backend.schemas.transfer import (
     TransferRequestCreate,
     TransferRequestApprove,
@@ -389,10 +391,59 @@ class TransferService:
             )
 
         with self.transaction():
-            # TODO: 生成 TRANSFER_OUT/TRANSFER_IN Ledger 记录
-            # 这部分需要调用 LedgerService 创建账本记录
-            # 暂时先完成状态流转
+            # 获取源账户和目标账户
+            source_account = self.db.query(AdAccount).filter(
+                AdAccount.id == transfer.source_ad_account_id
+            ).first()
+            target_account = self.db.query(AdAccount).filter(
+                AdAccount.id == transfer.target_ad_account_id
+            ).first()
 
+            if not source_account or not target_account:
+                raise ResourceNotFoundError(
+                    "源账户或目标账户不存在",
+                    error_code="BIZ_002"
+                )
+
+            # 获取供应商ID（临时方案：从第一个供应商获取，或创建默认供应商）
+            # TODO: 后续需要从 AdAccount 或 Channel 获取实际的 supplier_id
+            supplier = self.db.query(Supplier).first()
+            if not supplier:
+                # 如果没有供应商，创建一个默认供应商
+                supplier = Supplier(
+                    name="默认供应商",
+                    status="active",
+                    base_currency="CNY",
+                    created_by=current_user.id,
+                )
+                self.db.add(supplier)
+                self.db.flush()
+
+            supplier_id = supplier.id
+
+            # 计算迁移后的余额
+            source_balance_after = source_account.balance - transfer.transfer_amount
+            target_balance_after = target_account.balance + transfer.transfer_amount
+
+            # 生成 TRANSFER_OUT/TRANSFER_IN Ledger 记录
+            LedgerEntryService.create_transfer_entries(
+                session=self.db,
+                transfer_request_id=transfer.id,
+                from_supplier_id=supplier_id,
+                to_supplier_id=supplier_id,  # 同供应商内部转账
+                amount=transfer.transfer_amount,
+                from_balance_after=source_balance_after,
+                to_balance_after=target_balance_after,
+                performed_by=current_user.id,
+                from_ad_account_id=transfer.source_ad_account_id,
+                to_ad_account_id=transfer.target_ad_account_id
+            )
+
+            # 更新账户余额
+            source_account.balance = source_balance_after
+            target_account.balance = target_balance_after
+
+            # 完成状态流转
             transfer.status = TransferRequestStatus.COMPLETED.value
             transfer.completed_at = datetime.now()
             transfer.version += 1

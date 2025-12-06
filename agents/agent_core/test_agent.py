@@ -2,12 +2,13 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
 
+from agent_platform.core.protocol import AgentProtocol, AgentContext
 from ..tools.types import AgentResponse
 
 logger = logging.getLogger(__name__)
 
 
-class TestAgent:
+class TestAgent(AgentProtocol):
     """
     TestAgent：统一对接两类测试 Skill
 
@@ -28,7 +29,34 @@ class TestAgent:
         self.base_path = base_path or Path(__file__).resolve().parent.parent.parent
         self.project_id = project_id
 
-    def handle_request(self, request: Dict[str, Any]) -> AgentResponse:
+    # ------------------------------------------------------------------ #
+    # AgentProtocol Properties
+    # ------------------------------------------------------------------ #
+
+    @property
+    def name(self) -> str:
+        """Agent unique identifier."""
+        return "test"
+
+    @property
+    def description(self) -> str:
+        """Agent description."""
+        return "Test prompt generator for DB invariants and backend pytest"
+
+    @property
+    def version(self) -> str:
+        """Agent version."""
+        return "1.0.0"
+
+    # ------------------------------------------------------------------ #
+    # Main Entry Point
+    # ------------------------------------------------------------------ #
+
+    def handle_request(
+        self,
+        request: Dict[str, Any],
+        context: Optional[AgentContext] = None,
+    ) -> AgentResponse:
         """
         处理测试请求（符合 AgentProtocol）。
 
@@ -64,22 +92,38 @@ class TestAgent:
         )
         mode = str(mode).lower().strip()
 
+        # Ensure context exists for run_id tracking
+        if context is None:
+            context = AgentContext()
+
         if mode in ("db", "db_test", "db_invariants"):
-            return self._handle_db_test(request)
+            return self._handle_db_test(request, context)
         elif mode in ("backend", "backend_tests", "backend_pytest"):
-            return self._handle_backend_test(request)
+            return self._handle_backend_test(request, context)
         else:
             msg = f"Unsupported test mode: {mode}"
             logger.error(msg)
             return {
                 "success": False,
-                "data": None,
+                "data": {
+                    "status": "failed",
+                    "executed": False,
+                    "meta": {
+                        "run_id": context.run_id,
+                        "agent": self.name,
+                        "version": self.version,
+                    },
+                },
                 "error": msg,
             }
 
     # ------- DB 测试（原有逻辑抽出来） -------
 
-    def _handle_db_test(self, request: Dict[str, Any]) -> AgentResponse:
+    def _handle_db_test(
+        self,
+        request: Dict[str, Any],
+        context: AgentContext,
+    ) -> AgentResponse:
         from ..skills.db_test_skill import db_test_skill
 
         logger.info("Test Agent generating DB test prompt")
@@ -108,6 +152,12 @@ class TestAgent:
                         "需要配置 Supabase MCP 或手动运行 prompt 中的 SQL 查询。"
                     ),
                     "mode": "db",
+                    "meta": {
+                        "run_id": context.run_id,
+                        "agent": self.name,
+                        "version": self.version,
+                        "skill_used": "db_test_skill",
+                    },
                 },
                 "error": None,
             }
@@ -120,13 +170,23 @@ class TestAgent:
                     "executed": False,
                     "reason": "DB test skill 执行失败，prompt 未生成",
                     "mode": "db",
+                    "meta": {
+                        "run_id": context.run_id,
+                        "agent": self.name,
+                        "version": self.version,
+                        "skill_used": "db_test_skill",
+                    },
                 },
                 "error": result.get("error") or "db_test_skill failed",
             }
 
     # ------- Backend pytest 测试（新逻辑） -------
 
-    def _handle_backend_test(self, request: Dict[str, Any]) -> AgentResponse:
+    def _handle_backend_test(
+        self,
+        request: Dict[str, Any],
+        context: AgentContext,
+    ) -> AgentResponse:
         from ..skills.backend_test_skill import backend_test_skill
 
         scope = (request.get("scope") or "all").lower()
@@ -161,6 +221,12 @@ class TestAgent:
                     "mode": "backend",
                     "scope": scope,
                     "level": level,
+                    "meta": {
+                        "run_id": context.run_id,
+                        "agent": self.name,
+                        "version": self.version,
+                        "skill_used": "backend_test_skill",
+                    },
                 },
                 "error": None,
             }
@@ -175,6 +241,12 @@ class TestAgent:
                     "mode": "backend",
                     "scope": scope,
                     "level": level,
+                    "meta": {
+                        "run_id": context.run_id,
+                        "agent": self.name,
+                        "version": self.version,
+                        "skill_used": "backend_test_skill",
+                    },
                 },
                 "error": result.get("error") or "backend_test_skill failed",
             }

@@ -1,24 +1,24 @@
 # Backend 回归测试基线冻结报告
 
-**版本** v1.0 | **状态** Frozen | **日期** 2025-12-02
+**版本** v1.1 | **状态** Frozen | **日期** 2025-12-06
 
 ---
 
 ## 1. 执行摘要
 
-本报告记录了 AI_ad_spend02 项目后端回归测试套件的基线冻结状态。本次回归测试覆盖了 6 个核心测试套件，共计 **198 个测试用例全部通过**，0 个失败。测试执行时间 7.04 秒，测试环境稳定，可作为后续版本回归对比的基准线。
+本报告记录了 AI_ad_spend02 项目后端回归测试套件的基线冻结状态。本次回归测试覆盖了 7 个核心测试套件，共计 **213 个测试用例全部通过**，0 个失败。测试执行时间约 8.3 秒，测试环境稳定，可作为后续版本回归对比的基准线。
 
 ### 1.1 总体统计
 
 | 指标 | 数值 |
 |------|------|
-| **测试用例总数** | 198 |
-| **通过用例数** | 198 |
+| **测试用例总数** | 213 |
+| **通过用例数** | 213 |
 | **失败用例数** | 0 |
 | **跳过用例数** | 3 |
 | **通过率** | 100% |
-| **执行时间** | 7.04 秒 |
-| **测试套件数** | 6 |
+| **执行时间** | ~8.3 秒 |
+| **测试套件数** | 7 |
 
 ### 1.2 回归执行方式
 
@@ -29,6 +29,7 @@ python -m pytest backend/tests/api/test_daily_report_flow_generated.py \
                  backend/tests/ad_accounts \
                  backend/tests/test_topup_api.py \
                  backend/tests/api/test_transfers_flow_generated.py \
+                 backend/tests/api/test_finance_profit_flow_generated.py \
                  -q -k "not skip"
 ```
 
@@ -158,6 +159,30 @@ python run_tests.py --type regression
 - 添加了 `funded_ad_account` 和 `funded_ad_account_2` fixtures，为转账测试提供初始余额。
 - 修复了错误响应断言路径，统一使用 `error.code` 访问错误码。
 
+### 2.7 Finance Profit API
+
+| 指标 | 数值 |
+|------|------|
+| **测试文件** | `backend/tests/api/test_finance_profit_flow_generated.py` |
+| **用例数** | 15 |
+| **通过数** | 15 |
+| **失败数** | 0 |
+| **状态** | ✅ 全部通过 |
+
+**覆盖范围：**
+- Happy Path 流程测试（生成聚合、月度/日度/项目/账户利润、整体汇总）
+- 参数校验测试（无效日期范围、未来日期、日期范围超限）
+- 权限验证测试（media_buyer 角色权限检查）
+- 错误码验证测试（项目/账户不存在 404）
+
+**登记信息：**
+- **run_id**: `orch-20251206-finance-profit-summary-002`
+- **端点**: `GET /api/v1/finance/profit/summary`
+- **Orchestrator 版本**: `ai-ad-api-dev-orchestrator v1.1.1`
+- **审查结果**: status=pass, p0_count=0, p1_count=0, recommend_deploy=true
+- **文档同步**: docs_to_update_count=0, openspec_required=false
+- **备注**: 实现已完整，无需代码修改（noop 分支样本）
+
 ---
 
 ## 3. 跳过用例说明
@@ -277,7 +302,8 @@ backend/tests/
 ├── api/
 │   ├── test_daily_report_flow_generated.py    (33 tests)
 │   ├── test_trend_risk_flow_generated.py      (17 tests)
-│   └── test_transfers_flow_generated.py        (21 tests)
+│   ├── test_transfers_flow_generated.py        (21 tests)
+│   └── test_finance_profit_flow_generated.py   (15 tests)
 ├── ledger/                                     (54 tests, 3 skipped)
 ├── ad_accounts/                                (51 tests)
 └── test_topup_api.py                          (22 tests)
@@ -293,7 +319,31 @@ backend/tests/
 
 ---
 
-**报告生成日期：** 2025-12-02  
-**报告版本：** v1.0  
+## 8. Baseline 更新记录
+
+### 8.1 v1.0 → v1.1 更新（2025-12-06）
+
+**更新内容：**
+- 新增模块：`finance_profit`（Finance Profit API）
+- 新增用例：15 个（全部通过）
+- 用例总数：198 → 213
+- 测试套件数：6 → 7
+
+**登记流水线：**
+- **run_id**: `orch-20251206-finance-profit-summary-002`
+- **模块**: `finance_profit`
+- **端点**: `GET /api/v1/finance/profit/summary`
+- **测试文件**: `backend/tests/api/test_finance_profit_flow_generated.py`
+- **覆盖维度**: Happy Path / Validation / Permissions / Error Codes
+
+**更新原因：**
+- 完成 finance_profit 模块的完整 API 开发流水线验证
+- 实现与 PROFIT_SOT.md v1.1 §3.7 规范一致
+- 所有测试通过，无阻塞问题，可作为金样本流水线参考
+
+---
+
+**报告生成日期：** 2025-12-06  
+**报告版本：** v1.1  
 **状态：** Frozen ✅
 

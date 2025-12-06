@@ -152,19 +152,35 @@ def success_response(data: Any = None, message: str = "操作成功", code: str 
 
 
 def error_response(message: str, code: str = "INTERNAL_ERROR", status_code: int = 400, details: Optional[Dict[str, Any]] = None, **kwargs) -> JSONResponse:
-    """错误响应函数"""
-    # 构建符合测试期望的错误响应格式：{"success": False, "data": None, "message": "...", "code": "..."}
-    content = {
-        "success": False,
-        "data": None,
-        "message": message,
+    """
+    错误响应函数
+    
+    符合 API_SOT.md v9.0 第 4.3 节 Envelope 格式：
+    {
+      "success": false,
+      "error": {
+        "code": "...",
+        "message": "...",
+        "details": {...}
+      },
+      "request_id": "...",
+      "timestamp": "..."
+    }
+    """
+    error_obj = {
         "code": code,
-        "request_id": str(uuid.uuid4()),
-        "timestamp": datetime.utcnow().isoformat()
+        "message": message
     }
     
     if details:
-        content["details"] = details
+        error_obj["details"] = details
+    
+    content = {
+        "success": False,
+        "error": error_obj,
+        "request_id": str(uuid.uuid4()),
+        "timestamp": datetime.utcnow().isoformat()
+    }
     
     if kwargs:
         content.update(kwargs)

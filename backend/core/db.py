@@ -106,8 +106,8 @@ class DatabaseConfig:
         """获取数据库连接URL"""
         database_url = get_db_settings().database_url
 
-        # 为PostgreSQL添加SSL参数
-        if database_url.startswith('postgresql://'):
+        # 为PostgreSQL添加SSL参数（支持 postgresql:// 和 postgresql+psycopg://）
+        if database_url.startswith(('postgresql://', 'postgresql+psycopg://')):
             parsed = urlparse(database_url)
 
             # 构建查询参数

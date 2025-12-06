@@ -157,7 +157,17 @@
       "Bash(\".venv\\Scripts\\python.exe\" -c \"import sys; sys.path.insert(0, ''.''); from agent_platform.mcp.server import _registry, handle_mcp_request; import json; req = {''method'': ''tools/list'', ''id'': 1}; resp = handle_mcp_request(req); print(json.dumps(resp, indent=2))\")",
       "Bash(D:git1108AI_ad_spend02.venvScriptspython.exe -c \"print(''hello'')\")",
       "Bash(git -C \"D:\\git\\1108\\AI_ad_spend02\" diff frontend/components/dashboard/sidebar.tsx frontend/app/globals.css)",
-      "Bash(start chrome --remote-debugging-port=9222 --user-data-dir=\"C:\\chrome-debug-profile\" \"http://localhost:3000/dashboard\")"
+      "Bash(start chrome --remote-debugging-port=9222 --user-data-dir=\"C:\\chrome-debug-profile\" \"http://localhost:3000/dashboard\")",
+      "Bash(.venvScriptspython.exe -m pytest backend/tests/api/test_finance_profit_flow_generated.py -v --tb=short)",
+      "Bash(.venvScriptspython.exe -m pytest backend/tests/api/test_finance_profit_flow_generated.py --co -q)",
+      "Bash(D:\\git\\1108\\AI_ad_spend02\\.venv\\Scripts\\python.exe -m pytest:*)",
+      "Bash(D:git1108AI_ad_spend02.venvScriptspython.exe -m pytest D:git1108AI_ad_spend02backendtestsapitest_finance_profit_flow_generated.py -v)",
+      "Bash(..\\.venvScriptspython.exe -c \"import uvicorn; print(''Backend dependencies OK'')\")",
+      "Bash(start cmd /k \"..\\.venv\\Scripts\\python.exe -m uvicorn main:app --reload --host 127.0.0.1 --port 8000\")",
+      "Bash(start cmd /k \"pnpm dev\")",
+      "Bash(timeout /t 10 /nobreak)",
+      "Bash(start chrome --remote-debugging-port=9222 --user-data-dir=\"C:\\chrome-debug-profile-ai-ad\")",
+      "Bash(timeout /t 5 /nobreak)"
     ],
     "deny": [],
     "ask": []

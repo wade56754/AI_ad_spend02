@@ -75,6 +75,20 @@ The layer is fully compliant with ASDD Freeze v1.0 and ready for operational dep
 **Active & Frozen**: 10
 **Planned**: 2
 
+### Post-Freeze Additions (1 - Added After v2.6 Freeze)
+
+| Document | Version | Status | Owner | Last Reviewed | Path |
+|----------|---------|--------|-------|---------------|------|
+| TEST_AUTOMATION_SOT_v1.0.1.md | v1.0.1 | ready_for_production | wade | 2025-12-06 | [docs/2.sot/TEST_AUTOMATION_SOT_v1.0.1.md](TEST_AUTOMATION_SOT_v1.0.1.md) |
+
+**Notes**:
+- TEST_AUTOMATION_SOT created post-freeze (2025-12-06) to document 4→2 Skill merge in test automation domain
+- Two test lines defined: API Test Line (ai-ad-api-automation-test v1.5) + Agents Test Line (ai-ad-agents-test-orchestrator v2.4)
+- Two deprecated skills documented: ai-ad-test-regression-orchestrator v1.2.1, ai-ad-agents-test-runner v2.2.1
+- Baseline: MASTER.md v3.5, SOT_FREEZE_MANIFEST_v2.6.md, BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md, AI_CODE_DEV_ORCHESTRATION_SOT_v1.0.md
+
+**Updated Total SoT Documents**: 13 (10 frozen + 2 planned + 1 post-freeze)
+
 ---
 
 ## Governing Skills & Tools Used

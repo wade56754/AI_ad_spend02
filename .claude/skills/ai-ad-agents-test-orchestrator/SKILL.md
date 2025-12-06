@@ -1,10 +1,10 @@
 ---
 name: ai-ad-agents-test-orchestrator
-version: "2.2"
+version: "2.4"
 status: ready_for_production
 layer: skill
 owner: wade
-last_reviewed: 2025-11-28
+last_reviewed: 2025-12-06
 baseline:
   - MASTER.md v3.5
   - SoT Freeze v2.6
@@ -12,15 +12,18 @@ baseline:
   - Architecture Freeze v1.0
   - Infrastructure Freeze v1.0
   - Agent Freeze v1.0
+  - AI_CODE_DEV_ORCHESTRATION_SOT_v1.0.md  # Phase 2c: P1 fix - added missing baseline
+absorbs:
+  - ai-ad-agents-test-runner v2.2 (merged as internal_runner_module)
 ---
 
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-agents-test-orchestrator</name>
-  <version>2.1</version>
+  <version>2.4</version>
   <status>active</status>
   <domain>AI_AD_SYSTEM / Agents 测试巡检工作流协调</domain>
-  <profile>Test-Orchestrator / Quality-Gate / Auto-Regression</profile>
+  <profile>Test-Orchestrator / Quality-Gate / Auto-Regression / Internal-Runner</profile>
 ──────────────────────────────────────────────
 
 
@@ -32,9 +35,14 @@ baseline:
 
     职责：
     - 分析本次代码改动范围，映射到相关测试文件
-    - 调用 ai-ad-agents-test-runner v2.0 进行静态测试执行
+    - **内部执行** 静态测试分析（原 ai-ad-agents-test-runner 功能已内嵌为 internal_runner_module）
     - 逐个执行测试（一次一条），监控 PASS/FAIL/UNCERTAIN 状态
     - 生成测试巡检报告，判定是否允许上线
+
+    v2.3 变更：
+    - 原 ai-ad-agents-test-runner v2.2 功能已完全内嵌
+    - 不再调用外部 Skill，所有测试执行由内部 runner 模块完成
+    - 对外行为保持不变（test_scope / changed_files / verdict 等）
 
     只读约束（Inviolable）：
     - 永远不实际运行 pytest 或任何系统命令
@@ -125,7 +133,7 @@ baseline:
       - 若无法映射，降级为 smoke 模式
 
     - all
-      - 跑所有 tests/agents/ 下的测试
+      - 跑所有 agents/tests/ 下的测试
       - 完整回归测试，耗时较长
 
     - smoke
@@ -170,7 +178,7 @@ baseline:
        - 禁止修改被测代码
 
     5. 跨范围执行
-       - 禁止执行 tests/agents/ 以外的测试
+       - 禁止执行 agents/tests/ 以外的测试
        - 禁止超出 test_scope 范围
        - 禁止动态扩展测试范围
   </forbidden_actions>
@@ -225,17 +233,17 @@ baseline:
     </inputs>
 
     <actions>
-      1. 将 changed_files 中位于 agents/ 的文件映射到 tests/agents/ 下的对应测试：
-         - agents/agents_config.py → tests/agents/test_agents_config.py
-         - agents/agent_core/fe_agent.py → tests/agents/test_fe_agent.py
-         - agents/agent_core/be_agent.py → tests/agents/test_be_agent.py
-         - agents/agent_core/test_agent.py → tests/agents/test_test_agent.py
-         - agents/agent_core/orchestrator_agent.py → tests/agents/test_orchestrator_agent.py
-         - agents/tools/fs_tool.py → tests/agents/test_fs_tool.py
-         - agents/tools/validation.py → tests/agents/test_validation.py
-         - agents/skills/fe_dev_skill.py → tests/agents/test_fe_dev_skill.py
-         - agents/skills/be_dev_skill.py → tests/agents/test_be_dev_skill.py
-         - agents/skills/db_test_skill.py → tests/agents/test_db_test_skill.py
+      1. 将 changed_files 中位于 agents/ 的文件映射到 agents/tests/ 下的对应测试：
+         - agents/agents_config.py → agents/tests/test_agents_config.py
+         - agents/agent_core/fe_agent.py → agents/tests/test_fe_agent.py
+         - agents/agent_core/be_agent.py → agents/tests/test_be_agent.py
+         - agents/agent_core/test_agent.py → agents/tests/test_test_agent.py
+         - agents/agent_core/orchestrator_agent.py → agents/tests/test_orchestrator_agent.py
+         - agents/tools/fs_tool.py → agents/tests/test_fs_tool.py
+         - agents/tools/validation.py → agents/tests/test_validation.py
+         - agents/skills/fe_dev_skill.py → agents/tests/test_fe_dev_skill.py
+         - agents/skills/be_dev_skill.py → agents/tests/test_be_dev_skill.py
+         - agents/skills/db_test_skill.py → agents/tests/test_db_test_skill.py
 
       2. 处理不同 test_scope：
          - smoke: 只选择 test_agents_smoke.py + 关键 agents_config 测试
@@ -265,7 +273,7 @@ baseline:
   ====================================================== -->
   <phase id="INIT-DISCOVERY">
     <goal>
-      获取当前 tests/agents/ 下所有可执行测试的完整列表。
+      获取当前 agents/tests/ 下所有可执行测试的完整列表。
     </goal>
 
     <inputs>
@@ -517,17 +525,17 @@ baseline:
     - 状态: PASS / FAIL / UNCERTAIN
 
     ## 2. 失败列表（若存在）
-    ### ❌ tests/agents/test_xxx.py::test_yyy
+    ### ❌ agents/tests/test_xxx.py::test_yyy
     - **期望行为**: ...
     - **实际结论**: ...
     - **失败原因**: ...
     - **修复建议**: 修改 agents/xxx.py 的 yyy 函数，确保 ...
 
     ## 3. 不确定列表（若存在）
-    ### ⚠️ tests/agents/test_zzz.py::test_complex
+    ### ⚠️ agents/tests/test_zzz.py::test_complex
     - **原因**: 超出静态分析能力（复杂 fixture / 动态行为）
     - **建议**: 真实运行 pytest
-    - **命令**: `pytest tests/agents/test_zzz.py::test_complex -q`
+    - **命令**: `pytest agents/tests/test_zzz.py::test_complex -q`
 
     ## 4. 放行结论
     - **Verdict**: BLOCK | ALLOW | WARN
@@ -603,20 +611,267 @@ baseline:
 
 
   <!-- ======================================================
-       14. 依赖子 Skill
+       14. 依赖子 Skill（已废弃，功能已内嵌）
   ====================================================== -->
   <sub_skills>
-    - ai-ad-agents-test-runner v2.0 （必须依赖）
-      - 提供 DISCOVERY / RUN-ONE / SUMMARY 能力
-      - 负责具体的静态测试分析
-      - 本 orchestrator 只负责工作流协调
+    > **v2.3 变更**: 原 ai-ad-agents-test-runner v2.2 已合并为内部模块，不再作为外部依赖。
+    > 详见 <internal_runner_module> 章节。
+
+    - 无外部子 Skill 依赖
+    - 测试执行功能由内部 runner 模块完成
+    - 保持与 v2.2 相同的测试能力（DISCOVERY / RUN-ONE / SUMMARY）
   </sub_skills>
+
+
+  <!-- ======================================================
+       14.5 内部 Runner 模块（合并自 ai-ad-agents-test-runner v2.2）
+  ====================================================== -->
+  <internal_runner_module>
+    <description>
+      原 ai-ad-agents-test-runner v2.2 的完整功能已内嵌于此。
+      本模块负责「静态单元测试模拟执行」，不再作为独立 Skill 调用。
+
+      v2.4 新增（Phase 2c）：
+      - RUN-PYTEST: 真实执行单个测试（调用 pytest 命令）
+      - RUN-SUITE: 真实执行测试套件（批量 pytest 执行）
+    </description>
+
+    <capabilities>
+      <!-- 静态分析模式（只读，不执行 pytest） -->
+      - DISCOVERY: 扫描 agents/tests/ 下所有测试函数，生成 PENDING_TESTS 清单
+      - RUN-ONE: 每次执行一个测试函数，静态推理 PASS/FAIL/UNCERTAIN
+      - SUMMARY: 输出最终统计与失败/不确定测试汇总
+
+      <!-- v2.4 新增：真实执行模式（Phase 2c） -->
+      - RUN-PYTEST: 调用 pytest 真实执行单个测试，返回实际结果
+      - RUN-SUITE: 调用 pytest 真实执行测试套件，支持 markers 和 scope 筛选
+    </capabilities>
+
+    <internal_modes>
+      <!-- ===== 静态分析模式（保持只读语义） ===== -->
+      <mode id="DISCOVERY">
+        扫描 agents/tests/ 目录，生成完整测试清单。
+        输出 PENDING_TESTS 初始状态，不执行任何测试。
+        【只读】不调用 pytest，不修改任何文件。
+      </mode>
+
+      <mode id="RUN-ONE">
+        每次只执行一个测试函数，基于静态分析推理 PASS/FAIL/UNCERTAIN。
+        读取测试代码 + 被测代码，分析断言和执行路径。
+        更新 PENDING/FINISHED 状态。
+        【只读】不调用 pytest，不修改任何文件。
+      </mode>
+
+      <mode id="SUMMARY">
+        当所有测试执行完毕（PENDING_TESTS 为空）时，
+        输出最终统计与失败/不确定测试汇总。
+        【只读】不调用 pytest，不修改任何文件。
+      </mode>
+
+      <!-- ===== v2.4 新增：真实执行模式（Phase 2c） ===== -->
+      <mode id="RUN-PYTEST">
+        真实调用 pytest 执行单个测试函数。
+
+        输入参数：
+        - test_id: string (pytest 风格，如 agents/tests/test_factory.py::test_create_agent)
+        - verbose: boolean (默认 false，若 true 则输出 -v)
+        - capture: "no" | "sys" | "fd" (默认 "sys")
+
+        执行命令：
+        ```bash
+        pytest {test_id} -v --tb=short -q
+        ```
+
+        输出：
+        - result: PASS | FAIL | ERROR | SKIPPED
+        - stdout: string (pytest 标准输出)
+        - stderr: string (pytest 标准错误)
+        - duration_ms: number (执行耗时)
+        - traceback: string (若失败，包含完整 traceback)
+
+        安全约束：
+        - 只执行 agents/tests/ 下的测试
+        - 禁止执行非测试命令
+        - 禁止修改源代码
+      </mode>
+
+      <mode id="RUN-SUITE">
+        真实调用 pytest 执行测试套件。
+
+        输入参数：
+        - scope: "all" | "smoke" | "auto" | string[] (测试文件列表)
+        - markers: string[] (pytest markers，如 ["unit", "not slow"])
+        - max_failures: number (默认 5，最大失败数后停止)
+        - parallel: boolean (默认 false，若 true 使用 pytest-xdist -n auto)
+
+        执行命令（scope=all）：
+        ```bash
+        pytest agents/tests/ -v --tb=short -x --maxfail={max_failures}
+        ```
+
+        执行命令（scope=smoke）：
+        ```bash
+        pytest agents/tests/test_factory.py agents/tests/test_types.py -v --tb=short
+        ```
+
+        输出：
+        - total: number (总测试数)
+        - passed: number
+        - failed: number
+        - skipped: number
+        - errors: number
+        - duration_ms: number (总执行耗时)
+        - failed_tests: [{ test_id, reason, traceback }]
+        - coverage: { lines: number, branches: number } (若启用 --cov)
+
+        安全约束：
+        - 只执行 agents/tests/ 下的测试
+        - 禁止注入任意命令参数
+        - 最大并发数限制为 4
+      </mode>
+    </internal_modes>
+
+    <state_management>
+      通过结构化 Markdown 输出维护测试进度：
+      - PENDING_TESTS: 待执行测试列表
+      - FINISHED_TESTS: 已完成测试列表（带 ✅/❌/⚠️ 状态标记）
+
+      状态标记：
+      - ✅ PASS: 静态分析推理该测试应通过
+      - ❌ FAIL: 静态分析推理该测试应失败
+      - ⚠️ UNCERTAIN: 超出静态分析能力，结果不可靠
+    </state_management>
+
+    <complexity_fallback>
+      Pytest 复杂特性降级策略（v2.4 增强）：
+
+      | Pytest 特性 | 静态分析能力 | 置信度 | 静态模式策略 | 执行模式策略 (Phase 2c) |
+      |------------|------------|--------|-------------|------------------------|
+      | 简单 assert | 完全支持 | ✅ 高 | 正常推理 | 直接执行 |
+      | 简单 mock/monkeypatch | 完全支持 | ✅ 高 | 正常推理 | 直接执行 |
+      | 简单 fixture | 完全支持 | ✅ 高 | 正常推理 | 直接执行 |
+      | @pytest.mark.parametrize | 部分支持 | ⚠️ 中 | 逐个参数组推理 | RUN-PYTEST 逐个验证 |
+      | fixture 间接依赖 (3+ 层) | 有限支持 | ⚠️ 中 | 尝试展开 fixture 链 | RUN-PYTEST 直接验证 |
+      | 动态 fixture | 不支持 | ❌ 低 | 报告 UNCERTAIN | **自动升级为 RUN-PYTEST** |
+      | 复杂 mock.side_effect | 不支持 | ❌ 低 | 报告 UNCERTAIN | **自动升级为 RUN-PYTEST** |
+
+      v2.4 执行模式自动升级规则：
+      1. 当 RUN-ONE 返回 UNCERTAIN 且 auto_escalate=true 时，自动切换为 RUN-PYTEST
+      2. 当 complexity_score > 0.7 时，建议使用 RUN-SUITE 替代批量 RUN-ONE
+      3. TODO: 实现 conftest.py 全局 fixture 解析
+      4. TODO: 实现 autouse fixture 副作用检测
+    </complexity_fallback>
+
+    <execution_strategies>
+      <!-- v2.4 新增：执行策略选择器 (Phase 2c) -->
+      <strategy id="static_first">
+        优先使用静态分析（RUN-ONE），仅在 UNCERTAIN 时升级为真实执行。
+        适用场景：快速 PR 审查、本地开发反馈。
+        命令：mode=RUN-ONE, auto_escalate=true
+      </strategy>
+
+      <strategy id="hybrid">
+        静态分析 + 真实执行混合模式。
+        步骤：
+        1. DISCOVERY 获取测试清单
+        2. 对高置信度测试使用 RUN-ONE
+        3. 对低置信度测试使用 RUN-PYTEST
+        4. SUMMARY 汇总所有结果
+        适用场景：CI/CD 前置闸门。
+      </strategy>
+
+      <strategy id="full_execution">
+        跳过静态分析，直接使用 RUN-SUITE 真实执行所有测试。
+        适用场景：发布前回归测试、主分支合并。
+        命令：mode=RUN-SUITE, scope=all
+      </strategy>
+    </execution_strategies>
+
+    <constraints>
+      安全约束（分模式区分）：
+
+      【静态分析模式 (DISCOVERY / RUN-ONE / SUMMARY)】
+      - 禁止实际运行 pytest 或任何系统命令
+      - 禁止修改源代码或测试代码
+      - 禁止写入任何文件
+      - 禁止虚构测试用例或测试结果
+      - 只执行静态分析，不执行真实测试
+
+      【真实执行模式 (RUN-PYTEST / RUN-SUITE)】(v2.4 新增)
+      - 允许运行 pytest 命令
+      - 仅限执行 agents/tests/ 目录下的测试
+      - 禁止执行非 pytest 命令
+      - 禁止修改源代码或测试代码
+      - 禁止注入任意命令行参数
+      - 最大并发数限制为 4
+      - 单次执行超时限制为 300 秒
+    </constraints>
+  </internal_runner_module>
 
 
   <!-- ======================================================
        15. 版本记录
   ====================================================== -->
   <VERSION_NOTES>
+    ### v2.4 (2025-12-06)
+    **Phase 2c: P1 修复 + 真实执行模式**
+
+    P1 修复内容：
+    - ✅ 路径统一：`tests/agents/` → `agents/tests/` (18 处修复)
+    - ✅ 添加缺失 baseline：`AI_CODE_DEV_ORCHESTRATION_SOT_v1.0.md`
+
+    新增功能：
+    - ✅ 新增 `RUN-PYTEST` 模式：真实调用 pytest 执行单个测试
+    - ✅ 新增 `RUN-SUITE` 模式：真实调用 pytest 执行测试套件
+    - ✅ 新增 `execution_strategies`：static_first / hybrid / full_execution
+    - ✅ 增强 `complexity_fallback`：新增执行模式策略列
+    - ✅ 新增自动升级规则：UNCERTAIN 测试自动升级为 RUN-PYTEST
+
+    安全约束更新：
+    - 静态分析模式保持只读语义不变
+    - 真实执行模式新增独立安全约束
+    - 最大并发数限制为 4，单次执行超时 300 秒
+
+    TODO 待实现：
+    - conftest.py 全局 fixture 解析
+    - autouse fixture 副作用检测
+
+    ---
+
+    ### v2.3 (2025-12-06)
+    **测试域合并 (Phase 2b)：内嵌 ai-ad-agents-test-runner**
+
+    合并内容：
+    - 原 ai-ad-agents-test-runner v2.2 功能完全内嵌为 <internal_runner_module>
+    - 新增 Section 14.5: internal_runner_module 章节
+    - 包含完整的 DISCOVERY / RUN-ONE / SUMMARY 能力
+    - 包含 state_management 和 complexity_fallback 策略
+    - 保持原有安全约束（禁止执行 pytest、禁止修改代码）
+
+    架构变更：
+    - 不再调用外部 ai-ad-agents-test-runner Skill
+    - 所有测试执行由内部 runner 模块完成
+    - 对外行为保持完全向后兼容
+
+    标记废弃：
+    - ai-ad-agents-test-runner v2.2 标记为 deprecated
+    - 该 Skill 保留作为历史参考，但不应被直接调用
+
+    ---
+
+    ### v2.2 (2025-11-28)
+    - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+    - ✅ 对齐 MASTER.md v3.5, SoT Freeze v2.6 baseline
+
+    ---
+
+    ### v2.1 (2025-11-27)
+    - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+    - ✅ 对齐 MASTER.md v3.5, SoT Freeze v2.6 baseline
+    - ✅ 对齐 ASDD 6-Layer Architecture
+
+    ---
+
     ### v2.0 (2025-11-26)
     **重大升级：SuperClaude 框架结构**
     - ✅ 升级为 SuperClaude <skill> 框架结构

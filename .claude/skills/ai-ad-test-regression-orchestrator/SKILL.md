@@ -1,11 +1,23 @@
 ---
 name: ai-ad-test-regression-orchestrator
-version: "1.2"
+version: "1.2.1"
+status: deprecated
+superseded_by: ai-ad-api-automation-test (mode=REGRESSION)
+deprecation_date: 2025-12-06
 description: |
-  负责把后端模块测试生成（模块级）、OpenSpec 测试门禁（tasks.md），
+  ⚠️ DEPRECATED: 本 Skill 功能已合并至 ai-ad-api-automation-test v1.5 的 REGRESSION 模式。
+
+  原职责：负责把后端模块测试生成（模块级）、OpenSpec 测试门禁（tasks.md），
   以及回归测试/CI 执行串成一条完整流水线，提供稳定模板和示例，避免跑偏。
+
+  迁移指南：
+  - module_test → 使用 ai-ad-api-automation-test mode=REGRESSION, regression_mode=module_test
+  - change_tasks → 使用 ai-ad-api-automation-test mode=REGRESSION, regression_mode=change_tasks
+  - ci_helper → 使用 ai-ad-api-automation-test mode=REGRESSION, regression_mode=ci_helper
 entrypoint: prompt
 ---
+
+> ⚠️ **DEPRECATED**: 本 Skill 已于 2025-12-06 废弃，功能已合并至 `ai-ad-api-automation-test v1.5` 的 REGRESSION 模式。请使用新版 Skill。
 
 <skill>
   <meta>

@@ -532,7 +532,12 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const token = useAuthStore.getState().token;
 
-  const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
+  // API Base URL from environment variable
+  // Next.js: process.env.NEXT_PUBLIC_API_BASE_URL
+  // Vite: import.meta.env.VITE_API_URL
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -554,6 +559,29 @@ export async function apiFetch<T>(
 }
 ```
 
+**API Base URL 配置**：
+
+**环境变量设置**（Next.js 项目）：
+- 开发环境：在 `frontend/.env.local` 中设置 `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000`
+- 生产环境：通过部署平台的环境变量设置（如 `NEXT_PUBLIC_API_BASE_URL=https://api.production.com`）
+
+**重要约束**：
+- ❌ **禁止硬编码 API 完整 URL**：不得在组件或 Hook 中直接写 `fetch('http://localhost:8000/api/v1/xxx')`
+- ✅ **必须使用统一封装**：所有 API 调用必须通过 `apiFetch` 或模块级 API 服务（如 `dailyReportsApi`）
+- ✅ **环境变量命名**：Next.js 要求客户端环境变量必须以 `NEXT_PUBLIC_` 前缀开头
+
+**多环境配置示例**：
+```env
+# frontend/.env.local (开发环境，不提交到 Git)
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+
+# frontend/.env.staging (预发布环境)
+NEXT_PUBLIC_API_BASE_URL=https://api-staging.example.com
+
+# frontend/.env.production (生产环境，通过 CI/CD 设置)
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
+```
+
 **Query Hook Pattern**:
 ```typescript
 // src/features/ad-accounts/hooks/useAdAccounts.ts
@@ -564,7 +592,7 @@ import { AdAccount } from '../types';
 export function useAdAccounts() {
   return useQuery({
     queryKey: ['adAccounts'],
-    queryFn: () => apiFetch<AdAccount[]>('/api/v1/ad-accounts'),
+    queryFn: () => apiFetch<AdAccount[]>('/ad-accounts'), // 使用相对路径，base URL 由 apiFetch 处理
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000 // 10 minutes (formerly cacheTime)
   });

@@ -627,6 +627,9 @@ MASTER.md (本文档) > STATE_MACHINE.md > DATA_SCHEMA.md > API_SOT.md
 - **docs/2.sot/RECONCILIATION_SOT.md** - 对账规则
 - **docs/2.sot/TRANSFER_SOT.md** - 转账规则
 
+**测试自动化 SoT**
+- **docs/2.sot/TEST_AUTOMATION_SOT_v1.0.1.md** v1.0.1 - 测试自动化规范（API Test Line + Agents Test Line）
+
 ### Tier 3: 实施指南 (docs/3.dev-guides/)
 
 **架构与设计**

@@ -30,6 +30,14 @@ from agent_platform.core.registry import create_agent, get_registry, list_agents
 
 logger = logging.getLogger(__name__)
 
+# P1-API-003: Module choices for api_dev flow
+# Keep in sync with OrchestratorAgent.API_DEV_MODULES (agents/agent_core/orchestrator_agent.py)
+API_DEV_MODULES = [
+    "daily_reports", "topup_requests", "ledger", "reconciliation",
+    "ad_accounts", "projects", "channels", "transfers", "finance_profit",
+    "suppliers", "settlements", "trend_risk", "auth",
+]
+
 
 def setup_logging(verbose: bool = False) -> None:
     """Configure logging for CLI output."""
@@ -173,27 +181,48 @@ def cmd_orch(args: argparse.Namespace) -> int:
     """Run OrchestratorAgent with specified flow."""
     _ensure_agents_registered()
 
+    # Safe access to optional attributes using getattr
+    preset = getattr(args, "preset", None)
+    flow = getattr(args, "flow", None)
+    task = getattr(args, "task", None)
+    target_files = getattr(args, "target_files", None)
+    module = getattr(args, "module", None)
+    change_type = getattr(args, "change_type", None)
+    api_mode = getattr(args, "api_mode", None)
+    run_tests_opt = getattr(args, "run_tests", None)
+    endpoint = getattr(args, "endpoint", None)
+
     # Load preset if specified
     preset_config: Dict[str, Any] = {}
-    if args.preset:
+    if preset:
         try:
             from agents.config import load_preset, merge_preset_with_overrides
-            preset_config = load_preset(args.preset)
-            logger.info(f"Loaded preset '{args.preset}': {preset_config.get('flow')}")
+            preset_config = load_preset(preset)
+            logger.info(f"Loaded preset '{preset}': {preset_config.get('flow')}")
         except (ValueError, FileNotFoundError) as e:
-            print(f"Error: Failed to load preset '{args.preset}': {e}")
+            print(f"Error: Failed to load preset '{preset}': {e}")
             return 1
 
     # Build overrides from CLI arguments
     overrides: Dict[str, Any] = {}
-    if args.flow:
-        overrides["flow"] = args.flow
-    if args.task:
-        overrides["task"] = args.task
-    if args.target_files:
-        overrides["target_files"] = args.target_files
-    if args.module:
-        overrides["module"] = args.module
+    if flow:
+        overrides["flow"] = flow
+    if task:
+        overrides["task"] = task
+    if target_files:
+        overrides["target_files"] = target_files
+    if module:
+        overrides["module"] = module
+
+    # API Dev flow specific overrides
+    if change_type:
+        overrides["change_type"] = change_type
+    if api_mode:
+        overrides["api_mode"] = api_mode
+    if run_tests_opt:
+        overrides["run_tests"] = run_tests_opt
+    if endpoint:
+        overrides["endpoint"] = endpoint
 
     # Merge preset with overrides (overrides take precedence)
     if preset_config:
@@ -202,28 +231,44 @@ def cmd_orch(args: argparse.Namespace) -> int:
     else:
         # No preset: use CLI arguments directly
         request: Dict[str, Any] = {
-            "flow": args.flow or "",
-            "task": args.task or "",
-            "target_files": args.target_files or [],
+            "flow": flow or "",
+            "task": task or "",
+            "target_files": target_files or [],
         }
-        if args.module:
-            request["module"] = args.module
+        if module:
+            request["module"] = module
+        # API Dev flow specific fields
+        if change_type:
+            request["change_type"] = change_type
+        if api_mode:
+            request["api_mode"] = api_mode
+        if run_tests_opt:
+            request["run_tests"] = run_tests_opt
+        if endpoint:
+            request["endpoint"] = endpoint
 
     # Ensure flow is set (required)
     if not request.get("flow"):
         print("Error: 'flow' is required. Specify --flow or use --preset.")
         return 1
 
+    # Safe access to remaining attributes
+    mode = getattr(args, "mode", "dry-run")
+    json_param = getattr(args, "json", None)
+    verbose = getattr(args, "verbose", False)
+    output = getattr(args, "output", "human")
+    compact = getattr(args, "compact", False)
+
     # Mode-specific options
-    if args.mode == "execute":
+    if mode == "execute":
         request["auto_write"] = True
-    elif args.mode == "dry-run":
+    elif mode == "dry-run":
         request["auto_write"] = False
 
     # Extra JSON params
-    if args.json:
+    if json_param:
         try:
-            extra = json.loads(args.json)
+            extra = json.loads(json_param)
             request.update(extra)
         except json.JSONDecodeError as e:
             print(f"Error: Invalid JSON in --json argument: {e}")
@@ -240,11 +285,11 @@ def cmd_orch(args: argparse.Namespace) -> int:
     run_id = context.run_id
 
     # Get flow from request (for display)
-    flow = request.get("flow", "unknown")
+    display_flow = request.get("flow", "unknown")
 
-    if args.verbose:
-        preset_info = f" (preset: {args.preset})" if args.preset else ""
-        print(f"[run_id={run_id}] Running orchestrator flow '{flow}'{preset_info} with request:")
+    if verbose:
+        preset_info = f" (preset: {preset})" if preset else ""
+        print(f"[run_id={run_id}] Running orchestrator flow '{display_flow}'{preset_info} with request:")
         print_json(request)
         print("-" * 40)
 
@@ -252,10 +297,10 @@ def cmd_orch(args: argparse.Namespace) -> int:
     result = orch.handle_request(request, context)
 
     # Output result
-    if args.output == "json":
-        print_json(result, pretty=not args.compact)
+    if output == "json":
+        print_json(result, pretty=not compact)
     else:
-        _print_orch_result(result, flow, run_id)
+        _print_orch_result(result, display_flow, run_id)
 
     return 0 if result.get("success", False) else 1
 
@@ -459,6 +504,7 @@ Examples:
             "frontend_restructure",
             "gen_backend",
             "auto_fix",
+            "api_dev",  # Phase API-3a: API development pipeline
         ],
         help="Orchestrator flow to execute (required if --preset not used)",
     )
@@ -473,13 +519,44 @@ Examples:
     )
     orch_parser.add_argument(
         "--module", "-m",
-        help="Module name (for scoped operations)",
+        # Note: Removed choices constraint to allow any module for non-api_dev flows
+        # api_dev flow validates module internally via OrchestratorAgent.API_DEV_MODULES
+        help="Module name for api_dev flow (required for api_dev, optional for other flows)",
     )
     orch_parser.add_argument(
         "--mode",
         choices=["dry-run", "execute"],
         default="dry-run",
         help="Execution mode (default: dry-run)",
+    )
+    # API Dev flow specific arguments
+    orch_parser.add_argument(
+        "--change-type", "-C",
+        choices=[
+            "schema",         # Pydantic schema / DTO only
+            "router",         # FastAPI router layer only
+            "schema+router",  # Both schema and router
+            "tests",          # Test supplements only
+            "full_feature",   # New feature
+            "bugfix",         # Bug fix
+        ],
+        help="[api_dev flow] Type of change to make",
+    )
+    orch_parser.add_argument(
+        "--api-mode",
+        choices=["plan", "impl", "impl+test", "refactor"],
+        default="impl+test",
+        help="[api_dev flow] API development mode (default: impl+test)",
+    )
+    orch_parser.add_argument(
+        "--run-tests",
+        choices=["none", "smoke", "full"],
+        default="smoke",
+        help="[api_dev flow] Test execution level (default: smoke)",
+    )
+    orch_parser.add_argument(
+        "--endpoint",
+        help="[api_dev flow] Target API endpoint (e.g., 'GET /api/v1/xxx')",
     )
     orch_parser.add_argument(
         "--json", "-j",

@@ -1,10 +1,15 @@
 ---
 name: ai-ad-agents-test-runner
-version: "2.2"
-status: ready_for_production
+version: "2.2.1"
+status: deprecated
+visibility: internal-only
+merged_into: ai-ad-agents-test-orchestrator
+deprecation_date: 2025-12-06
 layer: skill
 owner: wade
-last_reviewed: 2025-11-28
+last_reviewed: 2025-12-06
+used_by:
+  - ai-ad-agents-test-orchestrator (已内嵌)
 baseline:
   - MASTER.md v3.5
   - SoT Freeze v2.6
@@ -13,6 +18,12 @@ baseline:
   - Infrastructure Freeze v1.0
   - Agent Freeze v1.0
 ---
+
+> ⚠️ **DEPRECATED**: 本 Skill 已于 2025-12-06 合并为 `ai-ad-agents-test-orchestrator v2.3` 的内部模块。
+>
+> **请勿直接调用此 Skill**。所有功能已内嵌至 orchestrator 的 `<internal_runner_module>` 章节。
+>
+> 原始功能（DISCOVERY / RUN-ONE / SUMMARY）现由 orchestrator 内部处理，对外行为不变。
 
 <skill>
 ──────────────────────────────────────────────
@@ -28,7 +39,7 @@ baseline:
   ====================================================== -->
   <mission>
     对 agents/ 相关的测试文件进行「静态单元测试模拟执行」：
-    - 自动枚举 tests/agents/ 下的所有测试函数
+    - 自动枚举 agents/tests/ 下的所有测试函数
     - 每次调用只执行一个测试函数（单个测试）
     - 通过读取测试代码 + 被测代码来推理 PASS/FAIL/UNCERTAIN，而不是运行 pytest
     - 禁止写文件、禁止执行系统命令、禁止运行 pytest
@@ -41,7 +52,7 @@ baseline:
   ====================================================== -->
   <sub_skills>
     - 无下游子 skill
-    - 直接读取 tests/agents/**/*.py 和 agents/** 代码文件
+    - 直接读取 agents/tests/**/*.py 和 agents/** 代码文件
     - 基于静态分析推理测试结果
   </sub_skills>
 
@@ -56,12 +67,12 @@ baseline:
     }
 
     可选输入：
-    - test_id: string（pytest 风格标识符，如 tests/agents/test_xxx.py::test_yyy）
+    - test_id: string（pytest 风格标识符，如 agents/tests/test_xxx.py::test_yyy）
 
     Mode 行为说明：
 
     - DISCOVERY
-      - 扫描 tests/agents/ 下所有测试函数
+      - 扫描 agents/tests/ 下所有测试函数
       - 生成完整 PENDING_TESTS 清单
       - 不执行任何测试
       - 输出 Test Discovery Summary + 状态块
@@ -96,7 +107,7 @@ baseline:
     - 不使用硬编码路径
 
     关注的文件范围：
-    - 测试文件：tests/agents/**/*.py
+    - 测试文件：agents/tests/**/*.py
     - 被测实现：
         - agents/agents_config.py
         - agents/agent_core/*.py
@@ -152,12 +163,12 @@ baseline:
       ```markdown
       ## Test Discovery Summary
 
-      Total: <N> tests found in tests/agents/
+      Total: <N> tests found in agents/tests/
 
       ### PENDING_TESTS:
-      1. tests/agents/test_agents_config.py::test_create_agent
-      2. tests/agents/test_agents_config.py::test_list_agents
-      3. tests/agents/test_fe_agent.py::test_fe_agent_create_component
+      1. agents/tests/test_agents_config.py::test_create_agent
+      2. agents/tests/test_agents_config.py::test_list_agents
+      3. agents/tests/test_fe_agent.py::test_fe_agent_create_component
       ...
 
       ### FINISHED_TESTS:
@@ -172,13 +183,13 @@ baseline:
       Total: <N> tests | Executed: <M> | Remaining: <N-M>
 
       ### PENDING_TESTS:
-      2. tests/agents/test_agents_config.py::test_list_agents
-      3. tests/agents/test_fe_agent.py::test_fe_agent_create_component
+      2. agents/tests/test_agents_config.py::test_list_agents
+      3. agents/tests/test_fe_agent.py::test_fe_agent_create_component
       ...
 
       ### FINISHED_TESTS:
-      ✅ tests/agents/test_agents_config.py::test_create_agent (PASS)
-      ⚠️ tests/agents/test_be_agent.py::test_be_complex_fixture (UNCERTAIN)
+      ✅ agents/tests/test_agents_config.py::test_create_agent (PASS)
+      ⚠️ agents/tests/test_be_agent.py::test_be_complex_fixture (UNCERTAIN)
       ...
       ```
 
@@ -190,18 +201,18 @@ baseline:
       Total: <N> tests | Passed: <P> | Failed: <F> | Uncertain: <U>
 
       ### FINISHED_TESTS:
-      ✅ tests/agents/test_agents_config.py::test_create_agent (PASS)
-      ❌ tests/agents/test_fe_agent.py::test_fe_agent_error_case (FAIL)
-      ⚠️ tests/agents/test_be_agent.py::test_be_complex_fixture (UNCERTAIN)
+      ✅ agents/tests/test_agents_config.py::test_create_agent (PASS)
+      ❌ agents/tests/test_fe_agent.py::test_fe_agent_error_case (FAIL)
+      ⚠️ agents/tests/test_be_agent.py::test_be_complex_fixture (UNCERTAIN)
       ...
 
       ### FAILED_TESTS_SUMMARY:
-      - tests/agents/test_fe_agent.py::test_fe_agent_error_case
+      - agents/tests/test_fe_agent.py::test_fe_agent_error_case
         - Reason: ...
         - Fix suggestion: ...
 
       ### UNCERTAIN_TESTS_SUMMARY:
-      - tests/agents/test_be_agent.py::test_be_complex_fixture
+      - agents/tests/test_be_agent.py::test_be_complex_fixture
         - Reason: Complex pytest feature (dynamic fixture)
         - Recommendation: Run actual pytest execution
       ```
@@ -218,10 +229,10 @@ baseline:
 
       ```markdown
       ### PENDING_TESTS: (showing 30 of 80)
-      1. tests/agents/test_agents_config.py::test_create_agent
-      2. tests/agents/test_agents_config.py::test_list_agents
+      1. agents/tests/test_agents_config.py::test_create_agent
+      2. agents/tests/test_agents_config.py::test_list_agents
       ...
-      30. tests/agents/test_orchestrator.py::test_pipeline_step_3
+      30. agents/tests/test_orchestrator.py::test_pipeline_step_3
       ... (remaining 50 tests omitted)
       ```
     </state_scaling_rules>
@@ -249,32 +260,32 @@ baseline:
   ====================================================== -->
   <phase id="DISCOVERY">
     <description>
-      首次扫描 tests/agents/ 目录，生成完整测试清单。
+      首次扫描 agents/tests/ 目录，生成完整测试清单。
       不执行任何测试，只输出 PENDING_TESTS 初始状态。
     </description>
 
     <prerequisites>
-      - 目录存在性检查：当前工作区根目录下实际存在 tests/agents/ 目录
+      - 目录存在性检查：当前工作区根目录下实际存在 agents/tests/ 目录
       - 若目录不存在，立即报告并终止（见 error_handling）
     </prerequisites>
 
     <actions>
-      1. 扫描 tests/agents/：
+      1. 扫描 agents/tests/：
          - 找到所有 test_*.py 文件
          - 解析其中所有以 test_ 开头的函数名
          - 若无测试文件或无测试函数，按异常场景处理（见 error_handling）
 
       2. 生成 pytest 风格标识符：
-         - 例如：tests/agents/test_fe_agent.py::test_fe_agent_create_component
+         - 例如：agents/tests/test_fe_agent.py::test_fe_agent_create_component
 
       3. 输出结构化状态（按 STATE_MANAGEMENT 规范）：
          ```markdown
          ## Test Discovery Summary
-         Total: 10 tests found in tests/agents/
+         Total: 10 tests found in agents/tests/
 
          ### PENDING_TESTS:
-         1. tests/agents/test_agents_config.py::test_create_agent
-         2. tests/agents/test_agents_config.py::test_list_agents
+         1. agents/tests/test_agents_config.py::test_create_agent
+         2. agents/tests/test_agents_config.py::test_list_agents
          ...
 
          ### FINISHED_TESTS:
@@ -326,7 +337,7 @@ baseline:
       执行流程：
 
       1. 读取相关文件：
-         - 对应测试文件：tests/agents/xxx.py
+         - 对应测试文件：agents/tests/xxx.py
          - 测试函数：test_xxx(...)
          - 被测实现文件：根据 import / 被测对象推断（如 FEAgent/BEAgent/TestAgent/Orchestrator/fs_tool 等）
          - conftest.py（如果存在）
@@ -443,7 +454,7 @@ baseline:
       当遇到复杂特性时，测试报告应包含：
 
       ```markdown
-      ## Test Result: tests/agents/test_xxx.py::test_complex_case
+      ## Test Result: agents/tests/test_xxx.py::test_complex_case
 
       Result: ⚠️ UNCERTAIN (Static Analysis Limitation)
 
@@ -453,7 +464,7 @@ baseline:
       - Unable to accurately reason about: [specific aspect]
 
       Recommendation:
-      - Run actual pytest execution: `pytest tests/agents/test_xxx.py::test_complex_case`
+      - Run actual pytest execution: `pytest agents/tests/test_xxx.py::test_complex_case`
       - Or simplify test logic for static analysis compatibility
 
       Partial Analysis:
@@ -521,7 +532,7 @@ baseline:
       ### Next Step
 
       - To continue: "执行下一个测试" 或 mode=RUN-ONE
-      - Or specify: "执行 tests/agents/test_xxx.py::test_yyy" 或 mode=RUN-ONE with test_id
+      - Or specify: "执行 agents/tests/test_xxx.py::test_yyy" 或 mode=RUN-ONE with test_id
       ```
     </test_report_structure>
 
@@ -542,22 +553,22 @@ baseline:
     </description>
 
     <scenarios>
-      场景 1：tests/agents/ 目录不存在
+      场景 1：agents/tests/ 目录不存在
 
       处理：
-      - 立即报告："Error: tests/agents/ directory does not exist in current workspace"
+      - 立即报告："Error: agents/tests/ directory does not exist in current workspace"
       - 终止 skill 执行
       - 建议用户创建目录或切换工作区
 
       ---
 
-      场景 2：tests/agents/ 目录为空或无测试文件
+      场景 2：agents/tests/ 目录为空或无测试文件
 
       处理：
       - 输出测试发现结果：
         ```markdown
         ## Test Discovery Summary
-        Total: 0 tests found in tests/agents/
+        Total: 0 tests found in agents/tests/
 
         PENDING_TESTS: (empty)
         FINISHED_TESTS: (empty)
@@ -573,7 +584,7 @@ baseline:
       - 在测试清单中跳过该文件
       - 在输出中注明：
         ```markdown
-        Note: tests/agents/test_example.py contains no test functions (skipped)
+        Note: agents/tests/test_example.py contains no test functions (skipped)
         ```
 
       ---
@@ -583,11 +594,11 @@ baseline:
       处理：
       - 报告错误：
         ```markdown
-        Error: Test 'tests/agents/test_xxx.py::test_yyy' not found
+        Error: Test 'agents/tests/test_xxx.py::test_yyy' not found
 
         Available tests:
-        1. tests/agents/test_agents_config.py::test_create_agent
-        2. tests/agents/test_agents_config.py::test_list_agents
+        1. agents/tests/test_agents_config.py::test_create_agent
+        2. agents/tests/test_agents_config.py::test_list_agents
         ...
         ```
       - 不执行任何测试
@@ -670,7 +681,7 @@ baseline:
     「
     使用 ai-ad-agents-test-runner，
     mode = RUN-ONE，
-    test_id = tests/agents/test_fe_agent.py::test_fe_agent_create_component。
+    test_id = agents/tests/test_fe_agent.py::test_fe_agent_create_component。
     执行该测试并输出报告。
     」
 

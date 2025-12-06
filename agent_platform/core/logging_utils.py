@@ -188,7 +188,11 @@ def derive_error_kind(error: Exception) -> ErrorKind:
         return ErrorKind.SOT_VIOLATION
 
     # 基础设施错误
-    if any(kw in error_type.lower() for kw in ["connection", "timeout", "io"]):
+    # Use specific error type names to avoid false positives (e.g., "io" in "exception")
+    infra_error_types = ["connectionerror", "timeouterror", "ioerror", "oserror", "networkerror"]
+    if error_type.lower() in infra_error_types or any(
+        error_type.lower().endswith(suffix) for suffix in ["connectionerror", "timeouterror"]
+    ):
         return ErrorKind.INFRA_ERROR
 
     return ErrorKind.UNKNOWN

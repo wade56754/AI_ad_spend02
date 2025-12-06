@@ -1,10 +1,12 @@
 ---
 name: ai-ad-doc-architect
 version: "2.2"
-status: ready_for_production
+status: deprecated
 layer: skill
 owner: wade
 last_reviewed: 2025-11-28
+deprecation_reason: "功能已被 ai-master-architect 覆盖，保留作为历史参考，不再用于新流程。"
+superseded_by: ai-master-architect
 baseline:
   - MASTER.md v3.5
   - SoT Freeze v2.6
@@ -13,6 +15,8 @@ baseline:
   - Infrastructure Freeze v1.0
   - Agent Freeze v1.0
 ---
+
+> ⚠️ **DEPRECATED**: 本 Skill 已废弃。功能已被 `ai-master-architect` 覆盖，保留作为历史参考，不再用于新流程。
 
 <skill>
 ──────────────────────────────────────────────

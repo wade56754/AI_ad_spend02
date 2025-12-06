@@ -1,11 +1,11 @@
 ---
 name: ai-ad-api-automation-test
-version: "1.4"
+version: "1.5"
 status: beta
 layer: skill
 owner: wade
-last_reviewed: 2025-12-02
-last_updated: 2025-12-02
+last_reviewed: 2025-12-06
+last_updated: 2025-12-06
 baseline:
   - MASTER.md v3.5
   - SoT Freeze v2.6
@@ -14,13 +14,16 @@ baseline:
   - Infrastructure Freeze v1.0
   - Agent Freeze v1.0
   - AUTOMATION_TEST_SPEC_v1.4.md
+  - BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md
+absorbs:
+  - ai-ad-test-regression-orchestrator v1.2 (merged as mode=REGRESSION)
 ---
 
 <skill>
 <name>ai-ad-api-automation-test</name>
-<version>v1.4</version>
+<version>v1.5</version>
 <domain>AI_AD_SYSTEM / API Automation Testing</domain>
-<profile>API-Test-Orchestrator / Newman-Integration / pytest-Generation</profile>
+<profile>API-Test-Orchestrator / Newman-Integration / pytest-Generation / Regression-Testing</profile>
 
 <!-- ======================================================
      0. Core Mission
@@ -96,8 +99,19 @@ baseline:
 <input_contract>
   Minimum Input:
   {
-    mode: "GENERATE" | "RUN" | "NEWMAN" | "REPORT"
+    mode: "GENERATE" | "RUN" | "NEWMAN" | "REPORT" | "REGRESSION"
   }
+
+  **REGRESSION Mode Parameters** (v1.5 新增，合并自 ai-ad-test-regression-orchestrator v1.2):
+  - regression_mode: "module_test" | "change_tasks" | "ci_helper"
+    - module_test: 单模块测试生成 + 局部 pytest 命令生成
+    - change_tasks: 为 OpenSpec change 自动补全 testing & regression tasks
+    - ci_helper: 生成/审查 CI 中的回归测试 & OpenSpec 校验步骤
+  - module_name: string (module_test 专用，后端模块名)
+  - change_scope: string (module_test 专用，本次代码改动范围)
+  - change_id: string (change_tasks 专用，OpenSpec change id)
+  - affected_modules: string (change_tasks 专用，逗号分隔受影响模块)
+  - ci_provider: "github_actions" | "gitlab_ci" | "other" (ci_helper 专用)
 
   Optional Input:
   - target_module: string
@@ -142,6 +156,12 @@ baseline:
     - Generate comprehensive test report
     - Include coverage metrics
     - SoT alignment verification
+
+  - REGRESSION (v1.5 新增，合并自 ai-ad-test-regression-orchestrator v1.2)
+    - 后端回归测试 + OpenSpec 门禁 + CI 配置生成
+    - 子模式通过 regression_mode 参数选择
+    - Baseline: BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md (198 passed, 0 failed)
+    - 详见 REGRESSION Phase 章节
 
   Missing mode -> Output <halt>Missing: mode</halt> and stop.
 </input_contract>
@@ -736,6 +756,137 @@ baseline:
 
 
 <!-- ======================================================
+     8.5 REGRESSION Phase (v1.5 新增，合并自 ai-ad-test-regression-orchestrator v1.2)
+====================================================== -->
+<phase id="REGRESSION">
+  <description>
+    后端回归测试编排，原 ai-ad-test-regression-orchestrator 功能已合并到此处。
+    通过 regression_mode 参数选择具体模式：module_test / change_tasks / ci_helper。
+  </description>
+
+  <baseline_reference>
+    - 回归基线：Backend Regression Baseline v1.0 (198 passed, 0 failed)
+    - 基线报告：docs/4.testing/BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md
+    - 回归脚本：run_tests.py (--type regression)
+    - 回归套件：backend/tests/REGRESSION_TEST_SUITE.md
+  </baseline_reference>
+
+  <regression_modes>
+    <mode id="module_test">
+      <description>单模块测试生成 + 局部 pytest 命令生成</description>
+      <inputs>
+        - module_name: 后端模块名 (daily_reports / transfers / ledger / topups / ad_accounts / reconciliation / trend_risk)
+        - change_scope: 本次代码改动范围说明 (可选)
+      </inputs>
+      <output>
+        - 测试覆盖计划 (5 维度: Happy Path / Validation / Permissions / Error Codes / State Machine)
+        - JSON payload (可直接用于 mode=GENERATE)
+        - pytest 命令 (PowerShell 友好)
+      </output>
+    </mode>
+
+    <mode id="change_tasks">
+      <description>为 OpenSpec change 自动补全 testing & regression tasks</description>
+      <inputs>
+        - change_id: OpenSpec change id (如 transfers-batch-v2)
+        - affected_modules: 受影响模块列表 (逗号分隔)
+        - change_scope: 本次改动范围说明 (可选)
+      </inputs>
+      <output>
+        - Markdown 片段 (## Testing & Regression Tasks)
+        - 模块测试任务 (包含 JSON payload)
+        - 回归测试任务 (run_tests.py)
+        - OpenSpec 验证任务 (可选)
+      </output>
+    </mode>
+
+    <mode id="ci_helper">
+      <description>生成/审查 CI 中的回归测试 & OpenSpec 校验步骤</description>
+      <inputs>
+        - ci_provider: github_actions | gitlab_ci | other
+        - change_id: OpenSpec change id (可选)
+      </inputs>
+      <output>
+        - YAML job 片段 (可直接复制到 CI 配置)
+        - 包含: checkout → Python setup → deps install → regression tests
+        - 基线对比注释 (Baseline v1.0: 198 passed)
+      </output>
+    </mode>
+  </regression_modes>
+
+  <module_mapping>
+    已有标准化测试模块（带 *_flow_generated.py 或专用目录）：
+    - daily_reports → backend/tests/api/test_daily_report_flow_generated.py (33 tests)
+    - trend_risk → backend/tests/api/test_trend_risk_flow_generated.py (17 tests)
+    - transfers → backend/tests/api/test_transfers_flow_generated.py (21 tests)
+    - ledger → backend/tests/ledger (54 tests, 3 skipped)
+    - ad_accounts → backend/tests/ad_accounts (51 tests)
+    - topups → backend/tests/test_topup_api.py (22 tests)
+    - projects → backend/tests/test_project_api.py + test_api_projects.py
+    - reconciliation → backend/tests/test_reconciliation_service.py + test_reconciliation_api.py
+  </module_mapping>
+
+  <output_templates>
+    ### module_test 输出模板:
+    ```markdown
+    ### Module Test
+
+    **测试文件**: `backend/tests/api/test_{module}_flow_generated.py`
+
+    **覆盖计划**:
+    - Happy Path: [具体场景]
+    - Validation: [具体校验项]
+    - Permissions: [具体角色]
+    - Error Codes: [具体错误码]
+    - State Machine: [具体流转]
+
+    **JSON payload (用于 mode=GENERATE)**:
+    ```json
+    {
+      "mode": "GENERATE",
+      "target_module": "{module_name}",
+      "test_level": "L2",
+      "focus": ["happy_path", "validation", "permissions", "error_codes", "state_machine"]
+    }
+    ```
+
+    **本地测试命令**:
+    ```powershell
+    python -m pytest backend/tests/api/test_{module}_flow_generated.py -v --tb=short
+    ```
+    ```
+
+    ### change_tasks 输出模板:
+    ```markdown
+    ## Testing & Regression Tasks
+
+    - [ ] Module API tests ({affected_modules})
+      - **Payload**: { "mode": "GENERATE", "target_module": "...", "test_level": "L2" }
+      - **Command**: python -m pytest backend/tests/api/test_{module}_flow_generated.py -v
+
+    - [ ] Full backend regression test (Baseline v1.0)
+      - **Command**: python run_tests.py --type regression
+      - **Expected**: 198 passed, 0 failed
+      - **Baseline Reference**: docs/4.testing/BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md
+
+    - [ ] OpenSpec validation (if applicable)
+      - **Command**: openspec validate {change_id} --strict
+    ```
+
+    ### ci_helper 输出模板:
+    GitHub Actions job YAML (见完整模板在 ai-ad-test-regression-orchestrator 历史版本)
+  </output_templates>
+
+  <constraints>
+    - 严格禁止修改 docs/2.sot/* (SoT 只读)
+    - 严格禁止修改业务逻辑代码
+    - 只允许输出结构化片段 (测试计划 / JSON payload / pytest 命令 / Markdown / YAML)
+    - 所有命令必须能在 Windows PowerShell + venv 下直接执行
+  </constraints>
+</phase>
+
+
+<!-- ======================================================
      9. Module Mapping Configuration
 ====================================================== -->
 <module_mapping>
@@ -1127,6 +1278,38 @@ baseline:
      12. Version Notes
 ====================================================== -->
 <VERSION_NOTES>
+
+  ### v1.5 (2025-12-06)
+
+  **合并 ai-ad-test-regression-orchestrator v1.2 - Status: beta**
+
+  测试域合并 (Phase 2a):
+  - 新增 mode=REGRESSION，包含 3 个子模式:
+    - module_test: 单模块测试生成 + pytest 命令
+    - change_tasks: OpenSpec testing & regression tasks 生成
+    - ci_helper: CI 配置片段生成 (GitHub Actions / GitLab CI)
+  - 新增 regression-specific 参数:
+    - regression_mode, module_name, change_scope, change_id, affected_modules, ci_provider
+  - 新增 REGRESSION Phase 章节 (Section 8.5)
+  - 新增 baseline: BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md
+  - 标记 ai-ad-test-regression-orchestrator v1.2 为 deprecated
+
+  向后兼容:
+  - 原有 mode (GENERATE / RUN / NEWMAN / REPORT) 行为不变
+  - 原有参数 (target_module / test_level 等) 保持不变
+
+  ---
+
+  ### v1.4 (2025-12-02)
+
+  **Regression Baseline Integration - Status: beta (controlled-CI ready)**
+
+  P0 Enhancements:
+  - Added regression_baseline section to dependencies
+  - Referenced BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md as baseline
+  - Baseline: 198 passed, 3 deselected, 0 failed
+
+  ---
 
   ### v1.3 (2025-12-01)
 

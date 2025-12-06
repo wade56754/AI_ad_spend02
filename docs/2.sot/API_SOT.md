@@ -1,13 +1,14 @@
 # API 开发与使用规范（API Single Source of Truth）
 
-> **文档版本**: v9.0 (端点级完整版)
+> **文档版本**: v9.1 (端点级完整版 + MASTER 对齐修订)
 > **status**: frozen
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
+> **last_reviewed**: 2025-12-06
+> **baseline**: MASTER.md v3.6, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, ERROR_CODES_SOT.md v2.1
 > **文档类型**: 项目唯一真相源（SoT）
 > **适用范围**: 所有后端API开发与前端API调用
 > **规范级别**: 🔴 强制执行
-> **最后更新**: 2025-01-22
+> **最后更新**: 2025-12-06
 > **文档定位**: 端点级API规范,任何开发者仅凭本文档即可完成API开发/调用/测试
 
 ---
@@ -82,6 +83,58 @@
 
 **引用**: SYSTEM_OVERVIEW.md 第5章、DATA_SCHEMA.md 3.4.4节
 
+### 1.4 文档范围与模块分类
+
+本节明确 API_SOT v9.1 覆盖的模块边界，区分"核心 SoT API 模块"与"扩展/实验模块"。
+
+#### 1.4.1 核心 SoT API 模块（本版本必须实现）
+
+以下 **8 个模块**是本版本 API_SOT 的核心覆盖范围，所有端点定义、权限约束、错误码均受本文档约束：
+
+| 模块 | 章节 | 上游 SoT 依赖 | 状态 |
+|------|------|--------------|------|
+| Users/Auth | §5 | AUTH_SPEC.md v2.0 | ✅ implemented |
+| Projects | §6 | STATE_MACHINE.md §5, DATA_SCHEMA.md §3.2 | ✅ implemented |
+| Channels | §7 | STATE_MACHINE.md §6.1 | ✅ implemented |
+| Ad Accounts | §8 | STATE_MACHINE.md §7, DATA_SCHEMA.md §3.2.9 | ✅ implemented |
+| Daily Reports | §9 | STATE_MACHINE.md §8, DAILY_REPORT_SOT.md v1.0 | ✅ implemented |
+| Topup Requests | §10 | STATE_MACHINE.md §9, TOPUP_SOT.md v1.0 *(领域规范)* | ✅ implemented |
+| Ledger | §11 | LEDGER_SOT.md v1.1 | ✅ implemented |
+| Reconciliation | §12 | STATE_MACHINE.md §11, RECONCILIATION_SOT.md v1.0 | ✅ implemented |
+
+#### 1.4.2 扩展模块候选（计划 v10.x 收编）
+
+以下模块已有代码实现和测试，但尚未纳入 API_SOT 正式定义。计划在后续版本收编：
+
+| 模块 | 上游 SoT 依赖 | 当前状态 | 收编计划 |
+|------|--------------|---------|---------|
+| Transfers (余额迁移) | TRANSFER_SOT.md v1.0 | 有测试 (21 用例) | v10.0 候选 |
+| Finance Profit (利润统计) | PROFIT_SOT.md v1.1 *(领域规范)* | 有测试 (15 用例) | v10.0 候选 |
+| Suppliers (供应商管理) | DATA_SCHEMA.md §3.2.5 | 有测试 | v10.1 候选 |
+| Settlements (结算) | DATA_SCHEMA.md §3.5.x | 有测试 | v10.1 候选 |
+
+**约束**: 扩展模块的实现应参照对应上游 SoT，但在正式收编前不受本 API_SOT 文档约束。
+
+> **领域规范状态说明**: TOPUP_SOT.md v1.0、PROFIT_SOT.md v1.1 当前作为领域规范文档使用，尚未正式列入 MASTER.md Tier-2 SoT 索引。后续纳入 MASTER Tier-2 SoT 索引时，将同步更新本文件中的引用状态。
+
+#### 1.4.3 内部实验模块（不受本 SoT 约束）
+
+以下模块为内部/实验性质，不在 API_SOT 覆盖范围内：
+
+| 模块 | 说明 | 约束 |
+|------|------|------|
+| AI Analytics | AI 分析功能 | internal/experimental |
+| AI Monitoring | AI 监控功能 | internal/experimental |
+| Import Jobs | 数据导入任务 | internal/experimental |
+| Reports | 报表导出 | internal/experimental |
+| Project Templates | 项目模板 | internal/experimental |
+
+**约束**: 内部实验模块的 API 设计由开发团队自行决定，不需遵循本文档的端点规范，但仍需遵循响应格式规范（§4）和错误码规范。
+
+#### 1.4.4 Phase 1 上线边界总结
+
+> 本版本 API 上线验收范围仅覆盖 §1.4.1 中列出的 **8 个核心 SoT API 模块**（Users/Auth, Projects, Channels, AdAccounts, DailyReports, Topup, Ledger, Reconciliation）；§1.4.2 的扩展模块如已实现，应遵守对应领域 SoT（如 TRANSFER_SOT.md、PROFIT_SOT.md），但不计入本次『必测』范围；§1.4.3 的实验模块不纳入本版本验收。
+
 ---
 
 ## 2. 统一规范
@@ -98,6 +151,55 @@
 - **令牌传递**: `Authorization: Bearer <token>` 请求头
 - **前端调用**: 统一使用 `lib/api.ts::apiFetch`
 - **禁止**: 组件内直接使用 `fetch()` / `axios` 调用业务API
+
+**角色（Role）与权限（Permission）的关系说明**：
+- **API_SOT 文档中的"允许角色"列**：这是产品 & 测试视角的访问控制描述，用于说明哪些角色可以访问该端点
+- **实际实现**：由 `AUTH_SPEC.md` v2.0 定义 role → permissions 映射，Router 层一律使用 `require_permission("resource:action")` 进行权限检查，而不直接写 `if user.role == ...`
+- **权限字符串格式**：`resource:action`（如 `daily_report:submit`、`project:create`），定义参见 `AUTH_SPEC.md` v2.0 Section 3
+- **示例**：API_SOT 中标注"允许角色: `admin`, `account_manager`"，实际 Router 代码中使用 `Depends(require_permission('project:create'))` 进行权限检查
+
+#### 角色映射表（MASTER.md ↔ API_SOT/代码）
+
+> **来源**: MASTER.md v3.6 INV-004 职责分离，AUTH_SPEC.md v2.0
+
+以下表格建立 MASTER.md 中定义的角色名与 API_SOT/代码中使用的角色名的一一对应关系：
+
+| MASTER.md 角色 | API_SOT/代码角色 | 中文名称 | 职责描述 |
+|---------------|-----------------|---------|---------|
+| **ADMIN** | `admin` | 系统管理员 | 查看所有数据、导出审计报表、配置系统参数 |
+| **FINANCE** | `finance` | 财务 | 执行 REVERSAL、执行 TRANSFER、查看账本、导出报表 |
+| **OPERATIONS** | `data_operator` | 运营/户管/数据操作员 | 录入 real_spend、确认 conversions_final、审核 trend_flagged |
+| **AD_OPERATOR** | `media_buyer` | 投手/媒体采购 | 创建日报、填写 raw 数据、提交至 raw_submitted |
+| *(未在 MASTER 定义)* | `account_manager` | 客户经理 | 项目管理、账户分配（权限介于运营与管理员之间） |
+
+**重要权限约束（来自 MASTER.md INV-004）**：
+
+| 角色 | 允许操作 | **禁止操作** |
+|------|---------|-------------|
+| `admin` | 查看所有数据、导出审计报表、配置系统参数 | ⛔ 绕过状态机、删除 final_locked 记录、**执行 REVERSAL** |
+| `finance` | **执行 REVERSAL**、执行 TRANSFER、查看账本、导出报表 | ⛔ 修改日报任何字段、修改日报状态、删除账本记录 |
+| `data_operator` | 录入 real_spend、确认 conversions_final、审核 trend_flagged | ⛔ 修改 raw 数据、修改状态至 raw_submitted、删除日报 |
+| `media_buyer` | 创建日报、填写 raw 数据、提交至 raw_submitted | ⛔ 修改 final/real 数据、修改状态至 final_*、查看他人日报 |
+
+**⚠️ 特别注意**: 根据 MASTER.md INV-004，`admin` 角色**禁止执行 REVERSAL（红冲）**操作，红冲权限仅限于 `finance` 角色。本文档所有红冲相关端点均遵循此约束。
+
+#### REVERSAL（红冲）权限规则（全局约束）
+
+> **来源**: MASTER.md v3.6 INV-004 职责分离
+
+**核心规则**：
+- **所有 REVERSAL（红冲）类 API 只允许 `finance` 角色调用**
+- **`admin` 角色仅有只读权限，禁止执行任何红冲操作**
+- **本约束来源于 MASTER.md 的 INV-004 权限矩阵，修改必须先更新 MASTER.md**
+
+**适用范围**：
+- `POST /api/v1/daily-reports/{report_id}/reversal` - 日报红冲修正
+- `POST /api/v1/ledger/reversal` - 账本红冲记录创建
+- 未来新增的任何 REVERSAL 相关端点
+
+**业务背景**：
+- REVERSAL 是修正已锁定账务记录的唯一方式，属于高危财务操作
+- 根据职责分离原则（INV-004），财务（FINANCE）角色负责执行红冲，管理员（ADMIN）角色仅负责查看和审计
 
 ### 2.3 数据类型规范
 
@@ -132,6 +234,8 @@
 ---
 
 ## 3. API 开发流程
+
+> **实现细节和分层代码示例请参见 `API_DEVELOPMENT_FLOW.md` v2.2**。本文档以"契约"为主，定义 API 端点的请求/响应格式、权限、错误码等规范；`API_DEVELOPMENT_FLOW.md` 提供详细的代码实现示例和开发流程。
 
 ### 3.1 开发步骤（强制流程）
 
@@ -186,8 +290,12 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from backend.models.{module} import Resource
 from backend.schemas.{module} import ResourceCreate
-from backend.core.exceptions import BusinessError, PermissionError
-from backend.core.error_codes import ErrorCode
+from backend.exceptions.custom_exceptions import (
+    BusinessLogicError,
+    PermissionDeniedError,
+    ValidationError,
+    ResourceNotFoundError
+)
 
 class ResourceService:
     """资源服务 - 实现 STATE_MACHINE.md 定义的状态机"""
@@ -205,9 +313,9 @@ class ResourceService:
 
         # 权限检查（基于 BUSINESS_RULES.md）
         if current_user_role not in ['admin', 'finance']:
-            raise PermissionError(
-                code=ErrorCode.AUTH_500,
-                message="无权限创建资源"
+            raise PermissionDeniedError(
+                message="无权限创建资源",
+                error_code="AUTH_500"  # 来自 ERROR_CODES_SOT.md
             )
 
         # 业务逻辑
@@ -267,6 +375,14 @@ async def create_resource(
 
 所有API响应必须使用 Envelope 格式，**禁止**返回 FastAPI 默认的 `{detail: "..."}` 响应。
 
+**Envelope 字段强制性说明**：
+- `success`: 始终存在，布尔值（`true` 表示成功，`false` 表示失败）
+- `data` 与 `error` 互斥：
+  - `success=true` 时只填 `data`，`error` 字段不存在
+  - `success=false` 时只填 `error`，`data` 字段为 `null` 或不存在
+- `request_id` 和 `timestamp` 由全局中间件统一注入，业务 Handler 无需手动设置，但在所有实际响应中都会存在
+- 其余示例中为简洁可能省略 `request_id` 和 `timestamp`，但实际响应中这些字段始终存在
+
 ### 4.2 成功响应
 
 ```json
@@ -289,8 +405,8 @@ async def create_resource(
 - `data`: 业务数据（可以是对象、数组或null）
 - `message`: 面向开发者的操作说明
 - `code`: 成功状态码，默认为 "SUCCESS"
-- `request_id`: UUID v4格式的请求追踪ID
-- `timestamp`: ISO 8601格式的UTC时间戳
+- `request_id`: UUID v4格式的请求追踪ID（由全局中间件注入）
+- `timestamp`: ISO 8601格式的UTC时间戳（由全局中间件注入）
 
 ### 4.3 错误响应
 
@@ -313,11 +429,16 @@ async def create_resource(
 
 **字段说明**:
 - `success`: 布尔值，false 表示失败
-- `error.code`: 错误码（来自 ERROR_CODES_SOT.md）
+- `error.code`: 错误码（来自 ERROR_CODES_SOT.md v2.1 + backend/core/error_codes.py）
 - `error.message`: 面向开发者的错误描述（中文）
 - `error.details`: 错误详情（可选）
-- `request_id`: UUID v4格式的请求追踪ID
-- `timestamp`: ISO 8601格式的UTC时间戳
+- `request_id`: UUID v4格式的请求追踪ID（由全局中间件注入）
+- `timestamp`: ISO 8601格式的UTC时间戳（由全局中间件注入）
+
+**错误响应生成流程**：
+- 业务代码不手写 JSON 响应，只抛出自定义异常（如 `BusinessLogicError`, `ValidationError` 等）
+- 由全局异常处理器（`backend/exceptions/handlers.py`）统一转换为上述 Envelope 格式
+- 所有错误码必须来自 `ERROR_CODES_SOT.md` v2.1，禁止发明缩写短码（如 `VAL-001`、`STATE-001`）
 
 ### 4.4 分页响应
 
@@ -774,7 +895,7 @@ const newProject = await apiFetch('/api/v1/projects', {
 | PUT | `/api/v1/daily-reports/{report_id}/real-spend` | 录入real粉数 | `data_operator`, `admin` | `trend_ok`/`trend_resolved` → `final_pending` | implemented |
 | POST | `/api/v1/daily-reports/{report_id}/final-confirm` | 确认final粉数 | `data_operator`, `admin` | `final_pending` → `final_confirmed` | implemented |
 | POST | `/api/v1/daily-reports/{report_id}/final-lock` | 计费锁定 | 系统自动 | `final_confirmed` → `final_locked` | implemented |
-| POST | `/api/v1/daily-reports/{report_id}/reversal` | 红冲修正 | `admin` | `final_locked` → (创建REVERSAL记录) | implemented |
+| POST | `/api/v1/daily-reports/{report_id}/reversal` | 红冲修正 | `finance` | `final_locked` → (创建REVERSAL记录) | implemented |
 
 **粉数确认状态机（8状态）**:
 ```
@@ -1567,7 +1688,7 @@ with db.begin():
 
 | 错误码 | HTTP状态码 | 触发场景 |
 |--------|-----------|----------|
-| `AUTH_500` | 403 | 非admin角色 |
+| `AUTH_500` | 403 | 非finance角色 |
 | `BIZ_002` | 404 | 日报不存在 |
 | `STATE_402` | 400 | 当前状态不是final_locked |
 | `VALIDATION_001` | 400 | 必填字段缺失 |
@@ -1580,12 +1701,13 @@ with db.begin():
 
 #### 权限
 
-- **允许角色**: `admin`
+- **允许角色**: `finance`
 - **业务约束**:
   - 仅当status=final_locked时可执行
   - 必须填写详细的reversal_reason（≥20字符）
   - 红冲金额 = -原金额
   - 必须生成新的正确Ledger记录
+  - ⚠️ **MASTER.md INV-004 约束**: `admin` 角色禁止执行红冲操作
 
 #### 并发控制
 
@@ -1794,7 +1916,7 @@ with db.begin():
 |------|------|------|------|------|
 | GET | `/api/v1/ledger/project/{project_id}` | 查询项目Ledger | `admin`, `finance`, `account_manager`（仅自己管理的） | implemented |
 | GET | `/api/v1/ledger/supplier/{supplier_id}` | 查询供应商Ledger | `admin`, `finance` | implemented |
-| POST | `/api/v1/ledger/reversal` | 创建红冲记录 | `admin` | implemented |
+| POST | `/api/v1/ledger/reversal` | 创建红冲记录 | `finance` | implemented |
 
 **双账本类型**:
 - **PROJECT账本**: 项目收入（REVENUE, REVERSAL）
@@ -1989,8 +2111,42 @@ try {
 **文档性质**: 项目强制规范
 **执行级别**: 🔴 必须严格遵守
 **违规处理**: PR自动拒绝 / 代码回滚
-**最后更新**: 2025-01-22
-**版本**: v9.0 (端点级完整版)
+**最后更新**: 2025-12-06
+**版本**: v9.1 (端点级完整版 + MASTER 对齐修订)
+
+---
+
+## 变更记录 (Changelog)
+
+### v9.1 (2025-12-06) - MASTER 对齐修订
+
+**P0 修复 - REVERSAL 权限与 MASTER.md 对齐**:
+- 统一所有 REVERSAL 相关 API 的权限为 `finance`（§9.8、§11.1）
+- 依据: MASTER.md v3.6 INV-004 明确规定"财务(FINANCE)可执行 REVERSAL；管理员(ADMIN)禁止执行 REVERSAL"
+- 新增 §2.2 REVERSAL 权限规则（全局约束）：明确所有红冲类 API 只允许 `finance` 角色调用，`admin` 角色禁止执行
+
+**新增章节**:
+- §1.4 文档范围与模块分类：明确区分核心 SoT API 模块(8个)、扩展模块候选(4个)、内部实验模块
+- §2.2 角色映射表：建立 MASTER.md 角色名 ↔ API_SOT/代码角色名 的一一对应关系
+- §2.2 REVERSAL 权限规则（全局约束）：明确红冲权限的全局规则和适用范围
+
+**一致性修正**:
+- 更新 baseline 引用：MASTER.md v3.6, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, ERROR_CODES_SOT.md v2.1
+- 增加扩展模块候选列表：Transfers, Finance Profit, Suppliers, Settlements
+- 增加内部实验模块列表：AI Analytics, AI Monitoring, Import Jobs, Reports, Project Templates
+- 清理所有 REVERSAL 相关描述，确保无"admin 可以执行 REVERSAL"的表述
+
+**影响范围**:
+- 红冲相关 API 的权限检查需从 `admin` 调整为 `finance`
+- 前端需更新红冲操作入口的角色判断逻辑
+- 后端 Router 层需确保所有 REVERSAL 端点使用 `require_permission('ledger:reversal')` 或 `require_role(['finance'])` 进行权限检查
+
+**v9.1 精修补充 (2025-12-06)**:
+- 新增 §1.4.4 Phase 1 上线边界总结：明确核心 8 模块为必测范围，扩展模块和实验模块不计入本版本验收
+- 对 TOPUP_SOT.md v1.0、PROFIT_SOT.md v1.1 的引用状态进行轻微澄清，标注其当前为"领域规范"状态
+- 确认所有 REVERSAL 权限已完全统一为 `finance`，无 `admin` 可红冲的残留
+
+### v9.0 (2025-01-22) - 端点级完整版
 
 **v9.0 更新说明**:
 - 完全重写为端点级API规范
