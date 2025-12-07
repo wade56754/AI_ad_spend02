@@ -19,8 +19,9 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 # AI 广告代投系统 - Claude Code 项目指令
 
-> **文档版本**: v3.1 (基于 ASDD Freeze v1.0 + SoT Freeze v1.0)
+> **文档版本**: v3.2 (基于 AI Code Factory v3.0 + SoT Freeze v2.6)
 > **强制级别**: 🔴 自动加载，所有会话生效
+> **架构模式**: 纯 SuperClaude Skill（已废弃 Python Agent）
 
 ## 🔒 强制规则 (Inviolable Rules)
 
@@ -76,6 +77,46 @@ STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
 - **遇到未覆盖场景**: 提出 RFC，而非自行扩展
 - **违规处理**: PR 自动拒绝 / 代码回滚
 
+## 🏭 AI 代码工厂
+
+本项目使用 **SuperClaude Skill** 进行代码生成，详见 [.claude/README.md](.claude/README.md)。
+
+### 快速使用
+
+**后端代码生成**:
+```
+使用 ai-ad-be-gen 实现充值审批 API
+```
+
+**前端代码生成**:
+```
+使用 ai-ad-fe-gen 实现充值列表页面
+```
+
+**SoT 合规检查**:
+```
+/sot-check backend/services/topup_service.py
+```
+
+### 核心 Skills
+
+| Skill | 功能 |
+|-------|------|
+| `ai-ad-be-gen` | 后端代码生成 |
+| `ai-ad-fe-gen` | 前端代码生成 |
+| `ai-ad-test-gen` | 测试代码生成 |
+| `ai-ad-doc-orchestrator` | 文档编排 |
+| `ai-ad-spec-governor` | SoT 合规治理 |
+
+> 完整指南: [.claude/SUPERCLAUDE_SETUP.md](.claude/SUPERCLAUDE_SETUP.md)
+
+### 废弃组件
+
+以下组件已废弃，不再使用：
+- `agents/` 目录 (Python Agent)
+- `agent_platform/` 目录
+- `/agent` 和 `/orch` 命令
+
 ---
 
-**生效日期**: 2025-11-25 | **基准**: ASDD Freeze v1.0 + SoT Freeze v1.0
+**生效日期**: 2025-12-07 | **基准**: AI Code Factory v3.0 + SoT Freeze v2.6
