@@ -1,557 +1,373 @@
 ---
-version: v1.0
-status: draft
+version: v2.0
+status: production
 layer: agent-layer
 owner: wade
-last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+last_reviewed: 2025-12-07
+baseline: MASTER.md v3.4, SoT Freeze v2.6, AI Code Factory v3.0
 ---
 
-# Skill 注册与调度
+# SuperClaude Skill 注册表
 
-> **文档版本**: v1.0
-> **状态**: Draft
-> **最后审查**: 2025-11-27
-> **基准**: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
-
----
-
-## 1. Skill 定义与分类
-
-### 1.1 Skill vs Agent
-
-**核心区别**:
-
-| 维度 | Agent | Skill |
-|------|-------|-------|
-| **定义** | 类（Class） | 函数（Function） |
-| **接口** | `handle_request(request)` | `skill_func(task, files, ...)` |
-| **职责** | 参数验证、日志、错误处理 | 核心业务逻辑 |
-| **状态** | 可有状态（Stateful） | 无状态（Pure Function） |
-| **示例** | `BEAgent`, `FEAgent` | `be_dev_skill`, `fe_dev_skill` |
-
-**协作关系**:
-```
-Agent (协调层) → Skill (执行层)
-```
-
-### 1.2 Skill 分类
-
-**按功能分类**:
-
-| 分类 | 用途 | 示例 Skill |
-|------|------|-----------|
-| **Doc Skill** | 文档生成/审查 | `doc_skill`, `review_skill` |
-| **Code Skill** | 代码生成/重构 | `be_dev_skill`, `fe_dev_skill`, `refactor_skill` |
-| **Test Skill** | 测试生成/执行 | `db_test_skill` |
-| **Guard Skill** | SoT 守护/验证 | `sot_guard_skill` |
-
-**按层级分类**:
-
-| 层级 | 描述 | 示例 |
-|------|------|------|
-| **Python Skill** | Python 函数（agents/skills/） | `be_dev_skill.py` |
-| **Claude Skill** | Claude Code Skill（.claude/skills/） | `ai-ad-spec-governor` |
-
-### 1.3 Skill 命名约定
-
-**命名规则**: `{domain}_{action}_skill`
-
-| 命名示例 | 域 | 动作 | 说明 |
-|---------|---|------|------|
-| `be_dev_skill` | `be` (Backend) | `dev` (Development) | 后端开发 |
-| `fe_dev_skill` | `fe` (Frontend) | `dev` (Development) | 前端开发 |
-| `db_test_skill` | `db` (Database) | `test` (Testing) | 数据库测试 |
-| `sot_guard_skill` | `sot` (SoT) | `guard` (Guard) | SoT 守护 |
-
-**命名约束**:
-- ✅ 使用 `snake_case`
-- ✅ 后缀必须是 `_skill`
-- ❌ 禁止使用 `camelCase` 或 `PascalCase`
+> **文档版本**: v2.0
+> **状态**: Production
+> **最后审查**: 2025-12-07
+> **基准**: MASTER.md v3.4, SoT Freeze v2.6, AI Code Factory v3.0
 
 ---
 
-## 2. Skill 注册机制
+## 1. Skills 总览
 
-### 2.1 _SKILL_REGISTRY 结构
+### 1.1 架构说明
 
-**SkillMeta 定义**:
+本项目采用 **纯 SuperClaude Skill 架构**，所有 AI 辅助开发能力通过 `.claude/skills/` 目录下的 Markdown 定义实现。
 
-```python
-from dataclasses import dataclass
-from typing import Callable, List, Optional
+> ⚠️ **架构变更 (v2.0)**: Python Agent/Skill 系统已废弃，统一使用 SuperClaude Skills。
 
-@dataclass(frozen=True)
-class SkillMeta:
-    key: str               # Skill 唯一标识（如 "be-dev"）
-    name: str              # Skill 显示名称（如 "BackendDevelopment"）
-    version: str           # Skill 版本（如 "v1.0.0"）
-    description: str       # Skill 描述
-    dependencies: List[str] # Skill 依赖列表（如 ["sot-guard"]）
-    factory: Callable      # Skill 工厂函数
+### 1.2 Skill 定义
+
+**SuperClaude Skill** 是一个 Markdown 定义的 AI 能力单元，包含：
+
+| 组成部分 | 说明 |
+|---------|------|
+| **YAML Frontmatter** | 元数据（名称、版本、SoT 依赖、输出边界） |
+| **Purpose** | Skill 用途说明 |
+| **Input Contract** | 输入参数定义 |
+| **Output Contract** | 输出格式定义 |
+| **Constraints** | 必须遵守的边界约束 |
+| **Prompt Template** | 执行指令模板 |
+
+### 1.3 调用方式
+
+**对话式调用**:
+```
+使用 ai-ad-be-gen 实现充值审批 API，
+目标文件: schemas/topup.py, services/topup_service.py, routers/topups.py
 ```
 
-### 2.2 Skill 注册示例
-
-**在 agents/skills/ 注册 Python Skill**:
-
-```python
-# agents/skills_config.py (新建文件)
-
-from typing import Dict, Callable
-from .be_dev_skill import be_dev_skill
-from .fe_dev_skill import fe_dev_skill
-from .db_test_skill import db_test_skill
-from .sot_guard_skill import sot_guard_skill
-
-_SKILL_REGISTRY: Dict[str, SkillMeta] = {
-    "be-dev": SkillMeta(
-        key="be-dev",
-        name="BackendDevelopment",
-        version="v1.0.0",
-        description="后端代码生成 Skill，生成 FastAPI Router/Service",
-        dependencies=[],  # 无依赖
-        factory=lambda: be_dev_skill,
-    ),
-    "fe-dev": SkillMeta(
-        key="fe-dev",
-        name="FrontendDevelopment",
-        version="v1.0.0",
-        description="前端代码生成 Skill，生成 Next.js 组件",
-        dependencies=[],
-        factory=lambda: fe_dev_skill,
-    ),
-    "db-test": SkillMeta(
-        key="db-test",
-        name="DatabaseTest",
-        version="v1.0.0",
-        description="数据库测试 Skill，生成测试 Prompt",
-        dependencies=[],
-        factory=lambda: db_test_skill,
-    ),
-    "sot-guard": SkillMeta(
-        key="sot-guard",
-        name="SoTGuard",
-        version="v1.0.0",
-        description="SoT 守护 Skill，验证 SoT 文档完整性",
-        dependencies=[],
-        factory=lambda: sot_guard_skill,
-    ),
-}
+**Slash Command 调用**:
 ```
-
-### 2.3 Skill 工厂函数
-
-**Factory Pattern**:
-
-```python
-def _be_dev_skill_factory() -> Callable:
-    """
-    后端开发 Skill 工厂函数。
-
-    Returns:
-        be_dev_skill 函数引用
-    """
-    return be_dev_skill
-```
-
-### 2.4 Skill 注册代码示例
-
-**完整示例** (agents/skills_config.py):
-
-```python
-from typing import Dict
-from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class SkillMeta:
-    key: str
-    name: str
-    version: str
-    description: str
-    dependencies: list
-    factory: callable
-
-_SKILL_REGISTRY: Dict[str, SkillMeta] = {
-    "be-dev": SkillMeta(
-        key="be-dev",
-        name="BackendDevelopment",
-        version="v1.0.0",
-        description="生成 FastAPI Router/Service",
-        dependencies=[],
-        factory=lambda: be_dev_skill,
-    ),
-}
-
-def get_skill(key: str) -> callable:
-    """
-    获取 Skill 函数。
-
-    Args:
-        key: Skill 标识（如 "be-dev"）
-
-    Returns:
-        Skill 函数
-
-    Raises:
-        KeyError: Skill 不存在
-    """
-    if key not in _SKILL_REGISTRY:
-        available = ", ".join(_SKILL_REGISTRY.keys())
-        raise KeyError(f"Unknown skill '{key}'. Available: {available}")
-
-    meta = _SKILL_REGISTRY[key]
-    return meta.factory()
+/sot-check backend/services/topup_service.py
 ```
 
 ---
 
-## 3. Skill 依赖解析
+## 2. Skills 分类
 
-### 3.1 Skill 依赖声明
+### 2.1 代码生成 Skills
 
-**示例依赖关系**:
+| Skill | 版本 | 功能 | 输出 |
+|-------|------|------|------|
+| **ai-ad-be-gen** | v2.0 | 后端代码生成 | Schema、Service、Router |
+| **ai-ad-fe-gen** | v2.0 | 前端代码生成 | PageShell、hooks、components |
+| **ai-ad-test-gen** | v1.0 | 测试代码生成 | pytest、vitest 测试用例 |
 
-```python
-_SKILL_REGISTRY = {
-    "be-dev": SkillMeta(
-        key="be-dev",
-        dependencies=["sot-guard"],  # ← 依赖 sot-guard
-        factory=lambda: be_dev_skill,
-    ),
-    "fe-dev": SkillMeta(
-        key="fe-dev",
-        dependencies=["sot-guard"],  # ← 依赖 sot-guard
-        factory=lambda: fe_dev_skill,
-    ),
-    "sot-guard": SkillMeta(
-        key="sot-guard",
-        dependencies=[],  # 无依赖
-        factory=lambda: sot_guard_skill,
-    ),
-}
-```
+### 2.2 文档处理 Skills
 
-### 3.2 依赖图（DAG）
+| Skill | 版本 | 功能 | 工作流 |
+|-------|------|------|--------|
+| **ai-ad-doc-orchestrator** | v5.3 | 文档编排总控 | 大纲→审查→正文→冻结 |
+| **ai-project-doc-writer** | v2.0 | 文档内容生成 | OUTLINE / DW-FILL 模式 |
+| **ai-ad-doc-fixer** | v2.0 | 文档审查修复 | DOC-ANALYZE / DOC-PATCH 模式 |
+| **ai-master-architect** | v1.0 | 宪法级校验 | MASTER/SoT 对齐检查 |
+| **ai-ad-doc-architect** | v2.0 | 文档架构设计 | 结构一致性审查 |
 
-**依赖图示例**:
+### 2.3 治理 Skills
 
-```mermaid
-graph LR
-    BEDev[be-dev] --> SoTGuard[sot-guard]
-    FEDev[fe-dev] --> SoTGuard
-    DBTest[db-test] --> SoTGuard
-```
+| Skill | 版本 | 功能 | 检查项 |
+|-------|------|------|--------|
+| **ai-ad-spec-governor** | v2.0 | SoT 合规治理 | 状态枚举、错误码、字段类型 |
+| **ai-doc-system-auditor** | v1.0 | 文档系统审计 | 文档健康度评估 |
 
-**依赖解析顺序**:
-1. `sot-guard` (无依赖，先执行)
-2. `be-dev` (依赖 sot-guard)
-3. `fe-dev` (依赖 sot-guard)
+### 2.4 测试 Skills
 
-### 3.3 循环依赖检测
-
-**示例循环依赖**（非法）:
-
-```mermaid
-graph LR
-    SkillA[skill-a] --> SkillB[skill-b]
-    SkillB --> SkillC[skill-c]
-    SkillC --> SkillA  %% ❌ 循环依赖
-```
-
-**检测代码**:
-
-```python
-def has_cycle(dependencies: Dict[str, List[str]]) -> bool:
-    """
-    检测 Skill 依赖图中是否存在循环依赖。
-    """
-    visited = set()
-    rec_stack = set()
-
-    def dfs(skill_key):
-        visited.add(skill_key)
-        rec_stack.add(skill_key)
-
-        for dep in dependencies.get(skill_key, []):
-            if dep not in visited:
-                if dfs(dep):
-                    return True
-            elif dep in rec_stack:
-                return True  # 循环依赖
-
-        rec_stack.remove(skill_key)
-        return False
-
-    for skill in dependencies:
-        if skill not in visited:
-            if dfs(skill):
-                return True
-
-    return False
-```
-
-### 3.4 依赖图示例
-
-**复杂依赖图**:
-
-```mermaid
-graph TB
-    BEDev[be-dev] --> SoTGuard[sot-guard]
-    FEDev[fe-dev] --> SoTGuard
-    Refactor[refactor-skill] --> BEDev
-    Refactor --> FEDev
-    Review[review-skill] --> SoTGuard
-```
-
-**执行顺序** (拓扑排序):
-1. `sot-guard`
-2. `be-dev`, `fe-dev`, `review-skill` (并行)
-3. `refactor-skill`
-
----
-
-## 4. Skill 冲突处理
-
-### 4.1 冲突定义
-
-**冲突场景**: 多个 Skill 处理同一任务
-
-**示例**:
-```python
-# be_dev_skill v1.0.0
-def be_dev_skill(task, files):
-    return {"success": True, "data": {"changes": {...}}}
-
-# be_dev_skill v2.0.0
-def be_dev_skill(task, files):
-    return {"success": True, "data": {"changes": {...}}}
-```
-
-**问题**: 同时注册 v1.0.0 和 v2.0.0 会导致冲突。
-
-### 4.2 冲突解决策略
-
-| 策略 | 描述 | 适用场景 |
-|------|------|---------|
-| **优先级** | 高优先级 Skill 覆盖低优先级 Skill | 版本升级 |
-| **版本选择** | 用户指定使用哪个版本 | 兼容性测试 |
-| **手动选择** | 运行时提示用户选择 | 交互式场景 |
-
-**优先级策略**:
-
-```python
-_SKILL_REGISTRY = {
-    "be-dev": SkillMeta(
-        key="be-dev",
-        version="v1.0.0",
-        priority=1,  # ← 低优先级
-        factory=lambda: be_dev_skill_v1,
-    ),
-    "be-dev-v2": SkillMeta(
-        key="be-dev-v2",
-        version="v2.0.0",
-        priority=10,  # ← 高优先级（覆盖 v1.0.0）
-        factory=lambda: be_dev_skill_v2,
-    ),
-}
-
-def get_skill(key: str) -> callable:
-    # 返回优先级最高的 Skill
-    candidates = [s for s in _SKILL_REGISTRY.values() if s.key.startswith(key)]
-    return max(candidates, key=lambda s: s.priority).factory()
-```
-
-### 4.3 冲突示例
-
-**场景**: be_dev_skill v1.0.0 vs be_dev_skill v2.0.0
-
-**解决方案**:
-- **方案 1**: 只注册 v2.0.0，移除 v1.0.0
-- **方案 2**: 重命名 key（`be-dev-v1`, `be-dev-v2`）
-- **方案 3**: 使用优先级（v2.0.0 优先级更高）
-
----
-
-## 5. Skill 版本控制
-
-### 5.1 Skill 版本号
-
-**版本号格式**: `v{MAJOR}.{MINOR}.{PATCH}`
-
-| Skill | 版本 | 说明 |
+| Skill | 版本 | 功能 |
 |-------|------|------|
-| `be-dev` | v1.0.0 | 初始版本 |
-| `be-dev` | v1.1.0 | 新增功能（支持 TypeScript 后端） |
-| `be-dev` | v2.0.0 | Breaking Changes（修改返回格式） |
+| **ai-ad-api-automation-test** | v1.0 | API 自动化测试设计 |
+| **ai-ad-agents-test-orchestrator** | v1.0 | 测试编排 |
+| **ai-ad-agents-test-runner** | v1.0 | 测试执行 |
 
-### 5.2 Skill 版本兼容性
+### 2.5 工具 Skills
 
-**兼容性规则** (与 Agent 版本管理对齐):
-- ✅ **MINOR 和 PATCH 兼容**: BEAgent v1.0.0 可使用 be_dev_skill v1.0.0 ~ v1.9.9
-- ❌ **MAJOR 不兼容**: BEAgent v1.0.0 不能使用 be_dev_skill v2.0.0
-
-**兼容性矩阵**:
-
-| BEAgent | be_dev_skill v1.x | be_dev_skill v2.x |
-|---------|------------------|------------------|
-| **v1.0.0** | ✅ | ❌ |
-| **v2.0.0** | ❌ | ✅ |
-
-### 5.3 Skill 版本升级策略
-
-**升级流程**:
-1. 发布新版本 Skill（如 v1.1.0）
-2. 更新 `_SKILL_REGISTRY` 版本号
-3. 运行测试（确保兼容）
-4. 发布到生产环境
-5. 通知用户（Changelog）
+| Skill | 版本 | 功能 |
+|-------|------|------|
+| **prompt-engineer-skill** | v1.0 | Prompt 工程辅助 |
 
 ---
 
-## 6. 与 .claude/skills/ 的对齐
+## 3. Skill 定义规范
 
-### 6.1 Claude Skills vs Python Skills
+### 3.1 SKILL.md 格式
 
-**对比**:
+```yaml
+---
+name: ai-ad-be-gen
+version: "2.0"
+status: production
+layer: Skill
 
-| 维度 | Python Skill | Claude Skill |
-|------|-------------|-------------|
-| **位置** | `agents/skills/` | `.claude/skills/` |
-| **定义方式** | Python 函数 | Markdown (SKILL.md) |
-| **调用方式** | 直接调用函数 | 通过 SlashCommand |
-| **适用场景** | Agent 内部调用 | Claude Code 调用 |
-| **示例** | `be_dev_skill` | `ai-ad-spec-governor` |
+sot_dependencies:
+  required:
+    - docs/2.sot/DATA_SCHEMA.md
+    - docs/2.sot/STATE_MACHINE.md
+    - docs/2.sot/API_SOT.md
+  optional:
+    - docs/2.sot/LEDGER_SOT.md
+    - docs/2.sot/ERROR_CODES_SOT.md
 
-### 6.2 Claude Skills 调度
-
-**调用方式** (通过 SlashCommand):
-
-```python
-# 在 Agent 中调用 Claude Skill
-from claude_code import SlashCommand
-
-def handle_request(self, request):
-    # 1. 调用 ai-ad-spec-governor Skill
-    result = SlashCommand.execute("/ai-ad-spec-governor", {
-        "mode": "single-doc",
-        "target_docs": ["docs/2.sot/STATE_MACHINE.md"]
-    })
-
-    # 2. 处理结果
-    if result["success"]:
-        return {"success": True, "data": result["data"]}
-    else:
-        return {"success": False, "error": result["error"]}
-```
-
-### 6.3 集成示例
-
-**场景**: BEAgent 调用 ai-ad-spec-governor 验证生成的代码
-
-```python
-class BEAgent:
-    def handle_request(self, request):
-        # 1. 生成代码
-        code = be_dev_skill(request["task"], request["target_files"])
-
-        # 2. 调用 ai-ad-spec-governor 验证
-        validation_result = SlashCommand.execute("/ai-ad-spec-governor", {
-            "mode": "single-doc",
-            "target_docs": [code["file_path"]]
-        })
-
-        # 3. 检查验证结果
-        if validation_result["data"]["p0_count"] > 0:
-            return {"success": False, "error": "Generated code has P0 issues"}
-
-        return {"success": True, "data": code}
-```
-
+output_boundaries:
+  writable:
+    - backend/schemas/**
+    - backend/services/**
+    - backend/routers/**
+  forbidden:
+    - backend/models/**
+    - migrations/**
 ---
 
-## 7. Skill 调度最佳实践
+# ai-ad-be-gen
 
-### 7.1 Skill 命名规范
+## 1. Purpose
+后端代码生成 Skill，生成 FastAPI + SQLAlchemy + Pydantic 代码。
 
-**规范**:
-- ✅ 使用 `snake_case`（Python Skill）
-- ✅ 使用 `kebab-case`（Claude Skill，如 `ai-ad-spec-governor`）
-- ✅ 后缀必须是 `_skill` 或 `-skill`
-- ❌ 禁止使用 `camelCase` 或 `PascalCase`
+## 2. Input Contract
+- task: 任务描述
+- target_files: 目标文件列表
 
-### 7.2 Skill 文档化
+## 3. Output Contract
+- changes: Dict[file_path, content]
+- notes: List[str] - 自审笔记
+- sot_refs: List[str] - SoT 引用
 
-**Docstring 规范**:
+## 4. Constraints
+- 必须遵循 SoT 裁判链
+- 只能写入 writable 目录
+- 禁止触碰 forbidden 目录
 
-```python
-def be_dev_skill(task: str, target_files: List[str]) -> SkillResult:
-    """
-    后端代码生成 Skill。
-
-    Args:
-        task: 任务描述（自然语言）
-        target_files: 目标文件列表（相对于 backend/）
-
-    Returns:
-        SkillResult: {
-            "success": bool,
-            "data": {
-                "changes": Dict[str, str],  # 文件路径 → 内容
-                "notes": List[str]           # 自审笔记
-            },
-            "error": Optional[str]
-        }
-
-    Raises:
-        ValueError: task 或 target_files 为空
-
-    Examples:
-        >>> be_dev_skill("实现充值 API", ["api/topups.py"])
-        {"success": True, "data": {"changes": {...}, "notes": [...]}}
-    """
-    ...
+## 5. Prompt Template
+...
 ```
 
-### 7.3 Skill 测试
+### 3.2 命名约定
 
-**单元测试示例**:
+**规则**: `ai-ad-{domain}-{action}`
 
-```python
-# tests/skills/test_be_dev_skill.py
+| 示例 | 域 | 动作 |
+|------|---|------|
+| `ai-ad-be-gen` | be (Backend) | gen (Generate) |
+| `ai-ad-fe-gen` | fe (Frontend) | gen (Generate) |
+| `ai-ad-test-gen` | test | gen (Generate) |
+| `ai-ad-doc-fixer` | doc | fixer (Fix) |
+| `ai-ad-spec-governor` | spec | governor (Govern) |
 
-import pytest
-from agents.skills.be_dev_skill import be_dev_skill
+### 3.3 目录结构
 
-def test_be_dev_skill_success():
-    result = be_dev_skill(
-        task="实现 GET /api/topups 端点",
-        target_files=["api/topups.py"]
-    )
-    assert result["success"] is True
-    assert "api/topups.py" in result["data"]["changes"]
-
-def test_be_dev_skill_empty_task():
-    with pytest.raises(ValueError):
-        be_dev_skill(task="", target_files=["api/topups.py"])
+```
+.claude/skills/{skill-name}/
+├── SKILL.md       # Skill 定义（必须）
+└── README.md      # 使用说明（可选）
 ```
 
 ---
 
-## 8. 引用文献
+## 4. SoT 依赖矩阵
+
+### 4.1 代码生成 Skills 依赖
+
+| Skill | DATA_SCHEMA | STATE_MACHINE | API_SOT | ERROR_CODES | LEDGER_SOT | AUTH_SPEC |
+|-------|------------|--------------|---------|-------------|------------|-----------|
+| ai-ad-be-gen | ✅ 必须 | ✅ 必须 | ✅ 必须 | ⚪ 可选 | ⚪ 可选 | ⚪ 可选 |
+| ai-ad-fe-gen | ❌ | ⚪ 可选 | ✅ 必须 | ❌ | ❌ | ⚪ 可选 |
+| ai-ad-test-gen | ✅ 必须 | ✅ 必须 | ⚪ 可选 | ❌ | ⚪ 可选 | ❌ |
+
+### 4.2 治理 Skills 依赖
+
+| Skill | 依赖全部 SoT |
+|-------|-------------|
+| ai-ad-spec-governor | ✅ |
+| ai-doc-system-auditor | ✅ |
+| ai-master-architect | ✅ |
+
+---
+
+## 5. 输出边界定义
+
+### 5.1 后端 Skills 边界
+
+| Skill | 可写 | 禁止 |
+|-------|------|------|
+| **ai-ad-be-gen** | `backend/schemas/**`<br>`backend/services/**`<br>`backend/routers/**` | `backend/models/**`<br>`migrations/**` |
+| **ai-ad-test-gen** | `backend/tests/**` | `backend/models/**` |
+
+### 5.2 前端 Skills 边界
+
+| Skill | 可写 | 禁止 |
+|-------|------|------|
+| **ai-ad-fe-gen** | `frontend/src/modules/**`<br>`frontend/src/lib/api/**` | `frontend/node_modules/**`<br>`frontend/.next/**` |
+
+### 5.3 文档 Skills 边界
+
+| Skill | 可写 | 禁止 |
+|-------|------|------|
+| **ai-ad-doc-orchestrator** | `docs/**` (非 SoT) | `docs/2.sot/**` |
+| **ai-project-doc-writer** | `docs/**` (非 SoT) | `docs/2.sot/**` |
+
+---
+
+## 6. Skill 调用链
+
+### 6.1 文档编排调用链
+
+```
+                    ┌─────────────────────────────────┐
+                    │   ai-ad-doc-orchestrator        │
+                    │   (文档编排总控)                 │
+                    └─────────────┬───────────────────┘
+                                  │
+          ┌───────────────────────┼───────────────────────┐
+          ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ ai-project-     │    │ ai-ad-doc-      │    │ ai-master-      │
+│ doc-writer      │    │ fixer           │    │ architect       │
+│ (内容生成)       │    │ (审查修复)       │    │ (宪法校验)       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 6.2 代码生成调用链
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  代码生成工作流                          │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  需求 ──▶ ai-ad-be-gen ──▶ ai-ad-test-gen              │
+│              │                    │                     │
+│              ▼                    ▼                     │
+│         后端代码              单元测试                   │
+│                                                         │
+│  需求 ──▶ ai-ad-fe-gen ──▶ ai-ad-test-gen              │
+│              │                    │                     │
+│              ▼                    ▼                     │
+│         前端代码              前端测试                   │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 7. 版本管理
+
+### 7.1 版本号格式
+
+**格式**: `v{MAJOR}.{MINOR}`
+
+| 变更类型 | 版本策略 |
+|---------|---------|
+| 新增功能（向后兼容） | MINOR +1 |
+| Breaking Changes | MAJOR +1 |
+
+### 7.2 当前版本清单
+
+| Skill | 版本 | 状态 | 最后更新 |
+|-------|------|------|----------|
+| ai-ad-be-gen | v2.0 | ✅ Production | 2025-12-06 |
+| ai-ad-fe-gen | v2.0 | ✅ Production | 2025-12-06 |
+| ai-ad-test-gen | v1.0 | ✅ Production | 2025-12-06 |
+| ai-ad-doc-orchestrator | v5.3 | ✅ Production | 2025-11-28 |
+| ai-ad-doc-architect | v2.0 | ✅ Production | 2025-11-27 |
+| ai-ad-doc-fixer | v2.0 | ✅ Production | 2025-11-27 |
+| ai-project-doc-writer | v2.0 | ✅ Production | 2025-11-27 |
+| ai-master-architect | v1.0 | ✅ Production | 2025-11-27 |
+| ai-ad-spec-governor | v2.0 | ✅ Production | 2025-11-27 |
+| ai-doc-system-auditor | v1.0 | ✅ Production | 2025-11-27 |
+| ai-ad-api-automation-test | v1.0 | ✅ Production | 2025-12-06 |
+| prompt-engineer-skill | v1.0 | ✅ Production | 2025-11-25 |
+
+---
+
+## 8. 使用示例
+
+### 8.1 后端代码生成
+
+```
+使用 ai-ad-be-gen 实现充值审批 API，
+目标文件: schemas/topup.py, services/topup_service.py, routers/topups.py
+
+要求:
+1. 遵循 STATE_MACHINE.md#topup 状态转换
+2. 遵循 LEDGER_SOT.md#topup 账本分录规则
+3. 遵循 AUTH_SPEC.md 权限矩阵
+4. 使用 ERROR_CODES_SOT.md 定义的错误码
+```
+
+### 8.2 前端代码生成
+
+```
+使用 ai-ad-fe-gen 实现充值列表页面，模块名: topups
+
+要求:
+1. 使用 shadcn/ui 组件库
+2. 使用 TanStack Query 数据获取
+3. 遵循 FRONTEND_RULES 规范
+```
+
+### 8.3 测试代码生成
+
+```
+使用 ai-ad-test-gen 为 topup_service 生成单元测试，覆盖:
+1. test_approve_success - 成功审批
+2. test_approve_wrong_status - 状态不允许审批
+3. test_approve_no_permission - 权限不足
+```
+
+### 8.4 SoT 合规检查
+
+```
+/sot-check backend/services/topup_service.py
+```
+
+或:
+
+```
+使用 ai-ad-spec-governor 检查 backend/services/topup_service.py 的 SoT 合规性
+```
+
+### 8.5 文档编排
+
+```
+使用 ai-ad-doc-orchestrator 生成 PROJECT.md，outline_exists = false
+```
+
+---
+
+## 9. 废弃说明
+
+> ⚠️ **重要**: 以下 Python Skill 系统组件已废弃。
+
+| 废弃组件 | 原位置 | 替代方案 |
+|----------|--------|----------|
+| **be_dev_skill** | `agents/skills/` | ai-ad-be-gen |
+| **fe_dev_skill** | `agents/skills/` | ai-ad-fe-gen |
+| **db_test_skill** | `agents/skills/` | ai-ad-test-gen |
+| **sot_guard_skill** | `agents/skills/` | ai-ad-spec-governor |
+| **_SKILL_REGISTRY** | `agents/skills_config.py` | `.claude/skills/README.md` |
+
+---
+
+## 10. 引用文献
 
 **本文档引用的规范**:
-- MASTER.md v3.4 §11 - Skill 注册与调度
-- agents/agents_config.py - Agent Registry 实现
-- agents/skills/*.py - Python Skills 实现
-- .claude/skills/*/SKILL.md - Claude Skills 定义
+- MASTER.md v3.4 - 系统宪法
+- .claude/README.md - AI 代码工厂主入口
+- .claude/skills/README.md - Skills 索引
+- .claude/SUPERCLAUDE_SETUP.md - Skill 使用指南
 
-**下一步阅读**:
-- [AGENT_LAYER_FREEZE_MANIFEST_v1.0.md](./AGENT_LAYER_FREEZE_MANIFEST_v1.0.md) - Agent Layer 冻结清单
+**相关文档**:
 - [AGENT_LAYER_OVERVIEW.md](./AGENT_LAYER_OVERVIEW.md) - Agent Layer 总览
+- [AI_CODE_FACTORY_DEV_GUIDE_v2.0.md](./AI_CODE_FACTORY_DEV_GUIDE_v2.0.md) - 开发指南
 
 ---
 
-**文档状态**: ✅ Draft - 待审计
-**健康度**: 待评估（P0/P1/P2）
-**下一步**: 提交 ai-ad-doc-system-auditor 审计
+**文档状态**: ✅ Production
+**健康度**: P0 - 核心文档
+**基准**: AI Code Factory v3.0 + SoT Freeze v2.6
