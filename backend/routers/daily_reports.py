@@ -1165,16 +1165,29 @@ async def get_daily_report_audit_logs(
 ):
     """
     获取日报审核日志API
+
+    使用通用 AuditLog 模型，转换为 DailyReportAuditLogResponse 格式
     """
     try:
-        # 获取审核日志
+        # 获取审核日志（返回通用 AuditLog 对象列表）
         logs = service.get_daily_report_audit_logs(report_id, current_user)
 
-        # 转换为响应格式
-        log_responses = [
-            DailyReportAuditLogResponse.model_validate(log)
-            for log in logs
-        ]
+        # 转换 AuditLog 为 DailyReportAuditLogResponse 格式
+        log_responses = []
+        for log in logs:
+            log_responses.append(DailyReportAuditLogResponse(
+                id=log.id,
+                daily_report_id=int(log.resource_id) if log.resource_id else report_id,
+                action=log.action,
+                old_status=log.old_values.get("status") if log.old_values else None,
+                new_status=log.new_values.get("status") if log.new_values else None,
+                audit_user_id=log.user_id,
+                audit_user_name=log.user.name if log.user else "Unknown",
+                audit_time=log.created_at,
+                audit_notes=log.new_values.get("audit_notes") if log.new_values else None,
+                ip_address=log.ip_address,
+                user_agent=log.user_agent
+            ))
 
         return success_response(data=log_responses)
 
@@ -1191,6 +1204,7 @@ async def get_daily_report_audit_logs(
             status_code=status.HTTP_403_FORBIDDEN
         )
     except Exception as e:
+        logger.exception(f"Unexpected error in get_daily_report_audit_logs: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",

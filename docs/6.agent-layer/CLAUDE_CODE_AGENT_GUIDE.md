@@ -1,14 +1,19 @@
 # Claude Code Agent 使用指南
 
-> **文档版本**: v1.0
+> **文档版本**: v2.1 (7 Flow 架构)
+> **SoT 基准**: DEV_FLOW_SOT_v1.1
 > **创建日期**: 2025-12-06
+> **更新日期**: 2025-12-07
 > **适用范围**: Claude Code CLI 用户
 
 ---
 
 ## 概述
 
-本指南介绍如何在 Claude Code 命令行中直接调用 AI Agent 系统，实现代码生成、测试、文档审计等自动化任务。
+本指南介绍如何在 Claude Code 命令行中使用 AI 代码工厂命令，实现代码生成、测试、文档审计等自动化任务。
+
+> **v2.4 架构**: 统一使用 `/gen`、`/review`、`/doc`、`/sot-check`
+> **7 Flow 架构**: 使用 `/dev-flow` 执行标准开发流程
 
 ## 快速开始
 
@@ -17,40 +22,57 @@
 cd /path/to/AI_Ads
 claude
 
-# 调用 Agent
-/agent be 实现充值API
+# 使用开发流程命令 (推荐)
+/dev-flow be 实现充值审批功能
+
+# 或单独使用核心命令
+/gen be 实现充值API
 ```
 
 ---
 
 ## 可用命令一览
 
+### 开发流程命令 (推荐)
+
+| 命令 | Flow ID | 用途 | 示例 |
+|------|---------|------|------|
+| `/dev-flow be` | BE_DEV_FLOW | 后端功能开发 | `/dev-flow be 实现充值审批` |
+| `/dev-flow fe` | FE_DEV_FLOW | 前端功能开发 | `/dev-flow fe 实现充值页面` |
+| `/dev-flow fix` | API_FIX_FLOW | 接口 Bug 修复 | `/dev-flow fix 日报导出返回空` |
+| `/dev-flow test` | TEST_HARDEN_FLOW | 测试加固 | `/dev-flow test 补齐状态机测试` |
+| `/dev-flow doc` | DOC_FREEZE_FLOW | 文档审计/冻结 | `/dev-flow doc docs/2.sot/` |
+| `/dev-flow full` | FULL_FLOW | 完整功能开发 | `/dev-flow full 实现对账模块` |
+| `/dev-flow refactor` | REFACTOR_FLOW | 代码重构 | `/dev-flow refactor 重构审批逻辑` |
+
+### 核心命令
+
 | 命令 | 用途 | 示例 |
 |------|------|------|
-| `/agent` | 调用单个 Agent | `/agent be 实现充值API` |
-| `/orch` | 执行多 Agent 工作流 | `/orch be_then_test 实现日报功能` |
+| `/gen be` | 后端代码生成 | `/gen be 实现充值API` |
+| `/gen fe` | 前端代码生成 | `/gen fe 实现充值页面` |
+| `/gen test` | 测试代码生成 | `/gen test 为充值模块生成测试` |
+| `/review` | 代码审查 | `/review backend/services/topup_service.py` |
 | `/sot-check` | SoT 合规检查 | `/sot-check backend/routers/` |
-| `/doc-agent` | 文档审计 | `/doc-agent docs/2.sot/` |
+| `/doc` | 文档审计 | `/doc docs/2.sot/` |
 
 ---
 
-## 1. `/agent` - 单 Agent 调用
+## 1. `/gen` - 代码生成
 
 ### 语法
 
 ```bash
-/agent <agent_type> <action> [--files <files>]
+/gen <type> <task> [--files <files>]
 ```
 
-### 可用 Agent 类型
+### 可用类型
 
-| Agent | Key | 用途 | SoT 依赖 |
-|-------|-----|------|----------|
-| Backend Agent | `be` | 生成 FastAPI 路由、服务、Schema | DATA_SCHEMA, API_SOT, STATE_MACHINE |
-| Frontend Agent | `fe` | 生成 Next.js/React 组件 | FRONTEND_RULES, UI_DESIGN_SYSTEM |
-| Test Agent | `test` | 生成 pytest 测试用例 | TESTING_STRATEGY, STATE_MACHINE |
-| Doc Agent | `doc` | 文档生成与审查 | 全部 SoT 文档 |
-| Review Agent | `review` | SoT 合规检查 | 全部 SoT 文档 |
+| 类型 | 用途 | SoT 依赖 |
+|------|------|----------|
+| `be` | 后端代码生成 (FastAPI) | DATA_SCHEMA, API_SOT, STATE_MACHINE |
+| `fe` | 前端代码生成 (React/Next.js) | FRONTEND_RULES, UI_DESIGN_SYSTEM |
+| `test` | 测试代码生成 (pytest) | TESTING_STRATEGY, STATE_MACHINE |
 
 ### 使用示例
 
@@ -58,139 +80,69 @@ claude
 
 ```bash
 # 生成 CRUD API
-/agent be 实现 projects CRUD API
+/gen be 实现 projects CRUD API
 
 # 指定目标文件
-/agent be 实现充值服务 --files backend/services/topup_service.py
+/gen be 实现充值服务 --files backend/services/topup_service.py
 
-# 生成完整模块
-/agent be 实现对账模块 (router + service + schema)
+# 生成完整模块 (Schema → Service → Router)
+/gen be 实现对账模块
 ```
 
 #### 前端代码生成
 
 ```bash
 # 生成页面组件
-/agent fe 实现项目列表页面
+/gen fe 实现项目列表页面
 
 # 生成表单组件
-/agent fe 实现充值申请表单
+/gen fe 实现充值申请表单
 
 # 指定目标文件
-/agent fe 实现日报详情抽屉 --files frontend/components/DailyReportDrawer.tsx
+/gen fe 实现日报详情抽屉 --files frontend/components/DailyReportDrawer.tsx
 ```
 
-#### 测试用例生成
+#### 测试代码生成
 
 ```bash
 # 生成模块测试
-/agent test 生成日报模块测试
+/gen test 生成日报模块测试
 
 # 生成状态机测试
-/agent test 生成充值状态转换测试
+/gen test 生成充值状态转换测试
 
 # 指定测试文件
-/agent test 生成对账API测试 --files backend/tests/test_reconciliation_api.py
-```
-
-#### 代码审查
-
-```bash
-# 审查单个文件
-/agent review backend/routers/daily_reports.py
-
-# 审查目录
-/agent review backend/services/
-
-# SoT 合规检查
-/agent review --action sot_check backend/models/
-```
-
-#### 文档操作
-
-```bash
-# 生成文档
-/agent doc 生成 API 端点文档
-
-# 审查文档
-/agent doc 审查 API_SOT.md
-
-# 同步文档版本
-/agent doc 同步 SoT 版本引用
+/gen test 生成对账API测试 --files backend/tests/test_reconciliation_api.py
 ```
 
 ---
 
-## 2. `/orch` - 编排器工作流
+## 2. `/review` - 代码审查
 
 ### 语法
 
 ```bash
-/orch <flow> <task> [--auto-write]
+/review <file_or_directory>
 ```
 
-### 可用工作流
+### 审查内容
 
-| Flow | 说明 | 步骤 |
-|------|------|------|
-| `be_then_test` | 后端 → 测试 | BE Agent → Test Agent |
-| `full` | 完整流程 | BE → FE → Test |
-| `be_only` | 仅后端 | BE Agent |
-| `fe_only` | 仅前端 | FE Agent |
-
-### 工作流详解
-
-#### be_then_test (推荐)
-
-```
-┌─────────────┐    ┌─────────────┐
-│  BE Agent   │ -> │ Test Agent  │
-│ 生成后端代码  │    │ 生成测试用例  │
-└─────────────┘    └─────────────┘
-```
-
-```bash
-# 基本用法
-/orch be_then_test 实现充值API并生成测试
-
-# 自动写入
-/orch be_then_test 实现日报导出功能 --auto-write
-```
-
-#### full (完整流程)
-
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  BE Agent   │ -> │  FE Agent   │ -> │ Test Agent  │
-│   后端代码   │    │   前端组件   │    │   测试用例   │
-└─────────────┘    └─────────────┘    └─────────────┘
-```
-
-```bash
-# 实现完整功能
-/orch full 实现项目管理功能
-
-# 包含前后端和测试
-/orch full 实现死号余额迁移功能
-```
+- **代码质量**: 可读性、复杂度、错误处理
+- **安全检查**: 注入漏洞、权限问题
+- **SoT 合规**: 状态机、错误码、数据模型
+- **架构一致性**: 分层规范、依赖关系
 
 ### 使用示例
 
 ```bash
-# 后端 + 测试
-/orch be_then_test 实现充值申请API
+# 审查单个文件
+/review backend/routers/daily_reports.py
 
-# 完整流程
-/orch full 实现对账管理功能
+# 审查目录
+/review backend/services/
 
-# 仅后端
-/orch be_only 实现账本查询服务
-
-# 仅前端
-/orch fe_only 重构日报列表页面
-
-# 自动写入模式 (跳过确认)
-/orch be_then_test 实现转账API --auto-write
+# 审查前端组件
+/review frontend/src/components/TopupForm.tsx
 ```
 
 ---
@@ -224,8 +176,8 @@ claude
 # 检查服务层
 /sot-check backend/services/
 
-# 检查模型层
-/sot-check backend/models/
+# 检查 SoT 文档一致性
+/sot-check docs/2.sot/
 ```
 
 ### 输出示例
@@ -255,12 +207,12 @@ claude
 
 ---
 
-## 4. `/doc-agent` - 文档审计
+## 4. `/doc` - 文档审计
 
 ### 语法
 
 ```bash
-/doc-agent [directory] [--auto-fix]
+/doc [directory] [--auto-fix]
 ```
 
 ### 检查内容
@@ -276,7 +228,7 @@ claude
 |------|------|
 | STATE_MACHINE.md | v2.6 |
 | DATA_SCHEMA.md | v5.2 |
-| BUSINESS_RULES.md | v3.1 |
+| BUSINESS_RULES.md | v3.2 |
 | API_SOT.md | v9.0 |
 | ERROR_CODES_SOT.md | v2.1 |
 | AUTH_SPEC.md | v2.0 |
@@ -286,48 +238,115 @@ claude
 
 ```bash
 # 扫描全部文档
-/doc-agent
+/doc
 
 # 扫描指定目录
-/doc-agent docs/2.sot/
+/doc docs/2.sot/
 
 # 扫描并自动修复
-/doc-agent --auto-fix
+/doc --auto-fix
 
 # 仅扫描开发指南
-/doc-agent docs/3.dev-guides/
+/doc docs/3.dev-guides/
 ```
 
-### 输出示例
+---
 
+## 开发流程推荐 (7 Flow)
+
+### 使用 /dev-flow 命令 (推荐)
+
+```bash
+# 后端功能开发 (BE_DEV_FLOW)
+/dev-flow be 实现充值审批功能
+
+# 前端功能开发 (FE_DEV_FLOW)
+/dev-flow fe 实现充值申请页面
+
+# 接口 Bug 修复 (API_FIX_FLOW)
+/dev-flow fix 日报导出接口返回空数据
+
+# 测试加固 (TEST_HARDEN_FLOW)
+/dev-flow test 补齐对账模块状态机测试
+
+# 文档审计/冻结 (DOC_FREEZE_FLOW)
+/dev-flow doc docs/2.sot/
+
+# 完整功能开发 (FULL_FLOW)
+/dev-flow full 实现对账模块
+
+# 代码重构 (REFACTOR_FLOW)
+/dev-flow refactor 重构 topup_service.py 的审批逻辑
 ```
-## 文档审计报告
 
-### 扫描范围
-- 目录: docs/
-- 文件数: 42
+### 手动执行各步骤
 
-### 问题汇总
-- P0: 0 个
-- P1: 2 个
-- P2: 5 个
+#### 后端功能开发 (BE_DEV_FLOW)
 
-### P1 问题详情
-| 文件 | 问题 | 建议修复 |
-|------|------|----------|
-| TRANSFER_SOT.md | 引用 v2.5 应为 v2.6 | 更新版本号 |
-| RECONCILIATION_SOT.md | 引用 v2.5 应为 v2.6 | 更新版本号 |
+```bash
+# Step 1: SoT 对齐检查
+/sot-check docs/2.sot/
 
-### 下一步
-- 输入 "修复 P1" 修复警告级问题
-- 输入 "跳过" 不做修改
+# Step 2: Schema 层
+/gen be 生成充值审批的 Pydantic Schema
+
+# Step 3: Service 层
+/gen be 实现充值审批的 Service 层
+
+# Step 4: Router 层
+/gen be 实现充值审批的 Router 层
+
+# Step 5: 测试
+/gen test 为充值审批生成状态机测试 + API 测试
+
+# Step 6: 审查
+/review backend/services/topup_approval_service.py
+```
+
+#### Bug 修复 (API_FIX_FLOW)
+
+```bash
+# Step 1: SoT 检查
+/sot-check backend/routers/daily_report.py
+
+# Step 2: 修复
+/gen be 修复日报导出接口返回空数据问题
+
+# Step 3: 回归测试
+/gen test 为日报导出接口生成回归测试
+
+# Step 4: 审查
+/review backend/routers/daily_report.py
+```
+
+#### 代码重构 (REFACTOR_FLOW)
+
+```bash
+# ⚠️ 约束: 不得改变业务行为，不得修改 SoT 定义
+
+# Step 1: 建立测试基线
+pytest backend/tests/ --tb=short > refactor_baseline.txt
+
+# Step 2: SoT 检查
+/sot-check backend/services/topup_service.py
+
+# Step 3: 代码分析
+/review backend/services/topup_service.py
+
+# Step 4: 重构实施
+/gen be 重构 topup_service.py 的审批逻辑
+
+# Step 5: 等价验证
+/sot-check backend/services/topup_service.py
+pytest backend/tests/ -v > refactor_after.txt
+diff refactor_baseline.txt refactor_after.txt
 ```
 
 ---
 
 ## SoT 裁判链
 
-所有 Agent 生成的代码必须遵循以下优先级:
+所有生成的代码必须遵循以下优先级:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -335,7 +354,7 @@ claude
 ├─────────────────────────────────────────────────────────────┤
 │  DATA_SCHEMA.md v5.2    (数据模型，23 张表)                  │
 ├─────────────────────────────────────────────────────────────┤
-│  BUSINESS_RULES.md v3.1 (业务规则)                          │
+│  BUSINESS_RULES.md v3.2 (业务规则)                          │
 ├─────────────────────────────────────────────────────────────┤
 │  API_SOT.md v9.0        (API 规范，126 端点)                 │
 ├─────────────────────────────────────────────────────────────┤
@@ -351,34 +370,34 @@ claude
 
 ## 最佳实践
 
-### 1. 先检查后写入
+### 1. 先检查后生成
 
 ```bash
-# 默认预览模式
-/orch be_then_test 实现API
+# 先检查 SoT 合规性
+/sot-check backend/
 
-# 确认无误后再自动写入
-/orch be_then_test 实现API --auto-write
+# 再生成代码
+/gen be 实现新功能
 ```
 
 ### 2. 指定目标文件
 
 ```bash
 # ✅ 好: 明确指定文件
-/agent be 实现充值服务 --files backend/services/topup_service.py
+/gen be 实现充值服务 --files backend/services/topup_service.py
 
 # ⚠️ 避免: 范围过大
-/agent be 实现所有后端功能
+/gen be 实现所有后端功能
 ```
 
 ### 3. 分步执行复杂任务
 
 ```bash
 # 第一步: 后端
-/agent be 实现充值 router 和 service
+/gen be 实现充值 router 和 service
 
 # 第二步: 测试
-/agent test 生成充值模块测试
+/gen test 生成充值模块测试
 
 # 第三步: 检查
 /sot-check backend/routers/topup.py
@@ -388,37 +407,36 @@ claude
 
 ```bash
 # 每周执行一次
-/doc-agent --auto-fix
+/doc --auto-fix
 ```
 
 ---
 
 ## 常见问题
 
-### Q: Agent 生成的代码有错误怎么办?
+### Q: 生成的代码有错误怎么办?
 
 A: 使用 `/sot-check` 检查合规性，然后手动修复或重新生成。
 
-### Q: 如何查看 Agent 加载了哪些 SoT 文档?
+### Q: 如何查看加载了哪些 SoT 文档?
 
-A: Agent 会自动加载 `docs/2.sot/` 目录下的所有 SoT 文档。
+A: Skill 会自动加载 `docs/2.sot/` 目录下的所有 SoT 文档。
 
 ### Q: 生成的代码不符合项目规范?
 
-A: 检查 SoT 文档是否最新，使用 `/doc-agent` 审计文档一致性。
+A: 检查 SoT 文档是否最新，使用 `/doc` 审计文档一致性。
 
-### Q: 如何自定义 Agent 行为?
+### Q: 如何自定义命令行为?
 
-A: 修改 `.claude/commands/` 目录下的命令定义文件。
+A: 修改 `.claude/skills/` 目录下的 Skill 定义文件。
 
 ---
 
 ## 相关文档
 
-- [Agent 层概览](./AGENT_LAYER_OVERVIEW.md)
-- [编排管道规范](./AGENT_ORCHESTRATION_PIPELINE.md)
-- [技能注册表](./AGENT_SKILL_REGISTRY.md)
-- [Agent 安全规范](./AGENT_SECURITY_SPEC.md)
+- [AI 代码工厂开发指南](./AI_CODE_FACTORY_DEV_GUIDE_v2.4.md)
+- [SuperClaude 集成指南](./SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md)
+- [Skills 索引](../../.claude/skills/README.md)
 
 ---
 
@@ -426,4 +444,24 @@ A: 修改 `.claude/commands/` 目录下的命令定义文件。
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| v1.0 | 2025-12-06 | 初始版本，包含 4 个 slash commands |
+| v2.1 | 2025-12-07 | 新增 7 Flow 架构，新增 /dev-flow 命令文档 |
+| v2.0 | 2025-12-07 | 升级到 v2.4 命令架构，移除 /agent、/orch、/doc-agent |
+| v1.0 | 2025-12-06 | 初始版本 |
+
+---
+
+<details>
+<summary>📜 已弃用命令参考 (v2.3 及更早)</summary>
+
+以下命令在 v2.4 架构中已移除：
+
+| 旧命令 | 新命令 | 说明 |
+|--------|--------|------|
+| `/agent be <task>` | `/gen be <task>` | 后端代码生成 |
+| `/agent fe <task>` | `/gen fe <task>` | 前端代码生成 |
+| `/agent test <task>` | `/gen test <task>` | 测试代码生成 |
+| `/orch be_then_test <task>` | `/gen be` + `/gen test` | 后端→测试流程 |
+| `/orch full <task>` | `/gen be` + `/gen fe` + `/gen test` | 完整流程 |
+| `/doc-agent [dir]` | `/doc [dir]` | 文档审计 |
+
+</details>

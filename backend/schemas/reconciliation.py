@@ -175,33 +175,51 @@ class ReconciliationReportGenerateRequest(BaseModel):
 # ========== 响应模型 ==========
 
 class ReconciliationBatchResponse(BaseModel):
-    """对账批次响应"""
+    """
+    对账批次响应
+
+    与 ReconciliationBatch 模型对齐 (DATA_SCHEMA.md v5.2)
+    """
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    batch_no: str
-    reconciliation_date: date
-    status: str
-    total_accounts: int
-    matched_accounts: int
-    mismatched_accounts: int
-    total_platform_spend: Decimal
-    total_internal_spend: Decimal
-    total_difference: Decimal
-    auto_matched: int
-    manual_reviewed: int
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    created_by: int
-    created_by_name: str
-    notes: Optional[str]
+    batch_code: str = Field(..., alias="batch_no", description="批次代码")
+    period_start: date = Field(..., description="对账期间开始")
+    period_end: date = Field(..., description="对账期间结束")
+    status: str = Field(..., description="状态 (5状态机)")
+    total_system_spend: Optional[Decimal] = Field(None, description="系统总消耗")
+    total_actual_spend: Optional[Decimal] = Field(None, description="实际总消耗")
+    discrepancy: Optional[Decimal] = Field(None, description="差异金额")
+    created_by: Optional[str] = Field(None, description="创建人ID")
+    reviewed_by: Optional[str] = Field(None, description="审核人ID")
+    closed_at: Optional[datetime] = Field(None, description="关闭时间")
+    version: int = Field(1, description="乐观锁版本号")
     created_at: datetime
     updated_at: datetime
 
-    # 添加辅助字段
-    match_rate: Optional[float] = Field(None, description="匹配率百分比")
-    difference_rate: Optional[float] = Field(None, description="差异率百分比")
-    processing_duration: Optional[float] = Field(None, description="处理时长(小时)")
+    # 计算字段（非数据库字段）
+    discrepancy_rate: Optional[float] = Field(None, description="差异率百分比")
+
+    # 兼容别名
+    @property
+    def batch_no(self) -> str:
+        return self.batch_code
+
+    @property
+    def reconciliation_date(self) -> date:
+        return self.period_end
+
+    @property
+    def total_platform_spend(self) -> Optional[Decimal]:
+        return self.total_system_spend
+
+    @property
+    def total_internal_spend(self) -> Optional[Decimal]:
+        return self.total_actual_spend
+
+    @property
+    def total_difference(self) -> Optional[Decimal]:
+        return self.discrepancy
 
 
 class ReconciliationBatchListResponse(BaseModel):
@@ -211,51 +229,54 @@ class ReconciliationBatchListResponse(BaseModel):
 
 
 class ReconciliationDetailResponse(BaseModel):
-    """对账详情响应"""
+    """
+    对账详情响应
+
+    与 ReconciliationDetail 模型对齐 (DATA_SCHEMA.md v5.2)
+    """
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     batch_id: int
     ad_account_id: int
-    ad_account_name: str
-    project_id: int
-    project_name: str
-    channel_id: int
-    channel_name: str
-
-    # 平台数据
-    platform_spend: Decimal
-    platform_currency: str
-    platform_data_date: Optional[date]
-
-    # 内部数据
-    internal_spend: Decimal
-    internal_currency: str
-    internal_data_date: Optional[date]
-
-    # 差异信息
-    spend_difference: Decimal
-    exchange_rate: Decimal
-    percentage_difference: Optional[float] = Field(None, description="差异百分比")
-    is_matched: bool
-    match_status: str
-    difference_type: Optional[str]
-    difference_reason: Optional[str]
-    auto_confidence: Decimal
-
-    # 审核信息
-    reviewed_by: Optional[int]
-    reviewed_by_name: Optional[str]
-    reviewed_at: Optional[datetime]
-    review_notes: Optional[str]
-    resolved_by: Optional[int]
-    resolved_by_name: Optional[str]
-    resolved_at: Optional[datetime]
-    resolution_method: Optional[str]
-    resolution_notes: Optional[str]
-
+    system_spend: Decimal = Field(..., description="系统消耗")
+    actual_spend: Decimal = Field(..., description="实际消耗")
+    discrepancy: Decimal = Field(..., description="差异金额")
+    status: str = Field(..., description="状态 (pending/confirmed/adjusted)")
+    notes: Optional[str] = Field(None, description="备注")
+    version: int = Field(1, description="乐观锁版本号")
     created_at: datetime
     updated_at: datetime
+
+    # 计算属性
+    discrepancy_rate: Optional[float] = Field(None, description="差异率百分比")
+    has_discrepancy: Optional[bool] = Field(None, description="是否存在差异")
+
+    # 关联数据（可选，通过 relationship 填充）
+    ad_account_name: Optional[str] = Field(None, description="广告账户名称")
+    project_name: Optional[str] = Field(None, description="项目名称")
+    channel_name: Optional[str] = Field(None, description="渠道名称")
+
+    # 兼容别名
+    @property
+    def platform_spend(self) -> Decimal:
+        return self.system_spend
+
+    @property
+    def internal_spend(self) -> Decimal:
+        return self.actual_spend
+
+    @property
+    def spend_difference(self) -> Decimal:
+        return self.discrepancy
+
+    @property
+    def match_status(self) -> str:
+        return self.status
+
+    @property
+    def is_matched(self) -> bool:
+        return abs(self.discrepancy) < Decimal('0.01')
 
 
 class ReconciliationDetailListResponse(BaseModel):
@@ -265,29 +286,31 @@ class ReconciliationDetailListResponse(BaseModel):
 
 
 class ReconciliationAdjustmentResponse(BaseModel):
-    """调整记录响应"""
+    """
+    调整记录响应
+
+    与 ReconciliationAdjustment 模型对齐 (DATA_SCHEMA.md v5.2)
+    """
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     detail_id: int
-    batch_id: int
-    adjustment_type: str
-    original_amount: Decimal
-    adjustment_amount: Decimal
-    adjusted_amount: Decimal
-    adjustment_reason: str
-    detailed_reason: str
-    evidence_url: Optional[str]
-    approved_by: int
-    approved_by_name: str
-    approved_at: datetime
-    finance_approved: bool
-    finance_approved_by: Optional[int]
-    finance_approved_by_name: Optional[str]
-    finance_approved_at: Optional[datetime]
-    notes: Optional[str]
+    adjustment_type: str = Field(..., description="调整类型 (increase/decrease/writeoff)")
+    amount: Decimal = Field(..., description="调整金额")
+    reason: Optional[str] = Field(None, description="调整原因")
+    created_by: Optional[str] = Field(None, description="创建人ID")
+    version: int = Field(1, description="乐观锁版本号")
     created_at: datetime
     updated_at: datetime
+
+    # 兼容别名
+    @property
+    def adjustment_amount(self) -> Decimal:
+        return self.amount
+
+    @property
+    def adjustment_reason(self) -> Optional[str]:
+        return self.reason
 
 
 class ReconciliationStatisticsResponse(BaseModel):
@@ -328,22 +351,36 @@ class ReconciliationStatisticsResponse(BaseModel):
 
 
 class ReconciliationReportResponse(BaseModel):
-    """对账报告响应"""
+    """
+    对账报告响应
+
+    与 ReconciliationReport 模型对齐 (DATA_SCHEMA.md v5.2)
+    """
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    batch_id: Optional[int]
-    report_type: str
-    report_period_start: date
-    report_period_end: date
-    report_data: Dict[str, Any]
-    chart_data: Optional[Dict[str, Any]]
-    summary_data: Dict[str, Any]
-    file_path: Optional[str]
-    generated_by: int
-    generated_by_name: str
-    generated_at: datetime
-    file_size: Optional[int] = None  # 文件大小（字节）
+    batch_id: int
+    report_type: str = Field(..., description="报告类型 (daily/weekly/monthly)")
+    period_start: date = Field(..., description="报告期间开始")
+    period_end: date = Field(..., description="报告期间结束")
+    metrics: Optional[str] = Field(None, description="报告指标(JSON)")
+    report_url: Optional[str] = Field(None, description="报告文件URL")
+    generated_by: Optional[str] = Field(None, description="生成人ID")
+    generated_at: Optional[datetime] = Field(None, description="生成时间")
+    created_at: datetime
+    updated_at: datetime
+
+    # 计算属性
+    metrics_dict: Optional[Dict[str, Any]] = Field(None, description="报告指标字典")
+
+    # 兼容别名
+    @property
+    def report_period_start(self) -> date:
+        return self.period_start
+
+    @property
+    def report_period_end(self) -> date:
+        return self.period_end
 
 
 class ReconciliationReportListResponse(BaseModel):

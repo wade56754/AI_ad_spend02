@@ -14,5 +14,5 @@ export * from './services';
 // Hooks
 export * from './hooks';
 
-// Components will be added as they are created
-// export * from './components';
+// Components
+export * from './components';

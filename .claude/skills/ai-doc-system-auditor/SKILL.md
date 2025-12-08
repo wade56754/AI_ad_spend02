@@ -1,25 +1,28 @@
 ---
 name: ai-doc-system-auditor
-version: "1.5"
-status: ready_for_production
+version: "2.0"
+status: production
 layer: skill
 owner: wade
-last_reviewed: 2025-11-28
-baseline:
-  - MASTER.md v3.5
-  - SoT Freeze v2.6
-  - Dev-Guides Freeze vFinal
-  - Architecture Freeze v1.0
-  - Infrastructure Freeze v1.0
-  - Agent Freeze v1.0
+last_reviewed: 2025-12-07
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
+
+# SuperClaude Enhancement Configuration
+enhancement:
+  enabled: true
+  superclaude_patterns:
+    - analysis_pattern     # 吸收 /sc:analyze 审计分析
+    - task_breakdown       # 吸收 /sc:pm 问题分解
+  internal_workflow: true
+  sot_priority: true       # SoT 检查结果优先级最高
 ---
 
 <skill>
 ──────────────────────────────────────────────
   <name>ai-doc-system-auditor</name>
-  <version>1.4</version>
+  <version>2.0</version>
   <domain>ASDD 文档体系审计（Constitution + SoT + Implementation + AI Layer）</domain>
-  <profile>System-Audit / Read-Only / High-Safety / Fail-Fast</profile>
+  <profile>System-Audit / Read-Only / High-Safety / Fail-Fast / SuperClaude-Enhanced</profile>
 ──────────────────────────────────────────────
 
 
@@ -306,7 +309,7 @@ baseline:
 
     人类可读（Markdown）:
 
-    # 文档体系审计报告（ai-doc-system-auditor v1.4）
+    # 文档体系审计报告（ai-doc-system-auditor v2.0）
 
     ## 0. 总体评价
     ## 1. P0 级问题（必须立即修复）
@@ -414,7 +417,55 @@ baseline:
 
 
   <!-- ======================================================
-       9. 使用示例（Usage Examples）
+       9. SuperClaude Enhancement（增强能力）
+  ====================================================== -->
+  <superclaude_enhancement>
+    Summary: 集成 SuperClaude 能力增强审计质量。
+
+    Post-Review Enhancement（审计后增强）:
+      触发时机: 审计报告生成后
+      SuperClaude 命令:
+        - /sc:analyze: 深度分析审计结果的完整性和准确性
+      增强效果:
+        - 验证问题分类是否准确
+        - 检查是否有遗漏的问题模式
+        - 确保 P0/P1/P2 分级合理
+
+    Smart-Suggest Enhancement（智能建议）:
+      触发时机: 按需调用
+      SuperClaude 命令:
+        - /sc:improve: 生成改进建议
+        - /sc:document: 建议补充文档
+      增强效果:
+        - 为 doc-fixer 提供具体修复建议
+        - 为 ai-doc-orchestrator 提供文档创建建议
+        - 生成最佳实践参考
+
+    增强输出格式（追加到标准输出）:
+      {
+        "enhancement": {
+          "post_review": {
+            "executed": true,
+            "validation_passed": true,
+            "additional_findings": [],
+            "confidence_score": 95
+          },
+          "smart_suggest": {
+            "executed": false,
+            "suggestions": []
+          }
+        }
+      }
+
+    启用条件:
+      - 默认启用 post_review
+      - smart_suggest 在 --suggest 参数时启用
+      - paranoid 模式自动启用全部增强
+  </superclaude_enhancement>
+
+
+  <!-- ======================================================
+       10. 使用示例（Usage Examples）
   ====================================================== -->
   <usage_examples>
     示例 1：全局体检
@@ -443,7 +494,7 @@ baseline:
 
 
   <!-- ======================================================
-       10. Chain-of-Thought 管理
+       11. Chain-of-Thought 管理
   ====================================================== -->
   <chain_of_thought>
     - 允许内部复杂比对、交叉引用、版本分析
@@ -451,14 +502,23 @@ baseline:
     - 信息缺失时标注 "Missing: xxx"，不自动补全业务逻辑
     - 遇到 halt 条件时立即终止，输出 halt JSON，不继续执行后续步骤
     - 禁止基于推断扩展扫描范围
+    - 【增强】可调用 SuperClaude 命令辅助分析，但不改变只读约束
   </chain_of_thought>
 
   <!-- ======================================================
-       11. 版本记录
+       12. 版本记录
   ====================================================== -->
   <VERSION_NOTES>
-    ### v3.0-superclaude (2025-11-27)
+    ### v2.0-superclaude (2025-12-07)
+    - ✅ 集成 SuperClaude Enhancement Layer
+    - ✅ 添加 post_review 和 smart_suggest 增强模式
+    - ✅ 更新输出格式包含 enhancement 字段
+    - ✅ 对齐 SuperClaude Enhancer v1.0 baseline
+
+    ### v1.5 (2025-11-28)
     - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
+
+    ### v1.4-superclaude (2025-11-27)
     - ✅ 修复 P1-DSA-002: 扩展白名单根路径至 ASDD 6-Layer Architecture
     - ✅ 对齐 MASTER.md v3.5, SoT Freeze v2.6 baseline
 

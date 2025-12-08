@@ -1,23 +1,18 @@
 ---
 name: ai-ad-agents-test-runner
 version: "2.2"
-status: ready_for_production
+status: deprecated
 layer: skill
 owner: wade
-last_reviewed: 2025-11-28
-baseline:
-  - MASTER.md v3.5
-  - SoT Freeze v2.6
-  - Dev-Guides Freeze vFinal
-  - Architecture Freeze v1.0
-  - Infrastructure Freeze v1.0
-  - Agent Freeze v1.0
+last_reviewed: 2025-12-07
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
+deprecation_reason: "已迁移到纯 SuperClaude Skill 架构，Python Agent 运行时已移除"
 ---
 
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-agents-test-runner</name>
-  <version>2.1</version>
+  <version>2.2</version>
   <domain>AI_AD_SYSTEM / Agents 静态单测执行 Orchestrator</domain>
   <profile>Test-Orchestrator / Static-Analysis / Safe</profile>
 ──────────────────────────────────────────────

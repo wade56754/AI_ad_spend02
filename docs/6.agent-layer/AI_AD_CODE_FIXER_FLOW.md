@@ -4,8 +4,9 @@ version: v1.2.0
 status: release-candidate
 layer: 6.agent-layer
 owner: wade
-last_reviewed: 2025-11-29
+last_reviewed: 2025-12-07
 profile: backend-code-fix
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5
 
 description: >
   本文档定义 AI_ad_spend02 项目中 backend 代码修复（code-fix）、

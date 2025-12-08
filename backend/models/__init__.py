@@ -65,6 +65,10 @@ from .workflow.ad_spend import AdSpendDaily
 # 业务流程模块
 from .workflow.topup_request import TopupRequest
 from .workflow.transfer_request import TransferRequest
+from .workflow.import_job import ImportJob
+
+# 导入任务枚举
+from .enums import ImportJobStatus, ImportJobType
 
 # 充值相关辅助表（来自 topup_fixed.py）
 from .topup_fixed import (
@@ -78,6 +82,7 @@ from .finance import (
     ReconciliationBatch,
     ReconciliationDetail,
     ReconciliationAdjustment,
+    ReconciliationReport,
     Supplier,
     SupplierStatus,
     PaymentMethod,
@@ -122,6 +127,8 @@ __all__ = [
     'ReconciliationAdjustmentType',
     'AccountAlertStatus',
     'AccountAlertSeverity',
+    'ImportJobStatus',
+    'ImportJobType',
 
     # 模型类
     'User',
@@ -148,6 +155,7 @@ __all__ = [
     'ReconciliationBatch',
     'ReconciliationDetail',
     'ReconciliationAdjustment',
+    'ReconciliationReport',
     'Supplier',
     'SupplierStatus',
     'PaymentMethod',
@@ -157,4 +165,5 @@ __all__ = [
     'PaymentStatus',
     'AuditLog',
     'Log',
+    'ImportJob',
 ]

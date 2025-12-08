@@ -1,8 +1,10 @@
 ---
 name: ai-ad-be-gen
-version: "2.0"
+version: "2.2"
 status: production
-layer: Skill
+layer: skill
+owner: wade
+last_reviewed: 2025-12-07
 
 sot_dependencies:
   required:
@@ -25,7 +27,18 @@ output_boundaries:
     - migrations/**
     - .env*
 
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.0, SoT Freeze v2.6
+# SuperClaude Enhancement Configuration (v2.0)
+enhancement:
+  enabled: true
+  superclaude_patterns:
+    - task_breakdown       # 吸收 /sc:pm 任务分解
+    - design_first         # 吸收 /sc:design 设计优先
+    - step_implementation  # 吸收 /sc:implement 步骤化执行
+    - analysis_pattern     # 吸收 /sc:analyze 分析审计
+  internal_workflow: true
+  sot_priority: true       # SoT 检查结果优先级最高
+
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 ---
 
 # BE-Gen Skill - 后端代码生成
@@ -119,6 +132,37 @@ interface BEGenOutput {
 - 异步优先
 </SYSTEM>
 
+<!-- ========== SuperClaude Enhancement: Pre-Analysis ========== -->
+<ENHANCEMENT_PHASE id="pre_analysis" enabled="{{ENABLE_PRE_ANALYSIS}}">
+<INSTRUCTION>
+在生成代码之前，执行 SuperClaude 前置分析：
+
+**Step 0.1: 代码分析 (/sc:analyze)**
+- 分析目标文件的现有代码结构
+- 识别现有的设计模式和约定
+- 检查是否有可复用的组件或基类
+
+**Step 0.2: 技术调研 (/sc:research)** (复杂任务时)
+- 调研相关的最佳实践
+- 查找类似功能的实现参考
+- 确认技术方案的可行性
+
+**Step 0.3: 上下文增强**
+- 将分析结果汇总为 PRE_ANALYSIS_CONTEXT
+- 识别潜在风险点
+- 生成实施建议
+</INSTRUCTION>
+
+<OUTPUT_TEMPLATE>
+PRE_ANALYSIS_CONTEXT:
+- patterns_found: [识别到的设计模式]
+- reusable_components: [可复用的组件]
+- recommendations: [实施建议]
+- risks: [潜在风险]
+</OUTPUT_TEMPLATE>
+</ENHANCEMENT_PHASE>
+<!-- ========== End Pre-Analysis ========== -->
+
 <CONTEXT>
 <DOC name="MASTER">
 {{MASTER}}
@@ -155,6 +199,11 @@ interface BEGenOutput {
 <EXISTING_FILES>
 {{EXISTING_FILES}}
 </EXISTING_FILES>
+
+<!-- Pre-Analysis Context (if enabled) -->
+<PRE_ANALYSIS_CONTEXT optional="true">
+{{PRE_ANALYSIS_CONTEXT}}
+</PRE_ANALYSIS_CONTEXT>
 </CONTEXT>
 
 <TASK>
@@ -169,11 +218,13 @@ interface BEGenOutput {
    - 从 BUSINESS_RULES 找到相关业务规则 (BR-XXX-YYY)
    - 从 STATE_MACHINE 确认状态转换约束
    - 从 DATA_SCHEMA 确认字段类型和约束
+   - 【增强】参考 PRE_ANALYSIS_CONTEXT 中的建议
 
 2. **代码规划**
    - 确定需要修改/创建的文件
    - 规划三层结构：Schema → Service → Router
    - 确认错误码和异常处理
+   - 【增强】复用 PRE_ANALYSIS_CONTEXT 中识别的组件
 
 3. **代码生成**
    - 生成 Pydantic Schema (带 SoT 注释)
@@ -191,6 +242,43 @@ interface BEGenOutput {
    - 记录引用的 SoT 条款
    - 记录潜在风险点
 </THINKING_CHAIN>
+
+<!-- ========== SuperClaude Enhancement: Post-Review ========== -->
+<ENHANCEMENT_PHASE id="post_review" enabled="{{ENABLE_POST_REVIEW}}">
+<INSTRUCTION>
+代码生成完成后，执行 SuperClaude 后置审查：
+
+**Step 5.1: 代码质量审查 (/sc:analyze)**
+- 代码风格一致性检查
+- 潜在 Bug 检测
+- 性能问题识别
+- 安全漏洞扫描
+
+**Step 5.2: SoT 合规检查 (/sot-check)**
+- 状态枚举是否与 STATE_MACHINE.md 一致
+- 错误码是否在 ERROR_CODES_SOT.md 中定义
+- 字段类型是否与 DATA_SCHEMA.md 一致
+- 业务规则是否正确实现
+
+**Step 5.3: 质量评分**
+- 计算综合质量评分 (0-100)
+- 如果评分 < 75，生成修正建议
+- 如果发现 P0 问题，标记为 blocking
+
+**Step 5.4: 结果汇总**
+- 将审查结果添加到输出的 enhancement 字段
+</INSTRUCTION>
+
+<OUTPUT_TEMPLATE>
+POST_REVIEW_RESULT:
+- passed: true/false
+- quality_score: 0-100
+- issues: [{severity, file, message, suggestion}]
+- sot_compliance: true/false
+- recommendations: [改进建议]
+</OUTPUT_TEMPLATE>
+</ENHANCEMENT_PHASE>
+<!-- ========== End Post-Review ========== -->
 
 <OUTPUT_FORMAT>
 只输出一段 JSON，格式如下：
@@ -218,7 +306,21 @@ interface BEGenOutput {
     "STATE_MACHINE.md#topup: pending → approved",
     "BUSINESS_RULES.md#BR-TP-001",
     "ERROR_CODES_SOT.md#TOPUP_001"
-  ]
+  ],
+  "enhancement": {
+    "pre_analysis": {
+      "executed": true,
+      "patterns_found": ["Repository模式", "..."],
+      "recommendations": ["建议复用BaseService", "..."]
+    },
+    "post_review": {
+      "executed": true,
+      "passed": true,
+      "quality_score": 85,
+      "issues": [],
+      "sot_compliance": true
+    }
+  }
 }
 </OUTPUT_FORMAT>
 ```

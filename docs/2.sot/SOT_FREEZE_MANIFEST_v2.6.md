@@ -50,7 +50,7 @@ The layer is fully compliant with ASDD Freeze v1.0 and ready for operational dep
 | API_SOT.md | v9.0 | frozen* | wade | 2025-11-27 | [docs/2.sot/API_SOT.md](API_SOT.md) |
 | DATA_SCHEMA.md | v5.2 | active→frozen | wade | 2025-11-27 | [docs/2.sot/DATA_SCHEMA.md](DATA_SCHEMA.md) |
 | STATE_MACHINE.md | v2.6 | active→frozen | wade | 2025-11-27 | [docs/2.sot/STATE_MACHINE.md](STATE_MACHINE.md) |
-| BUSINESS_RULES.md | v3.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
+| BUSINESS_RULES.md | v3.2 | active→frozen | wade | 2025-11-27 | [docs/2.sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
 | ERROR_CODES_SOT.md | v2.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/ERROR_CODES_SOT.md](ERROR_CODES_SOT.md) |
 | AUTH_SPEC.md | v2.0 | active→frozen | wade | 2025-11-27 | [docs/2.sot/AUTH_SPEC.md](AUTH_SPEC.md) |
 | LEDGER_SOT.md | v1.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/LEDGER_SOT.md](LEDGER_SOT.md) |

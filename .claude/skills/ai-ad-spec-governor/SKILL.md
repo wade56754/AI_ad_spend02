@@ -5,20 +5,14 @@ status: ready_for_production
 layer: skill
 owner: wade
 last_reviewed: 2025-11-28
-baseline:
-  - MASTER.md v3.5
-  - SoT Freeze v2.6
-  - Dev-Guides Freeze vFinal
-  - Architecture Freeze v1.0
-  - Infrastructure Freeze v1.0
-  - Agent Freeze v1.0
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 ---
 
-# AI-Ad Spec Governor Skill v1.1
+# AI-Ad Spec Governor Skill v1.2
 
 <skill>
 <name>ai-ad-spec-governor</name>
-<version>v1.1</version>
+<version>1.2</version>
 <status>active</status>
 <owner>doc-architect / wade</owner>
 <last_updated>2025-11-27</last_updated>

@@ -1,20 +1,15 @@
 """
 日报管理API集成测试
-Version: 2.0 - 使用统一异步测试栈
+Version: 3.0 - 使用统一异步测试栈 + 完整 fixtures
 Author: Claude协作开发
 
 变更说明：
-- 使用 async_client fixture 替代 sync client
-- 跳过依赖未实现 fixtures 的测试
-- 放宽断言条件以容忍 API 未完全实现的情况
+- v3.0: 补齐所有 fixtures，启用全部测试
+- v2.0: 使用 async_client fixture 替代 sync client
+- 测试对齐 STATE_MACHINE.md v2.6 第 8 章 8 状态机
 """
 
 import pytest
-
-
-# 标记大部分测试为跳过，因为依赖的 fixtures (test_ad_account, sample_daily_report_data,
-# excel_file_content, sample_batch_import_data 等) 尚未在 conftest.py 中实现
-pytestmark = pytest.mark.skip(reason="Daily report fixtures (test_ad_account, sample_daily_report_data) not yet implemented")
 
 
 class TestDailyReportAPI:

@@ -1,8 +1,10 @@
 ---
 name: ai-ad-test-gen
-version: "2.0"
+version: "2.2"
 status: production
-layer: Skill
+layer: skill
+owner: wade
+last_reviewed: 2025-12-07
 
 sot_dependencies:
   required:
@@ -22,7 +24,17 @@ output_boundaries:
     - backend/models/**
     - migrations/**
 
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.0, SoT Freeze v2.6
+# SuperClaude Enhancement Configuration (v2.0)
+enhancement:
+  enabled: true
+  superclaude_patterns:
+    - test_strategy        # 吸收 /sc:test 测试金字塔与维度矩阵
+    - analysis_pattern     # 吸收 /sc:analyze 覆盖度分析
+    - task_breakdown       # 吸收 /sc:pm 测试阶段分解
+  internal_workflow: true
+  sot_priority: true       # SoT 检查结果优先级最高
+
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 ---
 
 # Test-Gen Skill - 测试用例生成

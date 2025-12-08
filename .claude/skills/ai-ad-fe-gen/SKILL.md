@@ -1,8 +1,10 @@
 ---
 name: ai-ad-fe-gen
-version: "2.0"
+version: "2.3"
 status: production
-layer: Skill
+layer: skill
+owner: wade
+last_reviewed: 2025-12-07
 
 sot_dependencies:
   required:
@@ -23,7 +25,17 @@ output_boundaries:
     - frontend/.next/**
     - .env*
 
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.0, SoT Freeze v2.6
+# SuperClaude Enhancement Configuration
+enhancement:
+  enabled: true
+  superclaude_patterns:
+    - design_first         # 吸收 /sc:design UI 设计优先
+    - step_implementation  # 吸收 /sc:implement 步骤化执行
+    - analysis_pattern     # 吸收 /sc:analyze 分析审计
+  internal_workflow: true
+  sot_priority: true       # SoT 检查结果优先级最高
+
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 ---
 
 # FE-Gen Skill - 前端代码生成
@@ -139,6 +151,37 @@ interface FEGenOutput {
 - shadcn/ui + Tailwind CSS
 </SYSTEM>
 
+<!-- ========== SuperClaude Enhancement: Pre-Analysis ========== -->
+<ENHANCEMENT_PHASE id="pre_analysis" enabled="{{ENABLE_PRE_ANALYSIS}}">
+<INSTRUCTION>
+在生成代码之前，执行 SuperClaude 前置分析：
+
+**Step 0.1: UI 设计分析 (/sc:design)**
+- 分析现有模块的 UI 模式和组件结构
+- 识别可复用的组件和 hooks
+- 确定设计系统遵循情况
+
+**Step 0.2: 代码分析 (/sc:analyze)**
+- 分析目标目录的现有代码
+- 识别数据流和状态管理模式
+- 检查类型定义的完整性
+
+**Step 0.3: 上下文增强**
+- 将分析结果汇总为 PRE_ANALYSIS_CONTEXT
+- 识别潜在的 UI/UX 问题
+- 生成组件设计建议
+</INSTRUCTION>
+
+<OUTPUT_TEMPLATE>
+PRE_ANALYSIS_CONTEXT:
+- ui_patterns_found: [识别到的 UI 模式]
+- reusable_components: [可复用的组件]
+- hooks_available: [可用的 hooks]
+- design_recommendations: [设计建议]
+</OUTPUT_TEMPLATE>
+</ENHANCEMENT_PHASE>
+<!-- ========== End Pre-Analysis ========== -->
+
 <CONTEXT>
 <DOC name="API_SOT">
 {{API_SOT}}
@@ -189,6 +232,7 @@ interface FEGenOutput {
    - 确定需要创建/修改的文件
    - 规划组件层次结构
    - 设计 hooks 和数据流
+   - 【增强】参考 PRE_ANALYSIS_CONTEXT 中的设计建议
 
 4. **代码生成**
    - 生成类型定义 (types/)
@@ -196,6 +240,7 @@ interface FEGenOutput {
    - 生成数据 hooks (hooks/)
    - 生成 UI 组件 (components/)
    - 生成页面骨架 (PageShell)
+   - 【增强】复用 PRE_ANALYSIS_CONTEXT 中识别的组件
 
 5. **自检**
    - 检查类型是否完整
@@ -203,6 +248,42 @@ interface FEGenOutput {
    - 检查是否遵循 UI 设计规范
    - 检查是否有禁区代码
 </THINKING_CHAIN>
+
+<!-- ========== SuperClaude Enhancement: Post-Review ========== -->
+<ENHANCEMENT_PHASE id="post_review" enabled="{{ENABLE_POST_REVIEW}}">
+<INSTRUCTION>
+代码生成完成后，执行 SuperClaude 后置审查：
+
+**Step 5.1: 代码质量审查 (/sc:analyze)**
+- TypeScript 类型完整性
+- 组件结构和复用性
+- Hook 使用正确性
+- 无 any 类型使用
+
+**Step 5.2: SoT 合规检查 (/sot-check)**
+- 状态枚举是否与 STATE_MACHINE.md 一致
+- API 调用是否与 API_SOT.md 一致
+- UI 模式是否与设计系统一致
+
+**Step 5.3: 质量评分**
+- 计算综合质量评分 (0-100)
+- 如果评分 < 75，生成修正建议
+- 如果发现 P0 问题，标记为 blocking
+
+**Step 5.4: 结果汇总**
+- 将审查结果添加到输出的 enhancement 字段
+</INSTRUCTION>
+
+<OUTPUT_TEMPLATE>
+POST_REVIEW_RESULT:
+- passed: true/false
+- quality_score: 0-100
+- type_issues: [{file, line, message}]
+- sot_compliance: true/false
+- ui_consistency: true/false
+</OUTPUT_TEMPLATE>
+</ENHANCEMENT_PHASE>
+<!-- ========== End Post-Review ========== -->
 
 <OUTPUT_FORMAT>
 只输出一段 JSON，格式如下：
@@ -238,7 +319,23 @@ interface FEGenOutput {
     "API_SOT.md#topups",
     "STATE_MACHINE.md#topup",
     "UI_DESIGN_SYSTEM.md#table"
-  ]
+  ],
+  "enhancement": {
+    "pre_analysis": {
+      "executed": true,
+      "ui_patterns_found": ["PageShell模式", "Table组件", "..."],
+      "reusable_components": ["Badge", "Card", "..."],
+      "recommendations": ["建议复用现有筛选组件", "..."]
+    },
+    "post_review": {
+      "executed": true,
+      "passed": true,
+      "quality_score": 85,
+      "type_issues": [],
+      "sot_compliance": true,
+      "ui_consistency": true
+    }
+  }
 }
 </OUTPUT_FORMAT>
 ```
@@ -645,9 +742,10 @@ export function TopupsPageShell() {
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.1 | 2025-12-07 | 增强：集成 SuperClaude pre_analysis 和 post_review |
 | v2.0 | 2025-12-06 | 重构：对齐 AI_CODE_FACTORY_DEV_GUIDE_v2.0，增加完整代码模板 |
 | v1.0 | 2025-11-01 | 初始版本 |
 
 ---
 
-**文档控制**: Owner: wade | Baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.0
+**文档控制**: Owner: wade | Baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.0, SuperClaude Enhancer v1.0

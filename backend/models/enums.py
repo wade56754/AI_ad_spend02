@@ -191,3 +191,28 @@ class TransferRequestStatus(str, Enum):
     APPROVED = "approved"              # 已审批
     REJECTED = "rejected"              # 已拒绝（终态）
     COMPLETED = "completed"            # 已完成（终态）
+
+
+class ImportJobStatus(str, Enum):
+    """
+    导入任务状态枚举
+
+    状态流程: pending → processing → completed/failed
+             pending → cancelled (admin only)
+    终态: completed, failed, cancelled
+    """
+    PENDING = "pending"          # 待处理
+    PROCESSING = "processing"    # 处理中
+    COMPLETED = "completed"      # 已完成（终态）
+    FAILED = "failed"            # 失败（终态）
+    CANCELLED = "cancelled"      # 已取消（终态）
+
+
+class ImportJobType(str, Enum):
+    """
+    导入任务类型枚举
+    """
+    FINANCE = "finance"                # 财务数据导入
+    SPEND = "spend"                    # 消耗数据导入
+    RECONCILIATION = "reconciliation"  # 对账数据导入
+    DAILY_REPORT = "daily_report"      # 日报数据导入

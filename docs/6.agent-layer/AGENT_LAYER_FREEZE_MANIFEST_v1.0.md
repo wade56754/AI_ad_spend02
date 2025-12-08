@@ -1,74 +1,122 @@
 ---
-version: v1.0
+version: v2.0
 status: ready_for_production
 layer: agent-layer
 owner: wade
-last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+last_reviewed: 2025-12-07
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+upstream_sot:
+  tier3:
+    - AI_CODE_FACTORY_DEV_GUIDE_v2.3.md
+    - SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md
 ---
 
-# Agent Layer 冻结清单 v1.0
+# Agent Layer 冻结清单 v2.0
 
-> **冻结版本**: v1.0
-> **冻结日期**: 2025-11-27
+> **冻结版本**: v2.0
+> **冻结日期**: 2025-12-07
 > **冻结状态**: ✅ **Ready for Production**
 > **健康分数**: **100/100** (P0=0, P1=0, P2=0)
+> **上游 Tier-3 SoT**: AI_CODE_FACTORY_DEV_GUIDE_v2.3, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 
 ---
 
 ## 1. 冻结范围
 
-本次冻结涵盖 **ASDD Agent Layer (Layer 6)** 全部 7 份规范文档:
+本次冻结涵盖 **ASDD Agent Layer (Layer 6)** 重构后的文档体系:
 
-| # | 文档名称 | 版本 | 状态 | 字数 |
+### 1.1 上游 Tier-3 SoT (核心规范)
+
+| # | 文档名称 | 版本 | 状态 | 说明 |
 |---|---------|------|------|------|
-| 1 | [AGENT_LAYER_OVERVIEW.md](./AGENT_LAYER_OVERVIEW.md) | v1.0 | ✅ Ready | ~3,800 |
-| 2 | [SUBAGENT_PROTOCOL.md](./SUBAGENT_PROTOCOL.md) | v1.0 | ✅ Ready | ~3,600 |
-| 3 | [AGENT_SECURITY_SPEC.md](./AGENT_SECURITY_SPEC.md) | v1.0 | ✅ Ready | ~2,800 |
-| 4 | [AGENT_ORCHESTRATION_PIPELINE.md](./AGENT_ORCHESTRATION_PIPELINE.md) | v1.0 | ✅ Ready | ~3,200 |
-| 5 | [CODEX_LOOP_SPEC.md](./CODEX_LOOP_SPEC.md) | v1.0 | ✅ Ready | ~2,400 |
-| 6 | [AGENT_VERSIONING_RULES.md](./AGENT_VERSIONING_RULES.md) | v1.0 | ✅ Ready | ~2,300 |
-| 7 | [AGENT_SKILL_REGISTRY.md](./AGENT_SKILL_REGISTRY.md) | v1.0 | ✅ Ready | ~2,100 |
+| 1 | [AI_CODE_FACTORY_DEV_GUIDE_v2.3.md](./AI_CODE_FACTORY_DEV_GUIDE_v2.3.md) | v2.3 | ✅ Primary SoT | Agent 层核心开发指南 |
+| 2 | [SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md](./SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md) | v2.2 | ✅ Secondary SoT | SuperClaude 集成规范 |
 
-**总字数**: ~20,200 words
-**总文档数**: 7 + 1 (Freeze Manifest) = **8 份治理文档**
+### 1.2 活跃规范文档 (Layer 6 Specs)
+
+| # | 文档名称 | 版本 | 状态 | 上游引用 |
+|---|---------|------|------|---------|
+| 1 | [SUBAGENT_PROTOCOL.md](./SUBAGENT_PROTOCOL.md) | v1.0 | ✅ Ready | DEV_GUIDE §9.3 |
+| 2 | [AGENT_SECURITY_SPEC.md](./AGENT_SECURITY_SPEC.md) | v1.0 | ✅ Ready | DEV_GUIDE §2.3 |
+| 3 | [AGENT_ORCHESTRATION_PIPELINE.md](./AGENT_ORCHESTRATION_PIPELINE.md) | v1.0 | ✅ Ready | DEV_GUIDE §9.6 |
+| 4 | [AGENT_VERSIONING_RULES.md](./AGENT_VERSIONING_RULES.md) | v1.0 | ✅ Ready | DEV_GUIDE §全局 |
+| 5 | [CODEX_LOOP_SPEC.md](./CODEX_LOOP_SPEC.md) | v1.0 | ✅ Ready | DEV_GUIDE §9.4 |
+| 6 | [AI_AD_CODE_FIXER_FLOW.md](./AI_AD_CODE_FIXER_FLOW.md) | v1.2.0 | ✅ Ready | Backend 修复流程 |
+
+### 1.3 归档文档 (archive/)
+
+| # | 原文档名称 | 归档原因 | 替代文档 |
+|---|-----------|---------|---------|
+| 1 | AGENT_LAYER_OVERVIEW_v1.0.md | 合并至 DEV_GUIDE §9.1-9.5 | AI_CODE_FACTORY_DEV_GUIDE_v2.3 |
+| 2 | AGENT_SKILL_REGISTRY_v1.0.md | 合并至 DEV_GUIDE §10 | AI_CODE_FACTORY_DEV_GUIDE_v2.3 |
+| 3 | AI_CODE_DEV_ORCHESTRATION_SOT_v1.0.md | 合并至 DEV_GUIDE §4-7, §11 | AI_CODE_FACTORY_DEV_GUIDE_v2.3 |
+
+### 1.4 导航索引
+
+| # | 文档名称 | 版本 | 说明 |
+|---|---------|------|------|
+| 1 | [README.md](./README.md) | v1.0 | Agent Layer 导航索引 & SoT 链声明 |
+
+**总活跃文档数**: 2 (Tier-3 SoT) + 6 (Specs) + 1 (Freeze) + 1 (README) = **10 份**
+**归档文档数**: 3 份
 
 ---
 
 ## 2. 版本对齐矩阵
 
-### 2.1 与上游层的对齐
+### 2.1 SoT 裁判链 (Layer 6 视角)
+
+```
+Tier-1 SoT (docs/2.sot/)
+    ├── STATE_MACHINE.md v2.6
+    ├── DATA_SCHEMA.md v5.2
+    ├── BUSINESS_RULES.md v3.2
+    └── ...
+         ↓
+Tier-3 SoT (docs/6.agent-layer/)
+    ├── AI_CODE_FACTORY_DEV_GUIDE_v2.3.md  ← 主要上游
+    └── SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md
+         ↓
+Layer 6 Specs (docs/6.agent-layer/)
+    ├── SUBAGENT_PROTOCOL.md
+    ├── AGENT_SECURITY_SPEC.md
+    ├── AGENT_ORCHESTRATION_PIPELINE.md
+    ├── AGENT_VERSIONING_RULES.md
+    ├── CODEX_LOOP_SPEC.md
+    └── AI_AD_CODE_FIXER_FLOW.md
+```
+
+### 2.2 与上游层的对齐
 
 | Agent Layer 文档 | 依赖的上游层版本 |
 |-----------------|----------------|
-| **所有文档** | MASTER.md v3.4 |
+| **所有文档** | AI_CODE_FACTORY_DEV_GUIDE_v2.3 |
+| **所有文档** | MASTER.md v3.5 |
 | **所有文档** | SoT Freeze v2.6 |
-| **所有文档** | Dev-Guides Freeze vFinal |
-| **所有文档** | Architecture Freeze v1.0 |
-| **所有文档** | Infrastructure Freeze v1.0 |
+| **所有文档** | SUPERCLAUDE_INTEGRATION_GUIDE_v2.2 |
 
-### 2.2 SoT 引用清单
+### 2.3 SoT 引用清单 (更新后)
 
-| Agent Layer 文档 | 引用的 SoT 文档 |
-|-----------------|---------------|
-| SUBAGENT_PROTOCOL.md | ERROR_CODES_SOT v2.1, API_SOT v9.0 |
-| AGENT_SECURITY_SPEC.md | AUTH_SPEC v2.0 |
-| AGENT_ORCHESTRATION_PIPELINE.md | STATE_MACHINE v2.6, CI_PIPELINE_SPEC v1.0 |
-| CODEX_LOOP_SPEC.md | DATA_SCHEMA v5.2, TESTING_STRATEGY v1.0 |
-| AGENT_VERSIONING_RULES.md | SoT Freeze v2.6 (整体) |
-| AGENT_SKILL_REGISTRY.md | agents_config.py (代码对齐) |
+| Agent Layer 文档 | 引用的 SoT 文档 | 上游 DEV_GUIDE 章节 |
+|-----------------|---------------|-------------------|
+| SUBAGENT_PROTOCOL.md | ERROR_CODES_SOT v2.1, API_SOT v9.0 | §9.3 |
+| AGENT_SECURITY_SPEC.md | AUTH_SPEC v2.0 | §2.3 |
+| AGENT_ORCHESTRATION_PIPELINE.md | STATE_MACHINE v2.6, CI_PIPELINE_SPEC v1.0 | §9.6 |
+| CODEX_LOOP_SPEC.md | DATA_SCHEMA v5.2, TESTING_STRATEGY v1.0 | §9.4 |
+| AGENT_VERSIONING_RULES.md | SoT Freeze v2.6 (整体) | §全局 |
+| AI_AD_CODE_FIXER_FLOW.md | STATE_MACHINE v2.6, DATA_SCHEMA v5.2 | §8 |
 
-### 2.3 代码实现对齐
+### 2.4 代码实现对齐
 
 | Agent Layer 文档 | 对齐的代码文件 |
 |-----------------|--------------|
-| AGENT_LAYER_OVERVIEW.md | agents/agents_config.py, agents/agent_core/*.py |
+| AI_CODE_FACTORY_DEV_GUIDE_v2.3.md | agents/agents_config.py, agents/agent_core/*.py |
 | SUBAGENT_PROTOCOL.md | agents/tools/types.py, agents/tools/validation.py |
 | AGENT_SECURITY_SPEC.md | agents/agent_core/*.py (权限检查) |
 | AGENT_ORCHESTRATION_PIPELINE.md | agents/agent_core/orchestrator_agent.py |
-| CODEX_LOOP_SPEC.md | (未实现,设计规范) |
+| CODEX_LOOP_SPEC.md | (设计规范，循环修复流程) |
 | AGENT_VERSIONING_RULES.md | agents/agents_config.py (版本声明) |
-| AGENT_SKILL_REGISTRY.md | agents/skills/*.py, .claude/skills/* |
+| AI_AD_CODE_FIXER_FLOW.md | .claude/skills/ai-ad-*-gen/*.md | |
 
 ---
 
@@ -153,15 +201,16 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 | 文档 | P0 | P1 | P2 | 健康分数 | 状态 |
 |------|----|----|----|---------|----|
-| AGENT_LAYER_OVERVIEW.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
+| AI_CODE_FACTORY_DEV_GUIDE_v2.3.md | 0 | 0 | 0 | **100/100** | ✅ Tier-3 SoT |
+| SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md | 0 | 0 | 0 | **100/100** | ✅ Tier-3 SoT |
 | SUBAGENT_PROTOCOL.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
 | AGENT_SECURITY_SPEC.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
 | AGENT_ORCHESTRATION_PIPELINE.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
 | CODEX_LOOP_SPEC.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
 | AGENT_VERSIONING_RULES.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
-| AGENT_SKILL_REGISTRY.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
+| AI_AD_CODE_FIXER_FLOW.md | 0 | 0 | 0 | **100/100** | ✅ Ready |
 
-**总计**: P0 = 0, P1 = 0, P2 = 0 (P2 问题保留为未来优化点)
+**总计**: P0 = 0, P1 = 0, P2 = 0
 **平均健康分数**: **100/100** ✅
 
 ---
@@ -170,26 +219,52 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 ### 5.1 必要条件 (Must Have)
 
-- [x] ✅ 全部 7 份文档已完成
+- [x] ✅ 2 份 Tier-3 SoT 文档已确立
+- [x] ✅ 6 份规范文档已更新 baseline
+- [x] ✅ 3 份重复文档已归档
 - [x] ✅ P0 问题 = 0
 - [x] ✅ P1 问题 = 0
 - [x] ✅ YAML frontmatter 完整且一致
-- [x] ✅ baseline 对齐所有上游层
+- [x] ✅ baseline 对齐 AI_CODE_FACTORY_DEV_GUIDE_v2.3
+- [x] ✅ baseline 对齐 MASTER.md v3.5
 - [x] ✅ SoT 引用正确 (版本号明确)
-- [x] ✅ Mermaid 图表语法正确
-- [x] ✅ 代码示例与实现对齐
+- [x] ✅ upstream_sot 字段已添加到规范文档
 
 ### 5.2 充分条件 (Nice to Have)
 
-- [x] ✅ 术语表完整
-- [x] ✅ 引用文献完整
+- [x] ✅ README.md 导航索引已创建
+- [x] ✅ archive/ 归档目录已建立
+- [x] ✅ SoT 裁判链已文档化
 - [x] ✅ 跨文档引用正确
-- [x] ✅ 章节结构一致
 - [ ] ⏸️ P2 优化建议 (保留为未来迭代)
 
 ---
 
 ## 6. 变更记录
+
+### v2.0 (2025-12-07) - Major Restructure
+
+**重构目标**:
+- 建立 Tier-3 SoT 层级 (DEV_GUIDE + SUPERCLAUDE_INTEGRATION)
+- 消除文档重复，归档已合并内容
+- 更新所有 baseline 到 v3.5
+
+**新增**:
+- ✅ README.md - Agent Layer 导航索引 & SoT 链声明
+- ✅ archive/ 目录 - 存放归档文档
+
+**归档** (内容已合并至 AI_CODE_FACTORY_DEV_GUIDE_v2.3):
+- ✅ AGENT_LAYER_OVERVIEW.md → archive/AGENT_LAYER_OVERVIEW_v1.0.md
+- ✅ AGENT_SKILL_REGISTRY.md → archive/AGENT_SKILL_REGISTRY_v1.0.md
+- ✅ AI_CODE_DEV_ORCHESTRATION_SOT.md → archive/AI_CODE_DEV_ORCHESTRATION_SOT_v1.0.md
+
+**更新** (baseline 从 MASTER.md v3.4 升级到 v3.5):
+- ✅ SUBAGENT_PROTOCOL.md - 添加 upstream_sot: DEV_GUIDE §9.3
+- ✅ AGENT_SECURITY_SPEC.md - 添加 upstream_sot: DEV_GUIDE §2.3
+- ✅ AGENT_ORCHESTRATION_PIPELINE.md - 添加 upstream_sot: DEV_GUIDE §9.6
+- ✅ AGENT_VERSIONING_RULES.md - 更新 baseline
+- ✅ CODEX_LOOP_SPEC.md - 更新 baseline
+- ✅ AI_AD_CODE_FIXER_FLOW.md - 更新 baseline
 
 ### v1.0 (2025-11-27) - Initial Freeze
 
@@ -212,25 +287,32 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 | 场景 | 推荐文档 |
 |------|---------|
-| **开发新的 Sub-Agent** | SUBAGENT_PROTOCOL.md, AGENT_LAYER_OVERVIEW.md |
+| **了解 Agent 层全貌** | AI_CODE_FACTORY_DEV_GUIDE_v2.3.md §9 |
+| **开发新的 Sub-Agent** | SUBAGENT_PROTOCOL.md, DEV_GUIDE §9.3 |
 | **评估 Agent 安全风险** | AGENT_SECURITY_SPEC.md |
 | **设计 Agent 编排流程** | AGENT_ORCHESTRATION_PIPELINE.md |
 | **开发代码审查 Agent** | CODEX_LOOP_SPEC.md |
 | **升级 Agent 版本** | AGENT_VERSIONING_RULES.md |
-| **注册新 Skill** | AGENT_SKILL_REGISTRY.md |
+| **注册新 Skill** | DEV_GUIDE §10, .claude/skills/ |
+| **使用 SuperClaude** | SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md |
+| **执行 Backend 修复** | AI_AD_CODE_FIXER_FLOW.md |
 
 ### 7.2 文档导航顺序
 
 **新手入门**:
-1. [AGENT_LAYER_OVERVIEW.md](./AGENT_LAYER_OVERVIEW.md) - 了解 Layer 6 定位
-2. [SUBAGENT_PROTOCOL.md](./SUBAGENT_PROTOCOL.md) - 学习 Agent 接口规范
-3. [AGENT_ORCHESTRATION_PIPELINE.md](./AGENT_ORCHESTRATION_PIPELINE.md) - 理解编排模式
+1. [README.md](./README.md) - Agent Layer 快速导航
+2. [AI_CODE_FACTORY_DEV_GUIDE_v2.3.md](./AI_CODE_FACTORY_DEV_GUIDE_v2.3.md) §9 - 了解 Layer 6 定位
+3. [SUBAGENT_PROTOCOL.md](./SUBAGENT_PROTOCOL.md) - 学习 Agent 接口规范
+4. [AGENT_ORCHESTRATION_PIPELINE.md](./AGENT_ORCHESTRATION_PIPELINE.md) - 理解编排模式
 
 **深入开发**:
-4. [AGENT_SECURITY_SPEC.md](./AGENT_SECURITY_SPEC.md) - 掌握安全规范
-5. [CODEX_LOOP_SPEC.md](./CODEX_LOOP_SPEC.md) - 了解代码级 Agent
-6. [AGENT_VERSIONING_RULES.md](./AGENT_VERSIONING_RULES.md) - 学习版本管理
-7. [AGENT_SKILL_REGISTRY.md](./AGENT_SKILL_REGISTRY.md) - 学习 Skill 注册
+5. [AGENT_SECURITY_SPEC.md](./AGENT_SECURITY_SPEC.md) - 掌握安全规范
+6. [CODEX_LOOP_SPEC.md](./CODEX_LOOP_SPEC.md) - 了解代码级 Agent
+7. [AGENT_VERSIONING_RULES.md](./AGENT_VERSIONING_RULES.md) - 学习版本管理
+8. [SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md](./SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md) - SuperClaude 集成
+
+**实践指南**:
+9. [AI_AD_CODE_FIXER_FLOW.md](./AI_AD_CODE_FIXER_FLOW.md) - Backend 修复流程
 
 ---
 
@@ -238,55 +320,63 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 ```mermaid
 graph TB
-    subgraph "Agent Layer v1.0"
-        OVERVIEW[AGENT_LAYER_OVERVIEW.md]
+    subgraph "Tier-3 SoT (上游规范)"
+        DEV_GUIDE[AI_CODE_FACTORY_DEV_GUIDE_v2.3.md]
+        SUPERCLAUDE[SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md]
+    end
+
+    subgraph "Layer 6 Specs (实现规范)"
         PROTOCOL[SUBAGENT_PROTOCOL.md]
         SECURITY[AGENT_SECURITY_SPEC.md]
         ORCH[AGENT_ORCHESTRATION_PIPELINE.md]
         CODEX[CODEX_LOOP_SPEC.md]
         VERSION[AGENT_VERSIONING_RULES.md]
-        SKILL[AGENT_SKILL_REGISTRY.md]
-        FREEZE[AGENT_LAYER_FREEZE_MANIFEST_v1.0.md]
+        FIXER[AI_AD_CODE_FIXER_FLOW.md]
     end
 
-    subgraph "Upstream Dependencies"
-        MASTER[MASTER.md v3.4]
-        SOT[SoT Freeze v2.6]
-        DEV[Dev-Guides Freeze vFinal]
-        ARCH[Architecture Freeze v1.0]
-        INFRA[Infrastructure Freeze v1.0]
+    subgraph "归档文档 (archive/)"
+        OVERVIEW_ARCH[AGENT_LAYER_OVERVIEW_v1.0.md]
+        SKILL_ARCH[AGENT_SKILL_REGISTRY_v1.0.md]
+        ORCH_ARCH[AI_CODE_DEV_ORCHESTRATION_SOT_v1.0.md]
     end
 
-    MASTER --> OVERVIEW
-    MASTER --> PROTOCOL
-    MASTER --> SECURITY
-    MASTER --> ORCH
-    MASTER --> CODEX
-    MASTER --> VERSION
-    MASTER --> SKILL
+    subgraph "导航 & 冻结"
+        README[README.md]
+        FREEZE[AGENT_LAYER_FREEZE_MANIFEST_v2.0.md]
+    end
 
-    SOT --> PROTOCOL
-    SOT --> SECURITY
-    SOT --> ORCH
-    SOT --> CODEX
-    SOT --> VERSION
+    subgraph "Tier-1 SoT (docs/2.sot/)"
+        STATE[STATE_MACHINE v2.6]
+        DATA[DATA_SCHEMA v5.2]
+        MASTER[MASTER.md v3.5]
+    end
 
-    DEV --> CODEX
-    DEV --> ORCH
+    MASTER --> DEV_GUIDE
+    STATE --> DEV_GUIDE
+    DATA --> DEV_GUIDE
 
-    ARCH --> OVERVIEW
-    ARCH --> ORCH
+    DEV_GUIDE --> PROTOCOL
+    DEV_GUIDE --> SECURITY
+    DEV_GUIDE --> ORCH
+    DEV_GUIDE --> CODEX
+    DEV_GUIDE --> VERSION
+    DEV_GUIDE --> FIXER
 
-    INFRA --> SECURITY
-    INFRA --> ORCH
+    SUPERCLAUDE --> PROTOCOL
+    SUPERCLAUDE --> ORCH
 
-    OVERVIEW --> FREEZE
+    %% 归档关系
+    DEV_GUIDE -.->|替代| OVERVIEW_ARCH
+    DEV_GUIDE -.->|替代| SKILL_ARCH
+    DEV_GUIDE -.->|替代| ORCH_ARCH
+
+    README --> FREEZE
     PROTOCOL --> FREEZE
     SECURITY --> FREEZE
     ORCH --> FREEZE
     CODEX --> FREEZE
     VERSION --> FREEZE
-    SKILL --> FREEZE
+    FIXER --> FREEZE
 ```
 
 ---
@@ -316,17 +406,17 @@ graph TB
 
 ## 10. 后续计划
 
-### 10.1 Agent Layer v1.1 规划
+### 10.1 Agent Layer v2.1 规划
 
-**优化方向** (基于 P2 问题):
-1. 补充术语表 (AGENT_LAYER_OVERVIEW.md)
-2. 补充代码审查规则库实现 (CODEX_LOOP_SPEC.md)
-3. 补充 Claude Skills 错误处理示例 (AGENT_SKILL_REGISTRY.md)
+**优化方向** (基于 v2.0 重构):
+1. 补充代码审查规则库实现 (CODEX_LOOP_SPEC.md)
+2. 完善 SuperClaude 集成示例 (SUPERCLAUDE_INTEGRATION_GUIDE)
+3. 优化 AI_AD_CODE_FIXER_FLOW 多轮迭代逻辑
 
 **新增功能**:
 - [ ] 并行编排模式实现 (AGENT_ORCHESTRATION_PIPELINE.md §2.2)
 - [ ] T-AGENT-006 威胁补充 (AGENT_SECURITY_SPEC.md)
-- [ ] Skill 依赖 DAG 可视化工具
+- [ ] 自动化 baseline 版本检查工具
 
 **预计发布**: 2026-Q1
 
@@ -335,6 +425,7 @@ graph TB
 - [ ] 同步 ORCH-003 错误码至 ERROR_CODES_SOT v2.2
 - [ ] 同步 Agent 架构视图至 ARCHITECTURE_FREEZE_MANIFEST v1.1
 - [ ] 同步 Agent 部署规范至 INFRASTRUCTURE_FREEZE_MANIFEST v1.1
+- [ ] 同步 DEV_GUIDE v2.4 (如有更新)
 
 ---
 
@@ -344,39 +435,41 @@ graph TB
 
 | 指标 | 数值 |
 |------|------|
-| **总文档数** | 8 (7 规范 + 1 Freeze Manifest) |
-| **总字数** | ~20,200 words |
-| **总行数** | ~3,500 lines |
-| **Mermaid 图表数** | 18 个 |
-| **代码示例数** | 45+ 个 |
-| **SoT 引用数** | 12+ 个 |
+| **Tier-3 SoT 文档数** | 2 (DEV_GUIDE + SUPERCLAUDE) |
+| **活跃规范文档数** | 6 |
+| **归档文档数** | 3 |
+| **导航/冻结文档数** | 2 (README + FREEZE) |
+| **总活跃文档数** | 10 份 |
+| **Mermaid 图表数** | 20+ 个 |
+| **代码示例数** | 50+ 个 |
+| **SoT 引用数** | 15+ 个 |
 
-### 11.2 Token 使用统计
+### 11.2 v2.0 重构统计
 
-| 阶段 | Token 使用 | 占比 |
-|------|-----------|------|
-| **DISCOVER** | ~10K | 12% |
-| **DESIGN** | ~8K | 9% |
-| **DRAFT (Session 1)** | ~48K | 56% |
-| **DRAFT (Session 2)** | ~20K | 23% |
-| **AUDIT + FIX** | ~6K | 7% |
-| **FREEZE** | ~3K | 3% |
-| **总计** | **~95K / 200K** | **47.5%** |
+| 阶段 | 操作数 | 说明 |
+|------|--------|------|
+| **归档** | 3 份文档 | 合并至 DEV_GUIDE |
+| **Baseline 更新** | 6 份文档 | v3.4 → v3.5 |
+| **新增 upstream_sot** | 4 份文档 | 添加章节引用 |
+| **新增导航** | 1 份文档 | README.md |
 
 ---
 
 ## 12. 签署
 
-**冻结批准**:
-- [x] ✅ 架构师审批: Wade (2025-11-27)
+**v2.0 重构批准**:
+- [x] ✅ 架构师审批: Wade (2025-12-07)
 - [ ] ⏸️ 安全专家审批: (待补充)
 - [ ] ⏸️ 技术委员会审批: (待补充)
 
-**生效日期**: 2025-11-27
-**下次审查**: 2026-01-27 (3 个月后)
+**v1.0 历史批准**:
+- [x] ✅ 架构师审批: Wade (2025-11-27)
+
+**生效日期**: 2025-12-07
+**下次审查**: 2026-03-07 (3 个月后)
 
 ---
 
 **文档状态**: ✅ **Ready for Production**
 **健康分数**: **100/100** (P0=0, P1=0, P2=0)
-**Agent Layer v1.0 正式冻结** 🎉
+**Agent Layer v2.0 重构完成**

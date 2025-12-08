@@ -1,16 +1,16 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
 > **版本**: v5.2
-> **status**: active
+> **status**: frozen
 > **owner**: wade
 > **last_reviewed**: 2025-11-27
 > **更新日期**: 2025‑11‑22
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
-> - 实现规范 → `../1.overview/MASTER_SPEC.md` v1.1
+> - 实现规范 → `../1.overview/MASTER.md` v3.6
 > - 状态机 → `STATE_MACHINE.md` v2.6（任何状态字段必须引用对应状态机）
-> - 业务规则 → `BUSINESS_RULES.md` v3.1
+> - 业务规则 → `BUSINESS_RULES.md` v3.2
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
 > - 业务需求 → `BRD_chapter1_v3.1.md` (BRD v3.1基线)
 

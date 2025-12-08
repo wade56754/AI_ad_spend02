@@ -5,19 +5,13 @@ status: ready_for_production
 layer: skill
 owner: wade
 last_reviewed: 2025-11-28
-baseline:
-  - MASTER.md v3.5
-  - SoT Freeze v2.6
-  - Dev-Guides Freeze vFinal
-  - Architecture Freeze v1.0
-  - Infrastructure Freeze v1.0
-  - Agent Freeze v1.0
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 ---
 
 <skill>
 ──────────────────────────────────────────────
   <name>ai-project-doc-writer</name>
-  <version>3.0-superclaude</version>
+  <version>3.1</version>
   <domain>ASDD + SoT 文档生产</domain>
   <profile>Self-governed / Multi-role / Safe</profile>
 ──────────────────────────────────────────────
