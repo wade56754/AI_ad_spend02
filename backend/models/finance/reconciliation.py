@@ -527,3 +527,103 @@ class ReconciliationAdjustment(Base, TimestampMixin, SerializableMixin):
     def type_enum(self) -> ReconciliationAdjustmentType:
         """返回调整类型枚举对象"""
         return ReconciliationAdjustmentType(self.adjustment_type)
+
+
+class ReconciliationReport(Base, TimestampMixin, SerializableMixin):
+    """
+    对账报告表
+
+    必须与 DATA_SCHEMA.md v5.2 第3.5.4节保持严格一致。
+
+    字段：
+    - id: 主键
+    - batch_id: 批次ID（外键）
+    - report_type: 报告类型（daily/weekly/monthly）
+    - period_start: 报告期间开始
+    - period_end: 报告期间结束
+    - metrics: 报告指标（JSONB）
+    - report_url: 报告文件URL
+    - generated_by: 生成人ID（外键）
+    - generated_at: 生成时间
+    - created_at/updated_at: 时间戳（自动管理）
+    """
+    __tablename__ = 'reconciliation_reports'
+
+    # 序列化配置
+    __json_include_relationships__ = ['batch', 'generator']
+
+    # 主键
+    id = Column(BigInteger, primary_key=True, autoincrement=True, comment="报告ID")
+
+    # 外键
+    batch_id = Column(
+        BigInteger,
+        ForeignKey('reconciliation_batches.id', ondelete='CASCADE'),
+        nullable=False,
+        comment="批次ID"
+    )
+    generated_by = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="生成人ID"
+    )
+
+    # 业务字段
+    report_type = Column(String(20), nullable=False, comment="报告类型")
+    period_start = Column(Date, nullable=False, comment="报告期间开始")
+    period_end = Column(Date, nullable=False, comment="报告期间结束")
+    metrics = Column(Text, nullable=True, comment="报告指标(JSON)")
+    report_url = Column(String(500), nullable=True, comment="报告文件URL")
+    generated_at = Column(DateTime(timezone=True), server_default=func.now(), comment="生成时间")
+
+    # ========== 关系定义 ==========
+
+    # 多对一：报告 -> 批次
+    batch = relationship(
+        "ReconciliationBatch",
+        foreign_keys=[batch_id],
+        lazy="joined",
+        doc="所属批次"
+    )
+
+    # 多对一：报告 -> 生成人
+    generator = relationship(
+        "User",
+        foreign_keys=[generated_by],
+        lazy="selectin",
+        doc="生成人"
+    )
+
+    # 约束和索引
+    __table_args__ = (
+        CheckConstraint(
+            "report_type IN ('daily', 'weekly', 'monthly')",
+            name='chk_reconciliation_reports_type'
+        ),
+        Index('idx_reconciliation_reports_batch_id', 'batch_id'),
+        Index('idx_reconciliation_reports_generated_by', 'generated_by'),
+        Index('idx_reconciliation_reports_period', 'period_start', 'period_end'),
+    )
+
+    def __repr__(self):
+        return f"<ReconciliationReport(id={self.id}, batch_id={self.batch_id}, type='{self.report_type}')>"
+
+    # ========== 业务属性 ==========
+
+    @property
+    def metrics_dict(self) -> dict:
+        """返回指标字典"""
+        import json
+        if self.metrics:
+            try:
+                return json.loads(self.metrics)
+            except (json.JSONDecodeError, TypeError):
+                return {}
+        return {}
+
+    @metrics_dict.setter
+    def metrics_dict(self, value: dict):
+        """设置指标字典"""
+        import json
+        self.metrics = json.dumps(value, ensure_ascii=False) if value else None

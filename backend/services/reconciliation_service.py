@@ -11,16 +11,11 @@ from datetime import datetime, date
 from decimal import Decimal
 from typing import List, Optional, Dict, Any, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func, select
+from sqlalchemy import and_, or_, func, select, Integer
 
 from backend.models import (
-    ReconciliationBatch, ReconciliationDetail, ReconciliationAdjustment
+    ReconciliationBatch, ReconciliationDetail, ReconciliationAdjustment, ReconciliationReport
 )
-# ReconciliationReport 可能尚未完全实现
-try:
-    from backend.models.reconciliation import ReconciliationReport
-except (ImportError, AttributeError):
-    ReconciliationReport = None
 from backend.models import AdAccount
 from backend.models import Project
 from backend.models import Channel
@@ -680,3 +675,779 @@ class ReconciliationService:
         batch.discrepancy = sum(d.discrepancy for d in details) if details else Decimal('0.00')
 
         self.db.commit()
+
+    # ========== 批次状态转换方法 (STATE_MACHINE.md v2.6 第11章) ==========
+
+    async def submit_batch(
+        self,
+        batch_id: int,
+        current_user_id: int
+    ) -> ReconciliationBatch:
+        """
+        提交批次审核
+        状态转换: draft → pending_review
+        允许角色: finance, data_operator
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+
+        if batch.status != ReconciliationBatchStatus.DRAFT.value:
+            raise BusinessLogicError(
+                message=f"只能从草稿状态提交审核，当前状态: {batch.status}",
+                error_code="STATE_400"
+            )
+
+        # 验证批次有明细
+        detail_count = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.batch_id == batch_id
+        ).count()
+
+        if detail_count == 0:
+            raise BusinessLogicError(
+                message="批次没有对账明细，无法提交审核",
+                error_code="RECON_001"
+            )
+
+        batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
+        batch.version += 1
+        self.db.commit()
+        self.db.refresh(batch)
+
+        return batch
+
+    async def approve_batch(
+        self,
+        batch_id: int,
+        current_user_id: int
+    ) -> ReconciliationBatch:
+        """
+        批准对账批次
+        状态转换: pending_review → approved
+        允许角色: finance, admin
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+
+        if batch.status != ReconciliationBatchStatus.PENDING_REVIEW.value:
+            raise BusinessLogicError(
+                message=f"只能从待审核状态批准，当前状态: {batch.status}",
+                error_code="STATE_400"
+            )
+
+        batch.status = ReconciliationBatchStatus.APPROVED.value
+        batch.reviewed_by = current_user_id
+        batch.version += 1
+        self.db.commit()
+        self.db.refresh(batch)
+
+        return batch
+
+    async def request_adjustment(
+        self,
+        batch_id: int,
+        current_user_id: int,
+        reason: str
+    ) -> ReconciliationBatch:
+        """
+        请求调整（审核不通过）
+        状态转换: pending_review → needs_adjustment
+        允许角色: finance, admin
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+
+        if batch.status != ReconciliationBatchStatus.PENDING_REVIEW.value:
+            raise BusinessLogicError(
+                message=f"只能从待审核状态请求调整，当前状态: {batch.status}",
+                error_code="STATE_400"
+            )
+
+        batch.status = ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value
+        batch.reviewed_by = current_user_id
+        batch.version += 1
+        self.db.commit()
+        self.db.refresh(batch)
+
+        return batch
+
+    async def resubmit_batch(
+        self,
+        batch_id: int,
+        current_user_id: int
+    ) -> ReconciliationBatch:
+        """
+        重新提交批次（调整后）
+        状态转换: needs_adjustment → pending_review
+        允许角色: finance, data_operator
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+
+        if batch.status != ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value:
+            raise BusinessLogicError(
+                message=f"只能从需调整状态重新提交，当前状态: {batch.status}",
+                error_code="STATE_400"
+            )
+
+        batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
+        batch.version += 1
+        self.db.commit()
+        self.db.refresh(batch)
+
+        return batch
+
+    async def complete_batch(
+        self,
+        batch_id: int,
+        current_user_id: int
+    ) -> ReconciliationBatch:
+        """
+        完成对账批次（终态）
+        状态转换: approved → completed
+        允许角色: finance, admin
+
+        完成条件 (STATE_MACHINE.md v2.6 第14.4节):
+        1. 所有明细状态均为 confirmed 或 adjusted
+        2. 存在对应的 reconciliation_report 记录
+        3. adjusted 状态的明细都有对应的 adjustments 记录
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+
+        if batch.status != ReconciliationBatchStatus.APPROVED.value:
+            raise BusinessLogicError(
+                message=f"只能从已批准状态完成，当前状态: {batch.status}",
+                error_code="STATE_400"
+            )
+
+        # 验证完成条件1: 所有明细已处理
+        pending_details = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.batch_id == batch_id,
+            ReconciliationDetail.status == ReconciliationDetailStatus.PENDING.value
+        ).count()
+
+        if pending_details > 0:
+            raise BusinessLogicError(
+                message=f"还有 {pending_details} 条明细未处理，无法完成",
+                error_code="RECON_001"
+            )
+
+        # 验证完成条件2: 报告已生成
+        # 尝试导入 ReconciliationReport
+        try:
+            from backend.models.finance.reconciliation import ReconciliationReport
+            report_exists = self.db.query(ReconciliationReport).filter(
+                ReconciliationReport.batch_id == batch_id
+            ).first()
+
+            if not report_exists:
+                raise BusinessLogicError(
+                    message="对账报告未生成，无法完成",
+                    error_code="RECON_002"
+                )
+        except ImportError:
+            # ReconciliationReport 不存在，跳过此验证
+            pass
+
+        # 验证完成条件3: adjusted 明细有调整记录
+        adjusted_details = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.batch_id == batch_id,
+            ReconciliationDetail.status == ReconciliationDetailStatus.ADJUSTED.value
+        ).all()
+
+        for detail in adjusted_details:
+            adjustment_exists = self.db.query(ReconciliationAdjustment).filter(
+                ReconciliationAdjustment.detail_id == detail.id
+            ).first()
+
+            if not adjustment_exists:
+                raise BusinessLogicError(
+                    message=f"明细 {detail.id} 标记为已调整但没有调整记录",
+                    error_code="RECON_003"
+                )
+
+        # 状态转换
+        batch.status = ReconciliationBatchStatus.COMPLETED.value
+        batch.reviewed_by = current_user_id
+        batch.closed_at = func.now()
+        batch.version += 1
+        self.db.commit()
+        self.db.refresh(batch)
+
+        return batch
+
+    async def force_complete_batch(
+        self,
+        batch_id: int,
+        current_user_id: int,
+        reason: str
+    ) -> ReconciliationBatch:
+        """
+        强制完成对账批次（管理员专用）
+        状态转换: any (非completed) → completed
+        允许角色: admin only
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, "admin")
+
+        if batch.status == ReconciliationBatchStatus.COMPLETED.value:
+            raise BusinessLogicError(
+                message="批次已完成，无需强制完成",
+                error_code="STATE_402"
+            )
+
+        # 强制完成，跳过所有验证
+        batch.status = ReconciliationBatchStatus.COMPLETED.value
+        batch.reviewed_by = current_user_id
+        batch.closed_at = func.now()
+        batch.version += 1
+        self.db.commit()
+        self.db.refresh(batch)
+
+        return batch
+
+    # ========== 明细状态转换方法 ==========
+
+    async def confirm_detail(
+        self,
+        detail_id: int,
+        current_user_id: int
+    ) -> ReconciliationDetail:
+        """
+        确认对账明细
+        状态转换: pending → confirmed
+        允许角色: finance, data_operator
+        """
+        detail = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.id == detail_id
+        ).first()
+
+        if not detail:
+            raise ResourceNotFoundError(
+                message="对账明细不存在",
+                error_code="SYS_004"
+            )
+
+        if detail.status != ReconciliationDetailStatus.PENDING.value:
+            raise BusinessLogicError(
+                message=f"只能从待确认状态确认，当前状态: {detail.status}",
+                error_code="STATE_400"
+            )
+
+        detail.status = ReconciliationDetailStatus.CONFIRMED.value
+        detail.notes = f"确认人: {current_user_id}, 时间: {datetime.utcnow().isoformat()}"
+        detail.version += 1
+        self.db.commit()
+        self.db.refresh(detail)
+
+        # 更新批次统计
+        await self._update_batch_statistics(detail.batch_id)
+
+        return detail
+
+    async def adjust_detail(
+        self,
+        detail_id: int,
+        current_user_id: int,
+        adjustment_type: str,
+        amount: Decimal,
+        reason: str
+    ) -> Tuple[ReconciliationDetail, ReconciliationAdjustment]:
+        """
+        调整对账明细
+        状态转换: pending → adjusted
+        允许角色: finance, data_operator
+
+        同时创建调整记录和（可选）账本记录
+        """
+        detail = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.id == detail_id
+        ).first()
+
+        if not detail:
+            raise ResourceNotFoundError(
+                message="对账明细不存在",
+                error_code="SYS_004"
+            )
+
+        if detail.status != ReconciliationDetailStatus.PENDING.value:
+            raise BusinessLogicError(
+                message=f"只能从待确认状态调整，当前状态: {detail.status}",
+                error_code="STATE_400"
+            )
+
+        # 创建调整记录
+        adjustment = ReconciliationAdjustment(
+            detail_id=detail_id,
+            adjustment_type=adjustment_type,
+            amount=amount,
+            reason=reason,
+            created_by=current_user_id
+        )
+        self.db.add(adjustment)
+
+        # 更新明细状态
+        detail.status = ReconciliationDetailStatus.ADJUSTED.value
+        detail.notes = f"调整金额: {amount}, 原因: {reason}"
+        detail.version += 1
+
+        self.db.commit()
+        self.db.refresh(detail)
+        self.db.refresh(adjustment)
+
+        # 更新批次统计
+        await self._update_batch_statistics(detail.batch_id)
+
+        return detail, adjustment
+
+    # ========== 报告生成方法 ==========
+
+    async def generate_report(
+        self,
+        request: ReconciliationReportGenerateRequest,
+        current_user_id: int
+    ):
+        """
+        生成对账报告
+
+        Args:
+            request: 报告生成请求
+            current_user_id: 当前用户ID
+
+        Returns:
+            ReconciliationReport: 生成的报告对象
+        """
+        import json
+
+        # 尝试导入 ReconciliationReport
+        try:
+            from backend.models.finance.reconciliation import ReconciliationReport
+        except ImportError:
+            raise BusinessLogicError(
+                message="ReconciliationReport 模型不可用",
+                error_code="SYS_001"
+            )
+
+        # 收集数据
+        query = self.db.query(ReconciliationBatch)
+
+        if request.batch_id:
+            query = query.filter(ReconciliationBatch.id == request.batch_id)
+        else:
+            query = query.filter(
+                ReconciliationBatch.period_end >= request.report_period_start,
+                ReconciliationBatch.period_end <= request.report_period_end
+            )
+
+        batches = query.all()
+
+        if not batches:
+            raise ResourceNotFoundError(
+                message="没有找到符合条件的对账批次",
+                error_code="SYS_004"
+            )
+
+        # 计算报告指标
+        total_batches = len(batches)
+        completed_batches = sum(1 for b in batches if b.status == ReconciliationBatchStatus.COMPLETED.value)
+        total_system_spend = sum(_safe_decimal(b.total_system_spend) for b in batches)
+        total_actual_spend = sum(_safe_decimal(b.total_actual_spend) for b in batches)
+        total_discrepancy = sum(_safe_decimal(b.discrepancy) for b in batches)
+
+        # 统计明细
+        detail_stats = self.db.query(
+            func.count(ReconciliationDetail.id).label('total'),
+            func.sum(
+                func.cast(ReconciliationDetail.status == ReconciliationDetailStatus.CONFIRMED.value, Integer)
+            ).label('confirmed'),
+            func.sum(
+                func.cast(ReconciliationDetail.status == ReconciliationDetailStatus.ADJUSTED.value, Integer)
+            ).label('adjusted')
+        ).filter(
+            ReconciliationDetail.batch_id.in_([b.id for b in batches])
+        ).first()
+
+        metrics = {
+            "total_batches": total_batches,
+            "completed_batches": completed_batches,
+            "total_system_spend": str(total_system_spend),
+            "total_actual_spend": str(total_actual_spend),
+            "total_discrepancy": str(total_discrepancy),
+            "total_details": detail_stats.total or 0,
+            "confirmed_details": detail_stats.confirmed or 0,
+            "adjusted_details": detail_stats.adjusted or 0,
+            "match_rate": round((detail_stats.confirmed or 0) / (detail_stats.total or 1) * 100, 2),
+            "generated_at": datetime.utcnow().isoformat()
+        }
+
+        # 创建报告记录
+        report = ReconciliationReport(
+            batch_id=request.batch_id or batches[0].id,
+            report_type=request.report_type,
+            period_start=request.report_period_start,
+            period_end=request.report_period_end,
+            metrics=json.dumps(metrics, ensure_ascii=False),
+            generated_by=current_user_id
+        )
+
+        self.db.add(report)
+        self.db.commit()
+        self.db.refresh(report)
+
+        return report
+
+    # ========== 账本集成方法 (LEDGER_SOT.md v1.1) ==========
+
+    async def create_ledger_entry_for_adjustment(
+        self,
+        adjustment: ReconciliationAdjustment,
+        project_id: int,
+        current_user_id: int
+    ):
+        """
+        为对账调整创建账本记录
+
+        根据 LEDGER_SOT.md v1.1 第11章，对账调整需要生成相应的账本分录
+
+        Args:
+            adjustment: 对账调整记录
+            project_id: 项目ID
+            current_user_id: 当前用户ID
+
+        Returns:
+            LedgerEntry: 创建的账本记录
+        """
+        from backend.models import LedgerEntry, LedgerEntryType
+
+        # 根据调整类型确定账本分录类型
+        if adjustment.adjustment_type == 'increase':
+            entry_type = LedgerEntryType.TOPUP.value
+            amount = adjustment.amount
+        elif adjustment.adjustment_type == 'decrease':
+            entry_type = LedgerEntryType.REVERSAL.value
+            amount = -adjustment.amount
+        else:  # writeoff
+            entry_type = LedgerEntryType.REVERSAL.value
+            amount = -adjustment.amount
+
+        # 创建账本记录
+        ledger_entry = LedgerEntry(
+            ledger_type='PROJECT',
+            project_id=project_id,
+            entry_type=entry_type,
+            amount=amount,
+            reference_type='reconciliation_adjustment',
+            reference_id=adjustment.id,
+            notes=f"对账调整: {adjustment.reason}",
+            created_by=current_user_id
+        )
+
+        self.db.add(ledger_entry)
+        self.db.commit()
+        self.db.refresh(ledger_entry)
+
+        return ledger_entry
+
+    # ========== 批次 CRUD 扩展方法 ==========
+
+    async def update_batch(
+        self,
+        batch_id: int,
+        request: ReconciliationBatchCreateRequest,
+        current_user_id: int,
+        user_role: str
+    ) -> ReconciliationBatch:
+        """
+        更新对账批次（仅 draft 状态可更新）
+
+        Args:
+            batch_id: 批次ID
+            request: 更新请求
+            current_user_id: 当前用户ID
+            user_role: 用户角色
+
+        Returns:
+            ReconciliationBatch: 更新后的批次
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, user_role)
+
+        if batch.status != ReconciliationBatchStatus.DRAFT.value:
+            raise BusinessLogicError(
+                message=f"只能更新草稿状态的批次，当前状态: {batch.status}",
+                error_code="STATE_400"
+            )
+
+        # 检查日期是否冲突（排除当前批次）
+        existing = self.db.query(ReconciliationBatch).filter(
+            ReconciliationBatch.period_end == request.reconciliation_date,
+            ReconciliationBatch.id != batch_id
+        ).first()
+
+        if existing:
+            raise BusinessLogicError(
+                message="该日期已存在其他对账批次",
+                error_code="BIZ_302"
+            )
+
+        # 更新字段
+        batch.period_start = request.reconciliation_date
+        batch.period_end = request.reconciliation_date
+        batch.version += 1
+
+        self.db.commit()
+        self.db.refresh(batch)
+
+        return batch
+
+    async def delete_batch(
+        self,
+        batch_id: int,
+        current_user_id: int
+    ) -> bool:
+        """
+        删除对账批次（仅 draft 状态，admin 角色）
+
+        Args:
+            batch_id: 批次ID
+            current_user_id: 当前用户ID
+
+        Returns:
+            bool: 删除是否成功
+        """
+        batch = await self.get_batch_by_id(batch_id, current_user_id, "admin")
+
+        if batch.status != ReconciliationBatchStatus.DRAFT.value:
+            raise BusinessLogicError(
+                message=f"只能删除草稿状态的批次，当前状态: {batch.status}",
+                error_code="STATE_400"
+            )
+
+        # 删除关联的明细
+        self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.batch_id == batch_id
+        ).delete()
+
+        # 删除批次
+        self.db.delete(batch)
+        self.db.commit()
+
+        return True
+
+    # ========== 明细扩展方法 ==========
+
+    async def get_detail_by_id(
+        self,
+        detail_id: int,
+        current_user_id: int = None,
+        user_role: str = None
+    ) -> ReconciliationDetail:
+        """
+        获取单个对账明细
+
+        Args:
+            detail_id: 明细ID
+            current_user_id: 当前用户ID
+            user_role: 用户角色
+
+        Returns:
+            ReconciliationDetail: 对账明细
+        """
+        detail = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.id == detail_id
+        ).first()
+
+        if not detail:
+            raise ResourceNotFoundError(
+                message="对账明细不存在",
+                error_code="SYS_004"
+            )
+
+        # 权限检查（通过批次）
+        if user_role in ["account_manager", "media_buyer"]:
+            await self.get_batch_by_id(detail.batch_id, current_user_id, user_role)
+
+        return detail
+
+    # ========== 调整记录方法 ==========
+
+    async def get_adjustments(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        batch_id: Optional[int] = None,
+        detail_id: Optional[int] = None,
+        adjustment_type: Optional[str] = None
+    ) -> Tuple[List[ReconciliationAdjustment], int]:
+        """
+        获取调整记录列表
+
+        Args:
+            page: 页码
+            page_size: 每页条数
+            batch_id: 批次ID过滤
+            detail_id: 明细ID过滤
+            adjustment_type: 调整类型过滤
+
+        Returns:
+            Tuple[List[ReconciliationAdjustment], int]: (调整记录列表, 总数)
+        """
+        query = self.db.query(ReconciliationAdjustment)
+
+        # 按批次过滤
+        if batch_id:
+            query = query.join(ReconciliationDetail).filter(
+                ReconciliationDetail.batch_id == batch_id
+            )
+
+        # 按明细过滤
+        if detail_id:
+            query = query.filter(ReconciliationAdjustment.detail_id == detail_id)
+
+        # 按类型过滤
+        if adjustment_type:
+            query = query.filter(ReconciliationAdjustment.adjustment_type == adjustment_type)
+
+        # 计算总数
+        total = query.count()
+
+        # 分页
+        adjustments = query.order_by(
+            ReconciliationAdjustment.created_at.desc()
+        ).offset((page - 1) * page_size).limit(page_size).all()
+
+        return adjustments, total
+
+    async def get_adjustment_by_id(
+        self,
+        adjustment_id: int
+    ) -> ReconciliationAdjustment:
+        """
+        获取单个调整记录
+
+        Args:
+            adjustment_id: 调整记录ID
+
+        Returns:
+            ReconciliationAdjustment: 调整记录
+        """
+        adjustment = self.db.query(ReconciliationAdjustment).filter(
+            ReconciliationAdjustment.id == adjustment_id
+        ).first()
+
+        if not adjustment:
+            raise ResourceNotFoundError(
+                message="调整记录不存在",
+                error_code="SYS_004"
+            )
+
+        return adjustment
+
+    async def execute_adjustment(
+        self,
+        adjustment_id: int,
+        current_user_id: int
+    ) -> ReconciliationAdjustment:
+        """
+        执行调整记录（触发账本分录）
+
+        Args:
+            adjustment_id: 调整记录ID
+            current_user_id: 当前用户ID
+
+        Returns:
+            ReconciliationAdjustment: 更新后的调整记录
+        """
+        adjustment = await self.get_adjustment_by_id(adjustment_id)
+
+        # 检查是否已执行
+        if hasattr(adjustment, 'executed') and adjustment.executed:
+            raise BusinessLogicError(
+                message="调整记录已执行",
+                error_code="BIZ_003"
+            )
+
+        # 获取明细和批次信息
+        detail = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.id == adjustment.detail_id
+        ).first()
+
+        if not detail:
+            raise ResourceNotFoundError(
+                message="关联的对账明细不存在",
+                error_code="SYS_004"
+            )
+
+        # 获取广告账户的项目ID
+        ad_account = self.db.query(AdAccount).filter(
+            AdAccount.id == detail.ad_account_id
+        ).first()
+
+        if not ad_account or not ad_account.project_id:
+            raise BusinessLogicError(
+                message="无法确定调整记录关联的项目",
+                error_code="BIZ_003"
+            )
+
+        # 创建账本分录
+        await self.create_ledger_entry_for_adjustment(
+            adjustment=adjustment,
+            project_id=ad_account.project_id,
+            current_user_id=current_user_id
+        )
+
+        # 标记为已执行（如果模型有此字段）
+        if hasattr(adjustment, 'executed'):
+            adjustment.executed = True
+            self.db.commit()
+            self.db.refresh(adjustment)
+
+        return adjustment
+
+    # ========== 报告方法 ==========
+
+    async def get_report_by_id(
+        self,
+        report_id: int
+    ):
+        """
+        获取单个对账报告
+
+        Args:
+            report_id: 报告ID
+
+        Returns:
+            ReconciliationReport: 对账报告
+        """
+        try:
+            from backend.models.finance.reconciliation import ReconciliationReport
+        except ImportError:
+            raise BusinessLogicError(
+                message="ReconciliationReport 模型不可用",
+                error_code="SYS_001"
+            )
+
+        report = self.db.query(ReconciliationReport).filter(
+            ReconciliationReport.id == report_id
+        ).first()
+
+        if not report:
+            raise ResourceNotFoundError(
+                message="对账报告不存在",
+                error_code="SYS_004"
+            )
+
+        return report
+
+    async def delete_report(
+        self,
+        report_id: int
+    ) -> bool:
+        """
+        删除对账报告（admin 角色）
+
+        Args:
+            report_id: 报告ID
+
+        Returns:
+            bool: 删除是否成功
+        """
+        report = await self.get_report_by_id(report_id)
+
+        self.db.delete(report)
+        self.db.commit()
+
+        return True

@@ -1,24 +1,17 @@
 ---
 name: ai-ad-api-automation-test
-version: "1.4"
+version: "1.3"
 status: beta
 layer: skill
 owner: wade
-last_reviewed: 2025-12-02
-last_updated: 2025-12-02
-baseline:
-  - MASTER.md v3.5
-  - SoT Freeze v2.6
-  - Dev-Guides Freeze vFinal
-  - Architecture Freeze v1.0
-  - Infrastructure Freeze v1.0
-  - Agent Freeze v1.0
-  - AUTOMATION_TEST_SPEC_v1.4.md
+last_reviewed: 2025-12-01
+last_updated: 2025-12-01
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2, AUTOMATION_TEST_SPEC_v1.4.md
 ---
 
 <skill>
 <name>ai-ad-api-automation-test</name>
-<version>v1.4</version>
+<version>1.3</version>
 <domain>AI_AD_SYSTEM / API Automation Testing</domain>
 <profile>API-Test-Orchestrator / Newman-Integration / pytest-Generation</profile>
 
@@ -66,27 +59,6 @@ baseline:
     Note: External URLs are reference-only and may change. The patterns and practices
     have been internalized in this skill and AUTOMATION_TEST_SPEC_v1.4.md.
   </external_references>
-
-  <regression_baseline>
-    | Baseline | Document | Version | Purpose |
-    |----------|----------|---------|---------|
-    | Backend Regression Baseline | `docs/4.testing/BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md` | v1.0 | Regression test baseline for comparison, CI/CD gate, and release verification |
-
-    **Baseline Details**:
-    - **Established**: 2025-12-02
-    - **Test Results**: 198 passed, 3 deselected, 0 failed
-    - **Coverage**: 6 core modules (Daily Reports, Trend Risk, Ledger, Ad Accounts, Topup, Transfers)
-    - **Execution Command**: `python run_tests.py --type regression`
-
-    **Usage**:
-    - Compare regression test results against baseline v1.0 to identify regressions
-    - Use as CI/CD pass/fail standard
-    - Reference for release verification and issue tracking
-
-    **Maintenance**:
-    - Baseline updates require new version (v1.1, v1.2, ...) and new freeze report
-    - See AUTOMATION_TEST_SPEC_v1.4 Section 11.7 for baseline management process
-  </regression_baseline>
 </dependencies>
 
 
@@ -1130,7 +1102,7 @@ baseline:
 
   ### v1.3 (2025-12-01)
 
-  **Module Mapping Enhancement + Round 2 Pre-Launch Remediation - Status: beta (controlled-CI ready)**
+  **Module Mapping Enhancement - Status: beta**
 
   P0 Enhancements:
   - Added complete module mapping configuration section (Section 9)
@@ -1154,21 +1126,6 @@ baseline:
     - supported_modules table
     - module_details XML blocks
     - Usage examples
-
-  P1 Fixes (Implementation):
-  - Enhanced newman_runner.js preflight checks:
-    - Added Node.js version check (minimum v16)
-    - Added Newman installation check
-    - Added collections directory existence check
-    - Added environments directory warning
-  - Enhanced backend_test_skill.py logging:
-    - Added INFO-level parameter logging
-    - Added pytest command flag visibility
-
-  Code Quality:
-  - All P0 issues verified cleared
-  - All critical P1 issues addressed
-  - Deployment recommendation: controlled-CI
 
   ---
 

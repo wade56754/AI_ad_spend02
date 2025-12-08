@@ -1,3 +1,4 @@
+from decimal import Decimal
 from math import ceil
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
@@ -5,6 +6,7 @@ from uuid import UUID, uuid4
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
@@ -14,12 +16,33 @@ from backend.core.logging import log_requests
 from backend.models import AdAccount
 # from models import Log  # Log模型不存在，暂时注释
 from backend.schemas import AdAccountCreate, AdAccountRead, AdAccountStatusUpdate
+from backend.schemas.transfer import TransferRequestCreate, TransferRequestResponse
 # from services.log_service import LogService  # 暂时注释，Log模型不存在
 from backend.services.ad_account_service import AdAccountService  # 用于测试 mock
+from backend.services.transfer_service import TransferService
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/ad-accounts", tags=["ad_accounts"])
+
+
+# ========== 请求体模型 ==========
+
+class BalanceTransferRequest(BaseModel):
+    """
+    死号余额迁移请求体
+
+    SoT Ref: docs/2.sot/TRANSFER_SOT.md v1.0
+    """
+    target_ad_account_id: int = Field(..., description="目标账户ID（接收余额的活跃账户）")
+    transfer_amount: Optional[Decimal] = Field(
+        None,
+        gt=0,
+        description="迁移金额（可选，默认迁移全部余额）"
+    )
+    reason: Optional[str] = Field(None, max_length=500, description="迁移原因")
+
+    model_config = {"extra": "forbid"}
 
 ALLOWED_TRANSITIONS: Dict[str, List[str]] = {
     "new": ["testing"],
@@ -176,17 +199,200 @@ def delete_ad_account(
     account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
     if not account:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad account not found")
-    
+
     # 只有归档状态的账户才能删除
     if account.status != "archived":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="只有归档状态的账户才能删除"
         )
-    
+
     db.delete(account)
     db.commit()
-    
+
     return ok(data={"message": "Account deleted successfully"})
+
+
+@log_requests("ad_accounts")
+@router.post("/{account_id}/balance-transfer", response_model=dict, status_code=status.HTTP_201_CREATED)
+def create_balance_transfer(
+    account_id: int,
+    payload: BalanceTransferRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    从死号账户发起余额迁移
+
+    **业务规则** (SoT: TRANSFER_SOT.md v1.0):
+    - 源账户状态必须为 dead
+    - 目标账户状态必须为 active
+    - 源账户与目标账户必须属于同一供应商 (supplier_id)
+    - 迁移金额必须 > 0 且 <= 源账户余额
+    - 迁移不可逆，完成后需通过调账修正
+
+    **状态流转** (SoT: STATE_MACHINE.md v2.6 第12章):
+    创建后状态为 draft → 提交后 pending_approval → 审批后 approved → 执行后 completed
+
+    **权限**:
+    - account_manager: 可发起（仅自己管理的项目）
+    - finance: 可发起和审批
+    - admin: 全部权限
+
+    **错误码** (SoT: ERROR_CODES_SOT.md v2.1):
+    - E-TRANS-001: 申请单号已存在
+    - E-TRANS-002: 源账户不是 dead
+    - E-TRANS-003: 目标账户不是 active
+    - E-TRANS-004: 跨供应商迁移不允许
+    - E-TRANS-006: 余额不足
+    """
+    # 验证源账户存在
+    source_account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
+    if not source_account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "BIZ_002", "message": f"源账户 {account_id} 不存在"}
+        )
+
+    # 验证源账户状态必须为 dead
+    if source_account.status != "dead":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "E-TRANS-002",
+                "message": f"源账户状态必须为 dead，当前状态: {source_account.status}"
+            }
+        )
+
+    # 验证目标账户存在
+    target_account = db.query(AdAccount).filter(
+        AdAccount.id == payload.target_ad_account_id
+    ).first()
+    if not target_account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BIZ_002",
+                "message": f"目标账户 {payload.target_ad_account_id} 不存在"
+            }
+        )
+
+    # 验证目标账户状态必须为 active
+    if target_account.status != "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "E-TRANS-003",
+                "message": f"目标账户状态必须为 active，当前状态: {target_account.status}"
+            }
+        )
+
+    # 验证源账户和目标账户不能相同
+    if account_id == payload.target_ad_account_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "E-TRANS-001",
+                "message": "源账户和目标账户不能相同"
+            }
+        )
+
+    # 验证同供应商限制 (如果有 supplier_id 字段)
+    source_supplier_id = getattr(source_account, 'supplier_id', None)
+    target_supplier_id = getattr(target_account, 'supplier_id', None)
+    if source_supplier_id and target_supplier_id and source_supplier_id != target_supplier_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "E-TRANS-004",
+                "message": "禁止跨供应商迁移余额，必须拆分为退款 + 充值"
+            }
+        )
+
+    # 获取源账户余额
+    source_balance = getattr(source_account, 'balance', Decimal('0.00')) or Decimal('0.00')
+
+    # 确定迁移金额（如果未指定，则迁移全部余额）
+    transfer_amount = payload.transfer_amount if payload.transfer_amount else source_balance
+
+    # 验证迁移金额
+    if transfer_amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "E-TRANS-006",
+                "message": "迁移金额必须大于 0"
+            }
+        )
+
+    if transfer_amount > source_balance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "E-TRANS-006",
+                "message": f"迁移金额 {transfer_amount} 超过源账户余额 {source_balance}"
+            }
+        )
+
+    # 调用 TransferService 创建迁移申请
+    try:
+        transfer_service = TransferService(db)
+
+        # 构建 TransferRequestCreate
+        transfer_request = TransferRequestCreate(
+            source_ad_account_id=account_id,
+            target_ad_account_id=payload.target_ad_account_id,
+            transfer_amount=transfer_amount,
+            reason=payload.reason or f"死号余额迁移: 账户 {account_id} → {payload.target_ad_account_id}"
+        )
+
+        # 创建迁移申请
+        from backend.models import User
+        user = db.query(User).filter(User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"code": "AUTH_001", "message": "用户不存在"}
+            )
+
+        transfer = transfer_service.create_transfer(transfer_request, user)
+
+        # 构建响应
+        response_data = {
+            "id": transfer.id,
+            "request_no": transfer.request_no,
+            "source_ad_account_id": transfer.source_ad_account_id,
+            "target_ad_account_id": transfer.target_ad_account_id,
+            "transfer_amount": str(transfer.transfer_amount),
+            "status": transfer.status,
+            "reason": transfer.reason,
+            "created_at": transfer.created_at.isoformat() if transfer.created_at else None,
+            "message": "余额迁移申请已创建，请等待审批"
+        }
+
+        logger.info(
+            "Balance transfer created",
+            transfer_id=transfer.id,
+            source_account=account_id,
+            target_account=payload.target_ad_account_id,
+            amount=str(transfer_amount),
+            user_id=str(current_user.id)
+        )
+
+        return ok(data=response_data, status_code=status.HTTP_201_CREATED)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Failed to create balance transfer",
+            error=str(e),
+            source_account=account_id,
+            target_account=payload.target_ad_account_id
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"code": "SYS_001", "message": f"创建迁移申请失败: {str(e)}"}
+        )
 
 

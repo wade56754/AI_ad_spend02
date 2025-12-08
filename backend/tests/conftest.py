@@ -521,6 +521,23 @@ def test_project(db_session, test_user):
 
 
 @pytest.fixture(scope="function")
+def test_project_2(db_session, test_user):
+    """创建第二个测试项目（用于对比测试）"""
+    project = Project(
+        id=2,
+        project_name="测试项目2",
+        project_code="TEST002",
+        client_name="测试客户2",
+        status="active",
+        created_by=test_user.id,
+    )
+    db_session.add(project)
+    db_session.commit()
+    db_session.refresh(project)
+    return project
+
+
+@pytest.fixture(scope="function")
 def test_channel(db_session):
     """创建测试渠道"""
     channel = Channel(
@@ -967,6 +984,83 @@ class LedgerInvariantHelper:
 def daily_report_state_helper():
     """日报状态机辅助类"""
     return DailyReportStateHelper
+
+
+# ============================================================================
+# Daily Report 测试数据 Fixtures
+# ============================================================================
+
+@pytest.fixture(scope="function")
+def sample_daily_report_data(test_ad_account):
+    """
+    示例日报创建数据（用于 API 测试）
+
+    对齐 API_SOT.md v9.0 第 9.2 节 DailyReportCreateRequest
+    字段命名遵循 SoT 三数据流规范:
+    - conversions_raw / raw_spend: raw 数据流（投手提交）
+    """
+    return {
+        "report_date": date.today().isoformat(),
+        "ad_account_id": test_ad_account.id,
+        "conversions_raw": 50,
+        "raw_spend": "100.00",
+        "campaign_name": "测试广告系列",
+        "ad_group_name": "测试广告组",
+        "ad_creative_name": "测试创意",
+        "impressions": 10000,
+        "clicks": 500,
+        "notes": "测试日报数据",
+    }
+
+
+@pytest.fixture(scope="function")
+def sample_batch_import_data(test_ad_account):
+    """
+    示例批量导入数据（用于批量导入 API 测试）
+
+    对齐 API_SOT.md v9.0 DailyReportBatchImportRequest
+    """
+    from datetime import timedelta
+    return {
+        "reports": [
+            {
+                "report_date": (date.today() - timedelta(days=1)).isoformat(),
+                "ad_account_id": test_ad_account.id,
+                "conversions_raw": 30,
+                "raw_spend": "80.00",
+                "impressions": 8000,
+                "clicks": 400,
+            },
+            {
+                "report_date": (date.today() - timedelta(days=2)).isoformat(),
+                "ad_account_id": test_ad_account.id,
+                "conversions_raw": 40,
+                "raw_spend": "90.00",
+                "impressions": 9000,
+                "clicks": 450,
+            },
+        ],
+        "skip_errors": False,
+    }
+
+
+# Alias fixtures for backward compatibility with existing tests
+@pytest.fixture(scope="function")
+def auth_headers_user(media_buyer_headers):
+    """投手用户请求头（向后兼容别名）"""
+    return media_buyer_headers
+
+
+@pytest.fixture(scope="function")
+def auth_headers_admin(admin_headers):
+    """管理员请求头（向后兼容别名）"""
+    return admin_headers
+
+
+@pytest.fixture(scope="function")
+def auth_headers_operator(data_operator_headers):
+    """数据操作员请求头（向后兼容别名）"""
+    return data_operator_headers
 
 
 class TopupStateHelper:

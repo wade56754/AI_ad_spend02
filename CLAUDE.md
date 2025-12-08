@@ -34,7 +34,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 ### 2. 遵循 SoT 裁判链
 所有技术决策必须遵循以下优先级：
 ```
-STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
+STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.2
 → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1 → AUTH_SPEC.md v2.0
 → LEDGER_SOT.md v1.1
 ```

@@ -30,6 +30,7 @@ from backend.models import DailyReport
 from backend.models import AdAccount
 from backend.models import User
 from backend.models.base import DailyReportStatus, UserRole
+from backend.models.audit import AuditLog
 from backend.schemas.daily_report import (
     DailyReportCreateRequest,
     DailyReportUpdateRequest,
@@ -430,11 +431,12 @@ class DailyReportService:
             raise PermissionDeniedError("只有管理员可以删除日报")
 
         with self.transaction():
-            # 删除审计日志
-            # FIXME: DailyReportAuditLog model missing - uncomment when model is added
-            # self.db.query(DailyReportAuditLog).filter(
-            #     DailyReportAuditLog.daily_report_id == report_id
-            # ).delete()
+            # 删除关联的审计日志（使用通用 AuditLog 模型）
+            deleted_logs = self.db.query(AuditLog).filter(
+                AuditLog.resource_type == "daily_report",
+                AuditLog.resource_id == str(report_id)
+            ).delete()
+            logger.debug(f"Deleted {deleted_logs} audit logs for report {report_id}")
 
             # 删除日报
             self.db.delete(report)
@@ -749,28 +751,27 @@ class DailyReportService:
         self,
         report_id: int,
         current_user: User
-    ) -> List["DailyReportAuditLog"]:
+    ) -> List[AuditLog]:
         """
-        获取日报审核日志
+        获取日报审核日志（使用通用 AuditLog 模型）
 
         Args:
             report_id: 日报ID
             current_user: 当前用户
 
         Returns:
-            List[DailyReportAuditLog]: 审核日志列表
+            List[AuditLog]: 审核日志列表
         """
         # 先验证日报存在和权限
         self.get_daily_report(report_id, current_user)
 
-        # FIXME: DailyReportAuditLog model missing - uncomment when model is added
-        # return self.db.query(DailyReportAuditLog).options(
-        #     joinedload(DailyReportAuditLog.audit_user)
-        # ).filter(
-        #     DailyReportAuditLog.daily_report_id == report_id
-        # ).order_by(desc(DailyReportAuditLog.audit_time)).all()
-
-        return []
+        # 使用通用 AuditLog 模型查询 daily_report 类型的日志
+        return self.db.query(AuditLog).options(
+            joinedload(AuditLog.user)
+        ).filter(
+            AuditLog.resource_type == "daily_report",
+            AuditLog.resource_id == str(report_id)
+        ).order_by(desc(AuditLog.created_at)).all()
 
     # 8 状态机流转白名单 (STATE_MACHINE.md v2.6 第8章)
     STATE_TRANSITIONS = {
@@ -857,9 +858,9 @@ class DailyReportService:
         audit_notes: Optional[str] = None,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
-    ) -> "DailyReportAuditLog":
+    ) -> AuditLog:
         """
-        创建审计日志
+        创建审计日志（使用通用 AuditLog 模型）
 
         Args:
             daily_report_id: 日报ID
@@ -872,24 +873,30 @@ class DailyReportService:
             user_agent: 用户代理
 
         Returns:
-            DailyReportAuditLog: 审计日志对象
+            AuditLog: 审计日志对象
         """
-        # FIXME: DailyReportAuditLog model missing - uncomment when model is added
-        # audit_log = DailyReportAuditLog(
-        #     daily_report_id=daily_report_id,
-        #     action=action,
-        #     old_status=old_status,
-        #     new_status=new_status,
-        #     audit_user_id=audit_user_id,
-        #     audit_notes=audit_notes,
-        #     ip_address=ip_address,
-        #     user_agent=user_agent
-        # )
-        # self.db.add(audit_log)
-        # return audit_log
+        old_values = {"status": old_status} if old_status else None
+        new_values = {
+            "status": new_status,
+            "audit_notes": audit_notes
+        } if new_status or audit_notes else None
 
-        # Temporary return None until model is implemented
-        return None
+        audit_log = AuditLog(
+            user_id=audit_user_id,
+            action=action,
+            resource_type="daily_report",
+            resource_id=str(daily_report_id),
+            old_values=old_values,
+            new_values=new_values,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        self.db.add(audit_log)
+        logger.debug(
+            f"Audit log created: resource=daily_report/{daily_report_id}, "
+            f"action={action}, user={audit_user_id}"
+        )
+        return audit_log
 
     # ============== RBAC 权限检查辅助方法 ==============
 

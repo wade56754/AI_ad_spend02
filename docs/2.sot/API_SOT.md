@@ -38,6 +38,7 @@
 9. [Daily Reports API（日报管理）](#9-daily-reports-api日报管理)
 10. [Topup Requests API（充值申请）](#10-topup-requests-api充值申请)
 11. [Ledger API（资金账本）](#11-ledger-api资金账本)
+11A. [Finance Profit API（财务利润统计）](#11a-finance-profit-api财务利润统计)
 12. [Reconciliation API（对账管理）](#12-reconciliation-api对账管理)
 13. [全局规范参考](#13-全局规范参考)
 
@@ -1804,6 +1805,167 @@ with db.begin():
 - 数据表: DATA_SCHEMA.md 3.4.4节
 - 双账本: SYSTEM_OVERVIEW.md 第5章
 - 业务规则: BR-FIN-005（双写一致性）
+
+---
+
+## 11A. Finance Profit API（财务利润统计）
+
+### 11A.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| GET | `/api/v1/finance/profit/summary` | 获取利润汇总 | `admin`, `finance`, `data_operator` | implemented |
+
+**计费公式**（来自 BUSINESS_RULES.md v3.1）:
+- `revenue = conversions_final × unit_price`
+- `cost = real_spend + fee`
+- `profit = revenue - cost`
+- `profit_margin = profit / revenue × 100`
+
+**引用**:
+- 数据表: DATA_SCHEMA.md 3.3.1节 `daily_reports`, 3.2.1节 `projects`, 3.2.9节 `ad_accounts`
+- 业务规则: BUSINESS_RULES.md v3.1 利润计算公式
+- 权限矩阵: AUTH_SPEC.md v2.0
+
+---
+
+### 11A.2 GET `/api/v1/finance/profit/summary` - 获取利润汇总
+
+#### 请求
+
+**Query Parameters**:
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 | 约束 |
+|------|------|------|--------|------|------|
+| `project_id` | integer | 否 | - | 项目ID（BIGINT） | 存在的项目ID |
+| `start_date` | string | 否 | - | 开始日期 | ISO 8601 date |
+| `end_date` | string | 否 | - | 结束日期 | ISO 8601 date, ≥ start_date |
+
+**Request示例**:
+```http
+GET /api/v1/finance/profit/summary?project_id=1&start_date=2025-01-01&end_date=2025-01-31
+Authorization: Bearer <token>
+```
+
+#### 响应
+
+**Success (200 OK)**:
+
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "report_date": "2025-01-21",
+        "project_id": 1,
+        "project_name": "春节推广项目",
+        "conversions_final": 100,
+        "unit_price": "50.00",
+        "revenue": "5000.00",
+        "real_spend": "3000.00",
+        "fee": "0.00",
+        "cost": "3000.00",
+        "profit": "2000.00",
+        "profit_margin": 40.0
+      }
+    ],
+    "total_conversions": 100,
+    "total_revenue": "5000.00",
+    "total_cost": "3000.00",
+    "total_profit": "2000.00",
+    "overall_profit_margin": 40.0
+  },
+  "message": "获取利润汇总成功",
+  "code": "SUCCESS"
+}
+```
+
+**Response Schema** (`data`字段):
+
+| 字段 | 类型 | 说明 | 计算方式/来源 |
+|------|------|------|---------------|
+| `items` | array | 利润明细列表 | - |
+| `items[].report_date` | date | 报告日期 | `daily_reports.report_date` |
+| `items[].project_id` | integer | 项目ID | `ad_accounts.project_id` |
+| `items[].project_name` | string | 项目名称 | `projects.name` |
+| `items[].conversions_final` | integer | 最终粉数 | `SUM(daily_reports.conversions_final)` |
+| `items[].unit_price` | string | 单粉价格 | `AVG(daily_reports.unit_price)` |
+| `items[].revenue` | string | 收入 | `conversions_final × unit_price` |
+| `items[].real_spend` | string | 真实消耗 | `SUM(daily_reports.real_spend)` |
+| `items[].fee` | string | 服务费 | 默认 "0.00" |
+| `items[].cost` | string | 成本 | `real_spend + fee` |
+| `items[].profit` | string | 利润 | `revenue - cost` |
+| `items[].profit_margin` | float | 利润率(%) | `profit / revenue × 100` |
+| `total_conversions` | integer | 总粉数 | 汇总计算 |
+| `total_revenue` | string | 总收入 | 汇总计算 |
+| `total_cost` | string | 总成本 | 汇总计算 |
+| `total_profit` | string | 总利润 | 汇总计算 |
+| `overall_profit_margin` | float | 总体利润率(%) | 汇总计算 |
+
+**金额精度**:
+- 所有金额字段: `DECIMAL(15,2)`, 使用 `ROUND_HALF_UP` 舍入
+- 币种: 继承自项目配置 (默认 CNY)
+
+**Error Responses**:
+
+| 错误码 | HTTP状态码 | 触发场景 | 对应异常类 |
+|--------|-----------|----------|-----------|
+| `AUTH_400` | 401 | 未提供认证令牌 | - |
+| `AUTH_500` | 403 | 非 admin/finance/data_operator 角色访问 | `AuthorizationException` |
+| `BIZ_002` | 404 | project_id 不存在 | `ResourceNotFoundException` |
+| `BIZ_001` | 400 | start_date > end_date（日期范围无效） | `BusinessRuleException` |
+| `BIZ_607` | 500 | 利润统计查询失败 | 通用异常捕获 |
+
+**引用**:
+- 错误码: ERROR_CODES_SOT.md v2.1 第3-4节
+- 权限: AUTH_SPEC.md v2.0 权限矩阵
+
+#### 权限
+
+- **允许角色**: `admin`, `finance`, `data_operator`
+- **业务约束**:
+  - 查询范围受角色限制（参考 AUTH_SPEC.md v2.0 第3章）
+  - project_id 若指定必须存在
+  - 日期范围 start_date ≤ end_date
+
+#### 并发控制
+
+- **幂等性**: 是（只读查询）
+- **事务**: 只读查询，无事务需求
+- **缓存**: 可考虑缓存（TTL 建议 5 分钟）
+
+#### 数据聚合逻辑
+
+```
+数据流向:
+daily_reports → ad_accounts → projects
+
+聚合维度:
+- 按 report_date 分组
+- 按 project_id 分组
+- 排序: report_date DESC
+```
+
+#### 使用示例
+
+**Frontend (TypeScript)**:
+```typescript
+import { apiFetch } from '@/lib/api';
+
+// 查询指定项目的利润汇总
+const profitSummary = await apiFetch('/api/v1/finance/profit/summary', {
+  method: 'GET',
+  params: {
+    project_id: 1,
+    start_date: '2025-01-01',
+    end_date: '2025-01-31'
+  }
+});
+
+// 查询所有项目汇总
+const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
+```
 
 ---
 

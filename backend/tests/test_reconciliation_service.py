@@ -804,3 +804,361 @@ class TestReconciliationService:
         assert result.exception_batches == 5
         assert result.resolved_batches == 5
         assert result.resolution_rate == 50.0  # 5/10 * 100
+
+    # ========== 批次状态转换测试 (STATE_MACHINE.md v2.6) ==========
+
+    @pytest.mark.asyncio
+    async def test_submit_batch_success(self, service, mock_db, sample_batch):
+        """测试成功提交批次审核: draft → pending_review"""
+        sample_batch.status = "draft"
+        sample_batch.version = 1
+
+        # 模拟有对账明细
+        def query_side_effect(model):
+            mock_query = Mock()
+            model_name = getattr(model, '__name__', str(model))
+
+            if 'ReconciliationBatch' in model_name:
+                mock_query.filter.return_value.first.return_value = sample_batch
+            elif 'ReconciliationDetail' in model_name:
+                mock_query.filter.return_value.count.return_value = 5  # 有明细
+            else:
+                mock_query.filter.return_value.first.return_value = None
+
+            return mock_query
+
+        mock_db.query = Mock(side_effect=query_side_effect)
+
+        result = await service.submit_batch(1, sample_batch.created_by)
+
+        assert sample_batch.status == "pending_review"
+        assert sample_batch.version == 2
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_submit_batch_no_details(self, service, mock_db, sample_batch):
+        """测试提交无明细的批次: 应失败"""
+        sample_batch.status = "draft"
+
+        def query_side_effect(model):
+            mock_query = Mock()
+            model_name = getattr(model, '__name__', str(model))
+
+            if 'ReconciliationBatch' in model_name:
+                mock_query.filter.return_value.first.return_value = sample_batch
+            elif 'ReconciliationDetail' in model_name:
+                mock_query.filter.return_value.count.return_value = 0  # 无明细
+            else:
+                mock_query.filter.return_value.first.return_value = None
+
+            return mock_query
+
+        mock_db.query = Mock(side_effect=query_side_effect)
+
+        with pytest.raises(BusinessLogicError) as exc_info:
+            await service.submit_batch(1, sample_batch.created_by)
+
+        assert exc_info.value.error_code == "RECON_001"
+
+    @pytest.mark.asyncio
+    async def test_approve_batch_success(self, service, mock_db, sample_batch):
+        """测试成功批准批次: pending_review → approved"""
+        sample_batch.status = "pending_review"
+        sample_batch.version = 1
+        mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
+
+        result = await service.approve_batch(1, sample_batch.created_by)
+
+        assert sample_batch.status == "approved"
+        assert sample_batch.version == 2
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_approve_batch_invalid_status(self, service, mock_db, sample_batch):
+        """测试从非 pending_review 状态批准: 应失败"""
+        sample_batch.status = "draft"  # 非 pending_review
+        mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
+
+        with pytest.raises(BusinessLogicError) as exc_info:
+            await service.approve_batch(1, sample_batch.created_by)
+
+        assert exc_info.value.error_code == "STATE_400"
+
+    @pytest.mark.asyncio
+    async def test_request_adjustment_success(self, service, mock_db, sample_batch):
+        """测试请求调整: pending_review → needs_adjustment"""
+        sample_batch.status = "pending_review"
+        sample_batch.version = 1
+        mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
+
+        result = await service.request_adjustment(1, sample_batch.created_by, "数据有问题")
+
+        assert sample_batch.status == "needs_adjustment"
+        assert sample_batch.version == 2
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_resubmit_batch_success(self, service, mock_db, sample_batch):
+        """测试重新提交批次: needs_adjustment → pending_review"""
+        sample_batch.status = "needs_adjustment"
+        sample_batch.version = 1
+        mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
+
+        result = await service.resubmit_batch(1, sample_batch.created_by)
+
+        assert sample_batch.status == "pending_review"
+        assert sample_batch.version == 2
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_complete_batch_success(self, service, mock_db, sample_batch, sample_detail):
+        """测试完成批次: approved → completed (满足所有条件)"""
+        sample_batch.status = "approved"
+        sample_batch.version = 1
+
+        # 准备 mock: 所有明细已处理，报告已生成，调整记录存在
+        confirmed_detail = Mock()
+        confirmed_detail.id = 1
+        confirmed_detail.status = "confirmed"
+
+        def query_side_effect(model):
+            mock_query = Mock()
+            model_name = getattr(model, '__name__', str(model))
+
+            if 'ReconciliationBatch' in model_name:
+                mock_query.filter.return_value.first.return_value = sample_batch
+            elif 'ReconciliationDetail' in model_name:
+                # 无待处理明细
+                mock_query.filter.return_value.count.return_value = 0
+                mock_query.filter.return_value.all.return_value = []
+            elif 'ReconciliationReport' in model_name:
+                # 报告存在
+                mock_query.filter.return_value.first.return_value = Mock()
+            elif 'ReconciliationAdjustment' in model_name:
+                mock_query.filter.return_value.first.return_value = Mock()
+            else:
+                mock_query.filter.return_value.first.return_value = None
+
+            return mock_query
+
+        mock_db.query = Mock(side_effect=query_side_effect)
+
+        result = await service.complete_batch(1, sample_batch.created_by)
+
+        assert sample_batch.status == "completed"
+        assert sample_batch.version == 2
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_complete_batch_pending_details(self, service, mock_db, sample_batch):
+        """测试完成批次时还有未处理明细: 应失败"""
+        sample_batch.status = "approved"
+
+        def query_side_effect(model):
+            mock_query = Mock()
+            model_name = getattr(model, '__name__', str(model))
+
+            if 'ReconciliationBatch' in model_name:
+                mock_query.filter.return_value.first.return_value = sample_batch
+            elif 'ReconciliationDetail' in model_name:
+                # 有待处理明细
+                mock_query.filter.return_value.count.return_value = 3
+            else:
+                mock_query.filter.return_value.first.return_value = None
+
+            return mock_query
+
+        mock_db.query = Mock(side_effect=query_side_effect)
+
+        with pytest.raises(BusinessLogicError) as exc_info:
+            await service.complete_batch(1, sample_batch.created_by)
+
+        assert exc_info.value.error_code == "RECON_001"
+
+    @pytest.mark.asyncio
+    async def test_force_complete_batch_success(self, service, mock_db, sample_batch):
+        """测试强制完成批次 (管理员专用)"""
+        sample_batch.status = "draft"  # 任意非 completed 状态
+        sample_batch.version = 1
+        mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
+
+        result = await service.force_complete_batch(1, sample_batch.created_by, "紧急关闭")
+
+        assert sample_batch.status == "completed"
+        assert sample_batch.version == 2
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_force_complete_already_completed(self, service, mock_db, sample_batch):
+        """测试强制完成已完成的批次: 应失败"""
+        sample_batch.status = "completed"
+        mock_db.query.return_value.filter.return_value.first.return_value = sample_batch
+
+        with pytest.raises(BusinessLogicError) as exc_info:
+            await service.force_complete_batch(1, sample_batch.created_by, "无效操作")
+
+        assert exc_info.value.error_code == "STATE_402"
+
+    # ========== 明细状态转换测试 ==========
+
+    @pytest.mark.asyncio
+    async def test_confirm_detail_success(self, service, mock_db, sample_detail):
+        """测试确认明细: pending → confirmed"""
+        sample_detail.status = "pending"
+        sample_detail.version = 1
+        sample_detail.batch_id = 1
+
+        mock_batch = Mock()
+        mock_batch.id = 1
+        mock_batch.total_system_spend = Decimal('0.00')
+        mock_batch.total_actual_spend = Decimal('0.00')
+        mock_batch.discrepancy = Decimal('0.00')
+
+        def query_side_effect(model):
+            mock_query = Mock()
+            model_name = getattr(model, '__name__', str(model))
+
+            if 'ReconciliationDetail' in model_name:
+                mock_query.filter.return_value.first.return_value = sample_detail
+                mock_query.filter.return_value.all.return_value = [sample_detail]
+            elif 'ReconciliationBatch' in model_name:
+                mock_query.filter.return_value.first.return_value = mock_batch
+            else:
+                mock_query.filter.return_value.first.return_value = None
+
+            return mock_query
+
+        mock_db.query = Mock(side_effect=query_side_effect)
+
+        result = await service.confirm_detail(1, sample_detail.batch_id)
+
+        assert sample_detail.status == "confirmed"
+        assert sample_detail.version == 2
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_adjust_detail_success(self, service, mock_db, sample_detail):
+        """测试调整明细: pending → adjusted (同时创建调整记录)"""
+        sample_detail.status = "pending"
+        sample_detail.version = 1
+        sample_detail.batch_id = 1
+
+        mock_batch = Mock()
+        mock_batch.id = 1
+        mock_batch.total_system_spend = Decimal('0.00')
+        mock_batch.total_actual_spend = Decimal('0.00')
+        mock_batch.discrepancy = Decimal('0.00')
+
+        def query_side_effect(model):
+            mock_query = Mock()
+            model_name = getattr(model, '__name__', str(model))
+
+            if 'ReconciliationDetail' in model_name:
+                mock_query.filter.return_value.first.return_value = sample_detail
+                mock_query.filter.return_value.all.return_value = [sample_detail]
+            elif 'ReconciliationBatch' in model_name:
+                mock_query.filter.return_value.first.return_value = mock_batch
+            else:
+                mock_query.filter.return_value.first.return_value = None
+
+            return mock_query
+
+        mock_db.query = Mock(side_effect=query_side_effect)
+
+        detail, adjustment = await service.adjust_detail(
+            1,
+            sample_detail.batch_id,
+            "increase",
+            Decimal('50.00'),
+            "数据修正"
+        )
+
+        assert sample_detail.status == "adjusted"
+        assert sample_detail.version == 2
+        mock_db.add.assert_called()  # 调整记录被添加
+        mock_db.commit.assert_called()
+
+    # ========== 报告生成测试 ==========
+
+    @pytest.mark.asyncio
+    async def test_generate_report_success(self, service, mock_db, sample_batch, sample_detail):
+        """测试成功生成对账报告"""
+        sample_batch.status = "completed"
+        sample_batch.total_system_spend = Decimal('10000.00')
+        sample_batch.total_actual_spend = Decimal('9500.00')
+        sample_batch.discrepancy = Decimal('500.00')
+
+        sample_detail.status = "confirmed"
+
+        # 模拟 batch 和 detail stats
+        class FakeDetailStats:
+            total = 10
+            confirmed = 8
+            adjusted = 2
+
+        # 跟踪 query 调用次数来区分不同的查询
+        query_call_count = [0]  # 使用列表来允许在闭包中修改
+
+        def query_side_effect(*args):
+            """处理 db.query() 调用，可能接收多个参数
+
+            服务代码中有两次查询：
+            1. self.db.query(ReconciliationBatch) - 获取批次列表
+            2. self.db.query(func.count(...), func.sum(...), ...) - 获取统计数据
+            """
+            mock_query = Mock()
+            query_call_count[0] += 1
+            call_num = query_call_count[0]
+
+            # 检查参数来确定返回值
+            if args:
+                first_arg = args[0]
+                arg_str = str(first_arg)
+                model_name = getattr(first_arg, '__name__', arg_str)
+
+                # 第一次查询：ReconciliationBatch
+                if 'ReconciliationBatch' in model_name or 'ReconciliationBatch' in arg_str:
+                    mock_query.filter.return_value.all.return_value = [sample_batch]
+                # 第二次查询：聚合查询（包含 func.count 等）
+                elif 'count' in arg_str or 'sum' in arg_str or call_num == 2:
+                    mock_query.filter.return_value.first.return_value = FakeDetailStats()
+                elif 'ReconciliationDetail' in model_name or 'ReconciliationDetail' in arg_str:
+                    mock_query.filter.return_value.first.return_value = FakeDetailStats()
+                    # 支持 group_by().all() 链式调用
+                    mock_query.filter.return_value.group_by.return_value.all.return_value = []
+                else:
+                    mock_query.filter.return_value.first.return_value = FakeDetailStats()
+            else:
+                mock_query.filter.return_value.first.return_value = FakeDetailStats()
+
+            return mock_query
+
+        mock_db.query = Mock(side_effect=query_side_effect)
+
+        request = ReconciliationReportGenerateRequest(
+            batch_id=1,
+            report_type="daily",
+            report_period_start=date.today() - timedelta(days=1),
+            report_period_end=date.today()
+        )
+
+        result = await service.generate_report(request, sample_batch.created_by)
+
+        mock_db.add.assert_called()  # 报告被添加
+        mock_db.commit.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_generate_report_no_batches(self, service, mock_db):
+        """测试生成报告时无符合条件的批次: 应失败"""
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
+        request = ReconciliationReportGenerateRequest(
+            report_type="daily",
+            report_period_start=date.today() - timedelta(days=1),
+            report_period_end=date.today()
+        )
+
+        with pytest.raises(NotFoundError) as exc_info:
+            await service.generate_report(request, 1)
+
+        assert exc_info.value.error_code == "SYS_004"

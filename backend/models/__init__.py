@@ -65,9 +65,13 @@ from .workflow.ad_spend import AdSpendDaily
 # 业务流程模块
 from .workflow.topup_request import TopupRequest
 from .workflow.transfer_request import TransferRequest
+from .workflow.import_job import ImportJob
 
-# 充值相关辅助表（来自 topup.py）
-from .topup import (
+# 导入任务枚举
+from .enums import ImportJobStatus, ImportJobType
+
+# 充值相关辅助表（来自 topup_fixed.py）
+from .topup_fixed import (
     TopupTransaction,
     TopupApprovalLog,
 )
@@ -78,6 +82,7 @@ from .finance import (
     ReconciliationBatch,
     ReconciliationDetail,
     ReconciliationAdjustment,
+    ReconciliationReport,
     Supplier,
     SupplierStatus,
     PaymentMethod,
@@ -85,12 +90,6 @@ from .finance import (
     SettlementStatus,
     SettlementType,
     PaymentStatus,
-    # Profit module (PROFIT_SOT.md v1.1)
-    ProfitAggregate,
-    ProfitReportSnapshot,
-    ProfitPeriodType,
-    ProfitReportType,
-    ProfitReportStatus,
 )
 
 # 审计模块
@@ -128,6 +127,8 @@ __all__ = [
     'ReconciliationAdjustmentType',
     'AccountAlertStatus',
     'AccountAlertSeverity',
+    'ImportJobStatus',
+    'ImportJobType',
 
     # 模型类
     'User',
@@ -154,6 +155,7 @@ __all__ = [
     'ReconciliationBatch',
     'ReconciliationDetail',
     'ReconciliationAdjustment',
+    'ReconciliationReport',
     'Supplier',
     'SupplierStatus',
     'PaymentMethod',
@@ -163,10 +165,5 @@ __all__ = [
     'PaymentStatus',
     'AuditLog',
     'Log',
-    # Profit module (PROFIT_SOT.md v1.1)
-    'ProfitAggregate',
-    'ProfitReportSnapshot',
-    'ProfitPeriodType',
-    'ProfitReportType',
-    'ProfitReportStatus',
+    'ImportJob',
 ]

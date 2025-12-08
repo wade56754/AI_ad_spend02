@@ -408,6 +408,166 @@ async def upload_receipt(
         )
 
 
+@router.post(
+    "/{request_id}/reject",
+    response_model=StandardResponse[TopupRequestResponse],
+    summary="拒绝充值申请"
+)
+async def reject_request(
+    request_id: int,
+    req: Request,
+    reason: str = Query(..., description="拒绝原因"),
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(require_role(["data_operator", "finance", "admin"]))
+):
+    """
+    拒绝充值申请API
+
+    状态机流转 (STATE_MACHINE.md v2.6 §9):
+    - pending_review → rejected
+    - finance_approve → rejected
+
+    权限: data_operator, finance, admin
+    """
+    try:
+        client_ip, user_agent = get_client_info(req)
+
+        request = service.reject_request(
+            request_id=request_id,
+            current_user=current_user,
+            reason=reason,
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
+
+        response = _build_topup_request_response(request)
+
+        return success_response(
+            data=response,
+            message="充值申请已拒绝"
+        )
+
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=404
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            message=str(e),
+            status_code=400
+        )
+
+
+@router.post(
+    "/{request_id}/cancel",
+    response_model=StandardResponse[TopupRequestResponse],
+    summary="取消充值申请"
+)
+async def cancel_request(
+    request_id: int,
+    req: Request,
+    reason: str = Query(..., description="取消原因"),
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    取消充值申请API
+
+    状态机流转 (STATE_MACHINE.md v2.6 §9):
+    - draft → cancelled
+    - pending_review → cancelled
+
+    权限: 申请人本人, admin
+    """
+    try:
+        client_ip, user_agent = get_client_info(req)
+
+        request = service.cancel_request(
+            request_id=request_id,
+            current_user=current_user,
+            reason=reason,
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
+
+        response = _build_topup_request_response(request)
+
+        return success_response(
+            data=response,
+            message="充值申请已取消"
+        )
+
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=404
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            message=str(e),
+            status_code=400
+        )
+
+
+@router.post(
+    "/{request_id}/confirm-paid",
+    response_model=StandardResponse[TopupRequestResponse],
+    summary="确认收款完成"
+)
+async def confirm_paid_request(
+    request_id: int,
+    req: Request,
+    transaction_id: Optional[str] = Query(None, description="交易流水号"),
+    notes: Optional[str] = Query(None, description="备注"),
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(require_role(["finance", "admin"]))
+):
+    """
+    确认收款完成API
+
+    状态机流转 (STATE_MACHINE.md v2.6 §9):
+    - paid → completed
+
+    权限: finance, admin
+    """
+    try:
+        client_ip, user_agent = get_client_info(req)
+
+        request = service.confirm_paid(
+            request_id=request_id,
+            current_user=current_user,
+            transaction_id=transaction_id,
+            notes=notes,
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
+
+        response = _build_topup_request_response(request)
+
+        return success_response(
+            data=response,
+            message="收款确认完成"
+        )
+
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=404
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            message=str(e),
+            status_code=400
+        )
+
+
 @router.get(
     "/{request_id}/logs",
     response_model=StandardResponse[List[TopupApprovalLogResponse]],

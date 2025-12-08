@@ -75,6 +75,18 @@ from backend.schemas.profit import (
     TopProjectItem,
 )
 from backend.services.finance.profit_service import ProfitService, get_profit_service
+from backend.services.finance_service import FinanceService
+from backend.schemas.finance import (
+    ProfitSummaryResponse,
+    ProfitOverviewResponse,
+    ProfitByProjectResponse,
+    ProfitByAccountResponse,
+    ProfitByChannelResponse,
+    ProfitTrendResponse,
+    ProfitCompareResponse,
+    ProfitCompareRequest,
+    TrendGranularityEnum,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -794,5 +806,325 @@ async def get_profit_summary(
 
     except (BusinessLogicError, ResourceNotFoundError) as e:
         return _handle_service_exception(e)
+    except Exception as e:
+        return _handle_service_exception(e)
+
+
+# ============ 简化版 API (测试用) ============
+# 这些端点提供简化的利润查询功能，用于前端展示和测试
+
+@router.get(
+    "/overview",
+    summary="获取利润概览",
+    description="获取今日/本周/本月利润概览，包含环比变化。",
+    responses={
+        200: {"description": "查询成功"},
+        403: {"description": "权限不足"},
+    }
+)
+async def get_profit_overview(
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    db: Session = Depends(get_db),
+):
+    """
+    获取利润概览（今日/本周/本月）
+
+    权限: admin, finance, data_operator
+    """
+    logger.info(f"GET /finance/profit/overview: user={current_user.email}")
+
+    try:
+        service = FinanceService(db)
+        overview = service.get_profit_overview()
+
+        return StandardResponse.success(
+            data=overview.model_dump(),
+            message="ok",
+            code="SUCCESS"
+        )
+    except Exception as e:
+        return _handle_service_exception(e)
+
+
+@router.get(
+    "/by-project",
+    summary="按项目统计利润",
+    description="获取按项目维度的利润统计。",
+    responses={
+        200: {"description": "查询成功"},
+        400: {"description": "参数错误 (BIZ_001)"},
+        403: {"description": "权限不足"},
+    }
+)
+async def get_profit_by_project(
+    start_date: Optional[date] = Query(None, description="开始日期"),
+    end_date: Optional[date] = Query(None, description="结束日期"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    db: Session = Depends(get_db),
+):
+    """
+    按项目统计利润
+
+    权限: admin, finance, data_operator
+    """
+    logger.info(
+        f"GET /finance/profit/by-project: user={current_user.email}, "
+        f"start_date={start_date}, end_date={end_date}"
+    )
+
+    # 参数校验
+    if start_date and end_date and end_date < start_date:
+        return StandardResponse.error(
+            message="开始日期不能晚于结束日期",
+            code="BIZ_001",
+            status_code=400
+        )
+
+    try:
+        service = FinanceService(db)
+        result = service.get_profit_by_project(
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+        )
+
+        return StandardResponse.success(
+            data=result.model_dump(),
+            message="ok",
+            code="SUCCESS"
+        )
+    except Exception as e:
+        return _handle_service_exception(e)
+
+
+@router.get(
+    "/by-account",
+    summary="按账户统计利润",
+    description="获取按广告账户维度的利润统计。",
+    responses={
+        200: {"description": "查询成功"},
+        400: {"description": "参数错误 (BIZ_001)"},
+        403: {"description": "权限不足"},
+        404: {"description": "项目不存在 (BIZ_002)"},
+    }
+)
+async def get_profit_by_account(
+    project_id: Optional[int] = Query(None, description="项目ID过滤"),
+    start_date: Optional[date] = Query(None, description="开始日期"),
+    end_date: Optional[date] = Query(None, description="结束日期"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    db: Session = Depends(get_db),
+):
+    """
+    按账户统计利润
+
+    权限: admin, finance, data_operator
+    """
+    logger.info(
+        f"GET /finance/profit/by-account: user={current_user.email}, "
+        f"project_id={project_id}"
+    )
+
+    # 参数校验
+    if start_date and end_date and end_date < start_date:
+        return StandardResponse.error(
+            message="开始日期不能晚于结束日期",
+            code="BIZ_001",
+            status_code=400
+        )
+
+    # 验证项目存在
+    if project_id:
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            return StandardResponse.error(
+                message=f"项目不存在: project_id={project_id}",
+                code="BIZ_002",
+                status_code=404
+            )
+
+    try:
+        service = FinanceService(db)
+        result = service.get_profit_by_account(
+            project_id=project_id,
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+        )
+
+        return StandardResponse.success(
+            data=result.model_dump(),
+            message="ok",
+            code="SUCCESS"
+        )
+    except Exception as e:
+        return _handle_service_exception(e)
+
+
+@router.get(
+    "/by-channel",
+    summary="按渠道统计利润",
+    description="获取按渠道维度的利润统计。",
+    responses={
+        200: {"description": "查询成功"},
+        400: {"description": "参数错误 (BIZ_001)"},
+        403: {"description": "权限不足"},
+    }
+)
+async def get_profit_by_channel(
+    start_date: Optional[date] = Query(None, description="开始日期"),
+    end_date: Optional[date] = Query(None, description="结束日期"),
+    limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    db: Session = Depends(get_db),
+):
+    """
+    按渠道统计利润
+
+    权限: admin, finance, data_operator
+    """
+    logger.info(f"GET /finance/profit/by-channel: user={current_user.email}")
+
+    # 参数校验
+    if start_date and end_date and end_date < start_date:
+        return StandardResponse.error(
+            message="开始日期不能晚于结束日期",
+            code="BIZ_001",
+            status_code=400
+        )
+
+    try:
+        service = FinanceService(db)
+        result = service.get_profit_by_channel(
+            start_date=start_date,
+            end_date=end_date,
+            limit=limit,
+        )
+
+        return StandardResponse.success(
+            data=result.model_dump(),
+            message="ok",
+            code="SUCCESS"
+        )
+    except Exception as e:
+        return _handle_service_exception(e)
+
+
+@router.get(
+    "/trend",
+    summary="获取利润趋势",
+    description="获取指定时间段的利润趋势数据。",
+    responses={
+        200: {"description": "查询成功"},
+        400: {"description": "参数错误 (BIZ_001)"},
+        403: {"description": "权限不足"},
+    }
+)
+async def get_profit_trend(
+    granularity: str = Query("daily", description="趋势粒度: daily/weekly/monthly"),
+    project_id: Optional[int] = Query(None, description="项目ID过滤"),
+    start_date: Optional[date] = Query(None, description="开始日期"),
+    end_date: Optional[date] = Query(None, description="结束日期"),
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    db: Session = Depends(get_db),
+):
+    """
+    获取利润趋势
+
+    权限: admin, finance, data_operator
+    """
+    logger.info(
+        f"GET /finance/profit/trend: user={current_user.email}, "
+        f"granularity={granularity}"
+    )
+
+    # 参数校验
+    if start_date and end_date and end_date < start_date:
+        return StandardResponse.error(
+            message="开始日期不能晚于结束日期",
+            code="BIZ_001",
+            status_code=400
+        )
+
+    # 验证 granularity
+    valid_granularities = ["daily", "weekly", "monthly"]
+    if granularity not in valid_granularities:
+        return StandardResponse.error(
+            message=f"无效的粒度值: {granularity}",
+            code="BIZ_001",
+            status_code=400
+        )
+
+    try:
+        service = FinanceService(db)
+        result = service.get_profit_trend(
+            granularity=granularity,
+            project_id=project_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        return StandardResponse.success(
+            data=result.model_dump(),
+            message="ok",
+            code="SUCCESS"
+        )
+    except Exception as e:
+        return _handle_service_exception(e)
+
+
+@router.post(
+    "/compare",
+    summary="利润对比分析",
+    description="对比多个项目的利润数据。",
+    responses={
+        200: {"description": "对比成功"},
+        400: {"description": "参数错误"},
+        403: {"description": "权限不足"},
+        404: {"description": "项目不存在 (BIZ_002)"},
+    }
+)
+async def compare_profit(
+    request: ProfitCompareRequest,
+    start_date: Optional[date] = Query(None, description="开始日期"),
+    end_date: Optional[date] = Query(None, description="结束日期"),
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    db: Session = Depends(get_db),
+):
+    """
+    利润对比分析
+
+    权限: admin, finance, data_operator
+    """
+    logger.info(
+        f"POST /finance/profit/compare: user={current_user.email}, "
+        f"project_ids={request.project_ids}"
+    )
+
+    # 验证项目存在
+    for pid in request.project_ids:
+        project = db.query(Project).filter(Project.id == pid).first()
+        if not project:
+            return StandardResponse.error(
+                message=f"项目不存在: project_id={pid}",
+                code="BIZ_002",
+                status_code=404
+            )
+
+    try:
+        service = FinanceService(db)
+        result = service.compare_profit(
+            project_ids=request.project_ids,
+            start_date=start_date or request.start_date,
+            end_date=end_date or request.end_date,
+        )
+
+        return StandardResponse.success(
+            data=result.model_dump(),
+            message="ok",
+            code="SUCCESS"
+        )
     except Exception as e:
         return _handle_service_exception(e)

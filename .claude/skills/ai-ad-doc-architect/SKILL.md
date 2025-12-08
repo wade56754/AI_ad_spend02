@@ -5,19 +5,13 @@ status: ready_for_production
 layer: skill
 owner: wade
 last_reviewed: 2025-11-28
-baseline:
-  - MASTER.md v3.5
-  - SoT Freeze v2.6
-  - Dev-Guides Freeze vFinal
-  - Architecture Freeze v1.0
-  - Infrastructure Freeze v1.0
-  - Agent Freeze v1.0
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 ---
 
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-doc-architect</name>
-  <version>2.1</version>
+  <version>2.2</version>
   <status>active</status>
   <domain>AI_AD_SYSTEM / ASDD 文档架构分析与一致性审查</domain>
   <profile>Architecture-Analyzer / Read-Only / Structural-Review</profile>

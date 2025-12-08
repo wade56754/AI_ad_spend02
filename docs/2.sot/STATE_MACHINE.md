@@ -1,13 +1,13 @@
 # AI广告代投系统 - 状态机定义文档（SoT-State）
 
 > **版本**: v2.6
-> **status**: active
+> **status**: frozen
 > **owner**: wade
 > **last_reviewed**: 2025-11-27
 > **更新日期**: 2025‑11‑22
 > **类型**: 状态与合法流转的唯一事实来源（SoT-State）
 > **互锁文档**
-> - 实现规范 → `../1.overview/MASTER_SPEC.md`
+> - 实现规范 → `../1.overview/MASTER.md` v3.6
 > - 数据结构 → `./DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）
 > - API 流程 → `../3.dev-guides/API_DEVELOPMENT_FLOW.md`
 > - 角色定义 → 仅 `admin/finance/data_operator/account_manager/media_buyer`（无其他角色）
