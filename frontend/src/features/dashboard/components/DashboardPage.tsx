@@ -2,119 +2,88 @@
  * DashboardPage Component
  *
  * Main dashboard with metrics overview
+ * Based on UI_DESIGN_SYSTEM.md v2.0
+ *
+ * Layout: PageHeader → StatCards → TrendCharts → BottomSection
+ * Spacing: gap-6 (24px) for card grids, gap-8 (32px) for sections
+ * Typography: H2 = text-2xl font-semibold
  */
 
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
-  TrendingUp,
-  TrendingDown,
   DollarSign,
   Users,
-  FileText,
-  CreditCard,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  ArrowRight,
-  RefreshCw,
   BarChart3,
-  Wallet,
   Target,
 } from 'lucide-react';
 import { useAuth } from '@/modules/auth';
-import { QUICK_ACTIONS } from '../types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Stat Card Component
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  change?: number | null;
-  icon: React.ReactNode;
-  color: 'blue' | 'green' | 'purple' | 'orange' | 'red';
-  href?: string;
+import { DashboardHeader } from './DashboardHeader';
+import { TrendChart, type TimeRange } from './charts';
+import { StatCard } from './StatCard';
+import { PendingTasksCard } from './PendingTasksCard';
+import { QuickActionsCard } from './QuickActionsCard';
+import { AccountOverviewCard } from './AccountOverviewCard';
+import { SystemStatusCard } from './SystemStatusCard';
+import {
+  StatCardSkeleton,
+  TrendChartSkeleton,
+  CardSkeleton,
+} from './StatCardSkeleton';
+
+import { QUICK_ACTIONS } from '../types';
+import type { PendingTask, TrendDataPoint } from '../types';
+
+// 时间范围标签映射
+const TIME_RANGE_LABELS: Record<TimeRange, string> = {
+  '7d': '近7日',
+  '30d': '近30日',
+  '90d': '近90日',
+};
+
+// 根据时间范围获取天数
+function getDaysFromRange(range: TimeRange): number {
+  switch (range) {
+    case '7d': return 7;
+    case '30d': return 30;
+    case '90d': return 90;
+    default: return 7;
+  }
 }
 
-function StatCard({ title, value, change, icon, color, href }: StatCardProps) {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-green-50 text-green-600',
-    purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
-    red: 'bg-red-50 text-red-600',
-  };
+// Generate mock trend data for specified days
+function generateTrendData(baseValue: number, days: number, variance: number = 0.2): TrendDataPoint[] {
+  const data: TrendDataPoint[] = [];
+  const today = new Date();
 
-  const content = (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>{icon}</div>
-        {change !== null && change !== undefined && (
-          <div
-            className={`flex items-center text-sm font-medium ${
-              change >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}
-          >
-            {change >= 0 ? (
-              <TrendingUp className="h-4 w-4 mr-1" />
-            ) : (
-              <TrendingDown className="h-4 w-4 mr-1" />
-            )}
-            {Math.abs(change).toFixed(1)}%
-          </div>
-        )}
-      </div>
-      <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
-      <div className="text-sm text-gray-500">{title}</div>
-    </div>
-  );
-
-  if (href) {
-    return <Link href={href}>{content}</Link>;
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    // 添加一些趋势变化，让数据更真实
+    const trendFactor = 1 + (days - i) * 0.002; // 轻微上升趋势
+    const randomFactor = 1 + (Math.random() - 0.5) * variance;
+    data.push({
+      date: date.toISOString().split('T')[0],
+      value: Math.round(baseValue * randomFactor * trendFactor),
+    });
   }
 
-  return content;
-}
-
-// Pending Item Component
-interface PendingItemProps {
-  title: string;
-  count: number;
-  href: string;
-  icon: React.ReactNode;
-}
-
-function PendingItem({ title, count, href, icon }: PendingItemProps) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-    >
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-white rounded-lg text-gray-600">{icon}</div>
-        <span className="text-sm font-medium text-gray-700">{title}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-            count > 0 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-          }`}
-        >
-          {count}
-        </span>
-        <ArrowRight className="h-4 w-4 text-gray-400" />
-      </div>
-    </Link>
-  );
+  return data;
 }
 
 export function DashboardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Mock data - in real app, fetch from API
-  // TODO: Replace with actual API call using React Query
+  // 每个图表的时间范围状态
+  const [spendTimeRange, setSpendTimeRange] = useState<TimeRange>('7d');
+  const [conversionsTimeRange, setConversionsTimeRange] = useState<TimeRange>('7d');
+  const [revenueTimeRange, setRevenueTimeRange] = useState<TimeRange>('7d');
+
+  // Mock data - TODO: Replace with actual API call using React Query
   const stats = {
     today_spend: 125680.50,
     today_conversions: 3256,
@@ -122,6 +91,7 @@ export function DashboardPage() {
     today_profit: 36819.50,
     spend_change: 12.5,
     conversions_change: 8.3,
+    revenue_change: 10.8,
     profit_change: 15.2,
     pending_topups: 3,
     pending_settlements: 2,
@@ -132,17 +102,55 @@ export function DashboardPage() {
     total_balance: 856000.00,
   };
 
-  // Show loading state while auth is initializing
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500">加载中...</p>
-        </div>
-      </div>
-    );
-  }
+  // Mock trend data - 基于所选时间范围动态生成
+  const spendTrendData = useMemo(
+    () => generateTrendData(120000, getDaysFromRange(spendTimeRange), 0.15),
+    [spendTimeRange]
+  );
+  const conversionsTrendData = useMemo(
+    () => generateTrendData(3000, getDaysFromRange(conversionsTimeRange), 0.2),
+    [conversionsTimeRange]
+  );
+  const revenueTrendData = useMemo(
+    () => generateTrendData(160000, getDaysFromRange(revenueTimeRange), 0.18),
+    [revenueTimeRange]
+  );
+
+  // Pending tasks data
+  const pendingTasks: PendingTask[] = [
+    {
+      id: 'topups',
+      title: '待审批充值',
+      count: stats.pending_topups,
+      href: '/topups?status=pending',
+      priority: 'high',
+      icon: 'credit-card',
+    },
+    {
+      id: 'settlements',
+      title: '待结算项目',
+      count: stats.pending_settlements,
+      href: '/settlements?status=pending',
+      priority: 'medium',
+      icon: 'wallet',
+    },
+    {
+      id: 'reconciliations',
+      title: '待对账记录',
+      count: stats.pending_reconciliations,
+      href: '/reconciliation?status=pending',
+      priority: 'medium',
+      icon: 'check-circle',
+    },
+    {
+      id: 'imports',
+      title: '待处理导入',
+      count: stats.pending_imports,
+      href: '/import-jobs?status=pending',
+      priority: 'low',
+      icon: 'file-text',
+    },
+  ];
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('zh-CN', {
@@ -156,204 +164,175 @@ export function DashboardPage() {
     setIsRefreshing(true);
     try {
       // TODO: Replace with actual API refresh call
-      // await refetchDashboardStats();
-      // Simulate refresh
       await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       console.error('刷新数据失败:', error);
-      // TODO: Show error toast notification
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                欢迎回来，{user?.full_name || user?.username || '用户'}
-              </h1>
-              <p className="text-sm text-gray-500 mt-1">
-                这是您的系统概览，查看今日数据和待处理事项
-              </p>
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              刷新
-            </button>
+  // Show skeleton loading state while auth is initializing
+  if (isAuthLoading) {
+    return (
+      <div className="space-y-8" data-testid="dashboard-loading">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div>
+            <Skeleton className="w-48 h-9 rounded mb-2" />
+            <Skeleton className="w-64 h-5 rounded" />
           </div>
+          <Skeleton className="w-20 h-10 rounded" />
         </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Today's Stats */}
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">今日概览</h2>
+        {/* Stat Cards Skeleton */}
+        <section>
+          <Skeleton className="w-24 h-7 rounded mb-4" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard
-              title="今日消耗"
-              value={formatCurrency(stats.today_spend)}
-              change={stats.spend_change}
-              icon={<DollarSign className="h-6 w-6" />}
-              color="blue"
-              href="/ad-spend"
-            />
-            <StatCard
-              title="今日粉数"
-              value={stats.today_conversions.toLocaleString()}
-              change={stats.conversions_change}
-              icon={<Users className="h-6 w-6" />}
-              color="green"
-              href="/daily-reports"
-            />
-            <StatCard
-              title="今日收入"
-              value={formatCurrency(stats.today_revenue)}
-              icon={<BarChart3 className="h-6 w-6" />}
-              color="purple"
-              href="/finance/profit"
-            />
-            <StatCard
-              title="今日利润"
-              value={formatCurrency(stats.today_profit)}
-              change={stats.profit_change}
-              icon={<Target className="h-6 w-6" />}
-              color="orange"
-              href="/finance/profit"
-            />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
           </div>
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Pending Items */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Pending Tasks */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">待处理事项</h3>
-              <div className="space-y-3">
-                <PendingItem
-                  title="待审批充值"
-                  count={stats.pending_topups}
-                  href="/topups?status=pending"
-                  icon={<CreditCard className="h-5 w-5" />}
-                />
-                <PendingItem
-                  title="待结算项目"
-                  count={stats.pending_settlements}
-                  href="/settlements?status=pending"
-                  icon={<Wallet className="h-5 w-5" />}
-                />
-                <PendingItem
-                  title="待对账记录"
-                  count={stats.pending_reconciliations}
-                  href="/reconciliation?status=pending"
-                  icon={<CheckCircle className="h-5 w-5" />}
-                />
-                <PendingItem
-                  title="待处理导入"
-                  count={stats.pending_imports}
-                  href="/import-jobs?status=pending"
-                  icon={<FileText className="h-5 w-5" />}
-                />
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">快捷操作</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {QUICK_ACTIONS.map((action) => (
-                  <Link
-                    key={action.id}
-                    href={action.href}
-                    className="flex flex-col items-center gap-2 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div
-                      className={`p-3 rounded-full ${
-                        action.color === 'blue'
-                          ? 'bg-blue-100 text-blue-600'
-                          : action.color === 'green'
-                          ? 'bg-green-100 text-green-600'
-                          : action.color === 'purple'
-                          ? 'bg-purple-100 text-purple-600'
-                          : 'bg-orange-100 text-orange-600'
-                      }`}
-                    >
-                      {action.icon === 'file-plus' && <FileText className="h-5 w-5" />}
-                      {action.icon === 'plus-circle' && <CreditCard className="h-5 w-5" />}
-                      {action.icon === 'upload' && <FileText className="h-5 w-5" />}
-                      {action.icon === 'check-square' && <CheckCircle className="h-5 w-5" />}
-                    </div>
-                    <span className="text-sm font-medium text-gray-700">{action.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+        {/* Trend Charts Skeleton */}
+        <section>
+          <Skeleton className="w-24 h-7 rounded mb-4" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <TrendChartSkeleton />
+            <TrendChartSkeleton />
           </div>
+          <TrendChartSkeleton />
+        </section>
 
-          {/* Right Column - Summary */}
+        {/* Bottom Section Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
           <div className="space-y-6">
-            {/* Account Summary */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">账户概览</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b">
-                  <span className="text-sm text-gray-500">活跃项目</span>
-                  <span className="text-lg font-semibold text-gray-900">
-                    {stats.active_projects}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b">
-                  <span className="text-sm text-gray-500">广告账户</span>
-                  <span className="text-lg font-semibold text-gray-900">
-                    {stats.active_accounts}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-sm text-gray-500">账户余额</span>
-                  <span className="text-lg font-semibold text-green-600">
-                    {formatCurrency(stats.total_balance)}
-                  </span>
-                </div>
-              </div>
-              <Link
-                href="/ledger"
-                className="mt-4 flex items-center justify-center gap-2 w-full py-2 text-sm text-blue-600 hover:text-blue-700"
-              >
-                查看账本明细
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            {/* System Status */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">系统状态</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">API 服务正常</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">数据库连接正常</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">定时任务运行中</span>
-                </div>
-              </div>
-            </div>
+            <CardSkeleton />
+            <CardSkeleton />
           </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8" data-testid="dashboard-page">
+      {/* Page Header */}
+      <DashboardHeader
+        userName={user?.full_name || user?.username || '用户'}
+        isRefreshing={isRefreshing}
+        onRefresh={handleRefresh}
+      />
+
+      {/* Today's Stats - 4 columns */}
+      <section>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">今日概览</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            title="今日消耗"
+            value={formatCurrency(stats.today_spend)}
+            change={stats.spend_change}
+            icon={<DollarSign className="h-6 w-6" />}
+            color="blue"
+            href="/ad-spend"
+            testId="dashboard-stat-card-spend"
+          />
+          <StatCard
+            title="今日粉数"
+            value={stats.today_conversions.toLocaleString()}
+            change={stats.conversions_change}
+            icon={<Users className="h-6 w-6" />}
+            color="purple"
+            href="/daily-reports"
+            testId="dashboard-stat-card-conversions"
+          />
+          <StatCard
+            title="今日收入"
+            value={formatCurrency(stats.today_revenue)}
+            change={stats.revenue_change}
+            icon={<BarChart3 className="h-6 w-6" />}
+            color="green"
+            href="/finance/profit"
+            testId="dashboard-stat-card-revenue"
+          />
+          <StatCard
+            title="今日利润"
+            value={formatCurrency(stats.today_profit)}
+            change={stats.profit_change}
+            icon={<Target className="h-6 w-6" />}
+            color="orange"
+            href="/finance/profit"
+            testId="dashboard-stat-card-profit"
+          />
+        </div>
+      </section>
+
+      {/* Trend Section */}
+      <section>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">数据趋势</h2>
+        {/* Row 1: Two charts side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <TrendChart
+            title="消耗趋势"
+            description="每日广告消耗金额变化"
+            data={spendTrendData}
+            height={260}
+            showTimeRangeSelector={true}
+            defaultTimeRange={spendTimeRange}
+            onTimeRangeChange={setSpendTimeRange}
+            color="blue"
+            testId="dashboard-chart-spend"
+          />
+          <TrendChart
+            title="粉数趋势"
+            description="每日进粉数量变化"
+            data={conversionsTrendData}
+            height={260}
+            showTimeRangeSelector={true}
+            defaultTimeRange={conversionsTimeRange}
+            onTimeRangeChange={setConversionsTimeRange}
+            color="violet"
+            testId="dashboard-chart-conversions"
+          />
+        </div>
+        {/* Row 2: Full width chart */}
+        <TrendChart
+          title="收入趋势"
+          description="每日收入金额变化"
+          data={revenueTrendData}
+          height={280}
+          showTimeRangeSelector={true}
+          defaultTimeRange={revenueTimeRange}
+          onTimeRangeChange={setRevenueTimeRange}
+          color="green"
+          testId="dashboard-chart-revenue"
+        />
+      </section>
+
+      {/* Bottom Section */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - 2/3 width */}
+        <div className="lg:col-span-2 space-y-6">
+          <PendingTasksCard tasks={pendingTasks} />
+          <QuickActionsCard actions={QUICK_ACTIONS} />
+        </div>
+
+        {/* Right Column - 1/3 width */}
+        <div className="space-y-6">
+          <AccountOverviewCard
+            activeProjects={stats.active_projects}
+            activeAccounts={stats.active_accounts}
+            totalBalance={stats.total_balance}
+          />
+          <SystemStatusCard />
+        </div>
+      </section>
     </div>
   );
 }
