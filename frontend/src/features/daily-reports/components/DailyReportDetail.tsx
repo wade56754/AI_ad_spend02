@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
+import { apiPost, ApiError } from "@/lib/api";
 
 // 类型定义
 interface DailyReport {
@@ -116,29 +117,26 @@ export function DailyReportDetail({
       if (onReview) {
         await onReview(status, reviewComment);
       } else {
-        // 直接调用API
-        const response = await fetch(`/api/v1/daily-reports/${report.id}/review`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            status,
-            comment: reviewComment,
-          }),
+        // 直接调用API（使用认证API工具）
+        const response = await apiPost(`/api/v1/daily-reports/${report.id}/review`, {
+          status,
+          comment: reviewComment,
         });
 
-        const data = await response.json();
-        if (data.success) {
+        if (response.data) {
           toast.success(status === "approved" ? "审核通过" : "已拒绝");
           window.location.reload();
         } else {
-          toast.error(data.message || "操作失败");
+          toast.error("操作失败");
         }
       }
     } catch (error) {
       console.error("审核错误:", error);
-      toast.error("操作失败");
+      if (error instanceof ApiError) {
+        toast.error(error.message || "操作失败");
+      } else {
+        toast.error("操作失败");
+      }
     } finally {
       setIsSubmitting(false);
     }

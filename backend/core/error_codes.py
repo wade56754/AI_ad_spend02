@@ -413,6 +413,67 @@ class BusinessErrorCodes:
         500
     )
 
+    # 余额迁移相关 (610-619)
+    TRANSFER_DUPLICATE_REQUEST = ErrorCode(
+        "BIZ_610",
+        "迁移申请单号已存在",
+        409
+    )
+
+    TRANSFER_SAME_ACCOUNT = ErrorCode(
+        "BIZ_611",
+        "源账户和目标账户不能相同",
+        400
+    )
+
+    TRANSFER_SOURCE_NOT_DEAD = ErrorCode(
+        "BIZ_612",
+        "源账户状态必须为 dead",
+        400
+    )
+
+    TRANSFER_TARGET_NOT_ACTIVE = ErrorCode(
+        "BIZ_613",
+        "目标账户状态必须为 active",
+        400
+    )
+
+    TRANSFER_CROSS_SUPPLIER = ErrorCode(
+        "BIZ_614",
+        "禁止跨供应商迁移余额",
+        400
+    )
+
+    TRANSFER_ALREADY_PROCESSED = ErrorCode(
+        "BIZ_615",
+        "迁移申请已处理",
+        409
+    )
+
+    TRANSFER_INSUFFICIENT_BALANCE = ErrorCode(
+        "BIZ_616",
+        "余额不足",
+        400
+    )
+
+    TRANSFER_INVALID_AMOUNT = ErrorCode(
+        "BIZ_617",
+        "迁移金额无效",
+        400
+    )
+
+    TRANSFER_LEDGER_ERROR = ErrorCode(
+        "BIZ_618",
+        "账本记录生成失败",
+        500
+    )
+
+    TRANSFER_STATE_ERROR = ErrorCode(
+        "BIZ_619",
+        "迁移状态错误",
+        409
+    )
+
     # 系统健康检查 (700-799)
     READY_CHECK_FAILED = ErrorCode(
         "BIZ_700",

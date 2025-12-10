@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user, require_role
 from backend.core.response import success_response, error_response, StandardResponse
-from backend.core.error_codes import BusinessErrorCodes
+from backend.core.error_codes import BusinessErrorCodes, SystemErrorCodes
 from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
@@ -81,7 +81,7 @@ async def list_transfers(
 
     except Exception as e:
         return error_response(
-            code="SYS_001",
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
             message=f"获取迁移申请列表失败: {str(e)}",
             status_code=500
         )
@@ -122,13 +122,13 @@ async def create_transfer(
         )
     except ResourceNotFoundError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_002",
+            code=str(e.error_code) if hasattr(e, 'error_code') else BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, 'error_code') else BusinessErrorCodes.OPERATION_FAILED.code,
             message=str(e),
             status_code=400
         )
@@ -159,7 +159,7 @@ async def get_transfer(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="BIZ_002",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -192,7 +192,7 @@ async def submit_transfer(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="BIZ_002",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -238,7 +238,7 @@ async def approve_transfer(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="BIZ_002",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -284,7 +284,7 @@ async def reject_transfer(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="BIZ_002",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )
@@ -330,7 +330,7 @@ async def complete_transfer(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="BIZ_002",
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
             status_code=404
         )

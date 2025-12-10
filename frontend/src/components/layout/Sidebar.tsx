@@ -36,7 +36,8 @@ interface SidebarProps {
 }
 
 const navigation: NavigationItem[] = [
-  { name: '项目管理', href: '/projects', icon: LayoutDashboard, badge: 8 },
+  { name: '仪表盘', href: '/', icon: LayoutDashboard },
+  { name: '项目管理', href: '/projects', icon: FolderKanban, badge: 8 },
   { name: '渠道账户', href: '/ad-accounts', icon: Users, badge: 5 },
   { name: '日报管理', href: '/reports', icon: FileText, badge: 12 },
   { name: '财务管理', href: '/finance', icon: DollarSign },
@@ -97,8 +98,10 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
             <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
               主要功能
             </h3>
-            {navigation.slice(0, 4).map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            {navigation.slice(0, 5).map((item) => {
+              const isActive = item.href === '/'
+                ? pathname === '/'
+                : pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.name}
@@ -136,8 +139,10 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
             <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
               分析监控
             </h3>
-            {navigation.slice(4).map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            {navigation.slice(5).map((item) => {
+              const isActive = item.href === '/'
+                ? pathname === '/'
+                : pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.name}

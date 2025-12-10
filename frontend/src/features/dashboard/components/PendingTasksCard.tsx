@@ -30,9 +30,27 @@ interface PendingItemProps {
   count: number;
   href: string;
   icon: React.ReactNode;
+  priority?: 'high' | 'medium' | 'low';
 }
 
-function PendingItem({ title, count, href, icon }: PendingItemProps) {
+const PRIORITY_STYLES = {
+  high: {
+    badge: 'bg-red-100 text-red-800 border-red-200',
+    label: '高优先级',
+  },
+  medium: {
+    badge: 'bg-orange-100 text-orange-800 border-orange-200',
+    label: '中优先级',
+  },
+  low: {
+    badge: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    label: '低优先级',
+  },
+};
+
+function PendingItem({ title, count, href, icon, priority = 'medium' }: PendingItemProps) {
+  const priorityStyle = PRIORITY_STYLES[priority];
+
   return (
     <Link
       href={href}
@@ -40,7 +58,12 @@ function PendingItem({ title, count, href, icon }: PendingItemProps) {
     >
       <div className="flex items-center gap-3">
         <div className="p-2 bg-background rounded-lg text-muted-foreground">{icon}</div>
-        <span className="text-sm font-medium text-foreground">{title}</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-foreground">{title}</span>
+          {count > 0 && (
+            <span className="text-xs text-muted-foreground">{priorityStyle.label}</span>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Badge
@@ -48,7 +71,7 @@ function PendingItem({ title, count, href, icon }: PendingItemProps) {
           className={cn(
             'px-2 py-0.5 text-xs font-semibold',
             count > 0
-              ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
+              ? priorityStyle.badge
               : 'bg-green-100 text-green-800 border-green-200'
           )}
         >
@@ -87,6 +110,7 @@ export function PendingTasksCard({ tasks }: PendingTasksCardProps) {
               title={task.title}
               count={task.count}
               href={task.href}
+              priority={task.priority}
               icon={task.icon ? ICON_MAP[task.icon] || <FileText className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
             />
           ))}

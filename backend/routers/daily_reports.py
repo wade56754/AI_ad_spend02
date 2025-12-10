@@ -1210,3 +1210,304 @@ async def get_daily_report_audit_logs(
             message="系统内部错误",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
+
+
+# ============ 趋势风控自动化端点 (STATE_MACHINE.md v2.6 第8.3节) ============
+
+from backend.services.trend_risk_control_service import TrendRiskControlService, TrendRiskCheckResult
+from pydantic import BaseModel
+from typing import Dict, Any
+
+
+class TrendCheckResponse(BaseModel):
+    """趋势风控检查响应"""
+    report_id: int
+    passed: bool
+    new_status: str
+    triggered_rules: List[str]
+    trend_flag_reason: Optional[str] = None
+    details: Dict[str, Any]
+
+
+class BatchTrendCheckResponse(BaseModel):
+    """批量趋势风控检查响应"""
+    total_checked: int
+    passed_count: int
+    flagged_count: int
+    error_count: int
+    results: List[Dict[str, Any]]
+
+
+def get_trend_risk_service(db: Session = Depends(get_db)) -> TrendRiskControlService:
+    """获取趋势风控服务实例"""
+    return TrendRiskControlService(db)
+
+
+@router.post(
+    "/{report_id}/trend-check",
+    response_model=StandardResponse[TrendCheckResponse],
+    summary="执行趋势风控检查",
+    description="对指定日报执行 TF-001/002/003 风控规则检查 (trend_pending → trend_ok/trend_flagged)"
+)
+async def execute_trend_check(
+    report_id: int,
+    trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
+):
+    """
+    执行趋势风控检查 API (STATE_MACHINE.md v2.6 第8.3节)
+
+    风控规则:
+    - TF-001: 粉数骤降检查 (conversions_raw < 昨日 × 0.5)
+    - TF-002: 粉数骤增检查 (conversions_raw > 昨日 × 3)
+    - TF-003: 消耗异常检查 (raw_spend > 昨日 × 2)
+
+    状态流转:
+    - trend_pending → trend_ok (风控通过)
+    - trend_pending → trend_flagged (风控触发)
+    """
+    try:
+        report, check_result = trend_service.execute_trend_check(report_id)
+
+        response = TrendCheckResponse(
+            report_id=report.id,
+            passed=check_result.passed,
+            new_status=report.status,
+            triggered_rules=[r.value for r in check_result.triggered_rules],
+            trend_flag_reason=check_result.trend_flag_reason,
+            details=check_result.details
+        )
+
+        message = "风控检查通过" if check_result.passed else f"风控异常: {check_result.trend_flag_reason}"
+        return success_response(data=response, message=message)
+
+    except ValueError as e:
+        return error_response(
+            code="STATE_001",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.exception(f"Error in trend check for report {report_id}: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="风控检查失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.post(
+    "/{report_id}/trigger-trend-check",
+    response_model=StandardResponse[DailyReportResponse],
+    summary="触发趋势风控检查",
+    description="将日报状态从 raw_submitted 流转到 trend_pending，准备进行风控检查"
+)
+async def trigger_trend_check(
+    report_id: int,
+    trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
+    daily_report_service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["media_buyer", "data_operator", "admin"]))
+):
+    """
+    触发趋势风控检查 API (STATE_MACHINE.md v2.6 第8章)
+
+    状态流转: raw_submitted → trend_pending
+    """
+    try:
+        # 获取日报
+        report = daily_report_service.get_daily_report(report_id, current_user)
+
+        # 触发风控检查
+        updated_report = trend_service.trigger_trend_check_for_new_report(report)
+
+        report_response = DailyReportResponse.model_validate(updated_report)
+        return success_response(
+            data=report_response,
+            message="已触发趋势风控检查，状态已更新为 trend_pending"
+        )
+
+    except ValueError as e:
+        return error_response(
+            code="STATE_001",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
+    except Exception as e:
+        logger.exception(f"Error triggering trend check for report {report_id}: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="触发风控检查失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.post(
+    "/batch-trend-check",
+    response_model=StandardResponse[BatchTrendCheckResponse],
+    summary="批量执行趋势风控检查",
+    description="对所有 trend_pending 状态的日报执行风控检查"
+)
+async def batch_execute_trend_check(
+    ad_account_id: Optional[int] = Query(None, description="广告账户ID筛选"),
+    report_date: Optional[str] = Query(None, description="报告日期筛选 (YYYY-MM-DD)"),
+    trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
+    current_user: User = Depends(require_role(["data_operator", "admin"]))
+):
+    """
+    批量执行趋势风控检查 API (STATE_MACHINE.md v2.6 第8.3节)
+
+    自动对所有 trend_pending 状态的日报执行风控检查
+
+    风控规则:
+    - TF-001: 粉数骤降检查
+    - TF-002: 粉数骤增检查
+    - TF-003: 消耗异常检查
+    """
+    try:
+        # 解析日期
+        parsed_date = None
+        if report_date:
+            from datetime import datetime as dt
+            parsed_date = dt.strptime(report_date, "%Y-%m-%d").date()
+
+        # 执行批量检查
+        results = trend_service.batch_execute_trend_check(
+            ad_account_id=ad_account_id,
+            report_date=parsed_date
+        )
+
+        # 统计结果
+        passed_count = sum(1 for r in results if r[1] and r[2] is None)
+        flagged_count = sum(1 for r in results if not r[1] and r[2] is None)
+        error_count = sum(1 for r in results if r[2] is not None)
+
+        # 构建详细结果
+        result_details = []
+        for report_id, passed, error in results:
+            result_details.append({
+                "report_id": report_id,
+                "passed": passed,
+                "error": error
+            })
+
+        response = BatchTrendCheckResponse(
+            total_checked=len(results),
+            passed_count=passed_count,
+            flagged_count=flagged_count,
+            error_count=error_count,
+            results=result_details
+        )
+
+        return success_response(
+            data=response,
+            message=f"批量风控检查完成: 通过 {passed_count}, 异常 {flagged_count}, 错误 {error_count}"
+        )
+
+    except Exception as e:
+        logger.exception(f"Error in batch trend check: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="批量风控检查失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/trend-flagged",
+    response_model=StandardResponse[DailyReportListResponse],
+    summary="获取趋势异常日报列表",
+    description="获取所有被标记为 trend_flagged 状态的日报"
+)
+async def get_trend_flagged_reports(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    ad_account_id: Optional[int] = Query(None, description="广告账户ID筛选"),
+    report_date_start: Optional[str] = Query(None, description="开始日期"),
+    report_date_end: Optional[str] = Query(None, description="结束日期"),
+    trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
+    current_user: User = Depends(require_role(["data_operator", "admin", "finance"]))
+):
+    """
+    获取趋势异常日报列表 API
+
+    返回所有 trend_flagged 状态的日报，用于运营复核
+    """
+    try:
+        # 解析日期
+        parsed_start = None
+        parsed_end = None
+        if report_date_start:
+            from datetime import datetime as dt
+            parsed_start = dt.strptime(report_date_start, "%Y-%m-%d").date()
+        if report_date_end:
+            from datetime import datetime as dt
+            parsed_end = dt.strptime(report_date_end, "%Y-%m-%d").date()
+
+        # 获取异常日报
+        reports = trend_service.get_flagged_reports(
+            ad_account_id=ad_account_id,
+            report_date_start=parsed_start,
+            report_date_end=parsed_end,
+            limit=page_size * page  # 获取足够的数据进行分页
+        )
+
+        # 手动分页
+        total = len(reports)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_reports = reports[start_idx:end_idx]
+
+        # 转换为响应格式
+        report_responses = [
+            DailyReportResponse.model_validate(report)
+            for report in paginated_reports
+        ]
+
+        return paginated_response(
+            items=report_responses,
+            page=page,
+            page_size=page_size,
+            total=total
+        )
+
+    except Exception as e:
+        logger.exception(f"Error getting flagged reports: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取异常日报列表失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/trend-pending-count",
+    response_model=StandardResponse[Dict[str, int]],
+    summary="获取待风控检查日报数量",
+    description="获取当前 trend_pending 状态的日报数量"
+)
+async def get_trend_pending_count(
+    trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
+    current_user: User = Depends(require_role(["data_operator", "admin", "finance"]))
+):
+    """
+    获取待风控检查日报数量 API
+    """
+    try:
+        count = trend_service.get_pending_trend_check_count()
+        return success_response(
+            data={"pending_count": count},
+            message=f"当前有 {count} 个日报待风控检查"
+        )
+    except Exception as e:
+        logger.exception(f"Error getting pending count: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取待检查数量失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )

@@ -43,7 +43,7 @@ export function UserProfileDropdown({
     console.log('退出登录');
     // 清除用户信息、token等
     // 跳转到登录页
-    window.location.href = '/auth/login';
+    window.location.href = '/login';
   };
 
   const handleProfile = () => {

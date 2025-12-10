@@ -212,9 +212,29 @@ class ReconciliationService:
     async def run_reconciliation(
         self,
         batch_id: int,
-        current_user_id: int
+        current_user_id: int,
+        supplier_data: Optional[Dict[int, Decimal]] = None
     ) -> ReconciliationBatch:
-        """执行对账"""
+        """
+        执行对账 - 计算差异并生成调整建议
+
+        RECONCILIATION_SOT.md v1.0 §4.1:
+        1. 汇总系统消耗: our_total_spend = SUM(daily_reports.real_spend)
+        2. 对比供应商消耗: supplier_total_spend
+        3. 计算差异: difference = our_total_spend - supplier_total_spend
+        4. 计算差异率: difference_rate = (difference / supplier_total_spend) × 100%
+
+        Args:
+            batch_id: 批次ID
+            current_user_id: 当前用户ID
+            supplier_data: 供应商提供的消耗数据 {ad_account_id: spend_amount}
+                          如果为空，则使用 system_spend 作为基准（差异为0）
+
+        Returns:
+            ReconciliationBatch: 更新后的批次对象
+        """
+        from backend.models import DailyReport
+
         batch = await self.get_batch_by_id(batch_id, current_user_id, "admin")
 
         # 检查状态 - 只能从 draft 或 pending_review 状态执行对账
@@ -229,61 +249,231 @@ class ReconciliationService:
         self.db.commit()
 
         try:
-            # 获取所有活跃的广告账户
-            ad_accounts = self.db.query(AdAccount).filter(
-                AdAccount.status == "active"
+            # ====== Step 1: 汇总系统消耗 (RECONCILIATION_SOT.md §2.2) ======
+            # 按广告账户汇总 daily_reports.real_spend
+            system_spend_query = self.db.query(
+                DailyReport.ad_account_id,
+                func.sum(DailyReport.real_spend).label('total_spend')
+            ).filter(
+                DailyReport.report_date >= batch.period_start,
+                DailyReport.report_date <= batch.period_end,
+                DailyReport.status == 'final_locked'  # 仅统计已锁定的日报
+            ).group_by(
+                DailyReport.ad_account_id
             ).all()
 
-            platform_total = Decimal('0.00')
-            internal_total = Decimal('0.00')
+            # 转换为字典 {ad_account_id: total_spend}
+            system_spend_map = {
+                row.ad_account_id: _safe_decimal(row.total_spend)
+                for row in system_spend_query
+            }
+
+            # ====== Step 2: 获取所有相关广告账户 ======
+            ad_account_ids = set(system_spend_map.keys())
+            if supplier_data:
+                ad_account_ids.update(supplier_data.keys())
+
+            # 获取广告账户信息
+            ad_accounts = self.db.query(AdAccount).filter(
+                AdAccount.id.in_(ad_account_ids)
+            ).all() if ad_account_ids else []
+
+            # ====== Step 3: 计算差异并创建明细 ======
+            our_total = Decimal('0.00')
+            supplier_total = Decimal('0.00')
             difference_total = Decimal('0.00')
 
-            # 为每个账户创建对账详情
             for account in ad_accounts:
-                # TODO: 从平台API获取消耗数据
-                platform_spend = Decimal('0.00')  # 临时值
+                # 系统记录的消耗 (our_total_spend)
+                system_spend = system_spend_map.get(account.id, Decimal('0.00'))
 
-                # TODO: 从内部记录获取消耗数据
-                internal_spend = Decimal('0.00')  # 临时值
+                # 供应商提供的消耗 (supplier_total_spend)
+                # 如果没有供应商数据，假设与系统一致（差异为0）
+                external_spend = Decimal('0.00')
+                if supplier_data and account.id in supplier_data:
+                    external_spend = _safe_decimal(supplier_data[account.id])
+                else:
+                    external_spend = system_spend  # 默认无差异
 
-                # 计算差异
-                spend_difference = platform_spend - internal_spend
+                # ====== Step 4: 计算差异 (RECONCILIATION_SOT.md §2.2) ======
+                # difference = our_total_spend - supplier_total_spend
+                # 正差 = 我方多记 | 负差 = 我方少记
+                spend_difference = system_spend - external_spend
+
+                # 差异率 = (difference / supplier_total_spend) × 100%
+                difference_rate = Decimal('0.0000')
+                if external_spend > 0:
+                    difference_rate = (spend_difference / external_spend) * 100
+
+                # ====== Step 5: 判断是否匹配（容忍 0.01 的误差）======
                 is_matched = abs(spend_difference) < Decimal('0.01')
 
-                # 创建对账详情
-                # 注意：ReconciliationDetail 模型字段：system_spend, actual_spend, discrepancy, status
+                # ====== Step 6: 生成调整建议 ======
+                adjustment_suggestion = None
+                if not is_matched:
+                    if spend_difference > Decimal('10.00'):
+                        # 我方多记，需减少
+                        adjustment_suggestion = f"decrease:{spend_difference}"
+                    elif spend_difference < Decimal('-10.00'):
+                        # 我方少记，需增加
+                        adjustment_suggestion = f"increase:{abs(spend_difference)}"
+                    else:
+                        # 差异较小，可核销
+                        adjustment_suggestion = f"writeoff:{abs(spend_difference)}"
+
+                # ====== Step 7: 创建对账明细 ======
+                detail_notes = f"差异率: {difference_rate:.2f}%"
+                if adjustment_suggestion:
+                    detail_notes += f" | 建议: {adjustment_suggestion}"
+
                 detail = ReconciliationDetail(
                     batch_id=batch_id,
                     ad_account_id=account.id,
-                    system_spend=platform_spend,
-                    actual_spend=internal_spend,
+                    system_spend=system_spend,
+                    actual_spend=external_spend,
                     discrepancy=spend_difference,
                     status=ReconciliationDetailStatus.CONFIRMED.value if is_matched else ReconciliationDetailStatus.PENDING.value,
-                    notes=f"自动匹配" if is_matched else f"需要人工审核，差异: {spend_difference}"
+                    notes=detail_notes
                 )
-
                 self.db.add(detail)
 
-                # 累计统计（用于更新 batch 汇总字段）
-                platform_total += platform_spend
-                internal_total += internal_spend
+                # 累计统计
+                our_total += system_spend
+                supplier_total += external_spend
                 difference_total += spend_difference
 
-            # 更新批次汇总金额字段（这些字段在模型中存在）
-            batch.total_system_spend = platform_total
-            batch.total_actual_spend = internal_total
+            # ====== Step 8: 更新批次汇总 ======
+            batch.total_system_spend = our_total
+            batch.total_actual_spend = supplier_total
             batch.discrepancy = difference_total
-            # 对账完成后状态为 approved（需人工审核后才 completed）
-            batch.status = ReconciliationBatchStatus.APPROVED.value
+
+            # 计算批次差异率
+            if supplier_total > 0:
+                batch_difference_rate = (difference_total / supplier_total) * 100
+            else:
+                batch_difference_rate = Decimal('0.0000')
+
+            # 如果所有明细都匹配，状态为 approved；否则需要调整
+            pending_count = sum(
+                1 for a in ad_accounts
+                if abs(system_spend_map.get(a.id, Decimal('0.00')) -
+                       (supplier_data.get(a.id, system_spend_map.get(a.id, Decimal('0.00'))) if supplier_data else system_spend_map.get(a.id, Decimal('0.00'))))
+                   >= Decimal('0.01')
+            )
+
+            if pending_count == 0:
+                batch.status = ReconciliationBatchStatus.APPROVED.value
+            else:
+                batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
 
             self.db.commit()
 
         except Exception as e:
-            batch.status = ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value  # 异常时需要调整
+            batch.status = ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value
             self.db.commit()
             raise e
 
         return batch
+
+    async def calculate_difference(
+        self,
+        batch_id: int,
+        ad_account_id: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        计算对账差异（RECONCILIATION_SOT.md v1.0 §4）
+
+        差异计算公式:
+        - difference = our_total_spend - supplier_total_spend
+        - difference_rate = (difference / supplier_total_spend) × 100%
+
+        差异类型判定:
+        - 正差（我方多记）: difference > 0 → 建议 decrease
+        - 负差（我方少记）: difference < 0 → 建议 increase
+        - 零差: |difference| < 0.01 → 自动确认
+
+        Args:
+            batch_id: 批次ID
+            ad_account_id: 可选，指定账户ID（用于单账户差异分析）
+
+        Returns:
+            Dict: 差异计算结果
+        """
+        query = self.db.query(ReconciliationDetail).filter(
+            ReconciliationDetail.batch_id == batch_id
+        )
+
+        if ad_account_id:
+            query = query.filter(ReconciliationDetail.ad_account_id == ad_account_id)
+
+        details = query.all()
+
+        if not details:
+            return {
+                "batch_id": batch_id,
+                "total_system_spend": Decimal('0.00'),
+                "total_supplier_spend": Decimal('0.00'),
+                "total_difference": Decimal('0.00'),
+                "difference_rate": Decimal('0.0000'),
+                "matched_count": 0,
+                "pending_count": 0,
+                "adjustment_suggestions": []
+            }
+
+        # 汇总统计
+        total_system = sum(_safe_decimal(d.system_spend) for d in details)
+        total_supplier = sum(_safe_decimal(d.actual_spend) for d in details)
+        total_diff = sum(_safe_decimal(d.discrepancy) for d in details)
+
+        # 差异率
+        diff_rate = Decimal('0.0000')
+        if total_supplier > 0:
+            diff_rate = (total_diff / total_supplier) * 100
+
+        # 状态统计
+        matched_count = sum(1 for d in details if d.status == ReconciliationDetailStatus.CONFIRMED.value)
+        pending_count = sum(1 for d in details if d.status == ReconciliationDetailStatus.PENDING.value)
+
+        # 生成调整建议
+        suggestions = []
+        for d in details:
+            if d.status != ReconciliationDetailStatus.PENDING.value:
+                continue
+
+            diff_amount = _safe_decimal(d.discrepancy)
+            if abs(diff_amount) < Decimal('0.01'):
+                continue
+
+            suggestion = {
+                "detail_id": d.id,
+                "ad_account_id": d.ad_account_id,
+                "difference": diff_amount,
+                "adjustment_type": None,
+                "reason": None
+            }
+
+            if diff_amount > Decimal('10.00'):
+                suggestion["adjustment_type"] = "decrease"
+                suggestion["reason"] = f"系统多记 {diff_amount}，建议红冲减少"
+            elif diff_amount < Decimal('-10.00'):
+                suggestion["adjustment_type"] = "increase"
+                suggestion["reason"] = f"系统少记 {abs(diff_amount)}，建议补录增加"
+            else:
+                suggestion["adjustment_type"] = "writeoff"
+                suggestion["reason"] = f"差异金额较小 ({diff_amount})，建议核销"
+
+            suggestions.append(suggestion)
+
+        return {
+            "batch_id": batch_id,
+            "total_system_spend": total_system,
+            "total_supplier_spend": total_supplier,
+            "total_difference": total_diff,
+            "difference_rate": round(diff_rate, 4),
+            "matched_count": matched_count,
+            "pending_count": pending_count,
+            "adjustment_suggestions": suggestions
+        }
 
     async def get_batch_details(
         self,

@@ -760,10 +760,142 @@ class ProfitService:
         period_end: date,
         project_id: int,
     ) -> List[ProfitAggregate]:
-        """执行账户级聚合 (用于日度聚合)"""
-        # TODO: 实现账户级聚合逻辑 (类似项目级,但按 ad_account_id 分组)
-        # 当前版本仅实现项目级聚合,账户级待后续迭代
-        return []
+        """
+        执行账户级聚合 (用于日度聚合)
+
+        业务规则:
+        - BR-PROFIT-001: 仅聚合 final_locked 日报
+        - BR-PROFIT-006: 收入仅来自 REVENUE
+        - BR-PROFIT-007: 成本仅来自 COST
+
+        Args:
+            period_type: 周期类型
+            period_start: 开始日期
+            period_end: 结束日期
+            project_id: 项目ID
+
+        Returns:
+            List[ProfitAggregate]: 账户级聚合记录列表
+        """
+        # 获取项目下的所有账户
+        accounts = self.db.query(AdAccount).filter(
+            AdAccount.project_id == project_id
+        ).all()
+
+        if not accounts:
+            return []
+
+        aggregates = []
+
+        for account in accounts:
+            # 聚合 daily_reports (仅 final_locked)
+            daily_report_agg = self.db.query(
+                func.coalesce(func.sum(DailyReport.conversions_final), 0).label("total_conversions"),
+                func.coalesce(func.sum(DailyReport.real_spend), Decimal("0")).label("total_real_spend"),
+            ).filter(
+                and_(
+                    DailyReport.ad_account_id == account.id,
+                    DailyReport.report_date >= period_start,
+                    DailyReport.report_date <= period_end,
+                    DailyReport.status == "final_locked",
+                )
+            ).first()
+
+            # 聚合 ledger_entries - REVENUE
+            revenue_sum = self.db.query(
+                func.coalesce(func.sum(LedgerEntry.amount), Decimal("0"))
+            ).filter(
+                and_(
+                    LedgerEntry.ad_account_id == account.id,
+                    LedgerEntry.entry_date >= datetime.combine(period_start, datetime.min.time()),
+                    LedgerEntry.entry_date <= datetime.combine(period_end, datetime.max.time()),
+                    LedgerEntry.entry_type == "REVENUE",
+                )
+            ).scalar() or Decimal("0")
+
+            # 聚合 ledger_entries - COST
+            cost_sum = self.db.query(
+                func.coalesce(func.sum(func.abs(LedgerEntry.amount)), Decimal("0"))
+            ).filter(
+                and_(
+                    LedgerEntry.ad_account_id == account.id,
+                    LedgerEntry.entry_date >= datetime.combine(period_start, datetime.min.time()),
+                    LedgerEntry.entry_date <= datetime.combine(period_end, datetime.max.time()),
+                    LedgerEntry.entry_type == "COST",
+                )
+            ).scalar() or Decimal("0")
+
+            # 聚合 TOPUP
+            topup_sum = self.db.query(
+                func.coalesce(func.sum(LedgerEntry.amount), Decimal("0"))
+            ).filter(
+                and_(
+                    LedgerEntry.ad_account_id == account.id,
+                    LedgerEntry.entry_date >= datetime.combine(period_start, datetime.min.time()),
+                    LedgerEntry.entry_date <= datetime.combine(period_end, datetime.max.time()),
+                    LedgerEntry.entry_type == "TOPUP",
+                )
+            ).scalar() or Decimal("0")
+
+            # 聚合 TRANSFER_IN / TRANSFER_OUT
+            transfer_in_sum = self.db.query(
+                func.coalesce(func.sum(LedgerEntry.amount), Decimal("0"))
+            ).filter(
+                and_(
+                    LedgerEntry.ad_account_id == account.id,
+                    LedgerEntry.entry_date >= datetime.combine(period_start, datetime.min.time()),
+                    LedgerEntry.entry_date <= datetime.combine(period_end, datetime.max.time()),
+                    LedgerEntry.entry_type == "TRANSFER_IN",
+                )
+            ).scalar() or Decimal("0")
+
+            transfer_out_sum = self.db.query(
+                func.coalesce(func.sum(func.abs(LedgerEntry.amount)), Decimal("0"))
+            ).filter(
+                and_(
+                    LedgerEntry.ad_account_id == account.id,
+                    LedgerEntry.entry_date >= datetime.combine(period_start, datetime.min.time()),
+                    LedgerEntry.entry_date <= datetime.combine(period_end, datetime.max.time()),
+                    LedgerEntry.entry_type == "TRANSFER_OUT",
+                )
+            ).scalar() or Decimal("0")
+
+            # 计算毛利
+            total_revenue = Decimal(str(revenue_sum))
+            total_cost = Decimal(str(cost_sum))
+            gross_profit = total_revenue - total_cost
+            gross_margin_pct = self._calculate_margin_pct(gross_profit, total_revenue)
+
+            # 只有有数据时才创建聚合记录
+            if (total_revenue > 0 or total_cost > 0 or
+                daily_report_agg.total_conversions > 0 or
+                Decimal(str(daily_report_agg.total_real_spend or 0)) > 0):
+
+                aggregate = ProfitAggregate(
+                    period_type=period_type,
+                    period_start=datetime.combine(period_start, datetime.min.time()),
+                    period_end=datetime.combine(period_end, datetime.max.time()),
+                    project_id=project_id,
+                    ad_account_id=account.id,
+                    total_revenue=self._round_amount(total_revenue),
+                    total_cost=self._round_amount(total_cost),
+                    gross_profit=self._round_amount(gross_profit),
+                    gross_margin_pct=gross_margin_pct,
+                    total_conversions=int(daily_report_agg.total_conversions or 0),
+                    total_real_spend=self._round_amount(Decimal(str(daily_report_agg.total_real_spend or 0))),
+                    total_topup=self._round_amount(Decimal(str(topup_sum))),
+                    transfer_in=self._round_amount(Decimal(str(transfer_in_sum))),
+                    transfer_out=self._round_amount(Decimal(str(transfer_out_sum))),
+                    is_locked=False,
+                )
+                aggregates.append(aggregate)
+
+                logger.debug(
+                    f"Account {account.id} aggregate: revenue={total_revenue}, "
+                    f"cost={total_cost}, profit={gross_profit}"
+                )
+
+        return aggregates
 
     def _aggregate_global(
         self,

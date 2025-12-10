@@ -3,3 +3,8 @@ export * from './DailyReportsPage';
 export * from './DailyReportDetail';
 export * from './DailyReportForm';
 export * from './DailyReportsDashboard';
+export * from './StatusBadge';
+export * from './ActionButtons';
+export * from './FlagTrendDialog';
+export * from './ResolveFlagDialog';
+export * from './ConfirmFinalDialog';

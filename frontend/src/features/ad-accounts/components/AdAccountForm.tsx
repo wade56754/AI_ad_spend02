@@ -23,6 +23,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiGet, apiPost } from "@/lib/api";
 
 // 类型定义
 interface User {
@@ -139,10 +140,9 @@ export function AdAccountForm({
   // 获取用户列表
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/v1/users?role=media_buyer,account_manager");
-      const result = await response.json();
-      if (result.success) {
-        setUsers(result.data);
+      const response = await apiGet("/api/v1/users", { role: "media_buyer,account_manager" });
+      if (response.data) {
+        setUsers(response.data as User[]);
       }
     } catch (error) {
       console.error("获取用户列表失败:", error);
@@ -152,10 +152,9 @@ export function AdAccountForm({
   // 获取项目列表
   const fetchProjects = async () => {
     try {
-      const response = await fetch("/api/v1/projects?status=active");
-      const result = await response.json();
-      if (result.success) {
-        setProjects(result.data);
+      const response = await apiGet("/api/v1/projects", { status: "active" });
+      if (response.data) {
+        setProjects(response.data as Project[]);
       }
     } catch (error) {
       console.error("获取项目列表失败:", error);
@@ -170,17 +169,13 @@ export function AdAccountForm({
     setAccountValid(null);
 
     try {
-      const response = await fetch(`/api/v1/ad-accounts/validate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          platform: formData.platform,
-          account_id: formData.account_id,
-        }),
+      const response = await apiPost(`/api/v1/ad-accounts/validate`, {
+        platform: formData.platform,
+        account_id: formData.account_id,
       });
 
-      const result = await response.json();
-      setAccountValid(result.success && result.data.valid);
+      const result = response.data as { valid: boolean } | undefined;
+      setAccountValid(result?.valid ?? false);
     } catch (error) {
       console.error("验证失败:", error);
       setAccountValid(false);

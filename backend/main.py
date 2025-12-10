@@ -29,6 +29,7 @@ from backend.routers import (
     import_jobs,  # ✅ 数据导入API (已实现ImportJob模型)
     reconciliation,  # ✅ 对账管理API (新启用)
     reports,  # ✅ 报表管理API (v2.0 - 完整重构)
+    agents,  # ✅ Agent Platform API (新增)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
@@ -69,6 +70,7 @@ app.include_router(finance_profit.router, prefix=API_V1_PREFIX)  # 财务利润 
 app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 已实现ImportJob模型
 app.include_router(reconciliation.router, prefix=API_V1_PREFIX)  # 对账管理 ✅ 新启用
 app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表管理 ✅ v2.0 完整重构
+app.include_router(agents.router, prefix=API_V1_PREFIX)  # Agent Platform ✅ 新增
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 

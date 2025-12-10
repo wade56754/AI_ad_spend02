@@ -1,0 +1,33 @@
+# AI 广告代投系统 - 后端依赖
+# 核心框架
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.6
+pydantic-settings==2.7.1
+
+# 数据库
+sqlalchemy==2.0.37
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# 认证与安全
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.20
+
+# HTTP 客户端
+httpx==0.28.1
+requests==2.32.3
+
+# Supabase
+supabase==2.12.2
+
+# 工具库
+python-dotenv==1.0.1
+
+# 测试工具
+pytest==8.3.4
+pytest-cov==6.0.0
+pytest-asyncio==0.25.2
+pytest-mock==3.14.0
+httpx==0.28.1

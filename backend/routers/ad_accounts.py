@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
-from backend.core.response import ok
+from backend.core.response import success_response, error_response
+from backend.core.error_codes import BusinessErrorCodes, ValidationErrorCodes, SystemErrorCodes
 from backend.core.security import AuthenticatedUser, get_current_user
 from backend.core.logging import log_requests
 from backend.models import AdAccount
@@ -90,7 +91,7 @@ def list_ad_accounts(
         "total": total,
         "total_pages": ceil(total / page_size) if page_size else 0,
     }
-    return ok(data=data, meta={"pagination": pagination})
+    return success_response(data={"items": data, "meta": {"pagination": pagination}}, message="获取广告账户列表成功")
 
 
 @log_requests("ad_accounts")
@@ -102,9 +103,13 @@ def get_ad_account(
 ) -> dict:
     account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
     if not account:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad account not found")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="广告账户不存在",
+            status_code=404
+        )
     data = AdAccountRead.model_validate(account, from_attributes=True).model_dump()
-    return ok(data=data)
+    return success_response(data=data)
 
 
 @log_requests("ad_accounts")
@@ -129,7 +134,7 @@ def create_ad_account(
     #     detail=data,
     # )
 
-    return ok(data=data, status_code=status.HTTP_201_CREATED)
+    return success_response(data=data, message="广告账户创建成功", status_code=201)
 
 
 @log_requests("ad_accounts")
@@ -142,22 +147,28 @@ def update_ad_account_status(
 ) -> dict:
     account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
     if not account:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad account not found")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="广告账户不存在",
+            status_code=404
+        )
 
     target_status = payload.status
     current_status = account.status
 
     if target_status == current_status:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Status is unchanged",
+        return error_response(
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
+            message="状态未改变",
+            status_code=422
         )
 
     allowed = ALLOWED_TRANSITIONS.get(current_status, [])
     if target_status not in allowed:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Status transition from {current_status} to {target_status} is not allowed",
+        return error_response(
+            code="STATE_001",
+            message=f"状态从 {current_status} 到 {target_status} 的转换不允许",
+            status_code=422
         )
 
     before_state = jsonable_encoder(AdAccountRead.model_validate(account, from_attributes=True).model_dump())
@@ -185,7 +196,7 @@ def update_ad_account_status(
     # log_entry.after_data = after_state
     # db.commit()
 
-    return ok(data=after_state)
+    return success_response(data=after_state, message="广告账户状态更新成功")
 
 
 @log_requests("ad_accounts")
@@ -198,19 +209,24 @@ def delete_ad_account(
     """删除广告账户（仅允许删除归档状态的账户）"""
     account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
     if not account:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ad account not found")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="广告账户不存在",
+            status_code=404
+        )
 
     # 只有归档状态的账户才能删除
     if account.status != "archived":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="只有归档状态的账户才能删除"
+        return error_response(
+            code="STATE_001",
+            message="只有归档状态的账户才能删除",
+            status_code=400
         )
 
     db.delete(account)
     db.commit()
 
-    return ok(data={"message": "Account deleted successfully"})
+    return success_response(data={"message": "广告账户删除成功"}, message="广告账户删除成功")
 
 
 @log_requests("ad_accounts")
@@ -249,19 +265,18 @@ def create_balance_transfer(
     # 验证源账户存在
     source_account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
     if not source_account:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "BIZ_002", "message": f"源账户 {account_id} 不存在"}
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=f"源账户 {account_id} 不存在",
+            status_code=404
         )
 
     # 验证源账户状态必须为 dead
     if source_account.status != "dead":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "E-TRANS-002",
-                "message": f"源账户状态必须为 dead，当前状态: {source_account.status}"
-            }
+        return error_response(
+            code=BusinessErrorCodes.TRANSFER_SOURCE_NOT_DEAD.code,
+            message=f"源账户状态必须为 dead，当前状态: {source_account.status}",
+            status_code=400
         )
 
     # 验证目标账户存在
@@ -269,44 +284,36 @@ def create_balance_transfer(
         AdAccount.id == payload.target_ad_account_id
     ).first()
     if not target_account:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BIZ_002",
-                "message": f"目标账户 {payload.target_ad_account_id} 不存在"
-            }
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=f"目标账户 {payload.target_ad_account_id} 不存在",
+            status_code=404
         )
 
     # 验证目标账户状态必须为 active
     if target_account.status != "active":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "E-TRANS-003",
-                "message": f"目标账户状态必须为 active，当前状态: {target_account.status}"
-            }
+        return error_response(
+            code=BusinessErrorCodes.TRANSFER_TARGET_NOT_ACTIVE.code,
+            message=f"目标账户状态必须为 active，当前状态: {target_account.status}",
+            status_code=400
         )
 
     # 验证源账户和目标账户不能相同
     if account_id == payload.target_ad_account_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "E-TRANS-001",
-                "message": "源账户和目标账户不能相同"
-            }
+        return error_response(
+            code=BusinessErrorCodes.TRANSFER_SAME_ACCOUNT.code,
+            message="源账户和目标账户不能相同",
+            status_code=400
         )
 
     # 验证同供应商限制 (如果有 supplier_id 字段)
     source_supplier_id = getattr(source_account, 'supplier_id', None)
     target_supplier_id = getattr(target_account, 'supplier_id', None)
     if source_supplier_id and target_supplier_id and source_supplier_id != target_supplier_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "E-TRANS-004",
-                "message": "禁止跨供应商迁移余额，必须拆分为退款 + 充值"
-            }
+        return error_response(
+            code=BusinessErrorCodes.TRANSFER_CROSS_SUPPLIER.code,
+            message="禁止跨供应商迁移余额，必须拆分为退款 + 充值",
+            status_code=400
         )
 
     # 获取源账户余额
@@ -317,21 +324,17 @@ def create_balance_transfer(
 
     # 验证迁移金额
     if transfer_amount <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "E-TRANS-006",
-                "message": "迁移金额必须大于 0"
-            }
+        return error_response(
+            code=BusinessErrorCodes.TRANSFER_INVALID_AMOUNT.code,
+            message="迁移金额必须大于 0",
+            status_code=400
         )
 
     if transfer_amount > source_balance:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "E-TRANS-006",
-                "message": f"迁移金额 {transfer_amount} 超过源账户余额 {source_balance}"
-            }
+        return error_response(
+            code=BusinessErrorCodes.TRANSFER_INSUFFICIENT_BALANCE.code,
+            message=f"迁移金额 {transfer_amount} 超过源账户余额 {source_balance}",
+            status_code=400
         )
 
     # 调用 TransferService 创建迁移申请
@@ -350,9 +353,10 @@ def create_balance_transfer(
         from backend.models import User
         user = db.query(User).filter(User.id == current_user.id).first()
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"code": "AUTH_001", "message": "用户不存在"}
+            return error_response(
+                code="AUTH_001",
+                message="用户不存在",
+                status_code=401
             )
 
         transfer = transfer_service.create_transfer(transfer_request, user)
@@ -367,7 +371,6 @@ def create_balance_transfer(
             "status": transfer.status,
             "reason": transfer.reason,
             "created_at": transfer.created_at.isoformat() if transfer.created_at else None,
-            "message": "余额迁移申请已创建，请等待审批"
         }
 
         logger.info(
@@ -379,10 +382,8 @@ def create_balance_transfer(
             user_id=str(current_user.id)
         )
 
-        return ok(data=response_data, status_code=status.HTTP_201_CREATED)
+        return success_response(data=response_data, message="余额迁移申请已创建，请等待审批", status_code=201)
 
-    except HTTPException:
-        raise
     except Exception as e:
         logger.error(
             "Failed to create balance transfer",
@@ -390,9 +391,10 @@ def create_balance_transfer(
             source_account=account_id,
             target_account=payload.target_ad_account_id
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "SYS_001", "message": f"创建迁移申请失败: {str(e)}"}
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message=f"创建迁移申请失败: {str(e)}",
+            status_code=500
         )
 
 

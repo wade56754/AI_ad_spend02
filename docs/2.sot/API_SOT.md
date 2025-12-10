@@ -90,7 +90,7 @@
 ### 2.1 路由规范
 
 - **路由前缀**: `/api/v1`
-- **命名规则**: 复数形式，kebab-case（如 `/api/v1/topup-requests`）
+- **命名规则**: 复数形式，kebab-case（如 `/api/v1/topups`）
 - **路径参数**: 使用有意义的名称（如 `{project_id}`，不是 `{id}`）
 
 ### 2.2 认证与授权
@@ -749,7 +749,7 @@ const newProject = await apiFetch('/api/v1/projects', {
 | PUT | `/api/v1/ad-accounts/{account_id}` | 更新账户 | `admin`, `account_manager` | - | implemented |
 | POST | `/api/v1/ad-accounts/{account_id}/assign` | 分配账户给投手 | `admin`, `account_manager` | - | implemented |
 | POST | `/api/v1/ad-accounts/{account_id}/mark-dead` | 标记死号 | `admin`, `account_manager` | `dead` | implemented |
-| POST | `/api/v1/ad-accounts/{account_id}/balance-transfer` | 死号余额迁移 | `admin`, `finance` | - | planned |
+| POST | `/api/v1/ad-accounts/{account_id}/balance-transfer` | 死号余额迁移 | `admin`, `finance` | - | implemented |
 
 **状态机**: `new` → `testing` → `active` → `suspended` → `dead` → `archived`（来自 STATE_MACHINE.md 第7.1节）
 
@@ -1660,14 +1660,22 @@ with db.begin():
 
 | 方法 | 路径 | 功能 | 权限 | 状态机 | 状态 |
 |------|------|------|------|--------|------|
-| GET | `/api/v1/topup-requests` | 获取充值申请列表 | 根据角色过滤 | - | implemented |
-| POST | `/api/v1/topup-requests` | 创建充值申请 | `admin`, `finance`, `media_buyer`, `account_manager` | `draft` | implemented |
-| GET | `/api/v1/topup-requests/{request_id}` | 获取充值申请详情 | 根据角色过滤 | - | implemented |
-| POST | `/api/v1/topup-requests/{request_id}/review` | 数据审核 | `data_operator`, `admin` | `pending_review` → `finance_approve` | implemented |
-| POST | `/api/v1/topup-requests/{request_id}/approve` | 财务审批 | `finance`, `admin` | `finance_approve` → `paid` | implemented |
-| POST | `/api/v1/topup-requests/{request_id}/confirm-paid` | 到账确认 | `finance`, `admin` | `paid` → `completed` | implemented |
-| POST | `/api/v1/topup-requests/{request_id}/reject` | 拒绝申请 | `data_operator`, `finance`, `admin` | 任意状态 → `rejected` | implemented |
-| POST | `/api/v1/topup-requests/{request_id}/cancel` | 取消申请 | 申请人 | `draft` → `cancelled` | implemented |
+| GET | `/api/v1/topups` | 获取充值申请列表 | 根据角色过滤 | - | implemented |
+| POST | `/api/v1/topups` | 创建充值申请 | `admin`, `finance`, `media_buyer`, `account_manager` | `draft` | implemented |
+| GET | `/api/v1/topups/{request_id}` | 获取充值申请详情 | 根据角色过滤 | - | implemented |
+| POST | `/api/v1/topups/{request_id}/submit` | 提交审批 | 申请人 | `draft` → `pending_review` | implemented |
+| POST | `/api/v1/topups/{request_id}/review` | 数据审核 | `data_operator`, `admin` | `pending_review` → `finance_approve` | implemented |
+| POST | `/api/v1/topups/{request_id}/approve` | 财务审批 | `finance`, `admin` | `finance_approve` → `paid` | implemented |
+| PUT | `/api/v1/topups/{request_id}/pay` | 记录付款 | `finance`, `admin` | `paid` → - | implemented |
+| POST | `/api/v1/topups/{request_id}/confirm-paid` | 到账确认 | `finance`, `admin` | `paid` → `completed` | implemented |
+| POST | `/api/v1/topups/{request_id}/reject` | 拒绝申请 | `data_operator`, `finance`, `admin` | 任意状态 → `rejected` | implemented |
+| POST | `/api/v1/topups/{request_id}/cancel` | 取消申请 | 申请人 | `draft` → `cancelled` | implemented |
+| GET | `/api/v1/topups/{request_id}/logs` | 获取审批日志 | 所有已登录用户 | - | implemented |
+| GET | `/api/v1/topups/statistics` | 获取充值统计 | `admin`, `finance` | - | implemented |
+| GET | `/api/v1/topups/dashboard` | 获取仪表盘数据 | 所有已登录用户 | - | implemented |
+| GET | `/api/v1/topups/accounts/{account_id}/balance` | 获取账户余额 | 所有已登录用户 | - | implemented |
+| GET | `/api/v1/topups/export` | 导出充值数据 | `admin`, `finance` | - | implemented |
+| POST | `/api/v1/topups/{request_id}/receipt` | 上传付款凭证 | `finance`, `admin` | - | implemented |
 
 **充值状态机**: `draft` → `pending_review` → `finance_approve` → `paid` → `completed`（来自 STATE_MACHINE.md 第9章）
 
@@ -1676,7 +1684,7 @@ with db.begin():
 - 状态机: STATE_MACHINE.md 第9章
 - 业务规则: BR-FIN-001, BR-FIN-002, BR-FIN-005
 
-### 10.2 POST `/api/v1/topup-requests` - 创建充值申请
+### 10.2 POST `/api/v1/topups` - 创建充值申请
 
 #### 请求
 
@@ -1975,13 +1983,32 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 | 方法 | 路径 | 功能 | 权限 | 状态机 | 状态 |
 |------|------|------|------|--------|------|
-| GET | `/api/v1/reconciliation/batches` | 获取对账批次列表 | `admin`, `finance`, `data_operator` | - | implemented |
-| POST | `/api/v1/reconciliation/batches` | 创建对账批次 | `finance`, `admin` | `draft` | implemented |
-| GET | `/api/v1/reconciliation/batches/{batch_id}` | 获取批次详情 | `admin`, `finance`, `data_operator` | - | implemented |
-| POST | `/api/v1/reconciliation/batches/{batch_id}/submit` | 提交审核 | `finance`, `admin` | `draft` → `pending_review` | implemented |
-| POST | `/api/v1/reconciliation/batches/{batch_id}/approve` | 批准对账 | `finance`, `admin` | `pending_review` → `approved` | implemented |
-| POST | `/api/v1/reconciliation/batches/{batch_id}/request-adjustment` | 要求调整 | `finance`, `admin` | `pending_review` → `needs_adjustment` | implemented |
-| POST | `/api/v1/reconciliation/batches/{batch_id}/complete` | 完成对账 | `finance`, `admin` | `approved` → `completed` | implemented |
+| GET | `/api/v1/reconciliations/batches` | 获取对账批次列表 | `admin`, `finance`, `data_operator` | - | implemented |
+| POST | `/api/v1/reconciliations/batches` | 创建对账批次 | `finance`, `admin` | `draft` | implemented |
+| GET | `/api/v1/reconciliations/batches/{batch_id}` | 获取批次详情 | `admin`, `finance`, `data_operator` | - | implemented |
+| PUT | `/api/v1/reconciliations/batches/{batch_id}` | 更新批次 | `finance`, `admin` | - | implemented |
+| DELETE | `/api/v1/reconciliations/batches/{batch_id}` | 删除批次 | `admin` | - | implemented |
+| POST | `/api/v1/reconciliations/batches/{batch_id}/submit` | 提交审核 | `finance`, `admin` | `draft` → `pending_review` | implemented |
+| POST | `/api/v1/reconciliations/batches/{batch_id}/approve` | 批准对账 | `finance`, `admin` | `pending_review` → `approved` | implemented |
+| POST | `/api/v1/reconciliations/batches/{batch_id}/request-adjustment` | 要求调整 | `finance`, `admin` | `pending_review` → `needs_adjustment` | implemented |
+| POST | `/api/v1/reconciliations/batches/{batch_id}/complete` | 完成对账 | `finance`, `admin` | `approved` → `completed` | implemented |
+| POST | `/api/v1/reconciliations/batches/{batch_id}/run` | 执行对账 | `finance`, `admin` | - | implemented |
+| GET | `/api/v1/reconciliations/batches/{batch_id}/details` | 获取批次明细列表 | `admin`, `finance`, `data_operator` | - | implemented |
+| PUT | `/api/v1/reconciliations/batches/{batch_id}/resubmit` | 重新提交 | `finance`, `admin` | - | implemented |
+| PUT | `/api/v1/reconciliations/batches/{batch_id}/force-complete` | 强制完成 | `admin` | - | implemented |
+| GET | `/api/v1/reconciliations/details/{detail_id}` | 获取明细详情 | `admin`, `finance`, `data_operator` | - | implemented |
+| PUT | `/api/v1/reconciliations/details/{detail_id}/review` | 审核明细 | `finance`, `admin` | - | implemented |
+| POST | `/api/v1/reconciliations/details/{detail_id}/adjust` | 调整明细 | `finance`, `admin` | - | implemented |
+| PUT | `/api/v1/reconciliations/details/{detail_id}/confirm` | 确认明细 | `finance`, `admin` | - | implemented |
+| GET | `/api/v1/reconciliations/statistics` | 获取对账统计 | `admin`, `finance` | - | implemented |
+| GET | `/api/v1/reconciliations/export` | 导出对账数据 | `admin`, `finance` | - | implemented |
+| GET | `/api/v1/reconciliations/reports` | 获取对账报告列表 | `admin`, `finance` | - | implemented |
+| POST | `/api/v1/reconciliations/reports` | 创建对账报告 | `finance`, `admin` | - | implemented |
+| GET | `/api/v1/reconciliations/reports/{report_id}` | 获取报告详情 | `admin`, `finance` | - | implemented |
+| DELETE | `/api/v1/reconciliations/reports/{report_id}` | 删除报告 | `admin` | - | implemented |
+| GET | `/api/v1/reconciliations/adjustments` | 获取调整记录列表 | `admin`, `finance` | - | implemented |
+| GET | `/api/v1/reconciliations/adjustments/{adjustment_id}` | 获取调整详情 | `admin`, `finance` | - | implemented |
+| POST | `/api/v1/reconciliations/adjustments/{adjustment_id}/execute` | 执行调整 | `admin` | - | implemented |
 
 **对账状态机**: `draft` → `pending_review` → `approved` → `completed` (或 `needs_adjustment` → `approved` → `completed`)（来自 STATE_MACHINE.md v2.6 第11.1节）
 
@@ -1989,6 +2016,162 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 - 数据表: DATA_SCHEMA.md 3.5节
 - 状态机: STATE_MACHINE.md 第11章
 - 业务规则: BR-RECON-001, BR-RECON-003
+
+---
+
+## 12A. Transfers API（死号余额迁移）
+
+### 12A.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态机 | 状态 |
+|------|------|------|------|--------|------|
+| GET | `/api/v1/transfers` | 获取迁移申请列表 | 所有已登录用户 | - | implemented |
+| POST | `/api/v1/transfers` | 创建迁移申请 | `admin`, `account_manager`, `finance` | `draft` | implemented |
+| GET | `/api/v1/transfers/{transfer_id}` | 获取迁移申请详情 | 所有已登录用户 | - | implemented |
+| POST | `/api/v1/transfers/{transfer_id}/submit` | 提交审批 | 申请人, `admin` | `draft` → `pending_approval` | implemented |
+| POST | `/api/v1/transfers/{transfer_id}/approve` | 审批通过 | `finance`, `admin` | `pending_approval` → `approved` | implemented |
+| POST | `/api/v1/transfers/{transfer_id}/reject` | 拒绝申请 | `finance`, `admin` | → `rejected` | implemented |
+| POST | `/api/v1/transfers/{transfer_id}/complete` | 完成迁移 | `admin` | `approved` → `completed` | implemented |
+
+**迁移状态机**: `draft` → `pending_approval` → `approved` → `completed` (或 `rejected`)（来自 STATE_MACHINE.md v2.6 第12章）
+
+**引用**:
+- 数据表: DATA_SCHEMA.md 3.4.6节 `transfer_requests`
+- 状态机: STATE_MACHINE.md 第12章
+- 账本规则: LEDGER_SOT.md v1.1 (TRANSFER_OUT/TRANSFER_IN)
+
+---
+
+## 12B. Suppliers API（供应商管理）
+
+### 12B.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| GET | `/api/v1/suppliers` | 获取供应商列表 | `admin`, `finance`, `account_manager` | implemented |
+| POST | `/api/v1/suppliers` | 创建供应商 | `admin`, `finance` | implemented |
+| GET | `/api/v1/suppliers/statistics` | 获取供应商统计 | `admin`, `finance` | implemented |
+| GET | `/api/v1/suppliers/{supplier_id}` | 获取供应商详情 | `admin`, `finance`, `account_manager` | implemented |
+| PUT | `/api/v1/suppliers/{supplier_id}` | 更新供应商 | `admin`, `finance` | implemented |
+| DELETE | `/api/v1/suppliers/{supplier_id}` | 删除供应商 | `admin` | implemented |
+| GET | `/api/v1/suppliers/{supplier_id}/accounts` | 获取供应商关联账户 | `admin`, `finance`, `account_manager` | implemented |
+| GET | `/api/v1/suppliers/{supplier_id}/ledger-summary` | 获取供应商账本汇总 | `admin`, `finance` | implemented |
+
+**引用**:
+- 数据表: DATA_SCHEMA.md `suppliers` 表
+- 账本规则: LEDGER_SOT.md v1.1 (SUPPLIER 账本)
+
+---
+
+## 12C. Settlements API（结算管理）
+
+### 12C.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态机 | 状态 |
+|------|------|------|------|--------|------|
+| GET | `/api/v1/settlements` | 获取结算列表 | `admin`, `finance` | - | implemented |
+| POST | `/api/v1/settlements` | 创建结算 | `admin`, `finance` | `draft` | implemented |
+| GET | `/api/v1/settlements/statistics` | 获取结算统计 | `admin`, `finance` | - | implemented |
+| GET | `/api/v1/settlements/overdue` | 获取逾期结算 | `admin`, `finance` | - | implemented |
+| GET | `/api/v1/settlements/{settlement_id}` | 获取结算详情 | `admin`, `finance` | - | implemented |
+| PUT | `/api/v1/settlements/{settlement_id}` | 更新结算 | `admin`, `finance` | - | implemented |
+| POST | `/api/v1/settlements/{settlement_id}/submit` | 提交审批 | `admin`, `finance` | `draft` → `pending` | implemented |
+| POST | `/api/v1/settlements/{settlement_id}/approve` | 审批结算 | `admin` | `pending` → `approved`/`rejected` | implemented |
+| POST | `/api/v1/settlements/{settlement_id}/payment` | 记录支付 | `admin`, `finance` | - | implemented |
+| POST | `/api/v1/settlements/{settlement_id}/cancel` | 取消结算 | `admin` | → `cancelled` | implemented |
+
+**引用**:
+- 账本规则: LEDGER_SOT.md v1.1 (支付记录生成账本分录)
+
+---
+
+## 12D. Reports API（报表统计）
+
+### 12D.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| GET | `/api/v1/reports/dashboard` | 获取仪表盘数据 | 所有已登录用户 | implemented |
+| GET | `/api/v1/reports/performance` | 获取绩效报表 | 所有已登录用户 | implemented |
+| GET | `/api/v1/reports/profit` | 获取利润报表 | `admin`, `finance` | implemented |
+| GET | `/api/v1/reports/reconciliation` | 获取对账报表 | `admin`, `finance`, `data_operator` | implemented |
+| GET | `/api/v1/reports/financial` | 获取财务报表 | `admin`, `finance` | implemented |
+| GET | `/api/v1/reports/trends/{metric}` | 获取趋势数据 | 所有已登录用户 | implemented |
+| GET | `/api/v1/reports` | 获取报表列表 | 所有已登录用户 | implemented |
+| GET | `/api/v1/reports/{project_id}` | 获取项目报表 | 根据角色过滤 | implemented |
+
+---
+
+## 12E. Project Templates API（项目模板）
+
+### 12E.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| GET | `/api/v1/project-templates` | 获取模板列表 | 所有已登录用户 | implemented |
+| POST | `/api/v1/project-templates` | 创建模板 | `admin`, `account_manager` | implemented |
+| GET | `/api/v1/project-templates/{template_id}` | 获取模板详情 | 所有已登录用户 | implemented |
+| PUT | `/api/v1/project-templates/{template_id}` | 更新模板 | `admin`, `account_manager` | implemented |
+| DELETE | `/api/v1/project-templates/{template_id}` | 删除模板 | `admin` | implemented |
+| POST | `/api/v1/project-templates/{template_id}/apply` | 应用模板创建项目 | `admin`, `account_manager` | implemented |
+| GET | `/api/v1/project-templates/{template_id}/preview` | 预览模板效果 | 所有已登录用户 | implemented |
+
+---
+
+## 12F. Import Jobs API（数据导入）
+
+### 12F.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| POST | `/api/v1/import-jobs/upload` | 上传导入文件 | `admin`, `data_operator` | implemented |
+| GET | `/api/v1/import-jobs` | 获取导入任务列表 | `admin`, `data_operator` | implemented |
+| GET | `/api/v1/import-jobs/statistics` | 获取导入统计 | `admin`, `data_operator` | implemented |
+| GET | `/api/v1/import-jobs/{job_id}` | 获取任务详情 | `admin`, `data_operator` | implemented |
+| GET | `/api/v1/import-jobs/{job_id}/progress` | 获取任务进度 | `admin`, `data_operator` | implemented |
+| GET | `/api/v1/import-jobs/{job_id}/errors` | 获取错误详情 | `admin`, `data_operator` | implemented |
+| POST | `/api/v1/import-jobs/{job_id}/start` | 启动导入任务 | `admin`, `data_operator` | implemented |
+| POST | `/api/v1/import-jobs/{job_id}/cancel` | 取消导入任务 | `admin`, `data_operator` | implemented |
+| DELETE | `/api/v1/import-jobs/{job_id}` | 删除导入任务 | `admin` | implemented |
+| POST | `/api/v1/import-jobs/check-duplicate` | 检查重复数据 | `admin`, `data_operator` | implemented |
+
+---
+
+## 12G. AI Analytics API（AI 分析）
+
+### 12G.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| POST | `/api/v1/ai-analytics/predict` | AI 预测 | `admin`, `data_operator` | implemented |
+| POST | `/api/v1/ai-analytics/optimize` | AI 优化建议 | `admin`, `data_operator` | implemented |
+| GET | `/api/v1/ai-analytics/insights` | 获取 AI 洞察 | 所有已登录用户 | implemented |
+| GET | `/api/v1/ai-analytics/recommendations` | 获取推荐 | 所有已登录用户 | implemented |
+| GET | `/api/v1/ai-analytics/anomalies` | 获取异常检测结果 | `admin`, `data_operator` | implemented |
+| GET | `/api/v1/ai-analytics/forecasts` | 获取预测数据 | `admin`, `finance` | implemented |
+
+---
+
+## 12H. Agents API（Agent 编排）
+
+### 12H.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| GET | `/api/v1/agents` | 获取可用 Agent 列表 | `admin` | implemented |
+| GET | `/api/v1/agents/{agent_name}` | 获取 Agent 详情 | `admin` | implemented |
+| POST | `/api/v1/agents/run` | 执行单个 Agent | `admin` | implemented |
+| POST | `/api/v1/agents/orch` | 编排执行多个 Agent | `admin` | implemented |
+
+---
+
+## 12I. Health API（健康检查）
+
+### 12I.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| GET | `/api/v1/health` | 健康检查 | 公开 | implemented |
 
 ---
 

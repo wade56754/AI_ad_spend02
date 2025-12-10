@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { apiGet, apiRequest, ApiError } from "@/lib/api";
 import {
   LineChart,
   Line,
@@ -117,21 +118,23 @@ export function DailyReportsDashboard({
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      params.append("start_date", format(dateRange.start, "yyyy-MM-dd"));
-      params.append("end_date", format(dateRange.end, "yyyy-MM-dd"));
+      const response = await apiGet<DashboardData>("/api/v1/daily-reports/dashboard", {
+        start_date: format(dateRange.start, "yyyy-MM-dd"),
+        end_date: format(dateRange.end, "yyyy-MM-dd"),
+      });
 
-      const response = await fetch(`/api/v1/daily-reports/dashboard?${params}`);
-      const result = await response.json();
-
-      if (result.success) {
-        setData(result.data);
+      if (response.data) {
+        setData(response.data);
       } else {
         toast.error("获取数据失败");
       }
     } catch (error) {
       console.error("获取仪表板数据错误:", error);
-      toast.error("获取数据失败");
+      if (error instanceof ApiError) {
+        toast.error(error.message || "获取数据失败");
+      } else {
+        toast.error("获取数据失败");
+      }
     } finally {
       setLoading(false);
     }
@@ -160,14 +163,21 @@ export function DailyReportsDashboard({
   // 导出报表
   const handleExport = async () => {
     try {
-      const params = new URLSearchParams();
-      params.append("start_date", format(dateRange.start, "yyyy-MM-dd"));
-      params.append("end_date", format(dateRange.end, "yyyy-MM-dd"));
-      params.append("type", "dashboard");
+      // 导出需要返回 blob，使用 apiRequest 并设置特殊响应类型
+      const queryString = new URLSearchParams({
+        start_date: format(dateRange.start, "yyyy-MM-dd"),
+        end_date: format(dateRange.end, "yyyy-MM-dd"),
+        type: "dashboard",
+      }).toString();
 
-      const response = await fetch(`/api/v1/daily-reports/export?${params}`);
-      if (response.ok) {
-        const blob = await response.blob();
+      const response = await apiRequest(`/api/v1/daily-reports/export?${queryString}`, {
+        method: "GET",
+      });
+
+      // 如果返回的是文件数据（通常以 base64 或其他形式）
+      if (response.data) {
+        // 如果后端返回的是 blob URL 或 base64 数据
+        const blob = new Blob([JSON.stringify(response.data)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -179,7 +189,12 @@ export function DailyReportsDashboard({
         toast.success("导出成功");
       }
     } catch (error) {
-      toast.error("导出失败");
+      console.error("导出错误:", error);
+      if (error instanceof ApiError) {
+        toast.error(error.message || "导出失败");
+      } else {
+        toast.error("导出失败");
+      }
     }
   };
 

@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Calculator, Save, X, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
+import { apiPost, apiPut, ApiError } from "@/lib/api";
 
 // 类型定义
 interface DailyReport {
@@ -135,30 +136,27 @@ export function DailyReportForm({
     setIsSubmitting(true);
 
     try {
-      const url = report?.id
+      const endpoint = report?.id
         ? `/api/v1/daily-reports/${report.id}`
         : "/api/v1/daily-reports";
-      const method = report?.id ? "PUT" : "POST";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = report?.id
+        ? await apiPut(endpoint, formData)
+        : await apiPost(endpoint, formData);
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (response.data) {
         toast.success(report?.id ? "更新成功" : "创建成功");
         onSuccess();
       } else {
-        toast.error(data.message || "操作失败");
+        toast.error("操作失败");
       }
     } catch (error) {
       console.error("提交错误:", error);
-      toast.error("操作失败");
+      if (error instanceof ApiError) {
+        toast.error(error.message || "操作失败");
+      } else {
+        toast.error("操作失败");
+      }
     } finally {
       setIsSubmitting(false);
     }

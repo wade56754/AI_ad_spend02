@@ -147,13 +147,18 @@ export default function Header({
                   账户设置
                 </a>
                 <hr className="my-1 border-gray-200 dark:border-gray-700" />
-                <a
-                  href="#"
-                  className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('auth-token');
+                    localStorage.removeItem('refresh-token');
+                    localStorage.removeItem('token-expiry');
+                    window.location.href = '/login';
+                  }}
+                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
                 >
                   <LogOut className="w-4 h-4 mr-3" />
                   退出登录
-                </a>
+                </button>
               </div>
             </div>
           </div>

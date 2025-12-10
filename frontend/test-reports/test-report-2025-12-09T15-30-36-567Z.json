@@ -1,0 +1,252 @@
+{
+  "timestamp": "2025-12-09T15:30:31.226Z",
+  "summary": {
+    "total": 3,
+    "passed": 2,
+    "failed": 3,
+    "warnings": 1
+  },
+  "pages": [
+    {
+      "name": "首页",
+      "path": "/",
+      "status": "failed",
+      "loadTime": 1344,
+      "errors": [
+        {
+          "message": "page.waitForTimeout is not a function",
+          "stack": "TypeError: page.waitForTimeout is not a function\n    at testPage (D:\\git\\1108\\frontend\\test-chrome-devtools.js:157:16)\n    at async main (D:\\git\\1108\\frontend\\test-chrome-devtools.js:357:22)"
+        }
+      ],
+      "warnings": [],
+      "consoleErrors": [
+        {
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "location": {
+            "url": "http://localhost:3000/favicon.ico"
+          }
+        }
+      ],
+      "networkErrors": [],
+      "performance": {
+        "metrics": {
+          "Timestamp": 10968.950059,
+          "Documents": 4,
+          "Frames": 1,
+          "JSEventListeners": 669,
+          "Nodes": 1230,
+          "LayoutCount": 7,
+          "RecalcStyleCount": 10,
+          "LayoutDuration": 0.031738,
+          "RecalcStyleDuration": 0.009364,
+          "ScriptDuration": 0.090937,
+          "TaskDuration": 0.244665,
+          "JSHeapUsedSize": 14578136,
+          "JSHeapTotalSize": 21233664
+        },
+        "timing": {
+          "domContentLoaded": 415,
+          "loadComplete": 828,
+          "firstPaint": 407
+        },
+        "cdpMetrics": {
+          "Timestamp": 10968.951473,
+          "AudioHandlers": 0,
+          "AudioWorkletProcessors": 0,
+          "Documents": 4,
+          "Frames": 1,
+          "JSEventListeners": 669,
+          "LayoutObjects": 549,
+          "MediaKeySessions": 0,
+          "MediaKeys": 0,
+          "Nodes": 1230,
+          "Resources": 43,
+          "ContextLifecycleStateObservers": 40,
+          "V8PerContextDatas": 4,
+          "WorkerGlobalScopes": 0,
+          "UACSSResources": 0,
+          "RTCPeerConnections": 0,
+          "ResourceFetchers": 4,
+          "AdSubframes": 0,
+          "DetachedScriptStates": 2,
+          "ArrayBufferContents": 8,
+          "LayoutCount": 6,
+          "RecalcStyleCount": 10,
+          "LayoutDuration": 0.031705,
+          "RecalcStyleDuration": 0.009365,
+          "DevToolsCommandDuration": 0.000355,
+          "ScriptDuration": 0.090936,
+          "V8CompileDuration": 0.000477,
+          "TaskDuration": 0.24376,
+          "TaskOtherDuration": 0.110922,
+          "ThreadTime": 0.274663,
+          "ProcessTime": 0.455157,
+          "JSHeapUsedSize": 14589016,
+          "JSHeapTotalSize": 21233664,
+          "FirstMeaningfulPaint": 10968.441192,
+          "DomContentLoaded": 10968.020392,
+          "NavigationStart": 10967.605519
+        }
+      },
+      "title": "AI广告代投系统",
+      "finalUrl": "http://localhost:3000/projects"
+    },
+    {
+      "name": "登录页",
+      "path": "/login",
+      "status": "failed",
+      "loadTime": 943,
+      "errors": [
+        {
+          "message": "page.waitForTimeout is not a function",
+          "stack": "TypeError: page.waitForTimeout is not a function\n    at testPage (D:\\git\\1108\\frontend\\test-chrome-devtools.js:157:16)\n    at async main (D:\\git\\1108\\frontend\\test-chrome-devtools.js:357:22)"
+        }
+      ],
+      "warnings": [],
+      "consoleErrors": [],
+      "networkErrors": [],
+      "performance": {
+        "metrics": {
+          "Timestamp": 10969.918249,
+          "Documents": 4,
+          "Frames": 1,
+          "JSEventListeners": 614,
+          "Nodes": 824,
+          "LayoutCount": 7,
+          "RecalcStyleCount": 11,
+          "LayoutDuration": 0.012701,
+          "RecalcStyleDuration": 0.007385,
+          "ScriptDuration": 0.053535,
+          "TaskDuration": 0.179146,
+          "JSHeapUsedSize": 8289500,
+          "JSHeapTotalSize": 13631488
+        },
+        "timing": {
+          "domContentLoaded": 97,
+          "loadComplete": 406,
+          "firstPaint": 88
+        },
+        "cdpMetrics": {
+          "Timestamp": 10969.919675,
+          "AudioHandlers": 0,
+          "AudioWorkletProcessors": 0,
+          "Documents": 4,
+          "Frames": 1,
+          "JSEventListeners": 614,
+          "LayoutObjects": 345,
+          "MediaKeySessions": 0,
+          "MediaKeys": 0,
+          "Nodes": 824,
+          "Resources": 34,
+          "ContextLifecycleStateObservers": 33,
+          "V8PerContextDatas": 4,
+          "WorkerGlobalScopes": 0,
+          "UACSSResources": 0,
+          "RTCPeerConnections": 0,
+          "ResourceFetchers": 4,
+          "AdSubframes": 0,
+          "DetachedScriptStates": 2,
+          "ArrayBufferContents": 8,
+          "LayoutCount": 6,
+          "RecalcStyleCount": 11,
+          "LayoutDuration": 0.012664,
+          "RecalcStyleDuration": 0.007385,
+          "DevToolsCommandDuration": 0.00069,
+          "ScriptDuration": 0.05353,
+          "V8CompileDuration": 0.00047,
+          "TaskDuration": 0.17895,
+          "TaskOtherDuration": 0.104211,
+          "ThreadTime": 0.179951,
+          "ProcessTime": 0.32309,
+          "JSHeapUsedSize": 8300308,
+          "JSHeapTotalSize": 13631488,
+          "FirstMeaningfulPaint": 10969.391307,
+          "DomContentLoaded": 10969.071798,
+          "NavigationStart": 10968.975385
+        }
+      },
+      "title": "登录 | AI 广告投放系统",
+      "finalUrl": "http://localhost:3000/login"
+    },
+    {
+      "name": "仪表盘",
+      "path": "/projects",
+      "status": "failed",
+      "loadTime": 1285,
+      "errors": [
+        {
+          "message": "page.waitForTimeout is not a function",
+          "stack": "TypeError: page.waitForTimeout is not a function\n    at testPage (D:\\git\\1108\\frontend\\test-chrome-devtools.js:157:16)\n    at async main (D:\\git\\1108\\frontend\\test-chrome-devtools.js:357:22)"
+        }
+      ],
+      "warnings": [],
+      "consoleErrors": [],
+      "networkErrors": [],
+      "performance": {
+        "metrics": {
+          "Timestamp": 10971.229038,
+          "Documents": 4,
+          "Frames": 1,
+          "JSEventListeners": 669,
+          "Nodes": 1230,
+          "LayoutCount": 7,
+          "RecalcStyleCount": 9,
+          "LayoutDuration": 0.039245,
+          "RecalcStyleDuration": 0.009087,
+          "ScriptDuration": 0.088692,
+          "TaskDuration": 0.239751,
+          "JSHeapUsedSize": 14591516,
+          "JSHeapTotalSize": 21233664
+        },
+        "timing": {
+          "domContentLoaded": 41,
+          "loadComplete": 761,
+          "firstPaint": 32
+        },
+        "cdpMetrics": {
+          "Timestamp": 10971.230005,
+          "AudioHandlers": 0,
+          "AudioWorkletProcessors": 0,
+          "Documents": 4,
+          "Frames": 1,
+          "JSEventListeners": 669,
+          "LayoutObjects": 549,
+          "MediaKeySessions": 0,
+          "MediaKeys": 0,
+          "Nodes": 1230,
+          "Resources": 42,
+          "ContextLifecycleStateObservers": 40,
+          "V8PerContextDatas": 4,
+          "WorkerGlobalScopes": 0,
+          "UACSSResources": 0,
+          "RTCPeerConnections": 0,
+          "ResourceFetchers": 4,
+          "AdSubframes": 0,
+          "DetachedScriptStates": 2,
+          "ArrayBufferContents": 8,
+          "LayoutCount": 6,
+          "RecalcStyleCount": 8,
+          "LayoutDuration": 0.039205,
+          "RecalcStyleDuration": 0.009024,
+          "DevToolsCommandDuration": 0.000371,
+          "ScriptDuration": 0.08869,
+          "V8CompileDuration": 0.000503,
+          "TaskDuration": 0.238712,
+          "TaskOtherDuration": 0.100919,
+          "ThreadTime": 0.270774,
+          "ProcessTime": 0.451758,
+          "JSHeapUsedSize": 14602324,
+          "JSHeapTotalSize": 21233664,
+          "FirstMeaningfulPaint": 10970.724983,
+          "DomContentLoaded": 10969.984801,
+          "NavigationStart": 10969.943668
+        }
+      },
+      "title": "AI广告代投系统",
+      "finalUrl": "http://localhost:3000/projects"
+    }
+  ],
+  "performance": [],
+  "errors": [],
+  "warnings": []
+}

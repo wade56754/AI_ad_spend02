@@ -31,6 +31,8 @@ from backend.models import AdAccount
 from backend.models import User
 from backend.models.base import DailyReportStatus, UserRole
 from backend.models.audit import AuditLog
+from backend.models.finance.ledger import LedgerEntry
+from backend.models.enums import LedgerEntryType
 from backend.schemas.daily_report import (
     DailyReportCreateRequest,
     DailyReportUpdateRequest,
@@ -478,10 +480,14 @@ class DailyReportService:
         current_user: User
     ) -> DailyReport:
         """
-        锁定日报（进入计费）
+        锁定日报并生成计费 Ledger 记录
 
         基于 STATE_MACHINE.md v2.6 第8章:
         final_confirmed → final_locked (终态)
+
+        基于 LEDGER_SOT.md v1.1:
+        - 生成 REVENUE Ledger: amount = conversions_final × unit_price (正数)
+        - 生成 COST Ledger: amount = -(real_spend + fee) (负数)
 
         Args:
             report_id: 日报ID
@@ -490,13 +496,142 @@ class DailyReportService:
 
         Returns:
             DailyReport: 更新后的日报对象
+
+        Raises:
+            ResourceNotFoundError: 日报不存在
+            PermissionDeniedError: 无权限操作
+            BusinessLogicError: 状态不允许锁定或计费数据不完整
         """
-        return self._transition_daily_report(
-            report_id=report_id,
-            target_status=DailyReportStatus.FINAL_LOCKED,
-            audit_request=request,
-            current_user=current_user
+        logger.info(
+            f"Locking final report with billing: report_id={report_id}, "
+            f"user={current_user.id} ({current_user.role})"
         )
+
+        # 权限检查 - 仅 admin/data_operator 可锁定
+        if current_user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
+            raise PermissionDeniedError("无权限锁定日报")
+
+        # 获取日报（带关联的广告账户）
+        report = self.db.query(DailyReport).options(
+            joinedload(DailyReport.ad_account)
+        ).filter(
+            DailyReport.id == report_id
+        ).first()
+
+        if not report:
+            raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ_002")
+
+        # 状态检查 - 仅 final_confirmed 可锁定
+        if report.status != DailyReportStatus.FINAL_CONFIRMED.value:
+            raise BusinessLogicError(
+                f"当前状态 {report.status} 不允许锁定。仅 final_confirmed 状态可锁定",
+                error_code="STATE_001"
+            )
+
+        # ====== 计费数据校验 (LEDGER_SOT.md v1.1) ======
+        conversions_final = report.conversions_final or 0
+        unit_price = report.unit_price or Decimal('0.00')
+        real_spend = report.real_spend or Decimal('0.00')
+        fee = report.fee or Decimal('0.00')
+
+        # 校验：final 粉数必须有值
+        if conversions_final <= 0:
+            raise BusinessLogicError(
+                f"计费失败：最终粉数 conversions_final={conversions_final} 必须大于 0",
+                error_code="BIZ_001"
+            )
+
+        # 校验：单价必须有值
+        if unit_price <= 0:
+            raise BusinessLogicError(
+                f"计费失败：单粉价格 unit_price={unit_price} 必须大于 0",
+                error_code="BIZ_001"
+            )
+
+        # 计算收入和成本
+        revenue_amount = Decimal(conversions_final) * unit_price  # 正数
+        cost_amount = -(real_spend + fee)  # 负数（成本增加）
+
+        with self.transaction():
+            # Step 1: 锁定广告账户（行锁，防止并发）
+            ad_account = self.db.query(AdAccount).filter(
+                AdAccount.id == report.ad_account_id
+            ).with_for_update().first()
+
+            if not ad_account:
+                raise BusinessLogicError(
+                    f"关联的广告账户 {report.ad_account_id} 不存在",
+                    error_code="BIZ_002"
+                )
+
+            # Step 2: 获取账户当前余额
+            current_balance = LedgerEntry.get_account_balance(self.db, ad_account.id)
+
+            # Step 3: 创建 REVENUE Ledger 记录 (LEDGER_SOT.md v1.1 §2.3)
+            revenue_entry = LedgerEntry(
+                ad_account_id=ad_account.id,
+                entry_type=LedgerEntryType.REVENUE.value,
+                amount=revenue_amount,
+                balance_after=current_balance + revenue_amount,
+                reference_type="daily_report",
+                reference_id=report.id,
+                notes=f"日报计费收入 #{report.id} - 粉数:{conversions_final} × 单价:{unit_price}"
+            )
+            self.db.add(revenue_entry)
+            self.db.flush()  # 获取 entry ID
+
+            # Step 4: 更新余额（收入后）
+            balance_after_revenue = current_balance + revenue_amount
+
+            # Step 5: 创建 COST Ledger 记录 (LEDGER_SOT.md v1.1 §2.4)
+            cost_entry = LedgerEntry(
+                ad_account_id=ad_account.id,
+                entry_type=LedgerEntryType.COST.value,
+                amount=cost_amount,
+                balance_after=balance_after_revenue + cost_amount,
+                reference_type="daily_report",
+                reference_id=report.id,
+                notes=f"日报计费成本 #{report.id} - 消耗:{real_spend} + 手续费:{fee}"
+            )
+            self.db.add(cost_entry)
+
+            # Step 6: 更新广告账户余额
+            final_balance = balance_after_revenue + cost_amount
+            ad_account.balance = final_balance
+
+            # Step 7: 更新日报状态为 final_locked
+            old_status = report.status
+            report.status = DailyReportStatus.FINAL_LOCKED.value
+            report.final_locked_at = datetime.utcnow()
+            report.notes = request.audit_notes  # 使用 notes 字段存储审核说明
+            report.reviewed_by = current_user.id
+            report.reviewed_at = datetime.utcnow()
+            report.updated_at = datetime.utcnow()
+
+            # Step 8: 记录审计日志
+            self._create_audit_log(
+                daily_report_id=report_id,
+                action="final_locked",
+                audit_user_id=current_user.id,
+                old_status=old_status,
+                new_status=DailyReportStatus.FINAL_LOCKED.value,
+                audit_notes=(
+                    f"{request.audit_notes or ''} | "
+                    f"REVENUE={revenue_amount}, COST={cost_amount}, "
+                    f"balance_after={final_balance}"
+                ),
+                ip_address=getattr(current_user, 'ip_address', None),
+                user_agent=getattr(current_user, 'user_agent', None)
+            )
+
+            logger.info(
+                f"Daily report locked with billing: report_id={report_id}, "
+                f"conversions_final={conversions_final}, unit_price={unit_price}, "
+                f"REVENUE={revenue_amount}, COST={cost_amount}, "
+                f"ad_account_balance_after={final_balance}"
+            )
+
+            return report
 
     def flag_trend_anomaly(
         self,

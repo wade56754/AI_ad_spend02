@@ -64,7 +64,7 @@ export function AppLayout({
       // 处理退出登录逻辑
       console.log('退出登录');
       // 这里可以添加清除用户信息、token等逻辑
-      router.push('/auth/login');
+      router.push('/login');
     } else if (menuId === 'help') {
       // 打开帮助文档或新页面
       window.open('/docs', '_blank');

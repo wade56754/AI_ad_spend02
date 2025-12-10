@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, case, desc
 
 from backend.models import (
-    Project, AdAccount, AdSpendDaily, Channel,
+    Project, AdAccount, AccountPerformance, Channel,
     LedgerEntry, LedgerEntryType,
     ReconciliationBatch, ReconciliationBatchStatus,
     TopupRequest, TopupStatus,
@@ -55,23 +55,23 @@ class ReportsService:
         if not start_date:
             start_date = end_date - timedelta(days=30)
 
-        # 构建查询
+        # 构建查询 - 使用 AccountPerformance 替代 AdSpendDaily
         query = self.db.query(
             Project.id.label("project_id"),
             Project.name.label("project_name"),
             Channel.id.label("channel_id"),
             Channel.name.label("channel_name"),
-            func.coalesce(func.sum(AdSpendDaily.spend), 0).label("total_spend"),
-            func.coalesce(func.sum(AdSpendDaily.leads_count), 0).label("total_leads"),
-        ).select_from(AdSpendDaily).join(
-            AdAccount, AdSpendDaily.ad_account_id == AdAccount.id
+            func.coalesce(func.sum(AccountPerformance.spend), 0).label("total_spend"),
+            func.coalesce(func.sum(AccountPerformance.conversions), 0).label("total_leads"),  # leads_count → conversions
+        ).select_from(AccountPerformance).join(
+            AdAccount, AccountPerformance.ad_account_id == AdAccount.id
         ).join(
             Project, AdAccount.project_id == Project.id
         ).join(
             Channel, AdAccount.channel_id == Channel.id
         ).filter(
-            AdSpendDaily.date >= start_date,
-            AdSpendDaily.date <= end_date
+            AccountPerformance.date >= start_date,
+            AccountPerformance.date <= end_date
         )
 
         # 应用过滤条件
@@ -143,18 +143,18 @@ class ReportsService:
         if not start_date:
             start_date = end_date - timedelta(days=30)
 
-        # 获取项目消耗
+        # 获取项目消耗 - 使用 AccountPerformance 替代 AdSpendDaily
         spend_query = self.db.query(
             Project.id.label("project_id"),
             Project.name.label("project_name"),
-            func.coalesce(func.sum(AdSpendDaily.spend), 0).label("ad_spend"),
-        ).select_from(AdSpendDaily).join(
-            AdAccount, AdSpendDaily.ad_account_id == AdAccount.id
+            func.coalesce(func.sum(AccountPerformance.spend), 0).label("ad_spend"),
+        ).select_from(AccountPerformance).join(
+            AdAccount, AccountPerformance.ad_account_id == AdAccount.id
         ).join(
             Project, AdAccount.project_id == Project.id
         ).filter(
-            AdSpendDaily.date >= start_date,
-            AdSpendDaily.date <= end_date
+            AccountPerformance.date >= start_date,
+            AccountPerformance.date <= end_date
         )
 
         if project_ids:
@@ -170,7 +170,7 @@ class ReportsService:
         ).select_from(LedgerEntry).join(
             AdAccount, LedgerEntry.ad_account_id == AdAccount.id
         ).filter(
-            LedgerEntry.entry_type == 'TOPUP',
+            LedgerEntry.entry_type == LedgerEntryType.TOPUP.value,  # 使用枚举值
             func.date(LedgerEntry.entry_date) >= start_date,
             func.date(LedgerEntry.entry_date) <= end_date
         )
@@ -272,6 +272,10 @@ class ReportsService:
         total_system_spend = sum(Decimal(str(row.system_spend or 0)) for row in status_results.values())
         total_actual_spend = sum(Decimal(str(row.actual_spend or 0)) for row in status_results.values())
         total_discrepancy = sum(Decimal(str(row.discrepancy or 0)) for row in status_results.values())
+        
+        # 确保 total_discrepancy 是 Decimal 类型
+        if not isinstance(total_discrepancy, Decimal):
+            total_discrepancy = Decimal(str(total_discrepancy or 0))
 
         items = [ReconciliationReportItem(
             period=f"{start_date.isoformat()} ~ {end_date.isoformat()}",
@@ -347,7 +351,7 @@ class ReportsService:
                 LedgerEntry.entry_type,
                 func.coalesce(func.sum(LedgerEntry.amount), 0).label("total")
             ).filter(
-                LedgerEntry.ad_account_id == account.account_id,
+                LedgerEntry.ad_account_id == account.id,  # 使用 account.id 而不是 account.account_id
                 func.date(LedgerEntry.entry_date) >= start_date,
                 func.date(LedgerEntry.entry_date) <= end_date
             ).group_by(LedgerEntry.entry_type)
@@ -379,6 +383,14 @@ class ReportsService:
         total_balance = sum(item.current_balance for item in items)
         total_topup = sum(item.total_topup for item in items)
         total_spend = sum(item.total_spend for item in items)
+        
+        # 确保所有汇总值是 Decimal 类型
+        if not isinstance(total_balance, Decimal):
+            total_balance = Decimal(str(total_balance or 0))
+        if not isinstance(total_topup, Decimal):
+            total_topup = Decimal(str(total_topup or 0))
+        if not isinstance(total_spend, Decimal):
+            total_spend = Decimal(str(total_spend or 0))
 
         summary = {
             "total_accounts": len(items),
@@ -405,41 +417,41 @@ class ReportsService:
         today = date.today()
         month_start = today.replace(day=1)
 
-        # 今日数据
+        # 今日数据 - 使用 AccountPerformance 替代 AdSpendDaily
         today_spend_query = self.db.query(
-            func.coalesce(func.sum(AdSpendDaily.spend), 0)
-        ).filter(AdSpendDaily.date == today).scalar()
+            func.coalesce(func.sum(AccountPerformance.spend), 0)
+        ).filter(AccountPerformance.date == today).scalar()
 
         today_leads_query = self.db.query(
-            func.coalesce(func.sum(AdSpendDaily.leads_count), 0)
-        ).filter(AdSpendDaily.date == today).scalar()
+            func.coalesce(func.sum(AccountPerformance.conversions), 0)  # leads_count → conversions
+        ).filter(AccountPerformance.date == today).scalar()
 
         today_topup_query = self.db.query(
             func.coalesce(func.sum(LedgerEntry.amount), 0)
         ).filter(
-            LedgerEntry.entry_type == 'TOPUP',
+            LedgerEntry.entry_type == LedgerEntryType.TOPUP.value,  # 使用枚举值
             func.date(LedgerEntry.entry_date) == today
         ).scalar()
 
-        # 本月数据
+        # 本月数据 - 使用 AccountPerformance 替代 AdSpendDaily
         month_spend_query = self.db.query(
-            func.coalesce(func.sum(AdSpendDaily.spend), 0)
+            func.coalesce(func.sum(AccountPerformance.spend), 0)
         ).filter(
-            AdSpendDaily.date >= month_start,
-            AdSpendDaily.date <= today
+            AccountPerformance.date >= month_start,
+            AccountPerformance.date <= today
         ).scalar()
 
         month_leads_query = self.db.query(
-            func.coalesce(func.sum(AdSpendDaily.leads_count), 0)
+            func.coalesce(func.sum(AccountPerformance.conversions), 0)  # leads_count → conversions
         ).filter(
-            AdSpendDaily.date >= month_start,
-            AdSpendDaily.date <= today
+            AccountPerformance.date >= month_start,
+            AccountPerformance.date <= today
         ).scalar()
 
         month_topup_query = self.db.query(
             func.coalesce(func.sum(LedgerEntry.amount), 0)
         ).filter(
-            LedgerEntry.entry_type == 'TOPUP',
+            LedgerEntry.entry_type == LedgerEntryType.TOPUP.value,  # 使用枚举值
             func.date(LedgerEntry.entry_date) >= month_start,
             func.date(LedgerEntry.entry_date) <= today
         ).scalar()
@@ -461,7 +473,7 @@ class ReportsService:
 
         # 待办事项
         pending_topups = self.db.query(func.count(TopupRequest.id)).filter(
-            TopupRequest.status == TopupStatus.PENDING_DATA_REVIEW.value
+            TopupRequest.status == TopupStatus.PENDING_REVIEW.value  # 修复：PENDING_DATA_REVIEW → PENDING_REVIEW
         ).scalar() or 0
 
         pending_reconciliations = self.db.query(func.count(ReconciliationBatch.id)).filter(
@@ -472,25 +484,25 @@ class ReportsService:
             DailyReport.status == DailyReportStatus.RAW_SUBMITTED.value
         ).scalar() or 0
 
-        # 消耗趋势（最近7天）
+        # 消耗趋势（最近7天） - 使用 AccountPerformance 替代 AdSpendDaily
         spend_trend = []
         for i in range(6, -1, -1):
             trend_date = today - timedelta(days=i)
             daily_spend = self.db.query(
-                func.coalesce(func.sum(AdSpendDaily.spend), 0)
-            ).filter(AdSpendDaily.date == trend_date).scalar()
+                func.coalesce(func.sum(AccountPerformance.spend), 0)
+            ).filter(AccountPerformance.date == trend_date).scalar()
             spend_trend.append({
                 "date": trend_date.isoformat(),
                 "value": float(daily_spend or 0)
             })
 
-        # 线索趋势（最近7天）
+        # 线索趋势（最近7天） - 使用 AccountPerformance 替代 AdSpendDaily
         leads_trend = []
         for i in range(6, -1, -1):
             trend_date = today - timedelta(days=i)
             daily_leads = self.db.query(
-                func.coalesce(func.sum(AdSpendDaily.leads_count), 0)
-            ).filter(AdSpendDaily.date == trend_date).scalar()
+                func.coalesce(func.sum(AccountPerformance.conversions), 0)  # leads_count → conversions
+            ).filter(AccountPerformance.date == trend_date).scalar()
             leads_trend.append({
                 "date": trend_date.isoformat(),
                 "value": int(daily_leads or 0)
@@ -539,13 +551,14 @@ class ReportsService:
         data_points = []
 
         if metric == "spend":
+            # 使用 AccountPerformance 替代 AdSpendDaily
             query = self.db.query(
-                AdSpendDaily.date,
-                func.coalesce(func.sum(AdSpendDaily.spend), 0).label("value")
+                AccountPerformance.date,
+                func.coalesce(func.sum(AccountPerformance.spend), 0).label("value")
             ).filter(
-                AdSpendDaily.date >= start_date,
-                AdSpendDaily.date <= end_date
-            ).group_by(AdSpendDaily.date).order_by(AdSpendDaily.date)
+                AccountPerformance.date >= start_date,
+                AccountPerformance.date <= end_date
+            ).group_by(AccountPerformance.date).order_by(AccountPerformance.date)
 
             for row in query.all():
                 data_points.append(TrendDataPoint(
@@ -554,13 +567,14 @@ class ReportsService:
                 ))
 
         elif metric == "leads":
+            # 使用 AccountPerformance 替代 AdSpendDaily
             query = self.db.query(
-                AdSpendDaily.date,
-                func.coalesce(func.sum(AdSpendDaily.leads_count), 0).label("value")
+                AccountPerformance.date,
+                func.coalesce(func.sum(AccountPerformance.conversions), 0).label("value")  # leads_count → conversions
             ).filter(
-                AdSpendDaily.date >= start_date,
-                AdSpendDaily.date <= end_date
-            ).group_by(AdSpendDaily.date).order_by(AdSpendDaily.date)
+                AccountPerformance.date >= start_date,
+                AccountPerformance.date <= end_date
+            ).group_by(AccountPerformance.date).order_by(AccountPerformance.date)
 
             for row in query.all():
                 data_points.append(TrendDataPoint(
@@ -573,7 +587,7 @@ class ReportsService:
                 func.date(LedgerEntry.entry_date).label("date"),
                 func.coalesce(func.sum(LedgerEntry.amount), 0).label("value")
             ).filter(
-                LedgerEntry.entry_type == 'TOPUP',
+                LedgerEntry.entry_type == LedgerEntryType.TOPUP.value,  # 使用枚举值
                 func.date(LedgerEntry.entry_date) >= start_date,
                 func.date(LedgerEntry.entry_date) <= end_date
             ).group_by(func.date(LedgerEntry.entry_date)).order_by(func.date(LedgerEntry.entry_date))
@@ -586,6 +600,9 @@ class ReportsService:
 
         # 计算汇总
         total_value = sum(dp.value for dp in data_points)
+        # 确保 total_value 是 Decimal 类型
+        if not isinstance(total_value, Decimal):
+            total_value = Decimal(str(total_value or 0))
         avg_value = total_value / len(data_points) if data_points else Decimal("0")
         max_value = max((dp.value for dp in data_points), default=Decimal("0"))
         min_value = min((dp.value for dp in data_points), default=Decimal("0"))

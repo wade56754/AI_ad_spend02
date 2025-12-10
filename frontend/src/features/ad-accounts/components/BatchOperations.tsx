@@ -30,6 +30,7 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import { apiGet, apiPost, ApiError } from "@/lib/api";
 
 // 类型定义
 interface AdAccount {
@@ -152,10 +153,9 @@ export function BatchOperations({
   // 获取用户列表
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/v1/users?role=media_buyer,account_manager");
-      const result = await response.json();
-      if (result.success) {
-        setUsers(result.data);
+      const response = await apiGet("/api/v1/users", { role: "media_buyer,account_manager" });
+      if (response.data) {
+        setUsers(response.data as User[]);
       }
     } catch (error) {
       console.error("获取用户列表失败:", error);
@@ -165,10 +165,9 @@ export function BatchOperations({
   // 获取项目列表
   const fetchProjects = async () => {
     try {
-      const response = await fetch("/api/v1/projects?status=active");
-      const result = await response.json();
-      if (result.success) {
-        setProjects(result.data);
+      const response = await apiGet("/api/v1/projects", { status: "active" });
+      if (response.data) {
+        setProjects(response.data as Project[]);
       }
     } catch (error) {
       console.error("获取项目列表失败:", error);
@@ -191,24 +190,23 @@ export function BatchOperations({
         ...operationData,
       };
 
-      const response = await fetch("/api/v1/ad-accounts/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const response = await apiPost("/api/v1/ad-accounts/batch", payload);
 
-      if (response.ok) {
-        const result = await response.json();
-        toast.success(`批量操作成功，影响 ${result.data.affected_count} 个账户`);
+      if (response.data) {
+        const result = response.data as { affected_count: number };
+        toast.success(`批量操作成功，影响 ${result.affected_count} 个账户`);
         onOperationComplete();
         onClose();
       } else {
-        const error = await response.json();
-        toast.error(error.message || "批量操作失败");
+        toast.error("批量操作失败");
       }
     } catch (error) {
       console.error("批量操作错误:", error);
-      toast.error("批量操作失败");
+      if (error instanceof ApiError) {
+        toast.error(error.message || "批量操作失败");
+      } else {
+        toast.error("批量操作失败");
+      }
     } finally {
       setLoading(false);
     }

@@ -12,20 +12,23 @@
 'use client';
 
 import React, { useState, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import {
   DollarSign,
   Users,
   BarChart3,
   Target,
+  Plus,
+  FileText,
+  Wallet,
 } from 'lucide-react';
-import { useAuth } from '@/modules/auth';
+import { useAuth } from '@/features/auth';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 import { DashboardHeader } from './DashboardHeader';
-import { TrendChart, type TimeRange } from './charts';
 import { StatCard } from './StatCard';
 import { PendingTasksCard } from './PendingTasksCard';
-import { QuickActionsCard } from './QuickActionsCard';
 import { AccountOverviewCard } from './AccountOverviewCard';
 import { SystemStatusCard } from './SystemStatusCard';
 import {
@@ -33,41 +36,66 @@ import {
   TrendChartSkeleton,
   CardSkeleton,
 } from './StatCardSkeleton';
+import {
+  GlobalDateFilter,
+  type DateRangePreset,
+  getDateRangeFromPreset,
+} from './GlobalDateFilter';
+import { AlertBanner, generateMockAlerts, type Alert } from './AlertBanner';
+import {
+  MainTrendChart,
+  type MetricType,
+  type TrendDataPoint as MainTrendDataPoint,
+  generateSummary,
+} from './MainTrendChart';
+import { TopLists, generateMockTopLists } from './TopLists';
 
-import { QUICK_ACTIONS } from '../types';
-import type { PendingTask, TrendDataPoint } from '../types';
+import type { PendingTask } from '../types';
 
-// 时间范围标签映射
-const TIME_RANGE_LABELS: Record<TimeRange, string> = {
-  '7d': '近7日',
-  '30d': '近30日',
-  '90d': '近90日',
-};
-
-// 根据时间范围获取天数
-function getDaysFromRange(range: TimeRange): number {
-  switch (range) {
+// 根据日期预设获取天数
+function getDaysFromPreset(preset: DateRangePreset): number {
+  switch (preset) {
+    case 'today': return 1;
     case '7d': return 7;
     case '30d': return 30;
-    case '90d': return 90;
+    case 'custom': return 30; // 默认
     default: return 7;
   }
 }
 
-// Generate mock trend data for specified days
-function generateTrendData(baseValue: number, days: number, variance: number = 0.2): TrendDataPoint[] {
-  const data: TrendDataPoint[] = [];
+// 简单的伪随机数生成器（用于保证 SSR 和客户端一致性）
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+// Generate mock trend data for main chart (multi-metric)
+function generateMainTrendData(days: number): MainTrendDataPoint[] {
+  const data: MainTrendDataPoint[] = [];
   const today = new Date();
+  // 使用固定日期作为基准，确保每次生成相同
+  today.setHours(0, 0, 0, 0);
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    // 添加一些趋势变化，让数据更真实
-    const trendFactor = 1 + (days - i) * 0.002; // 轻微上升趋势
-    const randomFactor = 1 + (Math.random() - 0.5) * variance;
+
+    const trendFactor = 1 + (days - i) * 0.002;
+    // 使用日期索引作为种子，确保每次生成相同的"随机"值
+    const seed = i * 12345;
+    const randomFactor = (offset: number) => 1 + (seededRandom(seed + offset) - 0.5) * 0.15;
+
+    const spend = Math.round(120000 * randomFactor(0) * trendFactor);
+    const revenue = Math.round(160000 * randomFactor(1) * trendFactor);
+    const profit = revenue - spend;
+    const conversions = Math.round(3000 * randomFactor(2) * trendFactor);
+
     data.push({
       date: date.toISOString().split('T')[0],
-      value: Math.round(baseValue * randomFactor * trendFactor),
+      spend,
+      revenue,
+      profit,
+      conversions,
     });
   }
 
@@ -78,10 +106,33 @@ export function DashboardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // 每个图表的时间范围状态
-  const [spendTimeRange, setSpendTimeRange] = useState<TimeRange>('7d');
-  const [conversionsTimeRange, setConversionsTimeRange] = useState<TimeRange>('7d');
-  const [revenueTimeRange, setRevenueTimeRange] = useState<TimeRange>('7d');
+  // Debug: Log user info
+  React.useEffect(() => {
+    console.log('DashboardPage - User:', user, 'Loading:', isAuthLoading);
+  }, [user, isAuthLoading]);
+
+  // 全局日期范围状态
+  const [globalDateRange, setGlobalDateRange] = useState<DateRangePreset>('7d');
+
+  // 选中的指标状态 (用于 KPI 卡片联动主图)
+  const [activeMetric, setActiveMetric] = useState<MetricType>('spend');
+
+  // 告警列表 - 初始为空，避免 hydration 错误
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+
+  // 在客户端挂载后生成告警数据
+  React.useEffect(() => {
+    setAlerts(generateMockAlerts());
+  }, []);
+
+  // Helper function for currency formatting
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('zh-CN', {
+      style: 'currency',
+      currency: 'CNY',
+      minimumFractionDigits: 2,
+    }).format(value);
+  };
 
   // Mock data - TODO: Replace with actual API call using React Query
   const stats = {
@@ -102,19 +153,36 @@ export function DashboardPage() {
     total_balance: 856000.00,
   };
 
-  // Mock trend data - 基于所选时间范围动态生成
-  const spendTrendData = useMemo(
-    () => generateTrendData(120000, getDaysFromRange(spendTimeRange), 0.15),
-    [spendTimeRange]
+  // Mock trend data - 基于全局时间范围生成
+  const mainTrendData = useMemo(
+    () => generateMainTrendData(getDaysFromPreset(globalDateRange)),
+    [globalDateRange]
   );
-  const conversionsTrendData = useMemo(
-    () => generateTrendData(3000, getDaysFromRange(conversionsTimeRange), 0.2),
-    [conversionsTimeRange]
+
+  // 生成自动总结
+  const trendSummary = useMemo(
+    () => generateSummary(mainTrendData, activeMetric),
+    [mainTrendData, activeMetric]
   );
-  const revenueTrendData = useMemo(
-    () => generateTrendData(160000, getDaysFromRange(revenueTimeRange), 0.18),
-    [revenueTimeRange]
-  );
+
+  // 计算 7 日均值 (用于 KPI 卡片)
+  const average7d = useMemo(() => {
+    const last7Days = mainTrendData.slice(-7);
+    const avgSpend = last7Days.reduce((sum, d) => sum + (d.spend || 0), 0) / 7;
+    const avgRevenue = last7Days.reduce((sum, d) => sum + (d.revenue || 0), 0) / 7;
+    const avgProfit = last7Days.reduce((sum, d) => sum + (d.profit || 0), 0) / 7;
+    const avgConversions = last7Days.reduce((sum, d) => sum + (d.conversions || 0), 0) / 7;
+
+    return {
+      spend: formatCurrency(avgSpend),
+      revenue: formatCurrency(avgRevenue),
+      profit: formatCurrency(avgProfit),
+      conversions: Math.round(avgConversions).toLocaleString(),
+    };
+  }, [mainTrendData]);
+
+  // Top lists data - Mock data for now
+  const topListsData = useMemo(() => generateMockTopLists(), []);
 
   // Pending tasks data
   const pendingTasks: PendingTask[] = [
@@ -151,14 +219,6 @@ export function DashboardPage() {
       icon: 'file-text',
     },
   ];
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-      minimumFractionDigits: 2,
-    }).format(value);
-  };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -222,15 +282,51 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8" data-testid="dashboard-page">
-      {/* Page Header */}
-      <DashboardHeader
-        userName={user?.full_name || user?.username || '用户'}
-        isRefreshing={isRefreshing}
-        onRefresh={handleRefresh}
-      />
+    <div className="space-y-6" data-testid="dashboard-page">
+      {/* Page Header with Global Date Filter */}
+      <div className="flex items-center justify-between">
+        <DashboardHeader
+          userName={user?.full_name || user?.username || '用户'}
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefresh}
+        />
+        <GlobalDateFilter
+          value={globalDateRange}
+          onChange={(preset) => setGlobalDateRange(preset)}
+        />
+      </div>
 
-      {/* Today's Stats - 4 columns */}
+      {/* Alert Banner - 风险告警条 */}
+      {alerts.length > 0 && (
+        <AlertBanner
+          alerts={alerts}
+          onDismiss={(id) => setAlerts(alerts.filter((a) => a.id !== id))}
+        />
+      )}
+
+      {/* Quick Actions - 快捷操作 */}
+      <div className="flex gap-3">
+        <Link href="/projects/new">
+          <Button className="shadow-sm">
+            <Plus className="h-4 w-4 mr-2" />
+            创建新推广计划
+          </Button>
+        </Link>
+        <Link href="/reports">
+          <Button variant="outline" className="shadow-sm">
+            <FileText className="h-4 w-4 mr-2" />
+            查看报表
+          </Button>
+        </Link>
+        <Link href="/finance">
+          <Button variant="outline" className="shadow-sm">
+            <Wallet className="h-4 w-4 mr-2" />
+            财务中心
+          </Button>
+        </Link>
+      </div>
+
+      {/* Today's Stats - 4 columns with enhanced info */}
       <section>
         <h2 className="text-2xl font-semibold text-foreground mb-4">今日概览</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -238,100 +334,80 @@ export function DashboardPage() {
             title="今日消耗"
             value={formatCurrency(stats.today_spend)}
             change={stats.spend_change}
+            average7d={average7d.spend}
+            target="预算 ¥100k-130k"
             icon={<DollarSign className="h-6 w-6" />}
             color="blue"
-            href="/ad-spend"
+            onClick={() => setActiveMetric('spend')}
+            isActive={activeMetric === 'spend'}
             testId="dashboard-stat-card-spend"
           />
           <StatCard
             title="今日粉数"
             value={stats.today_conversions.toLocaleString()}
             change={stats.conversions_change}
+            average7d={average7d.conversions}
+            target="目标 3000+/日"
             icon={<Users className="h-6 w-6" />}
             color="purple"
-            href="/daily-reports"
+            onClick={() => setActiveMetric('conversions')}
+            isActive={activeMetric === 'conversions'}
             testId="dashboard-stat-card-conversions"
           />
           <StatCard
             title="今日收入"
             value={formatCurrency(stats.today_revenue)}
             change={stats.revenue_change}
+            average7d={average7d.revenue}
+            target="目标 ¥150k+"
             icon={<BarChart3 className="h-6 w-6" />}
             color="green"
-            href="/finance/profit"
+            onClick={() => setActiveMetric('revenue')}
+            isActive={activeMetric === 'revenue'}
             testId="dashboard-stat-card-revenue"
           />
           <StatCard
             title="今日利润"
             value={formatCurrency(stats.today_profit)}
             change={stats.profit_change}
+            average7d={average7d.profit}
+            target="目标 ROAS ≥ 1.8"
             icon={<Target className="h-6 w-6" />}
             color="orange"
-            href="/finance/profit"
+            onClick={() => setActiveMetric('profit')}
+            isActive={activeMetric === 'profit'}
             testId="dashboard-stat-card-profit"
           />
         </div>
       </section>
 
-      {/* Trend Section */}
-      <section>
-        <h2 className="text-2xl font-semibold text-foreground mb-4">数据趋势</h2>
-        {/* Row 1: Two charts side by side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <TrendChart
-            title="消耗趋势"
-            description="每日广告消耗金额变化"
-            data={spendTrendData}
-            height={260}
-            showTimeRangeSelector={true}
-            defaultTimeRange={spendTimeRange}
-            onTimeRangeChange={setSpendTimeRange}
-            color="blue"
-            testId="dashboard-chart-spend"
-          />
-          <TrendChart
-            title="粉数趋势"
-            description="每日进粉数量变化"
-            data={conversionsTrendData}
-            height={260}
-            showTimeRangeSelector={true}
-            defaultTimeRange={conversionsTimeRange}
-            onTimeRangeChange={setConversionsTimeRange}
-            color="violet"
-            testId="dashboard-chart-conversions"
-          />
-        </div>
-        {/* Row 2: Full width chart */}
-        <TrendChart
-          title="收入趋势"
-          description="每日收入金额变化"
-          data={revenueTrendData}
-          height={280}
-          showTimeRangeSelector={true}
-          defaultTimeRange={revenueTimeRange}
-          onTimeRangeChange={setRevenueTimeRange}
-          color="green"
-          testId="dashboard-chart-revenue"
-        />
+      {/* Main Trend Chart - 主趋势图 */}
+      <MainTrendChart
+        data={mainTrendData}
+        activeMetric={activeMetric}
+        onMetricChange={setActiveMetric}
+        summary={trendSummary}
+      />
+
+      {/* Top Lists - 归因列表 (新增) */}
+      <TopLists
+        topSpendCampaigns={topListsData.topSpend}
+        worstROASCampaigns={topListsData.worstROAS}
+      />
+
+      {/* Pending Tasks Section - 待处理事项 */}
+      <section id="pending-tasks-section">
+        <PendingTasksCard tasks={pendingTasks} />
       </section>
 
-      {/* Bottom Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - 2/3 width */}
-        <div className="lg:col-span-2 space-y-6">
-          <PendingTasksCard tasks={pendingTasks} />
-          <QuickActionsCard actions={QUICK_ACTIONS} />
-        </div>
-
-        {/* Right Column - 1/3 width */}
-        <div className="space-y-6">
-          <AccountOverviewCard
-            activeProjects={stats.active_projects}
-            activeAccounts={stats.active_accounts}
-            totalBalance={stats.total_balance}
-          />
-          <SystemStatusCard />
-        </div>
+      {/* Bottom Section - Account & System Info */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AccountOverviewCard
+          activeProjects={stats.active_projects}
+          activeAccounts={stats.active_accounts}
+          totalBalance={stats.total_balance}
+        />
+        <SystemStatusCard />
       </section>
     </div>
   );

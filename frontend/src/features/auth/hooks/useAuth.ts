@@ -60,6 +60,9 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // TEMPORARY: Mock user for development (remove this in production)
+  const MOCK_DEV_MODE = process.env.NODE_ENV === 'development' && !getAuthToken();
+
   // Get current user query
   const {
     data: user,
@@ -68,8 +71,18 @@ export function useAuth() {
     refetch: refetchUser,
   } = useQuery({
     queryKey: ['auth', 'user'],
-    queryFn: getCurrentUser,
-    enabled: !!getAuthToken(),
+    queryFn: MOCK_DEV_MODE
+      ? async () => ({
+          id: 'mock-user-1',
+          username: '演示用户',
+          full_name: '演示用户',
+          email: 'demo@example.com',
+          role: 'admin',
+          is_active: true,
+          created_at: new Date().toISOString(),
+        } as User)
+      : getCurrentUser,
+    enabled: MOCK_DEV_MODE || !!getAuthToken(),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
