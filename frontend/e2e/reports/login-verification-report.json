@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-12-11T07:01:32.079Z",
+  "success": [],
+  "failures": [
+    "测试执行错误: Missing X server to start the headful browser. Either set headless to true or use xvfb-run to run your Puppeteer script."
+  ],
+  "networkRequests": [],
+  "consoleErrors": [],
+  "loginRequest": null,
+  "localStorage": {},
+  "screenshots": []
+}

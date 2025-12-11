@@ -3,6 +3,18 @@
 # SoT + Skills + super_review_agent 管线
 # ===========================
 
+# ---------- 项目记忆文档 ----------
+
+RULE: Before starting any development task, read `.cursor/PROJECT_MEMORY.md` to understand the complete project context, including:
+- Core state machines (8-state daily report workflow)
+- Five-role permission system
+- Double ledger system (REVENUE/COST)
+- SoT document priority chain
+- Critical file paths and code patterns
+- Common anti-patterns to avoid
+
+RULE: The PROJECT_MEMORY.md serves as the primary context transfer document for AI agents across sessions. It contains essential project knowledge that must be referenced before making any code changes.
+
 # ---------- 🚨 AI Spec-Driven Development 框架规则 ----------
 
 RULE: Before generating any code, you MUST read and understand docs/1.overview/MASTER.md first, then docs/1.overview/MASTER_SPEC.md.
