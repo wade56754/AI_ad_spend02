@@ -14,10 +14,10 @@ export interface DataState<T = any> {
 }
 
 // 数据状态上下文接口
-export interface DataStateContextType {
-  state: DataState;
+export interface DataStateContextType<T = unknown> {
+  state: DataState<T>;
   setLoading: () => void;
-  setSuccess: (data: any) => void;
+  setSuccess: (data: T) => void;
   setError: (error: string) => void;
   setEmpty: () => void;
   reset: () => void;
@@ -55,7 +55,7 @@ export function DataStateProvider({
     });
   }, [onDataUpdate]);
 
-  const setSuccess = React.useCallback((data: any) => {
+  const setSuccess = React.useCallback(<T = unknown>(data: T) => {
     setState(prev => {
       const newState = {
         ...prev,

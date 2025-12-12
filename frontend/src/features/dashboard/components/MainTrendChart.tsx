@@ -96,8 +96,16 @@ const formatYAxis = (value: number, metric: MetricType) => {
     : `¥${(value / 1000).toFixed(1)}k`;
 };
 
+// Tooltip Props 类型
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: string;
+  metric: MetricType;
+}
+
 // 格式化 Tooltip
-const CustomTooltip = ({ active, payload, label, metric }: any) => {
+const CustomTooltip = ({ active, payload, label, metric }: CustomTooltipProps) => {
   if (!active || !payload || !payload.length) return null;
 
   const config = METRIC_CONFIG[metric];

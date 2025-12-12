@@ -93,12 +93,12 @@ export function SettlementsPage() {
     setParams({ page: 1, page_size: 10 });
   };
 
-  const handleView = (settlement: Settlement) => {
-    console.log('View settlement:', settlement);
+  const handleView = (_settlement: Settlement) => {
+    // TODO: 实现结算单详情查看
   };
 
-  const handleEdit = (settlement: Settlement) => {
-    console.log('Edit settlement:', settlement);
+  const handleEdit = (_settlement: Settlement) => {
+    // TODO: 实现结算单编辑
   };
 
   const handleSubmit = (settlement: Settlement) => {
@@ -121,8 +121,8 @@ export function SettlementsPage() {
     }
   };
 
-  const handleRecordPayment = (settlement: Settlement) => {
-    console.log('Record payment for settlement:', settlement);
+  const handleRecordPayment = (_settlement: Settlement) => {
+    // TODO: 实现付款登记
   };
 
   const handleCancel = (settlement: Settlement) => {
@@ -160,7 +160,7 @@ export function SettlementsPage() {
               </div>
             </div>
             <button
-              onClick={() => console.log('TODO: Show create form')}
+              onClick={() => { /* TODO: 实现新增结算表单 */ }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />

@@ -52,11 +52,18 @@ interface ModernNavigationProps {
   children: React.ReactNode;
 }
 
+interface NavItemData {
+  name: string;
+  href: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
 export const ModernNavigation: React.FC<ModernNavigationProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
 
-  const NavItem = ({ item }: { item: any }) => {
+  const NavItem = ({ item }: { item: NavItemData }) => {
     const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
 
     return (

@@ -49,7 +49,7 @@ export const USER_ROLE_CONFIG: Record<UserRole, {
 // ========== 请求接口 ==========
 
 export interface LoginRequest {
-  email: string;
+  identifier: string;  // 用户名或邮箱 (SoT: AUTH_SPEC.md v2.0)
   password: string;
   remember_me?: boolean;
 }

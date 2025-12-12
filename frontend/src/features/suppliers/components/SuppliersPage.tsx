@@ -101,9 +101,8 @@ export function SuppliersPage() {
     setParams({ page: 1, page_size: 10 });
   };
 
-  const handleView = (supplier: Supplier) => {
-    // TODO: Implement detail drawer
-    console.log('View supplier:', supplier);
+  const handleView = (_supplier: Supplier) => {
+    // TODO: 实现供应商详情抽屉
   };
 
   const handleEdit = (supplier: Supplier) => {

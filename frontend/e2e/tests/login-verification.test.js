@@ -66,13 +66,18 @@ async function runLoginVerification() {
   try {
     // 启动浏览器
     console.log('🚀 启动Chrome浏览器...\n');
+    // 检测是否在 CI 环境或无头模式下运行
+    const isCI = process.env.CI === 'true' || process.env.HEADLESS === 'true';
+
     browser = await puppeteer.launch({
-      headless: false,  // 显示浏览器窗口以便观察
-      devtools: true,   // 自动打开DevTools
+      headless: isCI ? 'new' : false,  // CI 环境使用 headless 模式
+      devtools: !isCI,   // 非 CI 环境打开 DevTools
       args: [
         '--window-size=1920,1080',
         '--disable-web-security',
-        '--disable-features=IsolateOrigins,site-per-process'
+        '--disable-features=IsolateOrigins,site-per-process',
+        '--no-sandbox',  // CI 环境需要
+        '--disable-setuid-sandbox'  // CI 环境需要
       ]
     });
 

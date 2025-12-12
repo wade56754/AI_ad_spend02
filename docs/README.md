@@ -66,7 +66,7 @@ graph TD
 | [DATA_SCHEMA.md](./2.sot/DATA_SCHEMA.md) | v5.2 | 🟢 Frozen | Database schema, 23 tables, indexes, constraints |
 | [API_SOT.md](./2.sot/API_SOT.md) | v9.0 | 🟢 Frozen | REST API contracts, 50+ endpoints |
 | [ERROR_CODES_SOT.md](./2.sot/ERROR_CODES_SOT.md) | v2.1 | 🟢 Frozen | Global error code registry (AUTH/BIZ/VAL/SYS/DB/STATE/TREND) |
-| [BUSINESS_RULES.md](./2.sot/BUSINESS_RULES.md) | v3.1 | 🟢 Frozen | Business logic rules, pricing formulas |
+| [BUSINESS_RULES.md](./2.sot/BUSINESS_RULES.md) | v3.2 | 🟢 Frozen | Business logic rules, pricing formulas |
 | [AUTH_SPEC.md](./2.sot/AUTH_SPEC.md) | v2.0 | 🟢 Frozen | 5 user roles, RBAC permissions |
 | [LEDGER_SOT.md](./2.sot/LEDGER_SOT.md) | v1.1 | 🟢 Frozen | Dual-ledger system (PROJECT vs SUPPLIER) |
 | [DAILY_REPORT_SOT.md](./2.sot/DAILY_REPORT_SOT.md) | v1.0 | 🟢 Frozen | Daily report workflow and data flow |
@@ -168,7 +168,7 @@ SoT Layer Freeze v2.6 (Technical Truth)
   ├── DATA_SCHEMA.md v5.2 (Database schema)
   ├── API_SOT.md v9.0 (API contracts)
   ├── ERROR_CODES_SOT.md v2.1 (Error codes)
-  ├── BUSINESS_RULES.md v3.1 (Business logic)
+  ├── BUSINESS_RULES.md v3.2 (Business logic)
   ├── AUTH_SPEC.md v2.0 (Authentication)
   └── LEDGER_SOT.md v1.1 (Ledger system)
   ↓

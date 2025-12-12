@@ -39,10 +39,7 @@ export function UserProfileDropdown({
   userRole = "管理员"
 }: UserProfileDropdownProps) {
   const handleLogout = () => {
-    // 处理退出登录逻辑
-    console.log('退出登录');
-    // 清除用户信息、token等
-    // 跳转到登录页
+    // TODO: 集成 useAuth().logout() 清除 token
     window.location.href = '/login';
   };
 

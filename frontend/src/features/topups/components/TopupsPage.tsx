@@ -3,376 +3,34 @@
  *
  * Main page for topup request management with filters and statistics
  * SoT: STATE_MACHINE.md v2.6 Section 9
+ *
+ * Refactored: Extracted StatsOverview, FilterPanel, DetailDialog components
  */
 
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Plus,
-  Filter,
-  RefreshCw,
-  Download,
-  ClipboardCheck,
-  Wallet,
-  CheckCircle,
-  Ban,
-  TrendingUp,
-  DollarSign,
-  FileText,
-} from 'lucide-react';
+import { Plus, Filter, RefreshCw, Download } from 'lucide-react';
 import { useTopups, useTopupStats } from '../hooks';
 import { TopupsTable } from './TopupsTable';
 import { TopupRequestForm } from './TopupRequestForm';
-import {
-  TopupStatusBadge,
-  TopupStatsCard,
-  TopupStatusLegend,
-  TopupAmount,
-} from './TopupStatusBadge';
+import { TopupStatusLegend } from './TopupStatusBadge';
 import {
   TopupApprovalDialog,
   TopupSubmitDialog,
   TopupCancelDialog,
 } from './TopupApprovalDialog';
-import { TopupApprovalTimeline } from './TopupApprovalTimeline';
+import { TopupsStatsOverview } from './TopupsStatsOverview';
+import { TopupsFilterPanel, type FilterState, initialFilterState } from './TopupsFilterPanel';
+import { TopupDetailDialog, type TopupAction } from './TopupDetailDialog';
 import type { TopupRequest, TopupStatus, TopupListParams } from '../types';
 
 // === Types ===
 
 type TabValue = 'all' | 'pending_review' | 'finance_approve' | 'paid' | 'completed' | 'rejected';
-
-interface FilterState {
-  status: TopupStatus | '';
-  project_id: string;
-  start_date: string;
-  end_date: string;
-  min_amount: string;
-  max_amount: string;
-}
-
-// === Stats Overview Component ===
-
-interface StatsOverviewProps {
-  stats: { by_status: Record<TopupStatus, number>; total_amount: number; pending_count: number } | undefined;
-  isLoading: boolean;
-  onFilterByStatus: (status: TopupStatus) => void;
-}
-
-function StatsOverview({ stats, isLoading, onFilterByStatus }: StatsOverviewProps) {
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {[...Array(6)].map((_, i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-4">
-              <div className="h-4 w-16 bg-muted rounded mb-2" />
-              <div className="h-8 w-24 bg-muted rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  const pendingReviewCount = stats?.by_status?.pending_review ?? 0;
-  const financeApproveCount = stats?.by_status?.finance_approve ?? 0;
-  const totalCount = stats ? Object.values(stats.by_status || {}).reduce((a, b) => a + b, 0) : 0;
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <TopupStatsCard
-        title="待数据复核"
-        value={pendingReviewCount}
-        icon={ClipboardCheck}
-        variant="warning"
-        onClick={() => onFilterByStatus('pending_review')}
-      />
-      <TopupStatsCard
-        title="待财务终审"
-        value={financeApproveCount}
-        icon={Wallet}
-        variant="info"
-        onClick={() => onFilterByStatus('finance_approve')}
-      />
-      <TopupStatsCard
-        title="待处理"
-        value={stats?.pending_count ?? 0}
-        icon={TrendingUp}
-        variant="warning"
-      />
-      <TopupStatsCard
-        title="总充值额"
-        value={stats ? `¥${((stats.total_amount || 0) / 100).toLocaleString()}` : '¥0'}
-        icon={DollarSign}
-        variant="success"
-      />
-      <TopupStatsCard
-        title="总申请数"
-        value={totalCount}
-        icon={CheckCircle}
-        variant="default"
-      />
-      <TopupStatsCard
-        title="已完成"
-        value={stats?.by_status?.completed ?? 0}
-        icon={FileText}
-        variant="success"
-      />
-    </div>
-  );
-}
-
-// === Filter Panel Component ===
-
-interface FilterPanelProps {
-  filters: FilterState;
-  onFiltersChange: (filters: FilterState) => void;
-  onReset: () => void;
-}
-
-function FilterPanel({ filters, onFiltersChange, onReset }: FilterPanelProps) {
-  const statusOptions: { value: TopupStatus | ''; label: string }[] = [
-    { value: '', label: '全部状态' },
-    { value: 'draft', label: '草稿' },
-    { value: 'pending_review', label: '待数据复核' },
-    { value: 'finance_approve', label: '待财务终审' },
-    { value: 'paid', label: '已支付' },
-    { value: 'completed', label: '已完成' },
-    { value: 'rejected', label: '已拒绝' },
-    { value: 'cancelled', label: '已取消' },
-  ];
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <div className="space-y-2">
-        <Label>状态筛选</Label>
-        <Select
-          value={filters.status}
-          onValueChange={(value) =>
-            onFiltersChange({ ...filters, status: value as TopupStatus | '' })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="全部状态" />
-          </SelectTrigger>
-          <SelectContent>
-            {statusOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>开始日期</Label>
-        <Input
-          type="date"
-          value={filters.start_date}
-          onChange={(e) => onFiltersChange({ ...filters, start_date: e.target.value })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>结束日期</Label>
-        <Input
-          type="date"
-          value={filters.end_date}
-          onChange={(e) => onFiltersChange({ ...filters, end_date: e.target.value })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>最小金额(元)</Label>
-        <Input
-          type="number"
-          placeholder="0"
-          value={filters.min_amount}
-          onChange={(e) => onFiltersChange({ ...filters, min_amount: e.target.value })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>最大金额(元)</Label>
-        <Input
-          type="number"
-          placeholder="不限"
-          value={filters.max_amount}
-          onChange={(e) => onFiltersChange({ ...filters, max_amount: e.target.value })}
-        />
-      </div>
-
-      <div className="flex items-end">
-        <Button variant="outline" onClick={onReset} className="w-full">
-          重置筛选
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// === Topup Detail Dialog ===
-
-interface TopupDetailDialogProps {
-  topup: TopupRequest | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAction: (action: 'data_review' | 'finance_approval' | 'complete' | 'cancel' | 'submit') => void;
-  userRole: string;
-}
-
-function TopupDetailDialog({
-  topup,
-  open,
-  onOpenChange,
-  onAction,
-  userRole,
-}: TopupDetailDialogProps) {
-  if (!topup) return null;
-
-  const canDataReview =
-    topup.status === 'pending_review' &&
-    ['data_operator', 'admin'].includes(userRole);
-  const canFinanceApprove =
-    topup.status === 'finance_approve' &&
-    ['finance', 'admin'].includes(userRole);
-  const canComplete =
-    topup.status === 'paid' &&
-    ['finance', 'system', 'admin'].includes(userRole);
-  const canCancel =
-    ['draft', 'pending_review', 'finance_approve'].includes(topup.status) &&
-    ['media_buyer', 'account_manager', 'admin'].includes(userRole);
-  const canSubmit =
-    topup.status === 'draft' &&
-    ['media_buyer', 'account_manager', 'admin'].includes(userRole);
-
-  // Handle Money type - could be number or object
-  const amountValue = typeof topup.amount === 'number'
-    ? topup.amount
-    : (topup.amount as { value?: number })?.value ?? 0;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            充值申请详情
-          </DialogTitle>
-          <DialogDescription>
-            查看充值申请的详细信息和审批历史
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          {/* Status Badge */}
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">当前状态</span>
-            <TopupStatusBadge status={topup.status} size="lg" />
-          </div>
-
-          {/* Amount */}
-          <div className="flex items-center justify-between py-4 border-y">
-            <span className="text-muted-foreground">充值金额</span>
-            <TopupAmount amount={amountValue} currency={topup.currency} size="lg" />
-          </div>
-
-          {/* Basic Info */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-sm text-muted-foreground">基本信息</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-muted-foreground">项目</span>
-                <p className="font-medium">{topup.project_name || topup.project_id.slice(0, 8)}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">广告账户</span>
-                <p className="font-medium">{topup.ad_account_name || '-'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">申请人</span>
-                <p className="font-medium">{topup.requested_by_name || '-'}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">申请时间</span>
-                <p className="font-medium">
-                  {new Date(topup.requested_at).toLocaleString('zh-CN')}
-                </p>
-              </div>
-            </div>
-            {topup.notes && (
-              <div>
-                <span className="text-muted-foreground text-sm">备注</span>
-                <p className="text-sm mt-1 p-2 bg-muted rounded">{topup.notes}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Timeline */}
-          <div className="space-y-3">
-            <h4 className="font-medium text-sm text-muted-foreground">审批历史</h4>
-            <TopupApprovalTimeline topup={topup} showDetails />
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-2 pt-4 border-t">
-            {canSubmit && (
-              <Button onClick={() => onAction('submit')} className="w-full">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                提交审批
-              </Button>
-            )}
-            {canDataReview && (
-              <Button onClick={() => onAction('data_review')} className="w-full">
-                <ClipboardCheck className="h-4 w-4 mr-2" />
-                数据复核
-              </Button>
-            )}
-            {canFinanceApprove && (
-              <Button onClick={() => onAction('finance_approval')} className="w-full">
-                <Wallet className="h-4 w-4 mr-2" />
-                财务终审
-              </Button>
-            )}
-            {canComplete && (
-              <Button onClick={() => onAction('complete')} className="w-full">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                确认到账
-              </Button>
-            )}
-            {canCancel && (
-              <Button variant="outline" onClick={() => onAction('cancel')} className="w-full">
-                <Ban className="h-4 w-4 mr-2" />
-                取消申请
-              </Button>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // === Main Page Component ===
 
@@ -381,14 +39,7 @@ export function TopupsPage() {
   const [activeTab, setActiveTab] = useState<TabValue>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [filters, setFilters] = useState<FilterState>({
-    status: '',
-    project_id: '',
-    start_date: '',
-    end_date: '',
-    min_amount: '',
-    max_amount: '',
-  });
+  const [filters, setFilters] = useState<FilterState>(initialFilterState);
 
   // Selected topup for actions
   const [selectedTopup, setSelectedTopup] = useState<TopupRequest | null>(null);
@@ -432,14 +83,7 @@ export function TopupsPage() {
 
   // Handlers
   const handleResetFilters = useCallback(() => {
-    setFilters({
-      status: '',
-      project_id: '',
-      start_date: '',
-      end_date: '',
-      min_amount: '',
-      max_amount: '',
-    });
+    setFilters(initialFilterState);
   }, []);
 
   const handleFilterByStatus = useCallback((status: TopupStatus) => {
@@ -452,7 +96,7 @@ export function TopupsPage() {
   }, []);
 
   const handleDetailAction = useCallback(
-    (action: 'data_review' | 'finance_approval' | 'complete' | 'cancel' | 'submit') => {
+    (action: TopupAction) => {
       setShowDetail(false);
       if (action === 'submit') {
         setShowSubmitDialog(true);
@@ -473,9 +117,8 @@ export function TopupsPage() {
     setShowCancelDialog(false);
   }, [refetch]);
 
-  const handleCreateFormSubmit = useCallback(async (data: unknown) => {
-    // Handle form submission
-    console.log('Create topup:', data);
+  const handleCreateFormSubmit = useCallback(async (_data: unknown) => {
+    // TODO: Implement actual form submission via API
     setShowCreateForm(false);
     refetch();
   }, [refetch]);
@@ -518,7 +161,7 @@ export function TopupsPage() {
       </div>
 
       {/* Stats Overview */}
-      <StatsOverview
+      <TopupsStatsOverview
         stats={statsData}
         isLoading={isStatsLoading}
         onFilterByStatus={handleFilterByStatus}
@@ -541,7 +184,7 @@ export function TopupsPage() {
       {showFilters && (
         <Card>
           <CardContent className="pt-6">
-            <FilterPanel
+            <TopupsFilterPanel
               filters={filters}
               onFiltersChange={setFilters}
               onReset={handleResetFilters}

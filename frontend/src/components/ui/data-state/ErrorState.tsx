@@ -409,15 +409,17 @@ export interface ErrorBoundaryState {
   error?: Error;
 }
 
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+}
+
 export class ErrorBoundary extends React.Component<
-  {
-    children: React.ReactNode;
-    fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
-    onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
-  },
+  ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  constructor(props: any) {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }

@@ -18,6 +18,7 @@ from . import (
     import_jobs,
     reconciliation,  # 对账管理
     reports,  # 报表管理
+    agents,  # Agent 管理
 )
 
 __all__ = [
@@ -37,6 +38,7 @@ __all__ = [
     "import_jobs",
     "reconciliation",
     "reports",
+    "agents",
 ]
 
 

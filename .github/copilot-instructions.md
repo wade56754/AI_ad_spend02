@@ -181,8 +181,8 @@ service.transition_to(
 |------|------|------|------------|
 | **STATE_MACHINE** | v2.6 | `docs/2.sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
 | **DATA_SCHEMA** | v5.2 | `docs/2.sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
-| **BUSINESS_RULES** | v3.1 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
-| **API_SOT** | v2.2 | `docs/2.sot/API_SOT.md` | §9 Daily Reports API |
+| **BUSINESS_RULES** | v3.2 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
+| **API_SOT** | v9.0 | `docs/2.sot/API_SOT.md` | §9 Daily Reports API |
 | **ERROR_CODES_SOT** | v2.1 | `docs/2.sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
 | **AUTH_SPEC** | v2.0 | `docs/2.sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
 | **LEDGER_SOT** | v1.1 | `docs/2.sot/LEDGER_SOT.md` | §2 双账本体系 |

@@ -123,11 +123,11 @@ export function TodayTasksCard({
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y divide-slate-100">
-          {tasks.map((task, index) => (
+          {tasks.map((task) => (
             <div
               key={task.id}
               className="group flex items-center gap-3 px-5 py-2.5 hover:bg-slate-50 transition-colors cursor-pointer"
-              onClick={() => console.log('Task clicked:', task.title)}
+              onClick={() => { /* TODO: 任务详情导航 */ }}
             >
               {/* 状态指示器 */}
               <div className="flex-shrink-0">

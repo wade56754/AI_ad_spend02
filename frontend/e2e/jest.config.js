@@ -9,9 +9,9 @@ module.exports = {
   testTimeout: 60000, // E2E 测试超时时间：60秒
 
   // 全局设置
-  globalSetup: './e2e/setup/global-setup.ts',
-  globalTeardown: './e2e/setup/global-teardown.ts',
-  setupFilesAfterEnv: ['./e2e/setup/setup.ts'],
+  globalSetup: './setup/global-setup.ts',
+  globalTeardown: './setup/global-teardown.ts',
+  setupFilesAfterEnv: ['./setup/setup.ts'],
 
   // TypeScript 支持
   transform: {

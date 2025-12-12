@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,19 +73,19 @@ export function DailyReportForm({
   const [calculatorInput, setCalculatorInput] = useState("");
   const [calculatorResult, setCalculatorResult] = useState(0);
 
-  // 计算派生指标
-  useEffect(() => {
+  // 派生指标计算 - 使用 useMemo 替代 useEffect
+  // 这些值完全由其他状态派生，不需要存储为独立状态
+  const derivedMetrics = useMemo(() => {
     const cpl = formData.new_follows > 0 ? formData.spend / formData.new_follows : 0;
     const cpa = formData.conversions > 0 ? formData.spend / formData.conversions : 0;
     // 假设ROI为5（可以根据实际情况调整）
     const roas = formData.spend > 0 ? (formData.conversions * 5) / formData.spend : 0;
 
-    setFormData((prev) => ({
-      ...prev,
+    return {
       cpl: parseFloat(cpl.toFixed(2)),
       cpa: parseFloat(cpa.toFixed(2)),
       roas: parseFloat(roas.toFixed(2)),
-    }));
+    };
   }, [formData.spend, formData.conversions, formData.new_follows]);
 
   // 处理输入变化
@@ -370,7 +370,7 @@ export function DailyReportForm({
               <Input
                 type="number"
                 step="0.01"
-                value={formData.cpl}
+                value={derivedMetrics.cpl}
                 readOnly
                 className="bg-gray-50"
               />
@@ -381,7 +381,7 @@ export function DailyReportForm({
               <Input
                 type="number"
                 step="0.01"
-                value={formData.cpa}
+                value={derivedMetrics.cpa}
                 readOnly
                 className="bg-gray-50"
               />
@@ -393,7 +393,7 @@ export function DailyReportForm({
             <Input
               type="number"
               step="0.01"
-              value={formData.roas}
+              value={derivedMetrics.roas}
               readOnly
               className="bg-gray-50"
             />

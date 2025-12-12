@@ -27,6 +27,10 @@ from sqlalchemy.orm import Session
 
 from backend.models import DailyReport
 from backend.models.base import DailyReportStatus
+from backend.exceptions.custom_exceptions import (
+    BusinessLogicError,
+    ResourceNotFoundError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -360,12 +364,16 @@ class TrendRiskControlService:
         ).first()
 
         if not report:
-            raise ValueError(f"日报 {report_id} 不存在")
+            raise ResourceNotFoundError(
+                message=f"日报 {report_id} 不存在",
+                error_code="BIZ_002"
+            )
 
         # 验证状态 - 只能从 trend_pending 执行风控检查
         if report.status != DailyReportStatus.TREND_PENDING.value:
-            raise ValueError(
-                f"日报状态必须为 trend_pending，当前状态: {report.status}"
+            raise BusinessLogicError(
+                message=f"日报状态必须为 trend_pending，当前状态: {report.status}",
+                error_code="STATE_400"
             )
 
         # 执行风控检查
@@ -452,8 +460,9 @@ class TrendRiskControlService:
             DailyReport: 更新后的日报对象
         """
         if report.status != DailyReportStatus.RAW_SUBMITTED.value:
-            raise ValueError(
-                f"只能从 raw_submitted 状态触发风控检查，当前状态: {report.status}"
+            raise BusinessLogicError(
+                message=f"只能从 raw_submitted 状态触发风控检查，当前状态: {report.status}",
+                error_code="STATE_400"
             )
 
         with self.transaction():

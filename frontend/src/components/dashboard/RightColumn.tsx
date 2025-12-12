@@ -124,20 +124,21 @@ export default function RightColumn({
     }
   }, [externalActivities, externalQuickActions]);
 
-  // 组件挂载时加载数据
+  // 组件挂载时加载数据（仅在没有外部数据时）
+  // 合并两个 useEffect 为一个，避免重复同步逻辑
   useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // 当外部数据更新时，同步更新内部状态
-  useEffect(() => {
+    // 如果有外部数据，直接使用
     if (externalActivities !== undefined) {
       setActivities(externalActivities);
     }
     if (externalQuickActions !== undefined) {
       setQuickActions(externalQuickActions);
     }
-  }, [externalActivities, externalQuickActions]);
+    // 只有当没有外部数据时才加载内部数据
+    if (externalActivities === undefined || externalQuickActions === undefined) {
+      loadData();
+    }
+  }, [externalActivities, externalQuickActions, loadData]);
 
   // 统一状态管理
   const isLoading = externalLoading ?? loading;

@@ -24,8 +24,10 @@ import type {
   AuthState,
 } from '../types';
 
-const AUTH_TOKEN_KEY = 'auth_token';
-const AUTH_USER_KEY = 'auth_user';
+// 统一使用与 lib/auth.ts 相同的存储键
+const AUTH_TOKEN_KEY = 'auth-token';
+const AUTH_REFRESH_TOKEN_KEY = 'refresh-token';
+const AUTH_USER_KEY = 'auth-user';
 
 /**
  * Get stored auth token
@@ -54,14 +56,13 @@ export function removeAuthToken(): void {
 
 /**
  * Main auth hook
+ *
+ * SoT Reference: AUTH_SPEC.md v2.0
  */
 export function useAuth() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isInitialized, setIsInitialized] = useState(false);
-
-  // TEMPORARY: Mock user for development (remove this in production)
-  const MOCK_DEV_MODE = process.env.NODE_ENV === 'development' && !getAuthToken();
 
   // Get current user query
   const {
@@ -71,18 +72,8 @@ export function useAuth() {
     refetch: refetchUser,
   } = useQuery({
     queryKey: ['auth', 'user'],
-    queryFn: MOCK_DEV_MODE
-      ? async () => ({
-          id: 'mock-user-1',
-          username: '演示用户',
-          full_name: '演示用户',
-          email: 'demo@example.com',
-          role: 'admin',
-          is_active: true,
-          created_at: new Date().toISOString(),
-        } as User)
-      : getCurrentUser,
-    enabled: MOCK_DEV_MODE || !!getAuthToken(),
+    queryFn: getCurrentUser,
+    enabled: !!getAuthToken(),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

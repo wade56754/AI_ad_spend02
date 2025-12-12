@@ -4,7 +4,7 @@
  * SoT 对齐: API_SOT.md v9.0
  */
 
-import { apiFetch, apiFetchPaginated } from '@/lib/api';
+import { apiFetch, apiFetchPaginated, apiUpload } from '@/lib/api';
 import type {
   ImportJob,
   ImportJobProgress,
@@ -67,19 +67,9 @@ export async function uploadImportFile(file: File, jobType: string) {
   const formData = new FormData();
   formData.append('file', file);
 
-  // 注意: 使用原生fetch处理FormData上传，不设置Content-Type让浏览器自动设置
-  const response = await fetch(`${BASE_URL}/upload?job_type=${jobType}`, {
-    method: 'POST',
-    body: formData,
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || '上传失败');
-  }
-
-  return response.json();
+  // 使用 apiUpload 处理文件上传，自动添加认证 header
+  const response = await apiUpload<ImportJob>(`${BASE_URL}/upload?job_type=${jobType}`, formData);
+  return response;
 }
 
 /** 检查文件重复 */
@@ -87,16 +77,10 @@ export async function checkDuplicateFile(file: File) {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${BASE_URL}/check-duplicate`, {
-    method: 'POST',
-    body: formData,
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || '检查失败');
-  }
-
-  return response.json();
+  // 使用 apiUpload 处理文件上传，自动添加认证 header
+  const response = await apiUpload<{ isDuplicate: boolean; existingJobId?: number }>(
+    `${BASE_URL}/check-duplicate`,
+    formData
+  );
+  return response;
 }

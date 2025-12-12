@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { apiUpload, apiDownload } from "@/lib/api";
 
 // 类型定义
 interface UploadedFile {
@@ -154,34 +155,29 @@ export function PlatformBillUpload({
       formData.append("platform", selectedPlatform);
       formData.append("batch_id", batchId.toString());
 
-      // 上传文件
-      const response = await fetch("/api/v1/reconciliation/upload-platform-bill", {
-        method: "POST",
-        body: formData,
-      });
+      // 使用 apiUpload 上传文件，自动添加认证 header
+      const result = await apiUpload<{
+        records_count: number;
+        valid_records: number;
+        invalid_records: number;
+        preview_data: UploadedFile["preview_data"];
+      }>("/api/v1/reconciliation/upload-platform-bill", formData);
 
-      if (response.ok) {
-        const result = await response.json();
+      // 更新文件记录
+      setUploadedFiles(prev => prev.map(f =>
+        f.id === fileId
+          ? {
+              ...f,
+              status: "completed",
+              records_count: result.data?.records_count,
+              valid_records: result.data?.valid_records,
+              invalid_records: result.data?.invalid_records,
+              preview_data: result.data?.preview_data,
+            }
+          : f
+      ));
 
-        // 更新文件记录
-        setUploadedFiles(prev => prev.map(f =>
-          f.id === fileId
-            ? {
-                ...f,
-                status: "completed",
-                records_count: result.data.records_count,
-                valid_records: result.data.valid_records,
-                invalid_records: result.data.invalid_records,
-                preview_data: result.data.preview_data,
-              }
-            : f
-        ));
-
-        toast.success(`文件 ${file.name} 上传成功`);
-      } else {
-        const error = await response.json();
-        throw new Error(error.message || "上传失败");
-      }
+      toast.success(`文件 ${file.name} 上传成功`);
     } catch (error) {
       console.error("文件上传错误:", error);
       setUploadedFiles(prev => prev.map(f =>
@@ -228,19 +224,17 @@ export function PlatformBillUpload({
     }
 
     try {
-      const response = await fetch(`/api/v1/reconciliation/templates/${selectedPlatform}`);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${selectedPlatform}-bill-template.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        toast.success("模板下载成功");
-      }
+      // 使用 apiDownload 下载文件，自动添加认证 header
+      const blob = await apiDownload(`/api/v1/reconciliation/templates/${selectedPlatform}`);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${selectedPlatform}-bill-template.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success("模板下载成功");
     } catch (error) {
       toast.error("模板下载失败");
     }

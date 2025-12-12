@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { DollarSign, TrendingUp, Users, FileText, Activity, Target } from 'lucide-react';
+import { DollarSign, TrendingUp, Users, FileText, Activity, Target, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MetricCard } from '@/components/ui/MetricCard';
 import { DataStateManager } from '@/components/ui/data-state';
@@ -19,7 +19,7 @@ interface StatData {
   change: number;
   changeType: 'up' | 'down';
   description: string;
-  icon: any;
+  icon: LucideIcon;
   color: 'primary' | 'success' | 'warning' | 'error' | 'info';
 }
 

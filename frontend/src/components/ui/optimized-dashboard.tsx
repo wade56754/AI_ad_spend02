@@ -155,9 +155,8 @@ export const OptimizedDashboard = () => {
   }, []);
 
   // 处理指标卡片点击
-  const handleMetricClick = (metricType: string) => {
-    console.log(`Clicked on ${metricType} metric`);
-    // 这里可以导航到详细页面
+  const handleMetricClick = (_metricType: string) => {
+    // TODO: 导航到详细页面
   };
 
   // 获取状态标签样式
@@ -229,7 +228,7 @@ export const OptimizedDashboard = () => {
             <OptimizedButton
               variant="primary"
               icon={<Zap className="w-4 h-4" />}
-              onClick={() => console.log('AI分析功能')}
+              onClick={() => { /* TODO: AI分析功能 */ }}
             >
               AI分析
             </OptimizedButton>
@@ -451,11 +450,11 @@ export const OptimizedDashboard = () => {
                 { icon: <Activity className="w-4 h-4" />, label: "查看报表", action: "view-reports" },
                 { icon: <Eye className="w-4 h-4" />, label: "实时监控", action: "real-time-monitor" },
                 { icon: <Zap className="w-4 h-4" />, label: "优化建议", action: "optimization" }
-              ].map((action, index) => (
+              ].map((action) => (
                 <OptimizedButton
                   key={action.action}
                   variant="ghost"
-                  onClick={() => console.log(`Quick action: ${action.action}`)}
+                  onClick={() => { /* TODO: 快速操作 */ }}
                   className="flex flex-col items-center space-y-2 p-3 h-auto"
                   aria-label={`快速操作: ${action.label}`}
                 >

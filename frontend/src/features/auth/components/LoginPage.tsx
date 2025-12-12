@@ -22,8 +22,9 @@ export function LoginPage() {
 
     try {
       login(formData);
-    } catch (error: any) {
-      toast.error(error.message || '登录失败，请重试');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '登录失败，请重试';
+      toast.error(message);
     }
   };
 

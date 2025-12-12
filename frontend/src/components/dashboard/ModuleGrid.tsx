@@ -107,17 +107,16 @@ export default function ModuleGrid({
     }
   }, [externalModules]);
 
-  // 组件挂载时加载数据
+  // 组件挂载时加载数据（仅在没有外部数据时）
+  // 移除了重复的 useEffect 同步，因为 loadModulesData 已经处理了 externalModules
   useEffect(() => {
-    loadModulesData();
-  }, [loadModulesData]);
-
-  // 当外部数据更新时，同步更新内部状态
-  useEffect(() => {
+    // 如果有外部数据，直接使用，不需要加载
     if (externalModules !== undefined) {
       setModules(externalModules);
+    } else {
+      loadModulesData();
     }
-  }, [externalModules]);
+  }, [externalModules, loadModulesData]);
 
   // 统一状态管理
   const isLoading = externalLoading ?? loading;

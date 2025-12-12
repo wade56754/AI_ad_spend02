@@ -13,6 +13,17 @@ Use `@/openspec/AGENTS.md` to learn:
 - Spec format and conventions
 - Project structure and guidelines
 
+## OpenSpec Slash Commands (Validation Automation)
+
+| Command | Description |
+|---------|-------------|
+| `/openspec:proposal <name>` | Create new change proposal with validation |
+| `/openspec:validate <id>` | Validate change completeness and SoT compliance |
+| `/openspec:apply <id>` | Implement approved change with task tracking |
+| `/openspec:archive <id>` | Archive deployed change and update specs |
+
+**Workflow**: proposal → validate → (approval) → apply → validate → archive
+
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
@@ -57,11 +68,27 @@ STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.2
 
 ## 📚 完整规则总纲
 
-**详细规则**: 查阅 [.claude/PROJECT_RULES.md](.claude/PROJECT_RULES.md) v3.1
+**详细规则**: 查阅 [.claude/PROJECT_RULES.md](.claude/PROJECT_RULES.md) v3.4
 - SoT 裁判链完整版
 - 8 状态机详细定义
 - 反模式识别库
 - Claude/SuperClaude 使用指南
+
+## 📦 代码模式库 (Context Engineering)
+
+**示例代码**: 查阅 [examples/](examples/) 目录
+
+生成代码前**必须**参考对应模式文件，确保代码风格一致：
+
+| 任务类型 | 参考文件 |
+|---------|---------|
+| 后端 Router | `examples/backend/router_pattern.py` |
+| 后端 Service | `examples/backend/service_pattern.py` |
+| 后端 Schema | `examples/backend/schema_pattern.py` |
+| 状态机测试 | `examples/backend/state_machine_test_pattern.py` |
+| 前端页面 | `examples/frontend/page_pattern.tsx` |
+| 前端 API | `examples/frontend/api_client_pattern.ts` |
+| 前端表单 | `examples/frontend/form_pattern.tsx` |
 
 ## 🎯 每次开发前必做
 

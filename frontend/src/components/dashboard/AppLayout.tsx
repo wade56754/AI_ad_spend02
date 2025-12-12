@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from './sidebar';
 import Header from './header';
@@ -42,28 +42,24 @@ export function AppLayout({
   userEmail,
   userRole = "管理员"
 }: AppLayoutProps) {
-  const [activeMenu, setActiveMenu] = useState('workbench');
   const router = useRouter();
   const pathname = usePathname();
 
-  // 根据当前路径确定激活的菜单项
-  const getCurrentActiveMenu = () => {
+  // 根据当前路径确定激活的菜单项 - 使用 useMemo 替代 useState + useEffect
+  // activeMenu 完全由 pathname 派生，不需要单独的状态
+  const activeMenu = useMemo(() => {
     const currentItem = MENU_ITEMS.find(item => item.path === pathname);
     return currentItem ? currentItem.id : 'workbench';
-  };
+  }, [pathname]);
 
   const handleMenuChange = (menuId: string) => {
-    setActiveMenu(menuId);
-
     // 查找对应的路由
     const menuItem = [...MENU_ITEMS, ...BOTTOM_MENU_ITEMS].find(item => item.id === menuId);
 
     if (menuItem?.path) {
       router.push(menuItem.path);
     } else if (menuId === 'logout') {
-      // 处理退出登录逻辑
-      console.log('退出登录');
-      // 这里可以添加清除用户信息、token等逻辑
+      // TODO: 集成 useAuth().logout() 清除 token
       router.push('/login');
     } else if (menuId === 'help') {
       // 打开帮助文档或新页面
@@ -73,11 +69,6 @@ export function AppLayout({
       router.push('/contact');
     }
   };
-
-  // 初始化时设置当前激活的菜单
-  useEffect(() => {
-    setActiveMenu(getCurrentActiveMenu());
-  }, [pathname]);
 
   // 为侧边栏提供完整的菜单项
   const SidebarWithMenu = () => {

@@ -366,7 +366,7 @@ export const OptimizedNavigation: React.FC<OptimizedNavigationProps> = ({ childr
                 variant="primary"
                 size="sm"
                 icon={<Zap className="w-4 h-4" />}
-                onClick={() => console.log('快速优化功能')}
+                onClick={() => { /* TODO: 快速优化功能 */ }}
                 className="hidden md:flex"
               >
                 快速优化
@@ -380,7 +380,7 @@ export const OptimizedNavigation: React.FC<OptimizedNavigationProps> = ({ childr
                 variant="ghost"
                 size="sm"
                 icon={<Bell className="w-5 h-5" />}
-                onClick={() => console.log('通知功能')}
+                onClick={() => { /* TODO: 通知功能 */ }}
                 aria-label="查看通知"
                 className="relative"
               >
@@ -401,7 +401,7 @@ export const OptimizedNavigation: React.FC<OptimizedNavigationProps> = ({ childr
                       <User className="w-4 h-4 text-white" />
                     </div>
                   }
-                  onClick={() => console.log('用户菜单')}
+                  onClick={() => { /* TODO: 用户菜单 */ }}
                   aria-label="用户菜单"
                 />
               </div>

@@ -1,6 +1,45 @@
 """
-财务总账服务
+财务总账服务 (Ledger Service)
+
 处理财务流水、账户余额、预算分配等业务逻辑
+
+SoT 文档: LEDGER_SOT.md v1.1
+
+合法操作说明 (Legal Operations):
+=====================================
+
+1. 交易类型 (TransactionType):
+   - TOPUP: 充值入账 (增加余额)
+   - SPEND: 广告消耗 (减少余额)
+   - REFUND: 退款返还 (增加余额)
+   - FEE: 手续费扣除 (减少余额)
+   - ADJUSTMENT: 人工调账 (需审批)
+   - TRANSFER: 账户间调拨 (需审批)
+
+2. 账本规则 (Ledger Rules - 参考 LEDGER_SOT.md §2):
+   - 所有资金变动必须通过本服务进行，禁止直接修改 balance 字段
+   - 每笔交易生成唯一流水号 (TXN{日期}{类型}{序号})
+   - 交易记录不可删除，只能通过 REVERSAL 类型冲销
+   - 双账本体系: PROJECT 账本 (项目资金) + SUPPLIER 账本 (供应商成本)
+
+3. 余额更新规则:
+   - TOPUP/REFUND: +amount (贷方)
+   - SPEND/FEE: -amount (借方)
+   - 冻结余额 (frozen_balance): 预留审批中的金额
+   - 可用余额 = current_balance - frozen_balance
+
+4. 审计要求:
+   - 所有操作记录审计日志 (AuditService)
+   - 关联实体追溯: related_entity_type + related_entity_id
+   - 操作人记录: user_id (system 表示系统自动)
+
+5. 禁止操作 (Anti-patterns):
+   ❌ 直接修改 ad_accounts.balance 字段
+   ❌ 跳过本服务直接 INSERT ledger_transactions
+   ❌ 删除或修改已完成的交易记录
+   ❌ 创建负余额交易 (需先检查可用余额)
+
+业务规则引用: BR-LED-001 ~ BR-LED-010 (BUSINESS_RULES.md v3.2)
 """
 
 from datetime import datetime, date
@@ -19,7 +58,23 @@ from backend.services.audit_service import AuditService, BusinessAction
 
 
 class LedgerService:
-    """财务总账服务类"""
+    """
+    财务总账服务类
+
+    核心职责:
+    - 创建和管理财务交易记录
+    - 维护账户余额一致性
+    - 管理预算分配和消耗
+    - 提供交易统计和查询
+
+    合法调用方:
+    - TopupService: 充值流程
+    - DailyReportService: 消耗记账
+    - ReconciliationService: 对账调整
+    - TransferService: 资金调拨
+
+    禁止直接在 Router/API 层调用，必须通过业务 Service 层
+    """
 
     @staticmethod
     def create_transaction(
@@ -34,7 +89,19 @@ class LedgerService:
         metadata: Dict[str, Any] = None,
         user_id: str = None
     ) -> LedgerTransaction:
-        """创建财务交易记录"""
+        """
+        创建财务交易记录
+
+        合法操作 (BR-LED-001):
+        - 必须指定 transaction_type (6种类型之一)
+        - amount 必须为正数 (方向由 type 决定)
+        - 必须关联 project_id 或 account_id
+
+        副作用:
+        - 自动更新关联账户余额
+        - 自动更新预算分配 (SPEND 类型)
+        - 记录审计日志
+        """
         with get_db_session() as session:
             # 生成交易流水号
             transaction_number = LedgerService._generate_transaction_number(
@@ -390,7 +457,19 @@ class LedgerService:
         transaction_type: TransactionType,
         transaction_id: UUID
     ):
-        """更新账户余额"""
+        """
+        更新账户余额 (内部方法)
+
+        合法操作 (BR-LED-003):
+        - 只能通过 create_transaction 间接调用
+        - 根据 transaction_type 自动决定加减方向
+        - 同时更新 current_balance 和 available_balance
+
+        余额计算规则:
+        - TOPUP/REFUND: +amount (贷方增加)
+        - SPEND/FEE: -amount (借方减少)
+        - ADJUSTMENT/TRANSFER: 根据具体场景处理
+        """
         # 获取或创建余额记录
         balance = session.query(AccountBalance).filter(
             and_(

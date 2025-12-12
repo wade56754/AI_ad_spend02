@@ -11,15 +11,16 @@ class UserRole(str, Enum):
     """
     用户角色枚举
 
-    必须与 STATE_MACHINE.md 第2章保持严格一致。
-    合法角色：admin, finance, data_operator, account_manager, media_buyer, analyst
+    必须与 STATE_MACHINE.md v2.6 第2章保持严格一致。
+    合法角色：admin, finance, data_operator, account_manager, media_buyer
+
+    SoT Reference: STATE_MACHINE.md v2.6 §2
     """
-    ADMIN = "admin"
-    FINANCE = "finance"
-    DATA_OPERATOR = "data_operator"  # 修改：data_manager → data_operator
-    ACCOUNT_MANAGER = "account_manager"  # 新增：缺失的角色
-    MEDIA_BUYER = "media_buyer"
-    ANALYST = "analyst"  # 新增：测试中使用的角色
+    ADMIN = "admin"                      # 系统管理员
+    FINANCE = "finance"                  # 财务
+    DATA_OPERATOR = "data_operator"      # 数据运营
+    ACCOUNT_MANAGER = "account_manager"  # 账户管理员
+    MEDIA_BUYER = "media_buyer"          # 广告投手
 
 
 class ChannelStatus(str, Enum):
@@ -32,18 +33,34 @@ class ProjectStatus(str, Enum):
     """
     项目状态枚举
 
-    与 test_project_service.py 期望对齐：
-    - planning: 规划中
-    - active: 进行中
-    - paused: 暂停
-    - completed: 已完成
-    - cancelled: 已取消
+    必须与 STATE_MACHINE.md v2.6 第5章保持严格一致。
+    状态流程: draft → active → suspended → archived
+    终态: archived
+
+    SoT Reference: STATE_MACHINE.md v2.6 §5
     """
-    PLANNING = "planning"
-    ACTIVE = "active"
-    PAUSED = "paused"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    DRAFT = "draft"            # 草稿
+    ACTIVE = "active"          # 进行中
+    SUSPENDED = "suspended"    # 暂停
+    ARCHIVED = "archived"      # 已归档（终态）
+
+    def can_transition_to(self, target: 'ProjectStatus') -> bool:
+        """
+        检查是否可以转换到目标状态
+
+        状态流转规则（基于 STATE_MACHINE.md v2.6 第5章）：
+        - draft -> active, archived
+        - active -> suspended, archived
+        - suspended -> active, archived
+        - archived -> (终态，不可转换)
+        """
+        transitions = {
+            self.DRAFT: [self.ACTIVE, self.ARCHIVED],
+            self.ACTIVE: [self.SUSPENDED, self.ARCHIVED],
+            self.SUSPENDED: [self.ACTIVE, self.ARCHIVED],
+            self.ARCHIVED: [],  # 终态
+        }
+        return target in transitions.get(self, [])
 
 
 class AdAccountStatus(str, Enum):

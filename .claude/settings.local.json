@@ -104,7 +104,15 @@
       "Bash(git for-each-ref:*)",
       "Bash(git merge:*)",
       "Bash(cmd /c \"cd /d d:\\git\\1108 && git status 2>&1\")",
-      "Bash(cmd /c \"cd /d d:\\git\\1108 && git log --oneline -5 2>&1\")"
+      "Bash(cmd /c \"cd /d d:\\git\\1108 && git log --oneline -5 2>&1\")",
+      "Bash(del \"d:\\git\\1108\\frontend\\src\\public\\debug-console.js\")",
+      "Bash(git -C d:git1108 status)",
+      "Bash(git -C \"d:\\git\\1108\" diff --stat HEAD)",
+      "Bash(if not exist \"d:\\git\\1108\\backend\\tests\\integration\" mkdir \"d:\\git\\1108\\backend\\tests\\integration\")",
+      "Bash(if not exist \"d:\\git\\1108\\backend\\tests\\e2e\" mkdir \"d:\\git\\1108\\backend\\tests\\e2e\")",
+      "Bash(git -C \"d:\\git\\1108\" status)",
+      "Bash(git -C d:/git/1108 status)",
+      "Bash(git -C \"d:/git/1108\" log --oneline -3)"
     ],
     "deny": [],
     "ask": []

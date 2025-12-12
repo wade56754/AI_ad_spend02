@@ -65,11 +65,25 @@ interface Project {
   end_date: string;
 }
 
+interface TopupFormData {
+  account_id: string;
+  project_id: string;
+  amount: string;
+  currency: string;
+  urgency_level: string;
+  reason: string;
+  expected_impact: string;
+  alternative_plans: string;
+  supporting_documents: File[];
+  request_type: string;
+  scheduled_date: string;
+}
+
 interface TopupRequestFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (request: any) => void;
-  initialData?: any;
+  onSubmit: (request: TopupFormData) => void;
+  initialData?: Partial<TopupFormData>;
 }
 
 export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: TopupRequestFormProps) {
@@ -194,7 +208,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
   };
 
   // 处理表单字段变化
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: keyof TopupFormData, value: string | File[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

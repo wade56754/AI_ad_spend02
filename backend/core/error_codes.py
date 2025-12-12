@@ -696,6 +696,99 @@ class ProfitErrorCodes:
 
 
 # ============================================
+# 状态机错误码 (STATE_xxx)
+# 对齐 STATE_MACHINE.md v2.6 §8
+# ============================================
+
+class StateErrorCodes:
+    """状态机错误码 (STATE_MACHINE.md v2.6)"""
+
+    # 状态流转错误 (400-409)
+    FORBIDDEN_TRANSITION = ErrorCode(
+        "STATE_400",
+        "非法状态流转",
+        400
+    )
+
+    SKIP_REQUIRED_STEP = ErrorCode(
+        "STATE_401",
+        "跳过必要步骤",
+        400
+    )
+
+    FINAL_STATE_ROLLBACK = ErrorCode(
+        "STATE_402",
+        "终态非法回退",
+        400
+    )
+
+    SYSTEM_FORBIDDEN = ErrorCode(
+        "STATE_403",
+        "系统无权限流转",
+        403
+    )
+
+    ABSOLUTELY_FORBIDDEN = ErrorCode(
+        "STATE_405",
+        "绝对禁止的流转",
+        400
+    )
+
+    CONCURRENCY_CONFLICT = ErrorCode(
+        "STATE_409",
+        "并发冲突，版本不一致",
+        409
+    )
+
+
+# ============================================
+# 趋势风控错误码 (TREND_xxx)
+# 对齐 STATE_MACHINE.md v2.6 第8.3节
+# ============================================
+
+class TrendErrorCodes:
+    """趋势风控错误码 (STATE_MACHINE.md v2.6 §8.3)"""
+
+    # 风控触发 (001-003)
+    TREND_RISK_TRIGGERED = ErrorCode(
+        "TREND_001",
+        "趋势风控触发",
+        200  # 注意: 风控触发是成功的业务操作
+    )
+
+    REVIEW_REQUIRED = ErrorCode(
+        "TREND_002",
+        "风控复核未完成",
+        400
+    )
+
+    RULE_CONFIG_ERROR = ErrorCode(
+        "TREND_003",
+        "风控规则配置错误",
+        500
+    )
+
+    # 复核操作 (010-019)
+    RESOLUTION_NOTE_MISSING = ErrorCode(
+        "TREND_010",
+        "复核原因缺失",
+        400
+    )
+
+    ALREADY_RESOLVED = ErrorCode(
+        "TREND_011",
+        "已完成复核，无需重复操作",
+        400
+    )
+
+    INVALID_RESOLUTION_ACTION = ErrorCode(
+        "TREND_012",
+        "无效的复核操作",
+        400
+    )
+
+
+# ============================================
 # 错误码字典 (用于快速查找)
 # ============================================
 
@@ -800,6 +893,22 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "PROFIT_006": ProfitErrorCodes.MANUAL_UPDATE_FORBIDDEN,
     "PROFIT_007": ProfitErrorCodes.ACCOUNT_NOT_FOUND,
     "PROFIT_008": ProfitErrorCodes.DATE_RANGE_EXCEEDED,
+
+    # 状态机错误 (STATE_MACHINE.md v2.6)
+    "STATE_400": StateErrorCodes.FORBIDDEN_TRANSITION,
+    "STATE_401": StateErrorCodes.SKIP_REQUIRED_STEP,
+    "STATE_402": StateErrorCodes.FINAL_STATE_ROLLBACK,
+    "STATE_403": StateErrorCodes.SYSTEM_FORBIDDEN,
+    "STATE_405": StateErrorCodes.ABSOLUTELY_FORBIDDEN,
+    "STATE_409": StateErrorCodes.CONCURRENCY_CONFLICT,
+
+    # 趋势风控错误 (STATE_MACHINE.md v2.6 §8.3)
+    "TREND_001": TrendErrorCodes.TREND_RISK_TRIGGERED,
+    "TREND_002": TrendErrorCodes.REVIEW_REQUIRED,
+    "TREND_003": TrendErrorCodes.RULE_CONFIG_ERROR,
+    "TREND_010": TrendErrorCodes.RESOLUTION_NOTE_MISSING,
+    "TREND_011": TrendErrorCodes.ALREADY_RESOLVED,
+    "TREND_012": TrendErrorCodes.INVALID_RESOLUTION_ACTION,
 }
 
 

@@ -9,7 +9,7 @@ interface Column<T> {
   key: keyof T;
   title: string;
   sortable?: boolean;
-  render?: (value: any, record: T, index: number) => React.ReactNode;
+  render?: (value: T[keyof T], record: T, index: number) => React.ReactNode;
   width?: string;
   align?: 'left' | 'center' | 'right';
 }

@@ -106,11 +106,6 @@ export function DashboardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Debug: Log user info
-  React.useEffect(() => {
-    console.log('DashboardPage - User:', user, 'Loading:', isAuthLoading);
-  }, [user, isAuthLoading]);
-
   // 全局日期范围状态
   const [globalDateRange, setGlobalDateRange] = useState<DateRangePreset>('7d');
 

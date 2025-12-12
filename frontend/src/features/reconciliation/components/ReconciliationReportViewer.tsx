@@ -45,6 +45,7 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
+import { apiPost, apiDownload } from "@/lib/api";
 
 // 类型定义
 interface ReconciliationReport {
@@ -254,27 +255,22 @@ export function ReconciliationReportViewer({
   const handleGenerateReport = async (type: string) => {
     setGenerating(true);
     try {
-      const response = await fetch(`/api/v1/reconciliation/batches/${batchId}/generate-report`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
-      });
+      // 使用 apiPost 发送请求，自动添加认证 header
+      await apiPost(`/api/v1/reconciliation/batches/${batchId}/generate-report`, { type });
 
-      if (response.ok) {
-        toast.success("报告生成已开始，请稍候查看");
-        if (onGenerateReport) {
-          onGenerateReport(type);
-        }
-        // 定期检查报告状态
-        const checkInterval = setInterval(() => {
-          fetchReport();
-        }, 5000);
-
-        // 5分钟后停止检查
-        setTimeout(() => {
-          clearInterval(checkInterval);
-        }, 300000);
+      toast.success("报告生成已开始，请稍候查看");
+      if (onGenerateReport) {
+        onGenerateReport(type);
       }
+      // 定期检查报告状态
+      const checkInterval = setInterval(() => {
+        fetchReport();
+      }, 5000);
+
+      // 5分钟后停止检查
+      setTimeout(() => {
+        clearInterval(checkInterval);
+      }, 300000);
     } catch (error) {
       toast.error("生成报告失败");
     } finally {
@@ -287,19 +283,17 @@ export function ReconciliationReportViewer({
     if (!report?.file_url) return;
 
     try {
-      const response = await fetch(report.file_url);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `reconciliation-report-${format(new Date(), "yyyyMMdd")}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        toast.success("报告下载成功");
-      }
+      // 使用 apiDownload 下载文件，自动添加认证 header
+      const blob = await apiDownload(report.file_url);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `reconciliation-report-${format(new Date(), "yyyyMMdd")}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success("报告下载成功");
     } catch (error) {
       toast.error("下载失败");
     }
@@ -315,18 +309,13 @@ export function ReconciliationReportViewer({
     if (!report) return;
 
     try {
-      const response = await fetch(`/api/v1/reconciliation/reports/${report.id}/share`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipients: [], // 可以添加收件人
-          message: "请查看最新的对账报告",
-        }),
+      // 使用 apiPost 发送请求，自动添加认证 header
+      await apiPost(`/api/v1/reconciliation/reports/${report.id}/share`, {
+        recipients: [], // 可以添加收件人
+        message: "请查看最新的对账报告",
       });
 
-      if (response.ok) {
-        toast.success("报告分享成功");
-      }
+      toast.success("报告分享成功");
     } catch (error) {
       toast.error("分享失败");
     }

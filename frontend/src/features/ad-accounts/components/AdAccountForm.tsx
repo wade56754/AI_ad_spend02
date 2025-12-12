@@ -394,7 +394,7 @@ export function AdAccountForm({
                   <Label htmlFor="accountType">账户类型</Label>
                   <Select
                     value={formData.account_type}
-                    onValueChange={(value: any) => setFormData({ ...formData, account_type: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, account_type: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -448,7 +448,7 @@ export function AdAccountForm({
                   <Label htmlFor="status">初始状态</Label>
                   <Select
                     value={formData.account_status}
-                    onValueChange={(value: any) => setFormData({ ...formData, account_status: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, account_status: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
