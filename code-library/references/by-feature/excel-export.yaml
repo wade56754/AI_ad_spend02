@@ -1,0 +1,163 @@
+# Excel 导出功能参考
+# 版本: v1.0
+# 更新日期: 2025-12-17
+
+feature: "Excel 导出"
+updated: "2025-12-17"
+tags: [export, excel, xlsx, file-download]
+
+# 本项目现有参考
+local_references:
+  - name: "Excel 批量导入"
+    description: "可作为导出功能的参考 (逆向逻辑)"
+    files:
+      - backend/routers/daily_reports.py
+      - backend/config/excel_column_mapping.py
+    key_patterns:
+      - "pandas DataFrame 操作"
+      - "列名映射配置"
+      - "StreamingResponse 文件响应"
+
+# 外部参考项目
+external_references:
+  - id: "excel-001"
+    name: "FastAPI Excel Response"
+    github: "https://github.com/jmcnamara/XlsxWriter"
+    description: "XlsxWriter - Python Excel 写入库"
+    stars: "3500+"
+    license: "BSD-2-Clause"
+    tech_stack:
+      - "Python >= 3.6"
+      - "XlsxWriter"
+    features:
+      - "基础 Excel 生成"
+      - "自定义格式"
+      - "图表支持"
+      - "大文件支持 (constant memory mode)"
+    code_example: |
+      import xlsxwriter
+      from fastapi.responses import StreamingResponse
+      from io import BytesIO
+
+      def export_to_excel(data: list[dict]) -> StreamingResponse:
+          output = BytesIO()
+          workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+          worksheet = workbook.add_worksheet()
+
+          # 写入表头
+          headers = list(data[0].keys()) if data else []
+          for col, header in enumerate(headers):
+              worksheet.write(0, col, header)
+
+          # 写入数据
+          for row_num, row_data in enumerate(data, 1):
+              for col, key in enumerate(headers):
+                  worksheet.write(row_num, col, row_data.get(key))
+
+          workbook.close()
+          output.seek(0)
+
+          return StreamingResponse(
+              output,
+              media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              headers={"Content-Disposition": "attachment; filename=export.xlsx"}
+          )
+    adaptation_notes: |
+      1. 需要添加项目标准响应头
+      2. 需要集成权限检查
+      3. 需要添加分页/限制 (MAX_EXPORT_ROWS)
+      4. 使用项目列名映射配置
+
+  - id: "excel-002"
+    name: "openpyxl"
+    github: "https://github.com/theorchard/openpyxl"
+    description: "Python Excel 读写库 (xlsx)"
+    stars: "4500+"
+    license: "MIT"
+    tech_stack:
+      - "Python >= 3.6"
+      - "openpyxl"
+    features:
+      - "读写 xlsx 文件"
+      - "样式和格式"
+      - "图表"
+      - "公式"
+    code_example: |
+      from openpyxl import Workbook
+      from openpyxl.utils.dataframe import dataframe_to_rows
+      import pandas as pd
+
+      def export_dataframe(df: pd.DataFrame) -> bytes:
+          wb = Workbook()
+          ws = wb.active
+
+          for r in dataframe_to_rows(df, index=False, header=True):
+              ws.append(r)
+
+          from io import BytesIO
+          output = BytesIO()
+          wb.save(output)
+          return output.getvalue()
+
+  - id: "excel-003"
+    name: "pandas to_excel"
+    github: "https://github.com/pandas-dev/pandas"
+    description: "pandas 内置 Excel 导出"
+    features:
+      - "DataFrame.to_excel()"
+      - "多 sheet 支持"
+      - "样式 (需要 openpyxl)"
+    code_example: |
+      import pandas as pd
+      from io import BytesIO
+
+      def export_with_pandas(data: list[dict]) -> bytes:
+          df = pd.DataFrame(data)
+          output = BytesIO()
+          df.to_excel(output, index=False, engine='openpyxl')
+          return output.getvalue()
+
+# 推荐实现方案
+recommended_implementation:
+  backend:
+    description: "FastAPI + pandas + openpyxl"
+    steps:
+      - "查询数据 (带分页限制)"
+      - "转换为 DataFrame"
+      - "应用列名映射 (中文列名)"
+      - "导出为 xlsx"
+      - "返回 StreamingResponse"
+    code_template: |
+      @router.get("/export", response_class=StreamingResponse)
+      async def export_daily_reports(
+          project_id: Optional[str] = None,
+          start_date: Optional[date] = None,
+          end_date: Optional[date] = None,
+          db: Session = Depends(get_db),
+          current_user: User = Depends(get_current_user),
+      ):
+          """导出日报到 Excel"""
+          # 1. 权限检查
+          # 2. 查询数据 (限制 MAX_EXPORT_ROWS)
+          # 3. 转换为 DataFrame
+          # 4. 应用列名映射
+          # 5. 生成 Excel
+          # 6. 返回文件响应
+          pass
+
+  frontend:
+    description: "下载按钮 + Blob 处理"
+    code_template: |
+      async function exportToExcel(params: ExportParams) {
+        const response = await fetch(`/api/v1/daily-reports/export?${new URLSearchParams(params)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `export_${new Date().toISOString().split('T')[0]}.xlsx`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      }

@@ -11,7 +11,7 @@ baseline: MASTER.md v3.6, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 > **Documentation Framework**: ASDD (AI-Spec-Driven Development) 6-Layer Architecture
 > **Last Updated**: 2025-11-27
-> **Baseline**: MASTER v3.4, SoT v2.6, Dev-Guides vFinal, Architecture v1.0, Infrastructure v1.0, Agent v1.0
+> **Baseline**: MASTER v3.6, SoT v2.6, Dev-Guides vFinal, Architecture v1.0, Infrastructure v1.0, Agent v1.0
 
 ---
 
@@ -48,7 +48,7 @@ graph TD
 
 | Document | Version | Status | Purpose |
 |----------|---------|--------|---------|
-| [MASTER.md](./1.overview/MASTER.md) | v3.5 | 🟢 Frozen | System architecture constitution, 三大不可变量 |
+| [MASTER.md](./1.overview/MASTER.md) | v3.6 | 🟢 Frozen | System architecture constitution, 三大不可变量 |
 | [PROJECT.md](./1.overview/PROJECT.md) | v1.2 | 🟢 Frozen | Project scope, capability boundaries |
 | [FREEZE_MANIFEST_v1.0.md](./1.overview/FREEZE_MANIFEST_v1.0.md) | v1.0 | 🟢 Frozen | Overview Layer freeze record |
 
@@ -161,7 +161,7 @@ graph TD
 When technical conflicts arise, follow this priority order:
 
 ```
-MASTER.md v3.5 (System Constitution)
+MASTER.md v3.6 (System Constitution)
   ↓
 SoT Layer Freeze v2.6 (Technical Truth)
   ├── STATE_MACHINE.md v2.6 (State transitions)
@@ -388,6 +388,50 @@ openspec archive <change-id> --yes
 - **Testing**: [TESTING_STRATEGY.md](./3.dev-guides/TESTING_STRATEGY.md) v1.1
 - **Deployment**: [DEPLOYMENT_PIPELINE_SPEC.md](./5.infrastructure/DEPLOYMENT_PIPELINE_SPEC.md) v1.0
 - **Monitoring**: [OBSERVABILITY_GUIDE.md](./5.infrastructure/OBSERVABILITY_GUIDE.md) v1.0
+
+---
+
+## 📋 Proposals & Research (提案与调研)
+
+**Purpose**: Architecture proposals, reference research, and improvement plans
+
+| Document | Purpose | Status |
+|----------|---------|--------|
+| [AI_CODE_FACTORY_REFACTOR_PROPOSAL](./proposals/AI_CODE_FACTORY_REFACTOR_PROPOSAL.md) | 代码工厂重构方案 - 5阶段工作流设计 | 🟡 Active |
+| [CODE_FACTORY_REFERENCE_PROJECTS](./proposals/CODE_FACTORY_REFERENCE_PROJECTS.md) | 参考项目调研 - MetaGPT, OpenHands, SWE-agent | 🟢 Complete |
+| [AI_DRIVEN_DEV_REFERENCES](./proposals/AI_DRIVEN_DEV_REFERENCES.md) | AI驱动开发参考 - Cursor Rules, Spec-Kit | 🟢 Complete |
+| [DOC_STRUCTURE_ANALYSIS_REPORT](./proposals/DOC_STRUCTURE_ANALYSIS_REPORT.md) | 文档结构问题分析报告 | 🟢 Complete |
+
+---
+
+## 📚 Learning Resources (学习资源)
+
+| Document | Purpose | Audience |
+|----------|---------|----------|
+| [LEARNING_PLAN_80_20](./LEARNING_PLAN_80_20.md) | 80/20 学习计划 - 快速上手指南 | New Members |
+
+---
+
+## 📂 Extended Layers (扩展层)
+
+### Layer 7: Appendix (附录层)
+
+**Purpose**: Reference materials, glossary, sample data
+
+| Document | Purpose |
+|----------|---------|
+| [GLOSSARY.md](./7.appendix/GLOSSARY.md) | 术语表 |
+| [DECISIONS.md](./7.appendix/DECISIONS.md) | 架构决策记录 |
+| [SAMPLE_PAYLOADS.md](./7.appendix/SAMPLE_PAYLOADS.md) | 示例数据 |
+
+### Layer 8: Testing (测试层)
+
+**Purpose**: Test specifications and reports
+
+| Document | Purpose |
+|----------|---------|
+| [AUTOMATION_TEST_SPEC_v1.5.1.md](./8.testing/AUTOMATION_TEST_SPEC_v1.5.1.md) | API 自动化测试规范 |
+| [BACKEND_TEST_FREEZE_REPORT_v1.4.md](./8.testing/BACKEND_TEST_FREEZE_REPORT_v1.4.md) | 后端测试冻结报告 |
 
 ---
 

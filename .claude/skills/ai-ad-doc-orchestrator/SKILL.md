@@ -17,7 +17,7 @@ baseline:
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-doc-orchestrator</name>
-  <version>5.2</version>
+  <version>5.3</version>
   <domain>AI_AD_SYSTEM / ASDD 文档自动生成与审查工作流</domain>
   <profile>Workflow-Orchestrator / Multi-skill / Safe</profile>
 ──────────────────────────────────────────────

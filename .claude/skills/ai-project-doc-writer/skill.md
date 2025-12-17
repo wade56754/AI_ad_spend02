@@ -17,7 +17,7 @@ baseline:
 <skill>
 ──────────────────────────────────────────────
   <name>ai-project-doc-writer</name>
-  <version>3.0-superclaude</version>
+  <version>3.1</version>
   <domain>ASDD + SoT 文档生产</domain>
   <profile>Self-governed / Multi-role / Safe</profile>
 ──────────────────────────────────────────────

@@ -17,7 +17,7 @@ baseline:
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-agents-test-orchestrator</name>
-  <version>2.1</version>
+  <version>2.2</version>
   <status>active</status>
   <domain>AI_AD_SYSTEM / Agents 测试巡检工作流协调</domain>
   <profile>Test-Orchestrator / Quality-Gate / Auto-Regression</profile>

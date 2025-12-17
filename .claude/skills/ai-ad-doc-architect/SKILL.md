@@ -17,7 +17,7 @@ baseline:
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-doc-architect</name>
-  <version>2.1</version>
+  <version>2.2</version>
   <status>active</status>
   <domain>AI_AD_SYSTEM / ASDD 文档架构分析与一致性审查</domain>
   <profile>Architecture-Analyzer / Read-Only / Structural-Review</profile>

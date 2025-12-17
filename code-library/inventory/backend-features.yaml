@@ -1,0 +1,478 @@
+# AI 广告代投系统 - 后端功能清单
+# 版本: v1.0
+# 更新日期: 2025-12-17
+# 用途: 代码工厂搜索参考代码
+
+version: "1.0"
+updated: "2025-12-17"
+tech_stack:
+  framework: "FastAPI"
+  orm: "SQLAlchemy 2.x"
+  validation: "Pydantic v2"
+  database: "PostgreSQL (Supabase)"
+  auth: "Supabase Auth + JWT"
+
+features:
+  # ========== 认证与授权 ==========
+  auth:
+    - name: "JWT 认证"
+      description: "基于 Supabase Auth 的 JWT 令牌认证"
+      files:
+        - backend/core/security.py
+        - backend/deps/supabase_auth.py
+        - backend/routers/supabase_auth.py
+        - backend/services/supabase_auth_service.py
+      status: completed
+      reusable: true
+      tags: [auth, jwt, security, supabase]
+      patterns:
+        - "HTTPBearer 认证方案"
+        - "JWT 令牌验证"
+        - "AuthenticatedUser 数据类"
+
+    - name: "角色权限 RBAC"
+      description: "5 角色权限控制: admin, finance, data_operator, account_manager, media_buyer"
+      files:
+        - backend/core/dependencies.py
+        - backend/core/permissions.py
+        - backend/models/enums.py
+      status: completed
+      reusable: true
+      tags: [auth, rbac, permission, role]
+      patterns:
+        - "require_role 装饰器"
+        - "UserRole 枚举"
+        - "权限检查依赖注入"
+
+  # ========== 日报管理 ==========
+  daily_reports:
+    - name: "日报 CRUD"
+      description: "日报创建、查询、更新、删除完整接口"
+      files:
+        - backend/routers/daily_reports.py
+        - backend/services/daily_report_service.py
+        - backend/schemas/daily_report.py
+        - backend/models/workflow/daily_report.py
+      status: completed
+      reusable: true
+      tags: [crud, daily-report, api]
+      patterns:
+        - "FastAPI Router 模式"
+        - "Service 层分离"
+        - "Pydantic Schema 验证"
+
+    - name: "8 状态机流转"
+      description: "日报 8 状态流转: raw_submitted → trend_pending → ... → final_locked"
+      files:
+        - backend/services/daily_report_service.py
+        - backend/models/enums.py
+      status: completed
+      reusable: false  # 业务特定
+      tags: [state-machine, workflow, daily-report]
+      patterns:
+        - "DailyReportStatus 枚举"
+        - "状态转换校验"
+        - "审核流程"
+
+    - name: "Excel 批量导入"
+      description: "从 Excel 文件批量导入日报数据"
+      files:
+        - backend/routers/daily_reports.py
+        - backend/config/excel_column_mapping.py
+      status: completed
+      reusable: true
+      tags: [import, batch, excel, file-upload]
+      patterns:
+        - "UploadFile 文件上传"
+        - "pandas Excel 解析"
+        - "列名映射配置"
+        - "批量数据验证"
+      code_location: "backend/routers/daily_reports.py:parse_excel_row_to_report"
+
+    - name: "分页查询"
+      description: "带筛选条件的分页查询"
+      files:
+        - backend/routers/daily_reports.py
+        - backend/core/response.py
+      status: completed
+      reusable: true
+      tags: [pagination, query, filter]
+      patterns:
+        - "paginated_response 响应格式"
+        - "Query 参数验证"
+        - "SQLAlchemy 分页查询"
+
+  # ========== 充值管理 ==========
+  topup:
+    - name: "充值申请 CRUD"
+      description: "充值申请创建、审批、支付确认流程"
+      files:
+        - backend/routers/topup.py
+        - backend/services/topup_service.py
+        - backend/schemas/topup.py
+        - backend/models/workflow/topup_request.py
+      status: completed
+      reusable: true
+      tags: [crud, topup, workflow, approval]
+      patterns:
+        - "审批流程 (draft → pending_review → finance_approve → paid → completed)"
+        - "Service 层事务处理"
+
+    - name: "充值状态流转"
+      description: "7 状态审批流程"
+      files:
+        - backend/services/topup_service.py
+        - backend/models/enums.py
+      status: completed
+      reusable: false
+      tags: [state-machine, topup, approval]
+      patterns:
+        - "TopupRequestStatus 枚举"
+        - "状态转换校验"
+
+  # ========== 账本系统 ==========
+  ledger:
+    - name: "双账本系统"
+      description: "PROJECT 账本 + SUPPLIER 账本双账本记账"
+      files:
+        - backend/routers/ledger.py
+        - backend/services/ledger_service.py
+        - backend/models/finance/ledger.py
+        - backend/models/ledger.py
+      status: completed
+      reusable: false  # 业务特定
+      tags: [ledger, finance, accounting]
+      patterns:
+        - "LedgerEntryType 枚举 (REVENUE, COST, TOPUP, TRANSFER_OUT, TRANSFER_IN, REVERSAL)"
+        - "借贷平衡校验"
+        - "红冲机制"
+
+    - name: "余额查询"
+      description: "项目/供应商余额实时计算"
+      files:
+        - backend/services/ledger_service.py
+      status: completed
+      reusable: true
+      tags: [ledger, balance, query]
+      patterns:
+        - "聚合查询"
+        - "实时余额计算"
+
+  # ========== 对账管理 ==========
+  reconciliation:
+    - name: "对账批次管理"
+      description: "对账批次创建、审核、调整流程"
+      files:
+        - backend/routers/reconciliation.py
+        - backend/routers/reconciliation_extended.py
+        - backend/services/reconciliation_service.py
+        - backend/services/reconciliation_service_extended.py
+        - backend/schemas/reconciliation.py
+        - backend/models/finance/reconciliation.py
+      status: completed
+      reusable: true
+      tags: [reconciliation, batch, workflow]
+      patterns:
+        - "批次状态机 (draft → pending_review → approved/needs_adjustment → completed)"
+        - "明细状态管理"
+
+    - name: "对账调整"
+      description: "对账调整 (增加/减少/核销)"
+      files:
+        - backend/services/reconciliation_service.py
+        - backend/models/enums.py
+      status: completed
+      reusable: true
+      tags: [reconciliation, adjustment]
+      patterns:
+        - "ReconciliationAdjustmentType 枚举"
+        - "调整记录追踪"
+
+  # ========== 项目管理 ==========
+  projects:
+    - name: "项目 CRUD"
+      description: "项目创建、查询、更新、归档"
+      files:
+        - backend/routers/projects.py
+        - backend/services/project_service.py
+        - backend/schemas/project.py
+        - backend/models/core/project.py
+      status: completed
+      reusable: true
+      tags: [crud, project]
+      patterns:
+        - "ProjectStatus 状态 (planning, active, paused, completed, cancelled)"
+        - "项目成员管理"
+
+    - name: "项目模板"
+      description: "项目模板管理"
+      files:
+        - backend/routers/project_templates.py
+        - backend/services/project_template_service.py
+        - backend/schemas/project_template.py
+      status: completed
+      reusable: true
+      tags: [template, project]
+
+  # ========== 供应商管理 ==========
+  suppliers:
+    - name: "供应商 CRUD"
+      description: "供应商创建、查询、更新"
+      files:
+        - backend/routers/suppliers.py
+        - backend/services/supplier_service.py
+        - backend/schemas/supplier.py
+        - backend/models/finance/supplier.py
+      status: completed
+      reusable: true
+      tags: [crud, supplier]
+
+  # ========== 广告账户管理 ==========
+  ad_accounts:
+    - name: "广告账户 CRUD"
+      description: "广告账户创建、查询、状态管理"
+      files:
+        - backend/routers/ad_accounts.py
+        - backend/services/ad_account_service.py
+        - backend/schemas/ad_account.py
+        - backend/models/accounts/ad_account.py
+      status: completed
+      reusable: true
+      tags: [crud, ad-account]
+      patterns:
+        - "AdAccountStatus 状态机 (new, testing, active, suspended, dead, archived)"
+        - "状态转换规则"
+
+  # ========== 转账管理 ==========
+  transfers:
+    - name: "死号余额迁移"
+      description: "死号余额迁移申请与审批"
+      files:
+        - backend/routers/transfers.py
+        - backend/services/transfer_service.py
+        - backend/schemas/transfer.py
+        - backend/models/workflow/transfer_request.py
+      status: completed
+      reusable: true
+      tags: [transfer, workflow, approval]
+      patterns:
+        - "TransferRequestStatus 状态 (draft, pending_approval, approved, rejected, completed)"
+
+  # ========== 结算管理 ==========
+  settlements:
+    - name: "结算管理"
+      description: "结算创建与查询"
+      files:
+        - backend/routers/settlements.py
+        - backend/services/settlement_service.py
+        - backend/schemas/settlement.py
+        - backend/models/finance/settlement.py
+      status: completed
+      reusable: true
+      tags: [settlement, finance]
+
+  # ========== AI 监控 ==========
+  ai_monitoring:
+    - name: "AI 异常检测"
+      description: "基于 AI 的数据异常检测"
+      files:
+        - backend/routers/ai_monitoring.py
+        - backend/services/ai_monitoring_service.py
+        - backend/services/ai_anomaly_detection_service.py
+        - backend/models/ai_monitoring.py
+      status: completed
+      reusable: true
+      tags: [ai, monitoring, anomaly-detection]
+
+    - name: "AI 分析报表"
+      description: "AI 驱动的数据分析"
+      files:
+        - backend/routers/ai_analytics.py
+      status: completed
+      reusable: true
+      tags: [ai, analytics, report]
+
+  # ========== 基础设施 ==========
+  infrastructure:
+    - name: "统一响应格式"
+      description: "标准化 API 响应格式"
+      files:
+        - backend/core/response.py
+        - backend/schemas/response.py
+      status: completed
+      reusable: true
+      tags: [response, api, standard]
+      patterns:
+        - "success_response / error_response / paginated_response"
+        - "StandardResponse 模型"
+
+    - name: "统一错误码"
+      description: "分类错误码系统"
+      files:
+        - backend/core/error_codes.py
+        - backend/exceptions/custom_exceptions.py
+        - backend/exceptions/handlers.py
+      status: completed
+      reusable: true
+      tags: [error, exception, api]
+      patterns:
+        - "SystemErrorCodes / BusinessErrorCodes / ValidationErrorCodes / AuthErrorCodes"
+        - "自定义异常类"
+        - "全局异常处理器"
+
+    - name: "审计日志"
+      description: "操作审计日志记录"
+      files:
+        - backend/core/audit.py
+        - backend/services/audit_service.py
+        - backend/services/audit_log_service.py
+        - backend/models/audit/audit_log.py
+      status: completed
+      reusable: true
+      tags: [audit, log, security]
+
+    - name: "数据库连接"
+      description: "SQLAlchemy 数据库连接管理"
+      files:
+        - backend/core/db.py
+        - backend/core/config.py
+      status: completed
+      reusable: true
+      tags: [database, connection, config]
+      patterns:
+        - "get_db 依赖注入"
+        - "AsyncSession (可选)"
+
+    - name: "事务管理"
+      description: "数据库事务管理"
+      files:
+        - backend/core/transaction.py
+      status: completed
+      reusable: true
+      tags: [transaction, database]
+
+# ========== 渠道与代理商 ==========
+  channels:
+    - name: "渠道管理"
+      description: "广告渠道管理 (Facebook, Google, TikTok 等)"
+      files:
+        - backend/routers/channels.py
+      status: completed
+      reusable: true
+      tags: [crud, channel]
+
+  agents:
+    - name: "代理商管理"
+      description: "代理商实体管理"
+      files:
+        - backend/routers/agents.py
+      status: completed
+      reusable: true
+      tags: [crud, agent]
+
+  # ========== 报表 ==========
+  reports:
+    - name: "综合报表"
+      description: "综合报表生成"
+      files:
+        - backend/routers/reports.py
+      status: completed
+      reusable: true
+      tags: [report, statistics]
+
+    - name: "财务利润报表"
+      description: "利润计算和财务报表"
+      files:
+        - backend/routers/finance_profit.py
+        - backend/services/finance_service.py
+      status: completed
+      reusable: true
+      tags: [finance, profit, report]
+
+  # ========== 系统功能 ==========
+  system:
+    - name: "导入任务管理"
+      description: "批量导入任务管理"
+      files:
+        - backend/routers/import_jobs.py
+      status: completed
+      reusable: true
+      tags: [import, batch, job]
+
+    - name: "健康检查"
+      description: "系统健康检查端点"
+      files:
+        - backend/routers/health.py
+      status: completed
+      reusable: true
+      tags: [health, monitoring]
+
+# =============================================================================
+# 通用模式索引 (用于代码工厂搜索)
+# =============================================================================
+common_patterns:
+  crud:
+    description: "标准 CRUD 操作 (Create, Read, Update, Delete)"
+    example_features: [projects, suppliers, ad_accounts]
+    reference_files:
+      - backend/routers/projects.py
+      - backend/services/project_service.py
+      - backend/schemas/project.py
+
+  approval_workflow:
+    description: "多级审批工作流"
+    example_features: [topup, transfers, settlements]
+    reference_files:
+      - backend/routers/topup.py
+      - backend/services/topup_service.py
+
+  excel_import_export:
+    description: "Excel 批量导入导出"
+    example_features: [daily_reports, reconciliation]
+    reference_files:
+      - backend/routers/daily_reports.py
+      - backend/config/excel_column_mapping.py
+      - backend/utils/export.py
+
+  state_machine:
+    description: "状态机驱动的业务流程 (8 状态机)"
+    example_features: [daily_reports, topup, transfers]
+    reference_files:
+      - backend/services/daily_report_service.py
+      - backend/models/enums.py
+
+  pagination:
+    description: "分页查询"
+    reference_files:
+      - backend/core/response.py
+
+  standard_response:
+    description: "标准响应格式 (Envelope)"
+    reference_files:
+      - backend/core/response.py
+      - backend/core/error_codes.py
+      - backend/exceptions/custom_exceptions.py
+
+  dependency_injection:
+    description: "FastAPI 依赖注入"
+    reference_files:
+      - backend/core/dependencies.py
+      - backend/core/db.py
+
+# ========== 待开发功能 ==========
+todo_features:
+  - name: "Excel 批量导出"
+    description: "日报批量导出为 Excel 文件"
+    reference: "backend/routers/daily_reports.py (导入功能可参考)"
+    tags: [export, batch, excel]
+    priority: high
+
+  - name: "WebSocket 实时通知"
+    description: "实时推送状态变更通知"
+    tags: [websocket, notification, realtime]
+    priority: medium
+
+  - name: "文件存储服务"
+    description: "文件上传/下载/管理服务"
+    tags: [file, storage, upload]
+    priority: medium

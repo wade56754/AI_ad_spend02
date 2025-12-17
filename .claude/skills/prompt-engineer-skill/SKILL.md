@@ -1,6 +1,6 @@
 ---
 name: prompt-engineer
-version: 2.1
+version: "2.1"
 status: ready_for_production
 layer: agent
 owner: wade

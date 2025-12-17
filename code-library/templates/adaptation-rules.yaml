@@ -1,0 +1,184 @@
+# 代码适配规则配置
+# 版本: v1.0
+# 更新日期: 2025-12-17
+# 用途: 代码工厂适配外部代码时使用的转换规则
+
+version: "1.0"
+updated: "2025-12-17"
+
+# ========== Pydantic v2 适配规则 ==========
+# 参考来源: https://docs.pydantic.dev/latest/migration/
+pydantic_v2:
+  description: "Pydantic v1 → v2 迁移规则"
+  source_reference: "Pydantic Migration Guide"
+
+  replacements:
+    # Config 类 → model_config
+    - pattern: "class Config:"
+      replacement: "model_config = ConfigDict("
+      context: "将内部 Config 类改为 model_config 属性"
+
+    # validator → field_validator
+    - pattern: "@validator\\("
+      replacement: "@field_validator("
+      context: "装饰器更名"
+
+    # root_validator → model_validator
+    - pattern: "@root_validator"
+      replacement: "@model_validator"
+      context: "根验证器更名"
+
+    # orm_mode → from_attributes
+    - pattern: "orm_mode\\s*=\\s*True"
+      replacement: "from_attributes=True"
+      context: "ORM 模式配置更名"
+
+    # allow_mutation → frozen
+    - pattern: "allow_mutation\\s*=\\s*False"
+      replacement: "frozen=True"
+      context: "不可变配置更名"
+
+    # schema_extra → json_schema_extra
+    - pattern: "schema_extra"
+      replacement: "json_schema_extra"
+      context: "JSON Schema 扩展更名"
+
+  imports:
+    add:
+      - "from pydantic import ConfigDict"
+      - "from pydantic import field_validator, model_validator"
+    remove:
+      - "from pydantic import validator, root_validator"
+
+# ========== SQLAlchemy 2.x 适配规则 ==========
+# 参考来源: https://docs.sqlalchemy.org/en/20/changelog/migration_20.html
+sqlalchemy_2:
+  description: "SQLAlchemy 1.x → 2.x 迁移规则"
+  source_reference: "SQLAlchemy 2.0 Migration Guide"
+
+  replacements:
+    # Query API → Select API
+    - pattern: "session\\.query\\(([^)]+)\\)"
+      replacement: "session.execute(select($1))"
+      context: "Query API 改为 Select API"
+
+    # .all() 结果提取
+    - pattern: "\\.all\\(\\)"
+      replacement: ".scalars().all()"
+      context: "需要显式调用 scalars()"
+
+    # .first() 结果提取
+    - pattern: "\\.first\\(\\)"
+      replacement: ".scalars().first()"
+      context: "需要显式调用 scalars()"
+
+    # declarative_base
+    - pattern: "from sqlalchemy\\.ext\\.declarative import declarative_base"
+      replacement: "from sqlalchemy.orm import DeclarativeBase"
+      context: "声明式基类更改"
+
+  imports:
+    add:
+      - "from sqlalchemy import select"
+      - "from sqlalchemy.orm import DeclarativeBase"
+
+# ========== FastAPI 适配规则 ==========
+fastapi:
+  description: "FastAPI 代码规范化规则"
+
+  patterns:
+    # 路由定义
+    router_definition:
+      pattern: 'router = APIRouter(prefix="/{prefix}", tags=["{tag}"])'
+      example: 'router = APIRouter(prefix="/daily-reports", tags=["daily-reports"])'
+
+    # 依赖注入
+    dependency_injection:
+      pattern: "def get_{service}(db: Session = Depends(get_db)) -> {Service}Service:"
+      example: "def get_daily_report_service(db: Session = Depends(get_db)) -> DailyReportService:"
+
+    # 响应格式
+    response_format:
+      success: "return success_response(data=result)"
+      error: "return error_response(code=ErrorCode.XXX, message='...')"
+      paginated: "return paginated_response(items=items, total=total, page=page, page_size=page_size)"
+
+# ========== 项目代码规范 ==========
+project_standards:
+  description: "本项目特定的代码规范"
+
+  imports:
+    backend:
+      response:
+        - "from backend.core.response import success_response, error_response, paginated_response, StandardResponse"
+      error_codes:
+        - "from backend.core.error_codes import SystemErrorCodes, BusinessErrorCodes, ValidationErrorCodes, AuthErrorCodes"
+      exceptions:
+        - "from backend.exceptions.custom_exceptions import BusinessLogicError, ResourceNotFoundError, PermissionDeniedError"
+      dependencies:
+        - "from backend.core.dependencies import get_current_user, require_role"
+        - "from backend.core.db import get_db"
+
+    frontend:
+      query:
+        - "import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'"
+      api:
+        - "import { apiFetch, apiFetchPaginated } from '@/lib/api'"
+
+  naming:
+    backend:
+      router: "{entity}_router.py 或 {entities}.py"
+      service: "{entity}_service.py"
+      schema: "{entity}.py (在 schemas/ 目录)"
+      model: "{entity}.py (在 models/ 目录)"
+    frontend:
+      hook: "use{Entity}.ts 或 use{Entities}.ts"
+      api: "{entity}Api.ts 或 {entities}Api.ts"
+      types: "{entity}.types.ts"
+      component: "{ComponentName}.tsx (PascalCase)"
+
+  file_structure:
+    backend_feature:
+      - "backend/routers/{entity}.py"
+      - "backend/services/{entity}_service.py"
+      - "backend/schemas/{entity}.py"
+      - "backend/models/{module}/{entity}.py"
+    frontend_module:
+      - "frontend/src/modules/{module}/index.ts"
+      - "frontend/src/modules/{module}/hooks/use{Entity}.ts"
+      - "frontend/src/modules/{module}/services/{entity}Api.ts"
+      - "frontend/src/modules/{module}/types/{entity}.types.ts"
+
+# ========== 错误码映射 ==========
+error_code_mapping:
+  description: "外部错误码到本项目错误码的映射"
+
+  http_to_error_code:
+    400: "ValidationErrorCodes.INVALID_PARAMS"
+    401: "AuthErrorCodes.TOKEN_INVALID"
+    403: "AuthErrorCodes.PERMISSION_DENIED"
+    404: "BusinessErrorCodes.RESOURCE_NOT_FOUND"
+    409: "BusinessErrorCodes.RESOURCE_CONFLICT"
+    500: "SystemErrorCodes.INTERNAL_ERROR"
+
+# ========== 状态机适配 ==========
+state_machine_mapping:
+  description: "外部状态值到本项目状态的映射"
+
+  daily_report:
+    external_to_internal:
+      "draft": "raw_submitted"
+      "pending": "trend_pending"
+      "approved": "final_confirmed"
+      "completed": "final_locked"
+      "rejected": null  # 本项目无对应状态
+
+  topup:
+    internal_states:
+      - "draft"
+      - "pending_review"
+      - "finance_approve"
+      - "paid"
+      - "completed"
+      - "rejected"
+      - "cancelled"

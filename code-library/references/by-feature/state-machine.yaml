@@ -1,0 +1,157 @@
+# 状态机实现参考
+# 版本: v1.0
+# 更新日期: 2025-12-18
+
+feature: "状态机"
+updated: "2025-12-18"
+tags: [state-machine, workflow, transition, validation]
+
+# 本项目现有参考
+local_references:
+  - name: "日报 8 状态机"
+    description: "日报生命周期状态流转"
+    files:
+      - backend/services/daily_report_service.py
+      - backend/models/daily_report.py
+    key_patterns:
+      - "状态枚举定义"
+      - "转换规则校验"
+      - "权限角色约束"
+    sot_reference: "STATE_MACHINE.md v2.6"
+    states:
+      - raw_submitted
+      - trend_pending
+      - trend_ok
+      - trend_flagged
+      - trend_resolved
+      - final_pending
+      - final_confirmed
+      - final_locked
+
+  - name: "Import Job 状态机"
+    description: "导入任务状态流转"
+    files:
+      - backend/services/import_job_service.py
+      - backend/models/import_job.py
+    sot_reference: "IMPORT_JOB_SOT.md"
+    states:
+      - pending
+      - processing
+      - completed
+      - failed
+
+# 外部参考项目
+external_references:
+  - id: "fsm-001"
+    name: "python-statemachine"
+    github: "https://github.com/fgmacedo/python-statemachine"
+    description: "Python 状态机库"
+    stars: "800+"
+    license: "MIT"
+    features:
+      - "声明式状态定义"
+      - "转换回调"
+      - "守卫条件"
+      - "事件触发"
+    code_example: |
+      from statemachine import StateMachine, State
+
+      class DailyReportStateMachine(StateMachine):
+          # 状态定义
+          raw_submitted = State(initial=True)
+          trend_pending = State()
+          trend_ok = State()
+          trend_flagged = State()
+          trend_resolved = State()
+          final_pending = State()
+          final_confirmed = State()
+          final_locked = State(final=True)
+
+          # 转换定义
+          submit_for_trend = raw_submitted.to(trend_pending)
+          approve_trend = trend_pending.to(trend_ok)
+          flag_trend = trend_pending.to(trend_flagged)
+          resolve_flag = trend_flagged.to(trend_resolved)
+          submit_for_final = trend_ok.to(final_pending) | trend_resolved.to(final_pending)
+          confirm_final = final_pending.to(final_confirmed)
+          lock_final = final_confirmed.to(final_locked)
+
+          # 守卫条件
+          def before_submit_for_trend(self, event_data):
+              """提交前校验"""
+              if not event_data.kwargs.get('user_role') in ['media_buyer', 'admin']:
+                  raise PermissionError("Only media_buyer can submit")
+
+  - id: "fsm-002"
+    name: "transitions"
+    github: "https://github.com/pytransitions/transitions"
+    description: "轻量级状态机"
+    stars: "5000+"
+    license: "MIT"
+    code_example: |
+      from transitions import Machine
+
+      states = ['raw_submitted', 'trend_pending', 'trend_ok', 'final_locked']
+
+      transitions = [
+          {'trigger': 'submit', 'source': 'raw_submitted', 'dest': 'trend_pending'},
+          {'trigger': 'approve', 'source': 'trend_pending', 'dest': 'trend_ok'},
+          {'trigger': 'lock', 'source': 'trend_ok', 'dest': 'final_locked'},
+      ]
+
+      class DailyReport:
+          pass
+
+      report = DailyReport()
+      machine = Machine(model=report, states=states, transitions=transitions, initial='raw_submitted')
+
+# 推荐实现方案 (项目现有模式)
+recommended_implementation:
+  pattern: "配置驱动 + 服务校验"
+  description: "使用配置定义转换规则，服务层校验"
+
+  state_config:
+    file: "backend/config/state_machine.py"
+    example: |
+      DAILY_REPORT_TRANSITIONS = {
+          "raw_submitted": {
+              "allowed_next": ["trend_pending"],
+              "allowed_roles": ["media_buyer", "admin"],
+              "requires_fields": ["project_id", "report_date", "raw_spend"]
+          },
+          "trend_pending": {
+              "allowed_next": ["trend_ok", "trend_flagged"],
+              "allowed_roles": ["data_operator", "admin"],
+              "requires_fields": ["trend_result"]
+          },
+          # ...
+      }
+
+  service_validation:
+    file: "backend/services/daily_report_service.py"
+    example: |
+      def validate_transition(
+          current_status: str,
+          target_status: str,
+          user_role: str
+      ) -> tuple[bool, str]:
+          """校验状态转换是否合法"""
+          config = DAILY_REPORT_TRANSITIONS.get(current_status)
+          if not config:
+              return False, f"Invalid current status: {current_status}"
+
+          if target_status not in config["allowed_next"]:
+              return False, f"Transition {current_status} -> {target_status} not allowed"
+
+          if user_role not in config["allowed_roles"]:
+              return False, f"Role {user_role} cannot perform this transition"
+
+          return True, ""
+
+# 项目适配规则
+adaptation_rules:
+  - "所有状态定义必须来自 STATE_MACHINE.md v2.6"
+  - "禁止发明新状态或转换路径"
+  - "终态 (final_locked) 不可逆转"
+  - "状态变更必须记录到 status_history"
+  - "账务相关状态变更触发 ledger_entry"

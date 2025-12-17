@@ -1,0 +1,103 @@
+# 批量操作功能参考
+# 版本: v1.0
+# 更新日期: 2025-12-18
+
+feature: "批量操作"
+updated: "2025-12-18"
+tags: [batch, bulk, transaction, performance]
+
+# 本项目现有参考
+local_references:
+  - name: "批量状态转换"
+    description: "日报批量状态流转"
+    files:
+      - backend/services/daily_report_service.py
+      - backend/routers/daily_reports.py
+    key_patterns:
+      - "bulk_update_status"
+      - "事务管理"
+      - "状态机校验"
+      - "权限批量检查"
+
+  - name: "批量导入"
+    description: "Excel 批量导入日报"
+    files:
+      - backend/services/import_job_service.py
+    key_patterns:
+      - "pandas 批量处理"
+      - "db.bulk_insert_mappings"
+      - "错误收集与汇总"
+
+# 外部参考项目
+external_references:
+  - id: "batch-001"
+    name: "SQLAlchemy Bulk Operations"
+    description: "SQLAlchemy 批量操作最佳实践"
+    features:
+      - "bulk_insert_mappings"
+      - "bulk_update_mappings"
+      - "batch commit"
+    code_example: |
+      from sqlalchemy.orm import Session
+
+      def bulk_create(db: Session, items: list[dict], model_class):
+          """批量创建记录"""
+          db.bulk_insert_mappings(model_class, items)
+          db.commit()
+
+      def bulk_update(db: Session, items: list[dict], model_class):
+          """批量更新记录"""
+          db.bulk_update_mappings(model_class, items)
+          db.commit()
+
+      def chunked_insert(db: Session, items: list, chunk_size: int = 1000):
+          """分批插入大量数据"""
+          for i in range(0, len(items), chunk_size):
+              chunk = items[i:i + chunk_size]
+              db.add_all(chunk)
+              db.commit()
+
+  - id: "batch-002"
+    name: "Transaction Management"
+    description: "批量操作事务管理"
+    code_example: |
+      from contextlib import contextmanager
+
+      @contextmanager
+      def batch_transaction(db: Session):
+          """批量操作事务上下文"""
+          try:
+              yield db
+              db.commit()
+          except Exception as e:
+              db.rollback()
+              raise
+
+# 推荐实现方案
+recommended_implementation:
+  api_design:
+    - "POST /batch-{action} 批量操作端点"
+    - "请求体: { ids: string[], ...params }"
+    - "响应: { success: [], failed: [], errors: [] }"
+
+  validation:
+    - "ID 列表大小限制 (MAX_BATCH_SIZE)"
+    - "权限批量预检"
+    - "状态机批量校验"
+
+  error_handling:
+    - "部分成功策略 (partial success)"
+    - "错误收集与汇总返回"
+    - "事务回滚策略"
+
+  performance:
+    - "分批处理 (chunk_size)"
+    - "批量查询替代循环查询"
+    - "异步处理大批量操作"
+
+# 项目适配规则
+adaptation_rules:
+  - "MAX_BATCH_SIZE = 100 (单次批量上限)"
+  - "使用 STATE_MACHINE.md 校验批量状态转换"
+  - "错误码遵循 ERROR_CODES_SOT.md"
+  - "审计日志记录批量操作"

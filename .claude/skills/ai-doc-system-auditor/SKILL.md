@@ -17,7 +17,7 @@ baseline:
 <skill>
 ──────────────────────────────────────────────
   <name>ai-doc-system-auditor</name>
-  <version>1.4</version>
+  <version>1.5</version>
   <domain>ASDD 文档体系审计（Constitution + SoT + Implementation + AI Layer）</domain>
   <profile>System-Audit / Read-Only / High-Safety / Fail-Fast</profile>
 ──────────────────────────────────────────────

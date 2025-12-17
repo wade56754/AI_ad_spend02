@@ -17,7 +17,7 @@ baseline:
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-doc-fixer</name>
-  <version>3.0-superclaude</version>
+  <version>3.1</version>
   <domain>AI_AD_SYSTEM / ASDD 项目文档审核+修订</domain>
   <profile>Reviewer+Fixer / Safe / SoT-aware</profile>
 ──────────────────────────────────────────────

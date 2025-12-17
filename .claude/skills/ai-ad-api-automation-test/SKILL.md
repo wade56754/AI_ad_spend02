@@ -18,7 +18,7 @@ baseline:
 
 <skill>
 <name>ai-ad-api-automation-test</name>
-<version>v1.3</version>
+<version>1.3</version>
 <domain>AI_AD_SYSTEM / API Automation Testing</domain>
 <profile>API-Test-Orchestrator / Newman-Integration / pytest-Generation</profile>
 

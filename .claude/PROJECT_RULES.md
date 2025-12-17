@@ -1,6 +1,95 @@
+---
+# Cursor Rules 格式 - YAML Frontmatter
+alwaysApply: true
+description: "AI 广告代投系统 - 项目规则总纲 (Project Constitution)"
+version: "3.5"
+author: "AI Architecture Team"
+lastUpdated: "2025-12-17"
+
+# 六大规则分类 (参考 Cursor Rules & Prompts)
+categories:
+  - id: "constitution"
+    name: "系统宪法"
+    description: "SoT 裁判链、不可侵犯原则"
+    sections: ["§一", "§二"]
+
+  - id: "code-style"
+    name: "代码风格"
+    description: "技术栈约束、响应格式、类型检查"
+    sections: ["§三", "§七"]
+
+  - id: "organization"
+    name: "项目组织"
+    description: "ASDD 4层架构、文档路径、模块结构"
+    sections: ["§十三"]
+
+  - id: "constraints"
+    name: "约束规则"
+    description: "角色权限、数据库设计、状态机约束"
+    sections: ["§四", "§五", "§六"]
+
+  - id: "workflow"
+    name: "工作流程"
+    description: "API开发流程、OpenSpec变更流程、回归测试"
+    sections: ["§七", "§十四", "§后端回归测试"]
+
+  - id: "ai-behavior"
+    name: "AI 行为"
+    description: "AI禁止清单、自检清单、冲突处理"
+    sections: ["§八", "§九", "§十", "§十二"]
+
+# 基准文档
+baseline:
+  overview_freeze: "FREEZE_MANIFEST_v1.0.md"
+  sot_freeze: "SOT_FREEZE_MANIFEST_v2.6.md"
+  dev_guides_freeze: "DEV_GUIDES_FREEZE_MANIFEST_v2.1.md"
+  architecture_freeze: "ARCHITECTURE_FREEZE_MANIFEST_v1.0.md"
+
+# 技术栈 (快速参考)
+techStack:
+  backend:
+    framework: "FastAPI"
+    orm: "SQLAlchemy 2.x"
+    validation: "Pydantic v2"
+    database: "PostgreSQL (Supabase)"
+    auth: "Supabase Auth + JWT"
+  frontend:
+    framework: "Next.js 14 (App Router)"
+    language: "TypeScript (strict)"
+    ui: "shadcn/ui + Tailwind CSS"
+    http: "apiFetch (lib/api.ts)"
+
+# SoT 裁判链 (快速参考)
+sotChain:
+  - name: "MASTER.md"
+    version: "v3.4"
+    role: "系统宪法"
+  - name: "STATE_MACHINE.md"
+    version: "v2.6"
+    role: "状态定义"
+  - name: "DATA_SCHEMA.md"
+    version: "v5.2"
+    role: "数据结构"
+  - name: "BUSINESS_RULES.md"
+    version: "v3.1"
+    role: "业务规则"
+  - name: "API_SOT.md"
+    version: "v9.0"
+    role: "API契约"
+  - name: "ERROR_CODES_SOT.md"
+    version: "v2.1"
+    role: "错误码"
+  - name: "AUTH_SPEC.md"
+    version: "v2.0"
+    role: "认证授权"
+  - name: "LEDGER_SOT.md"
+    version: "v1.1"
+    role: "账本规则"
+---
+
 # AI 广告代投系统 - 项目规则总纲 (Project Constitution)
 
-> **文档版本**: v3.4 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0 + OpenSpec v1.0)
+> **文档版本**: v3.5 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0 + OpenSpec v1.0 + Cursor Rules Format)
 > **文档类型**: Claude/SuperClaude 的"世界观" - SoT 体系的裁判规则
 > **适用范围**: 所有开发/重构/代码生成工作
 > **规范级别**: 🔴 强制执行 (CI/CD 验证)
@@ -985,6 +1074,7 @@ docs(sot): update STATE_MACHINE for 9-state [update-state-machine-v3]
 **维护责任人**: AI Architecture Team
 
 **版本变更历史**:
+- v3.5 (2025-12-17): 整合 Cursor Rules 格式，添加 YAML frontmatter，六大规则分类体系，技术栈/SoT裁判链快速参考
 - v3.4 (2025-12-02): 新增第十三章「后端回归测试门槛」，强制回归测试规则，CI/CD 集成要求，OpenSpec change 回归测试要求
 - v3.3 (2025-12-01): 新增第十四章「OpenSpec 集成规则」，确立 OpenSpec 为唯一变更通道，添加 Claude/SuperClaude OpenSpec 检查清单
 - v3.2 (2025-11-27): 新增 ASDD 4层架构合规性章节，更新 Freeze 基准为 4层 Freeze Manifests，更新文档路径索引为 4层架构

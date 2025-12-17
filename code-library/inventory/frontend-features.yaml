@@ -1,0 +1,755 @@
+# AI 广告代投系统 - 前端功能清单
+# 版本: v1.0
+# 更新日期: 2025-12-17
+# 用途: 代码工厂搜索参考代码
+
+version: "1.0"
+updated: "2025-12-17"
+tech_stack:
+  framework: "Next.js 14"
+  language: "TypeScript"
+  state: "TanStack Query v5"
+  styling: "Tailwind CSS"
+  components: "shadcn/ui"
+  auth: "Supabase Auth"
+
+architecture:
+  pattern: "Module-based Architecture"
+  structure: |
+    frontend/src/
+    ├── app/                    # Next.js App Router
+    ├── modules/                # 功能模块 (按业务领域划分)
+    │   ├── daily-reports/      # 日报模块
+    │   ├── ledger/             # 账本模块
+    │   ├── reconciliation/     # 对账模块
+    │   ├── topups/             # 充值模块
+    │   └── shared/             # 共享组件
+    ├── lib/                    # 工具库
+    └── types/                  # 全局类型定义
+
+features:
+  # ========== 日报模块 ==========
+  daily_reports:
+    - name: "日报列表 Hook"
+      description: "TanStack Query v5 分页查询 + 状态管理"
+      files:
+        - frontend/src/modules/daily-reports/hooks/useDailyReports.ts
+      status: completed
+      reusable: true
+      tags: [hook, query, pagination, tanstack-query]
+      patterns:
+        - "useQuery 分页查询"
+        - "useMutation CRUD 操作"
+        - "queryClient.invalidateQueries 缓存失效"
+        - "乐观更新 (setQueryData)"
+      code_examples:
+        list_query: |
+          export function useDailyReports(params: DailyReportListParams = {}) {
+            return useQuery({
+              queryKey: queryKeys.dailyReports.list(params),
+              queryFn: () => getDailyReports(params),
+            });
+          }
+        mutation: |
+          export function useCreateDailyReport() {
+            const queryClient = useQueryClient();
+            return useMutation({
+              mutationFn: createDailyReport,
+              onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: queryKeys.dailyReports.all });
+              },
+            });
+          }
+
+    - name: "日报 API 服务"
+      description: "封装后端 API 调用"
+      files:
+        - frontend/src/modules/daily-reports/services/dailyReportsApi.ts
+      status: completed
+      reusable: true
+      tags: [api, service, fetch]
+      patterns:
+        - "apiFetch 统一请求"
+        - "URLSearchParams 查询参数"
+        - "类型安全返回值"
+
+    - name: "日报类型定义"
+      description: "TypeScript 类型定义 (与后端 Schema 对齐)"
+      files:
+        - frontend/src/modules/daily-reports/types/dailyReport.types.ts
+      status: completed
+      reusable: true
+      tags: [types, typescript]
+
+    - name: "状态转换操作"
+      description: "8 状态机前端操作 Hooks"
+      files:
+        - frontend/src/modules/daily-reports/hooks/useDailyReports.ts
+      status: completed
+      reusable: false  # 业务特定
+      tags: [state-machine, mutation, workflow]
+      patterns:
+        - "useSubmitForTrend"
+        - "useApproveTrend / useFlagTrend"
+        - "useResolveFlag"
+        - "useSubmitForFinal / useConfirmFinal"
+        - "useLockReport"
+
+    - name: "批量操作"
+      description: "批量提交趋势审核"
+      files:
+        - frontend/src/modules/daily-reports/hooks/useDailyReports.ts
+        - frontend/src/modules/daily-reports/services/dailyReportsApi.ts
+      status: completed
+      reusable: true
+      tags: [batch, bulk, mutation]
+      patterns:
+        - "useBulkSubmitForTrend"
+        - "批量 ID 提交"
+
+  # ========== 账本模块 ==========
+  ledger:
+    - name: "账本查询 Hook"
+      description: "账本余额和流水查询"
+      files:
+        - frontend/src/modules/ledger/hooks/useLedger.ts
+        - frontend/src/modules/ledger/services/ledgerApi.ts
+      status: completed
+      reusable: true
+      tags: [hook, query, ledger]
+
+    - name: "账本类型定义"
+      description: "账本相关 TypeScript 类型"
+      files:
+        - frontend/src/modules/ledger/types/ledger.types.ts
+      status: completed
+      reusable: true
+      tags: [types, typescript, ledger]
+
+  # ========== 对账模块 ==========
+  reconciliation:
+    - name: "对账查询 Hook"
+      description: "对账批次和明细查询"
+      files:
+        - frontend/src/modules/reconciliation/hooks/useReconciliation.ts
+        - frontend/src/modules/reconciliation/services/reconciliationApi.ts
+      status: completed
+      reusable: true
+      tags: [hook, query, reconciliation]
+
+    - name: "对账类型定义"
+      description: "对账相关 TypeScript 类型"
+      files:
+        - frontend/src/modules/reconciliation/types/reconciliation.types.ts
+      status: completed
+      reusable: true
+      tags: [types, typescript, reconciliation]
+
+  # ========== 充值模块 ==========
+  topups:
+    - name: "充值查询 Hook"
+      description: "充值申请查询和审批操作"
+      files:
+        - frontend/src/modules/topups/hooks/useTopups.ts
+        - frontend/src/modules/topups/services/topupsApi.ts
+      status: completed
+      reusable: true
+      tags: [hook, query, topup, approval]
+
+    - name: "充值类型定义"
+      description: "充值相关 TypeScript 类型"
+      files:
+        - frontend/src/modules/topups/types/topup.types.ts
+      status: completed
+      reusable: true
+      tags: [types, typescript, topup]
+
+  # ========== 共享组件 ==========
+  shared:
+    - name: "StatusBadge 状态徽章"
+      description: "可复用状态徽章组件"
+      files:
+        - frontend/src/modules/shared/components/ui/StatusBadge.tsx
+      status: completed
+      reusable: true
+      tags: [component, ui, badge, status]
+      patterns:
+        - "variant 样式变体 (default, success, warning, error, info)"
+        - "size 尺寸 (sm, md, lg)"
+        - "Tailwind CSS 样式"
+      code_example: |
+        <StatusBadge label="已确认" variant="success" size="md" />
+
+    - name: "LoadingSpinner 加载动画"
+      description: "加载状态指示器"
+      files:
+        - frontend/src/modules/shared/components/feedback/LoadingSpinner.tsx
+      status: completed
+      reusable: true
+      tags: [component, ui, loading, feedback]
+
+    - name: "ErrorDisplay 错误展示"
+      description: "统一错误展示组件"
+      files:
+        - frontend/src/modules/shared/components/feedback/ErrorDisplay.tsx
+      status: completed
+      reusable: true
+      tags: [component, ui, error, feedback]
+
+  # ========== 基础设施 ==========
+  infrastructure:
+    - name: "App Layout"
+      description: "Next.js 应用布局"
+      files:
+        - frontend/src/app/layout.tsx
+      status: completed
+      reusable: true
+      tags: [layout, app-router]
+
+    - name: "Providers 配置"
+      description: "全局 Provider 配置 (QueryClient, Auth)"
+      files:
+        - frontend/src/app/providers.tsx
+      status: completed
+      reusable: true
+      tags: [provider, context, tanstack-query]
+
+    - name: "全局样式"
+      description: "Tailwind CSS 全局样式"
+      files:
+        - frontend/src/app/globals.css
+      status: completed
+      reusable: true
+      tags: [css, tailwind, global]
+
+    - name: "通用类型"
+      description: "全局通用 TypeScript 类型"
+      files:
+        - frontend/src/types/common.ts
+        - frontend/src/types/index.ts
+      status: completed
+      reusable: true
+      tags: [types, typescript, common]
+
+# ========== 页面路由 (App Router) ==========
+  pages:
+    - name: "仪表盘首页"
+      description: "系统仪表盘，数据概览"
+      files:
+        - frontend/app/page.tsx
+      status: completed
+      reusable: false
+      tags: [page, dashboard, home]
+      size_kb: 12
+
+    - name: "日报列表页"
+      description: "日报列表、筛选、批量操作"
+      files:
+        - frontend/app/daily-reports/page.tsx
+        - frontend/app/daily-reports/components/DailyReportFilters.tsx
+        - frontend/app/daily-reports/components/DailyReportSummaryCards.tsx
+        - frontend/app/daily-reports/components/DailyReportTable.tsx
+        - frontend/app/daily-reports/types.ts
+      status: completed
+      reusable: true
+      tags: [page, daily-report, list, filter, table]
+      patterns:
+        - "Filters + SummaryCards + Table 三件套"
+        - "分页 + 筛选组件"
+      size_kb: 74
+
+    - name: "日报分析页"
+      description: "日报数据分析"
+      files:
+        - frontend/app/daily-reports/analysis/page.tsx
+      status: completed
+      reusable: false
+      tags: [page, daily-report, analysis]
+      size_kb: 14
+
+    - name: "日报审核页"
+      description: "日报审核工作流"
+      files:
+        - frontend/app/daily-reviews/page.tsx
+      status: completed
+      reusable: false
+      tags: [page, daily-report, review, workflow]
+      size_kb: 22
+
+    - name: "广告账户列表页"
+      description: "广告账户列表、详情"
+      files:
+        - frontend/app/ad-accounts/page.tsx
+        - frontend/app/ad-accounts/[id]/page.tsx
+        - frontend/app/ad-accounts/components/AdAccountFilters.tsx
+        - frontend/app/ad-accounts/components/AdAccountSummaryCards.tsx
+        - frontend/app/ad-accounts/components/AdAccountTable.tsx
+        - frontend/app/ad-accounts/types.ts
+      status: completed
+      reusable: true
+      tags: [page, ad-account, list, detail]
+      patterns:
+        - "列表页 + 详情页 ([id]) 路由"
+        - "Filters + SummaryCards + Table 三件套"
+      size_kb: 86
+
+    - name: "项目管理页"
+      description: "项目列表、详情"
+      files:
+        - frontend/app/projects/page.tsx
+        - frontend/app/projects/[id]/page.tsx
+        - frontend/app/projects/components/ProjectFilters.tsx
+        - frontend/app/projects/components/ProjectSummaryCards.tsx
+        - frontend/app/projects/components/ProjectTable.tsx
+        - frontend/app/projects/types.ts
+      status: completed
+      reusable: true
+      tags: [page, project, list, detail]
+      size_kb: 95
+
+    - name: "充值管理页"
+      description: "充值申请列表、审批"
+      files:
+        - frontend/app/topup/page.tsx
+        - frontend/app/topup/components/RechargeFilters.tsx
+        - frontend/app/topup/components/RechargeSummaryCards.tsx
+        - frontend/app/topup/components/RechargeTable.tsx
+        - frontend/app/topup/components/RechargeDetailDrawer.tsx
+        - frontend/app/topup/types.ts
+      status: completed
+      reusable: true
+      tags: [page, topup, recharge, approval, drawer]
+      patterns:
+        - "Drawer 详情抽屉"
+        - "审批工作流"
+      size_kb: 72
+
+    - name: "对账管理页"
+      description: "对账批次列表、详情"
+      files:
+        - frontend/app/reconciliation/page.tsx
+        - frontend/app/reconciliation/[id]/page.tsx
+        - frontend/app/reconciliation/components/ReconciliationFilters.tsx
+        - frontend/app/reconciliation/components/ReconciliationSummaryCards.tsx
+        - frontend/app/reconciliation/components/ReconciliationTable.tsx
+        - frontend/app/reconciliation/types.ts
+      status: completed
+      reusable: true
+      tags: [page, reconciliation, list, detail]
+      size_kb: 105
+
+    - name: "财务管理页"
+      description: "财务总账、流水"
+      files:
+        - frontend/app/finance/page.tsx
+      status: completed
+      reusable: false
+      tags: [page, finance, ledger]
+      size_kb: 35
+
+    - name: "成本分析页"
+      description: "成本分析报表"
+      files:
+        - frontend/app/cost-analysis/page.tsx
+      status: completed
+      reusable: false
+      tags: [page, cost, analysis, report]
+      size_kb: 22
+
+    - name: "报表页"
+      description: "报表列表、详情"
+      files:
+        - frontend/app/reports/page.tsx
+        - frontend/app/reports/[id]/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, report, list, detail]
+      size_kb: 47
+
+    - name: "数据导入页"
+      description: "Excel 批量导入"
+      files:
+        - frontend/app/data-import/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, import, excel, upload]
+      size_kb: 26
+
+    - name: "审计日志页"
+      description: "操作审计日志"
+      files:
+        - frontend/app/audit/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, audit, log]
+      size_kb: 23
+
+    - name: "用户管理页"
+      description: "用户列表、权限管理"
+      files:
+        - frontend/app/users/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, user, admin]
+      size_kb: 24
+
+    - name: "个人资料页"
+      description: "用户个人资料"
+      files:
+        - frontend/app/profile/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, profile, user]
+      size_kb: 33
+
+    - name: "系统设置页"
+      description: "系统设置"
+      files:
+        - frontend/app/settings/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, settings, config]
+      size_kb: 28
+
+  # ========== 认证页面 ==========
+  auth_pages:
+    - name: "登录页"
+      description: "用户登录 (Supabase Auth)"
+      files:
+        - frontend/app/auth/login/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, auth, login, supabase]
+      size_kb: 14
+
+    - name: "注册页"
+      description: "用户注册"
+      files:
+        - frontend/app/auth/sign-up/page.tsx
+        - frontend/app/auth/sign-up-success/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, auth, signup, supabase]
+      size_kb: 38
+
+    - name: "密码重置页"
+      description: "忘记密码 / 重置密码"
+      files:
+        - frontend/app/auth/forgot-password/page.tsx
+        - frontend/app/auth/update-password/page.tsx
+      status: completed
+      reusable: true
+      tags: [page, auth, password, reset]
+      size_kb: 36
+
+  # ========== UI 组件库 (shadcn/ui) ==========
+  ui_components:
+    - name: "Button 按钮"
+      files: [frontend/components/ui/button.tsx]
+      reusable: true
+      tags: [ui, button]
+
+    - name: "Input 输入框"
+      files: [frontend/components/ui/input.tsx]
+      reusable: true
+      tags: [ui, input, form]
+
+    - name: "Select 选择器"
+      files: [frontend/components/ui/select.tsx]
+      reusable: true
+      tags: [ui, select, form]
+
+    - name: "Dialog 对话框"
+      files: [frontend/components/ui/dialog.tsx]
+      reusable: true
+      tags: [ui, dialog, modal]
+
+    - name: "DropdownMenu 下拉菜单"
+      files: [frontend/components/ui/dropdown-menu.tsx]
+      reusable: true
+      tags: [ui, dropdown, menu]
+
+    - name: "Table 表格"
+      files: [frontend/components/ui/table.tsx, frontend/components/ui/data-table.tsx]
+      reusable: true
+      tags: [ui, table, data-table]
+
+    - name: "Card 卡片"
+      files: [frontend/components/ui/card.tsx]
+      reusable: true
+      tags: [ui, card]
+
+    - name: "Badge 徽章"
+      files: [frontend/components/ui/badge.tsx]
+      reusable: true
+      tags: [ui, badge]
+
+    - name: "Calendar 日历"
+      files: [frontend/components/ui/calendar.tsx]
+      reusable: true
+      tags: [ui, calendar, date]
+
+    - name: "Tabs 标签页"
+      files: [frontend/components/ui/tabs.tsx]
+      reusable: true
+      tags: [ui, tabs]
+
+    - name: "Alert 警告"
+      files: [frontend/components/ui/alert.tsx]
+      reusable: true
+      tags: [ui, alert, feedback]
+
+    - name: "StatusBadge 状态徽章"
+      files: [frontend/components/ui/StatusBadge.tsx]
+      reusable: true
+      tags: [ui, status, badge]
+
+    - name: "MetricCard 指标卡片"
+      files: [frontend/components/ui/MetricCard.tsx]
+      reusable: true
+      tags: [ui, metric, card, dashboard]
+
+    - name: "ThemeToggle 主题切换"
+      files: [frontend/components/ui/theme-toggle.tsx]
+      reusable: true
+      tags: [ui, theme, dark-mode]
+
+    - name: "UserProfileDropdown 用户下拉"
+      files: [frontend/components/ui/user-profile-dropdown.tsx]
+      reusable: true
+      tags: [ui, user, dropdown, profile]
+
+  # ========== 布局组件 ==========
+  layout_components:
+    - name: "AppLayout 应用布局"
+      files: [frontend/components/layout/AppLayout.tsx, frontend/components/layout/AppShell.tsx]
+      reusable: true
+      tags: [layout, app]
+
+    - name: "DashboardLayout 仪表盘布局"
+      files: [frontend/components/layout/DashboardLayout.tsx]
+      reusable: true
+      tags: [layout, dashboard]
+
+    - name: "Sidebar 侧边栏"
+      files: [frontend/components/layout/Sidebar.tsx]
+      reusable: true
+      tags: [layout, sidebar, navigation]
+
+    - name: "Header 头部"
+      files: [frontend/components/layout/Header.tsx]
+      reusable: true
+      tags: [layout, header]
+
+    - name: "Navigation 导航"
+      files:
+        - frontend/components/layout/modern-navigation.tsx
+        - frontend/components/layout/optimized-navigation.tsx
+      reusable: true
+      tags: [layout, navigation, menu]
+
+    - name: "PageTemplate 页面模板"
+      files: [frontend/components/layout/page-template.tsx, frontend/components/layout/page-header.tsx]
+      reusable: true
+      tags: [layout, template, page]
+
+  # ========== 全局 Hooks ==========
+  global_hooks:
+    - name: "useAuth 认证 Hook"
+      description: "用户认证状态管理 (Supabase)"
+      files: [frontend/hooks/use-auth.ts]
+      status: completed
+      reusable: true
+      tags: [hook, auth, supabase]
+      patterns:
+        - "Session 状态监听"
+        - "signIn / signOut / signUp"
+        - "Profile 获取"
+
+    - name: "useDashboardData 仪表盘数据"
+      description: "仪表盘数据聚合 Hook"
+      files: [frontend/hooks/useDashboardData.ts]
+      status: completed
+      reusable: true
+      tags: [hook, dashboard, data]
+
+    - name: "useTheme 主题 Hook"
+      description: "主题切换 (light/dark)"
+      files: [frontend/hooks/use-theme.ts, frontend/hooks/useTheme.ts]
+      status: completed
+      reusable: true
+      tags: [hook, theme, dark-mode]
+
+    - name: "useIsMounted SSR 安全"
+      description: "SSR 安全挂载检测"
+      files: [frontend/hooks/useIsMounted.ts]
+      status: completed
+      reusable: true
+      tags: [hook, ssr, mounted]
+
+  # ========== 业务组件 ==========
+  business_components:
+    - name: "日报详情组件"
+      files: [frontend/components/daily-reports/daily-report-detail.tsx]
+      reusable: true
+      tags: [component, daily-report, detail]
+
+    - name: "日报表单组件"
+      files: [frontend/components/daily-reports/daily-report-form.tsx]
+      reusable: true
+      tags: [component, daily-report, form]
+
+    - name: "日报仪表盘组件"
+      files: [frontend/components/daily-reports/daily-reports-dashboard.tsx]
+      reusable: true
+      tags: [component, daily-report, dashboard]
+
+    - name: "充值申请表单"
+      files: [frontend/components/finance/topup-request-form.tsx]
+      reusable: true
+      tags: [component, topup, form]
+
+    - name: "平台账单上传"
+      files: [frontend/components/reconciliation/platform-bill-upload.tsx]
+      reusable: true
+      tags: [component, reconciliation, upload]
+
+    - name: "对账报告查看器"
+      files: [frontend/components/reconciliation/reconciliation-report-viewer.tsx]
+      reusable: true
+      tags: [component, reconciliation, report, viewer]
+
+# ========== 前端模式库 ==========
+patterns:
+  module_structure:
+    description: "标准模块目录结构"
+    template: |
+      modules/{module-name}/
+      ├── index.ts              # 模块导出
+      ├── hooks/
+      │   ├── index.ts
+      │   └── use{Module}.ts    # TanStack Query Hooks
+      ├── services/
+      │   ├── index.ts
+      │   └── {module}Api.ts    # API 调用封装
+      └── types/
+          ├── index.ts
+          └── {module}.types.ts # TypeScript 类型
+
+  query_hook:
+    description: "TanStack Query v5 查询 Hook 模式"
+    template: |
+      export function use{Entity}s(params = {}) {
+        return useQuery({
+          queryKey: queryKeys.{entity}s.list(params),
+          queryFn: () => get{Entity}s(params),
+        });
+      }
+
+  mutation_hook:
+    description: "TanStack Query v5 变更 Hook 模式"
+    template: |
+      export function useCreate{Entity}() {
+        const queryClient = useQueryClient();
+        return useMutation({
+          mutationFn: create{Entity},
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.{entity}s.all });
+          },
+        });
+      }
+
+  api_service:
+    description: "API 服务调用模式"
+    template: |
+      const BASE_PATH = '/api/v1/{entities}';
+
+      export async function get{Entity}s(params = {}): Promise<PaginatedResponse<{Entity}>> {
+        const searchParams = new URLSearchParams();
+        // ... build params
+        return apiFetchPaginated<{Entity}>(`${BASE_PATH}?${searchParams}`);
+      }
+
+# =============================================================================
+# 通用模式索引 (用于代码工厂搜索)
+# =============================================================================
+common_patterns:
+  list_page:
+    description: "列表页三件套 (Filters + SummaryCards + Table)"
+    example_features: [daily-reports, ad-accounts, projects, reconciliation]
+    reference_files:
+      - frontend/app/daily-reports/page.tsx
+      - frontend/app/daily-reports/components/DailyReportFilters.tsx
+      - frontend/app/daily-reports/components/DailyReportSummaryCards.tsx
+      - frontend/app/daily-reports/components/DailyReportTable.tsx
+
+  detail_page:
+    description: "详情页 ([id] 动态路由)"
+    example_features: [ad-accounts, projects, reconciliation, reports]
+    reference_files:
+      - frontend/app/ad-accounts/[id]/page.tsx
+      - frontend/app/projects/[id]/page.tsx
+
+  tanstack_query_hook:
+    description: "TanStack Query v5 Hook 模式"
+    example_features: [daily-reports, ledger, topups, reconciliation]
+    reference_files:
+      - frontend/src/modules/daily-reports/hooks/useDailyReports.ts
+      - frontend/src/modules/ledger/hooks/useLedger.ts
+
+  api_service:
+    description: "API 服务调用模式 (apiFetch)"
+    example_features: [daily-reports, ledger, topups, reconciliation]
+    reference_files:
+      - frontend/src/modules/daily-reports/services/dailyReportsApi.ts
+
+  auth_flow:
+    description: "认证流程 (Supabase Auth)"
+    reference_files:
+      - frontend/hooks/use-auth.ts
+      - frontend/app/auth/login/page.tsx
+      - frontend/app/auth/sign-up/page.tsx
+
+  drawer_detail:
+    description: "Drawer 详情抽屉"
+    example_features: [topup]
+    reference_files:
+      - frontend/app/topup/components/RechargeDetailDrawer.tsx
+
+  file_upload:
+    description: "文件上传组件"
+    example_features: [data-import, reconciliation]
+    reference_files:
+      - frontend/app/data-import/page.tsx
+      - frontend/components/reconciliation/platform-bill-upload.tsx
+
+# ========== 待开发功能 ==========
+todo_features:
+  - name: "数据表格组件"
+    description: "通用数据表格 (排序, 筛选, 分页)"
+    reference: "shadcn/ui DataTable"
+    tags: [component, table, data-table]
+    priority: high
+
+  - name: "表单组件库"
+    description: "统一表单组件 (Input, Select, DatePicker)"
+    reference: "shadcn/ui Form"
+    tags: [component, form, input]
+    priority: high
+
+  - name: "导出按钮组件"
+    description: "Excel/CSV 导出按钮"
+    tags: [component, export, button]
+    priority: medium
+
+  - name: "图表组件"
+    description: "数据可视化图表"
+    reference: "recharts / visx"
+    tags: [component, chart, visualization]
+    priority: medium
+
+  - name: "通知/Toast 组件"
+    description: "操作反馈通知"
+    reference: "sonner / react-hot-toast"
+    tags: [component, notification, toast]
+    priority: medium

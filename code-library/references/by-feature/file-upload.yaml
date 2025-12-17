@@ -1,0 +1,100 @@
+# 文件上传功能参考
+# 版本: v1.0
+# 更新日期: 2025-12-18
+
+feature: "文件上传"
+updated: "2025-12-18"
+tags: [upload, file, multipart, excel-import]
+
+# 本项目现有参考
+local_references:
+  - name: "Excel 批量导入"
+    description: "日报 Excel 批量导入功能"
+    files:
+      - backend/routers/daily_reports.py
+      - backend/services/import_job_service.py
+      - backend/config/excel_column_mapping.py
+    key_patterns:
+      - "UploadFile 类型参数"
+      - "pandas read_excel"
+      - "异步任务处理"
+      - "ImportJob 状态追踪"
+
+# 外部参考项目
+external_references:
+  - id: "upload-001"
+    name: "FastAPI File Upload"
+    github: "https://fastapi.tiangolo.com/tutorial/request-files/"
+    description: "FastAPI 官方文件上传教程"
+    tech_stack:
+      - "FastAPI"
+      - "python-multipart"
+    features:
+      - "单文件上传"
+      - "多文件上传"
+      - "文件验证"
+    code_example: |
+      from fastapi import File, UploadFile
+
+      @router.post("/upload")
+      async def upload_file(file: UploadFile = File(...)):
+          # 验证文件类型
+          allowed_types = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]
+          if file.content_type not in allowed_types:
+              raise HTTPException(400, "Invalid file type")
+
+          # 验证文件大小 (10MB limit)
+          contents = await file.read()
+          if len(contents) > 10 * 1024 * 1024:
+              raise HTTPException(400, "File too large")
+
+          # 处理文件
+          return {"filename": file.filename, "size": len(contents)}
+
+  - id: "upload-002"
+    name: "Chunked Upload"
+    description: "大文件分片上传方案"
+    features:
+      - "断点续传"
+      - "进度追踪"
+      - "并发上传"
+    code_example: |
+      # 前端分片
+      const CHUNK_SIZE = 1024 * 1024; // 1MB
+
+      async function uploadChunked(file: File) {
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        const uploadId = crypto.randomUUID();
+
+        for (let i = 0; i < totalChunks; i++) {
+          const chunk = file.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+          await uploadChunk(uploadId, i, chunk, totalChunks);
+        }
+
+        await finalizeUpload(uploadId);
+      }
+
+# 推荐实现方案
+recommended_implementation:
+  validation:
+    - "文件类型白名单 (MIME type)"
+    - "文件大小限制 (MAX_UPLOAD_SIZE)"
+    - "文件名清理 (防止路径遍历)"
+    - "病毒扫描 (生产环境)"
+
+  storage:
+    - "本地临时目录 → 处理后删除"
+    - "云存储 (S3/OSS) 用于持久化"
+    - "数据库记录元信息"
+
+  async_processing:
+    - "大文件使用异步任务"
+    - "ImportJob 追踪处理状态"
+    - "WebSocket/轮询通知完成"
+
+# 项目适配规则
+adaptation_rules:
+  - "使用 ImportJob 模型追踪上传状态"
+  - "遵循 ERROR_CODES_SOT.md 中的错误码"
+  - "权限检查: 只有特定角色可上传"
+  - "审计日志: 记录上传操作"

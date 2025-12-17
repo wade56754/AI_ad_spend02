@@ -17,7 +17,7 @@ baseline:
 <skill>
 ──────────────────────────────────────────────
   <name>ai-ad-agents-test-runner</name>
-  <version>2.1</version>
+  <version>2.2</version>
   <domain>AI_AD_SYSTEM / Agents 静态单测执行 Orchestrator</domain>
   <profile>Test-Orchestrator / Static-Analysis / Safe</profile>
 ──────────────────────────────────────────────

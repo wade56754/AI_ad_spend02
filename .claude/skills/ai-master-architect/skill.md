@@ -16,7 +16,7 @@ baseline:
 
 <skill>
     <name>ai-master-architect</name>
-    <version>4.0</version>
+    <version>4.1</version>
 
     <mission>
         本技能用于对架构文档进行审查、裁决与结构性重构，使其具备“宪法级不可违背性”。

@@ -1,0 +1,104 @@
+# 审计日志功能参考
+# 版本: v1.0
+# 更新日期: 2025-12-18
+
+feature: "审计日志"
+updated: "2025-12-18"
+tags: [audit, logging, compliance, traceability]
+
+# 本项目现有参考
+local_references:
+  - name: "Ledger 账本系统"
+    description: "双账本审计追踪"
+    files:
+      - backend/services/ledger_service.py
+      - backend/models/ledger_entry.py
+    key_patterns:
+      - "ledger_entries 只增不改"
+      - "reference_type + reference_id 关联"
+      - "created_at 时间戳"
+    sot_reference: "LEDGER_SOT.md v1.1"
+
+  - name: "状态转换记录"
+    description: "日报状态变更追踪"
+    files:
+      - backend/services/daily_report_service.py
+    key_patterns:
+      - "status_history JSON 字段"
+      - "变更时间 + 操作人"
+    sot_reference: "STATE_MACHINE.md v2.6"
+
+# 外部参考项目
+external_references:
+  - id: "audit-001"
+    name: "SQLAlchemy Event Listeners"
+    description: "模型级自动审计"
+    features:
+      - "before_insert / after_update 事件"
+      - "自动记录变更"
+      - "无侵入式设计"
+    code_example: |
+      from sqlalchemy import event
+      from sqlalchemy.orm import Session
+
+      def audit_listener(mapper, connection, target):
+          """审计事件监听器"""
+          audit_log = AuditLog(
+              table_name=target.__tablename__,
+              record_id=target.id,
+              action="INSERT",
+              user_id=get_current_user_id(),
+              timestamp=datetime.utcnow(),
+              changes=get_changes(target)
+          )
+          connection.execute(audit_log.__table__.insert(), audit_log.to_dict())
+
+      # 注册监听器
+      event.listen(DailyReport, 'after_insert', audit_listener)
+      event.listen(DailyReport, 'after_update', audit_listener)
+
+  - id: "audit-002"
+    name: "Audit Trail Table"
+    description: "独立审计表设计"
+    code_example: |
+      class AuditLog(Base):
+          __tablename__ = "audit_logs"
+
+          id = Column(UUID, primary_key=True, default=uuid4)
+          table_name = Column(String(100), nullable=False, index=True)
+          record_id = Column(UUID, nullable=False, index=True)
+          action = Column(String(20), nullable=False)  # INSERT/UPDATE/DELETE
+          user_id = Column(UUID, ForeignKey("users.id"))
+          timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+          old_values = Column(JSONB)
+          new_values = Column(JSONB)
+          ip_address = Column(String(45))
+          user_agent = Column(String(500))
+
+# 推荐实现方案
+recommended_implementation:
+  design_principles:
+    - "审计表只增不改不删"
+    - "异步写入避免影响主流程"
+    - "索引优化查询性能"
+    - "数据保留策略 (retention policy)"
+
+  required_fields:
+    - "who: 操作人 (user_id)"
+    - "what: 操作内容 (action, changes)"
+    - "when: 操作时间 (timestamp)"
+    - "where: 来源 (ip_address, user_agent)"
+
+  query_patterns:
+    - "按时间范围查询"
+    - "按用户查询"
+    - "按记录 ID 查询历史"
+    - "按操作类型统计"
+
+# 项目适配规则
+adaptation_rules:
+  - "关键实体必须有审计追踪"
+  - "账务相关使用 ledger_entries (LEDGER_SOT.md)"
+  - "状态变更使用 status_history"
+  - "通用操作使用 audit_logs 表"
+  - "保留期限: 至少 3 年"
