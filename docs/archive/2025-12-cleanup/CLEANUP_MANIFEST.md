@@ -1,6 +1,6 @@
 # 项目清理清单 (Cleanup Manifest)
 
-> **清理日期**: 2025-12-06
+> **清理日期**: 2025-12-06 / **更新**: 2025-12-18
 > **执行者**: Claude Code
 > **基准**: ASDD 6-Layer Framework + SoT Freeze v2.6
 
@@ -15,7 +15,10 @@
 | 重复迁移文件 | 3 | 0 | 2025-11-17 重复迁移 |
 | 过时文档 | 4 | 0 | 旧版本文档 |
 | 系统文件 | 0 | 8 | .DS_Store 文件 |
-| **总计** | **49** | **10** | - |
+| 根目录过时文档 (2025-12-18) | 2 | 0 | 迁移计划、旧索引 |
+| Backend 过时文档 (2025-12-18) | 5 | 0 | 阶段执行报告、待办事项 |
+| Backend 测试过时报告 (2025-12-18) | 1 | 0 | 旧版SoT报告 |
+| **总计** | **57** | **10** | - |
 
 ---
 
@@ -27,6 +30,9 @@ docs/archive/2025-12-cleanup/
 ├── backend-scripts-legacy/    # 22 个后端脚本
 ├── migrations-legacy/         # 3 个重复迁移
 ├── docs-outdated/             # 4 个过时文档
+├── root-outdated/             # 2 个根目录过时文档 (2025-12-18)
+├── backend-outdated/          # 5 个后端过时文档 (2025-12-18)
+├── backend-tests-outdated/    # 1 个测试过时报告 (2025-12-18)
 └── CLEANUP_MANIFEST.md        # 本文件
 ```
 
@@ -208,3 +214,41 @@ AI_Ads/
 
 **清理完成时间**: 2025-12-06 22:15 UTC+8
 **清理状态**: ✅ 完成
+
+---
+
+## 12. 2025-12-18 补充归档
+
+### 12.1 根目录过时文档 (root-outdated/)
+
+| 文件名 | 归档原因 |
+|--------|----------|
+| AI Spec Driven Development 迁移计划.md | 迁移计划已完成，基于SoT v1.0，现已v2.6 |
+| DOCS_README.md | v4.0 旧文档索引，已被 docs/README.md v1.2 替代 |
+
+### 12.2 Backend 过时文档 (backend-outdated/)
+
+| 文件名 | 归档原因 |
+|--------|----------|
+| TODO_ROUTES.md | 开发待办已过时 (最后更新 2025-11-15) |
+| PHASE0_EXECUTION_GUIDE.md | Phase 0 执行指南，已完成 |
+| PHASE0_EXECUTION_REPORT.md | Phase 0 执行报告，已完成 |
+| PHASE2A_EXECUTION_GUIDE.md | Phase 2a 执行指南，已完成 |
+| PHASE2A_FILES_SUMMARY.md | Phase 2a 文件汇总，已完成 |
+
+### 12.3 Backend 测试过时报告 (backend-tests-outdated/)
+
+| 文件名 | 归档原因 |
+|--------|----------|
+| SOT_ALIGNMENT_FIX_REPORT_v2.0.md | 已被 v3.0 替代 |
+
+### 12.4 修复的问题
+
+| 文件 | 问题 | 修复 |
+|------|------|------|
+| docs/proposals/AI_CODE_FACTORY_REFACTOR_PROPOSAL.md | 日期笔误 2024-12-17 | 已修正为 2025-12-17 |
+
+---
+
+**补充归档时间**: 2025-12-18 05:15 UTC+8
+**补充归档状态**: ✅ 完成

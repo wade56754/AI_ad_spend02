@@ -1,0 +1,125 @@
+# 分页查询功能参考
+# 版本: v1.0
+# 更新日期: 2025-12-17
+
+feature: "分页查询"
+updated: "2025-12-17"
+tags: [pagination, query, list, api]
+
+# 本项目现有参考
+local_references:
+  - name: "日报分页查询"
+    description: "标准分页查询实现"
+    files:
+      - backend/routers/daily_reports.py
+      - backend/core/response.py
+    key_patterns:
+      - "paginated_response 响应格式"
+      - "Query 参数验证"
+      - "SQLAlchemy offset/limit"
+    code_location: "backend/routers/daily_reports.py:get_daily_reports"
+
+# 项目标准分页格式
+project_standard:
+  request_params:
+    - name: "page"
+      type: "int"
+      default: 1
+      description: "页码 (从 1 开始)"
+    - name: "page_size"
+      type: "int"
+      default: 20
+      max: 100
+      description: "每页数量"
+    - name: "sort_by"
+      type: "str"
+      optional: true
+      description: "排序字段"
+    - name: "sort_order"
+      type: "str"
+      default: "desc"
+      enum: ["asc", "desc"]
+      description: "排序方向"
+
+  response_format:
+    schema: |
+      {
+        "success": true,
+        "data": {
+          "items": [...],
+          "total": 100,
+          "page": 1,
+          "page_size": 20,
+          "total_pages": 5
+        }
+      }
+
+  backend_code_template: |
+    from backend.core.response import paginated_response
+
+    @router.get("")
+    async def list_items(
+        page: int = Query(1, ge=1, description="页码"),
+        page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+        sort_by: Optional[str] = Query(None, description="排序字段"),
+        sort_order: str = Query("desc", regex="^(asc|desc)$"),
+        db: Session = Depends(get_db),
+    ):
+        # 构建查询
+        query = db.query(Model)
+
+        # 计算总数
+        total = query.count()
+
+        # 排序
+        if sort_by:
+            order_col = getattr(Model, sort_by, None)
+            if order_col:
+                query = query.order_by(
+                    order_col.desc() if sort_order == "desc" else order_col.asc()
+                )
+
+        # 分页
+        items = query.offset((page - 1) * page_size).limit(page_size).all()
+
+        return paginated_response(
+            items=[item.to_dict() for item in items],
+            total=total,
+            page=page,
+            page_size=page_size
+        )
+
+  frontend_code_template: |
+    // TanStack Query v5 分页 Hook
+    export function useItems(params: ListParams = {}) {
+      return useQuery({
+        queryKey: ['items', 'list', params],
+        queryFn: () => getItems(params),
+        placeholderData: keepPreviousData,  // 保持上一页数据
+      });
+    }
+
+    // API 调用
+    export async function getItems(params: ListParams): Promise<PaginatedResponse<Item>> {
+      const searchParams = new URLSearchParams();
+      if (params.page) searchParams.set('page', String(params.page));
+      if (params.page_size) searchParams.set('page_size', String(params.page_size));
+      if (params.sort_by) searchParams.set('sort_by', params.sort_by);
+      if (params.sort_order) searchParams.set('sort_order', params.sort_order);
+
+      return apiFetchPaginated<Item>(`/api/v1/items?${searchParams}`);
+    }
+
+# 外部参考
+external_references:
+  - id: "pagination-001"
+    name: "fastapi-pagination"
+    github: "https://github.com/uriyyo/fastapi-pagination"
+    description: "FastAPI 分页扩展库"
+    stars: "1000+"
+    license: "MIT"
+    features:
+      - "多种分页策略 (page, limit-offset, cursor)"
+      - "自动响应模型生成"
+      - "SQLAlchemy 集成"
+    note: "本项目已有自定义实现，可参考其设计思路"

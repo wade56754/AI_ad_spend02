@@ -1,0 +1,465 @@
+# GitHub 参考仓库索引
+# 版本: v1.0
+# 更新日期: 2025-12-17
+# 用途: 代码工厂搜索 GitHub 参考代码
+
+version: "1.0"
+updated: "2025-12-17"
+source_document: "docs/proposals/CODE_FACTORY_REFERENCE_PROJECTS.md"
+
+# ========== AI Agent 框架 ==========
+ai_agent_frameworks:
+  - id: "agent-001"
+    name: "MetaGPT"
+    github: "https://github.com/geekan/MetaGPT"
+    stars: "45000+"
+    license: "MIT"
+    language: "Python"
+    description: "多 Agent 协作的软件公司模拟"
+    use_cases:
+      - "多角色 Agent 协作模式"
+      - "标准化 SOP 流程"
+      - "消息传递机制"
+      - "角色定义和职责划分"
+    key_files:
+      - "metagpt/roles/"
+      - "metagpt/actions/"
+      - "metagpt/schema.py"
+    compatibility:
+      python_version: ">=3.9"
+      relevant_for: ["CodeFactoryAgent", "Orchestrator"]
+
+  - id: "agent-002"
+    name: "OpenHands"
+    github: "https://github.com/All-Hands-AI/OpenHands"
+    stars: "38000+"
+    license: "MIT"
+    language: "Python"
+    description: "自主软件开发 Agent 平台 (原 OpenDevin)"
+    use_cases:
+      - "Agent-Computer Interface (ACI) 设计"
+      - "沙箱执行环境"
+      - "事件驱动架构"
+      - "工具调用机制"
+    key_files:
+      - "openhands/agenthub/"
+      - "openhands/controller/"
+      - "openhands/runtime/"
+    compatibility:
+      python_version: ">=3.11"
+      relevant_for: ["CodeAssemblerSkill", "CodeVerifierSkill"]
+
+  - id: "agent-003"
+    name: "SWE-agent"
+    github: "https://github.com/princeton-nlp/SWE-agent"
+    stars: "13000+"
+    license: "MIT"
+    language: "Python"
+    description: "Princeton 大学的 GitHub Issue 自动修复 Agent"
+    use_cases:
+      - "文件编辑接口设计"
+      - "代码搜索策略"
+      - "错误修复循环"
+    key_files:
+      - "sweagent/agent/"
+      - "sweagent/environment/"
+    compatibility:
+      python_version: ">=3.9"
+      relevant_for: ["CodeAdapterSkill"]
+
+  - id: "agent-004"
+    name: "Aider"
+    github: "https://github.com/paul-gauthier/aider"
+    stars: "22000+"
+    license: "Apache-2.0"
+    language: "Python"
+    description: "AI 配对编程工具"
+    use_cases:
+      - "Repo Map 技术 (项目结构概览)"
+      - "多文件协同编辑"
+      - "Diff 格式输出"
+      - "自动 Git 集成"
+      - "上下文管理策略"
+    key_files:
+      - "aider/coders/"
+      - "aider/repomap.py"
+      - "aider/io.py"
+    compatibility:
+      python_version: ">=3.9"
+      relevant_for: ["CodeAssemblerSkill"]
+    priority: "P0"
+
+# ========== 代码搜索 ==========
+code_search:
+  - id: "search-001"
+    name: "code-graph-rag"
+    github: "https://github.com/vitali87/code-graph-rag"
+    license: "MIT"
+    language: "Python"
+    description: "基于知识图谱的代码 RAG"
+    use_cases:
+      - "Tree-sitter AST 解析"
+      - "UniXcoder 语义搜索"
+      - "知识图谱存储代码关系"
+      - "自然语言查询接口"
+    key_technologies:
+      - "Tree-sitter"
+      - "UniXcoder"
+      - "Neo4j / NetworkX"
+    key_files:
+      - "src/parser/"
+      - "src/embeddings/"
+      - "src/graph/"
+    compatibility:
+      python_version: ">=3.9"
+      relevant_for: ["CodeSearcherSkill"]
+    priority: "P0"
+
+  - id: "search-002"
+    name: "code-rag"
+    github: "https://github.com/rawveg/code-rag"
+    license: "MIT"
+    language: "Python"
+    description: "语义代码搜索工具"
+    use_cases:
+      - "自然语言问答"
+      - "RAG 架构"
+      - "大型代码库支持"
+    compatibility:
+      relevant_for: ["CodeSearcherSkill"]
+
+# ========== 代码转换 ==========
+code_transformation:
+  - id: "transform-001"
+    name: "astx"
+    github: "https://github.com/codemodsquad/astx"
+    license: "MIT"
+    language: "TypeScript"
+    description: "强大的结构化搜索替换"
+    use_cases:
+      - "结构化搜索和替换"
+      - "通配符匹配"
+      - "JavaScript/TypeScript 支持"
+    key_files:
+      - "src/matchers/"
+      - "src/transformers/"
+    compatibility:
+      node_version: ">=16"
+      relevant_for: ["CodeAdapterSkill"]
+    priority: "P1"
+
+  - id: "transform-002"
+    name: "refactor"
+    github: "https://github.com/isidentical/refactor"
+    license: "MIT"
+    language: "Python"
+    description: "Python AST 重构工具包"
+    use_cases:
+      - "基于 Python AST"
+      - "契约式转换 (assert-based)"
+      - "多种转换动作"
+    key_files:
+      - "refactor/core.py"
+      - "refactor/actions.py"
+    compatibility:
+      python_version: ">=3.8"
+      relevant_for: ["CodeAdapterSkill"]
+    priority: "P1"
+
+  - id: "transform-003"
+    name: "ts-morph"
+    github: "https://github.com/dsherret/ts-morph"
+    license: "MIT"
+    language: "TypeScript"
+    description: "TypeScript AST 操作库"
+    use_cases:
+      - "简化 TypeScript AST 操作"
+      - "强类型 API"
+      - "代码重构辅助"
+    compatibility:
+      node_version: ">=14"
+      relevant_for: ["CodeAdapterSkill"]
+
+# ========== 代码生成 ==========
+code_generation:
+  - id: "gen-001"
+    name: "Continue"
+    github: "https://github.com/continuedev/continue"
+    stars: "20000+"
+    license: "Apache-2.0"
+    language: "TypeScript"
+    description: "开源 AI 代码助手"
+    use_cases:
+      - "IDE 集成架构"
+      - "多 LLM Provider 支持"
+      - "Context Provider 系统"
+      - "工具调用机制"
+    key_files:
+      - "core/llm/"
+      - "core/context/"
+      - "extensions/"
+    compatibility:
+      relevant_for: ["CodeAssemblerSkill"]
+
+  - id: "gen-002"
+    name: "Copier"
+    github: "https://github.com/copier-org/copier"
+    stars: "2000+"
+    license: "MIT"
+    language: "Python"
+    description: "项目模板和代码生成"
+    use_cases:
+      - "模板渲染"
+      - "支持模板更新/迁移"
+      - "YAML 配置"
+    key_files:
+      - "copier/main.py"
+      - "copier/template.py"
+    compatibility:
+      python_version: ">=3.8"
+      relevant_for: ["CodeAssemblerSkill"]
+
+# ========== 代码验证 ==========
+code_verification:
+  - id: "verify-001"
+    name: "mypy"
+    github: "https://github.com/python/mypy"
+    stars: "18000+"
+    license: "MIT"
+    language: "Python"
+    description: "Python 静态类型检查器"
+    use_cases:
+      - "类型检查"
+      - "类型推断"
+      - "插件系统"
+    integration: |
+      python -m mypy --json-report - {file}
+    compatibility:
+      python_version: ">=3.8"
+      relevant_for: ["CodeVerifierSkill"]
+    priority: "P0"
+
+  - id: "verify-002"
+    name: "ruff"
+    github: "https://github.com/astral-sh/ruff"
+    stars: "32000+"
+    license: "MIT"
+    language: "Rust"
+    description: "超快 Python Linter"
+    use_cases:
+      - "比 flake8 快 10-100 倍"
+      - "替代多个工具"
+      - "自动修复"
+    integration: |
+      ruff check --output-format=json {file}
+    compatibility:
+      python_version: ">=3.7"
+      relevant_for: ["CodeVerifierSkill"]
+    priority: "P0"
+
+  - id: "verify-003"
+    name: "CodeQL"
+    github: "https://github.com/github/codeql"
+    license: "MIT"
+    language: "CodeQL"
+    description: "GitHub 安全代码分析"
+    use_cases:
+      - "安全漏洞检测"
+      - "AI 辅助修复建议"
+      - "SARIF 格式输出"
+    compatibility:
+      relevant_for: ["CodeVerifierSkill"]
+
+# ========== Excel / 数据导出 ==========
+excel_export:
+  - id: "excel-001"
+    name: "FastAPI Excel Export Example"
+    github: "https://github.com/tiangolo/fastapi"
+    license: "MIT"
+    language: "Python"
+    description: "FastAPI 官方示例 - 文件响应和流式下载"
+    use_cases:
+      - "StreamingResponse 流式文件下载"
+      - "FileResponse 静态文件响应"
+      - "Background Tasks 异步生成"
+    key_files:
+      - "docs_src/response/tutorial004.py"
+      - "docs_src/background_tasks/"
+    tags: ["export", "download", "excel", "streaming", "fastapi"]
+    compatibility:
+      python_version: ">=3.8"
+      relevant_for: ["backend", "api"]
+    priority: "P0"
+    code_example: |
+      from fastapi import FastAPI
+      from fastapi.responses import StreamingResponse
+      import io
+      import openpyxl
+
+      @app.get("/export/excel")
+      async def export_excel():
+          wb = openpyxl.Workbook()
+          ws = wb.active
+          ws.append(["Column1", "Column2"])
+          ws.append(["Data1", "Data2"])
+
+          output = io.BytesIO()
+          wb.save(output)
+          output.seek(0)
+
+          return StreamingResponse(
+              output,
+              media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              headers={"Content-Disposition": "attachment; filename=export.xlsx"}
+          )
+
+  - id: "excel-002"
+    name: "openpyxl"
+    github: "https://github.com/theorchard/openpyxl"
+    license: "MIT"
+    language: "Python"
+    description: "Python Excel 读写库 (xlsx 格式)"
+    use_cases:
+      - "Excel 文件创建和修改"
+      - "样式和格式设置"
+      - "公式支持"
+      - "图表生成"
+    key_files:
+      - "openpyxl/workbook/"
+      - "openpyxl/worksheet/"
+      - "openpyxl/styles/"
+    tags: ["excel", "xlsx", "export", "import", "spreadsheet"]
+    compatibility:
+      python_version: ">=3.6"
+      relevant_for: ["backend"]
+    priority: "P0"
+    code_example: |
+      from openpyxl import Workbook
+      from openpyxl.styles import Font, Alignment, Border, Side
+
+      wb = Workbook()
+      ws = wb.active
+      ws.title = "Report"
+
+      # 设置表头样式
+      header_font = Font(bold=True)
+      for col, header in enumerate(["日期", "消耗", "转化"], 1):
+          cell = ws.cell(row=1, column=col, value=header)
+          cell.font = header_font
+
+      # 写入数据
+      for row_idx, data in enumerate(records, 2):
+          ws.cell(row=row_idx, column=1, value=data["date"])
+          ws.cell(row=row_idx, column=2, value=data["spend"])
+
+      wb.save("report.xlsx")
+
+  - id: "excel-003"
+    name: "XlsxWriter"
+    github: "https://github.com/jmcnamara/XlsxWriter"
+    stars: "3500+"
+    license: "BSD-2-Clause"
+    language: "Python"
+    description: "高性能 Excel 写入库 (仅写入)"
+    use_cases:
+      - "大数据量 Excel 生成"
+      - "内存优化模式"
+      - "丰富的格式支持"
+      - "图表和图像"
+    key_files:
+      - "xlsxwriter/workbook.py"
+      - "xlsxwriter/worksheet.py"
+    tags: ["excel", "xlsx", "export", "high-performance", "streaming"]
+    compatibility:
+      python_version: ">=3.6"
+      relevant_for: ["backend", "batch-export"]
+    priority: "P1"
+    code_example: |
+      import xlsxwriter
+      from io import BytesIO
+
+      output = BytesIO()
+      workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+      worksheet = workbook.add_worksheet()
+
+      # 格式
+      header_format = workbook.add_format({'bold': True, 'bg_color': '#D7E4BC'})
+
+      # 写入表头
+      headers = ["日期", "项目", "消耗", "转化"]
+      for col, header in enumerate(headers):
+          worksheet.write(0, col, header, header_format)
+
+      # 写入数据 (支持大数据量)
+      for row, record in enumerate(data, 1):
+          worksheet.write_row(row, 0, record)
+
+      workbook.close()
+      output.seek(0)
+
+  - id: "excel-004"
+    name: "pandas to_excel"
+    github: "https://github.com/pandas-dev/pandas"
+    stars: "43000+"
+    license: "BSD-3-Clause"
+    language: "Python"
+    description: "Pandas DataFrame 导出 Excel"
+    use_cases:
+      - "DataFrame 直接导出"
+      - "多 Sheet 支持"
+      - "与数据分析无缝集成"
+    tags: ["excel", "export", "pandas", "dataframe"]
+    compatibility:
+      python_version: ">=3.9"
+      relevant_for: ["backend", "data-analysis"]
+    priority: "P0"
+    code_example: |
+      import pandas as pd
+      from io import BytesIO
+
+      # 从数据库查询转 DataFrame
+      df = pd.DataFrame(records)
+
+      # 导出到内存
+      output = BytesIO()
+      with pd.ExcelWriter(output, engine='openpyxl') as writer:
+          df.to_excel(writer, sheet_name='日报', index=False)
+
+          # 设置列宽
+          worksheet = writer.sheets['日报']
+          for i, col in enumerate(df.columns):
+              worksheet.column_dimensions[chr(65 + i)].width = 15
+
+      output.seek(0)
+
+# ========== 按功能分类的快速索引 ==========
+feature_index:
+  code_search:
+    primary: ["search-001"]
+    secondary: ["search-002"]
+
+  code_transformation:
+    python: ["transform-002"]
+    typescript: ["transform-001", "transform-003"]
+
+  code_generation:
+    template_based: ["gen-002"]
+    ai_assisted: ["agent-004", "gen-001"]
+
+  code_verification:
+    type_check: ["verify-001"]
+    lint: ["verify-002"]
+    security: ["verify-003"]
+
+  agent_orchestration:
+    multi_agent: ["agent-001"]
+    autonomous: ["agent-002", "agent-003"]
+
+  # 业务功能索引
+  excel_export:
+    fastapi: ["excel-001"]
+    libraries: ["excel-002", "excel-003", "excel-004"]
+    high_performance: ["excel-003"]
+
+  data_export:
+    excel: ["excel-001", "excel-002", "excel-003", "excel-004"]

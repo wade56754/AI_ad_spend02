@@ -1,0 +1,247 @@
+# 项目代码规范配置
+# 版本: v1.0
+# 更新日期: 2025-12-17
+# 用途: 代码工厂生成代码时遵循的项目规范
+
+version: "1.0"
+updated: "2025-12-17"
+
+# ========== 项目信息 ==========
+project:
+  name: "AI 广告代投系统"
+  tech_stack:
+    backend:
+      framework: "FastAPI"
+      orm: "SQLAlchemy 2.x"
+      validation: "Pydantic v2"
+      database: "PostgreSQL (Supabase)"
+      auth: "Supabase Auth + JWT"
+      python_version: ">=3.10"
+    frontend:
+      framework: "Next.js 14"
+      language: "TypeScript"
+      state_management: "TanStack Query v5"
+      styling: "Tailwind CSS"
+      components: "shadcn/ui"
+      node_version: ">=18"
+
+# ========== SoT 文档引用 ==========
+sot_documents:
+  priority_order:
+    - STATE_MACHINE.md    # v2.6 - 状态机定义
+    - DATA_SCHEMA.md      # v5.2 - 数据模式
+    - BUSINESS_RULES.md   # v3.1 - 业务规则
+    - API_SOT.md          # v9.0 - API 规范
+    - ERROR_CODES_SOT.md  # v2.1 - 错误码
+    - AUTH_SPEC.md        # v2.0 - 认证规范
+    - LEDGER_SOT.md       # v1.1 - 账本规范
+
+  paths:
+    STATE_MACHINE: "docs/2.sot/STATE_MACHINE.md"
+    DATA_SCHEMA: "docs/2.sot/DATA_SCHEMA.md"
+    BUSINESS_RULES: "docs/2.sot/BUSINESS_RULES.md"
+    API_SOT: "docs/2.sot/API_SOT.md"
+    ERROR_CODES: "docs/2.sot/ERROR_CODES_SOT.md"
+    AUTH_SPEC: "docs/2.sot/AUTH_SPEC.md"
+    LEDGER_SOT: "docs/2.sot/LEDGER_SOT.md"
+
+# ========== 后端规范 ==========
+backend:
+  # 目录结构
+  directory_structure:
+    routers: "backend/routers/"
+    services: "backend/services/"
+    schemas: "backend/schemas/"
+    models: "backend/models/"
+    core: "backend/core/"
+    exceptions: "backend/exceptions/"
+
+  # 文件命名
+  naming:
+    router: "{entity}.py"
+    service: "{entity}_service.py"
+    schema: "{entity}.py"
+    model: "{entity}.py"
+
+  # 必需导入
+  required_imports:
+    response:
+      module: "backend.core.response"
+      items:
+        - "success_response"
+        - "error_response"
+        - "paginated_response"
+        - "StandardResponse"
+
+    error_codes:
+      module: "backend.core.error_codes"
+      items:
+        - "SystemErrorCodes"
+        - "BusinessErrorCodes"
+        - "ValidationErrorCodes"
+        - "AuthErrorCodes"
+
+    exceptions:
+      module: "backend.exceptions.custom_exceptions"
+      items:
+        - "BusinessLogicError"
+        - "ResourceNotFoundError"
+        - "PermissionDeniedError"
+        - "ResourceConflictError"
+
+    dependencies:
+      module: "backend.core.dependencies"
+      items:
+        - "get_current_user"
+        - "require_role"
+
+    database:
+      module: "backend.core.db"
+      items:
+        - "get_db"
+
+  # Router 模板
+  router_template: |
+    """
+    {Entity} 管理 API 路由
+    Version: 1.0
+    """
+
+    import logging
+    from typing import List, Optional
+    from fastapi import APIRouter, Depends, HTTPException, Query, status
+    from sqlalchemy.orm import Session
+
+    from backend.core.db import get_db
+    from backend.core.dependencies import get_current_user, require_role
+    from backend.core.response import success_response, error_response, paginated_response
+    from backend.core.error_codes import BusinessErrorCodes, ValidationErrorCodes
+    from backend.exceptions.custom_exceptions import ResourceNotFoundError
+    from backend.models import User
+    from backend.schemas.{entity} import (
+        {Entity}CreateRequest,
+        {Entity}UpdateRequest,
+        {Entity}Response,
+    )
+    from backend.services.{entity}_service import {Entity}Service
+
+    logger = logging.getLogger(__name__)
+    router = APIRouter(prefix="/{entities}", tags=["{entities}"])
+
+    def get_{entity}_service(db: Session = Depends(get_db)) -> {Entity}Service:
+        return {Entity}Service(db)
+
+  # Service 模板
+  service_template: |
+    """
+    {Entity} 业务服务层
+    """
+
+    import logging
+    from typing import List, Optional
+    from sqlalchemy.orm import Session
+
+    from backend.models.{module}.{entity} import {Entity}
+    from backend.schemas.{entity} import {Entity}Create, {Entity}Update
+    from backend.exceptions.custom_exceptions import ResourceNotFoundError
+
+    logger = logging.getLogger(__name__)
+
+    class {Entity}Service:
+        def __init__(self, db: Session):
+            self.db = db
+
+        def get_by_id(self, id: str) -> Optional[{Entity}]:
+            return self.db.query({Entity}).filter({Entity}.id == id).first()
+
+        def create(self, data: {Entity}Create) -> {Entity}:
+            entity = {Entity}(**data.model_dump())
+            self.db.add(entity)
+            self.db.commit()
+            self.db.refresh(entity)
+            return entity
+
+# ========== 前端规范 ==========
+frontend:
+  # 目录结构
+  directory_structure:
+    modules: "frontend/src/modules/"
+    lib: "frontend/src/lib/"
+    types: "frontend/src/types/"
+    app: "frontend/src/app/"
+
+  # 模块结构
+  module_structure:
+    pattern: |
+      modules/{module}/
+      ├── index.ts
+      ├── hooks/
+      │   ├── index.ts
+      │   └── use{Entity}.ts
+      ├── services/
+      │   ├── index.ts
+      │   └── {entity}Api.ts
+      └── types/
+          ├── index.ts
+          └── {entity}.types.ts
+
+  # 必需导入
+  required_imports:
+    query:
+      module: "@tanstack/react-query"
+      items:
+        - "useQuery"
+        - "useMutation"
+        - "useQueryClient"
+
+    api:
+      module: "@/lib/api"
+      items:
+        - "apiFetch"
+        - "apiFetchPaginated"
+
+  # Hook 模板
+  hook_template: |
+    import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+    import { queryKeys } from '@/lib/api';
+    import { get{Entity}s, create{Entity}, update{Entity}, delete{Entity} } from '../services';
+    import type { {Entity}, {Entity}CreateInput, {Entity}UpdateInput } from '../types';
+
+    export function use{Entity}s(params = {}) {
+      return useQuery({
+        queryKey: queryKeys.{entity}s.list(params),
+        queryFn: () => get{Entity}s(params),
+      });
+    }
+
+    export function useCreate{Entity}() {
+      const queryClient = useQueryClient();
+      return useMutation({
+        mutationFn: create{Entity},
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.{entity}s.all });
+        },
+      });
+    }
+
+# ========== 禁止行为 ==========
+forbidden:
+  - id: "F-001"
+    description: "禁止自定义错误码"
+    correct: "使用 ERROR_CODES_SOT.md 中定义的错误码"
+
+  - id: "F-002"
+    description: "禁止发明新状态"
+    correct: "使用 STATE_MACHINE.md 中定义的状态"
+
+  - id: "F-003"
+    description: "禁止直接修改 balance 字段"
+    correct: "通过 ledger_entries 表记录"
+
+  - id: "F-004"
+    description: "禁止在代码中硬编码配置值"
+    correct: "使用环境变量或配置文件"
+
+  - id: "F-005"
+    description: "禁止跳过类型检查"
+    correct: "所有代码必须通过 mypy/tsc 类型检查"
