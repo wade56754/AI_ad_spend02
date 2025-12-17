@@ -28,7 +28,8 @@ from backend.exceptions.custom_exceptions import (
     ResourceConflictError
 )
 from backend.models import AdAccount, User, TransferRequest
-from backend.models.enums import TransferRequestStatus, UserRole
+from backend.models.enums import TransferRequestStatus, UserRole, LedgerEntryType
+from backend.models.finance.ledger import LedgerEntry
 from backend.schemas.transfer import (
     TransferRequestCreate,
     TransferRequestApprove,
@@ -172,6 +173,17 @@ class TransferService:
             raise BusinessLogicError(
                 "源账户和目标账户不能相同",
                 error_code="BIZ_001"
+            )
+
+        # 业务校验: 同供应商约束 (DATA_SCHEMA.md v5.2 §3.2.5)
+        # 如果两个账户都有 supplier_id，则必须相同；否则跳过校验
+        source_supplier_id = getattr(source_account, 'supplier_id', None)
+        target_supplier_id = getattr(target_account, 'supplier_id', None)
+        if source_supplier_id and target_supplier_id and source_supplier_id != target_supplier_id:
+            raise BusinessLogicError(
+                f"禁止跨供应商迁移余额。源账户供应商={source_supplier_id}，"
+                f"目标账户供应商={target_supplier_id}。请拆分为退款 + 充值操作",
+                error_code="E-TRANS-004"  # 跨供应商迁移不允许
             )
 
         # 业务校验: 迁移金额不能超过源账户余额
@@ -389,12 +401,72 @@ class TransferService:
             )
 
         with self.transaction():
-            # TODO: 生成 TRANSFER_OUT/TRANSFER_IN Ledger 记录
-            # 这部分需要调用 LedgerService 创建账本记录
-            # 暂时先完成状态流转
+            # ====== LEDGER_SOT.md v1.1: TRANSFER_OUT/TRANSFER_IN 双条目生成 ======
 
+            # 1. 获取源账户和目标账户（带行锁）
+            source_account = self.db.query(AdAccount).filter(
+                AdAccount.id == transfer.source_ad_account_id
+            ).with_for_update().first()
+
+            target_account = self.db.query(AdAccount).filter(
+                AdAccount.id == transfer.target_ad_account_id
+            ).with_for_update().first()
+
+            if not source_account or not target_account:
+                raise BusinessLogicError(
+                    "源账户或目标账户不存在",
+                    error_code="BIZ_002"
+                )
+
+            # 2. 获取当前余额
+            source_balance = LedgerEntry.get_account_balance(self.db, transfer.source_ad_account_id)
+            target_balance = LedgerEntry.get_account_balance(self.db, transfer.target_ad_account_id)
+            transfer_amount = transfer.transfer_amount
+
+            # 3. 验证余额充足
+            if source_balance < transfer_amount:
+                raise BusinessLogicError(
+                    f"源账户余额不足: 当前余额 {source_balance}, 迁移金额 {transfer_amount}",
+                    error_code="BIZ_616"
+                )
+
+            # 4. 创建 TRANSFER_OUT 分录（源账户，负数）
+            transfer_out_entry = LedgerEntry(
+                ad_account_id=transfer.source_ad_account_id,
+                entry_type=LedgerEntryType.TRANSFER_OUT.value,
+                amount=-transfer_amount,  # 负数表示转出
+                balance_after=source_balance - transfer_amount,
+                reference_type="transfer_request",
+                reference_id=transfer.id,
+                notes=f"余额迁移转出 #{transfer.request_no} 至账户 {transfer.target_ad_account_id}"
+            )
+            self.db.add(transfer_out_entry)
+
+            # 5. 创建 TRANSFER_IN 分录（目标账户，正数）
+            transfer_in_entry = LedgerEntry(
+                ad_account_id=transfer.target_ad_account_id,
+                entry_type=LedgerEntryType.TRANSFER_IN.value,
+                amount=transfer_amount,  # 正数表示转入
+                balance_after=target_balance + transfer_amount,
+                reference_type="transfer_request",
+                reference_id=transfer.id,
+                notes=f"余额迁移转入 #{transfer.request_no} 从账户 {transfer.source_ad_account_id}"
+            )
+            self.db.add(transfer_in_entry)
+
+            # 6. 更新广告账户余额 (LEDGER_SOT.md v1.1 §3.2 余额真相源)
+            source_account.balance = (source_account.balance or Decimal('0.00')) - transfer_amount
+            target_account.balance = (target_account.balance or Decimal('0.00')) + transfer_amount
+
+            # 7. 更新迁移申请状态
             transfer.status = TransferRequestStatus.COMPLETED.value
             transfer.completed_at = datetime.now()
             transfer.version += 1
-            logger.info(f"Transfer {transfer_id} completed by {current_user.id}")
+
+            logger.info(
+                f"Transfer {transfer_id} completed by {current_user.id}: "
+                f"amount={transfer_amount}, "
+                f"source_balance_after={source_balance - transfer_amount}, "
+                f"target_balance_after={target_balance + transfer_amount}"
+            )
             return transfer

@@ -429,9 +429,10 @@ class _ReconciliationAdjustmentLegacy(Base):
     )
 
 
-class ReconciliationReport(Base):
-    """对账报告表"""
+class ReconciliationReportLegacy(Base):
+    """对账报告表 - DEPRECATED: 使用 finance.reconciliation.ReconciliationReport"""
     __tablename__ = "reconciliation_reports"
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True, index=True)
     batch_id = Column(
@@ -486,15 +487,15 @@ class ReconciliationReport(Base):
     __table_args__ = (
         CheckConstraint(
             "report_type IN ('daily', 'weekly', 'monthly')",
-            name="check_report_type"
+            name="check_report_type_legacy"
         ),
         CheckConstraint(
             "report_period_end >= report_period_start",
-            name="check_report_period_valid"
+            name="check_report_period_valid_legacy"
         ),
-        Index("idx_reconciliation_reports_batch", "batch_id"),
-        Index("idx_reconciliation_reports_type", "report_type"),
-        Index("idx_reconciliation_reports_period", "report_period_start"),
-        {"comment": "对账报告表"}
+        Index("idx_reconciliation_reports_batch_legacy", "batch_id"),
+        Index("idx_reconciliation_reports_type_legacy", "report_type"),
+        Index("idx_reconciliation_reports_period_legacy", "report_period_start"),
+        {"comment": "对账报告表 - DEPRECATED", "extend_existing": True}
     )
 

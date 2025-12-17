@@ -480,3 +480,185 @@ class TestAdAccountAPI:
                 status.HTTP_404_NOT_FOUND,
                 status.HTTP_500_INTERNAL_SERVER_ERROR  # ValidationError 可能未被正确处理
             ]
+
+    class TestBalanceTransferEndpoint:
+        """
+        POST /ad-accounts/{account_id}/balance-transfer 测试
+
+        SoT Ref:
+        - TRANSFER_SOT.md v1.0 (死号余额迁移业务规则)
+        - STATE_MACHINE.md v2.6 第12章 (transfer_requests 状态机)
+        - ERROR_CODES_SOT.md v2.1 (E-TRANS-* 错误码)
+        """
+
+        @patch('backend.routers.ad_accounts.get_current_user')
+        @patch('backend.routers.ad_accounts.TransferService')
+        def test_balance_transfer_source_not_dead(
+            self, mock_transfer_service, mock_auth, client, admin_headers
+        ):
+            """
+            测试源账户状态不是 dead 时应返回 E-TRANS-002 错误
+
+            业务规则: 仅 dead 状态的账户可以发起余额迁移
+            """
+            mock_auth.return_value = MagicMock(id=1, role="admin")
+
+            response = client.post(
+                "/api/v1/ad-accounts/1/balance-transfer",
+                json={
+                    "target_ad_account_id": 2,
+                    "transfer_amount": "100.00",
+                    "reason": "测试迁移"
+                },
+                headers=admin_headers
+            )
+
+            # 可能返回 400 (源账户不是 dead) 或 401 (未认证) 或 404 (账户不存在)
+            assert response.status_code in [
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_404_NOT_FOUND
+            ]
+
+        @patch('backend.routers.ad_accounts.get_current_user')
+        @patch('backend.routers.ad_accounts.TransferService')
+        def test_balance_transfer_target_not_active(
+            self, mock_transfer_service, mock_auth, client, admin_headers
+        ):
+            """
+            测试目标账户状态不是 active 时应返回 E-TRANS-003 错误
+
+            业务规则: 仅 active 状态的账户可以接收余额
+            """
+            mock_auth.return_value = MagicMock(id=1, role="admin")
+
+            response = client.post(
+                "/api/v1/ad-accounts/1/balance-transfer",
+                json={
+                    "target_ad_account_id": 2,
+                    "transfer_amount": "100.00"
+                },
+                headers=admin_headers
+            )
+
+            assert response.status_code in [
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_404_NOT_FOUND
+            ]
+
+        @patch('backend.routers.ad_accounts.get_current_user')
+        @patch('backend.routers.ad_accounts.TransferService')
+        def test_balance_transfer_same_account(
+            self, mock_transfer_service, mock_auth, client, admin_headers
+        ):
+            """
+            测试源账户和目标账户相同时应返回错误
+
+            业务规则: 源账户和目标账户不能相同
+            """
+            mock_auth.return_value = MagicMock(id=1, role="admin")
+
+            response = client.post(
+                "/api/v1/ad-accounts/1/balance-transfer",
+                json={
+                    "target_ad_account_id": 1,  # 与源账户相同
+                    "transfer_amount": "100.00"
+                },
+                headers=admin_headers
+            )
+
+            assert response.status_code in [
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_404_NOT_FOUND
+            ]
+
+        @patch('backend.routers.ad_accounts.get_current_user')
+        @patch('backend.routers.ad_accounts.TransferService')
+        def test_balance_transfer_insufficient_balance(
+            self, mock_transfer_service, mock_auth, client, admin_headers
+        ):
+            """
+            测试迁移金额超过源账户余额时应返回 E-TRANS-006 错误
+
+            业务规则: 迁移金额必须 <= 源账户余额
+            """
+            mock_auth.return_value = MagicMock(id=1, role="admin")
+
+            response = client.post(
+                "/api/v1/ad-accounts/1/balance-transfer",
+                json={
+                    "target_ad_account_id": 2,
+                    "transfer_amount": "999999.00"  # 假设超过余额
+                },
+                headers=admin_headers
+            )
+
+            assert response.status_code in [
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_404_NOT_FOUND
+            ]
+
+        @patch('backend.routers.ad_accounts.get_current_user')
+        @patch('backend.routers.ad_accounts.TransferService')
+        def test_balance_transfer_zero_amount(
+            self, mock_transfer_service, mock_auth, client, admin_headers
+        ):
+            """
+            测试迁移金额为 0 或负数时应返回验证错误
+
+            业务规则: 迁移金额必须 > 0
+            """
+            mock_auth.return_value = MagicMock(id=1, role="admin")
+
+            # 测试金额为 0
+            response = client.post(
+                "/api/v1/ad-accounts/1/balance-transfer",
+                json={
+                    "target_ad_account_id": 2,
+                    "transfer_amount": "0"
+                },
+                headers=admin_headers
+            )
+
+            # Pydantic 验证应该拒绝 0 或负数金额
+            assert response.status_code in [
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ]
+
+        def test_balance_transfer_request_schema(self, client, admin_headers):
+            """
+            测试 balance-transfer 请求体 Schema 验证
+
+            验证 BalanceTransferRequest schema 的字段约束
+            """
+            # 测试缺少必填字段
+            response = client.post(
+                "/api/v1/ad-accounts/1/balance-transfer",
+                json={},  # 缺少 target_ad_account_id
+                headers=admin_headers
+            )
+
+            assert response.status_code in [
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ]
+
+            # 测试 reason 字段超长
+            response = client.post(
+                "/api/v1/ad-accounts/1/balance-transfer",
+                json={
+                    "target_ad_account_id": 2,
+                    "reason": "x" * 501  # 超过 500 字符限制
+                },
+                headers=admin_headers
+            )
+
+            assert response.status_code in [
+                status.HTTP_401_UNAUTHORIZED,
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ]

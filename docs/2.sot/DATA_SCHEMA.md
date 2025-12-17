@@ -1,16 +1,16 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
 > **版本**: v5.2
-> **status**: active
+> **status**: frozen
 > **owner**: wade
 > **last_reviewed**: 2025-11-27
 > **更新日期**: 2025‑11‑22
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
-> - 实现规范 → `../1.overview/MASTER_SPEC.md` v1.1
+> - 实现规范 → `../1.overview/MASTER.md` v3.6
 > - 状态机 → `STATE_MACHINE.md` v2.6（任何状态字段必须引用对应状态机）
-> - 业务规则 → `BUSINESS_RULES.md` v3.1
+> - 业务规则 → `BUSINESS_RULES.md` v3.2
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
 > - 业务需求 → `BRD_chapter1_v3.1.md` (BRD v3.1基线)
 
@@ -77,6 +77,8 @@
 | `reconciliation_details` | 对账明细 | BIGSERIAL | implemented |
 | `reconciliation_adjustments` | 对账调整 | BIGSERIAL | implemented |
 | `reconciliation_reports` | 对账报告 | BIGSERIAL | implemented |
+| `profit_aggregates` | 利润聚合（L2汇总层） | BIGSERIAL | planned |
+| `profit_report_snapshots` | 利润报表快照 | BIGSERIAL | planned |
 
 ---
 
@@ -444,6 +446,78 @@
 #### 3.5.4 `reconciliation_reports`（implemented）
 
 字段：`id`, `batch_id (FK)`, `generated_at`, `generated_by`, `report_url`, `metrics JSONB`.
+
+---
+
+### 3.6 利润表模块
+
+> **设计来源**: `PROFIT_SOT.md` v1.1
+> **OpenSpec Change**: `finance-profit-v1`
+> **依赖 SoT**: LEDGER_SOT.md v1.1（双账本模型）, STATE_MACHINE.md v2.6（粉数确认状态机）
+
+#### 3.6.1 `profit_aggregates`（planned）
+
+**说明**：L2 汇总层核心表，存储按周期/维度聚合的利润数据。聚合来源为 `daily_reports`（仅 `final_locked` 状态）和 `ledger_entries`。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 主键 |
+| `period_type` | VARCHAR(20) | NOT NULL, CHECK IN ('daily', 'weekly', 'monthly') | 周期类型 |
+| `period_start` | TIMESTAMPTZ | NOT NULL | 周期开始时间 |
+| `period_end` | TIMESTAMPTZ | NOT NULL | 周期结束时间 |
+| `project_id` | BIGINT | FK → `projects.id`, 可空 | 项目ID，NULL 表示全局汇总 |
+| `ad_account_id` | BIGINT | FK → `ad_accounts.id`, 可空 | 账户ID，NULL 表示项目级汇总 |
+| `total_revenue` | DECIMAL(18,2) | NOT NULL, DEFAULT 0.00 | 总收入，派生字段：`SUM(ledger_entries.amount WHERE entry_type='REVENUE')` |
+| `total_cost` | DECIMAL(18,2) | NOT NULL, DEFAULT 0.00 | 总成本，派生字段：`ABS(SUM(ledger_entries.amount WHERE entry_type='COST'))` |
+| `gross_profit` | DECIMAL(18,2) | NOT NULL, DEFAULT 0.00 | 毛利，派生字段：`total_revenue - total_cost` |
+| `gross_margin_pct` | DECIMAL(5,2) | 可空 | 毛利率(%)，派生字段：`(gross_profit / total_revenue) × 100`，HALF_UP 四舍五入，revenue=0 时为 NULL |
+| `total_conversions` | INTEGER | DEFAULT 0 | 转化数，派生字段：`SUM(daily_reports.conversions_final WHERE status='final_locked')` |
+| `total_real_spend` | DECIMAL(18,2) | DEFAULT 0.00 | 实际消耗，派生字段：`SUM(daily_reports.real_spend WHERE status='final_locked')` |
+| `total_topup` | DECIMAL(18,2) | DEFAULT 0.00 | 充值金额，⚠️ 仅用于资金流入统计，不参与毛利计算 |
+| `transfer_in` | DECIMAL(18,2) | DEFAULT 0.00 | 转入金额，派生字段：`SUM(ledger_entries.amount WHERE entry_type='TRANSFER_IN')` |
+| `transfer_out` | DECIMAL(18,2) | DEFAULT 0.00 | 转出金额，派生字段：`ABS(SUM(ledger_entries.amount WHERE entry_type='TRANSFER_OUT'))` |
+| `is_locked` | BOOLEAN | DEFAULT FALSE | 是否锁定，锁定后不可重新生成 |
+| `locked_at` | TIMESTAMPTZ | 可空 | 锁定时间 |
+| `locked_by` | UUID | FK → `users.id`, 可空 | 锁定人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**：
+- UNIQUE (`period_type`, `period_start`, `project_id`, `ad_account_id`) - 防止重复聚合
+
+**索引**：`idx_profit_agg_period_type`, `idx_profit_agg_period_start`, `idx_profit_agg_project`, `idx_profit_agg_account`, `idx_profit_agg_locked`.
+
+**业务规则引用**：
+- BR-PROFIT-001: `gross_profit = total_revenue - total_cost`
+- BR-PROFIT-002: `total_topup` 不参与利润计算
+- BR-PROFIT-003: 仅聚合 `daily_reports.status = 'final_locked'` 的数据
+- BR-PROFIT-005: `is_locked = TRUE` 时禁止重新生成
+
+#### 3.6.2 `profit_report_snapshots`（planned）
+
+**说明**：报表快照层，存储生成的利润报表 JSON 数据，支持 draft/confirmed/locked 三态管理。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 主键 |
+| `report_type` | VARCHAR(30) | NOT NULL, CHECK IN ('monthly_summary', 'project_detail', 'account_detail') | 报表类型 |
+| `period_month` | VARCHAR(7) | NOT NULL | 月份，格式 YYYY-MM |
+| `project_id` | BIGINT | FK → `projects.id`, 可空 | 项目ID，NULL 表示全局报表 |
+| `report_data` | JSONB | NOT NULL | 报表数据，包含聚合指标和明细 |
+| `status` | VARCHAR(20) | NOT NULL, CHECK IN ('draft', 'confirmed', 'locked'), DEFAULT 'draft' | 报表状态 |
+| `generated_at` | TIMESTAMPTZ | NOT NULL, DEFAULT NOW() | 生成时间 |
+| `generated_by` | UUID | FK → `users.id`, NOT NULL | 生成人 |
+| `confirmed_at` | TIMESTAMPTZ | 可空 | 确认时间 |
+| `confirmed_by` | UUID | FK → `users.id`, 可空 | 确认人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+
+**约束**：
+- UNIQUE (`report_type`, `period_month`, `project_id`) - 同类型同月份同项目仅一份报表
+
+**索引**：`idx_profit_snap_report_type`, `idx_profit_snap_period_month`, `idx_profit_snap_project`, `idx_profit_snap_status`.
+
+**业务规则引用**：
+- BR-PROFIT-006: 月度报表基于 L2 聚合层 (`profit_aggregates`) 生成
 
 ---
 

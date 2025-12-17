@@ -1,0 +1,12 @@
+{
+  "timestamp": "2025-12-11T07:21:51.236Z",
+  "success": [],
+  "failures": [
+    "测试执行错误: The browser is already running for C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\puppeteer_dev_chrome_profile-laWQRA. Use a different `userDataDir` or stop the running browser first."
+  ],
+  "networkRequests": [],
+  "consoleErrors": [],
+  "loginRequest": null,
+  "localStorage": {},
+  "screenshots": []
+}

@@ -1,0 +1,35 @@
+# Flow Presets for finance_profit Module
+# 
+# Usage:
+#   python -m agent_platform.cli orch --preset finance_profit_backend_full --mode execute
+#
+# Presets can be overridden with CLI arguments:
+#   python -m agent_platform.cli orch --preset finance_profit_backend_full --task "Custom task description"
+
+flows:
+  finance_profit_backend_full:
+    flow: be_then_test
+    task: "Implement finance_profit API and tests (SoT-aligned)"
+    module: finance_profit
+    target_files:
+      - backend/routers/finance_profit.py
+      - backend/schemas/profit.py
+      - backend/services/finance_profit_service.py
+      - backend/tests/api/test_finance_profit_flow_generated.py
+
+  finance_profit_backend_only:
+    flow: backend_only
+    task: "Implement finance_profit API (SoT-aligned)"
+    module: finance_profit
+    target_files:
+      - backend/routers/finance_profit.py
+      - backend/schemas/profit.py
+      - backend/services/finance_profit_service.py
+
+  finance_profit_test_only:
+    flow: backend_only  # TestAgent can be called via backend_only with test mode
+    task: "Generate tests for finance_profit module"
+    module: finance_profit
+    target_files:
+      - backend/tests/api/test_finance_profit_flow_generated.py
+

@@ -605,7 +605,7 @@ MASTER.md (本文档) > STATE_MACHINE.md > DATA_SCHEMA.md > API_SOT.md
 
 ### Tier 1: 架构宪法
 
-- **docs/1.overview/MASTER.md** v3.5 - 系统唯一入口（本文档）
+- **docs/1.overview/MASTER.md** v3.6 - 系统唯一入口（本文档）
 - **docs/1.overview/PROJECT.md** v1.2 - 业务定义与边界声明
 
 ### Tier 2: 单源真相 (docs/2.sot/)

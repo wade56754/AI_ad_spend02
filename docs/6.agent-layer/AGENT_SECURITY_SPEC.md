@@ -3,16 +3,18 @@ version: v1.0
 status: draft
 layer: agent-layer
 owner: wade
-last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+last_reviewed: 2025-12-07
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+upstream_sot: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §2.3
 ---
 
 # Agent 安全规范
 
 > **文档版本**: v1.0
 > **状态**: Draft
-> **最后审查**: 2025-11-27
-> **基准**: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+> **最后审查**: 2025-12-07
+> **上游规范**: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §2.3
+> **基准**: MASTER.md v3.5, SoT Freeze v2.6
 
 ---
 

@@ -19,6 +19,10 @@ class StandardResponse(BaseModel, Generic[T]):
     request_id: str
     timestamp: str
 
+
+class ResponseBuilder:
+    """响应构建器 - 避免与 Pydantic 字段名冲突"""
+
     @staticmethod
     def success(
         data: Any = None,
@@ -95,7 +99,7 @@ class StandardResponse(BaseModel, Generic[T]):
             "has_prev": page > 1
         }
 
-        return StandardResponse.success(
+        return ResponseBuilder.success(
             data=data,
             message=message,
             code=code,
@@ -106,7 +110,7 @@ class StandardResponse(BaseModel, Generic[T]):
 # 保持向后兼容的函数
 def ok(data: Any = None, status_code: int = 200, meta: Optional[Dict[str, Any]] = None) -> JSONResponse:
     """兼容旧版本的ok函数"""
-    return StandardResponse.success(
+    return ResponseBuilder.success(
         data=data,
         status_code=status_code,
         meta=meta
@@ -115,12 +119,19 @@ def ok(data: Any = None, status_code: int = 200, meta: Optional[Dict[str, Any]] 
 
 def fail(code: str, message: str, status_code: int = 400, meta: Optional[Dict[str, Any]] = None) -> JSONResponse:
     """兼容旧版本的fail函数"""
-    return StandardResponse.error(
+    return ResponseBuilder.error(
         message=message,
         code=code,
         status_code=status_code,
         meta=meta
     )
+
+
+# 向后兼容：保留 StandardResponse.success 和 StandardResponse.error 的访问方式
+# 通过在模块级别创建别名
+StandardResponse.success = ResponseBuilder.success
+StandardResponse.error = ResponseBuilder.error
+StandardResponse.paginated = ResponseBuilder.paginated
 
 
 # 推荐使用的新函数

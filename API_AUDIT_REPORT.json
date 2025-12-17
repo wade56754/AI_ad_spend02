@@ -1,0 +1,394 @@
+{
+  "audit_date": "2025-12-10",
+  "doc_source": "docs/2.sot/API_SOT.md",
+  "code_source": "backend/routers/",
+  "summary": {
+    "documented_endpoints": 67,
+    "implemented_endpoints": 150,
+    "doc_only_count": 8,
+    "code_only_count": 91,
+    "status_mismatch_count": 3
+  },
+  "doc_only": [
+    {
+      "method": "POST",
+      "path": "/api/v1/ad-accounts/{account_id}/assign",
+      "description": "分配账户给投手",
+      "documented_status": "implemented",
+      "note": "API_SOT.md定义但代码未实现，可能被整合到其他端点"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ad-accounts/{account_id}/mark-dead",
+      "description": "标记死号",
+      "documented_status": "implemented",
+      "note": "实际实现为 PUT /ad-accounts/{account_id}/status，方法不一致"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/daily-reports/{report_id}/trend-check",
+      "description": "趋势风控检查",
+      "documented_status": "implemented",
+      "note": "代码中实现为 trend-flag，端点名称不一致"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/daily-reports/{report_id}/reversal",
+      "description": "红冲修正",
+      "documented_status": "implemented",
+      "note": "API_SOT.md定义但代码未找到"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/project/{project_id}",
+      "description": "查询项目Ledger",
+      "documented_status": "implemented",
+      "note": "Ledger API实际结构完全不同，未找到此端点"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/ledger/supplier/{supplier_id}",
+      "description": "查询供应商Ledger",
+      "documented_status": "implemented",
+      "note": "Ledger API实际结构完全不同，未找到此端点"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/ledger/reversal",
+      "description": "创建红冲记录",
+      "documented_status": "implemented",
+      "note": "Ledger API实际结构完全不同，未找到此端点"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users",
+      "description": "获取用户列表",
+      "documented_status": "implemented",
+      "note": "文档定义但代码中可能在authentication.py中而非单独users.py"
+    }
+  ],
+  "code_only": [
+    {
+      "category": "Authentication",
+      "endpoints": [
+        "POST /api/v1/auth/refresh",
+        "POST /api/v1/auth/logout-all",
+        "POST /api/v1/auth/change-password",
+        "POST /api/v1/auth/forgot-password",
+        "POST /api/v1/auth/reset-password",
+        "POST /api/v1/auth/verify-email",
+        "POST /api/v1/auth/resend-verification",
+        "POST /api/v1/auth/verify-token",
+        "POST /api/v1/auth/login/oauth"
+      ],
+      "count": 9,
+      "note": "扩展的认证功能，文档未记录"
+    },
+    {
+      "category": "Projects",
+      "endpoints": [
+        "GET /api/v1/projects/statistics",
+        "POST /api/v1/projects/{project_id}/expenses",
+        "GET /api/v1/projects/{project_id}/expenses"
+      ],
+      "count": 3,
+      "note": "项目统计和费用管理，文档未记录"
+    },
+    {
+      "category": "Ad Accounts",
+      "endpoints": [
+        "PUT /api/v1/ad-accounts/{account_id}/status",
+        "DELETE /api/v1/ad-accounts/{account_id}"
+      ],
+      "count": 2,
+      "note": "账户状态更新和删除，文档未记录"
+    },
+    {
+      "category": "Daily Reports",
+      "endpoints": [
+        "DELETE /api/v1/daily-reports/{report_id}",
+        "POST /api/v1/daily-reports/{report_id}/trend-flag",
+        "POST /api/v1/daily-reports/batch-import",
+        "POST /api/v1/daily-reports/import-file",
+        "GET /api/v1/daily-reports/export",
+        "GET /api/v1/daily-reports/statistics",
+        "GET /api/v1/daily-reports/{report_id}/audit-logs"
+      ],
+      "count": 7,
+      "note": "批量导入、导出、统计功能，文档未记录"
+    },
+    {
+      "category": "Topup Requests",
+      "endpoints": [
+        "GET /api/v1/topups/{request_id}/logs",
+        "GET /api/v1/topups/statistics",
+        "GET /api/v1/topups/dashboard",
+        "GET /api/v1/topups/accounts/{account_id}/balance",
+        "GET /api/v1/topups/export",
+        "PUT /api/v1/topups/{request_id}/pay",
+        "POST /api/v1/topups/{request_id}/receipt"
+      ],
+      "count": 7,
+      "note": "路径前缀为 /topups 而非文档中的 /topup-requests，且有许多额外功能"
+    },
+    {
+      "category": "Ledger",
+      "endpoints": [
+        "POST /api/v1/ledger/transactions",
+        "GET /api/v1/ledger/transactions",
+        "PUT /api/v1/ledger/transactions/{transaction_id}/status",
+        "GET /api/v1/ledger/balance",
+        "GET /api/v1/ledger/projects/{project_id}/budget",
+        "POST /api/v1/ledger/budget",
+        "GET /api/v1/ledger/statistics",
+        "GET /api/v1/ledger/export"
+      ],
+      "count": 8,
+      "note": "Ledger API实际结构与文档完全不同，采用了transaction-based模式"
+    },
+    {
+      "category": "Finance Profit",
+      "endpoints": [
+        "POST /api/v1/finance/profit/generate",
+        "GET /api/v1/finance/profit/monthly",
+        "GET /api/v1/finance/profit/daily",
+        "GET /api/v1/finance/profit/projects/{project_id}",
+        "GET /api/v1/finance/profit/accounts/{account_id}",
+        "GET /api/v1/finance/profit/overview",
+        "GET /api/v1/finance/profit/by-project",
+        "GET /api/v1/finance/profit/by-account",
+        "GET /api/v1/finance/profit/by-channel",
+        "GET /api/v1/finance/profit/trend",
+        "POST /api/v1/finance/profit/compare"
+      ],
+      "count": 11,
+      "note": "文档只记录了 /summary 端点，实际有完整的利润报表系统"
+    },
+    {
+      "category": "Reconciliation",
+      "endpoints": [
+        "POST /api/v1/reconciliations/batches/{batch_id}/run",
+        "GET /api/v1/reconciliations/batches/{batch_id}/details",
+        "PUT /api/v1/reconciliations/details/{detail_id}/review",
+        "POST /api/v1/reconciliations/details/{detail_id}/adjust",
+        "GET /api/v1/reconciliations/statistics",
+        "GET /api/v1/reconciliations/export",
+        "GET /api/v1/reconciliations/reports",
+        "POST /api/v1/reconciliations/reports",
+        "PUT /api/v1/reconciliations/batches/{batch_id}/resubmit",
+        "PUT /api/v1/reconciliations/batches/{batch_id}/force-complete",
+        "PUT /api/v1/reconciliations/details/{detail_id}/confirm",
+        "PUT /api/v1/reconciliations/batches/{batch_id}",
+        "DELETE /api/v1/reconciliations/batches/{batch_id}",
+        "GET /api/v1/reconciliations/details/{detail_id}",
+        "GET /api/v1/reconciliations/adjustments",
+        "GET /api/v1/reconciliations/adjustments/{adjustment_id}",
+        "POST /api/v1/reconciliations/adjustments/{adjustment_id}/execute",
+        "GET /api/v1/reconciliations/reports/{report_id}",
+        "DELETE /api/v1/reconciliations/reports/{report_id}"
+      ],
+      "count": 19,
+      "note": "路径前缀为 /reconciliations 而非 /reconciliation，且有大量额外功能"
+    },
+    {
+      "category": "Transfers (未记录模块)",
+      "endpoints": [
+        "GET /api/v1/transfers",
+        "POST /api/v1/transfers",
+        "GET /api/v1/transfers/{transfer_id}",
+        "POST /api/v1/transfers/{transfer_id}/submit",
+        "POST /api/v1/transfers/{transfer_id}/approve",
+        "POST /api/v1/transfers/{transfer_id}/reject",
+        "POST /api/v1/transfers/{transfer_id}/complete"
+      ],
+      "count": 7,
+      "note": "完整的转账管理模块，API_SOT.md完全未记录"
+    },
+    {
+      "category": "Suppliers (未记录模块)",
+      "endpoints": [
+        "POST /api/v1/suppliers",
+        "GET /api/v1/suppliers",
+        "GET /api/v1/suppliers/statistics",
+        "GET /api/v1/suppliers/{supplier_id}",
+        "PUT /api/v1/suppliers/{supplier_id}",
+        "DELETE /api/v1/suppliers/{supplier_id}",
+        "GET /api/v1/suppliers/{supplier_id}/accounts",
+        "GET /api/v1/suppliers/{supplier_id}/ledger-summary"
+      ],
+      "count": 8,
+      "note": "完整的供应商管理模块，API_SOT.md完全未记录"
+    },
+    {
+      "category": "Settlements (未记录模块)",
+      "endpoints": [
+        "POST /api/v1/settlements",
+        "GET /api/v1/settlements",
+        "GET /api/v1/settlements/statistics",
+        "GET /api/v1/settlements/overdue",
+        "GET /api/v1/settlements/{settlement_id}",
+        "PUT /api/v1/settlements/{settlement_id}",
+        "POST /api/v1/settlements/{settlement_id}/submit",
+        "POST /api/v1/settlements/{settlement_id}/approve",
+        "POST /api/v1/settlements/{settlement_id}/payment",
+        "POST /api/v1/settlements/{settlement_id}/cancel"
+      ],
+      "count": 10,
+      "note": "完整的结算管理模块，API_SOT.md完全未记录"
+    },
+    {
+      "category": "Reports (未记录模块)",
+      "endpoints": [
+        "GET /api/v1/reports/dashboard",
+        "GET /api/v1/reports/performance",
+        "GET /api/v1/reports/profit",
+        "GET /api/v1/reports/reconciliation",
+        "GET /api/v1/reports/financial",
+        "GET /api/v1/reports/trends/{metric}",
+        "GET /api/v1/reports",
+        "GET /api/v1/reports/{project_id}"
+      ],
+      "count": 8,
+      "note": "完整的报表模块，API_SOT.md完全未记录"
+    },
+    {
+      "category": "Project Templates (未记录模块)",
+      "endpoints": [
+        "GET /api/v1/project-templates",
+        "POST /api/v1/project-templates",
+        "GET /api/v1/project-templates/{template_id}",
+        "PUT /api/v1/project-templates/{template_id}",
+        "DELETE /api/v1/project-templates/{template_id}",
+        "POST /api/v1/project-templates/{template_id}/apply",
+        "GET /api/v1/project-templates/{template_id}/preview"
+      ],
+      "count": 7,
+      "note": "项目模板管理模块，API_SOT.md完全未记录"
+    },
+    {
+      "category": "Import Jobs (未记录模块)",
+      "endpoints": [
+        "POST /api/v1/import-jobs/upload",
+        "GET /api/v1/import-jobs",
+        "GET /api/v1/import-jobs/statistics",
+        "GET /api/v1/import-jobs/{job_id}",
+        "GET /api/v1/import-jobs/{job_id}/progress",
+        "GET /api/v1/import-jobs/{job_id}/errors",
+        "POST /api/v1/import-jobs/{job_id}/start",
+        "POST /api/v1/import-jobs/{job_id}/cancel",
+        "DELETE /api/v1/import-jobs/{job_id}",
+        "POST /api/v1/import-jobs/check-duplicate"
+      ],
+      "count": 10,
+      "note": "数据导入任务管理模块，API_SOT.md完全未记录"
+    },
+    {
+      "category": "AI Analytics (未记录模块)",
+      "endpoints": [
+        "POST /api/v1/ai-analytics/predict",
+        "POST /api/v1/ai-analytics/optimize",
+        "GET /api/v1/ai-analytics/insights",
+        "GET /api/v1/ai-analytics/recommendations",
+        "GET /api/v1/ai-analytics/anomalies",
+        "GET /api/v1/ai-analytics/forecasts"
+      ],
+      "count": 6,
+      "note": "AI分析功能模块，API_SOT.md完全未记录"
+    },
+    {
+      "category": "Agents (未记录模块)",
+      "endpoints": [
+        "GET /api/v1/agents",
+        "GET /api/v1/agents/{agent_name}",
+        "POST /api/v1/agents/run",
+        "POST /api/v1/agents/orch"
+      ],
+      "count": 4,
+      "note": "Agent编排系统，API_SOT.md完全未记录"
+    },
+    {
+      "category": "Health (未记录模块)",
+      "endpoints": [
+        "GET /api/v1/health"
+      ],
+      "count": 1,
+      "note": "健康检查端点，API_SOT.md完全未记录"
+    }
+  ],
+  "status_mismatch": [
+    {
+      "method": "POST",
+      "path": "/api/v1/ad-accounts/{account_id}/mark-dead",
+      "documented_status": "implemented",
+      "actual_implementation": "PUT /api/v1/ad-accounts/{account_id}/status",
+      "issue": "HTTP方法不一致 - 文档为POST，实际为PUT",
+      "severity": "medium"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/daily-reports/{report_id}/trend-check",
+      "documented_status": "implemented",
+      "actual_implementation": "POST /api/v1/daily-reports/{report_id}/trend-flag",
+      "issue": "端点名称不一致 - 文档为trend-check，实际为trend-flag",
+      "severity": "low"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/topup-requests",
+      "documented_status": "implemented",
+      "actual_implementation": "GET /api/v1/topups",
+      "issue": "路径前缀不一致 - 文档为/topup-requests，实际为/topups",
+      "severity": "medium"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "P0 - Critical",
+      "items": [
+        "更新 API_SOT.md 以记录所有8个未记录的完整模块（Transfers, Suppliers, Settlements, Reports, Project Templates, Import Jobs, AI Analytics, Agents, Health）",
+        "统一 Ledger API 的设计 - 文档与实现完全不一致",
+        "统一路径命名 - topup-requests vs topups, reconciliation vs reconciliations"
+      ]
+    },
+    {
+      "priority": "P1 - High",
+      "items": [
+        "补充文档中缺失的扩展认证功能（9个端点）",
+        "补充 Finance Profit 模块的完整文档（目前只记录了1个端点，实际有12个）",
+        "补充 Reconciliation 模块的完整文档（目前只记录了7个端点，实际有26个）",
+        "统一 HTTP 方法 - mark-dead 应该是 POST 还是 PUT？"
+      ]
+    },
+    {
+      "priority": "P2 - Medium",
+      "items": [
+        "添加 Projects 模块的 statistics 和 expenses 端点文档",
+        "添加 Ad Accounts 的 DELETE 端点文档",
+        "添加 Daily Reports 的批量导入、导出、统计功能文档",
+        "修正端点名称不一致问题（trend-check vs trend-flag）"
+      ]
+    },
+    {
+      "priority": "P3 - Low",
+      "items": [
+        "为所有实现的端点补充完整的请求/响应示例",
+        "添加状态机流转图到文档",
+        "添加权限矩阵完整说明"
+      ]
+    }
+  ],
+  "statistics": {
+    "documented_modules": 9,
+    "implemented_modules": 18,
+    "undocumented_modules": 9,
+    "documentation_coverage": "44.7%",
+    "endpoint_count_ratio": "documented:implemented = 67:150 (44.7%)",
+    "consistency_rate": "88.1%"
+  },
+  "notes": [
+    "API_SOT.md v9.0 主要覆盖了核心业务流程的端点",
+    "实际代码实现了大量扩展功能和辅助模块，但文档未更新",
+    "部分端点路径、HTTP方法与文档定义不一致",
+    "建议进行一次完整的文档更新以反映当前实现状态"
+  ]
+}

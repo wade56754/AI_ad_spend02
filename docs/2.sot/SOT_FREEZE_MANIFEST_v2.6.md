@@ -50,7 +50,7 @@ The layer is fully compliant with ASDD Freeze v1.0 and ready for operational dep
 | API_SOT.md | v9.0 | frozen* | wade | 2025-11-27 | [docs/2.sot/API_SOT.md](API_SOT.md) |
 | DATA_SCHEMA.md | v5.2 | active→frozen | wade | 2025-11-27 | [docs/2.sot/DATA_SCHEMA.md](DATA_SCHEMA.md) |
 | STATE_MACHINE.md | v2.6 | active→frozen | wade | 2025-11-27 | [docs/2.sot/STATE_MACHINE.md](STATE_MACHINE.md) |
-| BUSINESS_RULES.md | v3.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
+| BUSINESS_RULES.md | v3.2 | active→frozen | wade | 2025-11-27 | [docs/2.sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
 | ERROR_CODES_SOT.md | v2.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/ERROR_CODES_SOT.md](ERROR_CODES_SOT.md) |
 | AUTH_SPEC.md | v2.0 | active→frozen | wade | 2025-11-27 | [docs/2.sot/AUTH_SPEC.md](AUTH_SPEC.md) |
 | LEDGER_SOT.md | v1.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/LEDGER_SOT.md](LEDGER_SOT.md) |
@@ -175,7 +175,7 @@ The SoT Layer maintains strict internal version consistency:
 |--------------|------------------|---------------|-----------------|
 | STATE_MACHINE.md | v2.6 | DATA_SCHEMA, RECONCILIATION_SOT, DAILY_REPORT_SOT, TRANSFER_SOT | 4+ |
 | DATA_SCHEMA.md | v5.2 | RECONCILIATION_SOT, DAILY_REPORT_SOT, TRANSFER_SOT, RLS_POLICIES_SOT | 4+ |
-| BUSINESS_RULES.md | v3.1 | RECONCILIATION_SOT, multiple cross-references | 2+ |
+| BUSINESS_RULES.md | v3.2 | RECONCILIATION_SOT, multiple cross-references | 2+ |
 | LEDGER_SOT.md | v1.1 | RECONCILIATION_SOT (**CORRECTED**), TRANSFER_SOT, DAILY_REPORT_SOT, RLS_POLICIES_SOT | 4+ |
 | ERROR_CODES_SOT.md | v2.1 | RECONCILIATION_SOT, AUTH_SPEC | 2+ |
 | AUTH_SPEC.md | v2.0 | RECONCILIATION_SOT, system-wide auth references | 2+ |
@@ -304,7 +304,7 @@ docs/1.overview/ (Frozen v1.0 on 2025-11-27)
 docs/2.sot/ (Frozen v2.6 on 2025-11-27) ← THIS LAYER
     ├─ STATE_MACHINE.md v2.6 (Frozen)
     ├─ DATA_SCHEMA.md v5.2 (Frozen)
-    ├─ BUSINESS_RULES.md v3.1 (Frozen)
+    ├─ BUSINESS_RULES.md v3.2 (Frozen)
     ├─ API_SOT.md v9.0 (Frozen)
     └─ [8 more SoT documents] (Frozen)
          ▼

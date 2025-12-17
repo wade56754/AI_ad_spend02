@@ -6,7 +6,8 @@ Author: Claude协作开发
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Any
+from uuid import UUID
 
 from pydantic import BaseModel, Field, ConfigDict, field_validator, computed_field
 
@@ -100,13 +101,19 @@ class DailyReportBatchImportRequest(BaseModel):
 
 
 class DailyReportQueryParams(BaseModel):
-    """日报查询参数"""
+    """
+    日报查询参数 - 对齐 STATE_MACHINE.md v2.6 第8章 8状态机
+    """
     model_config = ConfigDict(from_attributes=True)
 
     report_date_start: Optional[date] = Field(None, description="开始日期")
     report_date_end: Optional[date] = Field(None, description="结束日期")
     ad_account_id: Optional[int] = Field(None, gt=0, description="广告账户ID")
-    status: Optional[str] = Field(None, pattern="^(pending|approved|rejected)$", description="审核状态")
+    status: Optional[str] = Field(
+        None,
+        pattern="^(raw_submitted|trend_pending|trend_ok|trend_flagged|trend_resolved|final_pending|final_confirmed|final_locked)$",
+        description="日报状态（8状态机: raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved → final_pending → final_confirmed → final_locked）"
+    )
     media_buyer_id: Optional[int] = Field(None, gt=0, description="投手ID")
     project_id: Optional[int] = Field(None, gt=0, description="项目ID")
 
@@ -208,14 +215,23 @@ class DailyReportListResponse(BaseModel):
 
 
 class DailyReportStatisticsResponse(BaseModel):
-    """日报统计响应"""
+    """
+    日报统计响应 - 对齐 STATE_MACHINE.md v2.6 第8章 8状态机
+    """
     model_config = ConfigDict(from_attributes=True)
 
     date_range: DateRange
     total_reports: int
-    approved_reports: int
-    rejected_reports: int
-    pending_reports: int
+    # 8 状态机统计 (STATE_MACHINE.md v2.6)
+    raw_submitted_reports: int = 0
+    trend_pending_reports: int = 0
+    trend_ok_reports: int = 0
+    trend_flagged_reports: int = 0
+    trend_resolved_reports: int = 0
+    final_pending_reports: int = 0
+    final_confirmed_reports: int = 0
+    final_locked_reports: int = 0
+    # 指标统计
     total_spend: Decimal
     total_impressions: int
     total_clicks: int
@@ -286,19 +302,23 @@ class DailyReportBatchImportResponse(BaseModel):
     processing_time_seconds: float
 
 
-# 审核日志响应
+# 审核日志响应（适配通用 AuditLog 模型）
 class DailyReportAuditLogResponse(BaseModel):
-    """审核日志响应"""
+    """
+    审核日志响应 - 适配通用 AuditLog 模型
+
+    AuditLog 使用 UUID 作为 user_id，此响应做转换适配
+    """
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     daily_report_id: int
-    action: str  # created, updated, approved, rejected
-    old_status: Optional[str]
-    new_status: Optional[str]
-    audit_user_id: int
-    audit_user_name: str
+    action: str  # created, updated, trend_flagged, trend_resolved, final_confirmed, final_locked, etc.
+    old_status: Optional[str] = None
+    new_status: Optional[str] = None
+    audit_user_id: Optional[Any] = None  # 可以是 int 或 UUID
+    audit_user_name: str = "Unknown"
     audit_time: datetime
-    audit_notes: Optional[str]
-    ip_address: Optional[str]
-    user_agent: Optional[str]
+    audit_notes: Optional[str] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None

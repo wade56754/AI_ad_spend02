@@ -94,6 +94,17 @@ Use `@/openspec/AGENTS.md` to learn:
 - Spec format and conventions
 - Project structure and guidelines
 
+## OpenSpec Slash Commands (Validation Automation)
+
+| Command | Description |
+|---------|-------------|
+| `/openspec:proposal <name>` | Create new change proposal with validation |
+| `/openspec:validate <id>` | Validate change completeness and SoT compliance |
+| `/openspec:apply <id>` | Implement approved change with task tracking |
+| `/openspec:archive <id>` | Archive deployed change and update specs |
+
+**Workflow**: proposal → validate → (approval) → apply → validate → archive
+
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
@@ -280,7 +291,7 @@ raise HTTPException(400, "Invalid")  # 缺少标准错误码
 
 ### SoT 裁判链
 ```
-STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
+STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.2
 → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1 → AUTH_SPEC.md v2.0
 → LEDGER_SOT.md v1.1
 ```

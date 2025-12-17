@@ -1,0 +1,277 @@
+/**
+ * Topups Page Component
+ *
+ * Main page for topup request management with filters and statistics
+ * SoT: STATE_MACHINE.md v2.6 Section 9
+ *
+ * Refactored: Extracted StatsOverview, FilterPanel, DetailDialog components
+ */
+
+'use client';
+
+import { useState, useMemo, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Filter, RefreshCw, Download } from 'lucide-react';
+import { useTopups, useTopupStats } from '../hooks';
+import { TopupsTable } from './TopupsTable';
+import { TopupRequestForm } from './TopupRequestForm';
+import { TopupStatusLegend } from './TopupStatusBadge';
+import {
+  TopupApprovalDialog,
+  TopupSubmitDialog,
+  TopupCancelDialog,
+} from './TopupApprovalDialog';
+import { TopupsStatsOverview } from './TopupsStatsOverview';
+import { TopupsFilterPanel, type FilterState, initialFilterState } from './TopupsFilterPanel';
+import { TopupDetailDialog, type TopupAction } from './TopupDetailDialog';
+import type { TopupRequest, TopupStatus, TopupListParams } from '../types';
+
+// === Types ===
+
+type TabValue = 'all' | 'pending_review' | 'finance_approve' | 'paid' | 'completed' | 'rejected';
+
+// === Main Page Component ===
+
+export function TopupsPage() {
+  // State
+  const [activeTab, setActiveTab] = useState<TabValue>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(initialFilterState);
+
+  // Selected topup for actions
+  const [selectedTopup, setSelectedTopup] = useState<TopupRequest | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [approvalMode, setApprovalMode] = useState<
+    'data_review' | 'finance_approval' | 'complete' | 'cancel' | null
+  >(null);
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  // User role (would come from auth context in real app)
+  const userRole = 'admin'; // TODO: Get from useAuth()
+
+  // Build query params
+  const queryParams = useMemo<TopupListParams>(() => {
+    const params: TopupListParams = {
+      page: 1,
+      page_size: 20,
+    };
+
+    // Tab filter
+    if (activeTab !== 'all') {
+      params.status = activeTab as TopupStatus;
+    } else if (filters.status) {
+      params.status = filters.status;
+    }
+
+    if (filters.start_date) params.start_date = filters.start_date;
+    if (filters.end_date) params.end_date = filters.end_date;
+    if (filters.min_amount)
+      params.min_amount = Math.round(parseFloat(filters.min_amount) * 100);
+    if (filters.max_amount)
+      params.max_amount = Math.round(parseFloat(filters.max_amount) * 100);
+
+    return params;
+  }, [activeTab, filters]);
+
+  // Data fetching
+  const { refetch } = useTopups(queryParams);
+  const { data: statsData, isLoading: isStatsLoading } = useTopupStats();
+
+  // Handlers
+  const handleResetFilters = useCallback(() => {
+    setFilters(initialFilterState);
+  }, []);
+
+  const handleFilterByStatus = useCallback((status: TopupStatus) => {
+    setActiveTab(status as TabValue);
+  }, []);
+
+  const handleViewDetail = useCallback((topup: TopupRequest) => {
+    setSelectedTopup(topup);
+    setShowDetail(true);
+  }, []);
+
+  const handleDetailAction = useCallback(
+    (action: TopupAction) => {
+      setShowDetail(false);
+      if (action === 'submit') {
+        setShowSubmitDialog(true);
+      } else if (action === 'cancel') {
+        setShowCancelDialog(true);
+      } else {
+        setApprovalMode(action);
+      }
+    },
+    []
+  );
+
+  const handleActionSuccess = useCallback(() => {
+    refetch();
+    setSelectedTopup(null);
+    setApprovalMode(null);
+    setShowSubmitDialog(false);
+    setShowCancelDialog(false);
+  }, [refetch]);
+
+  const handleCreateFormSubmit = useCallback(async (_data: unknown) => {
+    // TODO: Implement actual form submission via API
+    setShowCreateForm(false);
+    refetch();
+  }, [refetch]);
+
+  // Tab counts from stats
+  const tabCounts = useMemo(() => {
+    if (!statsData?.by_status) return {} as Record<string, number>;
+    return statsData.by_status;
+  }, [statsData]);
+
+  const totalCount = useMemo(() => {
+    if (!statsData?.by_status) return 0;
+    return Object.values(statsData.by_status).reduce((a, b) => a + b, 0);
+  }, [statsData]);
+
+  return (
+    <div className="container mx-auto py-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">充值管理</h1>
+          <p className="text-muted-foreground">
+            管理项目充值申请与双重审核流程
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            刷新
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            导出
+          </Button>
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            新建申请
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Overview */}
+      <TopupsStatsOverview
+        stats={statsData}
+        isLoading={isStatsLoading}
+        onFilterByStatus={handleFilterByStatus}
+      />
+
+      {/* Filters Toggle */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant={showFilters ? 'secondary' : 'outline'}
+          size="sm"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter className="h-4 w-4 mr-2" />
+          {showFilters ? '收起筛选' : '展开筛选'}
+        </Button>
+        <TopupStatusLegend />
+      </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <Card>
+          <CardContent className="pt-6">
+            <TopupsFilterPanel
+              filters={filters}
+              onFiltersChange={setFilters}
+              onReset={handleResetFilters}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
+        <TabsList>
+          <TabsTrigger value="all">
+            全部
+            {totalCount > 0 ? ` (${totalCount})` : ''}
+          </TabsTrigger>
+          <TabsTrigger value="pending_review">
+            待数据复核
+            {tabCounts.pending_review ? ` (${tabCounts.pending_review})` : ''}
+          </TabsTrigger>
+          <TabsTrigger value="finance_approve">
+            待财务终审
+            {tabCounts.finance_approve ? ` (${tabCounts.finance_approve})` : ''}
+          </TabsTrigger>
+          <TabsTrigger value="paid">
+            已支付
+            {tabCounts.paid ? ` (${tabCounts.paid})` : ''}
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            已完成
+            {tabCounts.completed ? ` (${tabCounts.completed})` : ''}
+          </TabsTrigger>
+          <TabsTrigger value="rejected">
+            已拒绝
+            {tabCounts.rejected ? ` (${tabCounts.rejected})` : ''}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-4">
+          <TopupsTable onViewDetail={handleViewDetail} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Detail Dialog */}
+      <TopupDetailDialog
+        topup={selectedTopup}
+        open={showDetail}
+        onOpenChange={setShowDetail}
+        onAction={handleDetailAction}
+        userRole={userRole}
+      />
+
+      {/* Approval Dialog */}
+      {approvalMode && (
+        <TopupApprovalDialog
+          open={!!approvalMode}
+          onOpenChange={(open) => !open && setApprovalMode(null)}
+          topup={selectedTopup}
+          mode={approvalMode}
+          userRole={userRole}
+          onSuccess={handleActionSuccess}
+        />
+      )}
+
+      {/* Submit Dialog */}
+      <TopupSubmitDialog
+        open={showSubmitDialog}
+        onOpenChange={setShowSubmitDialog}
+        topup={selectedTopup}
+        onSuccess={handleActionSuccess}
+      />
+
+      {/* Cancel Dialog */}
+      <TopupCancelDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        topup={selectedTopup}
+        onSuccess={handleActionSuccess}
+      />
+
+      {/* Create Form Dialog */}
+      <TopupRequestForm
+        isOpen={showCreateForm}
+        onClose={() => setShowCreateForm(false)}
+        onSubmit={handleCreateFormSubmit}
+      />
+    </div>
+  );
+}
+
+export default TopupsPage;

@@ -1,17 +1,26 @@
 """
 充值管理服务层测试
-Version: 1.0
+Version: 1.2
 Author: Claude协作开发
 
-NOTE: This module is temporarily skipped due to User model field name changes.
-The User model uses 'username' instead of 'nickname', and UUID instead of int for id.
-TODO: Update fixtures to use correct field names and UUIDs.
+变更说明:
+- v1.2: 恢复 skip - SQLite 不支持 UUID 类型，Project.account_manager_id 是 BigInteger 与 User.id UUID 不兼容
+- v1.1: 修复 User 模型字段名 (nickname -> username, id: int -> UUID)
+- v1.1: 修复 AdAccount 模型字段名 (name -> account_name, assigned_user_id -> assigned_to)
+- v1.1: 使用 UserRole 枚举替代字符串
+
+NOTE: 跳过原因:
+1. SQLite 测试数据库不支持 UUID 类型
+2. Project.account_manager_id 是 BigInteger，与 User.id (UUID) 类型不兼容
+3. 需要 PostgreSQL 或更新模型架构才能运行这些测试
 """
 
 import pytest
 
-# 暂时跳过整个模块 - User 模型字段名需要更新 (nickname -> username, id: int -> UUID)
-pytestmark = pytest.mark.skip(reason="User model fixtures need update: nickname->username, id needs UUID")
+# 暂时跳过 - SQLite 不支持 UUID, Project.account_manager_id 类型不兼容
+pytestmark = pytest.mark.skip(reason="ARCH-BUG: SQLite doesn't support UUID, Project.account_manager_id (BigInt) != User.id (UUID)")
+
+from uuid import uuid4
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
@@ -21,6 +30,7 @@ from backend.models.topup_fixed import TopupTransaction, TopupApprovalLog
 from backend.models import User
 from backend.models import AdAccount
 from backend.models import Project
+from backend.models.base import UserRole
 from backend.schemas.topup import (
     TopupRequestCreate,
     TopupDataReviewRequest,
@@ -49,10 +59,12 @@ class TestTopupService:
     def admin_user(self, db_session):
         """创建管理员用户"""
         user = User(
-            id=1,
-            email="admin@example.com",
-            nickname="管理员",
-            role="admin"
+            id=uuid4(),
+            email="admin_topup@example.com",
+            username="管理员",
+            hashed_password="hashed_test_password",
+            role=UserRole.ADMIN,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -62,10 +74,12 @@ class TestTopupService:
     def finance_user(self, db_session):
         """创建财务用户"""
         user = User(
-            id=2,
-            email="finance@example.com",
-            nickname="财务",
-            role="finance"
+            id=uuid4(),
+            email="finance_topup@example.com",
+            username="财务",
+            hashed_password="hashed_test_password",
+            role=UserRole.FINANCE,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -75,10 +89,12 @@ class TestTopupService:
     def data_operator_user(self, db_session):
         """创建数据员用户"""
         user = User(
-            id=3,
-            email="operator@example.com",
-            nickname="数据员",
-            role="data_operator"
+            id=uuid4(),
+            email="operator_topup@example.com",
+            username="数据员",
+            hashed_password="hashed_test_password",
+            role=UserRole.DATA_OPERATOR,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -88,10 +104,12 @@ class TestTopupService:
     def account_manager_user(self, db_session):
         """创建账户管理员用户"""
         user = User(
-            id=4,
-            email="manager@example.com",
-            nickname="账户经理",
-            role="account_manager"
+            id=uuid4(),
+            email="manager_topup@example.com",
+            username="账户经理",
+            hashed_password="hashed_test_password",
+            role=UserRole.ACCOUNT_MANAGER,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -101,10 +119,12 @@ class TestTopupService:
     def media_buyer_user(self, db_session):
         """创建媒体买家用户"""
         user = User(
-            id=5,
-            email="buyer@example.com",
-            nickname="媒体买家",
-            role="media_buyer"
+            id=uuid4(),
+            email="buyer_topup@example.com",
+            username="媒体买家",
+            hashed_password="hashed_test_password",
+            role=UserRole.MEDIA_BUYER,
+            is_active=True
         )
         db_session.add(user)
         db_session.commit()
@@ -145,7 +165,7 @@ class TestTopupService:
     def sample_ad_account(self, db_session, sample_project):
         """创建示例广告账户"""
         ad_account = AdAccount(
-            name="测试账户",
+            account_name="测试账户",
             project_id=sample_project.id,
             status="active"
         )
@@ -158,9 +178,9 @@ class TestTopupService:
     def managed_ad_account(self, db_session, managed_project, media_buyer_user):
         """创建由媒体买家管理的账户"""
         ad_account = AdAccount(
-            name="买家账户",
+            account_name="买家账户",
             project_id=managed_project.id,
-            assigned_user_id=media_buyer_user.id,
+            assigned_to=media_buyer_user.id,
             status="active"
         )
         db_session.add(ad_account)
@@ -584,7 +604,7 @@ class TestTopupService:
             )
 
             assert balance.ad_account_id == sample_ad_account.id
-            assert balance.ad_account_name == sample_ad_account.name
+            assert balance.ad_account_name == sample_ad_account.account_name
             assert balance.max_balance == Decimal("500000")
             assert balance.available_topup == Decimal("500000")  # 初始状态
 

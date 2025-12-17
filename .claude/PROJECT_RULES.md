@@ -104,7 +104,7 @@ sotChain:
 >   - STATE_MACHINE.md v2.6 (8状态机)
 >   - DATA_SCHEMA.md v5.2
 >   - API_SOT.md v9.0
->   - BUSINESS_RULES.md v3.1
+>   - BUSINESS_RULES.md v3.2
 >   - ERROR_CODES_SOT.md v2.1
 >   - AUTH_SPEC.md v2.0
 >   - LEDGER_SOT.md v1.1
@@ -122,7 +122,7 @@ STATE_MACHINE.md v2.6 (状态定义) ←─── 🚫 禁止在其他文档重�
     ↓ 引用
 DATA_SCHEMA.md v5.2 (数据结构)   ←─── 📌 所有表结构、字段类型以此为准
     ↓ 引用
-BUSINESS_RULES.md v3.1 (业务规则) ←─── ⚖️ BR-* 规则编号具有法律效力
+BUSINESS_RULES.md v3.2 (业务规则) ←─── ⚖️ BR-* 规则编号具有法律效力
     ↓ 引用
 API_SOT.md v9.0 (API 契约)       ←─── 🌐 所有路径、请求/响应格式以此为准
     ↓ 引用
@@ -181,7 +181,7 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 |------|------|------|---------|
 | STATE_MACHINE | v2.6 | `docs/2.sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
 | DATA_SCHEMA | v5.2 | `docs/2.sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
-| BUSINESS_RULES | v3.1 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
+| BUSINESS_RULES | v3.2 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
 | API_SOT | v9.0 | `docs/2.sot/API_SOT.md` | §9 Daily Reports API |
 | ERROR_CODES_SOT | v2.1 | `docs/2.sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
 | AUTH_SPEC | v2.0 | `docs/2.sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |

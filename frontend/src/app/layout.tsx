@@ -1,20 +1,10 @@
-/**
- * Root Layout
- *
- * Next.js App Router root layout with providers
- */
-
-import React from 'react';
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata: Metadata = {
-  title: 'AI Ad Spend System',
-  description: 'AI Advertising Spend Management System',
+  title: 'AI 广告代投系统',
+  description: 'AI-powered advertising management platform',
 };
 
 export default function RootLayout({
@@ -24,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN">
-      <body className={inter.className}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>

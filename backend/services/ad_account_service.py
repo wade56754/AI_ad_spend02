@@ -69,36 +69,38 @@ class AdAccountService:
 
         # 检查平台账户ID是否已存在
         existing = self.db.query(AdAccount).filter(
-            AdAccount.account_id == request.account_id
+            AdAccount.account_code == request.account_id
         ).first()
         if existing:
             raise ValidationError("BIZ_403", "平台账户ID已存在")
 
         # 创建账户
         account = AdAccount(
-            account_id=request.account_id,
-            name=request.name,
-            platform=request.platform.value,
-            platform_account_id=request.platform_account_id,
-            platform_business_id=request.platform_business_id,
+            account_code=request.account_id,
+            account_name=request.name,
             project_id=request.project_id,
             channel_id=request.channel_id,
-            assigned_user_id=request.assigned_user_id,
-            daily_budget=request.daily_budget,
-            total_budget=request.total_budget,
-            remaining_budget=request.total_budget,
-            currency=request.currency,
-            timezone=request.timezone,
-            country=request.country,
-            account_type=request.account_type,
-            payment_method=request.payment_method,
-            billing_information=request.billing_information,
-            auto_monitoring=request.auto_monitoring,
-            alert_thresholds=request.alert_thresholds,
+            assigned_to=request.assigned_user_id,
+            status="new",
+            # 注意：以下字段在模型中不存在，已移除
+            # platform=request.platform.value,
+            # platform_account_id=request.platform_account_id,
+            # platform_business_id=request.platform_business_id,
+            # daily_budget=request.daily_budget,
+            # total_budget=request.total_budget,
+            # remaining_budget=request.total_budget,
+            # currency=request.currency,
+            # timezone=request.timezone,
+            # country=request.country,
+            # account_type=request.account_type,
+            # payment_method=request.payment_method,
+            # billing_information=request.billing_information,
+            # auto_monitoring=request.auto_monitoring,
+            # alert_thresholds=request.alert_thresholds,
             notes=request.notes,
-            tags=request.tags,
-            metadata=request.metadata,
-            created_by=current_user_id
+            # tags=request.tags,
+            # metadata=request.metadata,
+            # created_by=current_user_id
         )
 
         self.db.add(account)
@@ -121,7 +123,7 @@ class AdAccountService:
             action="create",
             resource_type="ad_account",
             resource_id=account.id,
-            details=f"创建广告账户: {account.name}"
+            details=f"创建广告账户: {account.account_name}"
         )
 
         return account
@@ -143,7 +145,7 @@ class AdAccountService:
 
         # 根据角色过滤数据
         if user_role == "media_buyer":
-            query = query.filter(AdAccount.assigned_user_id == current_user_id)
+            query = query.filter(AdAccount.assigned_to == current_user_id)
         elif user_role == "account_manager":
             # 账户管理员只能看到自己项目的账户
             query = query.join(Project).filter(
@@ -153,14 +155,15 @@ class AdAccountService:
         # 应用过滤条件
         if status:
             query = query.filter(AdAccount.status == status)
-        if platform:
-            query = query.filter(AdAccount.platform == platform)
+        # 注意：platform 字段在模型中不存在，已移除过滤
+        # if platform:
+        #     query = query.filter(AdAccount.platform == platform)
         if project_id:
             query = query.filter(AdAccount.project_id == project_id)
         if channel_id:
             query = query.filter(AdAccount.channel_id == channel_id)
         if assigned_user_id:
-            query = query.filter(AdAccount.assigned_user_id == assigned_user_id)
+            query = query.filter(AdAccount.assigned_to == assigned_user_id)
 
         # 计算总数
         total = query.count()
@@ -186,7 +189,7 @@ class AdAccountService:
             raise NotFoundError("SYS_004", "广告账户不存在")
 
         # 权限检查
-        if user_role == "media_buyer" and account.assigned_user_id != current_user_id:
+        if user_role == "media_buyer" and account.assigned_to != current_user_id:
             raise PermissionError("BIZ_403", "无权限访问此账户")
         elif user_role == "account_manager":
             # 检查是否是账户管理员的项目
@@ -207,16 +210,22 @@ class AdAccountService:
 
         # 记录变更前的值
         old_values = {}
-        for field, value in request.dict(exclude_unset=True).items():
-            if hasattr(account, field):
-                old_value = getattr(account, field)
+        update_data = request.dict(exclude_unset=True)
+        
+        # 字段名映射：schema 字段 -> 模型字段
+        field_mapping = {
+            'name': 'account_name',
+            'assigned_user_id': 'assigned_to'
+        }
+        
+        for field, value in update_data.items():
+            # 映射字段名
+            model_field = field_mapping.get(field, field)
+            if hasattr(account, model_field):
+                old_value = getattr(account, model_field)
                 if old_value != value:
                     old_values[field] = old_value
-
-        # 更新字段
-        update_data = request.dict(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(account, field, value)
+                    setattr(account, model_field, value)
 
         self.db.commit()
 
@@ -336,7 +345,7 @@ class AdAccountService:
 
         # 根据角色过滤
         if user_role == "media_buyer":
-            query = query.filter(AdAccount.assigned_user_id == current_user_id)
+            query = query.filter(AdAccount.assigned_to == current_user_id)
         elif user_role == "account_manager":
             query = query.join(Project).filter(
                 Project.account_manager_id == current_user_id
@@ -347,8 +356,9 @@ class AdAccountService:
             query = query.filter(AdAccount.project_id == project_id)
         if channel_id:
             query = query.filter(AdAccount.channel_id == channel_id)
-        if platform:
-            query = query.filter(AdAccount.platform == platform)
+        # 注意：platform 字段在模型中不存在，已移除过滤
+        # if platform:
+        #     query = query.filter(AdAccount.platform == platform)
 
         # 总体统计
         total_accounts = query.count()
@@ -357,36 +367,21 @@ class AdAccountService:
         dead_accounts = query.filter(AdAccount.status == "dead").count()
         new_accounts = query.filter(AdAccount.status == "new").count()
 
-        # 性能统计
-        stats = query.with_entities(
-            func.sum(AdAccount.total_spend).label('total_spend'),
-            func.sum(AdAccount.total_leads).label('total_leads'),
-            func.avg(AdAccount.avg_cpl).label('avg_cpl'),
-            func.min(AdAccount.best_cpl).label('best_cpl'),
-            func.sum(AdAccount.total_budget).label('total_budget'),
-            func.sum(AdAccount.daily_budget).label('total_daily_budget')
-        ).first()
-
-        total_spend = stats.total_spend or Decimal('0')
-        total_leads = stats.total_leads or 0
-        avg_cpl = stats.avg_cpl or Decimal('0')
-        best_cpl = stats.best_cpl or Decimal('0')
-        total_budget = stats.total_budget or Decimal('0')
-        total_daily_budget = stats.total_daily_budget or Decimal('0')
+        # 性能统计 - 注意：这些字段在模型中不存在，需要从 AccountPerformance 获取
+        # 暂时返回默认值，后续需要从 AccountPerformance 表聚合
+        total_spend = Decimal('0')
+        total_leads = 0
+        avg_cpl = Decimal('0')
+        best_cpl = Decimal('0')
+        total_budget = Decimal('0')
+        total_daily_budget = Decimal('0')
 
         # 预算使用率
-        budget_utilization = float(total_spend / total_budget * 100) if total_budget > 0 else 0
+        budget_utilization = 0.0
 
-        # 平台分布
-        platform_dist = query.with_entities(
-            AdAccount.platform,
-            func.count().label('count')
-        ).group_by(AdAccount.platform).all()
-
-        platform_distribution = [
-            {"platform": p[0], "count": p[1]}
-            for p in platform_dist
-        ]
+        # 平台分布 - 注意：platform 字段在模型中不存在，需要从 Channel 获取
+        # 暂时返回空列表
+        platform_distribution = []
 
         # 状态分布
         status_dist = query.with_entities(
@@ -399,22 +394,16 @@ class AdAccountService:
             for s in status_dist
         ]
 
-        # TOP表现账户
-        top_performers = query.order_by(
-            AdAccount.total_leads.desc()
-        ).limit(10).all()
-
-        low_performers = query.filter(
-            AdAccount.status == "active"
-        ).order_by(
-            AdAccount.avg_cpl.desc()
-        ).limit(10).all()
+        # TOP表现账户 - 注意：这些字段在模型中不存在，暂时返回空列表
+        # 后续需要从 AccountPerformance 表聚合
+        top_performers = []
+        low_performers = []
 
         # 预警统计
         alerts_query = self.db.query(AccountAlert)
         if user_role == "media_buyer":
             alerts_query = alerts_query.join(AdAccount).filter(
-                AdAccount.assigned_user_id == current_user_id
+                AdAccount.assigned_to == current_user_id
             )
         elif user_role == "account_manager":
             alerts_query = alerts_query.join(AdAccount).join(Project).filter(
@@ -447,19 +436,19 @@ class AdAccountService:
             top_performers=[
                 {
                     "id": a.id,
-                    "name": a.name,
-                    "platform": a.platform,
-                    "total_leads": a.total_leads,
-                    "avg_cpl": a.avg_cpl
+                    "name": a.account_name,
+                    # "platform": a.platform,  # 字段不存在，已移除
+                    # "total_leads": a.total_leads,  # 字段不存在，已移除
+                    # "avg_cpl": a.avg_cpl  # 字段不存在，已移除
                 }
                 for a in top_performers
             ],
             low_performers=[
                 {
                     "id": a.id,
-                    "name": a.name,
-                    "platform": a.platform,
-                    "avg_cpl": a.avg_cpl
+                    "name": a.account_name,
+                    # "platform": a.platform,  # 字段不存在，已移除
+                    # "avg_cpl": a.avg_cpl  # 字段不存在，已移除
                 }
                 for a in low_performers
             ],
@@ -651,7 +640,7 @@ class AdAccountService:
             action="delete",
             resource_type="ad_account",
             resource_id=account_id,
-            details=f"删除广告账户: {account.name}"
+            details=f"删除广告账户: {account.account_name}"
         )
 
         return True

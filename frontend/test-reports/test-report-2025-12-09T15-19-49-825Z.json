@@ -1,0 +1,485 @@
+{
+  "timestamp": "2025-12-09T15:19:43.613Z",
+  "summary": {
+    "total": 3,
+    "passed": 0,
+    "failed": 3,
+    "warnings": 0
+  },
+  "pages": [
+    {
+      "name": "首页",
+      "path": "/",
+      "status": "failed",
+      "loadTime": 1273,
+      "errors": [
+        {
+          "message": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found\n\n\n<unknown> (Error: ./src/components/ui/button.tsx:5:1)\n<unknown> (https://nextjs.org/docs/messages/module-not-found)\nObject.getCompilationErrors (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-turbopack.js:983:59)\nDevBundlerService.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\lib\\dev-bundler-service.js:39:55)\nDevServer.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:679:42)",
+          "stack": "Error: ./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found\n\n\n<unknown> (Error: ./src/components/ui/button.tsx:5:1)\n<unknown> (https://nextjs.org/docs/messages/module-not-found)\nObject.getCompilationErrors (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-turbopack.js:983:59)\nDevBundlerService.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\lib\\dev-bundler-service.js:39:55)\nDevServer.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:679:42)\n    at getServerError (http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js:823:37)\n    at <anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:3562:27)"
+        },
+        {
+          "message": "HTTP 500 错误",
+          "url": "http://localhost:3000/"
+        }
+      ],
+      "warnings": [],
+      "consoleErrors": [
+        {
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "location": {
+            "url": "http://localhost:3000/"
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+          "location": {
+            "url": "http://localhost:3000/favicon.ico"
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        }
+      ],
+      "networkErrors": [],
+      "performance": {}
+    },
+    {
+      "name": "登录页",
+      "path": "/login",
+      "status": "failed",
+      "loadTime": 988,
+      "errors": [
+        {
+          "message": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found\n\n\n<unknown> (Error: ./src/components/ui/button.tsx:5:1)\n<unknown> (https://nextjs.org/docs/messages/module-not-found)\nObject.getCompilationErrors (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-turbopack.js:983:59)\nDevBundlerService.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\lib\\dev-bundler-service.js:39:55)\nDevServer.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:679:42)",
+          "stack": "Error: ./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found\n\n\n<unknown> (Error: ./src/components/ui/button.tsx:5:1)\n<unknown> (https://nextjs.org/docs/messages/module-not-found)\nObject.getCompilationErrors (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-turbopack.js:983:59)\nDevBundlerService.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\lib\\dev-bundler-service.js:39:55)\nDevServer.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:679:42)\n    at getServerError (http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js:823:37)\n    at <anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:3562:27)"
+        },
+        {
+          "message": "HTTP 500 错误",
+          "url": "http://localhost:3000/login"
+        }
+      ],
+      "warnings": [],
+      "consoleErrors": [
+        {
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "location": {
+            "url": "http://localhost:3000/login"
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/auth/services/authApi.ts:7:1\nModule not found: Can't resolve '@/lib/api'\n   5 |  */\n   6 |\n>  7 | import { apiFetch } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   8 | import type {\n   9 |   LoginRequest,\n  10 |   RegisterRequest,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/auth/services/authApi.ts\n    ./src/features/auth/services/index.ts\n    ./src/features/auth/index.ts\n    ./src/app/(auth)/login/page.tsx\n\n  Client Component Browser:\n    ./src/features/auth/services/authApi.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/auth/services/authApi.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/auth/services/authApi.ts:7:1\nModule not found: Can't resolve '@/lib/api'\n   5 |  */\n   6 |\n>  7 | import { apiFetch } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   8 | import type {\n   9 |   LoginRequest,\n  10 |   RegisterRequest,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/auth/services/authApi.ts\n    ./src/features/auth/services/index.ts\n    ./src/features/auth/index.ts\n    ./src/app/(auth)/login/page.tsx\n\n  Client Component Browser:\n    ./src/features/auth/services/authApi.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/auth/services/authApi.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        }
+      ],
+      "networkErrors": [],
+      "performance": {}
+    },
+    {
+      "name": "仪表盘",
+      "path": "/projects",
+      "status": "failed",
+      "loadTime": 1518,
+      "errors": [
+        {
+          "message": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found\n\n\n<unknown> (Error: ./src/components/ui/button.tsx:5:1)\n<unknown> (https://nextjs.org/docs/messages/module-not-found)\nObject.getCompilationErrors (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-turbopack.js:983:59)\nDevBundlerService.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\lib\\dev-bundler-service.js:39:55)\nDevServer.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:679:42)",
+          "stack": "Error: ./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found\n\n\n<unknown> (Error: ./src/components/ui/button.tsx:5:1)\n<unknown> (https://nextjs.org/docs/messages/module-not-found)\nObject.getCompilationErrors (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-turbopack.js:983:59)\nDevBundlerService.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\lib\\dev-bundler-service.js:39:55)\nDevServer.getCompilationError (file://D:\\git\\1108\\frontend\\node_modules\\next\\dist\\server\\dev\\next-dev-server.js:679:42)\n    at getServerError (http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js:823:37)\n    at <anonymous> (http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_d0aa886c._.js:3562:27)"
+        },
+        {
+          "message": "HTTP 500 错误",
+          "url": "http://localhost:3000/projects"
+        }
+      ],
+      "warnings": [],
+      "consoleErrors": [
+        {
+          "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+          "location": {
+            "url": "http://localhost:3000/projects"
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/auth/services/authApi.ts:7:1\nModule not found: Can't resolve '@/lib/api'\n   5 |  */\n   6 |\n>  7 | import { apiFetch } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   8 | import type {\n   9 |   LoginRequest,\n  10 |   RegisterRequest,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/auth/services/authApi.ts\n    ./src/features/auth/services/index.ts\n    ./src/features/auth/index.ts\n    ./src/app/(auth)/login/page.tsx\n\n  Client Component Browser:\n    ./src/features/auth/services/authApi.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/auth/services/authApi.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/projects/hooks/useProjects.ts:15:1\nModule not found: Can't resolve '@/lib/api'\n  13 |   type UseMutationOptions,\n  14 | } from '@tanstack/react-query';\n> 15 | import { queryKeys } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  16 | import {\n  17 |   getProjects,\n  18 |   getProject,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/projects/hooks/useProjects.ts\n    ./src/features/projects/hooks/index.ts\n    ./src/features/projects/index.ts\n    ./src/app/(dashboard)/projects/page.tsx\n\n  Client Component Browser:\n    ./src/features/projects/hooks/useProjects.ts [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/projects/hooks/useProjects.ts [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/projects/services/projectsApi.ts:7:1\nModule not found: Can't resolve '@/lib/api'\n   5 |  */\n   6 |\n>  7 | import { apiFetch } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   8 | import type {\n   9 |   Project,\n  10 |   ProjectMember,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/projects/services/projectsApi.ts\n    ./src/features/projects/services/index.ts\n    ./src/features/projects/index.ts\n    ./src/app/(dashboard)/projects/page.tsx\n\n  Client Component Browser:\n    ./src/features/projects/services/projectsApi.ts [Client Component Browser]\n    ./src/features/projects/hooks/useProjects.ts [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/projects/services/projectsApi.ts [Client Component SSR]\n    ./src/features/projects/hooks/useProjects.ts [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/avatar.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 | import * as AvatarPrimitive from \"@radix-ui/react-avatar\"\n  3 |\n> 4 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | const Avatar = React.forwardRef<\n  7 |   React.ElementRef<typeof AvatarPrimitive.Root>,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/avatar.tsx [Client Component Browser]\n    ./src/components/ui/user-profile-dropdown.tsx [Client Component Browser]\n    ./src/components/dashboard/header.tsx [Client Component Browser]\n    ./src/components/dashboard/AppLayout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/avatar.tsx [Client Component SSR]\n    ./src/components/ui/user-profile-dropdown.tsx [Client Component SSR]\n    ./src/components/dashboard/header.tsx [Client Component SSR]\n    ./src/components/dashboard/AppLayout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/badge.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 | import { cva, type VariantProps } from \"class-variance-authority\"\n  3 |\n> 4 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | const badgeVariants = cva(\n  7 |   \"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/badge.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/badge.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  #1 [Client Component Browser]:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  #2 [Client Component SSR]:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  #3 [Client Component Browser]:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/dashboard/header.tsx [Client Component Browser]\n    ./src/components/dashboard/AppLayout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  #4 [Client Component SSR]:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/dashboard/header.tsx [Client Component SSR]\n    ./src/components/dashboard/AppLayout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  #5 [Client Component Browser]:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  #6 [Client Component SSR]:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  #1 [Client Component Browser]:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  #2 [Client Component SSR]:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  #3 [Client Component Browser]:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectKanban.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectKanban.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  #4 [Client Component SSR]:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectKanban.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectKanban.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/dialog.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { X } from \"lucide-react\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const Dialog = DialogPrimitive.Root\n  8 |\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/dialog.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/dialog.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/dropdown-menu.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { Check, ChevronRight, Circle } from \"lucide-react\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const DropdownMenu = DropdownMenuPrimitive.Root\n  8 |\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  #1 [Client Component Browser]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component Browser]\n    ./src/components/dashboard/header.tsx [Client Component Browser]\n    ./src/components/dashboard/AppLayout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  #2 [Client Component SSR]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component SSR]\n    ./src/components/dashboard/header.tsx [Client Component SSR]\n    ./src/components/dashboard/AppLayout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  #3 [Client Component Browser]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  #4 [Client Component SSR]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/form.tsx:15:1\nModule not found: Can't resolve '@/lib/utils'\n  13 | } from \"react-hook-form\"\n  14 |\n> 15 | import { cn } from \"@/lib/utils\"\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  16 | import { Label } from \"@/components/ui/label\"\n  17 |\n  18 | const Form = FormProvider\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/form.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/form.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/input.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | export interface InputProps\n  6 |   extends React.InputHTMLAttributes<HTMLInputElement> {}\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/input.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/input.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/label.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const labelVariants = cva(\n  8 |   \"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\"\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/label.tsx [Client Component Browser]\n    ./src/components/ui/form.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/label.tsx [Client Component SSR]\n    ./src/components/ui/form.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/progress.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 | import * as ProgressPrimitive from \"@radix-ui/react-progress\"\n  3 |\n> 4 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | const Progress = React.forwardRef<\n  7 |   React.ElementRef<typeof ProgressPrimitive.Root>,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/progress.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/progress.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/select.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { Check, ChevronDown, ChevronUp } from \"lucide-react\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const Select = SelectPrimitive.Root\n  8 |\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/select.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/select.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/table.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Table = React.forwardRef<\n  6 |   HTMLTableElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/table.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/table.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/textarea.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 |\n  3 | import * as React from 'react';\n> 4 | import { cn } from '@/lib/utils';\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | export interface TextareaProps\n  7 |   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/textarea.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/textarea.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/button.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const buttonVariants = cva(\n  8 |   \"inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/button.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/button.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/card.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Card = React.forwardRef<\n  6 |   HTMLDivElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/card.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component Browser]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/card.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Client Component SSR]\n    ./src/components/shared/GlobalErrorBoundary.tsx [Server Component]\n    ./src/app/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/auth/services/authApi.ts:7:1\nModule not found: Can't resolve '@/lib/api'\n   5 |  */\n   6 |\n>  7 | import { apiFetch } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   8 | import type {\n   9 |   LoginRequest,\n  10 |   RegisterRequest,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/auth/services/authApi.ts\n    ./src/features/auth/services/index.ts\n    ./src/features/auth/index.ts\n    ./src/app/(auth)/login/page.tsx\n\n  Client Component Browser:\n    ./src/features/auth/services/authApi.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Client Component Browser]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/auth/services/authApi.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Client Component SSR]\n    ./src/features/auth/hooks/useAuth.ts [Server Component]\n    ./src/features/auth/hooks/index.ts [Server Component]\n    ./src/features/auth/index.ts [Server Component]\n    ./src/app/(auth)/login/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/projects/hooks/useProjects.ts:15:1\nModule not found: Can't resolve '@/lib/api'\n  13 |   type UseMutationOptions,\n  14 | } from '@tanstack/react-query';\n> 15 | import { queryKeys } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  16 | import {\n  17 |   getProjects,\n  18 |   getProject,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/projects/hooks/useProjects.ts\n    ./src/features/projects/hooks/index.ts\n    ./src/features/projects/index.ts\n    ./src/app/(dashboard)/projects/page.tsx\n\n  Client Component Browser:\n    ./src/features/projects/hooks/useProjects.ts [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/projects/hooks/useProjects.ts [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/features/projects/services/projectsApi.ts:7:1\nModule not found: Can't resolve '@/lib/api'\n   5 |  */\n   6 |\n>  7 | import { apiFetch } from '@/lib/api';\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n   8 | import type {\n   9 |   Project,\n  10 |   ProjectMember,\n\nImport map: aliased to relative './src/lib/api' inside of [project]/\n\nImport traces:\n  Server Component:\n    ./src/features/projects/services/projectsApi.ts\n    ./src/features/projects/services/index.ts\n    ./src/features/projects/index.ts\n    ./src/app/(dashboard)/projects/page.tsx\n\n  Client Component Browser:\n    ./src/features/projects/services/projectsApi.ts [Client Component Browser]\n    ./src/features/projects/hooks/useProjects.ts [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/features/projects/services/projectsApi.ts [Client Component SSR]\n    ./src/features/projects/hooks/useProjects.ts [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/avatar.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 | import * as AvatarPrimitive from \"@radix-ui/react-avatar\"\n  3 |\n> 4 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | const Avatar = React.forwardRef<\n  7 |   React.ElementRef<typeof AvatarPrimitive.Root>,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/avatar.tsx [Client Component Browser]\n    ./src/components/ui/user-profile-dropdown.tsx [Client Component Browser]\n    ./src/components/dashboard/header.tsx [Client Component Browser]\n    ./src/components/dashboard/AppLayout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/avatar.tsx [Client Component SSR]\n    ./src/components/ui/user-profile-dropdown.tsx [Client Component SSR]\n    ./src/components/dashboard/header.tsx [Client Component SSR]\n    ./src/components/dashboard/AppLayout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/badge.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 | import { cva, type VariantProps } from \"class-variance-authority\"\n  3 |\n> 4 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | const badgeVariants = cva(\n  7 |   \"inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2\",\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/badge.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/badge.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/dialog.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { X } from \"lucide-react\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const Dialog = DialogPrimitive.Root\n  8 |\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/dialog.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/dialog.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/dropdown-menu.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { Check, ChevronRight, Circle } from \"lucide-react\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const DropdownMenu = DropdownMenuPrimitive.Root\n  8 |\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  #1 [Client Component Browser]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component Browser]\n    ./src/components/dashboard/header.tsx [Client Component Browser]\n    ./src/components/dashboard/AppLayout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Client Component Browser]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  #2 [Client Component SSR]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component SSR]\n    ./src/components/dashboard/header.tsx [Client Component SSR]\n    ./src/components/dashboard/AppLayout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Client Component SSR]\n    ./src/app/(dashboard)/layout.tsx [Server Component]\n\n  #3 [Client Component Browser]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  #4 [Client Component SSR]:\n    ./src/components/ui/dropdown-menu.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/form.tsx:15:1\nModule not found: Can't resolve '@/lib/utils'\n  13 | } from \"react-hook-form\"\n  14 |\n> 15 | import { cn } from \"@/lib/utils\"\n     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  16 | import { Label } from \"@/components/ui/label\"\n  17 |\n  18 | const Form = FormProvider\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/form.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/form.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/input.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | export interface InputProps\n  6 |   extends React.InputHTMLAttributes<HTMLInputElement> {}\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/input.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/input.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/label.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { cva, type VariantProps } from \"class-variance-authority\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const labelVariants = cva(\n  8 |   \"text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70\"\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/label.tsx [Client Component Browser]\n    ./src/components/ui/form.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/label.tsx [Client Component SSR]\n    ./src/components/ui/form.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/progress.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 | import * as ProgressPrimitive from \"@radix-ui/react-progress\"\n  3 |\n> 4 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | const Progress = React.forwardRef<\n  7 |   React.ElementRef<typeof ProgressPrimitive.Root>,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/progress.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/progress.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/select.tsx:5:1\nModule not found: Can't resolve '@/lib/utils'\n  3 | import { Check, ChevronDown, ChevronUp } from \"lucide-react\"\n  4 |\n> 5 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  6 |\n  7 | const Select = SelectPrimitive.Root\n  8 |\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/select.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/select.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/table.tsx:3:1\nModule not found: Can't resolve '@/lib/utils'\n  1 | import * as React from \"react\"\n  2 |\n> 3 | import { cn } from \"@/lib/utils\"\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  4 |\n  5 | const Table = React.forwardRef<\n  6 |   HTMLTableElement,\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/table.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/table.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectsTable.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        },
+        {
+          "text": "./src/components/ui/textarea.tsx:4:1\nModule not found: Can't resolve '@/lib/utils'\n  2 |\n  3 | import * as React from 'react';\n> 4 | import { cn } from '@/lib/utils';\n    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  5 |\n  6 | export interface TextareaProps\n  7 |   extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {\n\nImport map: aliased to relative './src/lib/utils' inside of [project]/\n\nImport traces:\n  Client Component Browser:\n    ./src/components/ui/textarea.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component Browser]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./src/components/ui/textarea.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Client Component SSR]\n    ./src/features/projects/components/ProjectForm.tsx [Server Component]\n    ./src/features/projects/components/index.ts [Server Component]\n    ./src/features/projects/index.ts [Server Component]\n    ./src/app/(dashboard)/projects/page.tsx [Server Component]\n\nhttps://nextjs.org/docs/messages/module-not-found",
+          "location": {
+            "url": "http://localhost:3000/_next/static/chunks/node_modules_next_dist_51d2d3b1._.js",
+            "lineNumber": 2085,
+            "columnNumber": 21
+          }
+        }
+      ],
+      "networkErrors": [],
+      "performance": {}
+    }
+  ],
+  "performance": [],
+  "errors": [],
+  "warnings": []
+}

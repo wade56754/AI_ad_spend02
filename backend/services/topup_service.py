@@ -41,6 +41,8 @@ from backend.exceptions.custom_exceptions import (
     ResourceConflictError
 )
 from backend.utils.id_generator import generate_request_no
+from backend.models.finance.ledger import LedgerEntry
+from backend.models.ledger import LedgerEntryType
 # from backend.utils.audit import create_audit_log  # 暂时注释
 
 
@@ -461,18 +463,26 @@ class TopupService:
         )
         self.db.add(transaction)
 
-        # TODO: BR-FIN-005 - 创建 ledger_entry 记录 (LEDGER_SOT.md v1.1)
-        # ledger_entry = LedgerEntry(
-        #     ledger_type="ACCOUNT",
-        #     ad_account_id=request.ad_account_id,
-        #     entry_type="TOPUP",
-        #     amount=request.actual_amount or request.amount,
-        #     balance_after=current_balance + amount,
-        #     reference_type="topup_request",
-        #     reference_id=request_id,
-        #     operator_id=current_user.id
-        # )
-        # self.db.add(ledger_entry)
+        # BR-FIN-005 - 创建 ledger_entry 记录 (LEDGER_SOT.md v1.1)
+        # 获取账户当前余额
+        current_balance = LedgerEntry.get_account_balance(self.db, request.ad_account_id)
+        topup_amount = request.actual_amount or request.amount
+
+        ledger_entry = LedgerEntry(
+            ad_account_id=request.ad_account_id,
+            entry_type=LedgerEntryType.TOPUP.value,
+            amount=topup_amount,
+            balance_after=current_balance + topup_amount,
+            reference_type="topup_request",
+            reference_id=request_id,
+            notes=f"充值申请 #{request_id} 确认完成 - 操作人: {current_user.username}"
+        )
+        self.db.add(ledger_entry)
+
+        # 更新广告账户余额 (LEDGER_SOT.md v1.1 §3.2 余额真相源)
+        ad_account = self.db.query(AdAccount).filter(AdAccount.id == request.ad_account_id).with_for_update().first()
+        if ad_account:
+            ad_account.balance = (ad_account.balance or Decimal('0.00')) + topup_amount
 
         # 记录审批日志 [AUDIT]
         self._create_approval_log(
@@ -1126,10 +1136,10 @@ class TopupService:
             .join(AdAccount)
             .with_entities(
                 AdAccount.id,
-                AdAccount.name,
+                AdAccount.account_name,
                 func.count(TopupRequest.id).label('count')
             )
-            .group_by(AdAccount.id, AdAccount.name)
+            .group_by(AdAccount.id, AdAccount.account_name)
             .order_by(func.count(TopupRequest.id).desc())
             .limit(5)
             .all()
@@ -1138,7 +1148,7 @@ class TopupService:
         return [
             {
                 "account_id": row.id,
-                "account_name": row.name,
+                "account_name": row.account_name,
                 "request_count": row.count
             }
             for row in top_accounts

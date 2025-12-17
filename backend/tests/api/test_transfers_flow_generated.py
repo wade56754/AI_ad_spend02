@@ -59,7 +59,7 @@ class TestTransfersHappyPath:
     """
 
     def test_create_transfer_request__returns_201_and_draft(
-        self, client, account_manager_headers, test_ad_account, test_ad_account_2
+        self, client, account_manager_headers, funded_ad_account, funded_ad_account_2
     ):
         """
         成功创建迁移申请 - 返回 201 且状态为 draft
@@ -67,8 +67,8 @@ class TestTransfersHappyPath:
         SoT Ref: STATE_MACHINE.md v2.6 第 12 章
         """
         request_data = {
-            "source_ad_account_id": test_ad_account.id,
-            "target_ad_account_id": test_ad_account_2.id,
+            "source_ad_account_id": funded_ad_account.id,
+            "target_ad_account_id": funded_ad_account_2.id,
             "transfer_amount": "1000.00",
             "reason": "死号余额迁移",
         }
@@ -86,7 +86,7 @@ class TestTransfersHappyPath:
         assert data["data"]["transfer_amount"] == "1000.00"
 
     def test_submit_transfer_request__returns_200_and_pending_approval(
-        self, client, account_manager_headers, test_ad_account, test_ad_account_2
+        self, client, account_manager_headers, funded_ad_account, funded_ad_account_2
     ):
         """
         成功提交迁移申请 - 返回 200 且状态为 pending_approval
@@ -98,8 +98,8 @@ class TestTransfersHappyPath:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "测试提交",
             },
@@ -122,7 +122,7 @@ class TestTransfersHappyPath:
         assert data["data"]["status"] == "pending_approval"
 
     def test_approve_transfer_request__returns_200_and_approved(
-        self, client, account_manager_headers, finance_headers, test_ad_account, test_ad_account_2
+        self, client, account_manager_headers, finance_headers, funded_ad_account, funded_ad_account_2
     ):
         """
         成功审批迁移申请 - 返回 200 且状态为 approved
@@ -134,8 +134,8 @@ class TestTransfersHappyPath:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "测试审批",
             },
@@ -165,7 +165,7 @@ class TestTransfersHappyPath:
 
     def test_complete_transfer_request__returns_200_and_completed(
         self, client, account_manager_headers, finance_headers, admin_headers,
-        test_ad_account, test_ad_account_2
+        funded_ad_account, funded_ad_account_2
     ):
         """
         成功完成迁移 - 返回 200 且状态为 completed
@@ -177,8 +177,8 @@ class TestTransfersHappyPath:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "测试完成",
             },
@@ -213,7 +213,7 @@ class TestTransfersHappyPath:
 
     def test_complete_transfer_flow__draft_to_completed(
         self, client, account_manager_headers, finance_headers, admin_headers,
-        test_ad_account, test_ad_account_2
+        funded_ad_account, funded_ad_account_2
     ):
         """
         完整流程: 创建 → 提交 → 审批 → 完成
@@ -224,8 +224,8 @@ class TestTransfersHappyPath:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "完整流程测试",
             },
@@ -346,7 +346,8 @@ class TestTransfersValidation:
         # Business logic error returns 400
         assert response.status_code == 400
         data = response.json()
-        assert "BIZ" in data.get("code", "") or "balance" in data.get("message", "").lower()
+        error = data.get("error", {})
+        assert "BIZ" in error.get("code", "") or "balance" in error.get("message", "").lower()
 
 
 # ============================================================================
@@ -385,7 +386,7 @@ class TestTransfersPermissions:
         assert response.status_code == 403
 
     def test_approve_as_account_manager__returns_403(
-        self, client, account_manager_headers, test_ad_account, test_ad_account_2
+        self, client, account_manager_headers, funded_ad_account, funded_ad_account_2
     ):
         """
         account_manager 角色无权审批迁移申请 - 返回 403
@@ -396,8 +397,8 @@ class TestTransfersPermissions:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "测试权限",
             },
@@ -421,7 +422,7 @@ class TestTransfersPermissions:
         assert response.status_code == 403
 
     def test_complete_as_finance__returns_403(
-        self, client, account_manager_headers, finance_headers, test_ad_account, test_ad_account_2
+        self, client, account_manager_headers, finance_headers, funded_ad_account, funded_ad_account_2
     ):
         """
         finance 角色无权完成迁移 - 返回 403
@@ -432,8 +433,8 @@ class TestTransfersPermissions:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "测试权限",
             },
@@ -490,7 +491,8 @@ class TestTransfersErrorCodes:
 
         assert response.status_code == 404
         data = response.json()
-        assert data.get("code") == "BIZ_002" or "not found" in data.get("message", "").lower()
+        error = data.get("error", {})
+        assert error.get("code") == "BIZ_002" or "not found" in error.get("message", "").lower()
 
     def test_approve_nonexistent_transfer__returns_404_biz_002(
         self, client, finance_headers
@@ -508,10 +510,11 @@ class TestTransfersErrorCodes:
 
         assert response.status_code == 404
         data = response.json()
-        assert data.get("code") == "BIZ_002" or "not found" in data.get("message", "").lower()
+        error = data.get("error", {})
+        assert error.get("code") == "BIZ_002" or "not found" in error.get("message", "").lower()
 
     def test_complete_with_invalid_state__returns_409_state_error(
-        self, client, account_manager_headers, admin_headers, test_ad_account, test_ad_account_2
+        self, client, account_manager_headers, admin_headers, funded_ad_account, funded_ad_account_2
     ):
         """
         在非 approved 状态下完成迁移 - 返回 409 + STATE_ 错误码
@@ -522,8 +525,8 @@ class TestTransfersErrorCodes:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "测试状态",
             },
@@ -542,7 +545,8 @@ class TestTransfersErrorCodes:
         # Assert
         assert response.status_code == 409
         data = response.json()
-        assert "STATE" in data.get("code", "") or "state" in data.get("message", "").lower()
+        error = data.get("error", {})
+        assert "STATE" in error.get("code", "") or "state" in error.get("message", "").lower()
 
 
 # ============================================================================
@@ -609,7 +613,7 @@ class TestTransfersStateMachine:
 
     def test_illegal_transition__completed_to_approved(
         self, client, account_manager_headers, finance_headers, admin_headers,
-        test_ad_account, test_ad_account_2
+        funded_ad_account, funded_ad_account_2
     ):
         """
         非法流转: completed 不能回退到 approved（completed 是终态）
@@ -620,8 +624,8 @@ class TestTransfersStateMachine:
         create_response = client.post(
             TRANSFERS_URL,
             json={
-                "source_ad_account_id": test_ad_account.id,
-                "target_ad_account_id": test_ad_account_2.id,
+                "source_ad_account_id": funded_ad_account.id,
+                "target_ad_account_id": funded_ad_account_2.id,
                 "transfer_amount": "1000.00",
                 "reason": "测试回退",
             },

@@ -413,6 +413,67 @@ class BusinessErrorCodes:
         500
     )
 
+    # 余额迁移相关 (610-619)
+    TRANSFER_DUPLICATE_REQUEST = ErrorCode(
+        "BIZ_610",
+        "迁移申请单号已存在",
+        409
+    )
+
+    TRANSFER_SAME_ACCOUNT = ErrorCode(
+        "BIZ_611",
+        "源账户和目标账户不能相同",
+        400
+    )
+
+    TRANSFER_SOURCE_NOT_DEAD = ErrorCode(
+        "BIZ_612",
+        "源账户状态必须为 dead",
+        400
+    )
+
+    TRANSFER_TARGET_NOT_ACTIVE = ErrorCode(
+        "BIZ_613",
+        "目标账户状态必须为 active",
+        400
+    )
+
+    TRANSFER_CROSS_SUPPLIER = ErrorCode(
+        "BIZ_614",
+        "禁止跨供应商迁移余额",
+        400
+    )
+
+    TRANSFER_ALREADY_PROCESSED = ErrorCode(
+        "BIZ_615",
+        "迁移申请已处理",
+        409
+    )
+
+    TRANSFER_INSUFFICIENT_BALANCE = ErrorCode(
+        "BIZ_616",
+        "余额不足",
+        400
+    )
+
+    TRANSFER_INVALID_AMOUNT = ErrorCode(
+        "BIZ_617",
+        "迁移金额无效",
+        400
+    )
+
+    TRANSFER_LEDGER_ERROR = ErrorCode(
+        "BIZ_618",
+        "账本记录生成失败",
+        500
+    )
+
+    TRANSFER_STATE_ERROR = ErrorCode(
+        "BIZ_619",
+        "迁移状态错误",
+        409
+    )
+
     # 系统健康检查 (700-799)
     READY_CHECK_FAILED = ErrorCode(
         "BIZ_700",
@@ -573,6 +634,161 @@ class ValidationErrorCodes:
 
 
 # ============================================
+# 利润报表错误码 (PROFIT_xxx)
+# 对齐 PROFIT_SOT.md v1.1 §5
+# ============================================
+
+class ProfitErrorCodes:
+    """利润报表错误码 (PROFIT_SOT.md v1.1)"""
+
+    # 参数校验错误 (001-002)
+    INVALID_PERIOD_PARAMS = ErrorCode(
+        "PROFIT_001",
+        "周期参数无效",
+        400
+    )
+
+    FUTURE_START_DATE = ErrorCode(
+        "PROFIT_002",
+        "开始日期不能是未来",
+        400
+    )
+
+    # 资源不存在 (003, 005, 007)
+    PROJECT_NOT_FOUND = ErrorCode(
+        "PROFIT_003",
+        "项目不存在",
+        404
+    )
+
+    PERIOD_DATA_NOT_FOUND = ErrorCode(
+        "PROFIT_005",
+        "指定周期无数据",
+        404
+    )
+
+    ACCOUNT_NOT_FOUND = ErrorCode(
+        "PROFIT_007",
+        "账户不存在",
+        404
+    )
+
+    # 冲突错误 (004)
+    PERIOD_LOCKED = ErrorCode(
+        "PROFIT_004",
+        "周期已锁定，无法刷新",
+        409
+    )
+
+    # 权限错误 (006)
+    MANUAL_UPDATE_FORBIDDEN = ErrorCode(
+        "PROFIT_006",
+        "禁止手工修改聚合数据",
+        403
+    )
+
+    # 范围限制 (008)
+    DATE_RANGE_EXCEEDED = ErrorCode(
+        "PROFIT_008",
+        "日期范围超出限制",
+        400
+    )
+
+
+# ============================================
+# 状态机错误码 (STATE_xxx)
+# 对齐 STATE_MACHINE.md v2.6 §8
+# ============================================
+
+class StateErrorCodes:
+    """状态机错误码 (STATE_MACHINE.md v2.6)"""
+
+    # 状态流转错误 (400-409)
+    FORBIDDEN_TRANSITION = ErrorCode(
+        "STATE_400",
+        "非法状态流转",
+        400
+    )
+
+    SKIP_REQUIRED_STEP = ErrorCode(
+        "STATE_401",
+        "跳过必要步骤",
+        400
+    )
+
+    FINAL_STATE_ROLLBACK = ErrorCode(
+        "STATE_402",
+        "终态非法回退",
+        400
+    )
+
+    SYSTEM_FORBIDDEN = ErrorCode(
+        "STATE_403",
+        "系统无权限流转",
+        403
+    )
+
+    ABSOLUTELY_FORBIDDEN = ErrorCode(
+        "STATE_405",
+        "绝对禁止的流转",
+        400
+    )
+
+    CONCURRENCY_CONFLICT = ErrorCode(
+        "STATE_409",
+        "并发冲突，版本不一致",
+        409
+    )
+
+
+# ============================================
+# 趋势风控错误码 (TREND_xxx)
+# 对齐 STATE_MACHINE.md v2.6 第8.3节
+# ============================================
+
+class TrendErrorCodes:
+    """趋势风控错误码 (STATE_MACHINE.md v2.6 §8.3)"""
+
+    # 风控触发 (001-003)
+    TREND_RISK_TRIGGERED = ErrorCode(
+        "TREND_001",
+        "趋势风控触发",
+        200  # 注意: 风控触发是成功的业务操作
+    )
+
+    REVIEW_REQUIRED = ErrorCode(
+        "TREND_002",
+        "风控复核未完成",
+        400
+    )
+
+    RULE_CONFIG_ERROR = ErrorCode(
+        "TREND_003",
+        "风控规则配置错误",
+        500
+    )
+
+    # 复核操作 (010-019)
+    RESOLUTION_NOTE_MISSING = ErrorCode(
+        "TREND_010",
+        "复核原因缺失",
+        400
+    )
+
+    ALREADY_RESOLVED = ErrorCode(
+        "TREND_011",
+        "已完成复核，无需重复操作",
+        400
+    )
+
+    INVALID_RESOLUTION_ACTION = ErrorCode(
+        "TREND_012",
+        "无效的复核操作",
+        400
+    )
+
+
+# ============================================
 # 错误码字典 (用于快速查找)
 # ============================================
 
@@ -667,6 +883,32 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "VALIDATION_103": ValidationErrorCodes.TYPE_CONVERSION_ERROR,
     "VALIDATION_104": ValidationErrorCodes.PARSE_ERROR,
     "VALIDATION_105": ValidationErrorCodes.VALIDATION_ERROR,
+
+    # 利润报表错误 (PROFIT_SOT.md v1.1)
+    "PROFIT_001": ProfitErrorCodes.INVALID_PERIOD_PARAMS,
+    "PROFIT_002": ProfitErrorCodes.FUTURE_START_DATE,
+    "PROFIT_003": ProfitErrorCodes.PROJECT_NOT_FOUND,
+    "PROFIT_004": ProfitErrorCodes.PERIOD_LOCKED,
+    "PROFIT_005": ProfitErrorCodes.PERIOD_DATA_NOT_FOUND,
+    "PROFIT_006": ProfitErrorCodes.MANUAL_UPDATE_FORBIDDEN,
+    "PROFIT_007": ProfitErrorCodes.ACCOUNT_NOT_FOUND,
+    "PROFIT_008": ProfitErrorCodes.DATE_RANGE_EXCEEDED,
+
+    # 状态机错误 (STATE_MACHINE.md v2.6)
+    "STATE_400": StateErrorCodes.FORBIDDEN_TRANSITION,
+    "STATE_401": StateErrorCodes.SKIP_REQUIRED_STEP,
+    "STATE_402": StateErrorCodes.FINAL_STATE_ROLLBACK,
+    "STATE_403": StateErrorCodes.SYSTEM_FORBIDDEN,
+    "STATE_405": StateErrorCodes.ABSOLUTELY_FORBIDDEN,
+    "STATE_409": StateErrorCodes.CONCURRENCY_CONFLICT,
+
+    # 趋势风控错误 (STATE_MACHINE.md v2.6 §8.3)
+    "TREND_001": TrendErrorCodes.TREND_RISK_TRIGGERED,
+    "TREND_002": TrendErrorCodes.REVIEW_REQUIRED,
+    "TREND_003": TrendErrorCodes.RULE_CONFIG_ERROR,
+    "TREND_010": TrendErrorCodes.RESOLUTION_NOTE_MISSING,
+    "TREND_011": TrendErrorCodes.ALREADY_RESOLVED,
+    "TREND_012": TrendErrorCodes.INVALID_RESOLUTION_ACTION,
 }
 
 
