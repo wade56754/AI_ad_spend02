@@ -72,7 +72,7 @@ class ImportJobService:
         if existing and existing.status in [ImportJobStatus.COMPLETED.value, ImportJobStatus.PROCESSING.value]:
             raise BusinessLogicError(
                 message="相同文件已存在或正在处理中",
-                error_code="IMPORT_001"
+                error_code="IMPORT-001"
             )
 
         # 生成任务编号
@@ -118,7 +118,7 @@ class ImportJobService:
         if not job:
             raise ResourceNotFoundError(
                 message="导入任务不存在",
-                error_code="SYS_004"
+                error_code="SYS-004"
             )
 
         # 权限检查
@@ -126,7 +126,7 @@ class ImportJobService:
             if job.created_by != current_user_id:
                 raise PermissionDeniedError(
                     message="无权限访问此导入任务",
-                    error_code="AUTH_003"
+                    error_code="AUTH-003"
                 )
 
         return job
@@ -199,7 +199,7 @@ class ImportJobService:
         if job.is_terminal:
             raise BusinessLogicError(
                 message="任务已完成，无法修改",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         # 更新字段
@@ -235,7 +235,7 @@ class ImportJobService:
         if job.status != ImportJobStatus.PENDING.value:
             raise BusinessLogicError(
                 message="只能删除待处理的任务",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         self.db.delete(job)
@@ -267,7 +267,7 @@ class ImportJobService:
         if not file_content:
             raise ValidationError(
                 message="文件内容为空",
-                error_code="VAL_001"
+                error_code="VAL-001"
             )
 
         # 计算文件哈希
@@ -390,7 +390,7 @@ class ImportJobService:
         if job.status != ImportJobStatus.PENDING.value:
             raise BusinessLogicError(
                 message=f"只能从待处理状态开始处理，当前状态: {job.status}",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         job.start_processing()
@@ -427,7 +427,7 @@ class ImportJobService:
         if job.status != ImportJobStatus.PROCESSING.value:
             raise BusinessLogicError(
                 message=f"只能从处理中状态完成，当前状态: {job.status}",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         job.complete(success_rows, failed_rows, result_summary)
@@ -463,7 +463,7 @@ class ImportJobService:
         if job.status != ImportJobStatus.PROCESSING.value:
             raise BusinessLogicError(
                 message=f"只能从处理中状态标记失败，当前状态: {job.status}",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         job.fail(error_message, error_log)
@@ -497,14 +497,14 @@ class ImportJobService:
         if job.status != ImportJobStatus.PENDING.value:
             raise BusinessLogicError(
                 message=f"只能取消待处理状态的任务，当前状态: {job.status}",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         # 权限检查
         if not job.can_be_cancelled_by(current_user_id, UserRole(user_role)):
             raise PermissionDeniedError(
                 message="无权限取消此任务",
-                error_code="AUTH_003"
+                error_code="AUTH-003"
             )
 
         job.cancel(current_user_id)
@@ -539,7 +539,7 @@ class ImportJobService:
         if job.status != ImportJobStatus.PROCESSING.value:
             raise BusinessLogicError(
                 message="只能更新处理中任务的进度",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         job.update_progress(processed, success, failed)

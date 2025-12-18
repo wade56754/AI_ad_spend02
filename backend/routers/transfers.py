@@ -116,7 +116,7 @@ async def create_transfer(
 
     except PermissionDeniedError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "AUTH_500",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "AUTH-500",
             message=str(e),
             status_code=403
         )
@@ -134,7 +134,7 @@ async def create_transfer(
         )
     except ValueError as e:
         return error_response(
-            code="VALIDATION_001",
+            code="VALIDATION-001",
             message=str(e),
             status_code=400
         )
@@ -198,7 +198,7 @@ async def submit_transfer(
         )
     except PermissionDeniedError as e:
         return error_response(
-            code="AUTH_500",
+            code="AUTH-500",
             message=str(e),
             status_code=403
         )
@@ -244,7 +244,7 @@ async def approve_transfer(
         )
     except PermissionDeniedError as e:
         return error_response(
-            code="AUTH_500",
+            code="AUTH-500",
             message=str(e),
             status_code=403
         )
@@ -290,7 +290,7 @@ async def reject_transfer(
         )
     except PermissionDeniedError as e:
         return error_response(
-            code="AUTH_500",
+            code="AUTH-500",
             message=str(e),
             status_code=403
         )
@@ -336,7 +336,7 @@ async def complete_transfer(
         )
     except PermissionDeniedError as e:
         return error_response(
-            code="AUTH_500",
+            code="AUTH-500",
             message=str(e),
             status_code=403
         )

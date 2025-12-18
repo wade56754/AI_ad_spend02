@@ -96,7 +96,7 @@ class DailyReportService:
             )
             raise BusinessLogicError(
                 f"报表日期 {request.report_date} 不能大于今天 {date.today()}",
-                error_code="BIZ_201"
+                error_code="BIZ-201"
             )
 
         # 验证用户是否有权限操作该广告账户
@@ -109,7 +109,7 @@ class DailyReportService:
             logger.error(f"Ad account {request.ad_account_id} not found")
             raise ResourceNotFoundError(
                 f"广告账户 {request.ad_account_id} 不存在",
-                error_code="BIZ_002"
+                error_code="BIZ-002"
             )
 
         # 账户权限检查
@@ -131,7 +131,7 @@ class DailyReportService:
             )
             raise ResourceConflictError(
                 f"账户 {request.ad_account_id} 在 {request.report_date} 的日报已存在",
-                error_code="BIZ_003"
+                error_code="BIZ-003"
             )
 
         with self.transaction():
@@ -326,7 +326,7 @@ class DailyReportService:
 
         if not report:
             # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
-            raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ_002")
+            raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ-002")
 
         # 权限检查：验证当前用户是否有权限查看该日报
         if not self._can_user_view_report(current_user, report):
@@ -519,13 +519,13 @@ class DailyReportService:
         ).first()
 
         if not report:
-            raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ_002")
+            raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ-002")
 
         # 状态检查 - 仅 final_confirmed 可锁定
         if report.status != DailyReportStatus.FINAL_CONFIRMED.value:
             raise BusinessLogicError(
                 f"当前状态 {report.status} 不允许锁定。仅 final_confirmed 状态可锁定",
-                error_code="STATE_001"
+                error_code="STATE-001"
             )
 
         # ====== 计费数据校验 (LEDGER_SOT.md v1.1) ======
@@ -538,14 +538,14 @@ class DailyReportService:
         if conversions_final <= 0:
             raise BusinessLogicError(
                 f"计费失败：最终粉数 conversions_final={conversions_final} 必须大于 0",
-                error_code="BIZ_001"
+                error_code="BIZ-001"
             )
 
         # 校验：单价必须有值
         if unit_price <= 0:
             raise BusinessLogicError(
                 f"计费失败：单粉价格 unit_price={unit_price} 必须大于 0",
-                error_code="BIZ_001"
+                error_code="BIZ-001"
             )
 
         # 计算收入和成本
@@ -561,7 +561,7 @@ class DailyReportService:
             if not ad_account:
                 raise BusinessLogicError(
                     f"关联的广告账户 {report.ad_account_id} 不存在",
-                    error_code="BIZ_002"
+                    error_code="BIZ-002"
                 )
 
             # Step 2: 获取账户当前余额

@@ -959,7 +959,7 @@ async def import_daily_reports_from_file(
     except Exception as e:
         logger.error(f"Unexpected error in file import: {e}", exc_info=True)
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message=f"文件处理失败：{str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
@@ -1100,7 +1100,7 @@ async def export_daily_reports(
     except Exception as e:
         logger.error(f"Unexpected error in export: {e}", exc_info=True)
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message=f"导出失败：{str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
@@ -1283,7 +1283,7 @@ async def execute_trend_check(
 
     except ValueError as e:
         return error_response(
-            code="STATE_001",
+            code="STATE-001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -1328,7 +1328,7 @@ async def trigger_trend_check(
 
     except ValueError as e:
         return error_response(
-            code="STATE_001",
+            code="STATE-001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )

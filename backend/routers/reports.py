@@ -90,7 +90,7 @@ async def get_performance_report(
             project_id_list = [int(x.strip()) for x in project_ids.split(",")]
         except ValueError:
             return error_response(
-                code="VALIDATION_002",
+                code="VALIDATION-002",
                 message="项目ID格式错误",
                 status_code=400
             )
@@ -99,7 +99,7 @@ async def get_performance_report(
             channel_id_list = [int(x.strip()) for x in channel_ids.split(",")]
         except ValueError:
             return error_response(
-                code="VALIDATION_002",
+                code="VALIDATION-002",
                 message="渠道ID格式错误",
                 status_code=400
             )
@@ -145,7 +145,7 @@ async def get_profit_report(
             project_id_list = [int(x.strip()) for x in project_ids.split(",")]
         except ValueError:
             return error_response(
-                code="VALIDATION_002",
+                code="VALIDATION-002",
                 message="项目ID格式错误",
                 status_code=400
             )
@@ -222,7 +222,7 @@ async def get_financial_summary(
             project_id_list = [int(x.strip()) for x in project_ids.split(",")]
         except ValueError:
             return error_response(
-                code="VALIDATION_002",
+                code="VALIDATION-002",
                 message="项目ID格式错误",
                 status_code=400
             )
@@ -265,7 +265,7 @@ async def get_trend_report(
     valid_metrics = ["spend", "leads", "topup"]
     if metric not in valid_metrics:
         return error_response(
-            code="VALIDATION_002",
+            code="VALIDATION-002",
             message=f"无效的指标类型，支持: {', '.join(valid_metrics)}",
             status_code=400
         )
@@ -273,7 +273,7 @@ async def get_trend_report(
     valid_periods = ["daily", "weekly", "monthly"]
     if period not in valid_periods:
         return error_response(
-            code="VALIDATION_002",
+            code="VALIDATION-002",
             message=f"无效的统计周期，支持: {', '.join(valid_periods)}",
             status_code=400
         )
@@ -356,7 +356,7 @@ async def get_project_report(
 
     if not result.items:
         return error_response(
-            code="RESOURCE_001",
+            code="RESOURCE-001",
             message="指定项目暂无报表数据",
             status_code=404
         )

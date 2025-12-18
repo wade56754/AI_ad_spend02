@@ -354,7 +354,7 @@ async def list_agents(
     except Exception as e:
         logger.error(f"Failed to list agents: {e}", exc_info=True)
         return error_response(
-            code="SYS_001",
+            code="SYS-001",
             message="Failed to list agents",
             status_code=500,
         )
@@ -435,7 +435,7 @@ async def create_agent(
     except Exception as e:
         logger.error(f"Failed to create agent: {e}", exc_info=True)
         return error_response(
-            code="SYS_001",
+            code="SYS-001",
             message="Failed to create agent",
             status_code=500,
         )
@@ -497,7 +497,7 @@ async def update_agent(
     except Exception as e:
         logger.error(f"Failed to update agent: {e}", exc_info=True)
         return error_response(
-            code="SYS_001",
+            code="SYS-001",
             message="Failed to update agent",
             status_code=500,
         )
@@ -548,7 +548,7 @@ async def delete_agent(
     except Exception as e:
         logger.error(f"Failed to delete agent: {e}", exc_info=True)
         return error_response(
-            code="SYS_001",
+            code="SYS-001",
             message="Failed to delete agent",
             status_code=500,
         )
@@ -605,7 +605,7 @@ async def start_agent(
     except Exception as e:
         logger.error(f"Failed to start agent: {e}", exc_info=True)
         return error_response(
-            code="SYS_001",
+            code="SYS-001",
             message="Failed to start agent",
             status_code=500,
         )
@@ -662,7 +662,7 @@ async def stop_agent(
     except Exception as e:
         logger.error(f"Failed to stop agent: {e}", exc_info=True)
         return error_response(
-            code="SYS_001",
+            code="SYS-001",
             message="Failed to stop agent",
             status_code=500,
         )

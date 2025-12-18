@@ -79,7 +79,7 @@ async def list_templates(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message="获取项目模板列表失败",
             status_code=500
         )
@@ -141,7 +141,7 @@ async def get_template(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -171,7 +171,7 @@ async def update_template(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -201,7 +201,7 @@ async def delete_template(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -241,7 +241,7 @@ async def apply_template(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -273,7 +273,7 @@ async def get_template_categories(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message="获取模板分类列表失败",
             status_code=500
         )

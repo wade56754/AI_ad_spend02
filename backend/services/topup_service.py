@@ -73,7 +73,7 @@ class TopupService:
         if request_data.requested_amount > self.MAX_SINGLE_AMOUNT:
             raise BusinessLogicError(
                 f"单笔充值金额不能超过{self.MAX_SINGLE_AMOUNT}",
-                error_code="BIZ_201"
+                error_code="BIZ-201"
             )
 
         # 3. 检查账户余额上限
@@ -187,7 +187,7 @@ class TopupService:
 
         if not request:
             # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
-            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ_002")
+            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ-002")
 
         # 检查访问权限
         self._check_request_access(request, current_user)
@@ -210,7 +210,7 @@ class TopupService:
         if request.status != TopupStatus.PENDING_REVIEW.value:
             raise BusinessLogicError(
                 f"当前状态({request.status})不能进行数据审核",
-                error_code="BIZ_203"
+                error_code="BIZ-203"
             )
 
         old_status = request.status
@@ -254,7 +254,7 @@ class TopupService:
         if request.status != TopupStatus.FINANCE_APPROVE.value:
             raise BusinessLogicError(
                 f"当前状态({request.status})不能进行财务审批",
-                error_code="BIZ_203"
+                error_code="BIZ-203"
             )
 
         old_status = request.status
@@ -515,12 +515,12 @@ class TopupService:
         if request.status != TopupStatus.FINANCE_APPROVE.value:
             raise BusinessLogicError(
                 f"当前状态({request.status})不能标记为已打款",
-                error_code="BIZ_203"
+                error_code="BIZ-203"
             )
 
         # 检查是否已打款
         if request.paid_at:
-            raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ_207")
+            raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ-207")
 
         # 更新打款信息 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
         request.paid_at = datetime.utcnow()
@@ -899,7 +899,7 @@ class TopupService:
         ad_account = self.db.query(AdAccount).filter(AdAccount.id == ad_account_id).first()
 
         if not ad_account:
-            raise ResourceNotFoundError("广告账户不存在", error_code="SYS_004")
+            raise ResourceNotFoundError("广告账户不存在", error_code="SYS-004")
 
         # 管理员和财务可以访问所有账户 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
         if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
@@ -915,7 +915,7 @@ class TopupService:
             if ad_account.assigned_to == current_user.id:
                 return ad_account
 
-        raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ_206")
+        raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ-206")
 
     def _check_account_balance_limit(self, ad_account_id: int, requested_amount: Decimal):
         """检查账户余额上限"""
@@ -935,7 +935,7 @@ class TopupService:
         if current_balance + requested_amount > self.MAX_ACCOUNT_BALANCE:
             raise BusinessLogicError(
                 f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
-                error_code="BIZ_202"
+                error_code="BIZ-202"
             )
 
     def _check_daily_request_limit(self, ad_account_id: int, user_id: int):
@@ -957,7 +957,7 @@ class TopupService:
         if request_count >= self.MAX_DAILY_REQUESTS:
             raise BusinessLogicError(
                 f"同一账户24小时内最多只能申请{self.MAX_DAILY_REQUESTS}次充值",
-                error_code="BIZ_204"
+                error_code="BIZ-204"
             )
 
     def _apply_permission_filter(self, query, current_user: User):
@@ -998,7 +998,7 @@ class TopupService:
             if request.requested_by == current_user.id:
                 return
 
-        raise PermissionDeniedError("无权限查看该充值申请", error_code="BIZ_206")
+        raise PermissionDeniedError("无权限查看该充值申请", error_code="BIZ-206")
 
     def _get_request_for_action(
         self,
@@ -1011,10 +1011,10 @@ class TopupService:
 
         # 验证操作权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
         if action == "data_review" and current_user.role != UserRole.DATA_OPERATOR.value:
-            raise PermissionDeniedError("只有数据员可以进行数据审核", error_code="BIZ_206")
+            raise PermissionDeniedError("只有数据员可以进行数据审核", error_code="BIZ-206")
 
         if action == "finance_approve" and current_user.role != UserRole.FINANCE.value:
-            raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ_206")
+            raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ-206")
 
         return request
 

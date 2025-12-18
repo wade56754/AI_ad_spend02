@@ -145,7 +145,7 @@ class TransferService:
         ]:
             raise PermissionDeniedError(
                 "无权限创建迁移申请，仅 admin/account_manager/finance 可操作",
-                error_code="AUTH_500"
+                error_code="AUTH-500"
             )
 
         # 验证源账户存在
@@ -155,7 +155,7 @@ class TransferService:
         if not source_account:
             raise ResourceNotFoundError(
                 f"源账户 {request.source_ad_account_id} 不存在",
-                error_code="BIZ_002"
+                error_code="BIZ-002"
             )
 
         # 验证目标账户存在
@@ -165,14 +165,14 @@ class TransferService:
         if not target_account:
             raise ResourceNotFoundError(
                 f"目标账户 {request.target_ad_account_id} 不存在",
-                error_code="BIZ_002"
+                error_code="BIZ-002"
             )
 
         # 业务校验: 源账户和目标账户不能相同 (已在 schema 中校验，此处双重保险)
         if request.source_ad_account_id == request.target_ad_account_id:
             raise BusinessLogicError(
                 "源账户和目标账户不能相同",
-                error_code="BIZ_001"
+                error_code="BIZ-001"
             )
 
         # 业务校验: 同供应商约束 (DATA_SCHEMA.md v5.2 §3.2.5)
@@ -191,7 +191,7 @@ class TransferService:
         if request.transfer_amount > source_balance:
             raise BusinessLogicError(
                 f"迁移金额 {request.transfer_amount} 超过源账户余额 {source_balance}",
-                error_code="BIZ_001"
+                error_code="BIZ-001"
             )
 
         with self.transaction():
@@ -228,7 +228,7 @@ class TransferService:
         if not transfer:
             raise ResourceNotFoundError(
                 f"迁移申请 {transfer_id} 不存在",
-                error_code="BIZ_002"
+                error_code="BIZ-002"
             )
 
         return transfer
@@ -275,7 +275,7 @@ class TransferService:
             current_user.role != UserRole.ADMIN.value):
             raise PermissionDeniedError(
                 "只有申请人或管理员可以提交",
-                error_code="AUTH_500"
+                error_code="AUTH-500"
             )
 
         # 状态检查
@@ -284,7 +284,7 @@ class TransferService:
         ):
             raise BusinessLogicError(
                 f"当前状态 {transfer.status} 不能提交审批",
-                error_code="STATE_001"
+                error_code="STATE-001"
             )
 
         with self.transaction():
@@ -310,7 +310,7 @@ class TransferService:
         if current_user.role not in [UserRole.ADMIN.value, UserRole.FINANCE.value]:
             raise PermissionDeniedError(
                 "只有 finance/admin 可以审批",
-                error_code="AUTH_500"
+                error_code="AUTH-500"
             )
 
         # 状态检查
@@ -319,7 +319,7 @@ class TransferService:
         ):
             raise BusinessLogicError(
                 f"当前状态 {transfer.status} 不能审批通过",
-                error_code="STATE_001"
+                error_code="STATE-001"
             )
 
         with self.transaction():
@@ -348,7 +348,7 @@ class TransferService:
         if current_user.role not in [UserRole.ADMIN.value, UserRole.FINANCE.value]:
             raise PermissionDeniedError(
                 "只有 finance/admin 可以拒绝",
-                error_code="AUTH_500"
+                error_code="AUTH-500"
             )
 
         # 状态检查
@@ -357,7 +357,7 @@ class TransferService:
         ):
             raise BusinessLogicError(
                 f"当前状态 {transfer.status} 不能拒绝",
-                error_code="STATE_001"
+                error_code="STATE-001"
             )
 
         with self.transaction():
@@ -388,7 +388,7 @@ class TransferService:
         if current_user.role != UserRole.ADMIN.value:
             raise PermissionDeniedError(
                 "只有 admin 可以完成迁移",
-                error_code="AUTH_500"
+                error_code="AUTH-500"
             )
 
         # 状态检查
@@ -397,7 +397,7 @@ class TransferService:
         ):
             raise BusinessLogicError(
                 f"当前状态 {transfer.status} 不能完成，必须先审批通过",
-                error_code="STATE_001"
+                error_code="STATE-001"
             )
 
         with self.transaction():
@@ -415,7 +415,7 @@ class TransferService:
             if not source_account or not target_account:
                 raise BusinessLogicError(
                     "源账户或目标账户不存在",
-                    error_code="BIZ_002"
+                    error_code="BIZ-002"
                 )
 
             # 2. 获取当前余额
@@ -427,7 +427,7 @@ class TransferService:
             if source_balance < transfer_amount:
                 raise BusinessLogicError(
                     f"源账户余额不足: 当前余额 {source_balance}, 迁移金额 {transfer_amount}",
-                    error_code="BIZ_616"
+                    error_code="BIZ-616"
                 )
 
             # 4. 创建 TRANSFER_OUT 分录（源账户，负数）

@@ -366,14 +366,14 @@ class TrendRiskControlService:
         if not report:
             raise ResourceNotFoundError(
                 message=f"日报 {report_id} 不存在",
-                error_code="BIZ_002"
+                error_code="BIZ-002"
             )
 
         # 验证状态 - 只能从 trend_pending 执行风控检查
         if report.status != DailyReportStatus.TREND_PENDING.value:
             raise BusinessLogicError(
                 message=f"日报状态必须为 trend_pending，当前状态: {report.status}",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         # 执行风控检查
@@ -462,7 +462,7 @@ class TrendRiskControlService:
         if report.status != DailyReportStatus.RAW_SUBMITTED.value:
             raise BusinessLogicError(
                 message=f"只能从 raw_submitted 状态触发风控检查，当前状态: {report.status}",
-                error_code="STATE_400"
+                error_code="STATE-400"
             )
 
         with self.transaction():
