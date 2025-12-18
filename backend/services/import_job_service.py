@@ -267,7 +267,7 @@ class ImportJobService:
         if not file_content:
             raise ValidationError(
                 message="文件内容为空",
-                error_code="VAL-001"
+                error_code="VALIDATION_001"
             )
 
         # 计算文件哈希

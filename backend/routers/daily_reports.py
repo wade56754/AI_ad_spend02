@@ -292,7 +292,7 @@ async def list_daily_reports(
 
     except (BusinessLogicError, ResourceNotFoundError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -357,7 +357,7 @@ async def create_daily_report(
     except BusinessLogicError as e:
         # BIZ_201: 报表日期为未来日期 → 400
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -456,7 +456,7 @@ async def update_daily_report(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -542,7 +542,7 @@ async def flag_trend_anomaly(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -585,7 +585,7 @@ async def resolve_trend_anomaly(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -628,7 +628,7 @@ async def update_real_spend(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -671,7 +671,7 @@ async def confirm_final_report(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -714,7 +714,7 @@ async def lock_final_report(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -796,7 +796,7 @@ async def batch_import_daily_reports(
 
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -1283,7 +1283,7 @@ async def execute_trend_check(
 
     except ValueError as e:
         return error_response(
-            code="STATE-001",
+            code="STATE_400",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -1328,7 +1328,7 @@ async def trigger_trend_check(
 
     except ValueError as e:
         return error_response(
-            code="STATE-001",
+            code="STATE_400",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )

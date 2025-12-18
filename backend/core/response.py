@@ -52,7 +52,7 @@ class ResponseBuilder:
     @staticmethod
     def error(
         message: str,
-        code: str = "INTERNAL_ERROR",
+        code: str = "SYS_001",
         status_code: int = 400,
         details: Optional[Dict[str, Any]] = None,
         meta: Optional[Dict[str, Any]] = None
@@ -162,7 +162,7 @@ def success_response(data: Any = None, message: str = "操作成功", code: str 
     )
 
 
-def error_response(message: str, code: str = "INTERNAL_ERROR", status_code: int = 400, **kwargs) -> JSONResponse:
+def error_response(message: str, code: str = "SYS_001", status_code: int = 400, **kwargs) -> JSONResponse:
     """错误响应函数"""
     # 构建符合测试期望的错误响应格式：{"success": False, "error": {"code": "...", "message": "..."}}
     content = {

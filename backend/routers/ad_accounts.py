@@ -166,7 +166,7 @@ def update_ad_account_status(
     allowed = ALLOWED_TRANSITIONS.get(current_status, [])
     if target_status not in allowed:
         return error_response(
-            code="STATE-001",
+            code="STATE_400",
             message=f"状态从 {current_status} 到 {target_status} 的转换不允许",
             status_code=422
         )
@@ -218,7 +218,7 @@ def delete_ad_account(
     # 只有归档状态的账户才能删除
     if account.status != "archived":
         return error_response(
-            code="STATE-001",
+            code="STATE_400",
             message="只有归档状态的账户才能删除",
             status_code=400
         )

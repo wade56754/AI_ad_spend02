@@ -110,7 +110,7 @@ async def create_template(
 
     except (ResourceConflictError, ValueError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )

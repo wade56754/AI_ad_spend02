@@ -204,7 +204,7 @@ async def submit_transfer(
         )
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_001",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_400",
             message=str(e),
             status_code=409
         )
@@ -250,7 +250,7 @@ async def approve_transfer(
         )
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_001",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_400",
             message=str(e),
             status_code=409
         )
@@ -296,7 +296,7 @@ async def reject_transfer(
         )
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_001",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_400",
             message=str(e),
             status_code=409
         )
@@ -342,7 +342,7 @@ async def complete_transfer(
         )
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_001",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "STATE_400",
             message=str(e),
             status_code=409
         )

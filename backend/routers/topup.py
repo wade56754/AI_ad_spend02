@@ -181,7 +181,7 @@ async def create_topup_request(
 
     except (BusinessLogicError, ResourceConflictError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -264,7 +264,7 @@ async def data_review_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -310,7 +310,7 @@ async def finance_approve_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -356,7 +356,7 @@ async def mark_as_paid(
         )
     except (BusinessLogicError, PermissionDeniedError, ResourceConflictError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -455,7 +455,7 @@ async def reject_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -508,7 +508,7 @@ async def cancel_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -562,7 +562,7 @@ async def confirm_paid_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )

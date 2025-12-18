@@ -288,7 +288,7 @@ async def create_project(
 
     except (ResourceConflictError, BusinessLogicError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -391,7 +391,7 @@ async def update_project(
         )
     except (ResourceConflictError, BusinessLogicError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -434,7 +434,7 @@ async def delete_project(
         )
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -464,7 +464,7 @@ async def assign_member(
 
     except (ResourceNotFoundError, ResourceConflictError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )

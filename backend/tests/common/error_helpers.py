@@ -39,11 +39,11 @@ ERROR_CODE_PATTERN = re.compile(r"^([A-Z]+)-(\d{3})$")
 # ============================================================================
 
 VALIDATION_ERROR_CODES: Set[str] = {
-    "VAL-001",  # 必填字段缺失
-    "VAL-002",  # 字段格式错误
-    "VAL-003",  # 字段值超出范围
-    "VAL-004",  # 字段值不在枚举中
-    "VAL-005",  # 关联实体不存在
+    "VALIDATION_001",  # 必填字段缺失
+    "VALIDATION_002",  # 字段格式错误
+    "VALIDATION_003",  # 字段值超出范围
+    "VALIDATION_004",  # 字段值不在枚举中
+    "VALIDATION_005",  # 关联实体不存在
 }
 
 AUTH_ERROR_CODES: Set[str] = {
@@ -83,7 +83,7 @@ def assert_error_code(
 
     Args:
         response: API 响应对象或字典
-        expected_code: 预期错误码 (如 "VAL-001")
+        expected_code: 预期错误码 (如 "VALIDATION_001")
         msg: 自定义错误消息
 
     Raises:

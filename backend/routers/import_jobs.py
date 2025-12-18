@@ -73,14 +73,14 @@ async def upload_import_file(
         if not file_content:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "VAL_001", "message": "文件内容为空"}
+                detail={"code": "VALIDATION_001", "message": "文件内容为空"}
             )
 
         # 检查文件类型
         if not file.filename or not file.filename.lower().endswith('.csv'):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "VAL_002", "message": "仅支持CSV格式文件"}
+                detail={"code": "VALIDATION_002", "message": "仅支持CSV格式文件"}
             )
 
         # 上传并解析
@@ -502,7 +502,7 @@ async def check_duplicate_file(
         if not file_content:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "VAL_001", "message": "文件内容为空"}
+                detail={"code": "VALIDATION_001", "message": "文件内容为空"}
             )
 
         file_hash = hashlib.sha256(file_content).hexdigest()
