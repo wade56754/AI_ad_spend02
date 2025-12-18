@@ -10,7 +10,7 @@ Aligned with SoT:
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
@@ -56,9 +56,9 @@ async def create_settlement(
         )
         return success_response(data=settlement, message="结算创建成功")
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
 @router.get("", response_model=dict)
@@ -102,7 +102,7 @@ async def list_settlements(
             page_size=page_size
         )
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.get("/statistics", response_model=dict)
@@ -127,7 +127,7 @@ async def get_settlement_statistics(
         )
         return success_response(data=stats, message="获取统计信息成功")
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.get("/overdue", response_model=dict)
@@ -148,7 +148,7 @@ async def get_overdue_settlements(
         )
         return success_response(data=settlements, message="获取逾期结算成功")
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.get("/{settlement_id}", response_model=dict)
@@ -171,9 +171,9 @@ async def get_settlement(
         )
         return success_response(data=settlement, message="获取结算成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.put("/{settlement_id}", response_model=dict)
@@ -199,11 +199,11 @@ async def update_settlement(
         )
         return success_response(data=settlement, message="结算更新成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
 @router.post("/{settlement_id}/submit", response_model=dict)
@@ -227,11 +227,11 @@ async def submit_settlement(
         )
         return success_response(data=settlement, message="结算已提交审批")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
 @router.post("/{settlement_id}/approve", response_model=dict)
@@ -258,11 +258,11 @@ async def approve_settlement(
         action_msg = "审批通过" if request.action == "approve" else "已拒绝"
         return success_response(data=settlement, message=f"结算{action_msg}")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
 @router.post("/{settlement_id}/payment", response_model=dict)
@@ -289,11 +289,11 @@ async def record_payment(
         )
         return success_response(data=settlement, message="支付记录成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
 @router.post("/{settlement_id}/cancel", response_model=dict)
@@ -319,8 +319,8 @@ async def cancel_settlement(
         )
         return success_response(data=settlement, message="结算已取消")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)

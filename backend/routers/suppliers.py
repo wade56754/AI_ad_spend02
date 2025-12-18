@@ -9,7 +9,7 @@ Aligned with SoT:
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
@@ -53,11 +53,11 @@ async def create_supplier(
         )
         return success_response(data=supplier, message="供应商创建成功")
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except ResourceConflictError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        return error_response(code="BIZ_003", message=str(e), status_code=409)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
 @router.get("", response_model=dict)
@@ -93,7 +93,7 @@ async def list_suppliers(
             page_size=page_size
         )
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.get("/statistics", response_model=dict)
@@ -114,7 +114,7 @@ async def get_supplier_statistics(
         )
         return success_response(data=stats, message="获取统计信息成功")
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.get("/{supplier_id}", response_model=dict)
@@ -137,9 +137,9 @@ async def get_supplier(
         )
         return success_response(data=supplier, message="获取供应商成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.put("/{supplier_id}", response_model=dict)
@@ -164,11 +164,11 @@ async def update_supplier(
         )
         return success_response(data=supplier, message="供应商更新成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except ResourceConflictError as e:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        return error_response(code="BIZ_003", message=str(e), status_code=409)
 
 
 @router.delete("/{supplier_id}", response_model=dict)
@@ -192,11 +192,11 @@ async def delete_supplier(
         )
         return success_response(data=None, message="供应商删除成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
     except BusinessLogicError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
 @router.get("/{supplier_id}/accounts", response_model=dict)
@@ -228,9 +228,9 @@ async def get_supplier_accounts(
             page_size=page_size
         )
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
 @router.get("/{supplier_id}/ledger-summary", response_model=dict)
@@ -258,6 +258,6 @@ async def get_supplier_ledger_summary(
         )
         return success_response(data=summary, message="获取账本汇总成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        return error_response(code="SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        return error_response(code="AUTH_003", message=str(e), status_code=403)

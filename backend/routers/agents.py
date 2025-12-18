@@ -23,7 +23,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 
 from backend.core.response import success_response, error_response, paginated_response
@@ -377,12 +377,10 @@ async def get_agent(
     agent = store.get_by_id(agent_id)
 
     if agent is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BIZ_002",
-                "message": f"Agent '{agent_id}' not found",
-            },
+        return error_response(
+            code="BIZ_002",
+            message=f"Agent '{agent_id}' not found",
+            status_code=404
         )
 
     return success_response(
@@ -408,12 +406,10 @@ async def create_agent(
     # Check if agent with same name already exists
     existing = store.get_by_name(request.name)
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "BIZ_003",
-                "message": f"Agent with name '{request.name}' already exists",
-            },
+        return error_response(
+            code="BIZ_003",
+            message=f"Agent with name '{request.name}' already exists",
+            status_code=409
         )
 
     try:
@@ -460,24 +456,20 @@ async def update_agent(
     # Check if agent exists
     existing = store.get_by_id(agent_id)
     if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BIZ_002",
-                "message": f"Agent '{agent_id}' not found",
-            },
+        return error_response(
+            code="BIZ_002",
+            message=f"Agent '{agent_id}' not found",
+            status_code=404
         )
 
     # Check name uniqueness if name is being changed
     if request.name and request.name != existing["name"]:
         name_exists = store.get_by_name(request.name)
         if name_exists:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail={
-                    "code": "BIZ_003",
-                    "message": f"Agent with name '{request.name}' already exists",
-                },
+            return error_response(
+                code="BIZ_003",
+                message=f"Agent with name '{request.name}' already exists",
+                status_code=409
             )
 
     try:
@@ -520,22 +512,18 @@ async def delete_agent(
     # Check if agent exists
     existing = store.get_by_id(agent_id)
     if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BIZ_002",
-                "message": f"Agent '{agent_id}' not found",
-            },
+        return error_response(
+            code="BIZ_002",
+            message=f"Agent '{agent_id}' not found",
+            status_code=404
         )
 
     # Cannot delete running agent
     if existing["status"] == AgentStatus.RUNNING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "BIZ_001",
-                "message": "Cannot delete a running agent. Stop it first.",
-            },
+        return error_response(
+            code="BIZ_001",
+            message="Cannot delete a running agent. Stop it first.",
+            status_code=400
         )
 
     try:
@@ -571,22 +559,18 @@ async def start_agent(
     # Check if agent exists
     existing = store.get_by_id(agent_id)
     if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BIZ_002",
-                "message": f"Agent '{agent_id}' not found",
-            },
+        return error_response(
+            code="BIZ_002",
+            message=f"Agent '{agent_id}' not found",
+            status_code=404
         )
 
     # Check if already running
     if existing["status"] == AgentStatus.RUNNING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "BIZ_001",
-                "message": f"Agent '{existing['name']}' is already running",
-            },
+        return error_response(
+            code="BIZ_001",
+            message=f"Agent '{existing['name']}' is already running",
+            status_code=400
         )
 
     try:
@@ -628,22 +612,18 @@ async def stop_agent(
     # Check if agent exists
     existing = store.get_by_id(agent_id)
     if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BIZ_002",
-                "message": f"Agent '{agent_id}' not found",
-            },
+        return error_response(
+            code="BIZ_002",
+            message=f"Agent '{agent_id}' not found",
+            status_code=404
         )
 
     # Check if not running
     if existing["status"] != AgentStatus.RUNNING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "code": "BIZ_001",
-                "message": f"Agent '{existing['name']}' is not running (current status: {existing['status']})",
-            },
+        return error_response(
+            code="BIZ_001",
+            message=f"Agent '{existing['name']}' is not running (current status: {existing['status']})",
+            status_code=400
         )
 
     try:
