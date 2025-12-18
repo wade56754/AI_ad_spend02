@@ -186,6 +186,16 @@ RECONCILIATION_BATCH_STATE_MACHINE = StateMachine([
     Transition(ReconciliationBatchStatus.DRAFT, ReconciliationBatchStatus.PENDING_REVIEW, required_roles=["finance", "data_operator"]),
     Transition(ReconciliationBatchStatus.PENDING_REVIEW, ReconciliationBatchStatus.APPROVED, required_roles=["finance", "admin"]),
     Transition(ReconciliationBatchStatus.PENDING_REVIEW, ReconciliationBatchStatus.NEEDS_ADJUSTMENT, required_roles=["finance", "admin"]),
+    Transition(ReconciliationBatchStatus.NEEDS_ADJUSTMENT, ReconciliationBatchStatus.PENDING_REVIEW, required_roles=["finance", "data_operator"]),  # 重新提交
     Transition(ReconciliationBatchStatus.NEEDS_ADJUSTMENT, ReconciliationBatchStatus.APPROVED, required_roles=["finance", "admin"]),
     Transition(ReconciliationBatchStatus.APPROVED, ReconciliationBatchStatus.COMPLETED, required_roles=["finance", "admin"]),
+])
+
+
+# 预定义状态机: 对账明细
+RECONCILIATION_DETAIL_STATE_MACHINE = StateMachine([
+    Transition(ReconciliationDetailStatus.PENDING, ReconciliationDetailStatus.CONFIRMED, required_roles=["finance", "data_operator"]),
+    Transition(ReconciliationDetailStatus.PENDING, ReconciliationDetailStatus.ADJUSTED, required_roles=["finance", "data_operator"]),
+    Transition(ReconciliationDetailStatus.CONFIRMED, ReconciliationDetailStatus.ADJUSTED, required_roles=["finance", "admin"]),  # 已确认可调整
+    Transition(ReconciliationDetailStatus.ADJUSTED, ReconciliationDetailStatus.CONFIRMED, required_roles=["finance", "admin"]),  # 调整后可重新确认
 ])

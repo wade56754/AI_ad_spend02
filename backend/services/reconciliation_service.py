@@ -36,6 +36,13 @@ from backend.exceptions.custom_exceptions import (
     PermissionDeniedError,
     BusinessLogicError
 )
+from backend.core.state_machine import (
+    RECONCILIATION_BATCH_STATE_MACHINE,
+    RECONCILIATION_DETAIL_STATE_MACHINE,
+    StateTransitionError,
+    ReconciliationBatchStatus as SMBatchStatus,
+    ReconciliationDetailStatus as SMDetailStatus
+)
 
 
 def _safe_decimal(value, default: Decimal = Decimal('0.00')) -> Decimal:
@@ -84,6 +91,86 @@ class ReconciliationService:
 
     def __init__(self, db: Session):
         self.db = db
+
+    def _validate_batch_transition(
+        self,
+        batch: ReconciliationBatch,
+        target_status: str,
+        user_role: str,
+        action_name: str = "状态转换"
+    ) -> None:
+        """
+        验证对账批次状态转换是否合法
+
+        Args:
+            batch: 对账批次实体
+            target_status: 目标状态
+            user_role: 当前用户角色
+            action_name: 操作名称（用于错误消息）
+
+        Raises:
+            BusinessLogicError: 如果状态转换不允许
+        """
+        current_status = batch.status
+
+        # 检查是否可以转换
+        if not RECONCILIATION_BATCH_STATE_MACHINE.can_transition(current_status, target_status):
+            allowed = RECONCILIATION_BATCH_STATE_MACHINE.get_allowed_transitions(current_status)
+            raise BusinessLogicError(
+                message=f"{action_name}失败: 不能从 {current_status} 转换到 {target_status}。允许的目标状态: {allowed}",
+                error_code="STATE_400"
+            )
+
+        # 使用状态机执行转换（包含角色验证）
+        try:
+            RECONCILIATION_BATCH_STATE_MACHINE.transition(
+                batch, current_status, target_status, user_role=user_role
+            )
+        except StateTransitionError as e:
+            raise BusinessLogicError(
+                message=f"{action_name}失败: {str(e)}",
+                error_code="STATE_401"
+            )
+
+    def _validate_detail_transition(
+        self,
+        detail: ReconciliationDetail,
+        target_status: str,
+        user_role: str,
+        action_name: str = "状态转换"
+    ) -> None:
+        """
+        验证对账明细状态转换是否合法
+
+        Args:
+            detail: 对账明细实体
+            target_status: 目标状态
+            user_role: 当前用户角色
+            action_name: 操作名称（用于错误消息）
+
+        Raises:
+            BusinessLogicError: 如果状态转换不允许
+        """
+        current_status = detail.status
+
+        # 检查是否可以转换
+        if not RECONCILIATION_DETAIL_STATE_MACHINE.can_transition(current_status, target_status):
+            allowed = RECONCILIATION_DETAIL_STATE_MACHINE.get_allowed_transitions(current_status)
+            raise BusinessLogicError(
+                message=f"{action_name}失败: 不能从 {current_status} 转换到 {target_status}。允许的目标状态: {allowed}",
+                error_code="STATE_400"
+            )
+
+        # 使用状态机执行转换（包含角色验证）
+        try:
+            RECONCILIATION_DETAIL_STATE_MACHINE.transition(
+                detail, current_status, target_status, user_role=user_role
+            )
+        except StateTransitionError as e:
+            raise BusinessLogicError(
+                message=f"{action_name}失败: {str(e)}",
+                error_code="STATE_401"
+            )
 
     async def create_batch(
         self,
@@ -871,20 +958,15 @@ class ReconciliationService:
     async def submit_batch(
         self,
         batch_id: int,
-        current_user_id: int
+        current_user_id: int,
+        user_role: str = "finance"
     ) -> ReconciliationBatch:
         """
         提交批次审核
         状态转换: draft → pending_review
         允许角色: finance, data_operator
         """
-        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
-
-        if batch.status != ReconciliationBatchStatus.DRAFT.value:
-            raise BusinessLogicError(
-                message=f"只能从草稿状态提交审核，当前状态: {batch.status}",
-                error_code="STATE-400"
-            )
+        batch = await self.get_batch_by_id(batch_id, current_user_id, user_role)
 
         # 验证批次有明细
         detail_count = self.db.query(ReconciliationDetail).filter(
@@ -897,7 +979,13 @@ class ReconciliationService:
                 error_code="RECON-001"
             )
 
-        batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
+        # 使用统一状态机验证并执行转换
+        self._validate_batch_transition(
+            batch,
+            ReconciliationBatchStatus.PENDING_REVIEW.value,
+            user_role,
+            "提交审核"
+        )
         batch.version += 1
         self.db.commit()
         self.db.refresh(batch)
@@ -907,22 +995,23 @@ class ReconciliationService:
     async def approve_batch(
         self,
         batch_id: int,
-        current_user_id: int
+        current_user_id: int,
+        user_role: str = "finance"
     ) -> ReconciliationBatch:
         """
         批准对账批次
         状态转换: pending_review → approved
         允许角色: finance, admin
         """
-        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+        batch = await self.get_batch_by_id(batch_id, current_user_id, user_role)
 
-        if batch.status != ReconciliationBatchStatus.PENDING_REVIEW.value:
-            raise BusinessLogicError(
-                message=f"只能从待审核状态批准，当前状态: {batch.status}",
-                error_code="STATE-400"
-            )
-
-        batch.status = ReconciliationBatchStatus.APPROVED.value
+        # 使用统一状态机验证并执行转换
+        self._validate_batch_transition(
+            batch,
+            ReconciliationBatchStatus.APPROVED.value,
+            user_role,
+            "批准对账"
+        )
         batch.reviewed_by = current_user_id
         batch.version += 1
         self.db.commit()
@@ -934,22 +1023,23 @@ class ReconciliationService:
         self,
         batch_id: int,
         current_user_id: int,
-        reason: str
+        reason: str,
+        user_role: str = "finance"
     ) -> ReconciliationBatch:
         """
         请求调整（审核不通过）
         状态转换: pending_review → needs_adjustment
         允许角色: finance, admin
         """
-        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+        batch = await self.get_batch_by_id(batch_id, current_user_id, user_role)
 
-        if batch.status != ReconciliationBatchStatus.PENDING_REVIEW.value:
-            raise BusinessLogicError(
-                message=f"只能从待审核状态请求调整，当前状态: {batch.status}",
-                error_code="STATE-400"
-            )
-
-        batch.status = ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value
+        # 使用统一状态机验证并执行转换
+        self._validate_batch_transition(
+            batch,
+            ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value,
+            user_role,
+            "请求调整"
+        )
         batch.reviewed_by = current_user_id
         batch.version += 1
         self.db.commit()
@@ -960,22 +1050,23 @@ class ReconciliationService:
     async def resubmit_batch(
         self,
         batch_id: int,
-        current_user_id: int
+        current_user_id: int,
+        user_role: str = "finance"
     ) -> ReconciliationBatch:
         """
         重新提交批次（调整后）
         状态转换: needs_adjustment → pending_review
         允许角色: finance, data_operator
         """
-        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
+        batch = await self.get_batch_by_id(batch_id, current_user_id, user_role)
 
-        if batch.status != ReconciliationBatchStatus.NEEDS_ADJUSTMENT.value:
-            raise BusinessLogicError(
-                message=f"只能从需调整状态重新提交，当前状态: {batch.status}",
-                error_code="STATE-400"
-            )
-
-        batch.status = ReconciliationBatchStatus.PENDING_REVIEW.value
+        # 使用统一状态机验证并执行转换
+        self._validate_batch_transition(
+            batch,
+            ReconciliationBatchStatus.PENDING_REVIEW.value,
+            user_role,
+            "重新提交"
+        )
         batch.version += 1
         self.db.commit()
         self.db.refresh(batch)
@@ -985,7 +1076,8 @@ class ReconciliationService:
     async def complete_batch(
         self,
         batch_id: int,
-        current_user_id: int
+        current_user_id: int,
+        user_role: str = "finance"
     ) -> ReconciliationBatch:
         """
         完成对账批次（终态）
@@ -997,13 +1089,7 @@ class ReconciliationService:
         2. 存在对应的 reconciliation_report 记录
         3. adjusted 状态的明细都有对应的 adjustments 记录
         """
-        batch = await self.get_batch_by_id(batch_id, current_user_id, "finance")
-
-        if batch.status != ReconciliationBatchStatus.APPROVED.value:
-            raise BusinessLogicError(
-                message=f"只能从已批准状态完成，当前状态: {batch.status}",
-                error_code="STATE-400"
-            )
+        batch = await self.get_batch_by_id(batch_id, current_user_id, user_role)
 
         # 验证完成条件1: 所有明细已处理
         pending_details = self.db.query(ReconciliationDetail).filter(
@@ -1051,8 +1137,13 @@ class ReconciliationService:
                     error_code="RECON-003"
                 )
 
-        # 状态转换
-        batch.status = ReconciliationBatchStatus.COMPLETED.value
+        # 使用统一状态机验证并执行转换
+        self._validate_batch_transition(
+            batch,
+            ReconciliationBatchStatus.COMPLETED.value,
+            user_role,
+            "完成对账"
+        )
         batch.reviewed_by = current_user_id
         batch.closed_at = func.now()
         batch.version += 1
@@ -1065,22 +1156,25 @@ class ReconciliationService:
         self,
         batch_id: int,
         current_user_id: int,
-        reason: str
+        reason: str,
+        user_role: str = "admin"
     ) -> ReconciliationBatch:
         """
         强制完成对账批次（管理员专用）
         状态转换: any (非completed) → completed
         允许角色: admin only
+        注意: 此方法绕过状态机，仅限管理员使用
         """
-        batch = await self.get_batch_by_id(batch_id, current_user_id, "admin")
+        batch = await self.get_batch_by_id(batch_id, current_user_id, user_role)
 
         if batch.status == ReconciliationBatchStatus.COMPLETED.value:
             raise BusinessLogicError(
                 message="批次已完成，无需强制完成",
-                error_code="STATE-402"
+                error_code="STATE_402"
             )
 
-        # 强制完成，跳过所有验证
+        # 强制完成，跳过状态机验证（管理员特权）
+        # 注意: 这是特殊情况，不使用 _validate_batch_transition
         batch.status = ReconciliationBatchStatus.COMPLETED.value
         batch.reviewed_by = current_user_id
         batch.closed_at = func.now()
@@ -1095,7 +1189,8 @@ class ReconciliationService:
     async def confirm_detail(
         self,
         detail_id: int,
-        current_user_id: int
+        current_user_id: int,
+        user_role: str = "finance"
     ) -> ReconciliationDetail:
         """
         确认对账明细
@@ -1109,16 +1204,16 @@ class ReconciliationService:
         if not detail:
             raise ResourceNotFoundError(
                 message="对账明细不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
-        if detail.status != ReconciliationDetailStatus.PENDING.value:
-            raise BusinessLogicError(
-                message=f"只能从待确认状态确认，当前状态: {detail.status}",
-                error_code="STATE-400"
-            )
-
-        detail.status = ReconciliationDetailStatus.CONFIRMED.value
+        # 使用统一状态机验证并执行转换
+        self._validate_detail_transition(
+            detail,
+            ReconciliationDetailStatus.CONFIRMED.value,
+            user_role,
+            "确认明细"
+        )
         detail.notes = f"确认人: {current_user_id}, 时间: {datetime.utcnow().isoformat()}"
         detail.version += 1
         self.db.commit()
@@ -1135,7 +1230,8 @@ class ReconciliationService:
         current_user_id: int,
         adjustment_type: str,
         amount: Decimal,
-        reason: str
+        reason: str,
+        user_role: str = "finance"
     ) -> Tuple[ReconciliationDetail, ReconciliationAdjustment]:
         """
         调整对账明细
@@ -1151,14 +1247,16 @@ class ReconciliationService:
         if not detail:
             raise ResourceNotFoundError(
                 message="对账明细不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
-        if detail.status != ReconciliationDetailStatus.PENDING.value:
-            raise BusinessLogicError(
-                message=f"只能从待确认状态调整，当前状态: {detail.status}",
-                error_code="STATE-400"
-            )
+        # 使用统一状态机验证并执行转换
+        self._validate_detail_transition(
+            detail,
+            ReconciliationDetailStatus.ADJUSTED.value,
+            user_role,
+            "调整明细"
+        )
 
         # 创建调整记录
         adjustment = ReconciliationAdjustment(
@@ -1170,8 +1268,7 @@ class ReconciliationService:
         )
         self.db.add(adjustment)
 
-        # 更新明细状态
-        detail.status = ReconciliationDetailStatus.ADJUSTED.value
+        # 更新明细备注
         detail.notes = f"调整金额: {amount}, 原因: {reason}"
         detail.version += 1
 
