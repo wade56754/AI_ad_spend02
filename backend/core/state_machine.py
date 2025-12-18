@@ -199,3 +199,30 @@ RECONCILIATION_DETAIL_STATE_MACHINE = StateMachine([
     Transition(ReconciliationDetailStatus.CONFIRMED, ReconciliationDetailStatus.ADJUSTED, required_roles=["finance", "admin"]),  # 已确认可调整
     Transition(ReconciliationDetailStatus.ADJUSTED, ReconciliationDetailStatus.CONFIRMED, required_roles=["finance", "admin"]),  # 调整后可重新确认
 ])
+
+
+# 预定义状态机: 广告账户 (STATE_MACHINE.md v2.6 §7.1)
+AD_ACCOUNT_STATE_MACHINE = StateMachine([
+    # new 可以转换到任何状态
+    Transition(AdAccountStatus.NEW, AdAccountStatus.TESTING, required_roles=["account_manager", "admin"]),
+    Transition(AdAccountStatus.NEW, AdAccountStatus.ACTIVE, required_roles=["account_manager", "admin"]),
+    Transition(AdAccountStatus.NEW, AdAccountStatus.SUSPENDED, required_roles=["account_manager", "admin"]),
+    Transition(AdAccountStatus.NEW, AdAccountStatus.DEAD, required_roles=["admin"]),
+    Transition(AdAccountStatus.NEW, AdAccountStatus.ARCHIVED, required_roles=["admin"]),
+    # testing 可以转换到 active/suspended/dead/archived
+    Transition(AdAccountStatus.TESTING, AdAccountStatus.ACTIVE, required_roles=["account_manager", "admin"]),
+    Transition(AdAccountStatus.TESTING, AdAccountStatus.SUSPENDED, required_roles=["account_manager", "admin"]),
+    Transition(AdAccountStatus.TESTING, AdAccountStatus.DEAD, required_roles=["admin"]),
+    Transition(AdAccountStatus.TESTING, AdAccountStatus.ARCHIVED, required_roles=["admin"]),
+    # active 可以暂停/死亡/归档
+    Transition(AdAccountStatus.ACTIVE, AdAccountStatus.SUSPENDED, required_roles=["account_manager", "admin"]),
+    Transition(AdAccountStatus.ACTIVE, AdAccountStatus.DEAD, required_roles=["admin"]),
+    Transition(AdAccountStatus.ACTIVE, AdAccountStatus.ARCHIVED, required_roles=["admin"]),
+    # suspended 可以恢复/死亡/归档
+    Transition(AdAccountStatus.SUSPENDED, AdAccountStatus.ACTIVE, required_roles=["account_manager", "admin"]),
+    Transition(AdAccountStatus.SUSPENDED, AdAccountStatus.DEAD, required_roles=["admin"]),
+    Transition(AdAccountStatus.SUSPENDED, AdAccountStatus.ARCHIVED, required_roles=["admin"]),
+    # dead 只能归档 (终态之一)
+    Transition(AdAccountStatus.DEAD, AdAccountStatus.ARCHIVED, required_roles=["admin"]),
+    # archived 是终态，无法转换
+])

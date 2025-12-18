@@ -32,24 +32,63 @@ from backend.schemas.ad_account import (
 from backend.core.response import success_response, error_response
 from backend.exceptions import ValidationError, NotFoundError, PermissionError
 from backend.services.audit_log_service import AuditLogService
+from backend.core.state_machine import (
+    AD_ACCOUNT_STATE_MACHINE,
+    StateTransitionError,
+    AdAccountStatus as SMAdAccountStatus
+)
 
 
 class AdAccountService:
     """广告账户管理服务类"""
 
-    # 状态转换规则
-    ALLOWED_TRANSITIONS = {
-        "new": ["testing"],
-        "testing": ["active", "suspended", "dead"],
-        "active": ["suspended", "dead", "archived"],
-        "suspended": ["active", "dead", "archived"],
-        "dead": ["archived"],
-        "archived": []
-    }
-
     def __init__(self, db: Session):
         self.db = db
         self.audit_service = AuditLogService(db)
+
+    def _validate_transition(
+        self,
+        account: AdAccount,
+        target_status: str,
+        user_role: str,
+        action_name: str = "状态转换"
+    ) -> None:
+        """
+        验证广告账户状态转换是否合法
+
+        Args:
+            account: 广告账户实体
+            target_status: 目标状态
+            user_role: 当前用户角色
+            action_name: 操作名称（用于错误消息）
+
+        Raises:
+            ValidationError: 如果状态转换不允许
+        """
+        current_status = account.status
+
+        # 如果状态没变，跳过验证
+        if current_status == target_status:
+            return
+
+        # 检查是否可以转换
+        if not AD_ACCOUNT_STATE_MACHINE.can_transition(current_status, target_status):
+            allowed = AD_ACCOUNT_STATE_MACHINE.get_allowed_transitions(current_status)
+            raise ValidationError(
+                "STATE_400",
+                f"{action_name}失败: 不能从 {current_status} 转换到 {target_status}。允许的目标状态: {allowed}"
+            )
+
+        # 使用状态机执行转换（包含角色验证）
+        try:
+            AD_ACCOUNT_STATE_MACHINE.transition(
+                account, current_status, target_status, user_role=user_role
+            )
+        except StateTransitionError as e:
+            raise ValidationError(
+                "STATE_401",
+                f"{action_name}失败: {str(e)}"
+            )
 
     async def create_account(
         self,
@@ -245,22 +284,25 @@ class AdAccountService:
         self,
         account_id: int,
         request: AdAccountStatusUpdateRequest,
-        current_user_id: int
+        current_user_id: int,
+        user_role: str = "account_manager"
     ) -> AdAccount:
-        """更新账户状态"""
+        """
+        更新账户状态
+        状态转换规则由 AD_ACCOUNT_STATE_MACHINE 定义 (STATE_MACHINE.md v2.6 §7.1)
+        """
         account = await self.get_account_by_id(account_id, current_user_id)
-
-        # 检查状态转换是否合法
-        allowed_transitions = self.ALLOWED_TRANSITIONS.get(account.status, [])
-        if request.status != account.status and request.status not in allowed_transitions:
-            raise ValidationError(
-                "BIZ_404",
-                f"不能从状态 {account.status} 转换到 {request.status}"
-            )
-
-        # 更新状态
         old_status = account.status
-        account.status = request.status
+
+        # 使用统一状态机验证并执行转换
+        self._validate_transition(
+            account,
+            request.status,
+            user_role,
+            "账户状态更新"
+        )
+
+        # 更新附加信息
         account.status_reason = request.status_reason
         account.last_status_change = datetime.utcnow()
 
