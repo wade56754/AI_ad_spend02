@@ -27,6 +27,11 @@ from backend.exceptions.custom_exceptions import (
     PermissionDeniedError,
     ResourceConflictError
 )
+from backend.core.state_machine import (
+    TRANSFER_STATE_MACHINE,
+    StateTransitionError,
+    TransferStatus as SMTransferStatus,
+)
 from backend.models import AdAccount, User, TransferRequest
 from backend.models.enums import TransferRequestStatus, UserRole, LedgerEntryType
 from backend.models.finance.ledger import LedgerEntry
@@ -38,24 +43,6 @@ from backend.schemas.transfer import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-# 状态流转白名单 (STATE_MACHINE.md v2.6 第12章)
-TRANSFER_STATE_TRANSITIONS = {
-    TransferRequestStatus.DRAFT.value: [
-        TransferRequestStatus.PENDING_APPROVAL.value,
-        TransferRequestStatus.REJECTED.value
-    ],
-    TransferRequestStatus.PENDING_APPROVAL.value: [
-        TransferRequestStatus.APPROVED.value,
-        TransferRequestStatus.REJECTED.value
-    ],
-    TransferRequestStatus.APPROVED.value: [
-        TransferRequestStatus.COMPLETED.value
-    ],
-    TransferRequestStatus.REJECTED.value: [],  # 终态
-    TransferRequestStatus.COMPLETED.value: [],  # 终态
-}
 
 
 class TransferService:
@@ -76,10 +63,43 @@ class TransferService:
             self.db.rollback()
             raise
 
-    def _can_transition(self, from_status: str, to_status: str) -> bool:
-        """检查状态流转是否合法"""
-        allowed = TRANSFER_STATE_TRANSITIONS.get(from_status, [])
-        return to_status in allowed
+    def _validate_transition(
+        self,
+        transfer: TransferRequest,
+        target_status: str,
+        user_role: str,
+        action_name: str
+    ) -> None:
+        """
+        使用状态机验证状态转换
+
+        Args:
+            transfer: 迁移申请实体
+            target_status: 目标状态
+            user_role: 用户角色
+            action_name: 操作名称 (用于错误消息)
+
+        Raises:
+            BusinessLogicError: 状态转换非法或权限不足
+        """
+        current_status = transfer.status
+
+        # 检查是否可以转换
+        if not TRANSFER_STATE_MACHINE.can_transition(current_status, target_status):
+            allowed = TRANSFER_STATE_MACHINE.get_allowed_transitions(current_status)
+            raise BusinessLogicError(
+                f"当前状态({current_status})不能执行{action_name}操作，"
+                f"允许的目标状态: {allowed or '无'}",
+                error_code="STATE_400"
+            )
+
+        # 使用状态机执行转换 (会验证角色权限)
+        try:
+            TRANSFER_STATE_MACHINE.transition(
+                transfer, current_status, target_status, user_role
+            )
+        except StateTransitionError as e:
+            raise BusinessLogicError(str(e), error_code="STATE_400")
 
     def _generate_request_no(self) -> str:
         """生成迁移申请单号"""
@@ -278,17 +298,15 @@ class TransferService:
                 error_code="AUTH-500"
             )
 
-        # 状态检查
-        if not self._can_transition(
-            transfer.status, TransferRequestStatus.PENDING_APPROVAL.value
-        ):
-            raise BusinessLogicError(
-                f"当前状态 {transfer.status} 不能提交审批",
-                error_code="STATE-001"
-            )
+        # 使用状态机验证并执行转换
+        self._validate_transition(
+            transfer,
+            TransferRequestStatus.PENDING_APPROVAL.value,
+            current_user.role,
+            "提交审批"
+        )
 
         with self.transaction():
-            transfer.status = TransferRequestStatus.PENDING_APPROVAL.value
             transfer.version += 1
             logger.info(f"Transfer {transfer_id} submitted for approval")
             return transfer
@@ -306,24 +324,15 @@ class TransferService:
         """
         transfer = self.get_transfer_by_id(transfer_id, current_user)
 
-        # 权限检查
-        if current_user.role not in [UserRole.ADMIN.value, UserRole.FINANCE.value]:
-            raise PermissionDeniedError(
-                "只有 finance/admin 可以审批",
-                error_code="AUTH-500"
-            )
-
-        # 状态检查
-        if not self._can_transition(
-            transfer.status, TransferRequestStatus.APPROVED.value
-        ):
-            raise BusinessLogicError(
-                f"当前状态 {transfer.status} 不能审批通过",
-                error_code="STATE-001"
-            )
+        # 使用状态机验证并执行转换 (状态机会验证 finance/admin 角色)
+        self._validate_transition(
+            transfer,
+            TransferRequestStatus.APPROVED.value,
+            current_user.role,
+            "审批通过"
+        )
 
         with self.transaction():
-            transfer.status = TransferRequestStatus.APPROVED.value
             transfer.approved_by = current_user.id
             transfer.approved_at = datetime.now()
             transfer.approval_notes = approval.approval_notes
@@ -344,24 +353,15 @@ class TransferService:
         """
         transfer = self.get_transfer_by_id(transfer_id, current_user)
 
-        # 权限检查
-        if current_user.role not in [UserRole.ADMIN.value, UserRole.FINANCE.value]:
-            raise PermissionDeniedError(
-                "只有 finance/admin 可以拒绝",
-                error_code="AUTH-500"
-            )
-
-        # 状态检查
-        if not self._can_transition(
-            transfer.status, TransferRequestStatus.REJECTED.value
-        ):
-            raise BusinessLogicError(
-                f"当前状态 {transfer.status} 不能拒绝",
-                error_code="STATE-001"
-            )
+        # 使用状态机验证并执行转换 (状态机会验证 finance/admin 角色)
+        self._validate_transition(
+            transfer,
+            TransferRequestStatus.REJECTED.value,
+            current_user.role,
+            "拒绝"
+        )
 
         with self.transaction():
-            transfer.status = TransferRequestStatus.REJECTED.value
             transfer.approved_by = current_user.id
             transfer.approved_at = datetime.now()
             transfer.rejection_reason = rejection.rejection_reason
@@ -384,21 +384,13 @@ class TransferService:
         """
         transfer = self.get_transfer_by_id(transfer_id, current_user)
 
-        # 权限检查
-        if current_user.role != UserRole.ADMIN.value:
-            raise PermissionDeniedError(
-                "只有 admin 可以完成迁移",
-                error_code="AUTH-500"
-            )
-
-        # 状态检查
-        if not self._can_transition(
-            transfer.status, TransferRequestStatus.COMPLETED.value
-        ):
-            raise BusinessLogicError(
-                f"当前状态 {transfer.status} 不能完成，必须先审批通过",
-                error_code="STATE-001"
-            )
+        # 使用状态机验证并执行转换 (状态机会验证 finance/admin 角色)
+        self._validate_transition(
+            transfer,
+            TransferRequestStatus.COMPLETED.value,
+            current_user.role,
+            "完成迁移"
+        )
 
         with self.transaction():
             # ====== LEDGER_SOT.md v1.1: TRANSFER_OUT/TRANSFER_IN 双条目生成 ======

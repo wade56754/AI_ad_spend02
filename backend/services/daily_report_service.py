@@ -26,6 +26,11 @@ from backend.exceptions.custom_exceptions import (
     PermissionDeniedError,
     ResourceConflictError
 )
+from backend.core.state_machine import (
+    DAILY_REPORT_STATE_MACHINE,
+    StateTransitionError,
+    DailyReportStatus as SMDailyReportStatus,
+)
 from backend.models import DailyReport
 from backend.models import AdAccount
 from backend.models import User
@@ -507,10 +512,6 @@ class DailyReportService:
             f"user={current_user.id} ({current_user.role})"
         )
 
-        # 权限检查 - 仅 admin/data_operator 可锁定
-        if current_user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
-            raise PermissionDeniedError("无权限锁定日报")
-
         # 获取日报（带关联的广告账户）
         report = self.db.query(DailyReport).options(
             joinedload(DailyReport.ad_account)
@@ -521,12 +522,15 @@ class DailyReportService:
         if not report:
             raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ-002")
 
-        # 状态检查 - 仅 final_confirmed 可锁定
-        if report.status != DailyReportStatus.FINAL_CONFIRMED.value:
-            raise BusinessLogicError(
-                f"当前状态 {report.status} 不允许锁定。仅 final_confirmed 状态可锁定",
-                error_code="STATE-001"
-            )
+        old_status = report.status
+
+        # 使用状态机验证并执行转换 (状态机会验证角色权限)
+        self._validate_transition(
+            report,
+            DailyReportStatus.FINAL_LOCKED.value,
+            current_user.role,
+            "锁定日报"
+        )
 
         # ====== 计费数据校验 (LEDGER_SOT.md v1.1) ======
         conversions_final = report.conversions_final or 0
@@ -599,9 +603,7 @@ class DailyReportService:
             final_balance = balance_after_revenue + cost_amount
             ad_account.balance = final_balance
 
-            # Step 7: 更新日报状态为 final_locked
-            old_status = report.status
-            report.status = DailyReportStatus.FINAL_LOCKED.value
+            # Step 7: 更新日报附加信息 (状态已在 _validate_transition 中更新)
             report.final_locked_at = datetime.utcnow()
             report.notes = request.audit_notes  # 使用 notes 字段存储审核说明
             report.reviewed_by = current_user.id
@@ -719,26 +721,21 @@ class DailyReportService:
             f"real_spend={request.real_spend}, fee={request.fee}"
         )
 
-        # 权限检查 - 仅 data_operator/admin 可录入
-        if current_user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
-            raise PermissionDeniedError("无权限录入真实消耗，仅 data_operator 或 admin 可操作")
-
         report = self.get_daily_report(report_id, current_user)
+        old_status = report.status
 
-        # 状态检查 - 仅 trend_ok/trend_resolved 状态可录入
-        allowed_statuses = [DailyReportStatus.TREND_OK.value, DailyReportStatus.TREND_RESOLVED.value]
-        if report.status not in allowed_statuses:
-            raise BusinessLogicError(
-                f"当前状态 {report.status} 不允许录入真实消耗。"
-                f"仅 trend_ok 或 trend_resolved 状态可操作"
-            )
+        # 使用状态机验证并执行转换 (状态机会验证角色权限)
+        self._validate_transition(
+            report,
+            DailyReportStatus.FINAL_PENDING.value,
+            current_user.role,
+            "录入真实消耗"
+        )
 
         with self.transaction():
-            # 更新 real 数据流字段
+            # 更新 real 数据流字段 (状态已在 _validate_transition 中更新)
             report.real_spend = request.real_spend
             report.fee = request.fee
-            # 状态流转到 final_pending
-            report.status = DailyReportStatus.FINAL_PENDING.value
             report.updated_at = datetime.utcnow()
 
             # 记录审计日志
@@ -908,17 +905,43 @@ class DailyReportService:
             AuditLog.resource_id == str(report_id)
         ).order_by(desc(AuditLog.created_at)).all()
 
-    # 8 状态机流转白名单 (STATE_MACHINE.md v2.6 第8章)
-    STATE_TRANSITIONS = {
-        DailyReportStatus.RAW_SUBMITTED: [DailyReportStatus.TREND_PENDING],
-        DailyReportStatus.TREND_PENDING: [DailyReportStatus.TREND_OK, DailyReportStatus.TREND_FLAGGED],
-        DailyReportStatus.TREND_OK: [DailyReportStatus.FINAL_PENDING],
-        DailyReportStatus.TREND_FLAGGED: [DailyReportStatus.TREND_RESOLVED, DailyReportStatus.RAW_SUBMITTED],
-        DailyReportStatus.TREND_RESOLVED: [DailyReportStatus.FINAL_PENDING],
-        DailyReportStatus.FINAL_PENDING: [DailyReportStatus.FINAL_CONFIRMED],
-        DailyReportStatus.FINAL_CONFIRMED: [DailyReportStatus.FINAL_LOCKED],
-        DailyReportStatus.FINAL_LOCKED: [],  # 终态，仅可通过红冲修正
-    }
+    def _validate_transition(
+        self,
+        report: DailyReport,
+        target_status: str,
+        user_role: str,
+        action_name: str
+    ) -> None:
+        """
+        使用状态机验证状态转换
+
+        Args:
+            report: 日报实体
+            target_status: 目标状态
+            user_role: 用户角色
+            action_name: 操作名称 (用于错误消息)
+
+        Raises:
+            BusinessLogicError: 状态转换非法或权限不足
+        """
+        current_status = report.status
+
+        # 检查是否可以转换
+        if not DAILY_REPORT_STATE_MACHINE.can_transition(current_status, target_status):
+            allowed = DAILY_REPORT_STATE_MACHINE.get_allowed_transitions(current_status)
+            raise BusinessLogicError(
+                f"当前状态({current_status})不能执行{action_name}操作，"
+                f"允许的目标状态: {allowed or '无'}",
+                error_code="STATE_400"
+            )
+
+        # 使用状态机执行转换 (会验证角色权限)
+        try:
+            DAILY_REPORT_STATE_MACHINE.transition(
+                report, current_status, target_status, user_role
+            )
+        except StateTransitionError as e:
+            raise BusinessLogicError(str(e), error_code="STATE_400")
 
     def _transition_daily_report(
         self,
@@ -930,7 +953,7 @@ class DailyReportService:
         """
         日报状态流转内部方法
 
-        基于 STATE_MACHINE.md v2.6 第8章的 8 状态机白名单
+        基于 STATE_MACHINE.md v2.6 第8章的 8 状态机
 
         Args:
             report_id: 日报ID
@@ -941,29 +964,18 @@ class DailyReportService:
         Returns:
             DailyReport: 更新后的日报对象
         """
-        # 验证权限 - 使用 UserRole 枚举
-        if current_user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
-            raise PermissionDeniedError("无权限审核日报")
-
         report = self.get_daily_report(report_id, current_user)
+        old_status = report.status
 
-        # 获取当前状态枚举
-        try:
-            current_status = DailyReportStatus(report.status)
-        except ValueError:
-            raise BusinessLogicError(f"无效的当前状态: {report.status}")
-
-        # 检查状态流转是否合法
-        allowed_transitions = self.STATE_TRANSITIONS.get(current_status, [])
-        if target_status not in allowed_transitions:
-            raise BusinessLogicError(
-                f"非法状态流转: {current_status.value} → {target_status.value}。"
-                f"允许的目标状态: {[s.value for s in allowed_transitions]}"
-            )
+        # 使用状态机验证并执行转换 (状态机会验证角色权限)
+        self._validate_transition(
+            report,
+            target_status.value,
+            current_user.role,
+            f"状态流转到 {target_status.value}"
+        )
 
         with self.transaction():
-            old_status = report.status
-            report.status = target_status.value
             report.audit_notes = audit_request.audit_notes
             report.audit_user_id = current_user.id
             report.audit_time = datetime.utcnow()

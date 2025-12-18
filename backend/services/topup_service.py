@@ -40,6 +40,11 @@ from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceConflictError
 )
+from backend.core.state_machine import (
+    TOPUP_STATE_MACHINE,
+    StateTransitionError,
+    TopupStatus as SMTopupStatus,
+)
 from backend.utils.id_generator import generate_request_no
 from backend.models.finance.ledger import LedgerEntry
 from backend.models.ledger import LedgerEntryType
@@ -206,22 +211,17 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "data_review")
 
-        # 检查状态流转 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
-        if request.status != TopupStatus.PENDING_REVIEW.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能进行数据审核",
-                error_code="BIZ-203"
-            )
-
         old_status = request.status
         # 数据审核通过后进入 finance_approve，拒绝则进入 rejected
         new_status = TopupStatus.FINANCE_APPROVE.value if review_data.action == "approve" else TopupStatus.REJECTED.value
+
+        # 使用状态机验证并执行转换
+        self._validate_transition(request, new_status, current_user.role, "数据审核")
 
         # 更新审核信息
         request.data_reviewed_by = current_user.id
         request.data_reviewed_at = datetime.utcnow()
         request.data_review_notes = review_data.notes
-        request.status = new_status
 
         # 记录审批日志
         self._create_approval_log(
@@ -250,17 +250,17 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "finance_approve")
 
-        # 检查状态流转 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
-        if request.status != TopupStatus.FINANCE_APPROVE.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能进行财务审批",
-                error_code="BIZ-203"
-            )
-
         old_status = request.status
-        # 财务审批通过后保持 finance_approve（等待打款），拒绝则进入 rejected
-        # 注：这里保持在 finance_approve 状态，下一步是 mark_as_paid
-        new_status = TopupStatus.FINANCE_APPROVE.value if approval_data.action == "approve" else TopupStatus.REJECTED.value
+
+        if approval_data.action == "approve":
+            # 财务审批通过: finance_approve → paid (直接进入已打款状态)
+            new_status = TopupStatus.PAID.value
+        else:
+            # 财务拒绝: finance_approve → rejected
+            new_status = TopupStatus.REJECTED.value
+
+        # 使用状态机验证并执行转换
+        self._validate_transition(request, new_status, current_user.role, "财务审批")
 
         # 更新审批信息
         request.finance_approved_by = current_user.id
@@ -268,7 +268,6 @@ class TopupService:
         request.finance_approve_notes = approval_data.notes
         request.actual_amount = approval_data.actual_amount
         request.payment_method = approval_data.payment_method.value if approval_data.payment_method else None
-        request.status = new_status
 
         # 记录审批日志
         self._create_approval_log(
@@ -304,27 +303,11 @@ class TopupService:
         """
         request = self.get_request_by_id(request_id, current_user)
 
-        # 验证权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
-        allowed_roles = [UserRole.DATA_OPERATOR.value, UserRole.FINANCE.value, UserRole.ADMIN.value]
-        if current_user.role not in allowed_roles:
-            raise PermissionDeniedError(
-                "只有数据员、财务或管理员可以拒绝充值申请",
-                error_code="AUTH-003"
-            )
-
-        # 检查状态流转 - 只能从 pending_review 或 finance_approve 拒绝
-        valid_statuses = [TopupStatus.PENDING_REVIEW.value, TopupStatus.FINANCE_APPROVE.value]
-        if request.status not in valid_statuses:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能执行拒绝操作，只能从 pending_review 或 finance_approve 状态拒绝",
-                error_code="STATE-002"
-            )
-
         old_status = request.status
         new_status = TopupStatus.REJECTED.value
 
-        # 更新状态
-        request.status = new_status
+        # 使用状态机验证并执行转换 (状态机会验证角色权限)
+        self._validate_transition(request, new_status, current_user.role, "拒绝")
         request.rejected_at = datetime.utcnow()
         request.rejected_by = current_user.id
         request.rejection_reason = reason
@@ -373,19 +356,11 @@ class TopupService:
                 error_code="AUTH-003"
             )
 
-        # 检查状态流转 - 只能从 draft 或 pending_review 取消
-        valid_statuses = [TopupStatus.DRAFT.value, TopupStatus.PENDING_REVIEW.value]
-        if request.status not in valid_statuses:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能取消，只能在 draft 或 pending_review 状态取消",
-                error_code="STATE-002"
-            )
-
         old_status = request.status
         new_status = TopupStatus.CANCELLED.value
 
-        # 更新状态
-        request.status = new_status
+        # 使用状态机验证并执行转换 (取消操作无角色限制)
+        self._validate_transition(request, new_status, current_user.role, "取消")
         request.cancelled_at = datetime.utcnow()
         request.cancelled_by = current_user.id
         request.cancellation_reason = reason
@@ -426,26 +401,11 @@ class TopupService:
         """
         request = self.get_request_by_id(request_id, current_user)
 
-        # 验证权限 - 只有财务或管理员可以确认收款
-        allowed_roles = [UserRole.FINANCE.value, UserRole.ADMIN.value]
-        if current_user.role not in allowed_roles:
-            raise PermissionDeniedError(
-                "只有财务或管理员可以确认收款",
-                error_code="AUTH-003"
-            )
-
-        # 检查状态流转 - 只能从 paid 确认
-        if request.status != TopupStatus.PAID.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能确认收款，只能从 paid 状态确认",
-                error_code="STATE-002"
-            )
-
         old_status = request.status
         new_status = TopupStatus.COMPLETED.value
 
-        # 更新状态
-        request.status = new_status
+        # 使用状态机验证并执行转换 (状态机会验证 finance 角色)
+        self._validate_transition(request, new_status, current_user.role, "确认收款")
         request.completed_at = datetime.utcnow()
         if transaction_id:
             request.transaction_id = transaction_id
@@ -511,20 +471,18 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "finance_approve")
 
-        # 检查状态 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
-        if request.status != TopupStatus.FINANCE_APPROVE.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能标记为已打款",
-                error_code="BIZ-203"
-            )
-
         # 检查是否已打款
         if request.paid_at:
             raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ-207")
 
-        # 更新打款信息 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        old_status = request.status
+        new_status = TopupStatus.PAID.value
+
+        # 使用状态机验证并执行转换 (状态机会验证 finance 角色)
+        self._validate_transition(request, new_status, current_user.role, "标记已打款")
+
+        # 更新打款信息
         request.paid_at = datetime.utcnow()
-        request.status = TopupStatus.PAID.value
         if paid_data.transaction_id:
             request.transaction_id = paid_data.transaction_id
 
@@ -893,6 +851,44 @@ class TopupService:
         return export_data
 
     # ===== 私有方法 =====
+
+    def _validate_transition(
+        self,
+        request: TopupRequest,
+        target_status: str,
+        user_role: str,
+        action_name: str
+    ) -> None:
+        """
+        使用状态机验证状态转换
+
+        Args:
+            request: 充值申请实体
+            target_status: 目标状态
+            user_role: 用户角色
+            action_name: 操作名称 (用于错误消息)
+
+        Raises:
+            BusinessLogicError: 状态转换非法或权限不足
+        """
+        current_status = request.status
+
+        # 检查是否可以转换
+        if not TOPUP_STATE_MACHINE.can_transition(current_status, target_status):
+            allowed = TOPUP_STATE_MACHINE.get_allowed_transitions(current_status)
+            raise BusinessLogicError(
+                f"当前状态({current_status})不能执行{action_name}操作，"
+                f"允许的目标状态: {allowed or '无'}",
+                error_code="STATE_400"
+            )
+
+        # 使用状态机执行转换 (会验证角色权限)
+        try:
+            TOPUP_STATE_MACHINE.transition(
+                request, current_status, target_status, user_role
+            )
+        except StateTransitionError as e:
+            raise BusinessLogicError(str(e), error_code="STATE_400")
 
     def _validate_ad_account_access(self, ad_account_id: int, current_user: User) -> AdAccount:
         """验证广告账户访问权限"""
