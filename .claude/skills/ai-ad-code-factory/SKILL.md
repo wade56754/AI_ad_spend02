@@ -1,15 +1,23 @@
 ---
 name: ai-ad-code-factory
-version: "2.0"
+version: "3.0"
 status: ready_for_production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-17
+last_reviewed: 2025-12-18
 baseline:
   - MASTER.md v3.5
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
   - AI_CODE_FACTORY_REFACTOR_PROPOSAL.md v1.0
 code_sources:
+  - project: Anthropic autonomous-coding
+    github: https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding
+    license: Internal (参考设计)
+    borrowed_concepts:
+      - 双 Agent 模式 (Initializer + Factory)
+      - task_list.json 持久化
+      - 会话管理与恢复
+      - Defense-in-Depth 安全模型
   - project: MetaGPT
     github: https://github.com/geekan/MetaGPT
     license: MIT
@@ -33,33 +41,40 @@ code_sources:
 
 <skill>
 ══════════════════════════════════════════════════════════════════
-  AI 代码工厂 v2.0 - 组装器架构
+  AI 代码工厂 v3.0 - 自主编码集成版
 ══════════════════════════════════════════════════════════════════
 
   <name>ai-ad-code-factory</name>
-  <version>2.0</version>
-  <domain>AI_AD_SYSTEM / 代码工厂 / 组装器</domain>
-  <profile>Code-Assembler / Search-First / Low-Hallucination</profile>
+  <version>3.0</version>
+  <domain>AI_AD_SYSTEM / 代码工厂 / 自主编码</domain>
+  <profile>Autonomous-Coding / Search-First / Session-Persistent</profile>
 
 
   <!-- ======================================================
        0. 代码来源说明 (Code Sources)
   ====================================================== -->
   <code_sources>
-    本 Skill 是代码工厂的主编排器，借鉴了以下开源项目：
+    本 Skill 是代码工厂的主编排器，整合了以下项目的核心设计：
 
-    **整体架构**:
-    1. **MetaGPT** (MIT) - https://github.com/geekan/MetaGPT
+    **核心架构 (v3.0 新增)**:
+    1. **Anthropic autonomous-coding** - https://github.com/anthropics/claude-quickstarts
+       - 双 Agent 模式 (Initializer + Coding Agent)
+       - task_list.json 持久化 (任务只能 pending → completed)
+       - 会话管理与自动恢复
+       - Defense-in-Depth 安全模型 (白名单 + 沙箱)
+
+    **多角色协作**:
+    2. **MetaGPT** (MIT) - https://github.com/geekan/MetaGPT
        - 多角色 Agent 协作模式
        - 标准化 SOP (Standard Operating Procedure)
        - Stars: 45k+
 
-    2. **OpenHands** (MIT) - https://github.com/All-Hands-AI/OpenHands
+    3. **OpenHands** (MIT) - https://github.com/All-Hands-AI/OpenHands
        - Agent-Computer Interface (ACI) 设计
        - 事件驱动架构
        - Stars: 38k+
 
-    3. **SWE-agent** (MIT) - https://github.com/princeton-nlp/SWE-agent
+    4. **SWE-agent** (MIT) - https://github.com/princeton-nlp/SWE-agent
        - 文件编辑接口
        - 错误修复循环
        - Stars: 13k+
@@ -71,6 +86,71 @@ code_sources:
     - CodeAssemblerSkill: Aider, Copier
     - CodeVerifierSkill: mypy, ruff
   </code_sources>
+
+
+  <!-- ======================================================
+       0.1 v3.0 架构图 (Architecture)
+  ====================================================== -->
+  <architecture>
+    ```
+    ┌─────────────────────────────────────────────────────────────────┐
+    │                    AI 代码工厂 v3.0 (集成版)                      │
+    │                 借鉴 Anthropic Autonomous Coding                 │
+    ├─────────────────────────────────────────────────────────────────┤
+    │                                                                 │
+    │  ┌───────────────────────────────────────────────────────────┐ │
+    │  │                Session 1: INITIALIZER                      │ │
+    │  │  ┌──────────────────────────────────────────────────────┐ │ │
+    │  │  │ 1. 解析需求 (PromptStructurer)                       │ │ │
+    │  │  │ 2. 搜索参考代码 (CodeSearcher)                       │ │ │
+    │  │  │ 3. 生成 task_list.json (N 个子任务)                  │ │ │
+    │  │  │ 4. 初始化项目结构 + Git                               │ │ │
+    │  │  └──────────────────────────────────────────────────────┘ │ │
+    │  └───────────────────────────────────────────────────────────┘ │
+    │                              │                                  │
+    │                              ▼ (3秒自动继续)                     │
+    │                                                                 │
+    │  ┌───────────────────────────────────────────────────────────┐ │
+    │  │                Session 2+: FACTORY AGENT                   │ │
+    │  │  ┌──────────────────────────────────────────────────────┐ │ │
+    │  │  │                  5 阶段流水线 (每个任务)               │ │ │
+    │  │  │                                                      │ │ │
+    │  │  │   SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY        │ │ │
+    │  │  │     │        │        │         │         │          │ │ │
+    │  │  │     ▼        ▼        ▼         ▼         ▼          │ │ │
+    │  │  │  Searcher Selector Adapter Assembler Verifier        │ │ │
+    │  │  │                                                      │ │ │
+    │  │  │  ✅ 任务完成 → 更新 task_list.json → Git commit      │ │ │
+    │  │  └──────────────────────────────────────────────────────┘ │ │
+    │  └───────────────────────────────────────────────────────────┘ │
+    │                                                                 │
+    │  ┌───────────────────────────────────────────────────────────┐ │
+    │  │                    安全模型 (Defense-in-Depth)              │ │
+    │  │  Layer 1: 命令白名单 (security.py)                         │ │
+    │  │  Layer 2: 文件系统限制 (project_dir only)                  │ │
+    │  │  Layer 3: SoT 合规验证 (CodeVerifier)                      │ │
+    │  └───────────────────────────────────────────────────────────┘ │
+    │                                                                 │
+    │  ┌───────────────────────────────────────────────────────────┐ │
+    │  │                    持久化 (Persistence)                     │ │
+    │  │  - task_list.json: 任务进度 (只能 pending → completed)     │ │
+    │  │  - factory-progress.txt: 会话进度笔记                      │ │
+    │  │  - Git commits: 每个任务一次提交                            │ │
+    │  └───────────────────────────────────────────────────────────┘ │
+    │                                                                 │
+    └─────────────────────────────────────────────────────────────────┘
+    ```
+
+    **实现文件**:
+    ```
+    agents/skills/code_factory/
+    ├── __init__.py      # 模块导出
+    ├── factory.py       # 主编排器 (CodeFactory)
+    ├── task_list.py     # 任务管理 (TaskList)
+    ├── session.py       # 会话管理 (SessionManager)
+    └── security.py      # 安全验证 (SecurityValidator)
+    ```
+  </architecture>
 
 
   <!-- ======================================================
@@ -97,6 +177,12 @@ code_sources:
        2. 子 Skill 依赖
   ====================================================== -->
   <sub_skills>
+    <skill name="ai-ad-prompt-structurer" priority="0">
+      职责: 将用户自然语言需求转换为结构化提示词
+      来源: LangChain, DSPy, Guidance
+      说明: 前置处理器，提高任务执行准确性
+    </skill>
+
     <skill name="ai-ad-code-searcher" priority="1">
       职责: 从多个来源搜索参考代码
       来源: code-graph-rag, Aider
@@ -337,6 +423,8 @@ code_sources:
        7. 使用示例 (Usage Examples)
   ====================================================== -->
   <usage>
+    **Claude Code 使用方式** (推荐):
+
     示例 1: 基础使用
     「
     使用 ai-ad-code-factory，
@@ -361,12 +449,62 @@ code_sources:
     }
     」
 
-    示例 4: 预览模式
-    「
-    使用 ai-ad-code-factory，
-    requirement = "添加数据导出功能"，
-    output_mode = "preview"  // 只预览，不写入文件
-    」
+    **Python 代码使用** (v3.0 新增):
+
+    ```python
+    from agents.skills.code_factory import CodeFactory, FactoryConfig
+    from pathlib import Path
+
+    # 创建配置
+    config = FactoryConfig(
+        project_dir=Path("./my_project"),
+        max_iterations=10,      # 最多执行 10 轮
+        auto_continue=True,     # 自动继续
+        enable_security=True,   # 启用安全检查
+        enable_sot_check=True,  # 启用 SoT 合规检查
+    )
+
+    # 创建工厂实例
+    factory = CodeFactory(config)
+
+    # 运行 (首次会进入初始化会话)
+    result = factory.run(requirement="添加用户登录 API")
+
+    # 检查结果
+    if result["success"]:
+        print(f"完成 {result['tasks_executed']} 个任务")
+    else:
+        print(f"错误: {result['error']}")
+
+    # 恢复执行 (中断后再次运行)
+    result = factory.run()  # 无需 requirement，自动从 task_list.json 恢复
+    ```
+
+    **快捷函数**:
+    ```python
+    from agents.skills.code_factory import run_factory
+
+    result = run_factory(
+        project_dir="./my_project",
+        requirement="添加日报导出功能",
+        max_iterations=5,
+    )
+    ```
+
+    **单独使用组件**:
+    ```python
+    from agents.skills.code_factory import TaskList, SecurityValidator
+
+    # 任务列表管理
+    tasks = TaskList(Path("./my_project"))
+    next_task = tasks.get_next_task()
+    tasks.complete_task(next_task.id, output_files=["file.py"])
+
+    # 安全验证
+    validator = SecurityValidator(Path("./my_project"))
+    result = validator.validate_command("rm -rf /")
+    # result.allowed = False, result.reason = "命令 'rm -rf' 被禁止执行"
+    ```
   </usage>
 
 
@@ -374,6 +512,25 @@ code_sources:
        8. 版本记录 (Version Notes)
   ====================================================== -->
   <VERSION_NOTES>
+    ### v3.0 (2025-12-18) - 自主编码集成版
+    - **核心改进**: 集成 Anthropic autonomous-coding 架构
+      - 双 Agent 模式 (Initializer + Factory)
+      - task_list.json 持久化 (任务只能 pending → completed)
+      - 会话管理与自动恢复 (Ctrl+C 中断后可继续)
+      - Defense-in-Depth 安全模型
+
+    - **新增组件**:
+      - `factory.py` - 主编排器 (CodeFactory)
+      - `task_list.py` - 任务管理 (TaskList)
+      - `session.py` - 会话管理 (SessionManager)
+      - `security.py` - 安全验证 (SecurityValidator)
+
+    - **核心设计原则**:
+      - 任务只能 `pending → completed`，禁止删除/修改
+      - 每个会话使用新的上下文窗口
+      - 3 秒自动继续延迟
+      - 最多 3 次自动修复迭代
+
     ### v2.0 (2025-12-17)
     - 重构为组装器架构 (SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY)
     - 添加详细代码来源标注
