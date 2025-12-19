@@ -1,0 +1,1218 @@
+# API Endpoints Inventory
+# AI 广告代投系统 - 后端 API 端点清单
+# 版本: v1.0
+# 生成日期: 2025-12-18
+# 对齐文档: API_SOT.md v9.0, AUTH_SPEC.md v2.0
+
+metadata:
+  project: ai-ad-spend-backend
+  api_prefix: /api/v1
+  total_routers: 17
+  response_format: StandardResponse (success_response, error_response, paginated_response)
+  auth_method: JWT Bearer Token via Supabase Auth
+  roles:
+    - admin           # 系统管理员
+    - finance         # 财务
+    - data_operator   # 数据运营
+    - account_manager # 账户管理员
+    - media_buyer     # 广告投手
+
+routers:
+  # ============================================================
+  # 1. Health Check (健康检查)
+  # ============================================================
+  health:
+    prefix: ""
+    tags: ["health"]
+    file: backend/routers/health.py
+    endpoints:
+      - method: GET
+        path: /health
+        summary: API 健康检查端点
+        permissions: public
+        response_status: 200
+
+  # ============================================================
+  # 2. Authentication (认证)
+  # ============================================================
+  authentication:
+    prefix: /auth
+    tags: ["authentication"]
+    file: backend/routers/authentication.py
+    endpoints:
+      - method: POST
+        path: /auth/login
+        summary: 用户登录
+        permissions: public
+        response_status: 200
+      - method: POST
+        path: /auth/register
+        summary: 用户注册
+        permissions: public
+        response_status: 201
+      - method: POST
+        path: /auth/refresh
+        summary: 刷新访问令牌
+        permissions: authenticated
+        response_status: 200
+      - method: POST
+        path: /auth/logout
+        summary: 用户登出
+        permissions: authenticated
+        response_status: 200
+      - method: POST
+        path: /auth/logout-all
+        summary: 登出所有设备
+        permissions: authenticated
+        response_status: 200
+      - method: GET
+        path: /auth/me
+        summary: 获取当前用户信息
+        permissions: authenticated
+        response_status: 200
+      - method: POST
+        path: /auth/change-password
+        summary: 修改密码
+        permissions: authenticated
+        response_status: 200
+      - method: POST
+        path: /auth/forgot-password
+        summary: 忘记密码（发送重置邮件）
+        permissions: public
+        response_status: 200
+      - method: POST
+        path: /auth/reset-password
+        summary: 重置密码
+        permissions: public
+        response_status: 200
+      - method: POST
+        path: /auth/verify-email
+        summary: 验证邮箱
+        permissions: public
+        response_status: 200
+      - method: POST
+        path: /auth/resend-verification
+        summary: 重发验证邮件
+        permissions: public
+        response_status: 200
+      - method: POST
+        path: /auth/verify-token
+        summary: 验证 Token 有效性
+        permissions: public
+        response_status: 200
+      - method: POST
+        path: /auth/login/oauth
+        summary: OAuth2 兼容登录
+        permissions: public
+        response_status: 200
+
+  # ============================================================
+  # 3. Channels (渠道管理)
+  # ============================================================
+  channels:
+    prefix: /channels
+    tags: ["channels"]
+    file: backend/routers/channels.py
+    endpoints:
+      - method: GET
+        path: /channels/
+        summary: 获取渠道列表
+        permissions: authenticated
+        query_params: [page, page_size, is_active, search]
+        response_status: 200
+      - method: GET
+        path: /channels/{channel_id}
+        summary: 获取渠道详情
+        permissions: authenticated
+        path_params: [channel_id]
+        response_status: 200
+      - method: POST
+        path: /channels/
+        summary: 创建渠道
+        permissions: authenticated
+        response_status: 201
+      - method: PUT
+        path: /channels/{channel_id}
+        summary: 更新渠道
+        permissions: authenticated
+        path_params: [channel_id]
+        response_status: 200
+
+  # ============================================================
+  # 4. Projects (项目管理)
+  # ============================================================
+  projects:
+    prefix: /projects
+    tags: ["projects"]
+    file: backend/routers/projects.py
+    endpoints:
+      - method: GET
+        path: /projects
+        summary: 获取项目列表
+        permissions: authenticated
+        query_params: [page, page_size, status, manager_id, client_name]
+        response_status: 200
+      - method: POST
+        path: /projects
+        summary: 创建项目
+        permissions: [admin]
+        response_status: 201
+      - method: GET
+        path: /projects/statistics
+        summary: 获取项目统计
+        permissions: authenticated
+        response_status: 200
+      - method: GET
+        path: /projects/{project_id}
+        summary: 获取项目详情
+        permissions: authenticated
+        path_params: [project_id]
+        response_status: 200
+      - method: PUT
+        path: /projects/{project_id}
+        summary: 更新项目
+        permissions: [admin, account_manager]
+        path_params: [project_id]
+        response_status: 200
+      - method: DELETE
+        path: /projects/{project_id}
+        summary: 删除项目
+        permissions: [admin]
+        path_params: [project_id]
+        response_status: 204
+      - method: POST
+        path: /projects/{project_id}/members
+        summary: 分配项目成员
+        permissions: [admin, account_manager]
+        path_params: [project_id]
+        response_status: 200
+      - method: GET
+        path: /projects/{project_id}/members
+        summary: 获取项目成员列表
+        permissions: authenticated
+        path_params: [project_id]
+        response_status: 200
+      - method: DELETE
+        path: /projects/{project_id}/members/{user_id}
+        summary: 移除项目成员
+        permissions: [admin, account_manager]
+        path_params: [project_id, user_id]
+        response_status: 204
+      - method: POST
+        path: /projects/{project_id}/expenses
+        summary: 添加项目费用
+        permissions: [admin, account_manager]
+        path_params: [project_id]
+        response_status: 200
+      - method: GET
+        path: /projects/{project_id}/expenses
+        summary: 获取项目费用列表
+        permissions: authenticated
+        path_params: [project_id]
+        query_params: [page, page_size]
+        response_status: 200
+
+  # ============================================================
+  # 5. Ad Accounts (广告账户管理)
+  # ============================================================
+  ad_accounts:
+    prefix: /ad-accounts
+    tags: ["ad_accounts"]
+    file: backend/routers/ad_accounts.py
+    state_machine: "new → testing → active → suspended/dead → archived"
+    endpoints:
+      - method: GET
+        path: /ad-accounts
+        summary: 获取广告账户列表
+        permissions: authenticated
+        query_params: [page, page_size, status, project_id, channel_id]
+        response_status: 200
+      - method: GET
+        path: /ad-accounts/{account_id}
+        summary: 获取广告账户详情
+        permissions: authenticated
+        path_params: [account_id]
+        response_status: 200
+      - method: POST
+        path: /ad-accounts
+        summary: 创建广告账户
+        permissions: authenticated
+        response_status: 201
+      - method: PUT
+        path: /ad-accounts/{account_id}/status
+        summary: 更新广告账户状态
+        permissions: authenticated
+        path_params: [account_id]
+        response_status: 200
+      - method: DELETE
+        path: /ad-accounts/{account_id}
+        summary: 删除广告账户（仅归档状态）
+        permissions: authenticated
+        path_params: [account_id]
+        response_status: 200
+      - method: POST
+        path: /ad-accounts/{account_id}/balance-transfer
+        summary: 死号余额迁移
+        permissions: authenticated
+        path_params: [account_id]
+        sot_ref: "TRANSFER_SOT.md v1.0"
+        response_status: 201
+
+  # ============================================================
+  # 6. Transfers (余额迁移)
+  # ============================================================
+  transfers:
+    prefix: /transfers
+    tags: ["transfers"]
+    file: backend/routers/transfers.py
+    state_machine: "draft → pending_approval → approved → completed / rejected"
+    sot_ref: "STATE_MACHINE.md v2.6 §12"
+    endpoints:
+      - method: GET
+        path: /transfers
+        summary: 获取迁移申请列表
+        permissions: authenticated
+        query_params: [page, page_size, status]
+        response_status: 200
+      - method: POST
+        path: /transfers
+        summary: 创建迁移申请
+        permissions: [admin, account_manager, finance]
+        response_status: 201
+      - method: GET
+        path: /transfers/{transfer_id}
+        summary: 获取迁移申请详情
+        permissions: authenticated
+        path_params: [transfer_id]
+        response_status: 200
+      - method: POST
+        path: /transfers/{transfer_id}/submit
+        summary: 提交迁移申请
+        permissions: authenticated
+        path_params: [transfer_id]
+        state_transition: "draft → pending_approval"
+        response_status: 200
+      - method: POST
+        path: /transfers/{transfer_id}/approve
+        summary: 审批迁移申请
+        permissions: [admin, finance]
+        path_params: [transfer_id]
+        state_transition: "pending_approval → approved"
+        response_status: 200
+      - method: POST
+        path: /transfers/{transfer_id}/reject
+        summary: 拒绝迁移申请
+        permissions: [admin, finance]
+        path_params: [transfer_id]
+        state_transition: "draft/pending_approval → rejected"
+        response_status: 200
+      - method: POST
+        path: /transfers/{transfer_id}/complete
+        summary: 完成迁移（生成 Ledger 记录）
+        permissions: [admin]
+        path_params: [transfer_id]
+        state_transition: "approved → completed"
+        response_status: 200
+
+  # ============================================================
+  # 7. Daily Reports (日报管理)
+  # ============================================================
+  daily_reports:
+    prefix: /daily-reports
+    tags: ["daily-reports"]
+    file: backend/routers/daily_reports.py
+    state_machine: "raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved → final_pending → final_confirmed → final_locked"
+    sot_ref: "STATE_MACHINE.md v2.6 §8"
+    endpoints:
+      - method: GET
+        path: /daily-reports
+        summary: 获取日报列表
+        permissions: authenticated
+        query_params: [page, page_size, report_date_start, report_date_end, ad_account_id, status, media_buyer_id, project_id]
+        response_status: 200
+      - method: POST
+        path: /daily-reports
+        summary: 创建日报
+        permissions: [media_buyer, admin]
+        response_status: 201
+      - method: GET
+        path: /daily-reports/{report_id}
+        summary: 获取日报详情
+        permissions: authenticated
+        path_params: [report_id]
+        response_status: 200
+      - method: PUT
+        path: /daily-reports/{report_id}
+        summary: 更新日报
+        permissions: [media_buyer, admin]
+        path_params: [report_id]
+        response_status: 200
+      - method: DELETE
+        path: /daily-reports/{report_id}
+        summary: 删除日报
+        permissions: [admin]
+        path_params: [report_id]
+        response_status: 204
+      # 8 状态机流转端点
+      - method: POST
+        path: /daily-reports/{report_id}/trend-flag
+        summary: 标记趋势异常
+        permissions: [data_operator, admin]
+        path_params: [report_id]
+        state_transition: "trend_pending → trend_flagged"
+        response_status: 200
+      - method: POST
+        path: /daily-reports/{report_id}/trend-resolve
+        summary: 解决趋势异常
+        permissions: [data_operator, admin]
+        path_params: [report_id]
+        state_transition: "trend_flagged → trend_resolved"
+        response_status: 200
+      - method: PUT
+        path: /daily-reports/{report_id}/real-spend
+        summary: 录入 real 消耗
+        permissions: [data_operator, admin]
+        path_params: [report_id]
+        state_transition: "trend_ok/trend_resolved → final_pending"
+        response_status: 200
+      - method: POST
+        path: /daily-reports/{report_id}/final-confirm
+        summary: 确认最终粉数
+        permissions: [data_operator, admin]
+        path_params: [report_id]
+        state_transition: "final_pending → final_confirmed"
+        response_status: 200
+      - method: POST
+        path: /daily-reports/{report_id}/final-lock
+        summary: 锁定日报（终态）
+        permissions: [data_operator, admin]
+        path_params: [report_id]
+        state_transition: "final_confirmed → final_locked"
+        response_status: 200
+      # 批量导入
+      - method: POST
+        path: /daily-reports/batch-import
+        summary: 批量导入日报
+        permissions: [data_operator, admin]
+        response_status: 200
+      - method: POST
+        path: /daily-reports/import-file
+        summary: 文件导入日报
+        permissions: [data_operator, admin]
+        response_status: 200
+      # 导出与统计
+      - method: GET
+        path: /daily-reports/export
+        summary: 导出日报
+        permissions: [finance, admin, data_operator, account_manager]
+        response_status: 200
+      - method: GET
+        path: /daily-reports/statistics
+        summary: 获取日报统计
+        permissions: [data_operator, admin, finance, account_manager]
+        response_status: 200
+      - method: GET
+        path: /daily-reports/{report_id}/audit-logs
+        summary: 获取日报审核日志
+        permissions: authenticated
+        path_params: [report_id]
+        response_status: 200
+      # 趋势风控自动化端点
+      - method: POST
+        path: /daily-reports/{report_id}/trend-check
+        summary: 执行趋势风控检查
+        permissions: [data_operator, admin]
+        path_params: [report_id]
+        sot_ref: "STATE_MACHINE.md v2.6 §8.3"
+        response_status: 200
+      - method: POST
+        path: /daily-reports/{report_id}/trigger-trend-check
+        summary: 触发趋势风控检查
+        permissions: [media_buyer, data_operator, admin]
+        path_params: [report_id]
+        state_transition: "raw_submitted → trend_pending"
+        response_status: 200
+      - method: POST
+        path: /daily-reports/batch-trend-check
+        summary: 批量执行趋势风控检查
+        permissions: [data_operator, admin]
+        query_params: [ad_account_id, report_date]
+        response_status: 200
+      - method: GET
+        path: /daily-reports/trend-flagged
+        summary: 获取趋势异常日报列表
+        permissions: [data_operator, admin, finance]
+        query_params: [page, page_size, ad_account_id, report_date_start, report_date_end]
+        response_status: 200
+      - method: GET
+        path: /daily-reports/trend-pending-count
+        summary: 获取待风控检查日报数量
+        permissions: [data_operator, admin, finance]
+        response_status: 200
+
+  # ============================================================
+  # 8. Topup (充值管理)
+  # ============================================================
+  topups:
+    prefix: /topups
+    tags: ["topups"]
+    file: backend/routers/topup.py
+    state_machine: "draft → pending_review → data_reviewed → finance_approved → paid → completed / rejected / cancelled"
+    sot_ref: "STATE_MACHINE.md v2.6 §9"
+    endpoints:
+      - method: GET
+        path: /topups
+        summary: 获取充值申请列表
+        permissions: authenticated
+        query_params: [page, page_size, status, urgency, ad_account_id, project_id, start_date, end_date, request_no]
+        response_status: 200
+      - method: POST
+        path: /topups
+        summary: 创建充值申请
+        permissions: [media_buyer, account_manager]
+        response_status: 201
+      - method: GET
+        path: /topups/{request_id}
+        summary: 获取充值申请详情
+        permissions: authenticated
+        path_params: [request_id]
+        response_status: 200
+      - method: PUT
+        path: /topups/{request_id}/review
+        summary: 数据员审核
+        permissions: [data_operator]
+        path_params: [request_id]
+        state_transition: "pending_review → data_reviewed"
+        response_status: 200
+      - method: PUT
+        path: /topups/{request_id}/approve
+        summary: 财务审批
+        permissions: [finance]
+        path_params: [request_id]
+        state_transition: "data_reviewed → finance_approved"
+        response_status: 200
+      - method: PUT
+        path: /topups/{request_id}/pay
+        summary: 标记已打款
+        permissions: [finance]
+        path_params: [request_id]
+        state_transition: "finance_approved → paid"
+        response_status: 200
+      - method: POST
+        path: /topups/{request_id}/receipt
+        summary: 上传打款凭证
+        permissions: [finance]
+        path_params: [request_id]
+        response_status: 200
+      - method: POST
+        path: /topups/{request_id}/reject
+        summary: 拒绝充值申请
+        permissions: [data_operator, finance, admin]
+        path_params: [request_id]
+        query_params: [reason]
+        response_status: 200
+      - method: POST
+        path: /topups/{request_id}/cancel
+        summary: 取消充值申请
+        permissions: authenticated
+        path_params: [request_id]
+        query_params: [reason]
+        state_transition: "draft/pending_review → cancelled"
+        response_status: 200
+      - method: POST
+        path: /topups/{request_id}/confirm-paid
+        summary: 确认收款完成
+        permissions: [finance, admin]
+        path_params: [request_id]
+        query_params: [transaction_id, notes]
+        state_transition: "paid → completed"
+        response_status: 200
+      - method: GET
+        path: /topups/{request_id}/logs
+        summary: 获取审批日志
+        permissions: authenticated
+        path_params: [request_id]
+        response_status: 200
+      - method: GET
+        path: /topups/statistics
+        summary: 获取充值统计
+        permissions: [admin, finance, data_operator]
+        query_params: [start_date, end_date]
+        response_status: 200
+      - method: GET
+        path: /topups/dashboard
+        summary: 获取仪表板数据
+        permissions: authenticated
+        response_status: 200
+      - method: GET
+        path: /topups/accounts/{account_id}/balance
+        summary: 获取账户余额
+        permissions: authenticated
+        path_params: [account_id]
+        response_status: 200
+      - method: GET
+        path: /topups/export
+        summary: 导出充值记录
+        permissions: [admin, finance]
+        query_params: [start_date, end_date, status]
+        response_status: 200
+
+  # ============================================================
+  # 9. Ledger (账本管理)
+  # ============================================================
+  ledger:
+    prefix: /ledger
+    tags: ["ledger"]
+    file: backend/routers/ledger.py
+    sot_ref: "LEDGER_SOT.md v1.1"
+    endpoints:
+      - method: POST
+        path: /ledger/transactions
+        summary: 创建账本交易
+        permissions: [admin, finance]
+        response_status: 201
+      - method: GET
+        path: /ledger/transactions
+        summary: 获取账本交易列表
+        permissions: [admin, finance]
+        query_params: [page, page_size, ad_account_id, transaction_type, start_date, end_date]
+        response_status: 200
+      - method: PUT
+        path: /ledger/transactions/{transaction_id}/status
+        summary: 更新交易状态
+        permissions: [admin, finance]
+        path_params: [transaction_id]
+        response_status: 200
+      - method: GET
+        path: /ledger/balance
+        summary: 获取账户余额
+        permissions: authenticated
+        query_params: [ad_account_id]
+        response_status: 200
+      - method: GET
+        path: /ledger/projects/{project_id}/budget
+        summary: 获取项目预算
+        permissions: authenticated
+        path_params: [project_id]
+        response_status: 200
+      - method: POST
+        path: /ledger/budget
+        summary: 创建预算分配
+        permissions: [admin, finance]
+        response_status: 201
+      - method: GET
+        path: /ledger/statistics
+        summary: 获取交易统计
+        permissions: [admin, finance]
+        response_status: 200
+      - method: GET
+        path: /ledger/export
+        summary: 导出交易记录
+        permissions: [admin, finance]
+        response_status: 200
+
+  # ============================================================
+  # 10. Suppliers (供应商管理)
+  # ============================================================
+  suppliers:
+    prefix: /suppliers
+    tags: ["suppliers"]
+    file: backend/routers/suppliers.py
+    endpoints:
+      - method: POST
+        path: /suppliers
+        summary: 创建供应商
+        permissions: [admin, finance]
+        response_status: 201
+      - method: GET
+        path: /suppliers
+        summary: 获取供应商列表
+        permissions: authenticated
+        query_params: [page, page_size, status, search]
+        response_status: 200
+      - method: GET
+        path: /suppliers/statistics
+        summary: 获取供应商统计
+        permissions: [admin, finance]
+        response_status: 200
+      - method: GET
+        path: /suppliers/{supplier_id}
+        summary: 获取供应商详情
+        permissions: authenticated
+        path_params: [supplier_id]
+        response_status: 200
+      - method: PUT
+        path: /suppliers/{supplier_id}
+        summary: 更新供应商
+        permissions: [admin, finance]
+        path_params: [supplier_id]
+        response_status: 200
+      - method: DELETE
+        path: /suppliers/{supplier_id}
+        summary: 删除供应商
+        permissions: [admin]
+        path_params: [supplier_id]
+        response_status: 200
+      - method: GET
+        path: /suppliers/{supplier_id}/accounts
+        summary: 获取供应商关联账户
+        permissions: authenticated
+        path_params: [supplier_id]
+        response_status: 200
+      - method: GET
+        path: /suppliers/{supplier_id}/ledger-summary
+        summary: 获取供应商账本汇总
+        permissions: [admin, finance]
+        path_params: [supplier_id]
+        response_status: 200
+
+  # ============================================================
+  # 11. Settlements (结算管理)
+  # ============================================================
+  settlements:
+    prefix: /settlements
+    tags: ["Settlements"]
+    file: backend/routers/settlements.py
+    state_machine: "DRAFT → PENDING → APPROVED/REJECTED → PROCESSING → COMPLETED / CANCELLED"
+    sot_ref: "LEDGER_SOT.md v1.1"
+    endpoints:
+      - method: POST
+        path: /settlements
+        summary: 创建结算
+        permissions: [admin, finance]
+        response_status: 201
+      - method: GET
+        path: /settlements
+        summary: 获取结算列表
+        permissions: [admin, finance]
+        query_params: [page, page_size, settlement_type, status, payment_status, supplier_id, client_id, start_date, end_date]
+        response_status: 200
+      - method: GET
+        path: /settlements/statistics
+        summary: 获取结算统计
+        permissions: [admin, finance]
+        query_params: [start_date, end_date]
+        response_status: 200
+      - method: GET
+        path: /settlements/overdue
+        summary: 获取逾期结算列表
+        permissions: [admin, finance]
+        response_status: 200
+      - method: GET
+        path: /settlements/{settlement_id}
+        summary: 获取结算详情
+        permissions: [admin, finance]
+        path_params: [settlement_id]
+        response_status: 200
+      - method: PUT
+        path: /settlements/{settlement_id}
+        summary: 更新结算
+        permissions: [admin, finance]
+        path_params: [settlement_id]
+        response_status: 200
+      - method: POST
+        path: /settlements/{settlement_id}/submit
+        summary: 提交结算审批
+        permissions: [admin, finance]
+        path_params: [settlement_id]
+        state_transition: "DRAFT → PENDING"
+        response_status: 200
+      - method: POST
+        path: /settlements/{settlement_id}/approve
+        summary: 审批结算
+        permissions: [admin]
+        path_params: [settlement_id]
+        state_transition: "PENDING → APPROVED/REJECTED"
+        response_status: 200
+      - method: POST
+        path: /settlements/{settlement_id}/payment
+        summary: 记录结算支付
+        permissions: [admin, finance]
+        path_params: [settlement_id]
+        response_status: 200
+      - method: POST
+        path: /settlements/{settlement_id}/cancel
+        summary: 取消结算
+        permissions: [admin]
+        path_params: [settlement_id]
+        query_params: [reason]
+        state_transition: "DRAFT/APPROVED → CANCELLED"
+        response_status: 200
+
+  # ============================================================
+  # 12. Reconciliation (对账管理)
+  # ============================================================
+  reconciliation:
+    prefix: /reconciliation
+    tags: ["reconciliation"]
+    file: backend/routers/reconciliation.py
+    state_machine: "draft → pending → reviewed → adjusting → confirmed → completed"
+    endpoints:
+      # 批次 CRUD
+      - method: GET
+        path: /reconciliation/batches
+        summary: 获取对账批次列表
+        permissions: authenticated
+        query_params: [page, page_size, status, start_date, end_date]
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches
+        summary: 创建对账批次
+        permissions: [admin, finance, data_operator]
+        response_status: 201
+      - method: GET
+        path: /reconciliation/batches/{batch_id}
+        summary: 获取对账批次详情
+        permissions: authenticated
+        path_params: [batch_id]
+        response_status: 200
+      - method: PUT
+        path: /reconciliation/batches/{batch_id}
+        summary: 更新对账批次
+        permissions: [admin, finance, data_operator]
+        path_params: [batch_id]
+        response_status: 200
+      - method: DELETE
+        path: /reconciliation/batches/{batch_id}
+        summary: 删除对账批次
+        permissions: [admin]
+        path_params: [batch_id]
+        response_status: 200
+      # 批次运行与状态流转
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/run
+        summary: 运行对账
+        permissions: [admin, finance, data_operator]
+        path_params: [batch_id]
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/submit
+        summary: 提交对账批次
+        permissions: [data_operator, admin]
+        path_params: [batch_id]
+        state_transition: "draft → pending"
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/approve
+        summary: 审批对账批次
+        permissions: [finance, admin]
+        path_params: [batch_id]
+        state_transition: "pending → reviewed"
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/request-adjustment
+        summary: 请求调整
+        permissions: [finance, admin]
+        path_params: [batch_id]
+        state_transition: "reviewed → adjusting"
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/resubmit
+        summary: 重新提交
+        permissions: [data_operator, admin]
+        path_params: [batch_id]
+        state_transition: "adjusting → pending"
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/complete
+        summary: 完成对账
+        permissions: [finance, admin]
+        path_params: [batch_id]
+        state_transition: "confirmed → completed"
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/force-complete
+        summary: 强制完成对账
+        permissions: [admin]
+        path_params: [batch_id]
+        response_status: 200
+      # 明细操作
+      - method: GET
+        path: /reconciliation/batches/{batch_id}/details
+        summary: 获取对账明细列表
+        permissions: authenticated
+        path_params: [batch_id]
+        response_status: 200
+      - method: GET
+        path: /reconciliation/details/{detail_id}
+        summary: 获取对账明细详情
+        permissions: authenticated
+        path_params: [detail_id]
+        response_status: 200
+      - method: PUT
+        path: /reconciliation/details/{detail_id}/review
+        summary: 审核明细
+        permissions: [data_operator, finance, admin]
+        path_params: [detail_id]
+        response_status: 200
+      - method: PUT
+        path: /reconciliation/details/{detail_id}/adjust
+        summary: 调整明细
+        permissions: [data_operator, finance, admin]
+        path_params: [detail_id]
+        response_status: 200
+      - method: PUT
+        path: /reconciliation/details/{detail_id}/confirm
+        summary: 确认明细
+        permissions: [finance, admin]
+        path_params: [detail_id]
+        response_status: 200
+      # 调整单操作
+      - method: GET
+        path: /reconciliation/batches/{batch_id}/adjustments
+        summary: 获取调整单列表
+        permissions: authenticated
+        path_params: [batch_id]
+        response_status: 200
+      - method: GET
+        path: /reconciliation/adjustments/{adjustment_id}
+        summary: 获取调整单详情
+        permissions: authenticated
+        path_params: [adjustment_id]
+        response_status: 200
+      - method: POST
+        path: /reconciliation/adjustments
+        summary: 创建调整单
+        permissions: [data_operator, finance, admin]
+        response_status: 201
+      - method: POST
+        path: /reconciliation/adjustments/{adjustment_id}/execute
+        summary: 执行调整单
+        permissions: [finance, admin]
+        path_params: [adjustment_id]
+        response_status: 200
+      # 报告操作
+      - method: GET
+        path: /reconciliation/batches/{batch_id}/reports
+        summary: 获取对账报告列表
+        permissions: authenticated
+        path_params: [batch_id]
+        response_status: 200
+      - method: GET
+        path: /reconciliation/reports/{report_id}
+        summary: 获取对账报告详情
+        permissions: authenticated
+        path_params: [report_id]
+        response_status: 200
+      - method: POST
+        path: /reconciliation/batches/{batch_id}/reports
+        summary: 创建对账报告
+        permissions: [data_operator, finance, admin]
+        path_params: [batch_id]
+        response_status: 201
+      - method: DELETE
+        path: /reconciliation/reports/{report_id}
+        summary: 删除对账报告
+        permissions: [admin]
+        path_params: [report_id]
+        response_status: 200
+      # 统计与导出
+      - method: GET
+        path: /reconciliation/statistics
+        summary: 获取对账统计
+        permissions: [admin, finance, data_operator]
+        response_status: 200
+      - method: GET
+        path: /reconciliation/batches/{batch_id}/export
+        summary: 导出对账数据
+        permissions: [admin, finance]
+        path_params: [batch_id]
+        response_status: 200
+
+  # ============================================================
+  # 13. Finance Profit (财务利润报表)
+  # ============================================================
+  finance_profit:
+    prefix: /finance/profit
+    tags: ["finance-profit"]
+    file: backend/routers/finance_profit.py
+    sot_ref: "PROFIT_SOT.md v1.1"
+    endpoints:
+      - method: POST
+        path: /finance/profit/generate
+        summary: 生成/刷新利润聚合
+        permissions: [admin, finance]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/monthly
+        summary: 获取月度利润表
+        permissions: [admin, finance]
+        query_params: [year, month, project_id, include_accounts]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/daily
+        summary: 获取日度利润数据
+        permissions: [admin, finance]
+        query_params: [start_date, end_date, project_id, page, page_size]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/projects/{project_id}
+        summary: 获取项目利润明细
+        permissions: [admin, finance, data_operator, account_manager]
+        path_params: [project_id]
+        query_params: [start_date, end_date, granularity]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/accounts/{account_id}
+        summary: 获取账户消耗明细
+        permissions: [admin, finance, data_operator, account_manager, media_buyer]
+        path_params: [account_id]
+        query_params: [start_date, end_date]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/summary
+        summary: 获取整体利润汇总
+        permissions: [admin, finance]
+        query_params: [year, month]
+        response_status: 200
+      # 简化版 API
+      - method: GET
+        path: /finance/profit/overview
+        summary: 获取利润概览
+        permissions: [admin, finance, data_operator]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/by-project
+        summary: 按项目统计利润
+        permissions: [admin, finance, data_operator]
+        query_params: [start_date, end_date, limit]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/by-account
+        summary: 按账户统计利润
+        permissions: [admin, finance, data_operator]
+        query_params: [project_id, start_date, end_date, limit]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/by-channel
+        summary: 按渠道统计利润
+        permissions: [admin, finance, data_operator]
+        query_params: [start_date, end_date, limit]
+        response_status: 200
+      - method: GET
+        path: /finance/profit/trend
+        summary: 获取利润趋势
+        permissions: [admin, finance, data_operator]
+        query_params: [granularity, project_id, start_date, end_date]
+        response_status: 200
+      - method: POST
+        path: /finance/profit/compare
+        summary: 利润对比分析
+        permissions: [admin, finance, data_operator]
+        query_params: [start_date, end_date]
+        response_status: 200
+
+  # ============================================================
+  # 14. Import Jobs (导入任务)
+  # ============================================================
+  import_jobs:
+    prefix: /import_jobs
+    tags: ["导入任务"]
+    file: backend/routers/import_jobs.py
+    state_machine: "pending → processing → completed/failed/cancelled"
+    endpoints:
+      - method: POST
+        path: /import_jobs/upload
+        summary: 上传并解析导入文件
+        permissions: [admin, finance, data_operator]
+        query_params: [job_type]
+        response_status: 201
+      - method: GET
+        path: /import_jobs
+        summary: 获取导入任务列表
+        permissions: [admin, finance, data_operator, account_manager, media_buyer]
+        query_params: [page, page_size, status, type]
+        response_status: 200
+      - method: GET
+        path: /import_jobs/statistics
+        summary: 获取导入任务统计
+        permissions: [admin, finance, data_operator]
+        response_status: 200
+      - method: GET
+        path: /import_jobs/{job_id}
+        summary: 获取导入任务详情
+        permissions: [admin, finance, data_operator, account_manager, media_buyer]
+        path_params: [job_id]
+        response_status: 200
+      - method: GET
+        path: /import_jobs/{job_id}/progress
+        summary: 获取导入任务进度
+        permissions: [admin, finance, data_operator, account_manager, media_buyer]
+        path_params: [job_id]
+        response_status: 200
+      - method: GET
+        path: /import_jobs/{job_id}/errors
+        summary: 获取导入任务错误详情
+        permissions: [admin, finance, data_operator]
+        path_params: [job_id]
+        query_params: [page, page_size]
+        response_status: 200
+      - method: POST
+        path: /import_jobs/{job_id}/start
+        summary: 开始处理导入任务
+        permissions: [admin, finance, data_operator]
+        path_params: [job_id]
+        state_transition: "pending → processing"
+        response_status: 200
+      - method: POST
+        path: /import_jobs/{job_id}/cancel
+        summary: 取消导入任务
+        permissions: [admin, finance, data_operator]
+        path_params: [job_id]
+        state_transition: "pending → cancelled"
+        response_status: 200
+      - method: DELETE
+        path: /import_jobs/{job_id}
+        summary: 删除导入任务
+        permissions: [admin]
+        path_params: [job_id]
+        response_status: 200
+      - method: POST
+        path: /import_jobs/check-duplicate
+        summary: 检查文件是否已导入
+        permissions: [admin, finance, data_operator]
+        response_status: 200
+
+  # ============================================================
+  # 15. Reports (报表管理)
+  # ============================================================
+  reports:
+    prefix: /reports
+    tags: ["reports"]
+    file: backend/routers/reports.py
+    sot_ref: "API_SOT.md v9.0 §14"
+    endpoints:
+      - method: GET
+        path: /reports/dashboard
+        summary: 获取仪表盘摘要
+        permissions: authenticated
+        response_status: 200
+      - method: GET
+        path: /reports/performance
+        summary: 获取效果报表
+        permissions: authenticated
+        query_params: [start_date, end_date, project_ids, channel_ids]
+        response_status: 200
+      - method: GET
+        path: /reports/profit
+        summary: 获取利润报表
+        permissions: [admin, finance]
+        query_params: [start_date, end_date, project_ids]
+        response_status: 200
+      - method: GET
+        path: /reports/reconciliation
+        summary: 获取对账报表
+        permissions: [admin, finance]
+        query_params: [start_date, end_date]
+        response_status: 200
+      - method: GET
+        path: /reports/financial
+        summary: 获取财务摘要
+        permissions: [admin, finance]
+        query_params: [start_date, end_date, project_ids]
+        response_status: 200
+      - method: GET
+        path: /reports/trends/{metric}
+        summary: 获取趋势报表
+        permissions: authenticated
+        path_params: [metric]
+        query_params: [period, start_date, end_date]
+        response_status: 200
+      - method: GET
+        path: /reports
+        summary: 获取综合报表摘要（向后兼容）
+        permissions: authenticated
+        query_params: [start, end]
+        response_status: 200
+      - method: GET
+        path: /reports/{project_id}
+        summary: 获取单个项目报表（向后兼容）
+        permissions: authenticated
+        path_params: [project_id]
+        query_params: [start, end]
+        response_status: 200
+
+  # ============================================================
+  # 16. Agents (AI Agent 管理)
+  # ============================================================
+  agents:
+    prefix: /agents
+    tags: ["agents"]
+    file: backend/routers/agents.py
+    state_machine: "created → running → stopped/error"
+    endpoints:
+      - method: GET
+        path: /agents
+        summary: 获取 Agent 列表
+        permissions: authenticated
+        query_params: [page, page_size, status, agent_type]
+        response_status: 200
+      - method: GET
+        path: /agents/{agent_id}
+        summary: 获取 Agent 详情
+        permissions: authenticated
+        path_params: [agent_id]
+        response_status: 200
+      - method: POST
+        path: /agents
+        summary: 创建 Agent
+        permissions: authenticated
+        response_status: 201
+      - method: PUT
+        path: /agents/{agent_id}
+        summary: 更新 Agent
+        permissions: authenticated
+        path_params: [agent_id]
+        response_status: 200
+      - method: DELETE
+        path: /agents/{agent_id}
+        summary: 删除 Agent
+        permissions: authenticated
+        path_params: [agent_id]
+        response_status: 200
+      - method: POST
+        path: /agents/{agent_id}/start
+        summary: 启动 Agent
+        permissions: authenticated
+        path_params: [agent_id]
+        state_transition: "created/stopped → running"
+        response_status: 200
+      - method: POST
+        path: /agents/{agent_id}/stop
+        summary: 停止 Agent
+        permissions: authenticated
+        path_params: [agent_id]
+        state_transition: "running → stopped"
+        response_status: 200
+
+# ============================================================
+# 端点统计
+# ============================================================
+summary:
+  total_endpoints: 170
+  by_router:
+    health: 1
+    authentication: 13
+    channels: 4
+    projects: 11
+    ad_accounts: 6
+    transfers: 7
+    daily_reports: 22
+    topups: 16
+    ledger: 8
+    suppliers: 8
+    settlements: 11
+    reconciliation: 30
+    finance_profit: 12
+    import_jobs: 10
+    reports: 8
+    agents: 7
+  by_method:
+    GET: 85
+    POST: 65
+    PUT: 15
+    DELETE: 5
+  by_permission:
+    public: 10
+    authenticated: 60
+    role_restricted: 100

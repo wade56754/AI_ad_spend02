@@ -1,0 +1,497 @@
+# 功能索引表：本地需求 → GitHub 参考
+# 版本: v1.0
+# 更新日期: 2025-12-19
+# 用途: 代码工厂根据本地需求快速找到 GitHub 参考实现
+
+version: "1.0"
+updated: "2025-12-19"
+description: "本地功能需求与 GitHub 开源参考的映射表"
+
+# =============================================================================
+# 后端功能映射
+# =============================================================================
+backend:
+  # ========== 核心架构 ==========
+  fastapi_best_practices:
+    local_need: "FastAPI 项目结构和最佳实践"
+    local_files:
+      - backend/routers/
+      - backend/services/
+      - backend/core/
+    github_refs:
+      - name: "zhanymkanov/fastapi-best-practices"
+        url: "https://github.com/zhanymkanov/fastapi-best-practices"
+        stars: "10000+"
+        license: "MIT"
+        relevance: "P0 - 核心参考"
+        key_concepts:
+          - "依赖注入验证数据"
+          - "async/sync 处理策略"
+          - "项目结构规范"
+      - name: "modern-python/fastapi-sqlalchemy-template"
+        url: "https://github.com/modern-python/fastapi-sqlalchemy-template"
+        stars: "500+"
+        license: "MIT"
+        relevance: "P0 - 生产就绪"
+        key_concepts:
+          - "异步 SQLAlchemy 2.0"
+          - "依赖注入容器 (modern-di)"
+          - "pytest 自动回滚"
+      - name: "Aeternalis-Ingenium/FastAPI-Backend-Template"
+        url: "https://github.com/Aeternalis-Ingenium/FastAPI-Backend-Template"
+        stars: "500+"
+        license: "MIT"
+        relevance: "P1"
+        key_concepts:
+          - "异步 PostgreSQL"
+          - "Alembic 迁移"
+          - "Docker 容器化"
+
+  # ========== 状态机 ==========
+  state_machine:
+    local_need: "8 状态机流转 (日报/充值/转账/对账)"
+    local_files:
+      - backend/core/state_machine.py
+      - backend/models/enums.py
+      - backend/services/daily_report_service.py
+      - backend/services/topup_service.py
+    github_refs:
+      - name: "pytransitions/transitions"
+        url: "https://github.com/pytransitions/transitions"
+        stars: "5500+"
+        license: "MIT"
+        relevance: "P0 - 推荐"
+        key_concepts:
+          - "轻量级有限状态机"
+          - "状态/转换/回调"
+          - "Mermaid 图表生成"
+          - "静态类型支持 (2024)"
+        code_example: |
+          from transitions import Machine
+
+          class TopupWorkflow:
+              states = ['draft', 'pending_review', 'approved', 'paid', 'completed']
+
+              def __init__(self):
+                  self.machine = Machine(
+                      model=self,
+                      states=self.states,
+                      initial='draft'
+                  )
+                  self.machine.add_transition('submit', 'draft', 'pending_review')
+                  self.machine.add_transition('approve', 'pending_review', 'approved')
+                  self.machine.add_transition('pay', 'approved', 'paid')
+                  self.machine.add_transition('complete', 'paid', 'completed')
+      - name: "fgmacedo/python-statemachine"
+        url: "https://github.com/fgmacedo/python-statemachine"
+        stars: "800+"
+        license: "MIT"
+        relevance: "P1"
+        key_concepts:
+          - "声明式状态定义"
+          - "条件表达式 (Boolean 代数)"
+          - "依赖注入回调"
+          - "asyncio 原生支持"
+          - "图表自动生成"
+        code_example: |
+          from statemachine import StateMachine, State
+
+          class TopupStateMachine(StateMachine):
+              draft = State(initial=True)
+              pending_review = State()
+              approved = State()
+              paid = State()
+              completed = State(final=True)
+
+              submit = draft.to(pending_review)
+              approve = pending_review.to(approved)
+              pay = approved.to(paid)
+              complete = paid.to(completed)
+
+  # ========== Excel 导入导出 ==========
+  excel_export:
+    local_need: "日报/对账批量导出 Excel"
+    local_files:
+      - backend/routers/daily_reports.py
+      - backend/config/excel_column_mapping.py
+    github_refs:
+      - name: "pandas to_excel"
+        url: "https://github.com/pandas-dev/pandas"
+        stars: "43000+"
+        license: "BSD-3-Clause"
+        relevance: "P0 - 推荐"
+        key_concepts:
+          - "DataFrame 直接导出"
+          - "多 Sheet 支持"
+          - "样式和格式化"
+      - name: "jmcnamara/XlsxWriter"
+        url: "https://github.com/jmcnamara/XlsxWriter"
+        stars: "3500+"
+        license: "BSD-2-Clause"
+        relevance: "P1 - 高性能"
+        key_concepts:
+          - "大数据量内存优化"
+          - "图表生成"
+          - "条件格式"
+      - name: "theorchard/openpyxl"
+        url: "https://github.com/theorchard/openpyxl"
+        stars: "2800+"
+        license: "MIT"
+        relevance: "P0 - 推荐"
+        key_concepts:
+          - "读写 xlsx"
+          - "样式/公式/图表"
+          - "流式读取大文件"
+
+  # ========== Admin Dashboard ==========
+  admin_dashboard:
+    local_need: "后端管理界面 (可选)"
+    local_files: []
+    github_refs:
+      - name: "amisadmin/fastapi-amis-admin"
+        url: "https://github.com/amisadmin/fastapi-amis-admin"
+        stars: "1200+"
+        license: "Apache-2.0"
+        relevance: "P2"
+        key_concepts:
+          - "类 Django Admin"
+          - "FastCRUD 自动生成"
+          - "amis 低代码前端"
+      - name: "vsdudakov/fastadmin"
+        url: "https://github.com/vsdudakov/fastadmin"
+        stars: "600+"
+        license: "MIT"
+        relevance: "P2"
+        key_concepts:
+          - "FastAPI/Django/Flask 通用"
+          - "关系模型支持"
+
+  # ========== 认证授权 ==========
+  authentication:
+    local_need: "JWT 认证 + RBAC 权限"
+    local_files:
+      - backend/core/security.py
+      - backend/core/dependencies.py
+      - backend/core/permissions.py
+      - backend/deps/supabase_auth.py
+    github_refs:
+      - name: "FastAPI Security (官方)"
+        url: "https://fastapi.tiangolo.com/tutorial/security/"
+        relevance: "P0 - 官方文档"
+        key_concepts:
+          - "OAuth2PasswordBearer"
+          - "JWT 令牌"
+          - "依赖注入认证"
+      - name: "Supabase Auth (官方)"
+        url: "https://supabase.com/docs/guides/auth"
+        relevance: "P0 - 已集成"
+        key_concepts:
+          - "Row Level Security"
+          - "JWT 验证"
+          - "社交登录"
+
+  # ========== 审计日志 ==========
+  audit_log:
+    local_need: "操作审计日志记录"
+    local_files:
+      - backend/core/audit.py
+      - backend/services/audit_service.py
+      - backend/models/audit/audit_log.py
+    github_refs:
+      - name: "SQLAlchemy Events"
+        url: "https://docs.sqlalchemy.org/en/20/core/events.html"
+        relevance: "P0 - 官方"
+        key_concepts:
+          - "before_insert/update/delete 事件"
+          - "ORM 生命周期钩子"
+      - name: "sqlalchemy-continuum"
+        url: "https://github.com/kvesteri/sqlalchemy-continuum"
+        stars: "600+"
+        license: "BSD"
+        relevance: "P2"
+        key_concepts:
+          - "自动版本历史"
+          - "变更追踪"
+
+# =============================================================================
+# 前端功能映射
+# =============================================================================
+frontend:
+  # ========== UI 组件库 ==========
+  ui_components:
+    local_need: "基础 UI 组件 (Button, Card, Dialog, Table...)"
+    local_files:
+      - frontend/src/components/ui/
+    github_refs:
+      - name: "shadcn/ui"
+        url: "https://github.com/shadcn-ui/ui"
+        stars: "75000+"
+        license: "MIT"
+        relevance: "P0 - 已集成"
+        key_concepts:
+          - "可复制组件 (不是 npm 包)"
+          - "Radix UI 基础"
+          - "Tailwind CSS 样式"
+          - "TypeScript 支持"
+        components:
+          - button, card, dialog, dropdown-menu
+          - input, label, select, textarea
+          - table, tabs, badge, alert
+          - calendar, checkbox, switch
+          - popover, tooltip, separator
+
+  # ========== Admin Dashboard 模板 ==========
+  dashboard_template:
+    local_need: "管理后台 Dashboard 模板"
+    local_files:
+      - frontend/src/app/(dashboard)/
+      - frontend/src/components/dashboard/
+    github_refs:
+      - name: "arhamkhnz/next-shadcn-admin-dashboard"
+        url: "https://github.com/arhamkhnz/next-shadcn-admin-dashboard"
+        stars: "300+"
+        license: "MIT"
+        relevance: "P0 - 推荐"
+        key_concepts:
+          - "Next.js 14/16 + shadcn/ui"
+          - "多主题支持"
+          - "响应式布局"
+      - name: "kurosh87/shadcn-start"
+        url: "https://github.com/kurosh87/shadcn-start"
+        stars: "200+"
+        license: "MIT"
+        relevance: "P0 - 推荐"
+        key_concepts:
+          - "NextAuth 认证"
+          - "Recharts 图表"
+          - "TanStack Table + 服务端分页"
+          - "dnd-kit 拖拽"
+          - "zustand 状态"
+      - name: "NaveenDA/shadcn-nextjs-dashboard"
+        url: "https://github.com/NaveenDA/shadcn-nextjs-dashboard"
+        stars: "200+"
+        license: "MIT"
+        relevance: "P1"
+        key_concepts:
+          - "Next.js 14 + TypeScript"
+          - "响应式设计"
+          - "暗黑模式"
+
+  # ========== TanStack Query ==========
+  tanstack_query:
+    local_need: "服务端状态管理 (数据获取/缓存)"
+    local_files:
+      - frontend/src/features/*/hooks/
+      - frontend/src/features/*/services/
+      - frontend/src/lib/api.ts
+    github_refs:
+      - name: "TanStack/query"
+        url: "https://github.com/TanStack/query"
+        stars: "42000+"
+        license: "MIT"
+        relevance: "P0 - 已集成"
+        key_concepts:
+          - "useQuery / useMutation"
+          - "queryKey 管理"
+          - "乐观更新"
+          - "缓存失效"
+          - "Suspense 支持"
+        best_practices:
+          - "自定义 Hook 封装查询"
+          - "queryOptions 共享配置"
+          - "select 数据转换"
+          - "垂直切片目录结构"
+
+  # ========== 表单验证 ==========
+  form_validation:
+    local_need: "表单验证 (React Hook Form + Zod)"
+    local_files:
+      - frontend/src/features/*/components/*Form.tsx
+    github_refs:
+      - name: "react-hook-form/resolvers"
+        url: "https://github.com/react-hook-form/resolvers"
+        stars: "1500+"
+        license: "MIT"
+        relevance: "P0 - 已集成"
+        key_concepts:
+          - "zodResolver 集成"
+          - "类型安全表单"
+          - "Schema 到类型推断"
+        code_example: |
+          import { z } from 'zod';
+          import { useForm } from 'react-hook-form';
+          import { zodResolver } from '@hookform/resolvers/zod';
+
+          const schema = z.object({
+            email: z.string().email('请输入有效邮箱'),
+            amount: z.number().min(0, '金额必须大于0'),
+          });
+
+          type FormData = z.infer<typeof schema>;
+
+          function MyForm() {
+            const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+              resolver: zodResolver(schema),
+            });
+            // ...
+          }
+
+  # ========== 数据可视化 ==========
+  charts:
+    local_need: "数据图表 (趋势/饼图/柱状图)"
+    local_files:
+      - frontend/src/components/dashboard/TrendChart.tsx
+      - frontend/src/components/dashboard/MainTrendChart.tsx
+    github_refs:
+      - name: "recharts/recharts"
+        url: "https://github.com/recharts/recharts"
+        stars: "24000+"
+        license: "MIT"
+        relevance: "P0 - 已集成"
+        key_concepts:
+          - "React 组件式 API"
+          - "D3 底层实现"
+          - "LineChart, BarChart, PieChart"
+          - "响应式容器"
+      - name: "react-financial/react-financial-charts"
+        url: "https://github.com/react-financial/react-financial-charts"
+        stars: "700+"
+        license: "MIT"
+        relevance: "P2 - 金融专用"
+        key_concepts:
+          - "K线图/蜡烛图"
+          - "60+ 技术指标"
+          - "时间序列优化"
+
+  # ========== 认证页面 ==========
+  auth_pages:
+    local_need: "登录/注册/密码重置页面"
+    local_files:
+      - frontend/src/features/auth/components/
+      - frontend/src/app/(auth)/
+    github_refs:
+      - name: "Supabase Auth UI"
+        url: "https://supabase.com/docs/guides/auth/auth-helpers/nextjs"
+        relevance: "P0 - 已集成"
+        key_concepts:
+          - "createClientComponentClient"
+          - "Session 管理"
+          - "Route Handler"
+      - name: "NextAuth.js"
+        url: "https://github.com/nextauthjs/next-auth"
+        stars: "25000+"
+        license: "ISC"
+        relevance: "P2 - 备选方案"
+        key_concepts:
+          - "多 Provider 支持"
+          - "Session 策略"
+          - "Callback 自定义"
+
+  # ========== 文件上传 ==========
+  file_upload:
+    local_need: "Excel/CSV 文件上传"
+    local_files:
+      - frontend/src/features/import-jobs/
+      - frontend/src/components/reconciliation/platform-bill-upload.tsx
+    github_refs:
+      - name: "react-dropzone"
+        url: "https://github.com/react-dropzone/react-dropzone"
+        stars: "10500+"
+        license: "MIT"
+        relevance: "P1"
+        key_concepts:
+          - "拖拽上传"
+          - "文件类型验证"
+          - "进度回调"
+      - name: "uploadthing"
+        url: "https://github.com/pingdotgg/uploadthing"
+        stars: "4000+"
+        license: "MIT"
+        relevance: "P2"
+        key_concepts:
+          - "类型安全上传"
+          - "S3 兼容存储"
+
+  # ========== 数据表格 ==========
+  data_table:
+    local_need: "高级数据表格 (排序/筛选/分页)"
+    local_files:
+      - frontend/src/components/ui/data-table/
+      - frontend/src/features/*/components/*Table.tsx
+    github_refs:
+      - name: "TanStack/table"
+        url: "https://github.com/TanStack/table"
+        stars: "25000+"
+        license: "MIT"
+        relevance: "P0 - 推荐"
+        key_concepts:
+          - "Headless UI"
+          - "虚拟化滚动"
+          - "服务端分页/排序/筛选"
+          - "列定义 TypeScript"
+      - name: "shadcn/ui DataTable"
+        url: "https://ui.shadcn.com/docs/components/data-table"
+        relevance: "P0 - 已参考"
+        key_concepts:
+          - "TanStack Table + shadcn/ui"
+          - "可复制模板"
+          - "分页/筛选/排序组件"
+
+# =============================================================================
+# 通用工具映射
+# =============================================================================
+tooling:
+  # ========== 类型检查 ==========
+  type_checking:
+    python:
+      - name: "mypy"
+        url: "https://github.com/python/mypy"
+        command: "mypy --json-report - {file}"
+    typescript:
+      - name: "tsc"
+        command: "npx tsc --noEmit"
+
+  # ========== Linting ==========
+  linting:
+    python:
+      - name: "ruff"
+        url: "https://github.com/astral-sh/ruff"
+        command: "ruff check --output-format=json {file}"
+    typescript:
+      - name: "eslint"
+        command: "npx eslint --format json {file}"
+
+# =============================================================================
+# 快速查找索引
+# =============================================================================
+quick_lookup:
+  by_category:
+    auth: [authentication, auth_pages]
+    crud: [fastapi_best_practices, tanstack_query]
+    state_machine: [state_machine]
+    export: [excel_export]
+    import: [file_upload]
+    charts: [charts]
+    forms: [form_validation]
+    tables: [data_table]
+    dashboard: [dashboard_template, admin_dashboard]
+    ui: [ui_components]
+
+  by_priority:
+    P0:
+      - fastapi-best-practices
+      - transitions
+      - pandas
+      - shadcn/ui
+      - TanStack/query
+      - react-hook-form/resolvers
+      - recharts
+    P1:
+      - python-statemachine
+      - XlsxWriter
+      - next-shadcn-admin-dashboard
+      - TanStack/table
+    P2:
+      - fastapi-amis-admin
+      - react-financial-charts
+      - NextAuth.js

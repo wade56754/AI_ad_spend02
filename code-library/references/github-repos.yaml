@@ -1,10 +1,10 @@
 # GitHub 参考仓库索引
-# 版本: v1.0
-# 更新日期: 2025-12-17
+# 版本: v2.0
+# 更新日期: 2025-12-19
 # 用途: 代码工厂搜索 GitHub 参考代码
 
-version: "1.0"
-updated: "2025-12-17"
+version: "2.0"
+updated: "2025-12-19"
 source_document: "docs/proposals/CODE_FACTORY_REFERENCE_PROJECTS.md"
 
 # ========== AI Agent 框架 ==========
@@ -463,3 +463,229 @@ feature_index:
 
   data_export:
     excel: ["excel-001", "excel-002", "excel-003", "excel-004"]
+
+# =============================================================================
+# v2.0 新增：后端最佳实践 + 状态机 + 前端模板
+# =============================================================================
+
+# ========== FastAPI 最佳实践 ==========
+fastapi_best_practices:
+  - id: "bp-001"
+    name: "fastapi-best-practices"
+    github: "https://github.com/zhanymkanov/fastapi-best-practices"
+    stars: "10000+"
+    license: "MIT"
+    language: "Python"
+    description: "FastAPI 最佳实践和约定"
+    use_cases:
+      - "项目结构规范"
+      - "依赖注入验证"
+      - "async/sync 策略"
+      - "响应模型设计"
+    compatibility:
+      python_version: ">=3.8"
+      relevant_for: ["backend", "api"]
+    priority: "P0"
+
+  - id: "bp-002"
+    name: "fastapi-sqlalchemy-template"
+    github: "https://github.com/modern-python/fastapi-sqlalchemy-template"
+    stars: "500+"
+    license: "MIT"
+    language: "Python"
+    description: "生产就绪 FastAPI + SQLAlchemy 2.0 模板"
+    use_cases:
+      - "异步 SQLAlchemy 2.0"
+      - "依赖注入容器 (modern-di)"
+      - "pytest 自动回滚"
+      - "Docker 部署"
+    compatibility:
+      python_version: ">=3.11"
+      relevant_for: ["backend", "template"]
+    priority: "P0"
+
+# ========== 状态机库 ==========
+state_machine:
+  - id: "sm-001"
+    name: "transitions"
+    github: "https://github.com/pytransitions/transitions"
+    stars: "5500+"
+    license: "MIT"
+    language: "Python"
+    description: "轻量级 Python 有限状态机"
+    use_cases:
+      - "有限状态机建模"
+      - "状态转换回调"
+      - "条件转换"
+      - "Mermaid 图表生成"
+    compatibility:
+      python_version: ">=3.8"
+      relevant_for: ["backend", "workflow"]
+    priority: "P0"
+
+  - id: "sm-002"
+    name: "python-statemachine"
+    github: "https://github.com/fgmacedo/python-statemachine"
+    stars: "800+"
+    license: "MIT"
+    language: "Python"
+    description: "声明式 Python 状态机"
+    use_cases:
+      - "声明式状态定义"
+      - "条件表达式 (Boolean 代数)"
+      - "依赖注入回调"
+      - "asyncio 原生支持"
+    compatibility:
+      python_version: ">=3.8"
+      relevant_for: ["backend", "workflow"]
+    priority: "P1"
+
+# ========== Next.js Admin Dashboard ==========
+nextjs_dashboard:
+  - id: "dash-001"
+    name: "next-shadcn-admin-dashboard"
+    github: "https://github.com/arhamkhnz/next-shadcn-admin-dashboard"
+    stars: "300+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "Next.js 14/16 + shadcn/ui 管理后台模板"
+    use_cases:
+      - "Next.js App Router"
+      - "shadcn/ui 组件"
+      - "多主题支持"
+      - "响应式布局"
+    compatibility:
+      node_version: ">=18"
+      relevant_for: ["frontend", "dashboard"]
+    priority: "P0"
+
+  - id: "dash-002"
+    name: "shadcn-start"
+    github: "https://github.com/kurosh87/shadcn-start"
+    stars: "200+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "Next.js 14 + shadcn/ui + TanStack 启动模板"
+    use_cases:
+      - "NextAuth 社交/邮箱登录"
+      - "Recharts 图表"
+      - "TanStack Table 服务端分页"
+      - "dnd-kit 拖拽"
+      - "zustand 状态管理"
+    compatibility:
+      node_version: ">=18"
+      relevant_for: ["frontend", "dashboard"]
+    priority: "P0"
+
+# ========== React 表单验证 ==========
+form_validation:
+  - id: "form-001"
+    name: "react-hook-form/resolvers"
+    github: "https://github.com/react-hook-form/resolvers"
+    stars: "1500+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "React Hook Form 验证解析器 (Zod, Yup)"
+    use_cases:
+      - "Zod Schema 验证"
+      - "类型安全表单"
+      - "Schema → TypeScript 类型"
+    compatibility:
+      node_version: ">=14"
+      relevant_for: ["frontend", "form"]
+    priority: "P0"
+
+# ========== 数据可视化 ==========
+data_visualization:
+  - id: "viz-001"
+    name: "recharts"
+    github: "https://github.com/recharts/recharts"
+    stars: "24000+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "React 组件式图表库"
+    use_cases:
+      - "LineChart, BarChart, PieChart"
+      - "React 组件 API"
+      - "D3 底层"
+      - "响应式容器"
+    compatibility:
+      node_version: ">=14"
+      relevant_for: ["frontend", "chart"]
+    priority: "P0"
+
+  - id: "viz-002"
+    name: "react-financial-charts"
+    github: "https://github.com/react-financial/react-financial-charts"
+    stars: "700+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "React 金融图表库 (K线图/技术指标)"
+    use_cases:
+      - "K线/蜡烛图"
+      - "60+ 技术指标"
+      - "时间序列优化"
+    compatibility:
+      node_version: ">=14"
+      relevant_for: ["frontend", "finance", "chart"]
+    priority: "P2"
+
+# ========== TanStack 系列 ==========
+tanstack:
+  - id: "ts-001"
+    name: "TanStack/query"
+    github: "https://github.com/TanStack/query"
+    stars: "42000+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "服务端状态管理 (数据获取/缓存)"
+    use_cases:
+      - "useQuery / useMutation"
+      - "queryKey 管理"
+      - "乐观更新"
+      - "缓存失效"
+      - "Suspense 支持"
+    compatibility:
+      node_version: ">=14"
+      relevant_for: ["frontend", "state"]
+    priority: "P0"
+
+  - id: "ts-002"
+    name: "TanStack/table"
+    github: "https://github.com/TanStack/table"
+    stars: "25000+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "Headless 数据表格"
+    use_cases:
+      - "虚拟化滚动"
+      - "服务端分页/排序/筛选"
+      - "列定义 TypeScript"
+    compatibility:
+      node_version: ">=14"
+      relevant_for: ["frontend", "table"]
+    priority: "P0"
+
+# ========== shadcn/ui ==========
+ui_components:
+  - id: "ui-001"
+    name: "shadcn/ui"
+    github: "https://github.com/shadcn-ui/ui"
+    stars: "75000+"
+    license: "MIT"
+    language: "TypeScript"
+    description: "可复制组件库 (Radix + Tailwind)"
+    use_cases:
+      - "可复制组件 (非 npm 包)"
+      - "Radix UI 基础"
+      - "Tailwind CSS 样式"
+      - "TypeScript 支持"
+    components:
+      - "button, card, dialog, dropdown-menu"
+      - "input, label, select, textarea"
+      - "table, tabs, badge, alert"
+      - "calendar, checkbox, switch"
+    compatibility:
+      node_version: ">=18"
+      relevant_for: ["frontend", "ui"]
+    priority: "P0"
