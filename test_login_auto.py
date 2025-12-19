@@ -61,7 +61,9 @@ async def test_login_page():
             await page.locator("button[type='submit']").click()
             await page.wait_for_timeout(3000)
 
-            if "dashboard" in page.url:
+            # 注册成功后重定向到 / (route group不创建URL段)
+            current_url = page.url
+            if "register" not in current_url and "login" not in current_url:
                 print("  [PASS] 用户注册成功")
                 results.append(("用户注册", True))
 
@@ -187,10 +189,11 @@ async def test_login_page():
             current_url = page.url
             print(f"  当前URL: {current_url}")
 
-            if "dashboard" in current_url:
-                print("  [PASS] 登录成功 - 已跳转到 Dashboard")
+            # 登录成功后重定向到 / (route group不创建URL段)
+            if "login" not in current_url and "register" not in current_url:
+                print(f"  [PASS] 登录成功 - 已跳转到: {current_url}")
                 results.append(("正确登录", True))
-            elif "login" in current_url:
+            else:
                 # 检查 toast 消息
                 try:
                     toast = await page.locator("[data-sonner-toast]").first.text_content()
@@ -202,10 +205,6 @@ async def test_login_page():
                 except:
                     print("  [FAIL] 登录失败，仍在登录页面")
                     results.append(("正确登录", False))
-            else:
-                # 可能跳转到其他页面
-                print(f"  [INFO] 跳转到: {current_url}")
-                results.append(("正确登录", True))
 
         except Exception as e:
             print(f"\n[ERROR] {e}")
