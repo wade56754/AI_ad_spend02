@@ -1,6 +1,6 @@
 # Change: Transfers Batch Module v2
 
-**Status**: READY FOR VALIDATION
+**Status**: ARCHIVED
 **Version**: 2.0
 **Date**: 2025-12-02
 

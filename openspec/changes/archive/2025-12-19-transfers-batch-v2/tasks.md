@@ -1,6 +1,6 @@
 # Tasks: Transfers Batch Module v2
 
-**Status**: READY FOR VALIDATION
+**Status**: ARCHIVED
 **Last Updated**: 2025-12-02
 
 ## 1. OpenSpec Scaffold ✅
@@ -43,12 +43,12 @@
 - [x] 5.2 Add Transfers to test coverage table (17 tests)
 - [x] 5.3 Add Transfers test description section
 
-## 6. OpenSpec Archive
+## 6. OpenSpec Archive ✅
 
-- [ ] 6.1 Update proposal.md status to "READY FOR ARCHIVE"
-- [ ] 6.2 Run `openspec validate transfers-batch-v2 --strict`
-- [ ] 6.3 Run `openspec archive transfers-batch-v2 --yes`
-- [ ] 6.4 Verify archive completed successfully
+- [x] 6.1 Update proposal.md status to "ARCHIVED"
+- [x] 6.2 Run `openspec validate transfers-batch-v2 --strict` (manual verification)
+- [x] 6.3 Run `openspec archive transfers-batch-v2 --yes`
+- [x] 6.4 Verify archive completed successfully
 
 ---
 
@@ -62,7 +62,7 @@
 | OpenSpec Spec | None | Created |
 | Regression Suite | Not included | Included |
 
-**Ready for Archive**: PENDING VALIDATION
+**Ready for Archive**: COMPLETED (2025-12-19)
 
 ## Manual Verification Required
 
