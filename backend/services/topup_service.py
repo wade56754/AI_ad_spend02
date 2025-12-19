@@ -728,7 +728,6 @@ class TopupService:
             base_query
             .options(
                 joinedload(TopupRequest.ad_account),
-                joinedload(TopupRequest.project),
                 joinedload(TopupRequest.requester)
             )
             .filter(TopupRequest.status != TopupStatus.COMPLETED.value)
@@ -814,7 +813,6 @@ class TopupService:
         # 加载关联数据
         requests = (
             query.options(
-                joinedload(TopupRequest.project),
                 joinedload(TopupRequest.ad_account),
                 joinedload(TopupRequest.requester),
                 joinedload(TopupRequest.data_reviewer),
@@ -986,7 +984,7 @@ class TopupService:
 
         # 账户管理员查看自己项目的申请
         if current_user.role == UserRole.ACCOUNT_MANAGER.value:
-            if request.project and request.project.account_manager_id == current_user.id:
+            if request.ad_account and request.ad_account.project and request.ad_account.project.account_manager_id == current_user.id:
                 return
 
         # 媒体买家查看自己的申请
