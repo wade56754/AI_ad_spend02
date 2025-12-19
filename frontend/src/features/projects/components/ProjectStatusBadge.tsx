@@ -26,8 +26,9 @@ import type { ProjectStatus } from '../types';
 
 /**
  * Status configuration with icons, colors, and descriptions
+ * (Component-specific version with icons)
  */
-export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, {
+const PROJECT_STATUS_BADGE_CONFIG: Record<ProjectStatus, {
   label: string;
   icon: LucideIcon;
   variant: 'default' | 'success' | 'warning' | 'destructive' | 'outline';
@@ -86,7 +87,7 @@ export function ProjectStatusBadge({
   size = 'default',
   className,
 }: ProjectStatusBadgeProps) {
-  const config = PROJECT_STATUS_CONFIG[status];
+  const config = PROJECT_STATUS_BADGE_CONFIG[status];
 
   if (!config) {
     return <Badge variant="outline">未知状态</Badge>;
@@ -278,7 +279,7 @@ export function ProjectStatsCard({
 export function ProjectStatusLegend() {
   return (
     <div className="flex flex-wrap gap-4">
-      {(Object.entries(PROJECT_STATUS_CONFIG) as [ProjectStatus, typeof PROJECT_STATUS_CONFIG[ProjectStatus]][]).map(
+      {(Object.entries(PROJECT_STATUS_BADGE_CONFIG) as [ProjectStatus, typeof PROJECT_STATUS_BADGE_CONFIG[ProjectStatus]][]).map(
         ([status, config]) => {
           const Icon = config.icon;
           return (

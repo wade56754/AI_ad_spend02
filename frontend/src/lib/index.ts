@@ -21,11 +21,14 @@ export {
   apiRequest,
   queryKeys,
   ApiRequestError,
+  ApiError,
+  isApiError,
 } from './api';
 
 export type {
   PaginatedResponse,
-  ApiError,
+  ApiError as ApiErrorType,
   ApiResponse,
   ApiFetchOptions,
+  PaginationMeta,
 } from './api';

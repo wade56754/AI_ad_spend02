@@ -14,14 +14,30 @@
 // ============================================================================
 
 /**
- * Paginated response structure (aligned with backend paginated_response)
+ * Pagination metadata
+ */
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
+/**
+ * Paginated response structure (supports both formats)
+ * - New format: { items, total, page, page_size, total_pages }
+ * - Legacy format: { data, meta: { total, page, ... } }
  */
 export interface PaginatedResponse<T> {
+  // New format
   items: T[];
   total: number;
   page: number;
   page_size: number;
   total_pages: number;
+  // Legacy format (for backward compatibility)
+  data: T[];
+  meta: PaginationMeta;
 }
 
 /**
@@ -94,6 +110,18 @@ export class ApiRequestError extends Error {
     this.details = details;
   }
 }
+
+/**
+ * Type guard to check if error is an API error
+ */
+export function isApiError(error: unknown): error is ApiRequestError {
+  return error instanceof ApiRequestError;
+}
+
+/**
+ * Alias for backward compatibility
+ */
+export const ApiError = ApiRequestError;
 
 /**
  * Handle API error response
@@ -212,14 +240,39 @@ export async function apiFetch<T>(
 /**
  * Fetch paginated data
  *
+ * Normalizes response to support both formats:
+ * - Backend format: { items, total, page, page_size, total_pages }
+ * - Legacy format: { data, meta: { total, page, page_size, total_pages } }
+ *
  * @example
- * const { items, total, page } = await apiFetchPaginated<User>('/api/v1/users?page=1');
+ * const { items, data, meta } = await apiFetchPaginated<User>('/api/v1/users?page=1');
  */
 export async function apiFetchPaginated<T>(
   url: string,
   options: ApiFetchOptions = {}
 ): Promise<PaginatedResponse<T>> {
-  return apiFetch<PaginatedResponse<T>>(url, options);
+  const response = await apiFetch<Partial<PaginatedResponse<T>>>(url, options);
+
+  // Normalize response to support both formats
+  const items = response.items || response.data || [];
+  const meta = response.meta || {
+    total: response.total || 0,
+    page: response.page || 1,
+    page_size: response.page_size || 20,
+    total_pages: response.total_pages || 1,
+  };
+
+  return {
+    // New format
+    items,
+    total: meta.total,
+    page: meta.page,
+    page_size: meta.page_size,
+    total_pages: meta.total_pages,
+    // Legacy format
+    data: items,
+    meta,
+  };
 }
 
 // ============================================================================
@@ -227,10 +280,26 @@ export async function apiFetchPaginated<T>(
 // ============================================================================
 
 /**
- * GET request helper
+ * GET request helper with optional query params
  */
-export async function apiGet<T>(url: string): Promise<T> {
-  return apiFetch<T>(url, { method: 'GET' });
+export async function apiGet<T>(
+  url: string,
+  params?: Record<string, string | number | boolean | undefined>
+): Promise<T> {
+  let fullUrl = url;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        searchParams.set(key, String(value));
+      }
+    });
+    const query = searchParams.toString();
+    if (query) {
+      fullUrl += (url.includes('?') ? '&' : '?') + query;
+    }
+  }
+  return apiFetch<T>(fullUrl, { method: 'GET' });
 }
 
 /**
@@ -395,13 +464,20 @@ export const queryKeys = {
     all: ['projects'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.projects.all, 'list', params] as const,
-    detail: (id: string) => [...queryKeys.projects.all, 'detail', id] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.projects.all, 'list', params] as const,
+    detail: (id: string | number) =>
+      [...queryKeys.projects.all, 'detail', String(id)] as const,
+    members: (projectId: string | number) =>
+      [...queryKeys.projects.all, 'members', String(projectId)] as const,
   },
 
   // Channels
   channels: {
     all: ['channels'] as const,
     list: (params?: Record<string, unknown>) =>
+      [...queryKeys.channels.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
       [...queryKeys.channels.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.channels.all, 'detail', id] as const,
   },
@@ -420,10 +496,14 @@ export const queryKeys = {
     all: ['dailyReports'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.dailyReports.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.dailyReports.all, 'list', params] as const,
     detail: (id: string) =>
       [...queryKeys.dailyReports.all, 'detail', id] as const,
     stats: (params?: Record<string, unknown>) =>
       [...queryKeys.dailyReports.all, 'stats', params] as const,
+    byProject: (projectId: string | number, params?: Record<string, unknown>) =>
+      [...queryKeys.dailyReports.all, 'byProject', String(projectId), params] as const,
   },
 
   // Topups
@@ -431,15 +511,22 @@ export const queryKeys = {
     all: ['topups'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.topups.all, 'list', params] as const,
-    detail: (id: string) => [...queryKeys.topups.all, 'detail', id] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.topups.all, 'list', params] as const,
+    detail: (id: string | number) =>
+      [...queryKeys.topups.all, 'detail', String(id)] as const,
     stats: (params?: Record<string, unknown>) =>
       [...queryKeys.topups.all, 'stats', params] as const,
+    byProject: (projectId: string | number, params?: Record<string, unknown>) =>
+      [...queryKeys.topups.all, 'byProject', String(projectId), params] as const,
   },
 
   // Transfers
   transfers: {
     all: ['transfers'] as const,
     list: (params?: Record<string, unknown>) =>
+      [...queryKeys.transfers.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
       [...queryKeys.transfers.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.transfers.all, 'detail', id] as const,
   },
@@ -449,9 +536,15 @@ export const queryKeys = {
     all: ['ledger'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.ledger.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.ledger.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.ledger.all, 'detail', id] as const,
     balance: (accountId: string) =>
       [...queryKeys.ledger.all, 'balance', accountId] as const,
+    tenantBalance: (tenantId?: string) =>
+      [...queryKeys.ledger.all, 'tenantBalance', tenantId] as const,
+    projectBalance: (projectId?: string) =>
+      [...queryKeys.ledger.all, 'projectBalance', projectId] as const,
   },
 
   // Reconciliation
@@ -459,10 +552,14 @@ export const queryKeys = {
     all: ['reconciliation'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.reconciliation.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.reconciliation.all, 'list', params] as const,
     detail: (id: string) =>
       [...queryKeys.reconciliation.all, 'detail', id] as const,
     batches: (params?: Record<string, unknown>) =>
       [...queryKeys.reconciliation.all, 'batches', params] as const,
+    byProject: (projectId: string | number, params?: Record<string, unknown>) =>
+      [...queryKeys.reconciliation.all, 'byProject', String(projectId), params] as const,
   },
 
   // Settlements
@@ -470,8 +567,16 @@ export const queryKeys = {
     all: ['settlements'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.settlements.all, 'list', params] as const,
-    detail: (id: string) =>
-      [...queryKeys.settlements.all, 'detail', id] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.settlements.all, 'list', params] as const,
+    detail: (id: string | number) =>
+      [...queryKeys.settlements.all, 'detail', String(id)] as const,
+    statistics: (params?: Record<string, unknown>) =>
+      [...queryKeys.settlements.all, 'statistics', params] as const,
+    overdue: (params?: Record<string, unknown>) =>
+      [...queryKeys.settlements.all, 'overdue', params] as const,
+    payments: (settlementId: string | number) =>
+      [...queryKeys.settlements.all, 'payments', String(settlementId)] as const,
   },
 
   // Suppliers
@@ -479,7 +584,16 @@ export const queryKeys = {
     all: ['suppliers'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.suppliers.all, 'list', params] as const,
-    detail: (id: string) => [...queryKeys.suppliers.all, 'detail', id] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.suppliers.all, 'list', params] as const,
+    detail: (id: string | number) =>
+      [...queryKeys.suppliers.all, 'detail', String(id)] as const,
+    statistics: (params?: Record<string, unknown>) =>
+      [...queryKeys.suppliers.all, 'statistics', params] as const,
+    accounts: (supplierId: string | number) =>
+      [...queryKeys.suppliers.all, 'accounts', String(supplierId)] as const,
+    ledgerSummary: (supplierId: string | number) =>
+      [...queryKeys.suppliers.all, 'ledgerSummary', String(supplierId)] as const,
   },
 
   // Reports
@@ -487,13 +601,29 @@ export const queryKeys = {
     all: ['reports'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.reports.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.reports.all, 'detail', id] as const,
+    dashboard: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'dashboard', params] as const,
+    performance: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'performance', params] as const,
+    profit: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'profit', params] as const,
+    reconciliation: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'reconciliation', params] as const,
+    financial: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'financial', params] as const,
+    trends: (params?: Record<string, unknown>) =>
+      [...queryKeys.reports.all, 'trends', params] as const,
   },
 
   // Import Jobs
   importJobs: {
     all: ['importJobs'] as const,
     list: (params?: Record<string, unknown>) =>
+      [...queryKeys.importJobs.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
       [...queryKeys.importJobs.all, 'list', params] as const,
     detail: (id: string) =>
       [...queryKeys.importJobs.all, 'detail', id] as const,
@@ -504,8 +634,32 @@ export const queryKeys = {
     all: ['profit'] as const,
     list: (params?: Record<string, unknown>) =>
       [...queryKeys.profit.all, 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
+      [...queryKeys.profit.all, 'list', params] as const,
     summary: (params?: Record<string, unknown>) =>
       [...queryKeys.profit.all, 'summary', params] as const,
+  },
+
+  // Finance Profit (alias for backward compatibility)
+  financeProfit: {
+    all: ['financeProfit'] as const,
+    list: (params?: Record<string, unknown>) =>
+      ['financeProfit', 'list', params] as const,
+    lists: (params?: Record<string, unknown>) =>
+      ['financeProfit', 'list', params] as const,
+    detail: (id: string) => ['financeProfit', 'detail', id] as const,
+    summary: (params?: Record<string, unknown>) =>
+      ['financeProfit', 'summary', params] as const,
+    overview: (params?: Record<string, unknown>) =>
+      ['financeProfit', 'overview', params] as const,
+    byProject: (projectId?: string | number) =>
+      ['financeProfit', 'byProject', projectId ? String(projectId) : undefined] as const,
+    byAccount: (accountId?: string | number) =>
+      ['financeProfit', 'byAccount', accountId ? String(accountId) : undefined] as const,
+    byChannel: (channelId?: string | number) =>
+      ['financeProfit', 'byChannel', channelId ? String(channelId) : undefined] as const,
+    trend: (params?: Record<string, unknown>) =>
+      ['financeProfit', 'trend', params] as const,
   },
 
   // Dashboard

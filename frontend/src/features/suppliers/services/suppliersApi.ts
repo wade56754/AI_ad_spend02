@@ -8,14 +8,15 @@
 
 import { apiFetch, apiFetchPaginated } from '@/lib/api';
 import type { PaginatedResponse } from '@/lib/api';
-import type {
-  Supplier,
-  SupplierListParams,
-  SupplierCreateInput,
-  SupplierUpdateInput,
-  SupplierStatistics,
-  SupplierLedgerSummary,
-  SupplierAccount,
+import {
+  SupplierStatus,
+  type Supplier,
+  type SupplierListParams,
+  type SupplierCreateInput,
+  type SupplierUpdateInput,
+  type SupplierStatistics,
+  type SupplierLedgerSummary,
+  type SupplierAccount,
 } from '../types/supplier.types';
 
 const BASE_PATH = '/api/v1/suppliers';
@@ -138,7 +139,7 @@ export async function deleteSupplier(id: number): Promise<void> {
  * PUT /api/v1/suppliers/:id with status: active
  */
 export async function activateSupplier(id: number): Promise<Supplier> {
-  return updateSupplier(id, { status: 'active' as const });
+  return updateSupplier(id, { status: SupplierStatus.ACTIVE });
 }
 
 /**
@@ -146,7 +147,7 @@ export async function activateSupplier(id: number): Promise<Supplier> {
  * PUT /api/v1/suppliers/:id with status: inactive
  */
 export async function deactivateSupplier(id: number): Promise<Supplier> {
-  return updateSupplier(id, { status: 'inactive' as const });
+  return updateSupplier(id, { status: SupplierStatus.INACTIVE });
 }
 
 /**
@@ -154,5 +155,5 @@ export async function deactivateSupplier(id: number): Promise<Supplier> {
  * PUT /api/v1/suppliers/:id with status: suspended
  */
 export async function suspendSupplier(id: number): Promise<Supplier> {
-  return updateSupplier(id, { status: 'suspended' as const });
+  return updateSupplier(id, { status: SupplierStatus.SUSPENDED });
 }

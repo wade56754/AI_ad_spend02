@@ -30,13 +30,14 @@ import {
 import { TopupApprovalTimeline } from './TopupApprovalTimeline';
 import type { TopupRequest } from '../types';
 
-export type TopupAction = 'data_review' | 'finance_approval' | 'complete' | 'cancel' | 'submit';
+/** Local action type for this dialog */
+export type TopupDialogAction = 'data_review' | 'finance_approval' | 'complete' | 'cancel' | 'submit';
 
 interface TopupDetailDialogProps {
   topup: TopupRequest | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAction: (action: TopupAction) => void;
+  onAction: (action: TopupDialogAction) => void;
   userRole: string;
 }
 

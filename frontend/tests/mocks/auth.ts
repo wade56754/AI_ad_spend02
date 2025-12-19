@@ -4,7 +4,7 @@
  * 提供认证相关的 mock 工具函数
  */
 
-import { UserRole } from '@/src/types/auth'
+import { UserRole } from '@/features/auth/types/auth.types'
 
 /**
  * Mock 用户数据

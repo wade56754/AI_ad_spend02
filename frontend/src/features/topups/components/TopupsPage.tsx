@@ -25,7 +25,7 @@ import {
 } from './TopupApprovalDialog';
 import { TopupsStatsOverview } from './TopupsStatsOverview';
 import { TopupsFilterPanel, type FilterState, initialFilterState } from './TopupsFilterPanel';
-import { TopupDetailDialog, type TopupAction } from './TopupDetailDialog';
+import { TopupDetailDialog, type TopupDialogAction } from './TopupDetailDialog';
 import type { TopupRequest, TopupStatus, TopupListParams } from '../types';
 
 // === Types ===
@@ -96,7 +96,7 @@ export function TopupsPage() {
   }, []);
 
   const handleDetailAction = useCallback(
-    (action: TopupAction) => {
+    (action: TopupDialogAction) => {
       setShowDetail(false);
       if (action === 'submit') {
         setShowSubmitDialog(true);
