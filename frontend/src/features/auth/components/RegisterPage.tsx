@@ -1,25 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useAuth } from '../hooks';
+import type { RegisterRequest } from '../types';
 
 interface RegisterFormData {
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
+  full_name: string;
 }
 
 export function RegisterPage() {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { register, isRegistering } = useAuth();
   const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
+    full_name: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,16 +42,20 @@ export function RegisterPage() {
       return;
     }
 
-    setIsSubmitting(true);
     try {
-      // TODO: Implement registration API call
-      toast.success('注册成功，请登录');
-      router.push('/login');
+      const registerData: RegisterRequest = {
+        email: formData.email,
+        password: formData.password,
+        username: formData.username,
+        full_name: formData.full_name || undefined,
+      };
+
+      await register(registerData);
+      toast.success('注册成功');
+      // useAuth hook 会自动跳转到 dashboard
     } catch (error) {
       const message = error instanceof Error ? error.message : '注册失败，请重试';
       toast.error(message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -79,7 +85,22 @@ export function RegisterPage() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                disabled={isSubmitting}
+                disabled={isRegistering}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+                全名 <span className="text-gray-400">(可选)</span>
+              </label>
+              <input
+                id="full_name"
+                name="full_name"
+                type="text"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                disabled={isRegistering}
               />
             </div>
 
@@ -95,7 +116,7 @@ export function RegisterPage() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled={isSubmitting}
+                disabled={isRegistering}
               />
             </div>
 
@@ -111,7 +132,7 @@ export function RegisterPage() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                disabled={isSubmitting}
+                disabled={isRegistering}
                 minLength={8}
               />
             </div>
@@ -128,7 +149,7 @@ export function RegisterPage() {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                disabled={isSubmitting}
+                disabled={isRegistering}
                 minLength={8}
               />
             </div>
@@ -137,10 +158,10 @@ export function RegisterPage() {
           <div>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isRegistering}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '注册中...' : '注册'}
+              {isRegistering ? '注册中...' : '注册'}
             </button>
           </div>
 
