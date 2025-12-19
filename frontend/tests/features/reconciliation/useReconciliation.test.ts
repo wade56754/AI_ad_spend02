@@ -124,7 +124,7 @@ describe('useReconciliation Hooks', () => {
     it('should pass filter params to API', async () => {
       (reconciliationApi.getReconciliations as jest.Mock).mockResolvedValue({ items: [], total: 0 });
 
-      const params = { status: 'completed', project_id: 'proj-1' };
+      const params = { status: 'completed' as const, project_id: 'proj-1' };
       renderHook(() => useReconciliations(params), { wrapper: createWrapper() });
 
       await waitFor(() => {

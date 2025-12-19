@@ -100,7 +100,7 @@ describe('useTopups Hooks', () => {
     it('should pass filter params to API', async () => {
       (topupsApi.getTopups as jest.Mock).mockResolvedValue({ items: [], total: 0 });
 
-      const params = { status: 'pending_review', project_id: 'proj-1' };
+      const params = { status: 'pending_review' as const, project_id: 'proj-1' };
       renderHook(() => useTopups(params), { wrapper: createWrapper() });
 
       await waitFor(() => {

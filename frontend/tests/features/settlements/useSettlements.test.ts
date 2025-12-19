@@ -122,7 +122,7 @@ describe('useSettlements Hooks', () => {
     it('should pass filter params to API', async () => {
       (settlementsApi.getSettlements as jest.Mock).mockResolvedValue({ items: [], total: 0 });
 
-      const params = { status: 'pending_approval', supplier_id: 'sup-1' };
+      const params = { status: 'PENDING' as const, supplier_id: 1 };
       renderHook(() => useSettlements(params), { wrapper: createWrapper() });
 
       await waitFor(() => {
@@ -292,13 +292,13 @@ describe('useSettlements Hooks', () => {
   describe('Settlement Status Types', () => {
     it('should support all settlement statuses', () => {
       const validStatuses = [
-        'draft',
-        'pending_approval',
-        'approved',
-        'partially_paid',
-        'paid',
-        'overdue',
-        'cancelled',
+        'DRAFT',
+        'PENDING',
+        'APPROVED',
+        'REJECTED',
+        'PROCESSING',
+        'COMPLETED',
+        'CANCELLED',
       ];
 
       validStatuses.forEach((status) => {

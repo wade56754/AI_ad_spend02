@@ -117,7 +117,7 @@ describe('useDailyReports Hooks', () => {
     it('should pass filter params to API', async () => {
       (dailyReportsApi.getDailyReports as jest.Mock).mockResolvedValue({ items: [], total: 0 });
 
-      const params = { status: 'trend_pending', project_id: 'proj-1' };
+      const params = { status: 'trend_pending' as const, project_id: 'proj-1' };
       renderHook(() => useDailyReports(params), { wrapper: createWrapper() });
 
       await waitFor(() => {
