@@ -85,7 +85,8 @@ export function useAuth() {
       setAuthToken(data.access_token);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
       queryClient.setQueryData(['auth', 'user'], data.user);
-      router.push('/dashboard');
+      // Redirect to home page (dashboard is under (dashboard) route group at /)
+      router.push('/');
     },
   });
 
@@ -96,7 +97,8 @@ export function useAuth() {
       setAuthToken(data.access_token);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
       queryClient.setQueryData(['auth', 'user'], data.user);
-      router.push('/dashboard');
+      // Redirect to home page (dashboard is under (dashboard) route group at /)
+      router.push('/');
     },
   });
 
@@ -194,7 +196,7 @@ export function useRequireAuth(redirectTo = '/login') {
 /**
  * Hook to require specific role
  */
-export function useRequireRole(allowedRoles: string[], redirectTo = '/dashboard') {
+export function useRequireRole(allowedRoles: string[], redirectTo = '/') {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
