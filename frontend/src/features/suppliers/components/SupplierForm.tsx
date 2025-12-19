@@ -9,8 +9,8 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
-import type { Supplier, SupplierCreateInput, SupplierUpdateInput, PaymentMethod } from '../types';
-import { PAYMENT_METHOD_CONFIG } from '../types';
+import type { Supplier, SupplierCreateInput, SupplierUpdateInput } from '../types';
+import { PaymentMethod, PAYMENT_METHOD_CONFIG } from '../types';
 
 interface SupplierFormProps {
   supplier?: Supplier | null;
@@ -33,7 +33,7 @@ export function SupplierForm({
     contact_email: supplier?.contact_email || '',
     contact_phone: supplier?.contact_phone || '',
     base_currency: supplier?.base_currency || 'USD',
-    payment_method: supplier?.payment_method || 'bank_transfer',
+    payment_method: supplier?.payment_method || PaymentMethod.BANK_TRANSFER,
     payment_terms: supplier?.payment_terms || '',
     tax_id: supplier?.tax_id || '',
     address: supplier?.address || '',

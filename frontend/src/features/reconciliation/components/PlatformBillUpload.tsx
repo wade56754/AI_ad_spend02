@@ -149,19 +149,18 @@ export function PlatformBillUpload({
     setUploadedFiles(prev => [...prev, fileRecord]);
 
     try {
-      // 创建FormData
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("platform", selectedPlatform);
-      formData.append("batch_id", batchId.toString());
-
       // 使用 apiUpload 上传文件，自动添加认证 header
       const result = await apiUpload<{
         records_count: number;
         valid_records: number;
         invalid_records: number;
         preview_data: UploadedFile["preview_data"];
-      }>("/api/v1/reconciliation/upload-platform-bill", formData);
+      }>("/api/v1/reconciliation/upload-platform-bill", file, {
+        additionalData: {
+          platform: selectedPlatform,
+          batch_id: batchId.toString(),
+        }
+      });
 
       // 更新文件记录
       setUploadedFiles(prev => prev.map(f =>
@@ -169,10 +168,10 @@ export function PlatformBillUpload({
           ? {
               ...f,
               status: "completed",
-              records_count: result.data?.records_count,
-              valid_records: result.data?.valid_records,
-              invalid_records: result.data?.invalid_records,
-              preview_data: result.data?.preview_data,
+              records_count: result.records_count,
+              valid_records: result.valid_records,
+              invalid_records: result.invalid_records,
+              preview_data: result.preview_data,
             }
           : f
       ));

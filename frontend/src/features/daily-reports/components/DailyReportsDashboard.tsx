@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { apiGet, apiRequest, ApiError } from "@/lib/api";
+import { apiGet, apiRequest, isApiError } from "@/lib/api";
 import {
   LineChart,
   Line,
@@ -118,19 +118,21 @@ export function DailyReportsDashboard({
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const response = await apiGet<DashboardData>("/api/v1/daily-reports/dashboard", {
+      const response = await apiGet<{ data?: DashboardData } | DashboardData>("/api/v1/daily-reports/dashboard", {
         start_date: format(dateRange.start, "yyyy-MM-dd"),
         end_date: format(dateRange.end, "yyyy-MM-dd"),
       });
 
-      if (response.data) {
-        setData(response.data);
+      // Handle both { data: ... } envelope and direct data formats
+      const dashboardData = 'data' in response && response.data ? response.data : response as DashboardData;
+      if (dashboardData && 'summary' in dashboardData) {
+        setData(dashboardData);
       } else {
         toast.error("获取数据失败");
       }
     } catch (error) {
       console.error("获取仪表板数据错误:", error);
-      if (error instanceof ApiError) {
+      if (isApiError(error)) {
         toast.error(error.message || "获取数据失败");
       } else {
         toast.error("获取数据失败");
@@ -170,12 +172,12 @@ export function DailyReportsDashboard({
         type: "dashboard",
       }).toString();
 
-      const response = await apiRequest(`/api/v1/daily-reports/export?${queryString}`, {
+      const response = await apiRequest<{ data?: unknown }>(`/api/v1/daily-reports/export?${queryString}`, {
         method: "GET",
       });
 
       // 如果返回的是文件数据（通常以 base64 或其他形式）
-      if (response.data) {
+      if (response && (response as { data?: unknown }).data) {
         // 如果后端返回的是 blob URL 或 base64 数据
         const blob = new Blob([JSON.stringify(response.data)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         const url = window.URL.createObjectURL(blob);
@@ -190,7 +192,7 @@ export function DailyReportsDashboard({
       }
     } catch (error) {
       console.error("导出错误:", error);
-      if (error instanceof ApiError) {
+      if (isApiError(error)) {
         toast.error(error.message || "导出失败");
       } else {
         toast.error("导出失败");

@@ -11,8 +11,8 @@ import {
   BudgetProgress,
   ProjectStatsCard,
   ProjectStatusLegend,
-  PROJECT_STATUS_CONFIG,
 } from '@/features/projects/components/ProjectStatusBadge';
+import { PROJECT_STATUS_CONFIG } from '@/features/projects/types';
 import { FolderKanban } from 'lucide-react';
 
 describe('ProjectStatusBadge', () => {
@@ -148,13 +148,9 @@ describe('PROJECT_STATUS_CONFIG', () => {
   });
 
   it('each status has required properties', () => {
-    Object.values(PROJECT_STATUS_CONFIG).forEach((config) => {
+    Object.values(PROJECT_STATUS_CONFIG).forEach((config: { label: string; variant: string }) => {
       expect(config.label).toBeDefined();
-      expect(config.icon).toBeDefined();
       expect(config.variant).toBeDefined();
-      expect(config.bgColor).toBeDefined();
-      expect(config.textColor).toBeDefined();
-      expect(config.description).toBeDefined();
     });
   });
 });

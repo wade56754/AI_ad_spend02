@@ -124,7 +124,7 @@ export function useTrendReport(
   options?: Omit<UseQueryOptions<TrendReportResponse>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: queryKeys.reports.trends(params.metric, params),
+    queryKey: queryKeys.reports.trends(params),
     queryFn: () => getTrendReport(params),
     staleTime: 1000 * 60 * 5, // 5 minutes
     ...options,

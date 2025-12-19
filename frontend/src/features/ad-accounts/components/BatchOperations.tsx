@@ -30,7 +30,7 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
-import { apiGet, apiPost, ApiError } from "@/lib/api";
+import { apiGet, apiPost, isApiError } from "@/lib/api";
 
 // 类型定义
 interface AdAccount {
@@ -153,9 +153,9 @@ export function BatchOperations({
   // 获取用户列表
   const fetchUsers = async () => {
     try {
-      const response = await apiGet("/api/v1/users", { role: "media_buyer,account_manager" });
+      const response = await apiGet<{ data: User[] }>("/api/v1/users", { role: "media_buyer,account_manager" });
       if (response.data) {
-        setUsers(response.data as User[]);
+        setUsers(response.data);
       }
     } catch (error) {
       console.error("获取用户列表失败:", error);
@@ -165,9 +165,9 @@ export function BatchOperations({
   // 获取项目列表
   const fetchProjects = async () => {
     try {
-      const response = await apiGet("/api/v1/projects", { status: "active" });
+      const response = await apiGet<{ data: Project[] }>("/api/v1/projects", { status: "active" });
       if (response.data) {
-        setProjects(response.data as Project[]);
+        setProjects(response.data);
       }
     } catch (error) {
       console.error("获取项目列表失败:", error);
@@ -190,11 +190,10 @@ export function BatchOperations({
         ...operationData,
       };
 
-      const response = await apiPost("/api/v1/ad-accounts/batch", payload);
+      const response = await apiPost<{ data?: { affected_count: number } }>("/api/v1/ad-accounts/batch", payload);
 
       if (response.data) {
-        const result = response.data as { affected_count: number };
-        toast.success(`批量操作成功，影响 ${result.affected_count} 个账户`);
+        toast.success(`批量操作成功，影响 ${response.data.affected_count} 个账户`);
         onOperationComplete();
         onClose();
       } else {
@@ -202,7 +201,7 @@ export function BatchOperations({
       }
     } catch (error) {
       console.error("批量操作错误:", error);
-      if (error instanceof ApiError) {
+      if (isApiError(error)) {
         toast.error(error.message || "批量操作失败");
       } else {
         toast.error("批量操作失败");

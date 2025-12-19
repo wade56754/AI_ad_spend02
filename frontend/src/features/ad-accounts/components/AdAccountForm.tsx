@@ -140,9 +140,9 @@ export function AdAccountForm({
   // 获取用户列表
   const fetchUsers = async () => {
     try {
-      const response = await apiGet("/api/v1/users", { role: "media_buyer,account_manager" });
+      const response = await apiGet<{ data: User[] }>("/api/v1/users", { role: "media_buyer,account_manager" });
       if (response.data) {
-        setUsers(response.data as User[]);
+        setUsers(response.data);
       }
     } catch (error) {
       console.error("获取用户列表失败:", error);
@@ -152,9 +152,9 @@ export function AdAccountForm({
   // 获取项目列表
   const fetchProjects = async () => {
     try {
-      const response = await apiGet("/api/v1/projects", { status: "active" });
+      const response = await apiGet<{ data: Project[] }>("/api/v1/projects", { status: "active" });
       if (response.data) {
-        setProjects(response.data as Project[]);
+        setProjects(response.data);
       }
     } catch (error) {
       console.error("获取项目列表失败:", error);
@@ -169,13 +169,12 @@ export function AdAccountForm({
     setAccountValid(null);
 
     try {
-      const response = await apiPost(`/api/v1/ad-accounts/validate`, {
+      const response = await apiPost<{ data?: { valid: boolean } }>(`/api/v1/ad-accounts/validate`, {
         platform: formData.platform,
         account_id: formData.account_id,
       });
 
-      const result = response.data as { valid: boolean } | undefined;
-      setAccountValid(result?.valid ?? false);
+      setAccountValid(response.data?.valid ?? false);
     } catch (error) {
       console.error("验证失败:", error);
       setAccountValid(false);
@@ -394,7 +393,7 @@ export function AdAccountForm({
                   <Label htmlFor="accountType">账户类型</Label>
                   <Select
                     value={formData.account_type}
-                    onValueChange={(value: string) => setFormData({ ...formData, account_type: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, account_type: value as "personal" | "business" })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -448,7 +447,7 @@ export function AdAccountForm({
                   <Label htmlFor="status">初始状态</Label>
                   <Select
                     value={formData.account_status}
-                    onValueChange={(value: string) => setFormData({ ...formData, account_status: value })}
+                    onValueChange={(value: string) => setFormData({ ...formData, account_status: value as "active" | "pending" | "paused" | "banned" })}
                   >
                     <SelectTrigger>
                       <SelectValue />

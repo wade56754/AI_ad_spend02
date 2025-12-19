@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Calculator, Save, X, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
-import { apiPost, apiPut, ApiError } from "@/lib/api";
+import { apiPost, apiPut, isApiError } from "@/lib/api";
 
 // 类型定义
 interface DailyReport {
@@ -141,8 +141,8 @@ export function DailyReportForm({
         : "/api/v1/daily-reports";
 
       const response = report?.id
-        ? await apiPut(endpoint, formData)
-        : await apiPost(endpoint, formData);
+        ? await apiPut<{ data?: unknown }>(endpoint, formData)
+        : await apiPost<{ data?: unknown }>(endpoint, formData);
 
       if (response.data) {
         toast.success(report?.id ? "更新成功" : "创建成功");
@@ -152,7 +152,7 @@ export function DailyReportForm({
       }
     } catch (error) {
       console.error("提交错误:", error);
-      if (error instanceof ApiError) {
+      if (isApiError(error)) {
         toast.error(error.message || "操作失败");
       } else {
         toast.error("操作失败");

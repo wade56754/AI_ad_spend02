@@ -283,7 +283,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
         supporting_documents: formData.supporting_documents,
       };
 
-      await onSubmit(requestData);
+      await onSubmit(requestData as unknown as TopupFormData);
       onClose();
       // 重置表单
       setFormData({

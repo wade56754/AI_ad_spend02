@@ -149,7 +149,7 @@ export function MainTrendChart({
     if (data.length === 0) return null;
 
     const values = data
-      .map((d) => d[config.dataKey] as number)
+      .map((d) => (d as unknown as Record<string, unknown>)[config.dataKey] as number)
       .filter((v) => v !== undefined);
     const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
     const latest = values[values.length - 1];
@@ -291,7 +291,7 @@ export function generateSummary(
 
   const config = METRIC_CONFIG[metric];
   const values = data
-    .map((d) => d[config.dataKey] as number)
+    .map((d) => (d as unknown as Record<string, unknown>)[config.dataKey] as number)
     .filter((v) => v !== undefined);
 
   const avg = values.reduce((sum, v) => sum + v, 0) / values.length;

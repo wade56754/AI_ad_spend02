@@ -79,7 +79,7 @@ export function DataStateManager<T = any>({
   // 判断是否为空状态
   const isEmptyData = React.useMemo(() => {
     if (isEmpty) {
-      return isEmpty(actualData);
+      return isEmpty(actualData as T);
     }
 
     // 默认的空数据判断逻辑

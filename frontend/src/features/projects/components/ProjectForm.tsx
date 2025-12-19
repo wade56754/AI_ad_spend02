@@ -44,7 +44,7 @@ const projectSchema = z.object({
   client_company: z.string().min(1, '客户公司不能为空').max(200),
   description: z.string().max(1000).optional(),
   budget: z.number().min(0, '预算不能为负').optional(),
-  currency: z.string().default('USD'),
+  currency: z.string().min(1, '请选择货币'),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
 });

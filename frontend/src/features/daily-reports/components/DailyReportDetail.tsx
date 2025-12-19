@@ -118,7 +118,7 @@ export function DailyReportDetail({
         await onReview(status, reviewComment);
       } else {
         // 直接调用API（使用认证API工具）
-        const response = await apiPost(`/api/v1/daily-reports/${report.id}/review`, {
+        const response = await apiPost<{ data?: { success: boolean } }>(`/api/v1/daily-reports/${report.id}/review`, {
           status,
           comment: reviewComment,
         });

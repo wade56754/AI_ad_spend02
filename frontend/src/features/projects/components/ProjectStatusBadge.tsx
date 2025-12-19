@@ -28,7 +28,7 @@ import type { ProjectStatus } from '../types';
  * Status configuration with icons, colors, and descriptions
  * (Component-specific version with icons)
  */
-const PROJECT_STATUS_BADGE_CONFIG: Record<ProjectStatus, {
+export const PROJECT_STATUS_BADGE_CONFIG: Record<ProjectStatus, {
   label: string;
   icon: LucideIcon;
   variant: 'default' | 'success' | 'warning' | 'destructive' | 'outline';
