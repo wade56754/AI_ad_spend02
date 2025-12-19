@@ -1,8 +1,9 @@
 # Change: Finance Profit Module v1
 
-**Status**: DRAFT
+**Status**: ARCHIVED
 **Version**: 1.0
 **Date**: 2025-12-02
+**Archived**: 2025-12-19
 
 ## Why
 

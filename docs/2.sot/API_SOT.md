@@ -1822,7 +1822,14 @@ with db.begin():
 
 | 方法 | 路径 | 功能 | 权限 | 状态 |
 |------|------|------|------|------|
-| GET | `/api/v1/finance/profit/summary` | 获取利润汇总 | `admin`, `finance`, `data_operator` | implemented |
+| POST | `/api/v1/finance/profit/generate` | 生成利润聚合 | `admin`, `finance` | implemented |
+| GET | `/api/v1/finance/profit/monthly` | 月度利润表 | `admin`, `finance` | implemented |
+| GET | `/api/v1/finance/profit/daily` | 日度利润数据 | `admin`, `finance` | implemented |
+| GET | `/api/v1/finance/profit/projects/{id}` | 项目利润明细 | `admin`, `finance`, `account_manager` | implemented |
+| GET | `/api/v1/finance/profit/accounts/{id}` | 账户消耗明细 | `admin`, `finance`, `account_manager`, `media_buyer` | implemented |
+| GET | `/api/v1/finance/profit/summary` | 整体利润汇总 | `admin`, `finance` | implemented |
+
+**错误码**: PROFIT_001 ~ PROFIT_008（详见 ERROR_CODES_SOT.md v2.1）
 
 **计费公式**（来自 BUSINESS_RULES.md v3.1）:
 - `revenue = conversions_final × unit_price`

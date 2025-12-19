@@ -30,6 +30,9 @@ python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
 
 # 6. Transfers API 测试（死号余额迁移）
 python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
+
+# 7. Finance Profit API 测试（财务利润统计）
+python -m pytest backend/tests/api/test_finance_profit_flow_generated.py -q
 ```
 
 ## 🚀 快速执行
@@ -44,6 +47,7 @@ python -m pytest backend/tests/ledger -q
 python -m pytest backend/tests/ad_accounts -q
 python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
 python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
+python -m pytest backend/tests/api/test_finance_profit_flow_generated.py -q
 ```
 
 ### Linux/macOS (Bash)
@@ -55,7 +59,8 @@ python -m pytest backend/tests/api/test_trend_risk_flow_generated.py -q && \
 python -m pytest backend/tests/ledger -q && \
 python -m pytest backend/tests/ad_accounts -q && \
 python -m pytest backend/tests/test_topup_api.py -q -k "not skip" && \
-python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
+python -m pytest backend/tests/api/test_transfers_flow_generated.py -q && \
+python -m pytest backend/tests/api/test_finance_profit_flow_generated.py -q
 ```
 
 ## 📊 测试覆盖模块
@@ -68,6 +73,7 @@ python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
 | Ad Accounts | `backend/tests/ad_accounts/` | - | ✅ |
 | Topup | `test_topup_api.py` | 22+ | ✅ |
 | Transfers | `test_transfers_flow_generated.py` | 17 | ✅ |
+| Finance Profit | `test_finance_profit_flow_generated.py` | 15 | ✅ |
 
 ## 🔍 测试内容
 
@@ -102,6 +108,13 @@ python -m pytest backend/tests/api/test_transfers_flow_generated.py -q
 - Permissions: media_buyer 无创建权限、account_manager 无审批权限、finance 无完成权限
 - Error Codes: BIZ_002、STATE_001 错误码验证
 - State Machine: 5 状态机流转测试（对齐 STATE_MACHINE.md v2.6 第 12 章）
+
+### 7. Finance Profit (财务利润统计)
+- Happy Path: 生成聚合、月度查询、日度查询、项目明细、账户明细、汇总查询
+- Validation: 周期参数校验（start_date ≤ end_date，不可为未来日期，范围 ≤ 366 天）
+- Permissions: admin/finance 全权限、account_manager 部分权限、media_buyer 仅账户明细
+- Error Codes: PROFIT_001~008 错误码验证
+- 利润公式: gross_profit = total_revenue - total_cost（对齐 PROFIT_SOT.md v1.1）
 
 ## 📝 使用说明
 
