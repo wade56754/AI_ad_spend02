@@ -1,0 +1,17 @@
+# AI 代码工厂 - 最小依赖
+# 用途: 运行 agents/skills/ 下的代码工厂测试
+
+# YAML 解析
+pyyaml>=6.0.0
+
+# 数据验证
+pydantic>=2.5.0,<3.0.0
+
+# 日志和控制台美化
+rich>=13.0.0
+
+# Anthropic API (可选, 用于 LLM 调用)
+anthropic>=0.40.0
+
+# 类型检查 (可选)
+mypy>=1.6.0
