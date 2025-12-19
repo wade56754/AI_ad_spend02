@@ -64,6 +64,16 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Get stored user from localStorage for initial data
+  const getStoredUser = (): User | undefined => {
+    try {
+      const stored = localStorage.getItem(AUTH_USER_KEY);
+      return stored ? JSON.parse(stored) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
   // Get current user query
   const {
     data: user,
@@ -76,6 +86,10 @@ export function useAuth() {
     enabled: !!getAuthToken(),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    // Use stored user as initial data to avoid flash of unauthenticated state
+    initialData: getStoredUser,
+    // Keep previous data when query fails (e.g., network error, 401 from expired token)
+    placeholderData: (previousData) => previousData,
   });
 
   // Login mutation

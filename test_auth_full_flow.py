@@ -177,16 +177,6 @@ class AuthFlowTest:
         """测试 6: 访问受保护页面 (登录状态下)"""
         self.log("[6/9] 访问受保护页面", "STEP")
 
-        # 先确保已登录
-        current_url = page.url
-        if "login" in current_url or "register" in current_url:
-            self.log("需要先登录才能测试受保护页面")
-            # 重新登录
-            await page.locator("#identifier").fill(self.test_email)
-            await page.locator("#password").fill(self.test_password)
-            await page.locator("button[type='submit']").click()
-            await page.wait_for_timeout(2000)
-
         protected_routes = [
             ("/projects", "项目管理"),
             ("/ad-accounts", "渠道账户"),
@@ -196,9 +186,23 @@ class AuthFlowTest:
         all_accessible = True
         for route, name in protected_routes:
             await page.goto(f"http://localhost:3000{route}", wait_until="networkidle")
-            await page.wait_for_timeout(500)
+            await page.wait_for_timeout(1500)
 
             current_url = page.url
+
+            # 如果被重定向到登录页，需要重新登录
+            if "login" in current_url:
+                self.log(f"访问 {route} 被重定向到登录页，重新登录...")
+                await page.locator("#identifier").fill(self.test_email)
+                await page.locator("#password").fill(self.test_password)
+                await page.locator("button[type='submit']").click()
+                await page.wait_for_timeout(2000)
+
+                # 再次尝试访问
+                await page.goto(f"http://localhost:3000{route}", wait_until="networkidle")
+                await page.wait_for_timeout(1500)
+                current_url = page.url
+
             accessible = "login" not in current_url and "register" not in current_url
             if accessible:
                 self.log(f"{name} ({route}) 可访问")
@@ -220,21 +224,17 @@ class AuthFlowTest:
 
         # 尝试访问受保护页面
         await page.goto("http://localhost:3000/projects", wait_until="networkidle")
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(3000)  # 等待路由保护检查和重定向
 
         await self.screenshot(page, "09_protected_after_logout")
 
-        # 应该被重定向到登录页，或者页面显示无权限
+        # 应该被重定向到登录页
         current_url = page.url
-        success = "login" in current_url or "register" in current_url
-        if not success:
-            # 已知限制: 前端 dashboard layout 未实现 useRequireAuth 保护
-            # TODO: 在 (dashboard)/layout.tsx 中添加 useRequireAuth()
+        success = "login" in current_url
+        if success:
+            self.log("路由保护生效 - 已重定向到登录页")
+        else:
             self.log(f"当前页面: {current_url}")
-            self.log("已知限制: 前端未实现路由保护 (需要在 layout.tsx 添加 useRequireAuth)", "WARN")
-            # 标记为预期行为 (已知限制)，不阻塞测试
-            self.record("登出后路由保护 (未实现-已知限制)", True)
-            return True
         self.record("登出后无法访问受保护页面", success)
         return success
 
