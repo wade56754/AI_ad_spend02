@@ -178,3 +178,7 @@ backend/__pycache__/
 *.pyc
 .venv311/
 .zshrc.save
+
+# Temp logs
+backend_log.txt
+frontend_log.txt
