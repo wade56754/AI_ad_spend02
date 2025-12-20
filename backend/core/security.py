@@ -344,10 +344,15 @@ def require_roles(*roles: str):
 def require_permissions(*permissions: str):
     """权限检查装饰器"""
     def permission_dependency(current_user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
-        user_permissions = set(current_user.permissions)
+        # Import here to avoid circular imports
+        from backend.core.permissions import get_user_permissions
+
+        # Get permissions from role mapping + custom permissions
+        user_perms = get_user_permissions(current_user)
+        user_permission_values = set(p.value if hasattr(p, 'value') else p for p in user_perms)
         required_permissions = set(permissions)
 
-        if not required_permissions.issubset(user_permissions):
+        if not required_permissions.issubset(user_permission_values):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={"code": "AUTH_PERMISSION_DENIED", "message": "权限不足"}

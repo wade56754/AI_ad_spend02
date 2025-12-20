@@ -177,8 +177,10 @@ def check_user_permission(user: AuthenticatedUser, required_permissions: Iterabl
     if not required_permissions:
         return True
 
-    user_permissions = set(get_user_permissions(user))
-    required_perms = set(str(p) for p in required_permissions)
+    # 获取用户权限值集合
+    user_permissions = set(p.value if isinstance(p, Permission) else p for p in get_user_permissions(user))
+    # 获取所需权限值集合
+    required_perms = set(p.value if isinstance(p, Permission) else p for p in required_permissions)
 
     return required_perms.issubset(user_permissions)
 
@@ -196,7 +198,7 @@ def require_permissions(*permissions: Union[str, Permission]):
     权限检查装饰器
     要求用户具有所有指定权限
     """
-    return _require_permissions(*(str(p) for p in permissions))
+    return _require_permissions(*(p.value if isinstance(p, Permission) else p for p in permissions))
 
 
 def require_any_role(*roles: str):

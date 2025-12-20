@@ -1029,6 +1029,16 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "BIZ_605": BusinessErrorCodes.BUDGET_QUERY_ERROR,
     "BIZ_606": BusinessErrorCodes.BUDGET_CREATE_ERROR,
     "BIZ_607": BusinessErrorCodes.STATISTICS_QUERY_ERROR,
+    "BIZ_610": BusinessErrorCodes.TRANSFER_DUPLICATE_REQUEST,
+    "BIZ_611": BusinessErrorCodes.TRANSFER_SAME_ACCOUNT,
+    "BIZ_612": BusinessErrorCodes.TRANSFER_SOURCE_NOT_DEAD,
+    "BIZ_613": BusinessErrorCodes.TRANSFER_TARGET_NOT_ACTIVE,
+    "BIZ_614": BusinessErrorCodes.TRANSFER_CROSS_SUPPLIER,
+    "BIZ_615": BusinessErrorCodes.TRANSFER_ALREADY_PROCESSED,
+    "BIZ_616": BusinessErrorCodes.TRANSFER_INSUFFICIENT_BALANCE,
+    "BIZ_617": BusinessErrorCodes.TRANSFER_INVALID_AMOUNT,
+    "BIZ_618": BusinessErrorCodes.TRANSFER_LEDGER_ERROR,
+    "BIZ_619": BusinessErrorCodes.TRANSFER_STATE_ERROR,
     "BIZ_700": BusinessErrorCodes.READY_CHECK_FAILED,
 
     # 系统错误
