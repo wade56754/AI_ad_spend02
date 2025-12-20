@@ -18,8 +18,7 @@ SoT 对齐:
 
 import pytest
 
-# 跳过整个模块，直到 financial_events 表迁移完成
-pytestmark = pytest.mark.skip(reason="等待 financial_events 表迁移完成 (Phase 2)")
+# financial_events 表已迁移完成，测试已启用
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
@@ -61,6 +60,7 @@ class TestSpendEventStateMachine:
     def test_event_initial_status_is_raw(self, db_session):
         """测试事件初始状态为 raw"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             idempotency_key=f"TEST:{uuid4()}",
             amount=Decimal("100.00"),
@@ -74,6 +74,7 @@ class TestSpendEventStateMachine:
     def test_transition_raw_to_pending(self, db_session):
         """测试 raw → pending 转换"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.RAW.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -93,6 +94,7 @@ class TestSpendEventStateMachine:
         """测试 pending → confirmed 转换"""
         user_id = uuid4()
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.PENDING.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -113,6 +115,7 @@ class TestSpendEventStateMachine:
     def test_transition_confirmed_to_posted(self, db_session):
         """测试 confirmed → posted 转换"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.CONFIRMED.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -132,6 +135,7 @@ class TestSpendEventStateMachine:
     def test_transition_posted_to_reversed(self, db_session):
         """测试 posted → reversed 转换"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.POSTED.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -150,6 +154,7 @@ class TestSpendEventStateMachine:
     def test_transition_pending_back_to_raw(self, db_session):
         """测试 pending → raw 回退"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.PENDING.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -168,6 +173,7 @@ class TestSpendEventStateMachine:
     def test_invalid_transition_raw_to_confirmed(self, db_session):
         """测试非法转换 raw → confirmed"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.RAW.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -186,6 +192,7 @@ class TestSpendEventStateMachine:
     def test_invalid_transition_raw_to_posted(self, db_session):
         """测试非法转换 raw → posted"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.RAW.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -201,6 +208,7 @@ class TestSpendEventStateMachine:
     def test_invalid_transition_confirmed_to_raw(self, db_session):
         """测试非法转换 confirmed → raw"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.CONFIRMED.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -216,6 +224,7 @@ class TestSpendEventStateMachine:
     def test_reversed_is_terminal_state(self, db_session):
         """测试 reversed 是终态，不能转换到其他状态"""
         event = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             event_status=EventStatus.REVERSED.value,
             idempotency_key=f"TEST:{uuid4()}",
@@ -243,6 +252,7 @@ class TestSpendImportService:
     def sample_team(self, db_session):
         """创建测试团队"""
         team = Team(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             code="SZ",
             name="深圳团队",
             status="active"
@@ -307,6 +317,7 @@ class TestIdempotencyKey:
 
         # 创建第一个事件
         event1 = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             idempotency_key=idempotency_key,
             amount=Decimal("100.00"),
@@ -317,6 +328,7 @@ class TestIdempotencyKey:
 
         # 尝试创建重复事件
         event2 = FinancialEvent(
+            id=uuid4(),  # SQLite 不支持 gen_random_uuid()
             event_type=EventType.SPEND.value,
             idempotency_key=idempotency_key,
             amount=Decimal("200.00"),
@@ -589,6 +601,7 @@ class TestBatchReversal:
         events = []
         for i in range(3):
             event = FinancialEvent(
+                id=uuid4(),  # SQLite 不支持 gen_random_uuid()
                 event_type=EventType.SPEND.value,
                 event_status=EventStatus.POSTED.value,
                 idempotency_key=f"SPEND:batch-test-{i}:{date.today().isoformat()}",
@@ -670,8 +683,8 @@ class TestExportEvents:
         """创建测试事件"""
         from backend.models.finance import Team
 
-        # 创建团队
-        team = Team(code="SZ", name="深圳团队", status="active")
+        # 创建团队 (Team 也需要显式 id)
+        team = Team(id=uuid4(), code="SZ", name="深圳团队", status="active")
         db_session.add(team)
         db_session.flush()
 
@@ -679,6 +692,7 @@ class TestExportEvents:
         events = []
         for i in range(5):
             event = FinancialEvent(
+                id=uuid4(),  # SQLite 不支持 gen_random_uuid()
                 event_type=EventType.SPEND.value,
                 event_status=EventStatus.POSTED.value,
                 idempotency_key=f"SPEND:export-test-{i}:{date.today().isoformat()}",
