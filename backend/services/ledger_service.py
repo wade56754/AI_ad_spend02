@@ -560,3 +560,27 @@ class LedgerService:
 def get_ledger_service() -> LedgerService:
     """获取财务服务实例"""
     return LedgerService()
+
+
+# ========== Phase 3 集成: Event → Ledger ==========
+
+def create_ledger_from_event(event, db):
+    """
+    从 FinancialEvent 创建分录 (Phase 3 新接口)
+
+    这是 LedgerService 与 LedgerPostingService 的集成点。
+    调用 LedgerPostingService.post_event 来处理事件过账。
+
+    Args:
+        event: FinancialEvent 对象
+        db: 数据库会话
+
+    Returns:
+        List[LedgerEntry]: 生成的分录列表
+
+    Usage:
+        from backend.services.ledger_service import create_ledger_from_event
+        entries = create_ledger_from_event(event, db)
+    """
+    from backend.services.ledger_posting_service import LedgerPostingService
+    return LedgerPostingService.post_event(event, db)
