@@ -66,8 +66,53 @@ def list_ad_accounts(
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
+    """
+    获取广告账户列表
+
+    RLS 规则 (AUTH_SPEC.md v2.0 §5.3.1):
+    - admin/data_operator: 可见所有账户 (WHERE 1=1)
+    - account_manager: 可见所管项目的账户 (JOIN projects WHERE account_manager_id = :user_id)
+    - media_buyer: 仅可见分配给自己的账户 (WHERE assigned_to = :user_id)
+    - finance: 仅可见账户列表（只读）
+    """
+    from backend.models import Project
+
     query = db.query(AdAccount)
 
+    # ===== RLS: 按角色自动过滤数据范围 =====
+    user_role = current_user.role
+    user_id = current_user.id
+
+    if user_role in ["admin", "data_operator"]:
+        # 全局视野，无过滤
+        pass
+
+    elif user_role == "account_manager":
+        # 仅可见自己管理的项目的账户
+        managed_project_ids = (
+            db.query(Project.id)
+            .filter(Project.account_manager_id == user_id)
+            .subquery()
+        )
+        query = query.filter(AdAccount.project_id.in_(managed_project_ids))
+
+    elif user_role == "media_buyer":
+        # 仅可见分配给自己的账户
+        query = query.filter(AdAccount.assigned_to == user_id)
+
+    elif user_role == "finance":
+        # finance 可以只读查看所有账户
+        pass
+
+    else:
+        # 其他角色禁止访问
+        return error_response(
+            code="AUTH_500",
+            message="权限不足，无法访问广告账户",
+            status_code=403
+        )
+
+    # ===== 应用额外过滤条件 =====
     if status_filter:
         query = query.filter(AdAccount.status == status_filter)
 
@@ -101,6 +146,16 @@ def get_ad_account(
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
+    """
+    获取单个广告账户详情
+
+    RLS 规则 (AUTH_SPEC.md v2.0 §5.3.1):
+    - admin/data_operator/finance: 可访问所有账户
+    - account_manager: 仅可访问所管项目的账户
+    - media_buyer: 仅可访问分配给自己的账户
+    """
+    from backend.models import Project
+
     account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
     if not account:
         return error_response(
@@ -108,6 +163,42 @@ def get_ad_account(
             message="广告账户不存在",
             status_code=404
         )
+
+    # ===== RLS: 权限检查 =====
+    user_role = current_user.role
+    user_id = current_user.id
+
+    if user_role in ["admin", "data_operator", "finance"]:
+        # 全局视野，无过滤
+        pass
+
+    elif user_role == "account_manager":
+        # 检查账户所属项目是否由当前用户管理
+        project = db.query(Project).filter(Project.id == account.project_id).first()
+        if not project or project.account_manager_id != user_id:
+            return error_response(
+                code="AUTH_500",
+                message="权限不足，无法访问此广告账户",
+                status_code=403
+            )
+
+    elif user_role == "media_buyer":
+        # 仅可访问分配给自己的账户
+        if account.assigned_to != user_id:
+            return error_response(
+                code="AUTH_500",
+                message="权限不足，无法访问未分配给您的账户",
+                status_code=403
+            )
+
+    else:
+        # 其他角色禁止访问
+        return error_response(
+            code="AUTH_500",
+            message="权限不足，无法访问广告账户",
+            status_code=403
+        )
+
     data = AdAccountRead.model_validate(account, from_attributes=True).model_dump()
     return success_response(data=data)
 

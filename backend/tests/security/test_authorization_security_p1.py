@@ -156,7 +156,6 @@ class TestResourceAccessControl:
                     assert account.get("id") == test_ad_account.id or \
                            account.get("assigned_to") == str(media_buyer_user.id)
 
-    @pytest.mark.skip(reason="RLS permission check not implemented in router - needs ad_accounts router to enforce assigned_to filtering")
     def test_cannot_access_unassigned_account(
         self,
         client,
@@ -166,7 +165,7 @@ class TestResourceAccessControl:
         test_channel,
         admin_user
     ):
-        """不能访问未分配的账户"""
+        """不能访问未分配的账户 (RLS 权限检查)"""
         from backend.models import AdAccount
 
         # 创建一个分配给其他用户的账户
@@ -185,8 +184,8 @@ class TestResourceAccessControl:
         # media_buyer 尝试访问
         response = client.get(f"/api/v1/ad-accounts/{other_account.id}", headers=media_buyer_headers)
 
-        # 应该返回 403 或 404
-        assert response.status_code in [403, 404]
+        # 应该返回 403 (权限不足)
+        assert response.status_code == 403
 
     def test_admin_can_access_all_resources(
         self,
