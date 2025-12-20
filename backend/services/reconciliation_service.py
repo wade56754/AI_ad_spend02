@@ -187,7 +187,7 @@ class ReconciliationService:
         if existing:
             raise BusinessLogicError(
                 message="该日期已存在对账批次",
-                error_code="BIZ-302"
+                error_code="BIZ_302"
             )
 
         # 生成批次号
@@ -270,7 +270,7 @@ class ReconciliationService:
         if not batch:
             raise ResourceNotFoundError(
                 message="对账批次不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         # 权限检查
@@ -291,7 +291,7 @@ class ReconciliationService:
             if not has_permission.first():
                 raise PermissionDeniedError(
                     message="无权限访问此对账批次",
-                    error_code="BIZ-303"
+                    error_code="BIZ_303"
                 )
 
         return batch
@@ -328,7 +328,7 @@ class ReconciliationService:
         if batch.status not in [ReconciliationBatchStatus.DRAFT.value, ReconciliationBatchStatus.PENDING_REVIEW.value]:
             raise BusinessLogicError(
                 message="只能对草稿或待审核的批次执行对账",
-                error_code="BIZ-306"
+                error_code="BIZ_306"
             )
 
         # 更新批次状态为 pending_review
@@ -608,7 +608,7 @@ class ReconciliationService:
         if not detail:
             raise ResourceNotFoundError(
                 message="对账详情不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         # 对账详情状态检查 - pending, confirmed, adjusted 可审核
@@ -616,7 +616,7 @@ class ReconciliationService:
         if detail.status not in [ReconciliationDetailStatus.PENDING.value, ReconciliationDetailStatus.CONFIRMED.value, ReconciliationDetailStatus.ADJUSTED.value]:
             raise BusinessLogicError(
                 message="只能审核待处理或异常的对账详情",
-                error_code="BIZ-306"
+                error_code="BIZ_306"
             )
 
         # 更新审核信息
@@ -670,7 +670,7 @@ class ReconciliationService:
         if not detail:
             raise ResourceNotFoundError(
                 message="对账详情不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         # 创建调整记录 - 使用 SoT DATA_SCHEMA.md v5.2 定义的字段
@@ -976,7 +976,7 @@ class ReconciliationService:
         if detail_count == 0:
             raise BusinessLogicError(
                 message="批次没有对账明细，无法提交审核",
-                error_code="RECON-001"
+                error_code="RECON_001"
             )
 
         # 使用统一状态机验证并执行转换
@@ -1100,7 +1100,7 @@ class ReconciliationService:
         if pending_details > 0:
             raise BusinessLogicError(
                 message=f"还有 {pending_details} 条明细未处理，无法完成",
-                error_code="RECON-001"
+                error_code="RECON_001"
             )
 
         # 验证完成条件2: 报告已生成
@@ -1114,7 +1114,7 @@ class ReconciliationService:
             if not report_exists:
                 raise BusinessLogicError(
                     message="对账报告未生成，无法完成",
-                    error_code="RECON-002"
+                    error_code="RECON_002"
                 )
         except ImportError:
             # ReconciliationReport 不存在，跳过此验证
@@ -1134,7 +1134,7 @@ class ReconciliationService:
             if not adjustment_exists:
                 raise BusinessLogicError(
                     message=f"明细 {detail.id} 标记为已调整但没有调整记录",
-                    error_code="RECON-003"
+                    error_code="RECON_003"
                 )
 
         # 使用统一状态机验证并执行转换
@@ -1306,7 +1306,7 @@ class ReconciliationService:
         except ImportError:
             raise BusinessLogicError(
                 message="ReconciliationReport 模型不可用",
-                error_code="SYS-001"
+                error_code="SYS_001"
             )
 
         # 收集数据
@@ -1325,7 +1325,7 @@ class ReconciliationService:
         if not batches:
             raise ResourceNotFoundError(
                 message="没有找到符合条件的对账批次",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         # 计算报告指标
@@ -1455,7 +1455,7 @@ class ReconciliationService:
         if batch.status != ReconciliationBatchStatus.DRAFT.value:
             raise BusinessLogicError(
                 message=f"只能更新草稿状态的批次，当前状态: {batch.status}",
-                error_code="STATE-400"
+                error_code="STATE_400"
             )
 
         # 检查日期是否冲突（排除当前批次）
@@ -1467,7 +1467,7 @@ class ReconciliationService:
         if existing:
             raise BusinessLogicError(
                 message="该日期已存在其他对账批次",
-                error_code="BIZ-302"
+                error_code="BIZ_302"
             )
 
         # 更新字段
@@ -1500,7 +1500,7 @@ class ReconciliationService:
         if batch.status != ReconciliationBatchStatus.DRAFT.value:
             raise BusinessLogicError(
                 message=f"只能删除草稿状态的批次，当前状态: {batch.status}",
-                error_code="STATE-400"
+                error_code="STATE_400"
             )
 
         # 删除关联的明细
@@ -1540,7 +1540,7 @@ class ReconciliationService:
         if not detail:
             raise ResourceNotFoundError(
                 message="对账明细不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         # 权限检查（通过批次）
@@ -1618,7 +1618,7 @@ class ReconciliationService:
         if not adjustment:
             raise ResourceNotFoundError(
                 message="调整记录不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         return adjustment
@@ -1644,7 +1644,7 @@ class ReconciliationService:
         if hasattr(adjustment, 'executed') and adjustment.executed:
             raise BusinessLogicError(
                 message="调整记录已执行",
-                error_code="BIZ-003"
+                error_code="BIZ_003"
             )
 
         # 获取明细和批次信息
@@ -1655,7 +1655,7 @@ class ReconciliationService:
         if not detail:
             raise ResourceNotFoundError(
                 message="关联的对账明细不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         # 获取广告账户的项目ID
@@ -1666,7 +1666,7 @@ class ReconciliationService:
         if not ad_account or not ad_account.project_id:
             raise BusinessLogicError(
                 message="无法确定调整记录关联的项目",
-                error_code="BIZ-003"
+                error_code="BIZ_003"
             )
 
         # 创建账本分录
@@ -1704,7 +1704,7 @@ class ReconciliationService:
         except ImportError:
             raise BusinessLogicError(
                 message="ReconciliationReport 模型不可用",
-                error_code="SYS-001"
+                error_code="SYS_001"
             )
 
         report = self.db.query(ReconciliationReport).filter(
@@ -1714,7 +1714,7 @@ class ReconciliationService:
         if not report:
             raise ResourceNotFoundError(
                 message="对账报告不存在",
-                error_code="SYS-004"
+                error_code="SYS_004"
             )
 
         return report
