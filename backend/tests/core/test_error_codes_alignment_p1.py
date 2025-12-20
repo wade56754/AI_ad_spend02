@@ -341,7 +341,7 @@ class TestAPIErrorResponse:
 
     def test_unauthorized_returns_auth_error(self, client):
         """未认证请求返回 AUTH 错误码"""
-        response = client.get("/api/projects/")
+        response = client.get("/api/v1/projects/")
 
         assert response.status_code == 401
         data = response.json()
@@ -355,6 +355,6 @@ class TestAPIErrorResponse:
 
     def test_not_found_returns_biz_error(self, client, admin_headers):
         """不存在资源返回 BIZ 错误码"""
-        response = client.get("/api/projects/999999", headers=admin_headers)
+        response = client.get("/api/v1/projects/999999", headers=admin_headers)
 
         assert response.status_code == 404

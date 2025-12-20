@@ -44,17 +44,17 @@ class TestUserRole:
     """测试用户角色枚举"""
 
     def test_user_role_values(self):
-        """测试 UserRole 所有枚举值"""
+        """测试 UserRole 所有枚举值 (SoT: 5个合法角色)"""
         assert UserRole.ADMIN.value == "admin"
         assert UserRole.FINANCE.value == "finance"
         assert UserRole.DATA_OPERATOR.value == "data_operator"
         assert UserRole.ACCOUNT_MANAGER.value == "account_manager"
         assert UserRole.MEDIA_BUYER.value == "media_buyer"
-        assert UserRole.ANALYST.value == "analyst"
+        # 注意: ANALYST 角色已从 SoT 移除
 
     def test_user_role_count(self):
-        """测试 UserRole 枚举数量"""
-        assert len(UserRole) == 6
+        """测试 UserRole 枚举数量 (SoT: 5个)"""
+        assert len(UserRole) == 5
 
     def test_user_role_string_inheritance(self):
         """测试 UserRole 继承自 str"""
@@ -64,7 +64,7 @@ class TestUserRole:
     def test_user_role_iteration(self):
         """测试 UserRole 可迭代"""
         roles = list(UserRole)
-        assert len(roles) == 6
+        assert len(roles) == 5
         assert UserRole.ADMIN in roles
 
     def test_user_role_comparison(self):
@@ -106,21 +106,20 @@ class TestProjectStatus:
     """测试项目状态枚举"""
 
     def test_project_status_values(self):
-        """测试 ProjectStatus 所有枚举值"""
-        assert ProjectStatus.PLANNING.value == "planning"
+        """测试 ProjectStatus 所有枚举值 (SoT: 4个状态)"""
+        assert ProjectStatus.DRAFT.value == "draft"
         assert ProjectStatus.ACTIVE.value == "active"
-        assert ProjectStatus.PAUSED.value == "paused"
-        assert ProjectStatus.COMPLETED.value == "completed"
-        assert ProjectStatus.CANCELLED.value == "cancelled"
+        assert ProjectStatus.SUSPENDED.value == "suspended"
+        assert ProjectStatus.ARCHIVED.value == "archived"
 
     def test_project_status_count(self):
         """测试 ProjectStatus 枚举数量"""
-        assert len(ProjectStatus) == 5
+        assert len(ProjectStatus) == 4
 
     def test_project_status_terminal_states(self):
         """测试 ProjectStatus 终态"""
-        terminal_states = [ProjectStatus.COMPLETED, ProjectStatus.CANCELLED]
-        assert len(terminal_states) == 2
+        terminal_states = [ProjectStatus.ARCHIVED]
+        assert len(terminal_states) == 1
 
 
 # ============================================================================
@@ -569,8 +568,11 @@ class TestEnumEdgeCases:
 
     def test_enum_string_format(self):
         """测试枚举字符串格式化"""
-        assert f"{UserRole.ADMIN}" == "admin"
-        assert str(UserRole.ADMIN) == "admin"
+        # 使用 .value 获取字符串值
+        assert UserRole.ADMIN.value == "admin"
+        assert ProjectStatus.ACTIVE.value == "active"
+        # str() 在 StrEnum 类型返回 name, 需要用 .value
+        assert f"{UserRole.ADMIN.value}" == "admin"
 
     def test_enum_repr(self):
         """测试枚举 repr 输出"""
@@ -609,19 +611,18 @@ class TestEnumIntegration:
     def test_enum_usage_in_dict(self):
         """测试枚举在字典中的使用"""
         status_map = {
-            ProjectStatus.PLANNING: "规划中",
+            ProjectStatus.DRAFT: "草稿",
             ProjectStatus.ACTIVE: "进行中",
-            ProjectStatus.COMPLETED: "已完成"
+            ProjectStatus.ARCHIVED: "已归档"
         }
-        assert status_map[ProjectStatus.PLANNING] == "规划中"
+        assert status_map[ProjectStatus.DRAFT] == "草稿"
 
     def test_enum_usage_in_set(self):
         """测试枚举在集合中的使用"""
         terminal_statuses = {
-            ProjectStatus.COMPLETED,
-            ProjectStatus.CANCELLED
+            ProjectStatus.ARCHIVED
         }
-        assert ProjectStatus.COMPLETED in terminal_statuses
+        assert ProjectStatus.ARCHIVED in terminal_statuses
         assert ProjectStatus.ACTIVE not in terminal_statuses
 
     def test_enum_comparison_with_string(self):
@@ -674,10 +675,10 @@ class TestSoTConsistency:
     """测试与 SoT 文档一致性"""
 
     def test_user_role_sot_consistency(self):
-        """测试 UserRole 与 STATE_MACHINE.md 第2章一致"""
+        """测试 UserRole 与 AUTH_SPEC.md 一致 (5个合法角色)"""
         expected_roles = {
             "admin", "finance", "data_operator",
-            "account_manager", "media_buyer", "analyst"
+            "account_manager", "media_buyer"
         }
         actual_roles = {role.value for role in UserRole}
         assert actual_roles == expected_roles
@@ -763,15 +764,15 @@ class TestEnumCounts:
             len(ImportJobStatus) +
             len(ImportJobType)
         )
-        # 6+2+5+6+8+7+5+3+3+3+6+4+4+5+5+4 = 76
-        assert total_members == 76
+        # 5+2+4+6+8+7+5+3+3+3+6+4+4+5+5+4 = 74
+        assert total_members == 74
 
     def test_enum_member_count_breakdown(self):
         """测试各枚举成员数量明细"""
         expected_counts = {
-            "UserRole": 6,
+            "UserRole": 5,  # SoT: 5个合法角色
             "ChannelStatus": 2,
-            "ProjectStatus": 5,
+            "ProjectStatus": 4,  # SoT: draft/active/suspended/archived
             "AdAccountStatus": 6,
             "DailyReportStatus": 8,
             "TopupRequestStatus": 7,

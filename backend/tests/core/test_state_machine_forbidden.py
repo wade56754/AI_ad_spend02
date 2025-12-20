@@ -223,9 +223,9 @@ class TestErrorCodeMapping:
         assert StateErrorCodes.FORBIDDEN_TRANSITION.status_code == 400
 
         # STATE_401: 跳过必要步骤
-        assert hasattr(StateErrorCodes, 'SKIPPED_STEP')
-        assert StateErrorCodes.SKIPPED_STEP.code == "STATE_401"
-        assert StateErrorCodes.SKIPPED_STEP.status_code == 400
+        assert hasattr(StateErrorCodes, 'SKIP_REQUIRED_STEP')
+        assert StateErrorCodes.SKIP_REQUIRED_STEP.code == "STATE_401"
+        assert StateErrorCodes.SKIP_REQUIRED_STEP.status_code == 400
 
         # STATE_402: 终态非法回退
         assert hasattr(StateErrorCodes, 'FINAL_STATE_ROLLBACK')
@@ -235,7 +235,7 @@ class TestErrorCodeMapping:
     def test_state_error_codes_have_messages(self):
         """验证所有状态机错误码有消息"""
         assert StateErrorCodes.FORBIDDEN_TRANSITION.message
-        assert StateErrorCodes.SKIPPED_STEP.message
+        assert StateErrorCodes.SKIP_REQUIRED_STEP.message
         assert StateErrorCodes.FINAL_STATE_ROLLBACK.message
 
     def test_concurrency_conflict_code(self):
@@ -256,11 +256,10 @@ class TestTransferForbiddenTransitions:
         """测试 completed 转账不能回退"""
         from backend.models.base import TransferRequestStatus
 
-        # completed 是终态
+        # completed 和 rejected 是终态 (SoT: STATE_MACHINE.md v2.6)
         terminal_states = [
             TransferRequestStatus.COMPLETED,
             TransferRequestStatus.REJECTED,
-            TransferRequestStatus.CANCELLED,
         ]
 
         for status in terminal_states:
@@ -269,16 +268,16 @@ class TestTransferForbiddenTransitions:
             assert status.value is not None
 
     def test_transfer_status_values_match_sot(self):
-        """验证转账状态值与 SoT 定义一致"""
+        """验证转账状态值与 SoT 定义一致 (STATE_MACHINE.md v2.6)"""
         from backend.models.base import TransferRequestStatus
 
+        # SoT: draft → pending_approval → approved/rejected → completed
         expected_statuses = [
             'draft',
-            'pending_review',
+            'pending_approval',
             'approved',
             'completed',
             'rejected',
-            'cancelled',
         ]
 
         actual_statuses = [s.value for s in TransferRequestStatus]

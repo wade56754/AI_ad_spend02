@@ -598,7 +598,7 @@ class TestErrorCodeIntegration:
         """测试所有错误类可访问"""
         assert hasattr(AuthErrorCodes, 'INVALID_CREDENTIALS')
         assert hasattr(BusinessErrorCodes, 'INVALID_OPERATION')
-        assert hasattr(SystemErrorCodes, 'SYS_001')
+        assert hasattr(SystemErrorCodes, 'INTERNAL_ERROR')
         assert hasattr(DatabaseErrorCodes, 'CONNECTION_FAILED')
         assert hasattr(ValidationErrorCodes, 'REQUIRED_FIELD_MISSING')
         assert hasattr(ProfitErrorCodes, 'INVALID_PERIOD_PARAMS')

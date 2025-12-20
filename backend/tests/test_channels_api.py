@@ -24,13 +24,14 @@ class TestChannelsList:
         data = response.json()
         assert data["success"] is True
         assert "data" in data
-        assert isinstance(data["data"], list)
-        assert len(data["data"]) >= 1
+        # API 返回 paginated 格式: data.items 和 data.meta
+        assert isinstance(data["data"]["items"], list)
+        assert len(data["data"]["items"]) >= 1
 
         # 验证分页元数据
-        assert "meta" in data
-        assert "pagination" in data["meta"]
-        pagination = data["meta"]["pagination"]
+        assert "meta" in data["data"]
+        assert "pagination" in data["data"]["meta"]
+        pagination = data["data"]["meta"]["pagination"]
         assert "page" in pagination
         assert "page_size" in pagination
         assert "total" in pagination
@@ -45,7 +46,7 @@ class TestChannelsList:
 
         assert response.status_code == 200
         data = response.json()
-        pagination = data["meta"]["pagination"]
+        pagination = data["data"]["meta"]["pagination"]
         assert pagination["page"] == 1
         assert pagination["page_size"] == 10
 
@@ -60,7 +61,7 @@ class TestChannelsList:
         assert response.status_code == 200
         data = response.json()
         # 所有返回的渠道应该都是激活状态
-        for channel in data["data"]:
+        for channel in data["data"]["items"]:
             assert channel.get("is_active", True) is True
 
     def test_list_channels_search(self, client, auth_headers, test_channel):

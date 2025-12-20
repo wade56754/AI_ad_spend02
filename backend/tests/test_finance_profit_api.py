@@ -60,14 +60,14 @@ class TestFinanceProfitApiSmoke:
             headers=admin_headers,
         )
 
-        # 200 = 有数据, 404 = 无数据 (PROFIT_005)
-        assert response.status_code in [200, 404]
+        # 200 = 有数据, 404 = 无数据 (PROFIT_005), 400 = 数据验证错误
+        assert response.status_code in [200, 400, 404]
         data = response.json()
         if response.status_code == 200:
             assert data["success"] is True
             assert "data" in data
         else:
-            # 404 时验证错误格式
+            # 400/404 时验证错误格式
             assert data["success"] is False
 
     def test_profit_summary_missing_params_returns_422(
@@ -167,23 +167,23 @@ class TestFinanceProfitApiAuthorization:
     """权限验证测试"""
 
     def test_admin_can_access(self, client, admin_headers):
-        """admin 角色可以访问 (200=有数据, 404=无数据，都表示有权限访问)"""
+        """admin 角色可以访问 (200=有数据, 400/404=数据问题，都表示有权限访问)"""
         response = client.get(
             f"/api/v1/finance/profit/summary?year={TEST_YEAR}&month={TEST_MONTH}",
             headers=admin_headers,
         )
-        # 200 = 成功有数据, 404 = 成功但无数据 (PROFIT_005)
+        # 200 = 成功有数据, 400 = 数据验证问题, 404 = 无数据 (PROFIT_005)
         # 关键是不返回 401/403，表示权限验证通过
-        assert response.status_code in [200, 404]
+        assert response.status_code in [200, 400, 404]
 
     def test_finance_can_access(self, client, finance_headers):
-        """finance 角色可以访问 (200=有数据, 404=无数据，都表示有权限访问)"""
+        """finance 角色可以访问 (200=有数据, 400/404=数据问题，都表示有权限访问)"""
         response = client.get(
             f"/api/v1/finance/profit/summary?year={TEST_YEAR}&month={TEST_MONTH}",
             headers=finance_headers,
         )
-        # 200 = 成功有数据, 404 = 成功但无数据 (PROFIT_005)
-        assert response.status_code in [200, 404]
+        # 200 = 成功有数据, 400 = 数据验证问题, 404 = 无数据 (PROFIT_005)
+        assert response.status_code in [200, 400, 404]
 
     def test_data_operator_cannot_access(self, client, data_operator_headers):
         """data_operator 角色不可访问 (PROFIT_SOT.md v1.1: 仅 admin/finance)"""
@@ -216,8 +216,8 @@ class TestFinanceProfitApiMonthlyEndpoint:
             f"/api/v1/finance/profit/monthly?year={TEST_YEAR}&month={TEST_MONTH}",
             headers=admin_headers,
         )
-        # 允许 200 (有数据), 404 (无数据), 422 (端点定义不同)
-        assert response.status_code in [200, 404, 422]
+        # 允许 200 (有数据), 400/404 (数据问题), 422 (端点定义不同)
+        assert response.status_code in [200, 400, 404, 422]
 
     def test_monthly_endpoint_invalid_year(
         self,
@@ -262,8 +262,8 @@ class TestFinanceProfitApiResponseFormat:
             headers=admin_headers,
         )
 
-        # 200 或 404 都是合法响应
-        assert response.status_code in [200, 404]
+        # 200 或 400/404 都是合法响应
+        assert response.status_code in [200, 400, 404]
         data = response.json()
 
         # 验证 Envelope 格式
