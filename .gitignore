@@ -182,3 +182,4 @@ backend/__pycache__/
 # Temp logs
 backend_log.txt
 frontend_log.txt
+frontend/playwright-report/
