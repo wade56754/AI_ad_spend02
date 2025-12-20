@@ -132,7 +132,6 @@ class TestResourceAccessControl:
     验证用户只能访问授权的资源
     """
 
-    @pytest.mark.skip(reason="Router schema validation issue: AdAccountRead expects UUID but fixture uses int IDs")
     def test_user_can_only_see_assigned_accounts(
         self,
         client,
@@ -157,7 +156,7 @@ class TestResourceAccessControl:
                     assert account.get("id") == test_ad_account.id or \
                            account.get("assigned_to") == str(media_buyer_user.id)
 
-    @pytest.mark.skip(reason="Router schema validation issue: AdAccountRead expects UUID but fixture uses int IDs")
+    @pytest.mark.skip(reason="RLS permission check not implemented in router - needs ad_accounts router to enforce assigned_to filtering")
     def test_cannot_access_unassigned_account(
         self,
         client,
@@ -189,7 +188,6 @@ class TestResourceAccessControl:
         # 应该返回 403 或 404
         assert response.status_code in [403, 404]
 
-    @pytest.mark.skip(reason="Router schema validation issue: AdAccountRead expects UUID but fixture uses int IDs")
     def test_admin_can_access_all_resources(
         self,
         client,

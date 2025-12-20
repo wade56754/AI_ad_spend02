@@ -136,7 +136,6 @@ class TestAdAccountsAPIPerformance(TestAPIResponseTimes):
     广告账户 API 性能测试
     """
 
-    @pytest.mark.skip(reason="Router schema validation issue: AdAccountRead expects UUID but fixture uses int IDs")
     def test_ad_accounts_list_performance(
         self,
         client,
@@ -153,7 +152,6 @@ class TestAdAccountsAPIPerformance(TestAPIResponseTimes):
         assert p95 < self.LIST_THRESHOLD_MS, \
             f"广告账户列表 P95 响应时间 {p95:.2f}ms 超过阈值 {self.LIST_THRESHOLD_MS}ms"
 
-    @pytest.mark.skip(reason="Router schema validation issue: AdAccountRead expects UUID but fixture uses int IDs")
     def test_ad_account_detail_performance(
         self,
         client,
@@ -231,7 +229,6 @@ class TestPerformanceMetrics:
     性能指标收集
     """
 
-    @pytest.mark.skip(reason="Router schema validation issue: AdAccountRead expects UUID but fixture uses int IDs")
     def test_collect_all_api_metrics(
         self,
         client,
@@ -298,7 +295,6 @@ class TestConcurrentRequests:
         for response in results:
             assert response.status_code == 200
 
-    @pytest.mark.skip(reason="Router schema validation issue: AdAccountRead expects UUID but fixture uses int IDs")
     def test_concurrent_different_apis(
         self,
         client,

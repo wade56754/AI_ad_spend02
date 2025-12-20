@@ -97,7 +97,7 @@ def list_ad_accounts(
 @log_requests("ad_accounts")
 @router.get("/{account_id}", response_model=dict)
 def get_ad_account(
-    account_id: UUID,
+    account_id: int,  # BigInteger in model
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
@@ -119,7 +119,7 @@ def create_ad_account(
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    account = AdAccount(id=uuid4(), **payload.dict())
+    account = AdAccount(**payload.model_dump())  # id is autoincrement BigInteger
     db.add(account)
     db.commit()
     db.refresh(account)
@@ -140,7 +140,7 @@ def create_ad_account(
 @log_requests("ad_accounts")
 @router.put("/{account_id}/status", response_model=dict)
 def update_ad_account_status(
-    account_id: UUID,
+    account_id: int,  # BigInteger in model
     payload: AdAccountStatusUpdate,
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -202,7 +202,7 @@ def update_ad_account_status(
 @log_requests("ad_accounts")
 @router.delete("/{account_id}", response_model=dict)
 def delete_ad_account(
-    account_id: UUID,
+    account_id: int,  # BigInteger in model
     current_user: AuthenticatedUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:

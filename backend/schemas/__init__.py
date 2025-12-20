@@ -102,16 +102,17 @@ class ChannelRead(ChannelBase, TimestampMixin, ORMBase):
     id: UUID
 
 
-# Ad Accounts
+# Ad Accounts - 对齐 models/accounts/ad_account.py
 class AdAccountBase(BaseModel):
-    name: str
-    project_id: UUID
+    """广告账户基础字段 - 对齐 AdAccount 模型"""
+    account_code: str  # 账户代码 (required)
+    account_name: Optional[str] = None  # 账户名称 (optional)
+    project_id: int  # BigInteger in model
     channel_id: UUID
-    assigned_user_id: Optional[UUID] = None
-    status: str = AdAccountStatus.NEW.value  # 使用枚举默认值
-    dead_reason: Optional[str] = None
-    created_by: Optional[UUID] = None
-    updated_by: Optional[UUID] = None
+    assigned_to: Optional[UUID] = None  # 负责人 (UUID from AssignableMixin)
+    status: str = AdAccountStatus.NEW.value  # 账户状态
+    death_reason: Optional[str] = None  # 死号原因
+    notes: Optional[str] = None  # 备注
 
 
 class AdAccountCreate(AdAccountBase):
@@ -119,24 +120,24 @@ class AdAccountCreate(AdAccountBase):
 
 
 class AdAccountUpdate(BaseModel):
-    name: Optional[str] = None
-    project_id: Optional[UUID] = None
+    account_name: Optional[str] = None
+    project_id: Optional[int] = None
     channel_id: Optional[UUID] = None
-    assigned_user_id: Optional[UUID] = None
+    assigned_to: Optional[UUID] = None
     status: Optional[str] = None
-    dead_reason: Optional[str] = None
-    created_by: Optional[UUID] = None
-    updated_by: Optional[UUID] = None
+    death_reason: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class AdAccountStatusUpdate(BaseModel):
     status: str
-    updated_by: Optional[UUID] = None
-    dead_reason: Optional[str] = None
+    death_reason: Optional[str] = None
 
 
 class AdAccountRead(AdAccountBase, TimestampMixin, ORMBase):
-    id: UUID
+    """广告账户读取响应"""
+    id: int  # BigInteger in model
+    balance: Optional[Decimal] = None  # 账户余额
 
 
 # Ad Spend Daily
