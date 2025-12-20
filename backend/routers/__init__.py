@@ -19,6 +19,7 @@ from . import (
     reconciliation,  # 对账管理
     reports,  # 报表管理
     agents,  # Agent 管理
+    spend,  # 消耗导入 (Financial SoT Phase 2)
 )
 
 __all__ = [
@@ -39,6 +40,7 @@ __all__ = [
     "reconciliation",
     "reports",
     "agents",
+    "spend",
 ]
 
 
