@@ -75,8 +75,7 @@ class AdAccountService:
         if not AD_ACCOUNT_STATE_MACHINE.can_transition(current_status, target_status):
             allowed = AD_ACCOUNT_STATE_MACHINE.get_allowed_transitions(current_status)
             raise ValidationError(
-                "STATE_400",
-                f"{action_name}失败: 不能从 {current_status} 转换到 {target_status}。允许的目标状态: {allowed}"
+                f"{action_name}失败: 不能从状态 {current_status} 转换到 {target_status}。允许的目标状态: {allowed}"
             )
 
         # 使用状态机执行转换（包含角色验证）
@@ -86,8 +85,7 @@ class AdAccountService:
             )
         except StateTransitionError as e:
             raise ValidationError(
-                "STATE_401",
-                f"{action_name}失败: {str(e)}"
+                f"{action_name}失败: 不能从状态 {current_status} 转换到 {target_status}"
             )
 
     async def create_account(
@@ -99,19 +97,19 @@ class AdAccountService:
         # 验证项目是否存在
         project = self.db.query(Project).filter(Project.id == request.project_id).first()
         if not project:
-            raise ValidationError("BIZ_401", "项目不存在")
+            raise ValidationError("项目不存在")
 
         # 验证渠道是否存在
         channel = self.db.query(Channel).filter(Channel.id == request.channel_id).first()
         if not channel:
-            raise ValidationError("BIZ_402", "渠道不存在")
+            raise ValidationError("渠道不存在")
 
         # 检查平台账户ID是否已存在
         existing = self.db.query(AdAccount).filter(
             AdAccount.account_code == request.account_id
         ).first()
         if existing:
-            raise ValidationError("BIZ_403", "平台账户ID已存在")
+            raise ValidationError("平台账户ID已存在")
 
         # 创建账户
         account = AdAccount(
@@ -225,16 +223,16 @@ class AdAccountService:
         account = query.first()
 
         if not account:
-            raise NotFoundError("SYS_004", "广告账户不存在")
+            raise NotFoundError("广告账户不存在")
 
         # 权限检查
         if user_role == "media_buyer" and account.assigned_to != current_user_id:
-            raise PermissionError("BIZ_403", "无权限访问此账户")
+            raise PermissionError("无权限访问此账户")
         elif user_role == "account_manager":
             # 检查是否是账户管理员的项目
             project = self.db.query(Project).filter(Project.id == account.project_id).first()
             if not project or project.account_manager_id != current_user_id:
-                raise PermissionError("BIZ_403", "无权限访问此账户")
+                raise PermissionError("无权限访问此账户")
 
         return account
 
@@ -511,7 +509,7 @@ class AdAccountService:
         await self.get_account_by_id(account_id, current_user_id, user_role)
 
         query = self.db.query(AccountAlert).filter(
-            AccountAlert.account_id == account_id
+            AccountAlert.ad_account_id == account_id
         )
 
         if status:
@@ -534,13 +532,16 @@ class AdAccountService:
         await self.get_account_by_id(account_id, current_user_id)
 
         alert = AccountAlert(
-            account_id=account_id,
+            ad_account_id=account_id,
             alert_type=request.alert_type.value,
             severity=request.severity.value,
-            title=request.title,
+            status="open",  # 新建预警默认为 open 状态
             message=request.message,
-            trigger_condition=request.trigger_condition,
-            notify_users=request.notify_users
+            alert_metadata={
+                "title": request.title,
+                "trigger_condition": request.trigger_condition,
+                "notify_users": request.notify_users
+            }
         )
 
         self.db.add(alert)
@@ -570,7 +571,7 @@ class AdAccountService:
         ).first()
 
         if not alert:
-            raise NotFoundError("SYS_004", "预警不存在")
+            raise NotFoundError("预警不存在")
 
         # 权限检查
         await self.get_account_by_id(alert.account_id, current_user_id)
@@ -611,7 +612,7 @@ class AdAccountService:
         await self.get_account_by_id(account_id, current_user_id, user_role)
 
         query = self.db.query(AccountNote).filter(
-            AccountNote.account_id == account_id
+            AccountNote.ad_account_id == account_id
         )
 
         if note_type:
@@ -635,7 +636,7 @@ class AdAccountService:
         await self.get_account_by_id(account_id, current_user_id)
 
         note = AccountNote(
-            account_id=account_id,
+            ad_account_id=account_id,
             title=request.title,
             content=request.content,
             note_type=request.note_type.value,
@@ -668,7 +669,7 @@ class AdAccountService:
 
         # 检查是否可以删除（只有archived状态可以删除）
         if account.status != "archived":
-            raise ValidationError("BIZ_405", "只有归档状态的账户才能删除")
+            raise ValidationError("只有归档状态的账户才能删除")
 
         # 软删除
         account.status = "deleted"
@@ -698,12 +699,11 @@ class AdAccountService:
     ):
         """创建状态历史记录"""
         history = AccountStatusHistory(
-            account_id=account_id,
+            ad_account_id=account_id,
             old_status=old_status,
             new_status=new_status,
-            change_reason=reason,
-            changed_by=user_id,
-            change_source=source
+            reason=f"{reason} (source: {source})",  # 合并 reason 和 source
+            changed_by=user_id
         )
 
         self.db.add(history)

@@ -129,14 +129,8 @@ ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
         Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE,
         Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE,
         Permission.REPORT_READ
-    ],
-    UserRole.ANALYST: [
-        # 分析师权限 - 👁 项目管理(只读)、👁 账户管理(只读)、👁 日报管理(只读)、👁 报表查看
-        Permission.PROJECT_READ,
-        Permission.ACCOUNT_READ,
-        Permission.DAILY_REPORT_READ,
-        Permission.REPORT_READ, Permission.REPORT_EXPORT
     ]
+    # 注意: ANALYST 角色已移除 (SoT 仅定义 5 个合法角色)
 }
 
 
