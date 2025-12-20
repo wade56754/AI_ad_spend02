@@ -185,13 +185,18 @@ get_current_user = get_current_active_user
 
 
 def require_role(allowed_roles: Union[str, List[str]]):
-    """角色权限装饰器
+    """角色权限装饰器 (用于 Depends)
 
     Args:
         allowed_roles: 允许的角色列表，单个角色可以是字符串
 
     Returns:
         依赖函数
+
+    Usage:
+        @router.get("/admin")
+        async def admin_endpoint(user: User = Depends(require_role(["admin"]))):
+            ...
     """
     if isinstance(allowed_roles, str):
         allowed_roles = [allowed_roles]
@@ -210,6 +215,34 @@ def require_role(allowed_roles: Union[str, List[str]]):
         return current_user
 
     return role_checker
+
+
+def check_user_role(user: User, allowed_roles: Union[str, List[str]]) -> None:
+    """直接检查用户角色 (用于路由函数内部)
+
+    Args:
+        user: 当前用户对象
+        allowed_roles: 允许的角色列表，单个角色可以是字符串
+
+    Raises:
+        HTTPException: 403 - 权限不足
+
+    Usage:
+        async def my_endpoint(current_user: User = Depends(get_current_user)):
+            check_user_role(current_user, ["admin", "finance"])
+            # 继续处理...
+    """
+    if isinstance(allowed_roles, str):
+        allowed_roles = [allowed_roles]
+
+    if user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=AuthErrorCodes.PERMISSION_DENIED.status_code,
+            detail={
+                "code": AuthErrorCodes.PERMISSION_DENIED.code,
+                "message": f"权限不足，需要角色: {', '.join(allowed_roles)}"
+            }
+        )
 
 
 def require_admin():

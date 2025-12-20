@@ -51,6 +51,11 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
     # 外键：UUID（对齐 DATA_SCHEMA.md 3.2.9）
     channel_id = Column(PGUUID(as_uuid=True), ForeignKey('channels.id', ondelete='CASCADE'), nullable=False)
 
+    # Phase 1 Financial SoT 新增外键
+    team_id = Column(PGUUID(as_uuid=True), ForeignKey('teams.id', ondelete='SET NULL'), nullable=True, comment="团队ID")
+    buyer_id = Column(PGUUID(as_uuid=True), ForeignKey('buyers.id', ondelete='SET NULL'), nullable=True, comment="投手ID")
+    supplier_id = Column(PGUUID(as_uuid=True), ForeignKey('suppliers.id', ondelete='SET NULL'), nullable=True, comment="供应商ID")
+
     # 基本信息
     account_code = Column(String(50), unique=True, nullable=False, comment="账户代码")
     account_name = Column(String(100), nullable=True, comment="账户名称")
@@ -67,6 +72,11 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
 
     # 其他
     notes = Column(Text, nullable=True, comment="备注")
+
+    # Phase 1 Financial SoT 新增字段
+    account_type = Column(String(50), nullable=True, comment="账户类型 (美金户/越南盾户/企业户...)")
+    platform = Column(String(20), nullable=True, comment="平台 (FB/TK/Google)")
+    region = Column(String(50), nullable=True, comment="地区")
 
     # 并发控制
     version = Column(Integer, nullable=False, server_default='1', comment="乐观锁版本号")
@@ -97,6 +107,31 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
         doc="负责人（投手）"
     )
 
+    # Phase 1 Financial SoT 新增关系
+    # 多对一：账户 -> 团队
+    team = relationship(
+        "Team",
+        foreign_keys="AdAccount.team_id",
+        lazy="joined",
+        doc="所属团队"
+    )
+
+    # 多对一：账户 -> 投手
+    buyer = relationship(
+        "Buyer",
+        foreign_keys="AdAccount.buyer_id",
+        lazy="joined",
+        doc="负责投手"
+    )
+
+    # 多对一：账户 -> 供应商
+    supplier = relationship(
+        "Supplier",
+        foreign_keys="AdAccount.supplier_id",
+        lazy="joined",
+        doc="供应商"
+    )
+
     # 约束与索引
     __table_args__ = (
         CheckConstraint(
@@ -108,6 +143,11 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
         Index('idx_ad_accounts_status', 'status'),
         Index('idx_ad_accounts_assigned_to', 'assigned_to'),
         Index('idx_ad_accounts_created_at', 'created_at'),
+        # Phase 1 Financial SoT 新增索引
+        Index('idx_ad_accounts_team_id', 'team_id'),
+        Index('idx_ad_accounts_buyer_id', 'buyer_id'),
+        Index('idx_ad_accounts_supplier_id', 'supplier_id'),
+        Index('idx_ad_accounts_platform', 'platform'),
     )
 
     def __repr__(self):
