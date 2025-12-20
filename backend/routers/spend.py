@@ -10,15 +10,18 @@ SoT 对齐:
 - ERROR_CODES_SOT.md v2.1: 错误码规范
 
 端点列表:
-- POST /spend/import         - 导入 Excel 消耗数据
-- POST /spend/events         - 手动创建消耗事件
-- GET  /spend/events         - 查询消耗事件列表
-- GET  /spend/events/{id}    - 获取消耗事件详情
-- POST /spend/events/validate - 验证消耗事件 (raw → pending)
-- POST /spend/events/confirm  - 确认消耗事件 (pending → confirmed)
-- POST /spend/events/post     - 入账消耗事件 (confirmed → posted)
-- POST /spend/events/reverse  - 冲正消耗事件 (posted → reversed)
-- GET  /spend/statistics      - 获取消耗统计
+- POST /spend/import              - 导入 Excel 消耗数据
+- POST /spend/events              - 手动创建消耗事件
+- GET  /spend/events              - 查询消耗事件列表
+- GET  /spend/events/{id}         - 获取消耗事件详情
+- POST /spend/events/validate     - 验证消耗事件 (raw → pending)
+- POST /spend/events/confirm      - 确认消耗事件 (pending → confirmed)
+- POST /spend/events/post         - 入账消耗事件 (confirmed → posted)
+- POST /spend/events/reverse      - 冲正消耗事件 (posted → reversed)
+- POST /spend/events/batch-reverse - 批量冲正 (posted → reversed) [NEW]
+- GET  /spend/statistics          - 获取消耗统计
+- GET  /spend/export              - 导出消耗事件 Excel/CSV [NEW]
+- GET  /spend/template            - 获取导入模板 [NEW]
 
 权限要求:
 - finance: 所有操作
@@ -61,10 +64,13 @@ from backend.schemas.spend import (
     SpendEventPostResponse,
     SpendEventReverseRequest,
     SpendEventReverseResponse,
+    SpendEventBatchReverseRequest,
+    SpendEventBatchReverseResponse,
     SpendEventResponse,
     SpendEventListResponse,
     SpendEventQueryRequest,
     SpendStatisticsResponse,
+    SpendTemplateResponse,
     TeamCodeEnum,
 )
 from backend.services.spend_import_service import SpendImportService
@@ -505,4 +511,133 @@ async def get_spend_statistics(
     return success_response(
         data=SpendStatisticsResponse(**stats),
         message="统计成功"
+    )
+
+
+# ========== 批量冲正端点 ==========
+
+@router.post(
+    "/events/batch-reverse",
+    response_model=StandardResponse[SpendEventBatchReverseResponse],
+    summary="批量冲正消耗事件",
+    description="""
+    批量冲正已入账的消耗事件，将状态从 posted 转换为 reversed。
+
+    批量冲正流程:
+    1. 批量验证事件状态
+    2. 生成反向 ledger_entries
+    3. 状态转换: posted → reversed
+
+    限制: 单次最多冲正 100 条记录
+
+    权限要求: admin
+    """
+)
+async def batch_reverse_spend_events(
+    request: SpendEventBatchReverseRequest,
+    service: SpendImportService = Depends(get_spend_service),
+    current_user: User = Depends(get_current_user)
+):
+    """批量冲正消耗事件 (posted → reversed)"""
+    check_user_role(current_user, ["admin"])
+
+    try:
+        result = service.reverse_events(
+            event_ids=request.event_ids,
+            reason=request.reason,
+            user_id=current_user.id,
+        )
+        return success_response(
+            data=result,
+            message=result.message
+        )
+    except BusinessLogicError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": e.error_code, "message": str(e)}
+        )
+
+
+# ========== 导出端点 ==========
+
+@router.get(
+    "/export",
+    summary="导出消耗事件",
+    description="""
+    导出消耗事件为 Excel 或 CSV 文件。
+
+    支持多种筛选条件，最多导出 10000 条记录。
+
+    权限要求: finance, data_operator, admin
+    """
+)
+async def export_spend_events(
+    event_status: Optional[str] = Query(None, description="事件状态"),
+    team_id: Optional[UUID] = Query(None, description="团队ID"),
+    supplier_id: Optional[int] = Query(None, description="供应商ID"),
+    start_date: Optional[date] = Query(None, description="开始日期"),
+    end_date: Optional[date] = Query(None, description="结束日期"),
+    format: str = Query("xlsx", description="导出格式 (xlsx/csv)"),
+    service: SpendImportService = Depends(get_spend_service),
+    current_user: User = Depends(get_current_user)
+):
+    """导出消耗事件为 Excel/CSV"""
+    from fastapi.responses import Response
+
+    check_user_role(current_user, ["finance", "data_operator", "admin"])
+
+    file_content, file_name = service.export_events(
+        event_status=event_status,
+        team_id=team_id,
+        supplier_id=supplier_id,
+        start_date=start_date,
+        end_date=end_date,
+        export_format=format,
+    )
+
+    # 设置响应头
+    content_type = "text/csv" if format == "csv" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+    return Response(
+        content=file_content,
+        media_type=content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{file_name}"'
+        }
+    )
+
+
+# ========== 模板生成端点 ==========
+
+@router.get(
+    "/template",
+    summary="获取导入模板",
+    description="""
+    获取消耗数据导入模板 Excel 文件。
+
+    模板包含:
+    - 标准列名
+    - 示例数据
+    - 填写说明
+
+    权限要求: finance, data_operator, admin
+    """
+)
+async def get_spend_template(
+    service: SpendImportService = Depends(get_spend_service),
+    current_user: User = Depends(get_current_user)
+):
+    """获取消耗导入模板"""
+    from fastapi.responses import Response
+
+    check_user_role(current_user, ["finance", "data_operator", "admin"])
+
+    file_content, file_name, columns = service.generate_template()
+
+    return Response(
+        content=file_content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f'attachment; filename="{file_name}"'
+        }
     )

@@ -570,3 +570,265 @@ class TestEventTransitions:
 
         for status in all_statuses:
             assert status in FinancialEvent.TRANSITIONS
+
+
+# ==================== 新增功能测试 (Phase 2) ====================
+
+
+class TestBatchReversal:
+    """批量冲正功能测试"""
+
+    @pytest.fixture
+    def service(self, db_session):
+        """创建服务实例"""
+        return SpendImportService(db_session)
+
+    @pytest.fixture
+    def posted_events(self, db_session):
+        """创建已入账的事件"""
+        events = []
+        for i in range(3):
+            event = FinancialEvent(
+                event_type=EventType.SPEND.value,
+                event_status=EventStatus.POSTED.value,
+                idempotency_key=f"SPEND:batch-test-{i}:{date.today().isoformat()}",
+                amount=Decimal("100.00"),
+                fee_amount=Decimal("10.00"),
+                event_date=date.today(),
+            )
+            event.gross_amount = event.amount + event.fee_amount
+            db_session.add(event)
+            events.append(event)
+        db_session.flush()
+        return events
+
+    def test_batch_reverse_all_success(self, service, posted_events):
+        """测试批量冲正全部成功"""
+        event_ids = [e.id for e in posted_events]
+        user_id = uuid4()
+
+        result = service.reverse_events(
+            event_ids=event_ids,
+            reason="批量测试冲正",
+            user_id=user_id,
+        )
+
+        assert result.success is True
+        assert result.total_events == 3
+        assert result.success_events == 3
+        assert result.failed_events == 0
+        assert result.total_reversed_amount == Decimal("330.00")  # 3 * 110
+
+    def test_batch_reverse_partial_failure(self, service, posted_events, db_session):
+        """测试批量冲正部分失败"""
+        # 将一个事件改为 raw 状态
+        posted_events[0].event_status = EventStatus.RAW.value
+        db_session.flush()
+
+        event_ids = [e.id for e in posted_events]
+        user_id = uuid4()
+
+        result = service.reverse_events(
+            event_ids=event_ids,
+            reason="部分失败测试",
+            user_id=user_id,
+        )
+
+        assert result.success is False
+        assert result.total_events == 3
+        assert result.success_events == 2
+        assert result.failed_events == 1
+        assert len(result.failed_details) == 1
+        assert result.failed_details[0]["error_code"] == "STATE-405"
+
+    def test_batch_reverse_nonexistent_event(self, service):
+        """测试批量冲正不存在的事件"""
+        fake_ids = [uuid4(), uuid4()]
+        user_id = uuid4()
+
+        result = service.reverse_events(
+            event_ids=fake_ids,
+            reason="不存在的事件测试",
+            user_id=user_id,
+        )
+
+        assert result.success is False
+        assert result.failed_events == 2
+        assert all(d["error_code"] == "NOT-001" for d in result.failed_details)
+
+
+class TestExportEvents:
+    """导出功能测试"""
+
+    @pytest.fixture
+    def service(self, db_session):
+        """创建服务实例"""
+        return SpendImportService(db_session)
+
+    @pytest.fixture
+    def sample_events(self, db_session):
+        """创建测试事件"""
+        from backend.models.finance import Team
+
+        # 创建团队
+        team = Team(code="SZ", name="深圳团队", status="active")
+        db_session.add(team)
+        db_session.flush()
+
+        # 创建事件
+        events = []
+        for i in range(5):
+            event = FinancialEvent(
+                event_type=EventType.SPEND.value,
+                event_status=EventStatus.POSTED.value,
+                idempotency_key=f"SPEND:export-test-{i}:{date.today().isoformat()}",
+                amount=Decimal(f"{(i+1)*100}.00"),
+                fee_amount=Decimal("10.00"),
+                currency="USD",
+                event_date=date.today(),
+                team_id=team.id,
+            )
+            event.gross_amount = event.amount + event.fee_amount
+            db_session.add(event)
+            events.append(event)
+
+        db_session.flush()
+        return events
+
+    def test_export_xlsx(self, service, sample_events):
+        """测试导出 Excel 格式"""
+        file_content, file_name = service.export_events(
+            export_format="xlsx"
+        )
+
+        assert file_content is not None
+        assert len(file_content) > 0
+        assert file_name.endswith(".xlsx")
+        assert "spend_export_" in file_name
+
+    def test_export_csv(self, service, sample_events):
+        """测试导出 CSV 格式"""
+        file_content, file_name = service.export_events(
+            export_format="csv"
+        )
+
+        assert file_content is not None
+        assert len(file_content) > 0
+        assert file_name.endswith(".csv")
+        assert "spend_export_" in file_name
+
+    def test_export_with_filters(self, service, sample_events):
+        """测试带筛选条件的导出"""
+        file_content, file_name = service.export_events(
+            event_status=EventStatus.POSTED.value,
+            start_date=date.today(),
+            end_date=date.today(),
+            export_format="xlsx",
+        )
+
+        assert file_content is not None
+        assert len(file_content) > 0
+
+    def test_export_empty_result(self, service):
+        """测试导出空结果"""
+        file_content, file_name = service.export_events(
+            start_date=date(2000, 1, 1),
+            end_date=date(2000, 1, 2),  # 远古日期，应该没有数据
+            export_format="xlsx",
+        )
+
+        assert file_content is not None  # 即使没有数据也会生成空文件
+
+
+class TestTemplateGeneration:
+    """模板生成功能测试"""
+
+    @pytest.fixture
+    def service(self, db_session):
+        """创建服务实例"""
+        return SpendImportService(db_session)
+
+    def test_generate_template(self, service):
+        """测试生成导入模板"""
+        file_content, file_name, columns = service.generate_template()
+
+        assert file_content is not None
+        assert len(file_content) > 0
+        assert file_name.endswith(".xlsx")
+        assert "spend_import_template_" in file_name
+
+        # 验证列名
+        expected_columns = ["账户ID", "账户名称", "消耗金额", "今日最大消耗", "昨日最大消耗", "日期"]
+        assert columns == expected_columns
+
+    def test_template_is_valid_excel(self, service):
+        """测试模板是有效的 Excel 文件"""
+        import pandas as pd
+
+        file_content, _, _ = service.generate_template()
+
+        # 尝试用 pandas 读取
+        df = pd.read_excel(io.BytesIO(file_content), sheet_name="消耗数据")
+
+        assert df is not None
+        assert len(df) == 2  # 两行示例数据
+        assert "账户ID" in df.columns
+        assert "消耗金额" in df.columns
+
+    def test_template_has_instructions(self, service):
+        """测试模板包含填写说明"""
+        import pandas as pd
+
+        file_content, _, _ = service.generate_template()
+
+        # 读取说明 sheet
+        df = pd.read_excel(io.BytesIO(file_content), sheet_name="填写说明")
+
+        assert df is not None
+        assert len(df) > 0  # 有说明内容
+
+
+class TestBatchReverseSchemas:
+    """批量冲正 Schema 测试"""
+
+    def test_batch_reverse_request_valid(self):
+        """测试有效的批量冲正请求"""
+        from backend.schemas.spend import SpendEventBatchReverseRequest
+
+        request = SpendEventBatchReverseRequest(
+            event_ids=[uuid4(), uuid4()],
+            reason="这是一个有效的冲正原因说明"
+        )
+
+        assert len(request.event_ids) == 2
+        assert request.reason == "这是一个有效的冲正原因说明"
+
+    def test_batch_reverse_request_empty_ids_rejected(self):
+        """测试空ID列表被拒绝"""
+        from backend.schemas.spend import SpendEventBatchReverseRequest
+
+        with pytest.raises(ValueError):
+            SpendEventBatchReverseRequest(
+                event_ids=[],
+                reason="冲正原因"
+            )
+
+    def test_batch_reverse_request_short_reason_rejected(self):
+        """测试过短的原因被拒绝"""
+        from backend.schemas.spend import SpendEventBatchReverseRequest
+
+        with pytest.raises(ValueError):
+            SpendEventBatchReverseRequest(
+                event_ids=[uuid4()],
+                reason="短"  # 少于5个字符
+            )
+
+    def test_batch_reverse_request_too_many_ids_rejected(self):
+        """测试超过100条被拒绝"""
+        from backend.schemas.spend import SpendEventBatchReverseRequest
+
+        with pytest.raises(ValueError):
+            SpendEventBatchReverseRequest(
+                event_ids=[uuid4() for _ in range(101)],
+                reason="超过限制的冲正请求"
+            )

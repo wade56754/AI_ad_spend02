@@ -1100,3 +1100,257 @@ class SpendImportService:
             entries.append(account_entry)
 
         return entries
+
+    # ========== 批量冲正方法 ==========
+
+    def reverse_events(
+        self,
+        event_ids: List[UUID],
+        reason: str,
+        user_id: UUID,
+    ) -> "SpendEventBatchReverseResponse":
+        """
+        批量冲正消耗事件 (posted → reversed)
+
+        批量冲正流程:
+        1. 批量获取事件并验证状态
+        2. 逐个生成反向 ledger_entries
+        3. 状态转换: posted → reversed
+        4. 记录冲正原因和操作人
+
+        Args:
+            event_ids: 事件ID列表
+            reason: 冲正原因
+            user_id: 操作用户ID
+
+        Returns:
+            SpendEventBatchReverseResponse: 批量冲正结果
+        """
+        from backend.schemas.spend import SpendEventBatchReverseResponse
+
+        response = SpendEventBatchReverseResponse(
+            total_events=len(event_ids),
+            success_events=0,
+            failed_events=0,
+            total_reversed_amount=Decimal("0"),
+            reversal_ledger_entries=0,
+            failed_details=[],
+            reason=reason,
+            success=True,
+            message="批量冲正成功"
+        )
+
+        # 批量获取事件
+        events = self._get_events_by_ids(event_ids)
+        event_map = {event.id: event for event in events}
+
+        for event_id in event_ids:
+            try:
+                event = event_map.get(event_id)
+
+                if not event:
+                    response.failed_events += 1
+                    response.failed_details.append({
+                        "event_id": str(event_id),
+                        "error_code": "NOT-001",
+                        "error_message": f"事件不存在: {event_id}"
+                    })
+                    continue
+
+                if event.event_status != EventStatus.POSTED.value:
+                    response.failed_events += 1
+                    response.failed_details.append({
+                        "event_id": str(event_id),
+                        "error_code": "STATE-405",
+                        "error_message": f"只能冲正已入账的事件，当前状态: {event.event_status}"
+                    })
+                    continue
+
+                # 生成反向分录
+                reversal_entries = self._create_reversal_entries(event, reason)
+                response.reversal_ledger_entries += len(reversal_entries)
+                response.total_reversed_amount += event.gross_amount or event.amount
+
+                # 状态转换: posted → reversed
+                event.transition_to(EventStatus.REVERSED.value)
+                event.set_payload_field("reversal_reason", reason)
+                event.set_payload_field("reversed_by", str(user_id))
+                event.set_payload_field("reversed_at", datetime.utcnow().isoformat())
+
+                response.success_events += 1
+
+            except Exception as e:
+                response.failed_events += 1
+                response.failed_details.append({
+                    "event_id": str(event_id),
+                    "error_code": "BIZ-508",
+                    "error_message": str(e)
+                })
+
+        if response.failed_events > 0:
+            response.success = False
+            response.message = f"部分冲正失败: {response.failed_events} 个"
+        else:
+            self.db.commit()
+
+        return response
+
+    # ========== 导出方法 ==========
+
+    def export_events(
+        self,
+        event_status: Optional[str] = None,
+        team_id: Optional[UUID] = None,
+        supplier_id: Optional[int] = None,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+        export_format: str = "xlsx",
+    ) -> Tuple[bytes, str]:
+        """
+        导出消耗事件为 Excel 或 CSV
+
+        Args:
+            event_status: 事件状态筛选
+            team_id: 团队ID筛选
+            supplier_id: 供应商ID筛选
+            start_date: 开始日期
+            end_date: 结束日期
+            export_format: 导出格式 (xlsx/csv)
+
+        Returns:
+            Tuple[bytes, str]: (文件内容, 文件名)
+        """
+        import pandas as pd
+
+        # 查询事件 (不分页，获取全部)
+        query = self.db.query(FinancialEvent).filter(
+            FinancialEvent.event_type == EventType.SPEND.value
+        ).options(
+            joinedload(FinancialEvent.team),
+            joinedload(FinancialEvent.supplier),
+            joinedload(FinancialEvent.ad_account),
+        )
+
+        if event_status:
+            query = query.filter(FinancialEvent.event_status == event_status)
+        if team_id:
+            query = query.filter(FinancialEvent.team_id == team_id)
+        if supplier_id:
+            query = query.filter(FinancialEvent.supplier_id == supplier_id)
+        if start_date:
+            query = query.filter(FinancialEvent.event_date >= start_date)
+        if end_date:
+            query = query.filter(FinancialEvent.event_date <= end_date)
+
+        events = query.order_by(
+            desc(FinancialEvent.event_date),
+            desc(FinancialEvent.created_at)
+        ).limit(10000).all()  # 限制最多导出 10000 条
+
+        # 构建导出数据
+        export_data = []
+        for event in events:
+            export_data.append({
+                "事件日期": event.event_date.strftime("%Y-%m-%d") if event.event_date else "",
+                "团队": event.team.code if event.team else "",
+                "供应商": event.supplier.name if event.supplier else "",
+                "账户ID": event.ad_account_id or "",
+                "账户名称": event.ad_account.name if event.ad_account else "",
+                "消耗金额": float(event.amount),
+                "手续费": float(event.fee_amount),
+                "含费金额": float(event.gross_amount) if event.gross_amount else float(event.amount),
+                "币种": event.currency,
+                "状态": event.event_status,
+                "创建时间": event.created_at.strftime("%Y-%m-%d %H:%M:%S") if event.created_at else "",
+                "确认时间": event.confirmed_at.strftime("%Y-%m-%d %H:%M:%S") if event.confirmed_at else "",
+                "入账时间": event.posted_at.strftime("%Y-%m-%d %H:%M:%S") if event.posted_at else "",
+            })
+
+        df = pd.DataFrame(export_data)
+
+        # 生成文件
+        output = io.BytesIO()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        if export_format == "csv":
+            df.to_csv(output, index=False, encoding="utf-8-sig")
+            file_name = f"spend_export_{timestamp}.csv"
+        else:
+            df.to_excel(output, index=False, engine="openpyxl")
+            file_name = f"spend_export_{timestamp}.xlsx"
+
+        output.seek(0)
+        return output.getvalue(), file_name
+
+    # ========== 模板生成方法 ==========
+
+    def generate_template(self) -> Tuple[bytes, str, List[str]]:
+        """
+        生成消耗导入模板
+
+        Returns:
+            Tuple[bytes, str, List[str]]: (文件内容, 文件名, 列名列表)
+        """
+        import pandas as pd
+
+        # 模板列名 (中文)
+        columns = [
+            "账户ID",
+            "账户名称",
+            "消耗金额",
+            "今日最大消耗",
+            "昨日最大消耗",
+            "日期",
+        ]
+
+        # 示例数据
+        sample_data = [
+            {
+                "账户ID": "12345678",
+                "账户名称": "示例账户1",
+                "消耗金额": 1000.00,
+                "今日最大消耗": 5000.00,
+                "昨日最大消耗": 4500.00,
+                "日期": date.today().strftime("%Y-%m-%d"),
+            },
+            {
+                "账户ID": "87654321",
+                "账户名称": "示例账户2",
+                "消耗金额": 2500.50,
+                "今日最大消耗": 8000.00,
+                "昨日最大消耗": 7200.00,
+                "日期": date.today().strftime("%Y-%m-%d"),
+            },
+        ]
+
+        df = pd.DataFrame(sample_data, columns=columns)
+
+        # 生成 Excel 文件
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="消耗数据")
+
+            # 添加说明 sheet
+            instructions = pd.DataFrame({
+                "字段说明": [
+                    "账户ID: 广告账户的唯一标识 (必填)",
+                    "账户名称: 广告账户名称 (可选，用于核对)",
+                    "消耗金额: 当日消耗金额，单位元 (必填)",
+                    "今日最大消耗: 今日累计最大消耗 (可选)",
+                    "昨日最大消耗: 昨日累计最大消耗 (可选)",
+                    "日期: 消耗日期，格式 YYYY-MM-DD (可选，默认从文件名推断)",
+                    "",
+                    "注意事项:",
+                    "1. 账户ID 必须是系统中已存在的广告账户",
+                    "2. 消耗金额必须大于 0",
+                    "3. 日期不能是未来日期",
+                    "4. 同一账户同一日期的消耗会根据幂等键去重",
+                ]
+            })
+            instructions.to_excel(writer, index=False, sheet_name="填写说明")
+
+        output.seek(0)
+        timestamp = datetime.now().strftime("%Y%m%d")
+        file_name = f"spend_import_template_{timestamp}.xlsx"
+
+        return output.getvalue(), file_name, columns

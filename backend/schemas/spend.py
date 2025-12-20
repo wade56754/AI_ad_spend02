@@ -133,6 +133,31 @@ class SpendEventReverseRequest(BaseModel):
     reason: str = Field(..., min_length=5, max_length=500, description="冲正原因")
 
 
+class SpendEventBatchReverseRequest(BaseModel):
+    """批量冲正消耗事件请求 (posted → reversed)"""
+    model_config = ConfigDict(from_attributes=True)
+
+    event_ids: List[UUID] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="事件ID列表 (最多100条)"
+    )
+    reason: str = Field(..., min_length=5, max_length=500, description="冲正原因")
+
+
+class SpendEventExportRequest(BaseModel):
+    """消耗事件导出请求"""
+    model_config = ConfigDict(from_attributes=True)
+
+    event_status: Optional[EventStatus] = Field(None, description="事件状态筛选")
+    team_id: Optional[UUID] = Field(None, description="团队ID筛选")
+    supplier_id: Optional[int] = Field(None, description="供应商ID筛选")
+    start_date: Optional[date] = Field(None, description="开始日期")
+    end_date: Optional[date] = Field(None, description="结束日期")
+    format: str = Field("xlsx", description="导出格式 (xlsx/csv)")
+
+
 class SpendEventQueryRequest(BaseModel):
     """查询消耗事件请求"""
     model_config = ConfigDict(from_attributes=True)
@@ -345,6 +370,41 @@ class SpendEventReverseResponse(BaseModel):
     reason: str
     success: bool
     message: str
+
+
+class SpendEventBatchReverseResponse(BaseModel):
+    """批量冲正消耗事件响应"""
+    model_config = ConfigDict(from_attributes=True)
+
+    total_events: int = Field(0, description="总事件数")
+    success_events: int = Field(0, description="成功冲正数")
+    failed_events: int = Field(0, description="失败冲正数")
+
+    # 金额统计
+    total_reversed_amount: Decimal = Field(Decimal("0"), description="总冲正金额")
+    reversal_ledger_entries: int = Field(0, description="冲正分录数")
+
+    # 失败详情
+    failed_details: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="失败详情 [{event_id, error_code, error_message}]"
+    )
+
+    # 结果
+    reversed_at: datetime = Field(default_factory=datetime.utcnow, description="冲正时间")
+    reason: str = Field(..., description="冲正原因")
+    success: bool = Field(..., description="操作是否成功")
+    message: str = Field(..., description="结果消息")
+
+
+class SpendTemplateResponse(BaseModel):
+    """消耗导入模板响应"""
+    model_config = ConfigDict(from_attributes=True)
+
+    file_name: str = Field(..., description="文件名")
+    file_content: str = Field(..., description="Base64 编码的文件内容")
+    columns: List[str] = Field(..., description="模板列名")
+    sample_data: List[Dict[str, Any]] = Field(default_factory=list, description="示例数据")
 
 
 # ========== 响应模型 - 列表 ==========
