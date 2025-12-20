@@ -789,6 +789,109 @@ class TrendErrorCodes:
 
 
 # ============================================
+# 对账错误码 (RECON_xxx)
+# 对齐 STATE_MACHINE.md v2.6 §14.4
+# ============================================
+
+class ReconciliationErrorCodes:
+    """对账错误码 (STATE_MACHINE.md v2.6 §14.4)"""
+
+    # 批次完成前置条件错误 (001-009)
+    PENDING_DETAILS_EXIST = ErrorCode(
+        "RECON_001",
+        "存在未处理的对账明细",
+        400
+    )
+
+    ADJUSTMENT_NO_LEDGER = ErrorCode(
+        "RECON_002",
+        "调整未生成账本分录",
+        400
+    )
+
+    REPORT_NOT_GENERATED = ErrorCode(
+        "RECON_003",
+        "对账报告未生成",
+        400
+    )
+
+    # Invariants 校验错误 (010-019)
+    DEBIT_CREDIT_IMBALANCE = ErrorCode(
+        "RECON_010",
+        "借贷不平衡",
+        400
+    )
+
+    SUPPLIER_NEGATIVE_BALANCE = ErrorCode(
+        "RECON_011",
+        "代理商余额为负",
+        400
+    )
+
+    ORPHAN_LEDGER_ENTRIES = ErrorCode(
+        "RECON_012",
+        "存在孤立分录",
+        400
+    )
+
+    CONFIRMED_EVENT_NOT_POSTED = ErrorCode(
+        "RECON_013",
+        "已确认事件未入账",
+        400
+    )
+
+    BALANCE_LEDGER_MISMATCH = ErrorCode(
+        "RECON_014",
+        "余额字段与账本不一致",
+        400
+    )
+
+    # 对账操作错误 (020-029)
+    BATCH_NOT_FOUND = ErrorCode(
+        "RECON_020",
+        "对账批次不存在",
+        404
+    )
+
+    DETAIL_NOT_FOUND = ErrorCode(
+        "RECON_021",
+        "对账明细不存在",
+        404
+    )
+
+    ADJUSTMENT_NOT_FOUND = ErrorCode(
+        "RECON_022",
+        "调整记录不存在",
+        404
+    )
+
+    BATCH_ALREADY_COMPLETED = ErrorCode(
+        "RECON_023",
+        "对账批次已完成",
+        400
+    )
+
+    # Excel 对比错误 (030-039)
+    EXCEL_COMPARISON_FAILED = ErrorCode(
+        "RECON_030",
+        "Excel对比失败",
+        400
+    )
+
+    SUPPLIER_NOT_FOUND = ErrorCode(
+        "RECON_031",
+        "供应商不存在",
+        404
+    )
+
+    SNAPSHOT_NOT_FOUND = ErrorCode(
+        "RECON_032",
+        "余额快照不存在",
+        404
+    )
+
+
+# ============================================
 # 错误码字典 (用于快速查找)
 # ============================================
 
@@ -909,6 +1012,23 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "TREND_010": TrendErrorCodes.RESOLUTION_NOTE_MISSING,
     "TREND_011": TrendErrorCodes.ALREADY_RESOLVED,
     "TREND_012": TrendErrorCodes.INVALID_RESOLUTION_ACTION,
+
+    # 对账错误 (STATE_MACHINE.md v2.6 §14.4)
+    "RECON_001": ReconciliationErrorCodes.PENDING_DETAILS_EXIST,
+    "RECON_002": ReconciliationErrorCodes.ADJUSTMENT_NO_LEDGER,
+    "RECON_003": ReconciliationErrorCodes.REPORT_NOT_GENERATED,
+    "RECON_010": ReconciliationErrorCodes.DEBIT_CREDIT_IMBALANCE,
+    "RECON_011": ReconciliationErrorCodes.SUPPLIER_NEGATIVE_BALANCE,
+    "RECON_012": ReconciliationErrorCodes.ORPHAN_LEDGER_ENTRIES,
+    "RECON_013": ReconciliationErrorCodes.CONFIRMED_EVENT_NOT_POSTED,
+    "RECON_014": ReconciliationErrorCodes.BALANCE_LEDGER_MISMATCH,
+    "RECON_020": ReconciliationErrorCodes.BATCH_NOT_FOUND,
+    "RECON_021": ReconciliationErrorCodes.DETAIL_NOT_FOUND,
+    "RECON_022": ReconciliationErrorCodes.ADJUSTMENT_NOT_FOUND,
+    "RECON_023": ReconciliationErrorCodes.BATCH_ALREADY_COMPLETED,
+    "RECON_030": ReconciliationErrorCodes.EXCEL_COMPARISON_FAILED,
+    "RECON_031": ReconciliationErrorCodes.SUPPLIER_NOT_FOUND,
+    "RECON_032": ReconciliationErrorCodes.SNAPSHOT_NOT_FOUND,
 }
 
 
