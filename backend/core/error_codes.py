@@ -892,6 +892,77 @@ class ReconciliationErrorCodes:
 
 
 # ============================================
+# 手续费错误码 (FEE_xxx)
+# ============================================
+
+class FeeErrorCodes:
+    """手续费相关错误码 (FINANCIAL_REFACTOR_PLAN.md Phase 4)"""
+
+    # 供应商费率错误 (001-009)
+    SUPPLIER_NOT_FOUND = ErrorCode(
+        "FEE_001",
+        "供应商不存在",
+        404
+    )
+
+    INVALID_FEE_RATE = ErrorCode(
+        "FEE_002",
+        "费率无效，必须在0-1之间",
+        400
+    )
+
+    INVALID_FEE_TYPE = ErrorCode(
+        "FEE_003",
+        "费率类型无效，必须是PERCENTAGE或FIXED",
+        400
+    )
+
+    FEE_RATE_NOT_CONFIGURED = ErrorCode(
+        "FEE_004",
+        "供应商未配置费率",
+        400
+    )
+
+    # 计算错误 (010-019)
+    CALCULATION_ERROR = ErrorCode(
+        "FEE_010",
+        "手续费计算失败",
+        500
+    )
+
+    NEGATIVE_SPEND_AMOUNT = ErrorCode(
+        "FEE_011",
+        "消耗金额不能为负数",
+        400
+    )
+
+    OVERFLOW_ERROR = ErrorCode(
+        "FEE_012",
+        "金额计算溢出",
+        400
+    )
+
+    # 费率更新错误 (020-029)
+    UPDATE_FAILED = ErrorCode(
+        "FEE_020",
+        "费率更新失败",
+        500
+    )
+
+    PERMISSION_DENIED = ErrorCode(
+        "FEE_021",
+        "无权更新费率",
+        403
+    )
+
+    EFFECTIVE_DATE_INVALID = ErrorCode(
+        "FEE_022",
+        "生效日期无效",
+        400
+    )
+
+
+# ============================================
 # 错误码字典 (用于快速查找)
 # ============================================
 
@@ -1029,6 +1100,18 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "RECON_030": ReconciliationErrorCodes.EXCEL_COMPARISON_FAILED,
     "RECON_031": ReconciliationErrorCodes.SUPPLIER_NOT_FOUND,
     "RECON_032": ReconciliationErrorCodes.SNAPSHOT_NOT_FOUND,
+
+    # 手续费错误 (FINANCIAL_REFACTOR_PLAN.md Phase 4)
+    "FEE_001": FeeErrorCodes.SUPPLIER_NOT_FOUND,
+    "FEE_002": FeeErrorCodes.INVALID_FEE_RATE,
+    "FEE_003": FeeErrorCodes.INVALID_FEE_TYPE,
+    "FEE_004": FeeErrorCodes.FEE_RATE_NOT_CONFIGURED,
+    "FEE_010": FeeErrorCodes.CALCULATION_ERROR,
+    "FEE_011": FeeErrorCodes.NEGATIVE_SPEND_AMOUNT,
+    "FEE_012": FeeErrorCodes.OVERFLOW_ERROR,
+    "FEE_020": FeeErrorCodes.UPDATE_FAILED,
+    "FEE_021": FeeErrorCodes.PERMISSION_DENIED,
+    "FEE_022": FeeErrorCodes.EFFECTIVE_DATE_INVALID,
 }
 
 
