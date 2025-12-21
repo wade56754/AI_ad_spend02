@@ -109,7 +109,7 @@ export function ProjectTopList({
             {/* ROI和趋势 */}
             <div className="text-right">
               <div className="flex items-center gap-1">
-                <span className="font-semibold text-sm text-slate-900">{project.roi.toFixed(1)}</span>
+                <span className="font-semibold text-sm text-slate-900">{(Number(project.roi) || 0).toFixed(1)}</span>
                 {project.trend === 'up' && (
                   <TrendingUp className="w-3 h-3 text-green-500" />
                 )}
@@ -127,7 +127,7 @@ export function ProjectTopList({
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-400">平均ROI</span>
             <span className="font-semibold text-sm text-slate-900">
-              {(projects.reduce((sum, p) => sum + p.roi, 0) / projects.length).toFixed(2)}
+              {projects.length > 0 ? (projects.reduce((sum, p) => sum + (Number(p.roi) || 0), 0) / projects.length).toFixed(2) : '0.00'}
             </span>
           </div>
         </div>

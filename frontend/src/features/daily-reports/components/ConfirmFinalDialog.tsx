@@ -63,9 +63,9 @@ export function ConfirmFinalDialog({
     if (open && report) {
       setFormData({
         final_spend: getNumericSpend(report.raw_spend),
-        final_impressions: report.raw_impressions,
-        final_clicks: report.raw_clicks,
-        final_conversions: report.raw_conversions,
+        final_impressions: report.raw_impressions ?? 0,
+        final_clicks: report.raw_clicks ?? 0,
+        final_conversions: report.raw_conversions ?? 0,
         confirmation_notes: '',
       });
     }
@@ -99,7 +99,7 @@ export function ConfirmFinalDialog({
     }
 
     confirmFinal.mutate({
-      id: report.id,
+      id: String(report.id),
       input: formData,
     });
   };
@@ -110,9 +110,9 @@ export function ConfirmFinalDialog({
 
   // Calculate differences
   const spendDiff = formData.final_spend - getNumericSpend(report.raw_spend);
-  const impressionsDiff = formData.final_impressions - report.raw_impressions;
-  const clicksDiff = formData.final_clicks - report.raw_clicks;
-  const conversionsDiff = formData.final_conversions - report.raw_conversions;
+  const impressionsDiff = formData.final_impressions - (report.raw_impressions ?? 0);
+  const clicksDiff = formData.final_clicks - (report.raw_clicks ?? 0);
+  const conversionsDiff = formData.final_conversions - (report.raw_conversions ?? 0);
 
   const hasChanges = spendDiff !== 0 || impressionsDiff !== 0 || clicksDiff !== 0 || conversionsDiff !== 0;
 
@@ -175,7 +175,7 @@ export function ConfirmFinalDialog({
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <Label className="text-muted-foreground text-xs">原始展示</Label>
-                <div className="font-medium">{report.raw_impressions.toLocaleString()}</div>
+                <div className="font-medium">{(report.raw_impressions ?? 0).toLocaleString()}</div>
               </div>
               <div>
                 <Label htmlFor="final_impressions">最终展示 *</Label>
@@ -199,7 +199,7 @@ export function ConfirmFinalDialog({
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <Label className="text-muted-foreground text-xs">原始点击</Label>
-                <div className="font-medium">{report.raw_clicks.toLocaleString()}</div>
+                <div className="font-medium">{(report.raw_clicks ?? 0).toLocaleString()}</div>
               </div>
               <div>
                 <Label htmlFor="final_clicks">最终点击 *</Label>
@@ -223,7 +223,7 @@ export function ConfirmFinalDialog({
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <Label className="text-muted-foreground text-xs">原始转化</Label>
-                <div className="font-medium">{report.raw_conversions.toLocaleString()}</div>
+                <div className="font-medium">{(report.raw_conversions ?? 0).toLocaleString()}</div>
               </div>
               <div>
                 <Label htmlFor="final_conversions">最终转化 *</Label>

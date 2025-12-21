@@ -275,7 +275,7 @@ export function DailyReportsDashboard({
             </div>
             <div className="mt-2 flex items-center text-sm">
               <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                日均 ¥{(data.summary.total_spend / Math.max(data.trends.length, 1)).toFixed(0)}
+                日均 ¥{((Number(data.summary.total_spend) || 0) / Math.max(data.trends.length, 1)).toFixed(0)}
               </Badge>
             </div>
           </CardContent>
@@ -292,7 +292,7 @@ export function DailyReportsDashboard({
             </div>
             <div className="mt-2 flex items-center text-sm">
               <Badge variant="secondary" className="bg-green-100 text-green-800">
-                平均 CPL ¥{data.summary.avg_cpl.toFixed(2)}
+                平均 CPL ¥{(Number(data.summary.avg_cpl) || 0).toFixed(2)}
               </Badge>
             </div>
           </CardContent>
@@ -309,7 +309,7 @@ export function DailyReportsDashboard({
             </div>
             <div className="mt-2 flex items-center text-sm">
               <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                平均 CPA ¥{data.summary.avg_cpa.toFixed(2)}
+                平均 CPA ¥{(Number(data.summary.avg_cpa) || 0).toFixed(2)}
               </Badge>
             </div>
           </CardContent>
@@ -320,7 +320,7 @@ export function DailyReportsDashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">平均 ROI</p>
-                <p className="text-2xl font-bold">{data.summary.avg_roas.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{(Number(data.summary.avg_roas) || 0).toFixed(2)}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-muted-foreground" />
             </div>

@@ -29,7 +29,8 @@ export async function getDailyReports(
 ): Promise<PaginatedResponse<DailyReport>> {
   const searchParams = new URLSearchParams();
 
-  if (params.project_id) searchParams.set('project_id', params.project_id);
+  if (params.project_id) searchParams.set('project_id', String(params.project_id));
+  if (params.ad_account_id) searchParams.set('ad_account_id', String(params.ad_account_id));
   if (params.status) {
     const statuses = Array.isArray(params.status) ? params.status : [params.status];
     statuses.forEach((s) => searchParams.append('status', s));
@@ -41,6 +42,12 @@ export async function getDailyReports(
   if (params.page_size) searchParams.set('page_size', String(params.page_size));
   if (params.sort_by) searchParams.set('sort_by', params.sort_by);
   if (params.sort_order) searchParams.set('sort_order', params.sort_order);
+
+  // 新增筛选参数 (v2.1)
+  if (params.region) searchParams.set('region', params.region);
+  if (params.platform) searchParams.set('platform', params.platform);
+  if (params.team_id) searchParams.set('team_id', params.team_id);
+  if (params.submitter_name) searchParams.set('submitter_name', params.submitter_name);
 
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}?${query}` : BASE_PATH;
@@ -61,10 +68,10 @@ export async function getDailyReport(id: string): Promise<DailyReport> {
  * GET /api/v1/projects/:projectId/daily-reports
  */
 export async function getDailyReportsByProject(
-  projectId: string,
+  projectId: string | number,
   params: Omit<DailyReportListParams, 'project_id'> = {}
 ): Promise<PaginatedResponse<DailyReport>> {
-  return getDailyReports({ ...params, project_id: projectId });
+  return getDailyReports({ ...params, project_id: Number(projectId) });
 }
 
 // === Mutation Functions ===

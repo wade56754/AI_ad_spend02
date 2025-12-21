@@ -53,8 +53,9 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
     }
   };
 
-  const formatAmount = (amount: number) => {
-    return `¥${amount.toFixed(2)}`;
+  const formatAmount = (amount: number | undefined | null) => {
+    const num = Number(amount) || 0;
+    return `¥${num.toFixed(2)}`;
   };
 
   if (isLoading) {

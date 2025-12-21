@@ -116,7 +116,7 @@ function CampaignTable({
                 {formatNumber(campaign.conversions)}
               </TableCell>
               <TableCell className={`text-right font-semibold ${roasColor}`}>
-                {campaign.roas.toFixed(2)}
+                {(Number(campaign.roas) || 0).toFixed(2)}
               </TableCell>
               <TableCell className="text-center">
                 <Badge variant={statusConfig.variant}>

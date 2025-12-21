@@ -8,18 +8,26 @@
  */
 
 /**
+ * 安全地转换为数字
+ */
+function safeNumber(value: number | undefined | null): number {
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
+}
+
+/**
  * 格式化金额 - 标准千分位格式
  * @param value 金额数值
  * @param decimals 小数位数，默认 2
  * @returns 格式化后的金额字符串，如 "¥123,456.78"
  */
-export function formatCurrency(value: number, decimals: number = 2): string {
+export function formatCurrency(value: number | undefined | null, decimals: number = 2): string {
   return new Intl.NumberFormat('zh-CN', {
     style: 'currency',
     currency: 'CNY',
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(value);
+  }).format(safeNumber(value));
 }
 
 /**
@@ -28,8 +36,9 @@ export function formatCurrency(value: number, decimals: number = 2): string {
  * @param showSymbol 是否显示货币符号
  * @returns 格式化后的金额字符串，如 "¥12.5 万" 或 "12.5 万"
  */
-export function formatCurrencyWan(value: number, showSymbol: boolean = true): string {
-  const wan = value / 10000;
+export function formatCurrencyWan(value: number | undefined | null, showSymbol: boolean = true): string {
+  const num = safeNumber(value);
+  const wan = num / 10000;
   const symbol = showSymbol ? '¥' : '';
 
   if (wan >= 1000) {
@@ -40,7 +49,7 @@ export function formatCurrencyWan(value: number, showSymbol: boolean = true): st
     return `${symbol}${wan.toFixed(1)} 万`;
   } else {
     // 不足 1 万，显示标准格式
-    return formatCurrency(value, 0);
+    return formatCurrency(num, 0);
   }
 }
 
@@ -49,13 +58,14 @@ export function formatCurrencyWan(value: number, showSymbol: boolean = true): st
  * @param value 金额数值
  * @returns 简洁格式，如 "¥12.5万" 或 "¥1234"
  */
-export function formatCurrencyCompact(value: number): string {
-  if (value >= 10000) {
-    return `¥${(value / 10000).toFixed(1)}万`;
-  } else if (value >= 1000) {
-    return `¥${(value / 1000).toFixed(1)}k`;
+export function formatCurrencyCompact(value: number | undefined | null): string {
+  const num = safeNumber(value);
+  if (num >= 10000) {
+    return `¥${(num / 10000).toFixed(1)}万`;
+  } else if (num >= 1000) {
+    return `¥${(num / 1000).toFixed(1)}k`;
   } else {
-    return `¥${value.toFixed(0)}`;
+    return `¥${num.toFixed(0)}`;
   }
 }
 
@@ -64,8 +74,8 @@ export function formatCurrencyCompact(value: number): string {
  * @param value 数字
  * @returns 格式化后的字符串，如 "12,345"
  */
-export function formatNumber(value: number): string {
-  return value.toLocaleString('zh-CN');
+export function formatNumber(value: number | undefined | null): string {
+  return safeNumber(value).toLocaleString('zh-CN');
 }
 
 /**
@@ -73,13 +83,14 @@ export function formatNumber(value: number): string {
  * @param value 数字
  * @returns 简洁格式，如 "12.5k" 或 "1.2M"
  */
-export function formatNumberCompact(value: number): string {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  } else if (value >= 1000) {
-    return `${(value / 1000).toFixed(1)}k`;
+export function formatNumberCompact(value: number | undefined | null): string {
+  const num = safeNumber(value);
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  } else if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k`;
   } else {
-    return value.toFixed(0);
+    return num.toFixed(0);
   }
 }
 
@@ -91,12 +102,13 @@ export function formatNumberCompact(value: number): string {
  * @returns 格式化后的百分比字符串，如 "+12.5%"
  */
 export function formatPercent(
-  value: number,
+  value: number | undefined | null,
   decimals: number = 1,
   showSign: boolean = true
 ): string {
-  const sign = showSign && value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(decimals)}%`;
+  const num = safeNumber(value);
+  const sign = showSign && num > 0 ? '+' : '';
+  return `${sign}${num.toFixed(decimals)}%`;
 }
 
 /**
@@ -105,7 +117,7 @@ export function formatPercent(
  * @param compareText 对比文案，如 "较昨日"
  * @returns 完整文案，如 "较昨日 +12.5%"
  */
-export function formatChangeText(change: number, compareText: string = '较昨日'): string {
+export function formatChangeText(change: number | undefined | null, compareText: string = '较昨日'): string {
   return `${compareText} ${formatPercent(change)}`;
 }
 

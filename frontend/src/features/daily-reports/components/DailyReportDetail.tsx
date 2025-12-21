@@ -90,8 +90,18 @@ export function DailyReportDetail({
     }
   };
 
+  // 安全的数字格式化
+  const safeNumber = (value: number | undefined | null): number => {
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  };
+
+  const formatMoney = (value: number | undefined | null, decimals: number = 2): string => {
+    return safeNumber(value).toFixed(decimals);
+  };
+
   // 计算CTR
-  const ctr = report.impressions > 0 ? (report.clicks / report.impressions * 100) : 0;
+  const ctr = safeNumber(report.impressions) > 0 ? (safeNumber(report.clicks) / safeNumber(report.impressions) * 100) : 0;
 
   // 模拟最近7天的趋势数据
   const trendData = [
@@ -174,7 +184,7 @@ export function DailyReportDetail({
               <div>
                 <p className="text-sm text-gray-600">消耗金额</p>
                 <p className="text-2xl font-bold text-red-600">
-                  ¥{report.spend.toFixed(2)}
+                  ¥{formatMoney(report.spend)}
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-red-200" />
@@ -216,7 +226,7 @@ export function DailyReportDetail({
               <div>
                 <p className="text-sm text-gray-600">ROI</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {report.roas.toFixed(2)}
+                  {formatMoney(report.roas)}
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-purple-200" />
@@ -244,15 +254,15 @@ export function DailyReportDetail({
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">点击率 (CTR)</span>
-                <span className="font-semibold">{ctr.toFixed(2)}%</span>
+                <span className="font-semibold">{formatMoney(ctr)}%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">单粉成本 (CPL)</span>
-                <span className="font-semibold">¥{report.cpl.toFixed(2)}</span>
+                <span className="font-semibold">¥{formatMoney(report.cpl)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">转化成本 (CPA)</span>
-                <span className="font-semibold">¥{report.cpa.toFixed(2)}</span>
+                <span className="font-semibold">¥{formatMoney(report.cpa)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">广告创意</span>
@@ -272,24 +282,24 @@ export function DailyReportDetail({
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-sm text-gray-600">粉丝获取成本占比</span>
-                  <span className="text-sm">{((report.cpl * report.new_follows) / report.spend * 100).toFixed(1)}%</span>
+                  <span className="text-sm">{formatMoney(safeNumber(report.spend) > 0 ? (safeNumber(report.cpl) * safeNumber(report.new_follows)) / safeNumber(report.spend) * 100 : 0, 1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-blue-600 h-2 rounded-full"
-                    style={{ width: `${Math.min((report.cpl * report.new_follows) / report.spend * 100, 100)}%` }}
+                    style={{ width: `${Math.min(safeNumber(report.spend) > 0 ? (safeNumber(report.cpl) * safeNumber(report.new_follows)) / safeNumber(report.spend) * 100 : 0, 100)}%` }}
                   ></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-sm text-gray-600">转化成本占比</span>
-                  <span className="text-sm">{((report.cpa * report.conversions) / report.spend * 100).toFixed(1)}%</span>
+                  <span className="text-sm">{formatMoney(safeNumber(report.spend) > 0 ? (safeNumber(report.cpa) * safeNumber(report.conversions)) / safeNumber(report.spend) * 100 : 0, 1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="bg-green-600 h-2 rounded-full"
-                    style={{ width: `${Math.min((report.cpa * report.conversions) / report.spend * 100, 100)}%` }}
+                    style={{ width: `${Math.min(safeNumber(report.spend) > 0 ? (safeNumber(report.cpa) * safeNumber(report.conversions)) / safeNumber(report.spend) * 100 : 0, 100)}%` }}
                   ></div>
                 </div>
               </div>
@@ -302,13 +312,13 @@ export function DailyReportDetail({
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">每千次展示成本 (CPM)</span>
                 <span className="text-sm font-semibold">
-                  ¥{(report.impressions > 0 ? (report.spend / report.impressions * 1000) : 0).toFixed(2)}
+                  ¥{formatMoney(safeNumber(report.impressions) > 0 ? (safeNumber(report.spend) / safeNumber(report.impressions) * 1000) : 0)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-gray-600">每次点击成本 (CPC)</span>
                 <span className="text-sm font-semibold">
-                  ¥{(report.clicks > 0 ? (report.spend / report.clicks) : 0).toFixed(2)}
+                  ¥{formatMoney(safeNumber(report.clicks) > 0 ? (safeNumber(report.spend) / safeNumber(report.clicks)) : 0)}
                 </span>
               </div>
             </div>
