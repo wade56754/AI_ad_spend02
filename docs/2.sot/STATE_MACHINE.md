@@ -7,7 +7,7 @@
 > **更新日期**: 2025‑11‑22
 > **类型**: 状态与合法流转的唯一事实来源（SoT-State）
 > **互锁文档**
-> - 实现规范 → `../1.overview/MASTER.md` v3.6
+> - 实现规范 → `../1.overview/MASTER.md` v4.4
 > - 数据结构 → `./DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）
 > - API 流程 → `../3.dev-guides/API_DEVELOPMENT_FLOW.md`
 > - 角色定义 → 仅 `admin/finance/data_operator/account_manager/media_buyer`（无其他角色）
@@ -25,9 +25,30 @@
 
 ## 2. 角色与操作者
 
-- 合法业务角色：`admin`, `finance`, `data_operator`, `account_manager`, `media_buyer`。  
+- 技术层合法角色：`admin`, `finance`, `data_operator`, `account_manager`, `media_buyer`。  
 - **system（虚拟操作者）**：用于定时任务/事件驱动的自动流转，不参与 RBAC，仅可出现在审计日志（`operator_role = 'system'`）。业务授权只看 5 个合法角色。  
 - 审批分离：提交者不能审批自身请求；终态回退仅 `admin`（需审计理由）。
+
+### 2.1 业务层角色映射（MASTER v4.4 对齐）
+
+> **引用**: MASTER.md v4.4 §2.4
+
+技术层维持 5 角色 CHECK 约束，业务层通过以下映射对齐 MASTER 定义：
+
+| MASTER 业务角色 | 技术层角色 | 说明 |
+|----------------|-----------|------|
+| ceo | admin | 系统最高权限，资金审批 |
+| project_owner | (users.is_project_owner=true) | 项目负责人，复用现有用户 |
+| finance | finance | 财务 |
+| supervisor | data_operator | 主管/运营 |
+| pitcher | media_buyer | 投手 |
+| account_manager | account_manager | 户管 |
+| admin | admin | 系统管理员 |
+
+> **注意**：
+> - `project_owner` 通过 users 表的业务属性或 `project_members` 表实现，不新增角色枚举。
+> - 文档中出现的「运营」指代 `supervisor`（data_operator）或 `finance` 角色。
+> - 禁止新增角色枚举，必须复用上述 5 个技术层角色。
 
 ---
 
@@ -60,6 +81,44 @@
 | ad_spend_daily | 无状态 | - | 导入数据 |
 
 > Planned/历史状态见第 15 章，不得在当前实现使用。
+
+---
+
+## 4A. Phase 边界说明
+
+> **引用**: MASTER.md v4.4 §2.5（Phase 1/Phase 2 执行边界）、§9 INV-003
+
+### 4A.1 日报状态机 Phase 边界
+
+| Phase | 可用状态 | 说明 |
+|-------|---------|------|
+| Phase 1 | `raw_submitted`, `trend_ok`, `final_confirmed` | 简化 3 状态；跳过 trend_pending/trend_flagged/trend_resolved/final_pending |
+| Phase 2 | 全部 8 状态 | 启用完整审核流程 |
+
+**Phase 1 约束**：
+- 日报从 `raw_submitted` 可直接跳转 `trend_ok`（主管快速确认）
+- `trend_ok` 可直接跳转 `final_confirmed`（财务快速确认）
+- 禁止任何系统自动阻断或惩罚性状态转换
+
+**Phase 2 启用条件**：
+- Phase 1 稳定运行 2 个月
+- Feature Flag `ENABLE_FULL_DAILY_REPORT_SM=true`
+
+### 4A.2 充值状态机 Phase 边界
+
+| Phase | 行为差异 |
+|-------|---------|
+| Phase 1 | 所有状态可用，但无自动阻断/惩罚 |
+| Phase 2 | 可启用预算检查、超额阻断等约束 |
+
+### 4A.3 项目状态机 Phase 边界
+
+| Phase | 行为差异 |
+|-------|---------|
+| Phase 1 | `suspended` 仅标记状态，不阻断投放 |
+| Phase 2 | `suspended` 可联动阻断账户投放（需 Feature Flag） |
+
+> **核心原则**：Phase 1 只做「照亮」，不做「阻断」；Phase 2 通过 Feature Flag 逐步启用强约束。
 
 ---
 
@@ -106,6 +165,57 @@
 合法取值：`open`, `ack`, `resolved`（终态：resolved）  
 - 创建：system/data_operator  
 - 确认/解决：account_manager/admin，[AUDIT]
+
+---
+
+## 7.5 Phase 1 / Phase 2 日报状态机边界（重要）
+
+> **依据**: MASTER.md v4.4 §3（Phase 1/Phase 2 执行边界）、§9 INV-003（简化vs完整流程）
+
+### 7.5.1 Phase 1 简化版（3 状态快速流转）
+
+**目标**: 照亮问题，不阻断流程（"不问责、不阻断、不强制"）
+
+**可用状态**: `raw_submitted`, `trend_ok`, `final_confirmed`
+
+**合法流转** (跳过中间审核状态):
+```
+raw_submitted → trend_ok → final_confirmed
+```
+
+**字段使用**:
+- 进粉 SoT: 仅使用 `daily_report.conversions`（投手自报值）
+- 消耗 SoT: 仅使用 `ad_spend_daily.spend`（外部导入）
+- **不使用** Phase 2 字段: `conversions_raw`, `conversions_final`, `raw_spend`, `real_spend`
+
+**Phase 1 特性**:
+- ✅ 无趋势风控（不触发 `trend_flagged` / `trend_pending`）
+- ✅ 无强制终审（不使用 `final_pending` 等待态）
+- ✅ 数据可见但不阻断（`trend_ok` 状态仅标记，不影响后续流程）
+- ✅ 锁定仅用于归档（`final_confirmed` 后不再修改，但无强制约束）
+
+**业务约束**:
+- 投手提交日报后，主管快速确认（`raw_submitted` → `trend_ok`）
+- 财务快速确认计费（`trend_ok` → `final_confirmed`）
+- 无自动拒绝、无自动暂停、无自动冻结
+
+### 7.5.2 Phase 2 完整版（8 状态全流程）
+
+**目标**: 问责与强制约束，启用趋势风控与多级审核
+
+**状态枚举**: 见第 8 章完整定义（8 个状态）
+
+**启用条件** (MASTER.md v4.4 §3.4):
+1. Phase 1 稳定运行 2 个月
+2. 日报填报率 ≥ 90%
+3. 老板批准启用
+4. Feature Flag: `PHASE2_DAILY_REPORT_REQUIRED=true`
+
+**Phase 2 新增特性**:
+- 趋势风控（TF-001/002/003 规则，触发 `trend_flagged`）
+- 三数据流分离（`conversions_raw` / `conversions_final` / `real_spend`）
+- 多级审核（运营复核 `final_pending` → 财务终审 `final_confirmed`）
+- 计费锁定（`final_locked` 后仅可红冲，不可直接修改）
 
 ---
 
