@@ -21,11 +21,11 @@ import {
   Eye,
 } from 'lucide-react';
 
-// Mock data
+// Mock data - 对齐 adSpend.types.ts
 const mockSpendData = [
   {
     id: 1,
-    account_name: '账户A-抖音',
+    ad_account_name: '账户A-抖音',
     project_name: '项目Alpha',
     channel_name: '抖音',
     report_date: '2024-12-08',
@@ -39,7 +39,7 @@ const mockSpendData = [
   },
   {
     id: 2,
-    account_name: '账户B-快手',
+    ad_account_name: '账户B-快手',
     project_name: '项目Beta',
     channel_name: '快手',
     report_date: '2024-12-08',
@@ -53,7 +53,7 @@ const mockSpendData = [
   },
   {
     id: 3,
-    account_name: '账户C-百度',
+    ad_account_name: '账户C-百度',
     project_name: '项目Gamma',
     channel_name: '百度',
     report_date: '2024-12-08',
@@ -293,7 +293,7 @@ export function AdSpendPage() {
                 {mockSpendData.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {item.account_name}
+                      {item.ad_account_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {item.project_name}

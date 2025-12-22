@@ -217,9 +217,9 @@ class DailyReportService:
         )
 
         query = self.db.query(DailyReport).options(
-            joinedload(DailyReport.ad_account),
+            joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
             joinedload(DailyReport.submitter),
-            joinedload(DailyReport.reviewer)
+            joinedload(DailyReport.auditor)  # 审核人关系
         )
 
         # 构建查询条件
@@ -253,6 +253,27 @@ class DailyReportService:
                 )
             )
 
+        # 团队筛选 (v2.1)
+        if params.team_id:
+            where_conditions.append(
+                DailyReport.ad_account_id.in_(
+                    self.db.query(AdAccount.id).filter(
+                        AdAccount.team_id == params.team_id
+                    )
+                )
+            )
+
+        # 投手名称模糊筛选 (v2.1) - 基于账户名的投手前缀
+        if params.submitter_name:
+            # 账户名格式: "投手名_平台_地区", 使用 like 匹配
+            where_conditions.append(
+                DailyReport.ad_account_id.in_(
+                    self.db.query(AdAccount.id).filter(
+                        AdAccount.name.like(f"{params.submitter_name}%")
+                    )
+                )
+            )
+
         # 应用权限过滤 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
         if current_user.role == UserRole.MEDIA_BUYER.value:
             # 投手：只能看分配给自己的账户的日报
@@ -260,7 +281,7 @@ class DailyReportService:
             where_conditions.append(
                 DailyReport.ad_account_id.in_(
                     self.db.query(AdAccount.id).filter(
-                        AdAccount.assigned_user_id == current_user.id
+                        AdAccount.owner_id == current_user.id
                     )
                 )
             )
@@ -304,6 +325,81 @@ class DailyReportService:
         )
         return reports, total
 
+    def get_status_stats(
+        self,
+        current_user: User,
+        project_id: Optional[int] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None
+    ) -> dict:
+        """
+        获取各状态的日报数量统计
+
+        Args:
+            current_user: 当前用户
+            project_id: 可选的项目ID筛选
+            start_date: 可选的开始日期 (YYYY-MM-DD)
+            end_date: 可选的结束日期 (YYYY-MM-DD)
+
+        Returns:
+            dict: 各状态的数量统计 {status: count}
+        """
+        from sqlalchemy import func
+        from datetime import datetime
+
+        query = self.db.query(
+            DailyReport.status,
+            func.count(DailyReport.id).label('count')
+        )
+
+        # 权限过滤
+        if current_user.role == UserRole.MEDIA_BUYER.value:
+            query = query.filter(DailyReport.submitted_by == current_user.id)
+        elif current_user.role == UserRole.FINANCE.value:
+            query = query.filter(DailyReport.status == 'final_locked')
+
+        # 项目筛选 (通过 ad_account)
+        if project_id:
+            query = query.join(DailyReport.ad_account).filter(
+                AdAccount.project_id == project_id
+            )
+
+        # 日期筛选
+        if start_date:
+            try:
+                start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+                query = query.filter(DailyReport.report_date >= start_dt)
+            except ValueError:
+                pass
+
+        if end_date:
+            try:
+                end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+                query = query.filter(DailyReport.report_date <= end_dt)
+            except ValueError:
+                pass
+
+        # 按状态分组
+        results = query.group_by(DailyReport.status).all()
+
+        # 构建返回结果 (8状态机)
+        stats = {
+            'raw_submitted': 0,
+            'trend_pending': 0,
+            'trend_ok': 0,
+            'trend_flagged': 0,
+            'trend_resolved': 0,
+            'final_pending': 0,
+            'final_confirmed': 0,
+            'final_locked': 0,
+        }
+
+        for status_value, count in results:
+            if status_value in stats:
+                stats[status_value] = count
+
+        return stats
+
     def get_daily_report(
         self,
         report_id: int,
@@ -324,9 +420,9 @@ class DailyReportService:
             PermissionDeniedError: 无权限查看
         """
         report = self.db.query(DailyReport).options(
-            joinedload(DailyReport.ad_account),
+            joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
             joinedload(DailyReport.submitter),
-            joinedload(DailyReport.reviewer)
+            joinedload(DailyReport.auditor)  # 审核人关系
         ).filter(DailyReport.id == report_id).first()
 
         if not report:
@@ -1116,7 +1212,7 @@ class DailyReportService:
 
         # 投手：只能操作 assigned_user_id 是自己的账户
         if user.role == UserRole.MEDIA_BUYER.value:
-            has_access = account.assigned_user_id == user.id
+            has_access = account.owner_id == user.id
             logger.debug(
                 f"User {user.id} (media_buyer) {'has' if has_access else 'NO'} access to account {account.id}"
             )
@@ -1165,7 +1261,7 @@ class DailyReportService:
             if not account:
                 logger.warning(f"Report {report.id} has no associated account")
                 return False
-            has_access = account.assigned_user_id == user.id
+            has_access = account.owner_id == user.id
             logger.debug(
                 f"User {user.id} (media_buyer) {'can' if has_access else 'CANNOT'} view report {report.id}"
             )

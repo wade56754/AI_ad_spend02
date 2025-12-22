@@ -1,10 +1,10 @@
 ---
 name: ai-ad-code-verifier
-version: "2.0"
+version: "2.3"
 status: ready_for_production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-18
+last_reviewed: 2025-12-22
 baseline:
   - MASTER.md v3.5
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
@@ -55,12 +55,19 @@ code_sources:
        0. 核心架构 (Architecture)
   ====================================================== -->
   <architecture>
-    增强版验证器采用 5 层验证流水线:
+    增强版验证器采用 8 层验证流水线 (v2.2 新增幻觉抑制最终确认层):
 
     ```
     ┌─────────────────────────────────────────────────────────┐
     │                  EnhancedCodeVerifier                    │
     │                    (主编排器)                            │
+    └───────────────────────┬─────────────────────────────────┘
+                            │
+    ┌───────────────────────▼─────────────────────────────────┐
+    │  Layer 0: ModuleBoundaryVerifier (优先级 5) [v2.1 新增]  │
+    │  - 验证目标模块归属 (pitcher/finance/ad_account/project) │
+    │  - 检查写入表是否在该模块可写范围内                        │
+    │  - 阻止跨模块写入操作                                     │
     └───────────────────────┬─────────────────────────────────┘
                             │
     ┌───────────────────────▼─────────────────────────────────┐
@@ -79,9 +86,18 @@ code_sources:
                             │
     ┌───────────────────────▼─────────────────────────────────┐
     │  Layer 3: SpecComplianceVerifier (优先级 30)             │
-    │  - SoT 合规验证                                          │
-    │  - 状态机 8 状态验证                                     │
-    │  - 角色/字段/错误码验证                                   │
+    │  - SoT 合规验证 (状态/角色/字段/错误码)                   │
+    │  - 日报 7 状态验证 (DRAFT...REVISED)                     │
+    │  - 6 角色验证 (pitcher/account_manager/finance/...)      │
+    └───────────────────────┬─────────────────────────────────┘
+                            │
+    ┌───────────────────────▼─────────────────────────────────┐
+    │  Layer 3.5: FinanceRulesVerifier (优先级 35) [v2.1 新增] │
+    │  - Ledger 只 INSERT 验证 (禁止 UPDATE/DELETE)            │
+    │  - CONFIRMED 门禁 (fx_status=LOCKED)                     │
+    │  - 冲正链验证 (禁止冲正的冲正)                            │
+    │  - 金额符号验证 (AMOUNT_SIGN_RULES)                      │
+    │  - 期间锁检查 (period_locks)                             │
     └───────────────────────┬─────────────────────────────────┘
                             │
     ┌───────────────────────▼─────────────────────────────────┐
@@ -96,17 +112,31 @@ code_sources:
     │  - 测试文件存在性                                        │
     │  - 测试覆盖率检查                                        │
     │  - 测试质量验证                                          │
+    └───────────────────────┬─────────────────────────────────┘
+                            │
+    ┌───────────────────────▼─────────────────────────────────┐
+    │  Layer 6: HallucinationSuppressor (优先级 60) [v2.2 新增] │
+    │  - 状态值来源追溯 → STATE_MACHINE.md                     │
+    │  - 角色值来源追溯 → frozenset 白名单                     │
+    │  - 字段值来源追溯 → DATA_SCHEMA.md                       │
+    │  - 错误码来源追溯 → ERROR_CODES_SOT.md                   │
+    │  - API 调用来源追溯 → 项目代码                           │
+    │  - 生成 source_traceability_report                       │
+    │  - 任何追溯失败 → BLOCKING                               │
     └─────────────────────────────────────────────────────────┘
     ```
 
     实现文件位置:
     - `agents/skills/verifiers/__init__.py` - 模块导出
     - `agents/skills/verifiers/base.py` - 基础类型和接口
+    - `agents/skills/verifiers/module_boundary_verifier.py` - 模块边界验证 [v2.1 新增]
     - `agents/skills/verifiers/hallucination_detector.py` - 幻觉检测
     - `agents/skills/verifiers/ast_verifier.py` - AST 验证
     - `agents/skills/verifiers/spec_compliance_verifier.py` - SoT 合规
+    - `agents/skills/verifiers/finance_rules_verifier.py` - 财务规则验证 [v2.1 新增]
     - `agents/skills/verifiers/integration_verifier.py` - 集成验证
     - `agents/skills/verifiers/test_verifier.py` - 测试验证
+    - `agents/skills/verifiers/hallucination_suppressor.py` - 幻觉抑制最终确认 [v2.2 新增]
     - `agents/skills/verifiers/enhanced_verifier.py` - 主编排器
   </architecture>
 
@@ -160,13 +190,23 @@ code_sources:
 
     SoT 合规 (SOT):
     - SOT-001: 使用未定义的状态
-    - SOT-002: 使用旧状态名 (如 DRAFT)
+    - SOT-002: 使用旧状态名 (如 raw_submitted)
     - SOT-003: 使用非法角色
-    - SOT-004: 使用旧角色名
+    - SOT-004: 使用旧角色名 (如 media_buyer)
     - SOT-005: 使用未知字段
     - SOT-006: 使用非标准错误码
     - SOT-007: 使用未知错误前缀
     - SOT-008: 直接修改 balance
+    - SOT-009: 跨模块写入 (违反模块边界)
+
+    财务规则 (FIN) - AI_ANTI_HALLUCINATION_GUARD.md:
+    - FIN-001: UPDATE ledger 表 (禁止)
+    - FIN-002: DELETE ledger 表 (禁止)
+    - FIN-003: CONFIRMED 时缺少 fx_status=LOCKED 检查
+    - FIN-004: 冲正链循环 (冲正的冲正)
+    - FIN-005: 期间锁绕过 (未检查 period_locks)
+    - FIN-006: 金额符号错误 (违反 AMOUNT_SIGN_RULES)
+    - FIN-007: 缺少冲正原因 (reason < 10 字符)
 
     集成验证 (INT):
     - INT-001: 未识别的模块
@@ -185,6 +225,18 @@ code_sources:
     - TST-004: 测试缺少断言
     - TST-005: 空测试函数
     - TST-006: 测试名称不够描述性
+    - TST-007: P0 功能缺少测试覆盖 [v2.3 新增]
+    - TST-008: P0 功能测试覆盖率不足 [v2.3 新增]
+    - TST-009: P0 功能缺少边界测试 [v2.3 新增]
+
+    幻觉抑制 (SUP) - v2.2 新增:
+    - SUP-001: 状态值无法追溯到 STATE_MACHINE.md
+    - SUP-002: 角色值无法追溯到 frozenset 白名单
+    - SUP-003: 字段值无法追溯到 DATA_SCHEMA.md
+    - SUP-004: 错误码无法追溯到 ERROR_CODES_SOT.md
+    - SUP-005: API 调用在项目中不存在
+    - SUP-006: 导入的模块/函数在项目中不存在
+    - SUP-007: 使用非标准来源标注格式 (应为 # SoT: {DOC}#{SECTION})
   </error_codes>
 
 
@@ -206,10 +258,12 @@ code_sources:
         enable_spec: boolean,            // SoT 合规 (默认 true)
         enable_integration: boolean,     // 集成验证 (默认 true)
         enable_test: boolean,            // 测试验证 (默认 false)
+        enable_p0_test_check: boolean,   // P0 功能测试检查 (默认 true) [v2.3 新增]
         auto_fix: boolean,               // 自动修复 (默认 true)
         max_fix_iterations: number,      // 最大修复次数 (默认 3)
         strict_mode: boolean,            // 严格模式 (默认 false)
-        run_tests: boolean               // 运行测试 (默认 false)
+        run_tests: boolean,              // 运行测试 (默认 false)
+        p0_coverage_threshold: number    // P0 功能最低覆盖率 (默认 90) [v2.3 新增]
       },
       context: {                         // 验证上下文
         valid_states: string[],          // 合法状态列表
@@ -363,59 +417,192 @@ code_sources:
        6. SoT 合规验证详情
   ====================================================== -->
   <sot_compliance_details>
-    日报 8 状态机 (STATE_MACHINE.md v2.6):
-    ```
-    合法状态:
-    - raw_submitted
-    - trend_pending
-    - trend_ok
-    - trend_flagged
-    - trend_resolved
-    - final_pending
-    - final_confirmed
-    - final_locked
+    <!-- 状态值白名单 (AI_ANTI_HALLUCINATION_GUARD.md v1.0) -->
 
-    已废弃状态 (会触发 SOT-002):
-    - draft
-    - pending_review
-    - approved
-    - rejected
+    日报状态机 (STATE_MACHINE.md v2.6 + DATA_SCHEMA.md v5.2):
+    ```python
+    # 使用 frozenset 确保不可变
+    REPORT_STATUS = frozenset([
+        'DRAFT',            # 草稿
+        'SUBMITTED',        # 已提交
+        'PLATFORM_MATCHED', # 平台数据已匹配
+        'DIFF_FLAGGED',     # 差异标记
+        'CONFIRMED',        # 已确认
+        'REJECTED',         # 已拒绝
+        'REVISED'           # 已修订
+    ])
+
+    # 已废弃状态 (会触发 SOT-002):
+    # raw_submitted, trend_pending, trend_ok, trend_flagged,
+    # trend_resolved, final_pending, final_confirmed, final_locked
+    # (这些是旧版 8 状态，已弃用)
+    ```
+
+    Ledger 状态机:
+    ```python
+    LEDGER_STATUS = frozenset([
+        'PENDING',    # 待处理
+        'APPROVED',   # 已审批
+        'EXECUTED',   # 已执行
+        'CONFIRMED',  # 已确认 (需 fx_status=LOCKED)
+        'REJECTED'    # 已拒绝
+    ])
+
+    LEDGER_FX_STATUS = frozenset([
+        'PENDING',    # 待锁定
+        'ESTIMATED',  # 预估
+        'LOCKED'      # 已锁定
+    ])
+    ```
+
+    账户状态机:
+    ```python
+    ACCOUNT_STATUS = frozenset([
+        'active',     # 活跃
+        'idle',       # 闲置
+        'suspended',  # 暂停
+        'banned'      # 封禁
+    ])
+    ```
+
+    项目状态机:
+    ```python
+    PROJECT_STATUS = frozenset([
+        'active',     # 进行中
+        'paused',     # 暂停
+        'completed',  # 已完成
+        'cancelled'   # 已取消
+    ])
     ```
 
     充值状态机:
-    ```
-    合法状态: pending, approved, rejected, settled
-    ```
-
-    转账状态机:
-    ```
-    合法状态: pending, completed, failed, cancelled
-    ```
-
-    合法角色 (仅 5 个):
-    ```
-    - admin           # 系统管理员
-    - finance         # 财务
-    - data_operator   # 数据运营
-    - account_manager # 账户管理员
-    - media_buyer     # 广告投手
-
-    已废弃角色 (会触发 SOT-004):
-    - super_admin → admin
-    - accountant → finance
-    - operator → data_operator
+    ```python
+    TOPUP_STATUS = frozenset([
+        'pending',    # 待审批
+        'approved',   # 已审批
+        'rejected',   # 已拒绝
+        'settled'     # 已结算
+    ])
     ```
 
-    错误码前缀 (ERROR_CODES_SOT.md):
+    合法角色 (仅 6 个, 来源: CORE_MODULES.md v1.0):
+    ```python
+    USER_ROLE = frozenset([
+        'pitcher',          # 投手 - 操作广告账户，每日填报
+        'account_manager',  # 户管 - 管理广告账户分配
+        'finance',          # 财务 - 管理资金流水、对账
+        'supervisor',       # 主管 - 确认日报、审核数据
+        'ceo',              # CEO - 查看报表、关账审批
+        'admin'             # 管理员 - 系统配置
+    ])
+
+    # 已废弃角色 (会触发 SOT-004):
+    # media_buyer → pitcher
+    # data_operator → (已移除)
+    # super_admin → admin
+    # accountant → finance
     ```
-    - VAL: 验证错误
-    - AUTH: 认证/授权错误
-    - BIZ: 业务逻辑错误
-    - DB: 数据库错误
-    - INT: 集成错误
-    - SYS: 系统错误
+
+    错误码前缀 (ERROR_CODES_SOT.md v2.1 + P2 补充):
+    ```python
+    VALID_ERROR_PREFIXES = frozenset([
+        # 通用错误 (General)
+        'VAL',   # 验证错误 - 输入参数校验失败
+        'AUTH',  # 认证/授权错误 - 登录、权限、Token
+        'BIZ',   # 业务逻辑错误 - 通用业务规则违反
+        'DB',    # 数据库错误 - 连接、查询、事务
+        'INT',   # 集成错误 - 外部服务调用失败
+        'SYS',   # 系统错误 - 内部异常、配置错误
+
+        # 模块专用错误 (Module-Specific)
+        'FIN',   # 财务错误 - ledger/冲正/对账/期间锁
+        'RPT',   # 日报错误 - 日报提交/确认/状态流转
+        'ACC',   # 账户错误 - 广告账户/代理商/归属
+        'PRJ',   # 项目错误 - 项目/客户/单价规则
+        'PIT',   # 投手错误 - 投手信息/权限/分配
+        'TOP',   # 充值错误 - 充值申请/审批/结算
+        'IMP',   # 导入错误 - 数据导入/模板/格式
+        'EXP',   # 导出错误 - 数据导出/Excel/PDF
+        'REC',   # 对账错误 - 平台对账/差异处理
+        'SET',   # 结算错误 - 结算单/付款/确认
+    ])
+
+    # 错误码格式: {PREFIX}-{NUMBER}
+    # 示例: RPT-001, FIN-003, ACC-010
+    # NUMBER 范围: 001-999
     ```
   </sot_compliance_details>
+
+
+  <!-- ======================================================
+       6.1 P0 功能测试覆盖要求 (P0 Test Coverage Requirements) [v2.3 新增]
+  ====================================================== -->
+  <p0_test_coverage>
+    **核心原则**: P0 级别的功能必须有测试覆盖，否则代码不可合并。
+
+    **P0 功能定义** (必须测试):
+    ```yaml
+    p0_features:
+      # 状态机相关
+      - 状态转换函数 (transition_*)
+      - 状态验证函数 (validate_status)
+      - 状态守卫函数 (guard_*)
+
+      # 财务相关
+      - Ledger 写入函数 (create_ledger_entry)
+      - 冲正函数 (reverse_*, create_reversal)
+      - 余额计算函数 (calculate_balance)
+      - 期间锁检查函数 (check_period_lock, is_period_locked)
+
+      # 权限相关
+      - 角色验证函数 (check_role, require_role)
+      - 模块边界检查函数 (check_module_boundary)
+      - 数据隔离函数 (filter_by_owner)
+
+      # 业务规则相关
+      - BR-XXX 规则实现函数
+      - 金额计算函数 (calculate_*)
+      - 日期验证函数 (validate_date_*)
+    ```
+
+    **测试要求**:
+    | 功能类型 | 最低覆盖率 | 测试类型 |
+    |---------|-----------|---------|
+    | 状态转换 | 100% 路径 | 单元测试 + 边界测试 |
+    | 财务计算 | 100% 分支 | 单元测试 + 精度测试 |
+    | 权限检查 | 100% 角色 | 单元测试 + 集成测试 |
+    | 业务规则 | ≥90% 行 | 单元测试 + 场景测试 |
+
+    **测试命名规范**:
+    ```python
+    # 正向测试
+    def test_{function}_success_{scenario}():
+        ...
+
+    # 负向测试
+    def test_{function}_fails_when_{condition}():
+        ...
+
+    # 边界测试
+    def test_{function}_boundary_{edge_case}():
+        ...
+
+    # 示例
+    def test_transition_to_confirmed_success_with_valid_status():
+        ...
+
+    def test_create_ledger_entry_fails_when_period_locked():
+        ...
+
+    def test_calculate_balance_boundary_with_zero_amount():
+        ...
+    ```
+
+    **验证错误码**:
+    - TST-007: P0 功能缺少测试覆盖
+    - TST-008: P0 功能测试覆盖率不足
+    - TST-009: P0 功能缺少边界测试
+  </p0_test_coverage>
 
 
   <!-- ======================================================
@@ -453,6 +640,24 @@ code_sources:
        8. 版本记录 (Version Notes)
   ====================================================== -->
   <VERSION_NOTES>
+    ### v2.3 (2025-12-22) - P2 优化版
+    - 新增 P0 功能测试覆盖要求 (p0_test_coverage)
+    - 新增 TST-007~009 错误码 (P0 测试覆盖)
+    - 新增 SUP-007 错误码 (非标准来源标注)
+    - 扩展错误码前缀 (16 个: 通用 6 + 模块 10)
+    - 新增配置项: enable_p0_test_check, p0_coverage_threshold
+
+    ### v2.2 (2025-12-22)
+    - 新增 Layer 6: HallucinationSuppressor (幻觉抑制最终确认)
+    - 新增 SUP-001~006 错误码
+    - 8 层验证流水线完整实现
+
+    ### v2.1 (2025-12-22)
+    - 新增 Layer 0: ModuleBoundaryVerifier (模块边界验证)
+    - 新增 Layer 3.5: FinanceRulesVerifier (财务规则验证)
+    - 新增 FIN-001~007 错误码
+    - 更新角色/状态白名单为 frozenset 格式
+
     ### v2.0 (2025-12-18)
     - 新增幻觉检测层 (HallucinationDetector)
       - 检测不存在的 API/函数/模块

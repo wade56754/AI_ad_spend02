@@ -7,7 +7,7 @@
 export interface AdSpendRecord {
   id: number;
   ad_account_id: number;
-  account_name: string;
+  ad_account_name: string; // JOIN 填充: ad_accounts.name
   project_id: number;
   project_name: string;
   channel_id: number;
@@ -46,7 +46,7 @@ export interface AdSpendByProject {
 
 export interface AdSpendByAccount {
   ad_account_id: number;
-  account_name: string;
+  ad_account_name: string; // JOIN 填充: ad_accounts.name
   project_name: string;
   channel_name: string;
   total_spend: number;

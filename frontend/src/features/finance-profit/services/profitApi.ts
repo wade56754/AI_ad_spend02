@@ -42,8 +42,7 @@ export async function getProfitSummary(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/summary?${query}` : `${BASE_PATH}/summary`;
 
-  const response = await apiFetch<{ data: ProfitSummaryResponse }>(url);
-  return response.data;
+  return apiFetch<ProfitSummaryResponse>(url);
 }
 
 /**
@@ -51,8 +50,7 @@ export async function getProfitSummary(
  * GET /api/v1/finance/profit/overview
  */
 export async function getProfitOverview(): Promise<ProfitOverviewResponse> {
-  const response = await apiFetch<{ data: ProfitOverviewResponse }>(`${BASE_PATH}/overview`);
-  return response.data;
+  return apiFetch<ProfitOverviewResponse>(`${BASE_PATH}/overview`);
 }
 
 /**
@@ -71,8 +69,7 @@ export async function getProfitByProject(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/by-project?${query}` : `${BASE_PATH}/by-project`;
 
-  const response = await apiFetch<{ data: ProfitByProjectResponse }>(url);
-  return response.data;
+  return apiFetch<ProfitByProjectResponse>(url);
 }
 
 /**
@@ -92,8 +89,7 @@ export async function getProfitByAccount(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/by-account?${query}` : `${BASE_PATH}/by-account`;
 
-  const response = await apiFetch<{ data: ProfitByAccountResponse }>(url);
-  return response.data;
+  return apiFetch<ProfitByAccountResponse>(url);
 }
 
 /**
@@ -112,8 +108,7 @@ export async function getProfitByChannel(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/by-channel?${query}` : `${BASE_PATH}/by-channel`;
 
-  const response = await apiFetch<{ data: ProfitByChannelResponse }>(url);
-  return response.data;
+  return apiFetch<ProfitByChannelResponse>(url);
 }
 
 /**
@@ -134,8 +129,7 @@ export async function getProfitTrend(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/trend?${query}` : `${BASE_PATH}/trend`;
 
-  const response = await apiFetch<{ data: ProfitTrendResponse }>(url);
-  return response.data;
+  return apiFetch<ProfitTrendResponse>(url);
 }
 
 /**
@@ -153,9 +147,8 @@ export async function compareProfits(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/compare?${query}` : `${BASE_PATH}/compare`;
 
-  const response = await apiFetch<{ data: ProfitCompareResponse }>(url, {
+  return apiFetch<ProfitCompareResponse>(url, {
     method: 'POST',
     body: { project_ids: params.project_ids },
   });
-  return response.data;
 }

@@ -75,7 +75,7 @@ export const moduleData: Module[] = [
   },
   {
     id: 'ad-accounts',
-    title: '渠道账户',
+    title: '广告账号管理',
     description: '管理Facebook广告账户、分配给投手、监控账户状态',
     icon: Users,
     gradient: 'bg-gradient-to-br from-purple-500 to-purple-600',

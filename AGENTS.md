@@ -169,14 +169,32 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 ### SoT 裁判链 (优先级从高到低)
 
 ```
-STATE_MACHINE.md v2.6  → 状态机定义
-DATA_SCHEMA.md v5.2    → 数据模型
-BUSINESS_RULES.md v3.2 → 业务规则
-API_SOT.md v9.0        → API 契约
-ERROR_CODES_SOT.md v2.1→ 错误码
-AUTH_SPEC.md v2.0      → 认证授权
-LEDGER_SOT.md v1.1     → 账本规范
+MASTER.md v4.0                      → 架构宪法，最高优先级
+BUSINESS_FLOW_MANAGEMENT.md        → 业务流程与责任模型
+MVP_PHASE_DESIGN.md                → Phase 边界与页面定义
+STATE_MACHINE.md v2.6              → 状态机定义
+DATA_SCHEMA.md v5.2                → 数据模型
+LEDGER_SOT.md v1.1                 → 账本规范（Phase 2）
+BUSINESS_RULES.md v3.2             → 业务规则
+API_SOT.md v9.0                    → API 契约
+ERROR_CODES_SOT.md v2.1            → 错误码
+AUTH_SPEC.md v2.0                  → 认证授权
 ```
+
+### 核心管理目标（三权清晰）
+
+系统的唯一目标是：**支撑老板决策，而不是替代人做判断**
+
+- **谁对钱负责**：项目负责人申请 → 财务审核 → 老板批准
+- **谁对结果负责**：项目负责人对盈亏负责，主管对投手产出负责
+- **谁能纠偏**：日级主管、周级项目负责人、月级老板
+
+### Phase 1 / Phase 2 边界
+
+| Phase | 系统行为 | 禁止行为 |
+|-------|---------|----------|
+| Phase 1（照亮） | 记录事实、展示状态、提示异常 | 不允许系统自动惩罚 |
+| Phase 2（问责） | 引入约束、强制审批、考核关联 | 需 Phase 1 稳定运行 2 个月后启动 |
 
 ### 日报 8 状态机 (STATE_MACHINE.md v2.6)
 

@@ -5,6 +5,7 @@ from . import (
     health,
     projects,
     authentication,
+    users,  # 用户管理 (API_SOT v9.0 §5)
     ad_spend,
     ad_accounts,
     channels,
@@ -26,6 +27,7 @@ __all__ = [
     "health",
     "projects",
     "authentication",
+    "users",
     "ad_spend",
     "ad_accounts",
     "channels",

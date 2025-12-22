@@ -37,7 +37,7 @@ interface SidebarProps {
 
 const navigation: NavigationItem[] = [
   { name: '项目管理', href: '/projects', icon: LayoutDashboard, badge: 8 },
-  { name: '渠道账户', href: '/ad-accounts', icon: Users, badge: 5 },
+  { name: '广告账号管理', href: '/ad-accounts', icon: Users, badge: 5 },
   { name: '日报管理', href: '/reports', icon: FileText, badge: 12 },
   { name: '财务管理', href: '/finance', icon: DollarSign },
   { name: '数据统计', href: '/analytics', icon: BarChart3 },

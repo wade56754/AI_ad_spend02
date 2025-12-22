@@ -41,7 +41,7 @@ from backend.exceptions.custom_exceptions import (
 )
 
 
-router = APIRouter(prefix="/import_jobs", tags=["导入任务"])
+router = APIRouter(prefix="/import-jobs", tags=["导入任务"])
 
 
 def get_import_job_service(db: Session = Depends(get_db)) -> ImportJobService:

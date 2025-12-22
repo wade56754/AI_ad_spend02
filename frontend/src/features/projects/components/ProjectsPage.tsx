@@ -127,12 +127,13 @@ export function ProjectsPage() {
     }
   };
 
-  // Format currency
+  // Format currency - 使用固定格式避免 SSR hydration 不匹配
   const formatCurrency = (amount: number) => {
     if (amount >= 10000) {
       return `¥${(amount / 10000).toFixed(1)}万`;
     }
-    return `¥${amount.toLocaleString()}`;
+    // 使用 Intl.NumberFormat 固定 locale 避免 hydration 问题
+    return `¥${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 }).format(amount)}`;
   };
 
   return (
@@ -320,7 +321,8 @@ export function ProjectsPage() {
                     const count =
                       stats?.[`${status}_projects` as keyof typeof stats] ?? 0;
                     const total = stats?.total_projects ?? 1;
-                    const percent = ((count as number) / total) * 100;
+                    // 使用 Math.round 避免浮点精度导致的 hydration 不匹配
+                    const percent = Math.round(((count as number) / total) * 100);
 
                     return (
                       <div
@@ -389,7 +391,7 @@ export function ProjectsPage() {
                         style={{
                           width: `${
                             stats?.total_budget
-                              ? Math.min((stats.total_spent / stats.total_budget) * 100, 100)
+                              ? Math.round(Math.min((stats.total_spent / stats.total_budget) * 100, 100))
                               : 0
                           }%`,
                         }}

@@ -234,7 +234,7 @@ class ReconciliationService:
                 )
             else:  # media_buyer
                 query = query.filter(
-                    AdAccount.assigned_user_id == current_user_id
+                    AdAccount.owner_id == current_user_id
                 )
 
         # 应用过滤条件
@@ -285,7 +285,7 @@ class ReconciliationService:
                 )
             else:
                 has_permission = has_permission.filter(
-                    AdAccount.assigned_user_id == current_user_id
+                    AdAccount.owner_id == current_user_id
                 )
 
             if not has_permission.first():
@@ -717,7 +717,7 @@ class ReconciliationService:
                 )
             else:  # media_buyer
                 query = query.filter(
-                    AdAccount.assigned_user_id == current_user_id
+                    AdAccount.owner_id == current_user_id
                 )
 
         # 应用日期过滤（使用 period_end，reconciliation_date 是其属性别名）
@@ -748,7 +748,7 @@ class ReconciliationService:
                 )
             else:
                 details_query = details_query.filter(
-                    AdAccount.assigned_user_id == current_user_id
+                    AdAccount.owner_id == current_user_id
                 )
 
         total_accounts = details_query.count()
@@ -800,7 +800,7 @@ class ReconciliationService:
                     )
                 else:
                     adjustments_query = adjustments_query.join(AdAccount).filter(
-                        AdAccount.assigned_user_id == current_user_id
+                        AdAccount.owner_id == current_user_id
                     )
 
             adjustments_scalar = adjustments_query.with_entities(
@@ -890,7 +890,7 @@ class ReconciliationService:
                 )
             else:
                 query = query.filter(
-                    AdAccount.assigned_user_id == current_user_id
+                    AdAccount.owner_id == current_user_id
                 )
 
         # 应用过滤条件

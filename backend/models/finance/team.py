@@ -77,6 +77,7 @@ class Team(Base, TimestampMixin, SerializableMixin):
         "AdAccount",
         foreign_keys="AdAccount.team_id",
         lazy="dynamic",
+        overlaps="team",
         doc="团队账户"
     )
 

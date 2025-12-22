@@ -9,6 +9,18 @@
 > **规范级别**: 🔴 强制执行（PR必查）
 > **文档定位**: 财务/开发/风控/审计都可单独依赖本文件完成Ledger相关业务
 
+> ⚠️ **Phase 适用性声明**（MASTER.md v4.4 对齐）
+>
+> 本文档定义的「双账本架构」（PROJECT/SUPPLIER 分离核算）为 **Phase 2** 完整实现目标。
+>
+> **Phase 1 简化规则**：
+> - 仅使用基于项目的简化账务（单账本视角）
+> - `ledger_entries` 表可用，但 `ledger_type` 字段在 Phase 1 默认为 `PROJECT`
+> - 双账本强制校验（如 SUPPLIER 账本独立余额）在 Phase 1 禁用
+> - Phase 1 核心目标：记录资金流水，不做强约束
+>
+> **Phase 2 启用条件**：Phase 1 稳定运行 2 个月后，通过 Feature Flag 启用双账本完整功能。
+
 ---
 
 ## �?快速导�?

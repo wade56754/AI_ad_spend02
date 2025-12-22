@@ -1,13 +1,13 @@
 """
 日报管理API路由
-Version: 1.0
+Version: 1.1
 Author: Claude协作开发
 """
 
 import logging
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from fastapi.responses import StreamingResponse
@@ -256,6 +256,10 @@ async def list_daily_reports(
     status: Optional[str] = Query(None, pattern="^(raw_submitted|trend_pending|trend_ok|trend_flagged|trend_resolved|final_pending|final_confirmed|final_locked)$", description="日报状态（8状态机）"),
     media_buyer_id: Optional[int] = Query(None, description="投手ID"),
     project_id: Optional[int] = Query(None, description="项目ID"),
+    region: Optional[str] = Query(None, description="投放地区"),
+    platform: Optional[str] = Query(None, description="广告平台（FB/Google/TikTok）"),
+    team_id: Optional[str] = Query(None, description="团队ID (UUID)"),
+    submitter_name: Optional[str] = Query(None, description="投手名称（模糊匹配）"),
     service: DailyReportService = Depends(get_daily_report_service),
     current_user: User = Depends(get_current_user)
 ):
@@ -270,17 +274,43 @@ async def list_daily_reports(
             ad_account_id=ad_account_id,
             status=status,
             media_buyer_id=media_buyer_id,
-            project_id=project_id
+            project_id=project_id,
+            region=region,
+            platform=platform,
+            team_id=team_id,
+            submitter_name=submitter_name
         )
 
         # 获取日报列表
         reports, total = service.get_daily_reports(params, current_user, page, page_size)
 
-        # 转换为响应格式
-        report_responses = [
-            DailyReportResponse.model_validate(report)
-            for report in reports
-        ]
+        # 转换为响应格式，填充投手和团队信息
+        report_responses = []
+        for report in reports:
+            # 准备额外字段
+            report_submitter_name = None
+            report_team_name = None
+
+            # 填充投手名称
+            if report.submitter:
+                report_submitter_name = report.submitter.username or report.submitter.email
+            elif report.ad_account and report.ad_account.name:
+                # 从账户名提取投手名（格式: "投手名_平台_地区"）
+                account_parts = report.ad_account.name.split('_')
+                if len(account_parts) >= 1:
+                    report_submitter_name = account_parts[0]
+
+            # 填充团队名称（通过 ad_account -> team）
+            if report.ad_account and report.ad_account.team:
+                report_team_name = report.ad_account.team.name
+
+            # 创建响应对象，使用 model_copy 更新额外字段
+            resp = DailyReportResponse.model_validate(report)
+            resp = resp.model_copy(update={
+                'submitter_name': report_submitter_name,
+                'team_name': report_team_name
+            })
+            report_responses.append(resp)
 
         # 返回分页响应
         return paginated_response(
@@ -372,6 +402,120 @@ async def create_daily_report(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/stats",
+    response_model=StandardResponse[dict],
+    summary="获取日报状态统计",
+    description="获取各状态的日报数量统计"
+)
+async def get_daily_report_stats(
+    project_id: Optional[int] = Query(None, description="项目ID"),
+    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取日报状态统计API - 返回各状态的日报数量
+
+    8状态机统计 (STATE_MACHINE.md v2.6):
+    - raw_submitted: 原始提交
+    - trend_pending: 趋势待审
+    - trend_ok: 趋势通过
+    - trend_flagged: 趋势异常
+    - trend_resolved: 异常已处理
+    - final_pending: 终审待审
+    - final_confirmed: 终审确认
+    - final_locked: 已锁定
+    """
+    try:
+        stats = service.get_status_stats(
+            current_user=current_user,
+            project_id=project_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        return success_response(data=stats)
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_daily_report_stats: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+# ============ 筛选选项端点 (v2.1) - 必须在 /{report_id} 之前 ============
+
+from backend.models.finance.team import Team
+from backend.models.accounts.ad_account import AdAccount
+
+
+@router.get(
+    "/filter-options/teams",
+    response_model=StandardResponse[List[Dict[str, Any]]],
+    summary="获取团队筛选选项",
+    description="获取可用的团队列表，用于筛选下拉"
+)
+async def get_team_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取团队筛选选项 API (v2.1)
+    返回所有激活状态的团队
+    """
+    try:
+        teams = db.query(Team).filter(Team.status == "active").order_by(Team.name).all()
+        options = [{"id": t.id, "name": t.name, "code": t.code} for t in teams]
+        return success_response(data=options)
+    except Exception as e:
+        logger.exception(f"Error getting team options: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取团队选项失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/filter-options/submitters",
+    response_model=StandardResponse[List[str]],
+    summary="获取投手筛选选项",
+    description="从账户名提取的投手列表，用于筛选下拉"
+)
+async def get_submitter_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取投手筛选选项 API (v2.1)
+    从广告账户名称中提取投手名前缀（格式: 投手名_平台_地区）
+    """
+    try:
+        # 获取所有账户名
+        accounts = db.query(AdAccount.name).distinct().all()
+
+        # 提取投手名（账户名的第一段）
+        submitters = set()
+        for (name,) in accounts:
+            if name and '_' in name:
+                submitter = name.split('_')[0]
+                if submitter:
+                    submitters.add(submitter)
+
+        # 排序返回
+        sorted_submitters = sorted(list(submitters))
+        return success_response(data=sorted_submitters)
+    except Exception as e:
+        logger.exception(f"Error getting submitter options: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取投手选项失败",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
@@ -1511,3 +1655,5 @@ async def get_trend_pending_count(
             message="获取待检查数量失败",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
+
+

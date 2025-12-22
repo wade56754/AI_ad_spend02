@@ -1,13 +1,22 @@
 """
 日报模型 - 投手每日报告
 
-RLS 策略：用户只能访问分配给自己的账户的日报
+对齐 DATA_SCHEMA.md v5.2 和 init_schema.sql §6.1
+字段来源: init_schema.sql 第 408-447 行
+状态机: STATE_MACHINE.md v2.6 第 8 章 (8 状态机)
+
+v2.0 更新 (2024-12):
+- 新增 region 地区字段
+- 新增 platform 平台字段 (FB/Google/TikTok)
+- 新增 result_count 成效数
+- 新增 follows_count 进粉数
+- 新增计算属性: cost_per_follow, cost_per_result
 """
 from decimal import Decimal
 from uuid import UUID
 from datetime import date, datetime
 from sqlalchemy import Column, BigInteger, String, Text, Integer, Numeric, Date, DateTime, Index, CheckConstraint, ForeignKey, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -17,36 +26,45 @@ from backend.models.mixins.serializable import SerializableMixin
 from backend.models.mixins.rls_aware import RLSAwareMixin
 
 
+# 平台枚举
+PLATFORM_CHOICES = ['FB', 'Google', 'TikTok', 'Other']
+
+# 地区列表 (基于实际业务数据)
+REGION_CHOICES = [
+    'Turkey', 'India', 'Italy', 'Germany', 'Brazil', 'UK', 'Korea', 'France',
+    'Malaysia', 'Japan', 'Austria', 'Spain', 'Nigeria', 'Singapore', 'Belgium',
+    'Sweden', 'Canada', 'Indonesia', 'USA', 'Ireland', 'Other'
+]
+
+
 class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     """
     投手每日报告表（粉数确认状态机）
 
-    必须与 STATE_MACHINE.md v2.6 第8章保持严格一致。
+    对齐 init_schema.sql §6.1 daily_reports 表定义
+    必须与 STATE_MACHINE.md v2.6 第 8 章保持严格一致
 
     8 状态流程：
     raw_submitted → trend_pending → trend_ok/trend_flagged
     → trend_resolved → final_pending → final_confirmed → final_locked
 
-    字段：
-    - id: 主键
-    - ad_account_id: 广告账户ID（外键）
-    - submitted_by: 提交人ID（外键）
-    - reviewed_by: 审核人ID（外键）
-    - report_date: 报告日期
-    - status: 状态（8状态机）
-    - conversions_raw: 投手提交的原始粉数
-    - conversions_final: 运营确认的最终粉数
-    - raw_spend: 原始消耗
-    - real_spend: 真实消耗
-    - trend_flag: 趋势异常标记
-    - trend_flag_reason: 异常原因
-    - trend_resolution_note: 运营复核说明
+    字段（与数据库完全对齐）：
+    - id: BIGSERIAL 主键
+    - report_date: DATE 报告日期
+    - ad_account_id: BIGINT 广告账户外键
+    - campaign_name/ad_group_name/ad_creative_name: 广告信息
+    - impressions/clicks/conversions/new_follows: 基础指标
+    - conversions_raw/conversions_final: 粉数（raw/final 数据流）
+    - raw_spend/real_spend/unit_price: 消耗数据
+    - cpc/cpa/ctr/roi: 效果指标
+    - status: 8 状态机
+    - trend_flag/trend_flag_reason/trend_resolution_note: 趋势风控
     - final_locked_at: 锁定时间
-    - unit_price: 单粉价格
-    - notes: 备注
-    - submitted_at: 提交时间
-    - reviewed_at: 审核时间
-    - created_at/updated_at: 时间戳（自动管理）
+    - notes/attachments: 备注和附件
+    - submitted_by/audit_user_id: 提交人/审核人
+    - submitted_at/approved_at: 时间戳
+    - created_by/updated_by: 审计字段
+    - created_at/updated_at: 时间戳
     """
     __tablename__ = 'daily_reports'
 
@@ -56,78 +74,124 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     __rls_readonly_roles__ = [UserRole.FINANCE]
 
     # 序列化配置
-    __json_include_relationships__ = ['ad_account', 'submitter', 'reviewer']
+    __json_include_relationships__ = ['ad_account', 'submitter', 'auditor']
 
-    # 主键
+    # 主键 - BIGSERIAL
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="日报ID")
+
+    # 报告日期
+    report_date = Column(Date, nullable=False, comment="报告日期")
 
     # 外键
     ad_account_id = Column(
         BigInteger,
-        ForeignKey('ad_accounts.id', ondelete='CASCADE'),
+        ForeignKey('ad_accounts.id', ondelete='RESTRICT'),
         nullable=False,
         comment="广告账户ID"
     )
-    submitted_by = Column(
-        PGUUID(as_uuid=True),
-        ForeignKey('users.id', ondelete='SET NULL'),
-        nullable=True,
-        comment="提交人ID"
-    )
-    reviewed_by = Column(
-        PGUUID(as_uuid=True),
-        ForeignKey('users.id', ondelete='SET NULL'),
-        nullable=True,
-        comment="审核人ID"
-    )
 
-    # 业务字段 - 基础信息
-    report_date = Column(Date, nullable=False, comment="报告日期")
-    status = Column(String(20), nullable=False, comment="状态（8状态机）")
-
-    # 广告信息字段 (API_SOT.md v9.0 第 9.2 节)
+    # 广告信息字段 - 对齐 init_schema.sql
     campaign_name = Column(String(200), nullable=True, comment="广告系列名称")
     ad_group_name = Column(String(200), nullable=True, comment="广告组名称")
     ad_creative_name = Column(String(200), nullable=True, comment="广告创意名称")
 
-    # 指标字段
-    impressions = Column(Integer, nullable=True, default=0, comment="展示次数/曝光量")
-    clicks = Column(Integer, nullable=True, default=0, comment="点击次数")
+    # ========== 新增字段 v2.0 ==========
+    # 地区 - 投放目标地区
+    region = Column(String(50), nullable=True, comment="投放地区（Turkey/India/Brazil等）")
 
-    # 三数据流字段 (STATE_MACHINE.md v2.6 第 8 章)
+    # 平台 - 广告平台（直接字段，便于查询）
+    platform = Column(String(20), nullable=True, comment="广告平台（FB/Google/TikTok）")
+
+    # 成效数 - 广告成效数量
+    result_count = Column(Integer, nullable=False, default=0, server_default='0', comment="成效数（result）")
+
+    # 进粉数 - 实际进粉数量
+    follows_count = Column(Integer, nullable=False, default=0, server_default='0', comment="进粉数（people）")
+
+    # 货币类型
+    currency = Column(String(10), nullable=False, default='USD', server_default='USD', comment="货币类型（USD/CNY）")
+
+    # ========== 原有基础指标 ==========
+    impressions = Column(Integer, nullable=False, default=0, server_default='0', comment="展示次数/曝光量")
+    clicks = Column(Integer, nullable=False, default=0, server_default='0', comment="点击次数")
+    conversions = Column(Integer, nullable=False, default=0, server_default='0', comment="转化数")
+    new_follows = Column(Integer, nullable=False, default=0, server_default='0', comment="新增关注数（兼容旧字段）")
+
+    # 三数据流字段 - 对齐 init_schema.sql 和 STATE_MACHINE.md v2.6 第 8 章
     # raw 数据流 - 投手提交 (T+0)
-    conversions_raw = Column(Integer, nullable=True, default=0, comment="原始粉数（raw数据流）")
-    raw_spend = Column(Numeric(15, 2), nullable=True, default=0, comment="原始消耗（raw数据流）")
-    # real 数据流 - 运营录入 (T+1)
-    real_spend = Column(Numeric(15, 2), nullable=True, default=0, comment="真实消耗（real数据流）")
-    fee = Column(Numeric(15, 2), nullable=True, default=0, comment="手续费")
+    conversions_raw = Column(Integer, nullable=False, default=0, server_default='0', comment="原始粉数（raw数据流）")
     # final 数据流 - 运营确认
-    conversions_final = Column(Integer, nullable=True, default=0, comment="最终粉数（final数据流）")
+    conversions_final = Column(Integer, nullable=False, default=0, server_default='0', comment="最终粉数（final数据流）")
 
-    # 计费字段
-    unit_price = Column(Numeric(15, 2), nullable=True, comment="单粉价格（从项目继承）")
+    # 消耗字段 - 对齐 init_schema.sql
+    raw_spend = Column(Numeric(15, 2), nullable=False, default=Decimal('0.00'), server_default='0.00', comment="原始消耗（raw数据流）")
+    real_spend = Column(Numeric(15, 2), nullable=False, default=Decimal('0.00'), server_default='0.00', comment="真实消耗（real数据流）")
+    unit_price = Column(Numeric(15, 2), nullable=False, default=Decimal('0.00'), server_default='0.00', comment="单粉价格")
 
-    # 趋势风控字段 (STATE_MACHINE.md v2.6 第 8.3 节)
-    trend_flag = Column(String(20), nullable=True, default='normal', comment="趋势标记（normal/flagged/resolved）")
+    # 效果指标 - 对齐 init_schema.sql
+    cpc = Column(Numeric(12, 4), nullable=True, comment="单次点击成本")
+    cpa = Column(Numeric(12, 4), nullable=True, comment="单次转化成本")
+    ctr = Column(Numeric(12, 4), nullable=True, comment="点击率")
+    roi = Column(Numeric(12, 4), nullable=True, comment="投资回报率")
+
+    # 状态 - 8 状态机
+    status = Column(
+        String(20),
+        nullable=False,
+        default='raw_submitted',
+        server_default='raw_submitted',
+        comment="状态（8状态机）"
+    )
+
+    # 趋势风控字段 - 对齐 init_schema.sql 和 STATE_MACHINE.md v2.6 第 8.3 节
+    trend_flag = Column(
+        String(20),
+        nullable=False,
+        default='normal',
+        server_default='normal',
+        comment="趋势标记（normal/flagged/resolved）"
+    )
     trend_flag_reason = Column(Text, nullable=True, comment="趋势异常原因（如 TF-001）")
     trend_resolution_note = Column(Text, nullable=True, comment="运营复核说明")
 
     # 锁定时间
     final_locked_at = Column(DateTime(timezone=True), nullable=True, comment="计费锁定时间")
 
-    # 兼容旧字段 (deprecated, 将在下个版本移除)
-    # NOTE: 需要 Alembic migration 来添加新字段和迁移数据
-    fans_gained = Column(Integer, nullable=True, comment="[DEPRECATED] 新增粉丝数，请使用 conversions_raw")
-    spend_amount = Column(Numeric(15, 2), nullable=True, comment="[DEPRECATED] 消耗金额，请使用 raw_spend")
-
+    # 备注和附件 - 对齐 init_schema.sql
     notes = Column(Text, nullable=True, comment="备注")
+    attachments = Column(JSONB, nullable=True, comment="附件")
 
-    # 时间字段
+    # 用户关联 - 对齐 init_schema.sql
+    submitted_by = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="提交人ID"
+    )
+    audit_user_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="审核人ID"
+    )
+
+    # 审计字段 - 对齐 init_schema.sql
+    created_by = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="创建者ID"
+    )
+    updated_by = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="更新者ID"
+    )
+
+    # 时间字段 - 对齐 init_schema.sql
     submitted_at = Column(DateTime(timezone=True), nullable=True, comment="提交时间")
-    reviewed_at = Column(DateTime(timezone=True), nullable=True, comment="审核时间")
-
-    # 并发控制
-    version = Column(Integer, nullable=False, server_default='1', comment="乐观锁版本号")
+    approved_at = Column(DateTime(timezone=True), nullable=True, comment="审批时间")
 
     # ========== 关系定义 ==========
 
@@ -148,31 +212,73 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     )
 
     # 多对一：日报 -> 审核人
-    reviewer = relationship(
+    auditor = relationship(
         "User",
-        foreign_keys=[reviewed_by],
+        foreign_keys=[audit_user_id],
         lazy="selectin",
         doc="审核人（数据员）"
     )
 
-    # 约束和索引 - 必须与 STATE_MACHINE.md v2.6 第8章保持一致
+    # 约束和索引 - 对齐 init_schema.sql
     __table_args__ = (
         CheckConstraint(
             "status IN ('raw_submitted', 'trend_pending', 'trend_ok', 'trend_flagged', "
             "'trend_resolved', 'final_pending', 'final_confirmed', 'final_locked')",
             name='chk_daily_reports_status'
         ),
-        UniqueConstraint(
-            'ad_account_id', 'report_date',
-            name='daily_reports_ad_account_id_report_date_key'
+        CheckConstraint(
+            "trend_flag IN ('normal', 'flagged', 'resolved')",
+            name='chk_daily_reports_trend_flag'
         ),
-        Index('idx_daily_reports_ad_account_id', 'ad_account_id'),
-        Index('idx_daily_reports_report_date', 'report_date'),
+        UniqueConstraint(
+            'report_date', 'ad_account_id',
+            name='uq_daily_reports_date_account'
+        ),
+        Index('idx_daily_reports_date', 'report_date'),
+        Index('idx_daily_reports_account', 'ad_account_id'),
         Index('idx_daily_reports_status', 'status'),
+        Index('idx_daily_reports_created_by', 'created_by'),
+        Index('idx_daily_reports_date_status', 'report_date', 'status'),
     )
 
     def __repr__(self):
         return f"<DailyReport(id={self.id}, account_id={self.ad_account_id}, date={self.report_date})>"
+
+    # ========== 计算属性 (v2.0) ==========
+
+    @property
+    def cost_per_follow(self) -> Decimal:
+        """
+        单粉成本 = 广告消耗 / 进粉数
+
+        如果进粉数为0，返回0
+        """
+        if self.follows_count and self.follows_count > 0:
+            return Decimal(str(self.raw_spend)) / Decimal(self.follows_count)
+        return Decimal('0.00')
+
+    @property
+    def cost_per_result(self) -> Decimal:
+        """
+        单次成效费用 = 广告消耗 / 成效数
+
+        如果成效数为0，返回0
+        """
+        if self.result_count and self.result_count > 0:
+            return Decimal(str(self.raw_spend)) / Decimal(self.result_count)
+        return Decimal('0.00')
+
+    # ========== 向后兼容属性 ==========
+
+    @property
+    def reviewed_by(self):
+        """向后兼容：返回 audit_user_id"""
+        return self.audit_user_id
+
+    @reviewed_by.setter
+    def reviewed_by(self, value):
+        """向后兼容：设置 audit_user_id"""
+        self.audit_user_id = value
 
     # ========== 业务属性（8状态机）==========
 
@@ -257,7 +363,8 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         self.status = DailyReportStatus.RAW_SUBMITTED.value
         self.submitted_by = submitter_id
         self.submitted_at = func.now()
-        # conversions_raw 和 raw_spend 字段需要在模型中添加
+        self.conversions_raw = conversions_raw
+        self.raw_spend = raw_spend
 
     def trigger_trend_check(self):
         """触发趋势风控检查（系统自动）"""
@@ -276,37 +383,39 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         if not self.can_transition_to(DailyReportStatus.TREND_FLAGGED):
             raise ValueError(f"不允许从 {self.status} 状态标记趋势异常")
         self.status = DailyReportStatus.TREND_FLAGGED.value
-        self.notes = reason  # trend_flag_reason 字段需要添加
+        self.trend_flag = 'flagged'
+        self.trend_flag_reason = reason
 
     def resolve_trend(self, reviewer_id: UUID, resolution_note: str):
         """运营确认趋势异常已解决"""
         if not self.can_transition_to(DailyReportStatus.TREND_RESOLVED):
             raise ValueError(f"不允许从 {self.status} 状态解决趋势异常")
         self.status = DailyReportStatus.TREND_RESOLVED.value
-        self.reviewed_by = reviewer_id
-        self.notes = resolution_note  # trend_resolution_note 字段需要添加
+        self.audit_user_id = reviewer_id
+        self.trend_flag = 'resolved'
+        self.trend_resolution_note = resolution_note
 
     def enter_final_pending(self, reviewer_id: UUID):
         """运营录入real_spend后进入等待最终确认"""
         if not self.can_transition_to(DailyReportStatus.FINAL_PENDING):
             raise ValueError(f"不允许从 {self.status} 状态进入最终确认等待")
         self.status = DailyReportStatus.FINAL_PENDING.value
-        self.reviewed_by = reviewer_id
+        self.audit_user_id = reviewer_id
 
     def confirm_final(self, reviewer_id: UUID):
         """运营确认最终粉数"""
         if not self.can_transition_to(DailyReportStatus.FINAL_CONFIRMED):
             raise ValueError(f"不允许从 {self.status} 状态确认最终粉数")
         self.status = DailyReportStatus.FINAL_CONFIRMED.value
-        self.reviewed_by = reviewer_id
-        self.reviewed_at = func.now()
+        self.audit_user_id = reviewer_id
+        self.approved_at = func.now()
 
     def lock_final(self):
         """系统计费锁定（终态）"""
         if not self.can_transition_to(DailyReportStatus.FINAL_LOCKED):
             raise ValueError(f"不允许从 {self.status} 状态锁定")
         self.status = DailyReportStatus.FINAL_LOCKED.value
-        # final_locked_at 字段需要添加
+        self.final_locked_at = func.now()
 
     # ========== 权限判断方法（8状态机）==========
 

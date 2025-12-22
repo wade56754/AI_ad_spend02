@@ -1,10 +1,10 @@
 ---
 name: ai-ad-code-factory
-version: "3.0"
+version: "3.2"
 status: ready_for_production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-18
+last_reviewed: 2025-12-22
 baseline:
   - MASTER.md v3.5
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
@@ -113,12 +113,12 @@ code_sources:
     │  ┌───────────────────────────────────────────────────────────┐ │
     │  │                Session 2+: FACTORY AGENT                   │ │
     │  │  ┌──────────────────────────────────────────────────────┐ │ │
-    │  │  │                  5 阶段流水线 (每个任务)               │ │ │
+    │  │  │                  6 阶段流水线 (每个任务)               │ │ │
     │  │  │                                                      │ │ │
-    │  │  │   SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY        │ │ │
-    │  │  │     │        │        │         │         │          │ │ │
-    │  │  │     ▼        ▼        ▼         ▼         ▼          │ │ │
-    │  │  │  Searcher Selector Adapter Assembler Verifier        │ │ │
+    │  │  │   SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM │ │
+    │  │  │     │        │        │         │         │        │  │ │ │
+    │  │  │     ▼        ▼        ▼         ▼         ▼        ▼  │ │ │
+    │  │  │  Searcher Selector Adapter Assembler Verifier Confirmer │ │
     │  │  │                                                      │ │ │
     │  │  │  ✅ 任务完成 → 更新 task_list.json → Git commit      │ │ │
     │  │  └──────────────────────────────────────────────────────┘ │ │
@@ -216,12 +216,13 @@ code_sources:
   <input_contract>
     必填:
     {
-      requirement: string  // 需求描述
+      requirement: string,  // 需求描述
+      module: "pitcher" | "finance" | "ad_account" | "project"  // 核心模块 (必填!)
     }
 
     可选:
     {
-      scope: "backend" | "frontend" | "fullstack",  // 范围 (默认 fullstack)
+      scope: "backend" | "frontend" | "fullstack",  // 技术范围 (默认 fullstack)
       search_sources: {                              // 搜索来源
         local_project: boolean,                      // 默认 true
         code_library: boolean,                       // 默认 true
@@ -229,6 +230,30 @@ code_sources:
       },
       auto_fix_iterations: number,                   // 自动修复次数 (默认 3)
       output_mode: "files" | "diff" | "preview"      // 输出模式 (默认 files)
+    }
+
+    模块边界定义 (AI_ANTI_HALLUCINATION_GUARD.md v1.0):
+    {
+      pitcher: {
+        可写表: [daily_reports, pitchers(仅自己)],
+        只读表: [account_ownership_history, ad_accounts, projects],
+        禁止表: [ledger, period_locks, recon_*]
+      },
+      finance: {
+        可写表: [ledger(仅INSERT), period_locks, recon_*],
+        只读表: [daily_reports, ad_accounts, agencies],
+        禁止表: [pitchers(写)]
+      },
+      ad_account: {
+        可写表: [ad_accounts, agencies, account_ownership_history, attribution_*, spend_*],
+        只读表: [pitchers, projects],
+        禁止表: [ledger, daily_reports(写), period_locks]
+      },
+      project: {
+        可写表: [projects, clients],
+        只读表: [pitchers, ad_accounts],
+        禁止表: [ledger, daily_reports(写), account_ownership_history(写)]
+      }
     }
   </input_contract>
 
@@ -373,6 +398,20 @@ code_sources:
     │  └─────────────────────────────────────────────────────────┘   │
     │                              │                                  │
     │                              ▼                                  │
+    │  ┌─────────────────────────────────────────────────────────┐   │
+    │  │ Phase 6: CONFIRM (幻觉抑制最终确认) [v3.1 新增]          │   │
+    │  │                                                         │   │
+    │  │ 动作:                                                    │   │
+    │  │ 1. 遍历生成的每个状态值 → 追溯到 STATE_MACHINE.md       │   │
+    │  │ 2. 遍历生成的每个角色值 → 追溯到 frozenset 白名单       │   │
+    │  │ 3. 遍历生成的每个字段 → 追溯到 DATA_SCHEMA.md           │   │
+    │  │ 4. 遍历调用的每个 API → 确认在项目中存在                 │   │
+    │  │ 5. 生成来源追溯报告 (source_traceability_report)        │   │
+    │  │                                                         │   │
+    │  │ 任何追溯失败 → BLOCKING，必须人工介入                    │   │
+    │  └─────────────────────────────────────────────────────────┘   │
+    │                              │                                  │
+    │                              ▼                                  │
     │  输出:                                                          │
     │  - 可用代码文件                                                 │
     │  - 参考来源说明                                                 │
@@ -384,37 +423,120 @@ code_sources:
 
 
   <!-- ======================================================
+       5.1 代码来源标注规范 (Source Annotation Standard) [v3.2 新增]
+  ====================================================== -->
+  <source_annotation_standard>
+    所有生成的代码必须使用统一的来源标注格式:
+
+    **标准格式**: `# SoT: {DOC}#{SECTION}`
+
+    示例:
+    ```python
+    # SoT: STATE_MACHINE.md#daily_report
+    class ReportStatus(str, Enum):
+        DRAFT = "DRAFT"
+        SUBMITTED = "SUBMITTED"
+        ...
+
+    # SoT: DATA_SCHEMA.md#daily_reports.amount
+    amount: Decimal = Field(..., description="消耗金额")
+
+    # SoT: BUSINESS_RULES.md#BR-RPT-001
+    def validate_report_date(self, date: date) -> bool:
+        ...
+
+    # SoT: ERROR_CODES_SOT.md#RPT-001
+    raise BusinessError(code="RPT-001", message="日报日期不能是未来")
+
+    # SoT: API_SOT.md#POST /daily-reports
+    @router.post("/daily-reports")
+    async def create_daily_report(...):
+        ...
+    ```
+
+    **TypeScript/TSX 格式**:
+    ```typescript
+    // SoT: STATE_MACHINE.md#daily_report
+    type ReportStatus = "DRAFT" | "SUBMITTED" | "CONFIRMED";
+
+    // SoT: API_SOT.md#GET /daily-reports
+    export async function fetchDailyReports(): Promise<DailyReport[]> {
+        ...
+    }
+    ```
+
+    **禁止的格式** (会触发 SUP-007):
+    - `# 来源: xxx` ❌
+    - `// Source: xxx` ❌
+    - `/* Ref: xxx */` ❌
+    - 无来源标注 ❌
+
+    **验证规则**:
+    - 每个状态枚举必须有 SoT 标注
+    - 每个业务规则实现必须有 BR-XXX 引用
+    - 每个 API 端点必须有 API_SOT 引用
+    - 每个错误码必须有 ERROR_CODES_SOT 引用
+  </source_annotation_standard>
+
+
+  <!-- ======================================================
        6. 禁止行为 (Forbidden Actions)
   ====================================================== -->
   <forbidden_actions>
+    <!-- 模块边界规则 (AI_ANTI_HALLUCINATION_GUARD.md) -->
     <forbidden id="CF-001">
+      <action>不指定 module 参数直接生成代码</action>
+      <correct_action>必须指定 module: pitcher | finance | ad_account | project</correct_action>
+      <reason>模块边界是防止 AI 幻觉的核心约束</reason>
+    </forbidden>
+
+    <forbidden id="CF-002">
+      <action>跨模块写入数据表</action>
+      <correct_action>只能写入所属模块的可写表</correct_action>
+      <reason>模块隔离是系统完整性的保障 (ZT-06)</reason>
+    </forbidden>
+
+    <forbidden id="CF-003">
       <action>在没有搜索的情况下直接生成代码</action>
       <correct_action>必须先执行 SEARCH Phase</correct_action>
       <reason>搜索优先是减少幻觉的核心原则</reason>
     </forbidden>
 
-    <forbidden id="CF-002">
+    <forbidden id="CF-004">
       <action>不标注代码来源</action>
       <correct_action>所有代码必须标注来源</correct_action>
       <reason>来源追溯是代码可信度的基础</reason>
     </forbidden>
 
-    <forbidden id="CF-003">
-      <action>发明新的字段/状态/错误码</action>
-      <correct_action>仅使用 SoT 中已定义的</correct_action>
-      <reason>SoT 合规是系统一致性的保障</reason>
+    <forbidden id="CF-005">
+      <action>发明新的字段/状态/错误码/角色</action>
+      <correct_action>仅使用 SoT 白名单中已定义的值</correct_action>
+      <reason>SoT 合规是系统一致性的保障 (ZT-02)</reason>
     </forbidden>
 
-    <forbidden id="CF-004">
+    <forbidden id="CF-006">
       <action>跳过验证阶段</action>
       <correct_action>必须执行 VERIFY Phase</correct_action>
       <reason>验证是代码质量的最后防线</reason>
     </forbidden>
 
-    <forbidden id="CF-005">
+    <forbidden id="CF-007">
       <action>无限循环修复</action>
       <correct_action>最多 3 次修复迭代，失败则人工介入</correct_action>
       <reason>避免死循环，及时发现根本问题</reason>
+    </forbidden>
+
+    <!-- 财务模块特殊规则 -->
+    <forbidden id="CF-008">
+      <action>UPDATE/DELETE ledger 表</action>
+      <correct_action>只能 INSERT，错误修正使用冲正机制</correct_action>
+      <reason>账本不可变是财务合规的基础 (ZT-01)</reason>
+    </forbidden>
+
+    <forbidden id="CF-009">
+      <action>直接修改 balance 字段</action>
+      <correct_action>通过 ledger 流水计算余额</correct_action>
+      <reason>余额必须可追溯 (ZT-05)</reason>
     </forbidden>
   </forbidden_actions>
 
@@ -512,6 +634,17 @@ code_sources:
        8. 版本记录 (Version Notes)
   ====================================================== -->
   <VERSION_NOTES>
+    ### v3.2 (2025-12-22) - P2 优化版
+    - 新增代码来源标注规范 (source_annotation_standard)
+    - 统一格式: `# SoT: {DOC}#{SECTION}`
+    - 新增 SUP-007 错误码 (非标准来源标注)
+
+    ### v3.1 (2025-12-22) - P1 修复版
+    - 新增 Phase 6: CONFIRM (幻觉抑制最终确认)
+    - 6 阶段流水线: SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM
+    - 来源追溯报告 (source_traceability_report)
+    - 任何追溯失败为 BLOCKING 级别
+
     ### v3.0 (2025-12-18) - 自主编码集成版
     - **核心改进**: 集成 Anthropic autonomous-coding 架构
       - 双 Agent 模式 (Initializer + Factory)

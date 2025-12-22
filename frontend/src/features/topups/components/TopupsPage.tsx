@@ -135,28 +135,36 @@ export function TopupsPage() {
   }, [statsData]);
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">充值管理</h1>
-          <p className="text-muted-foreground">
-            管理项目充值申请与双重审核流程
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            刷新
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            导出
-          </Button>
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            新建申请
-          </Button>
+    <div className="min-h-screen bg-gray-50 -m-6 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+      {/* Header - v3.0 白色卡片头部 */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100">
+              <Plus className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">充值管理</h1>
+              <p className="text-sm text-gray-500">
+                管理项目充值申请与双重审核流程
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
+            </Button>
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              导出
+            </Button>
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              新建申请
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -182,18 +190,17 @@ export function TopupsPage() {
 
       {/* Filter Panel */}
       {showFilters && (
-        <Card>
-          <CardContent className="pt-6">
-            <TopupsFilterPanel
-              filters={filters}
-              onFiltersChange={setFilters}
-              onReset={handleResetFilters}
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <TopupsFilterPanel
+            filters={filters}
+            onFiltersChange={setFilters}
+            onReset={handleResetFilters}
+          />
+        </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs - 白色卡片容器 */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
         <TabsList>
           <TabsTrigger value="all">
@@ -226,6 +233,7 @@ export function TopupsPage() {
           <TopupsTable onViewDetail={handleViewDetail} />
         </TabsContent>
       </Tabs>
+      </div>
 
       {/* Detail Dialog */}
       <TopupDetailDialog
@@ -270,6 +278,7 @@ export function TopupsPage() {
         onClose={() => setShowCreateForm(false)}
         onSubmit={handleCreateFormSubmit}
       />
+      </div>
     </div>
   );
 }

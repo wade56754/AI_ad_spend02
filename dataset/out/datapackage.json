@@ -1,0 +1,1111 @@
+{
+  "resources": [
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_12yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年12月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_12yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_12yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年12月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_12yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_11yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年11月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_11yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_11yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年11月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_11yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_10yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年10月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_10yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_10yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年10月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_10yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_9yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年9月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_9yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_9yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年9月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_9yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_8yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年8月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_8yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_8yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年8月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_8yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_7yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年7月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_7yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_7yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年7月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_7yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_6yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年6月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_6yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_6yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年6月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_6yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_5yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年5月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_5yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_5yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年5月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_5yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_4yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年4月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_4yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_4yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年4月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_4yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_3yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年3月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_3yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_3yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年3月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_3yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_2yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年2月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_2yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_2yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年2月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_2yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_1yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年1月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_1yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_2025nian_1yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 2025年1月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_2025nian_1yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_shou_zhi_biao_hui_zong",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 收支表汇总",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_shou_zhi_biao_hui_zong.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_12yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 12月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_12yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_12yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 12月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_12yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_11yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 11月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_11yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_11yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 11月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_11yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_10yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 10月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_10yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_10yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 10月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_10yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_9yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 9月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_9yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_9yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 9月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_9yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_8yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 8月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_8yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_8yue_qu_dao_zong_zhi_chu_shou_ru",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 8月渠道总支出收入",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_8yue_qu_dao_zong_zhi_chu_shou_ru.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_7yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 7月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_7yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_6yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 6月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_6yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_6yue_wei_shou_cheng_cheng",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 6月未收-成成",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_6yue_wei_shou_cheng_cheng.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_5yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 5月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_5yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_4yue_ying_shou_wei_shou",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 4月应收未收",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_4yue_ying_shou_wei_shou.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_shou_zhi_biao_hui_zong_ying_shou_wei_shou_mo_ban",
+      "type": "table",
+      "description": "源文件: 12月收支表汇总.xlsx | Sheet: 应收未收-模板",
+      "path": "csv\\12yue_shou_zhi_biao_hui_zong_ying_shou_wei_shou_mo_ban.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_12yue_xiao_hao_hui_zong_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 12月消耗汇总表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_12yue_xiao_hao_hui_zong_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_12cheng_ben_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 12成本表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_12cheng_ben_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_12xiang_mu_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 12项目表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_12xiang_mu_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_12yin_du",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 12印度",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_12yin_du.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_12yue_ping_tai_xiao_hao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 12月平台消耗",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_12yue_ping_tai_xiao_hao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_12yue_guan_fang_shou_quan_hu_15xiao_hao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 12月官方授权户-15消耗",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_12yue_guan_fang_shou_quan_hu_15xiao_hao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_11yue_xiao_hao_hui_zong_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 11月消耗汇总表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_11yue_xiao_hao_hui_zong_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_11ti_cheng",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 11提成",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_11ti_cheng.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_11yin_du",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 11印度",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_11yin_du.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_10yue_xiao_hao_hui_zong_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 10月消耗汇总表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_10yue_xiao_hao_hui_zong_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_10cheng_ben_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 10成本表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_10cheng_ben_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_10ti_cheng",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 10提成",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_10ti_cheng.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_10xiang_mu_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 10项目表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_10xiang_mu_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_10yue_ping_tai_xiao_hao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 10月平台消耗",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_10yue_ping_tai_xiao_hao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_9yue_xiao_hao_hui_zong_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 9月消耗汇总表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_9yue_xiao_hao_hui_zong_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_8yue_xiao_hao_hui_zong_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 8月消耗汇总表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_8yue_xiao_hao_hui_zong_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_7yue_xiao_hao_hui_zong_biao",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 7月消耗汇总表",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_7yue_xiao_hao_hui_zong_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "12yue_xiao_hao_hui_zong_zz_xiao_hao_hui_zong_biao_mo_ban",
+      "type": "table",
+      "description": "源文件: 12月消耗汇总-ZZ.xlsx | Sheet: 消耗汇总表（模版）",
+      "path": "csv\\12yue_xiao_hao_hui_zong_zz_xiao_hao_hui_zong_biao_mo_ban.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_mo_ban",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 模板",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_mo_ban.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_yi_tui_gu_ge_gong_xiang_hu_lao_hu",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 已退，谷歌共享户老户",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_yi_tui_gu_ge_gong_xiang_hu_lao_hu.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_guan_fang_shou_quan_hu_15",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 官方授权户-15",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_guan_fang_shou_quan_hu_15.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_vcc_102524_fu_wu_fei_1_tai_hua_xu_ni_qia",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: Vcc-102524 服务费1（泰华）虚拟卡",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_vcc_102524_fu_wu_fei_1_tai_hua_xu_ni_qia.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_vcc_xin_xi_tong",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: VCC-新系统",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_vcc_xin_xi_tong.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_y_5208_fbou_mei_hu",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: Y-5208 FB欧美户",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_y_5208_fbou_mei_hu.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_fkz",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: FKZ",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_fkz.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_lu_ren_hu_dong_hai_zong_50_7_shan_zhi",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 路人互动-海总（50-7）山治",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_lu_ren_hu_dong_hai_zong_50_7_shan_zhi.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_lu_ren_hu_dong_xi_tong",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 路人互动-系统",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_lu_ren_hu_dong_xi_tong.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_shi_yue_er_bu_xian_tai_hua",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 十月二不限——（泰华）",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_shi_yue_er_bu_xian_tai_hua.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_anthony_fkz",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: Anthony - FKZ",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_anthony_fkz.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_lolo_fkz_5_dating",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: Lolo - FKZ (~5% | dating)",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_lolo_fkz_5_dating.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_tai_hua_me_fbhai_wai_hu",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 泰华&ME-FB海外户",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_tai_hua_me_fbhai_wai_hu.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_gt_papaou_20_8_1_tk6_1",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: GT&papa欧20+8+1 TK6+1",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_gt_papaou_20_8_1_tk6_1.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_hai_zong_hei_ze",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 海总-黑泽",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_hai_zong_hei_ze.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_shen_zhen_fang_lin_zi",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 深圳芳林子",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_shen_zhen_fang_lin_zi.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_feng_huang_luo_yang",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 凤凰&洛阳",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_feng_huang_luo_yang.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_bge_fbsan_bu_xian_101",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: B哥-fb三不限10➕1",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_bge_fbsan_bu_xian_101.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_yin_du_hu_yin_ni_qi_ye_hu",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 印度户印尼企业户",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_yin_du_hu_yin_ni_qi_ye_hu.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_hai_zong_zhi_cheng_san_bu_xian",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 海总&志诚三不限",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_hai_zong_zhi_cheng_san_bu_xian.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_gu_ge_fan_tuan",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 谷歌-饭团",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_gu_ge_fan_tuan.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_yin_du_qi_ye_hu_ou_zhou_mei_jin_hu_xia_hu_yi_tui",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 印度企业户 欧洲美金户下户已退",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_yin_du_qi_ye_hu_ou_zhou_mei_jin_hu_xia_hu_yi_tui.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_12yue_chong_zhi_hui_zong",
+      "type": "table",
+      "description": "源文件: ZZ-代理充值汇总表-2025年12月.xlsx | Sheet: 12月充值汇总",
+      "path": "csv\\zz_dai_li_chong_zhi_hui_zong_biao_2025nian_12yue_12yue_chong_zhi_hui_zong.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_12yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年12月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_12yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_11yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年11月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_11yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_10yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年10月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_10yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_9yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年9月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_9yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_8yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年8月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_8yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_7yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年7月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_7yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_6yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年6月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_6yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_5yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年5月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_5yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_4yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年4月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_4yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_3yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年3月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_3yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_2yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年2月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_2yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2025nian_1yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2025年1月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2025nian_1yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_12yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 12月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_12yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_11yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 11月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_11yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_10yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 10月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_10yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_10yue_zhi_fu_bao_bei_yong_jin",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 10月支付宝备用金",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_10yue_zhi_fu_bao_bei_yong_jin.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_10yue_wei_xin_bei_yong_jin",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 10月微信备用金",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_10yue_wei_xin_bei_yong_jin.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_9yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 9月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_9yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_9yue_zhi_fu_bao_bei_yong_jin",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 9月支付宝备用金",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_9yue_zhi_fu_bao_bei_yong_jin.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_9yue_wei_xin_bei_yong_jin",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 9月微信备用金",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_9yue_wei_xin_bei_yong_jin.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_8yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 8月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_8yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_7yue_bei_yong_jin_chong_zhi_xiang_qing",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 7月备用金充值详情",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_7yue_bei_yong_jin_chong_zhi_xiang_qing.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_7yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 7月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_7yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_8yue_zhang_dan_hu",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 8月账单户",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_8yue_zhang_dan_hu.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_8yue_bm",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 8月BM",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_8yue_bm.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_8yue_bei_yong_jin_chong_zhi_xiang_qing",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 8月备用金充值详情",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_8yue_bei_yong_jin_chong_zhi_xiang_qing.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_6yue_qi_hang_xiao_hchong_zhi_xiang_qing",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 6月启航小h充值详情",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_6yue_qi_hang_xiao_hchong_zhi_xiang_qing.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_6yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 6月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_6yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_yue_shou_zhi_cai_wu_bao_biao_mo_ban",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 月收支财务报表（模板）",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_yue_shou_zhi_cai_wu_bao_biao_mo_ban.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_5yue_qi_hang_xiao_hchong_zhi_xiang_qing",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 5月启航小h充值详情",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_5yue_qi_hang_xiao_hchong_zhi_xiang_qing.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_5yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 5月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_5yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_4yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 4月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_4yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_3yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 3月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_3yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "gong_si_ye_wu_zhang_dan_2yue_shou_zhi_cai_wu_bao_biao",
+      "type": "table",
+      "description": "源文件: 公司业务账单.xlsx | Sheet: 2月收支财务报表",
+      "path": "csv\\gong_si_ye_wu_zhang_dan_2yue_shou_zhi_cai_wu_bao_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "tou_shou_ri_bao_hui_fu_di_1_zhang_biao_dan_hui_fu",
+      "type": "table",
+      "description": "源文件: 投手日报（回复）.xlsx | Sheet: 第 1 张表单回复",
+      "path": "csv\\tou_shou_ri_bao_hui_fu_di_1_zhang_biao_dan_hui_fu.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "tou_shou_ri_bao_hui_fu_mei_ri_ri_bao_tou_shi_biao",
+      "type": "table",
+      "description": "源文件: 投手日报（回复）.xlsx | Sheet: 每日日报透视表",
+      "path": "csv\\tou_shou_ri_bao_hui_fu_mei_ri_ri_bao_tou_shi_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "tou_shou_ri_bao_hui_fu_mei_yue_ri_bao_tou_shi_biao",
+      "type": "table",
+      "description": "源文件: 投手日报（回复）.xlsx | Sheet: 每月日报透视表",
+      "path": "csv\\tou_shou_ri_bao_hui_fu_mei_yue_ri_bao_tou_shi_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "tou_shou_ri_bao_hui_fu_tou_shou_xin_xi",
+      "type": "table",
+      "description": "源文件: 投手日报（回复）.xlsx | Sheet: 投手信息",
+      "path": "csv\\tou_shou_ri_bao_hui_fu_tou_shou_xin_xi.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "shou_zhi_biao_ming_xi_biao",
+      "type": "table",
+      "description": "源文件: 收支表.xlsx | Sheet: 明细表",
+      "path": "csv\\shou_zhi_biao_ming_xi_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "shou_zhi_biao_cheng_ben_biao",
+      "type": "table",
+      "description": "源文件: 收支表.xlsx | Sheet: 成本表",
+      "path": "csv\\shou_zhi_biao_cheng_ben_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    },
+    {
+      "name": "shou_zhi_biao_li_run_biao",
+      "type": "table",
+      "description": "源文件: 收支表.xlsx | Sheet: 利润表",
+      "path": "csv\\shou_zhi_biao_li_run_biao.csv",
+      "scheme": "file",
+      "format": "csv",
+      "mediatype": "text/csv"
+    }
+  ]
+}

@@ -12,7 +12,8 @@ from sqlalchemy.orm import Session
 from backend.core.db import get_db
 from backend.core.response import success_response, error_response
 from backend.core.error_codes import BusinessErrorCodes, ValidationErrorCodes, SystemErrorCodes
-from backend.core.security import AuthenticatedUser, get_current_user
+from backend.core.dependencies import get_current_user
+from backend.models import User
 from backend.core.logging import log_requests
 from backend.models import AdAccount
 # from models import Log  # Log模型不存在，暂时注释
@@ -63,7 +64,7 @@ def list_ad_accounts(
     status_filter: Optional[str] = Query(None, alias="status"),
     project_id: Optional[UUID] = Query(None),
     channel_id: Optional[UUID] = Query(None),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -97,8 +98,8 @@ def list_ad_accounts(
         query = query.filter(AdAccount.project_id.in_(managed_project_ids))
 
     elif user_role == "media_buyer":
-        # 仅可见分配给自己的账户
-        query = query.filter(AdAccount.assigned_to == user_id)
+        # 仅可见分配给自己的账户 (owner_id 对齐 init_schema.sql)
+        query = query.filter(AdAccount.owner_id == user_id)
 
     elif user_role == "finance":
         # finance 可以只读查看所有账户
@@ -143,7 +144,7 @@ def list_ad_accounts(
 @router.get("/{account_id}", response_model=dict)
 def get_ad_account(
     account_id: int,  # BigInteger in model
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     """
@@ -207,7 +208,7 @@ def get_ad_account(
 @router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
 def create_ad_account(
     payload: AdAccountCreate,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     account = AdAccount(**payload.model_dump())  # id is autoincrement BigInteger
@@ -233,7 +234,7 @@ def create_ad_account(
 def update_ad_account_status(
     account_id: int,  # BigInteger in model
     payload: AdAccountStatusUpdate,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
@@ -294,7 +295,7 @@ def update_ad_account_status(
 @router.delete("/{account_id}", response_model=dict)
 def delete_ad_account(
     account_id: int,  # BigInteger in model
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     """删除广告账户（仅允许删除归档状态的账户）"""
@@ -325,7 +326,7 @@ def delete_ad_account(
 def create_balance_transfer(
     account_id: int,
     payload: BalanceTransferRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     """

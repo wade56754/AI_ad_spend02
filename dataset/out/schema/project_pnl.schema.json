@@ -1,0 +1,136 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "项目收支明细表",
+  "description": "Domain: 钱域 | Grain: 每月每项目收支",
+  "type": "object",
+  "properties": {
+    "month": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "11月",
+        "11月",
+        "11月"
+      ]
+    },
+    "team": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "SZ",
+        "SZ",
+        "SZ"
+      ]
+    },
+    "business_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "自投项目",
+        "外部代投",
+        "自投项目"
+      ]
+    },
+    "region": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "DE",
+        "JP",
+        "SG"
+      ]
+    },
+    "project_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "德国Summer",
+        "岳总",
+        "海总-新加坡、加拿大、美国"
+      ]
+    },
+    "lead_count": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "227.0",
+        "205.0",
+        "1.0"
+      ]
+    },
+    "total_spend": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "22713.24",
+        "30750.0",
+        "244.28"
+      ]
+    },
+    "actual_revenue": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "40860.0",
+        "36900.0",
+        "100.0"
+      ]
+    },
+    "gross_profit": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "18146.76",
+        "6150.0",
+        "-144.28"
+      ]
+    },
+    "prepaid_balance": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "-",
+        "0",
+        "5055"
+      ]
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "-",
+        "-",
+        "海总-新加坡、加拿大、美国的预付款是一起的，11月结余合计5055"
+      ]
+    }
+  },
+  "required": [
+    "month",
+    "team",
+    "business_type",
+    "region",
+    "project_name"
+  ]
+}

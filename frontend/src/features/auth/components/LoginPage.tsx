@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -21,7 +22,7 @@ export function LoginPage() {
     }
 
     try {
-      login(formData);
+      await login(formData);
     } catch (error) {
       const message = error instanceof Error ? error.message : '登录失败，请重试';
       toast.error(message);
@@ -74,19 +75,27 @@ export function LoginPage() {
               />
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="remember_me"
-                name="remember_me"
-                type="checkbox"
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                checked={formData.remember_me}
-                onChange={(e) => setFormData({ ...formData, remember_me: e.target.checked })}
-                disabled={isLoggingIn}
-              />
-              <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-900">
-                记住我
-              </label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember_me"
+                  name="remember_me"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  checked={formData.remember_me}
+                  onChange={(e) => setFormData({ ...formData, remember_me: e.target.checked })}
+                  disabled={isLoggingIn}
+                />
+                <label htmlFor="remember_me" className="ml-2 block text-sm text-gray-900">
+                  记住我
+                </label>
+              </div>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-500"
+              >
+                忘记密码？
+              </Link>
             </div>
           </div>
 
@@ -98,6 +107,16 @@ export function LoginPage() {
             >
               {isLoggingIn ? '登录中...' : '登录'}
             </button>
+          </div>
+
+          <div className="text-center text-sm">
+            <span className="text-gray-600">还没有账户？</span>
+            <Link
+              href="/register"
+              className="ml-1 font-medium text-blue-600 hover:text-blue-500"
+            >
+              立即注册
+            </Link>
           </div>
         </form>
       </div>

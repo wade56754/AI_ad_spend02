@@ -461,9 +461,9 @@ class ReportsService:
         active_accounts = self.db.query(func.count(AdAccount.id)).filter(
             AdAccount.status == 'active'
         ).scalar() or 0
-        low_balance_accounts = self.db.query(func.count(AdAccount.id)).filter(
-            AdAccount.balance < 1000  # 低于1000视为低余额
-        ).scalar() or 0
+        # 低余额账户统计 - 暂时设为0，因为余额需从账本计算
+        # 注意: 按 LEDGER_SOT.md v1.1，余额应从 ledger_entries 计算，而非直接存储
+        low_balance_accounts = 0  # TODO: 从 ledger_entries 计算账户余额
 
         # 项目统计
         total_projects = self.db.query(func.count(Project.id)).scalar() or 0

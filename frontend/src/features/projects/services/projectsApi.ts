@@ -30,45 +30,57 @@ export async function getProjects(params: ProjectListParams = {}) {
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}?${query}` : BASE_PATH;
 
+  // apiFetch already extracts .data from the envelope
   const response = await apiFetch<{
-    data: { items: Project[]; meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } } };
+    items: Project[];
+    meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
   }>(url);
 
   return {
-    data: response.data.items,
-    meta: response.data.meta,
+    data: response.items ?? [],
+    meta: response.meta,
   };
 }
 
 export async function getProject(id: number): Promise<{ data: Project }> {
-  return apiFetch<{ data: Project }>(`${BASE_PATH}/${id}`);
+  // apiFetch already extracts .data from the envelope
+  const response = await apiFetch<Project>(`${BASE_PATH}/${id}`);
+  return { data: response };
 }
 
 export async function getProjectStatistics(): Promise<{ data: ProjectStatistics }> {
-  return apiFetch<{ data: ProjectStatistics }>(`${BASE_PATH}/statistics`);
+  // apiFetch already extracts .data from the envelope
+  const response = await apiFetch<ProjectStatistics>(`${BASE_PATH}/statistics`);
+  return { data: response };
 }
 
 export async function getProjectMembers(projectId: number): Promise<{ data: ProjectMember[] }> {
-  return apiFetch<{ data: ProjectMember[] }>(`${BASE_PATH}/${projectId}/members`);
+  // apiFetch already extracts .data from the envelope
+  const response = await apiFetch<ProjectMember[]>(`${BASE_PATH}/${projectId}/members`);
+  return { data: response ?? [] };
 }
 
 // ========== Mutation Functions ==========
 
 export async function createProject(input: ProjectCreateInput): Promise<{ data: Project }> {
-  return apiFetch<{ data: Project }>(BASE_PATH, {
+  // apiFetch already extracts .data from the envelope
+  const response = await apiFetch<Project>(BASE_PATH, {
     method: 'POST',
     body: input,
   });
+  return { data: response };
 }
 
 export async function updateProject(
   id: number,
   input: ProjectUpdateInput
 ): Promise<{ data: Project }> {
-  return apiFetch<{ data: Project }>(`${BASE_PATH}/${id}`, {
+  // apiFetch already extracts .data from the envelope
+  const response = await apiFetch<Project>(`${BASE_PATH}/${id}`, {
     method: 'PUT',
     body: input,
   });
+  return { data: response };
 }
 
 export async function deleteProject(id: number): Promise<void> {
@@ -79,10 +91,12 @@ export async function assignMember(
   projectId: number,
   input: ProjectMemberAssignInput
 ): Promise<{ data: ProjectMember }> {
-  return apiFetch<{ data: ProjectMember }>(`${BASE_PATH}/${projectId}/members`, {
+  // apiFetch already extracts .data from the envelope
+  const response = await apiFetch<ProjectMember>(`${BASE_PATH}/${projectId}/members`, {
     method: 'POST',
     body: input,
   });
+  return { data: response };
 }
 
 export async function removeMember(projectId: number, userId: string): Promise<void> {

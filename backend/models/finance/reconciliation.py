@@ -46,7 +46,7 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="批次ID")
 
     # 业务字段
-    batch_code = Column(String(50), unique=True, nullable=False, comment="批次代码")
+    batch_no = Column(String(50), unique=True, nullable=False, comment="批次号")
     period_start = Column(Date, nullable=False, comment="对账期间开始")
     period_end = Column(Date, nullable=False, comment="对账期间结束")
     status = Column(String(20), nullable=False, comment="状态")
@@ -123,25 +123,21 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
     )
 
     def __repr__(self):
-        return f"<ReconciliationBatch(id={self.id}, code='{self.batch_code}', status='{self.status}')>"
+        return f"<ReconciliationBatch(id={self.id}, batch_no='{self.batch_no}', status='{self.status}')>"
 
     # ========== 业务属性（5状态机）==========
 
-    # ========== SoT 字段别名（DATA_SCHEMA.md 对齐）==========
+    # ========== SoT 字段别名（向后兼容）==========
 
     @property
-    def batch_no(self):
-        """
-        SoT 别名：返回 batch_code 的值
+    def batch_code(self):
+        """向后兼容：返回 batch_no 的值"""
+        return self.batch_no
 
-        DATA_SCHEMA.md 使用 batch_no，模型使用 batch_code
-        """
-        return self.batch_code
-
-    @batch_no.setter
-    def batch_no(self, value):
-        """SoT 别名：设置 batch_code 的值"""
-        self.batch_code = value
+    @batch_code.setter
+    def batch_code(self, value):
+        """向后兼容：设置 batch_no 的值"""
+        self.batch_no = value
 
     @property
     def approved_by(self):

@@ -1,10 +1,10 @@
 ---
 name: ai-ad-be-gen
-version: "2.2"
+version: "2.3"
 status: production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-07
+last_reviewed: 2025-12-22
 
 sot_dependencies:
   required:
@@ -96,7 +96,34 @@ interface BEGenOutput {
 | `backend/models/**` | ❌ 禁止 | 数据库模型 |
 | `migrations/**` | ❌ 禁止 | 数据库迁移 |
 
-### 4.2 SoT 遵循规则
+### 4.2 模块表边界 (AI_ANTI_HALLUCINATION_GUARD.md v1.0)
+
+按模块划分的数据表写入边界:
+
+```yaml
+module_table_boundaries:
+  pitcher:
+    writable: [daily_reports, pitchers(仅自己)]
+    read_only: [account_ownership_history, ad_accounts, projects, agencies]
+    forbidden: [ledger, period_locks, recon_*]
+
+  finance:
+    writable: [ledger(仅INSERT), period_locks, recon_*, settlements]
+    read_only: [daily_reports, ad_accounts, agencies, pitchers]
+    forbidden: [pitchers(写), projects(写)]
+
+  ad_account:
+    writable: [ad_accounts, agencies, account_ownership_history, attribution_*, spend_*]
+    read_only: [pitchers, projects, daily_reports]
+    forbidden: [ledger, period_locks]
+
+  project:
+    writable: [projects, clients, pricing_rules]
+    read_only: [pitchers, ad_accounts, agencies]
+    forbidden: [ledger, daily_reports(写), account_ownership_history(写)]
+```
+
+### 4.3 SoT 遵循规则
 
 1. **状态枚举**: 必须使用 `STATE_MACHINE.md` 中定义的状态
 2. **错误码**: 必须使用 `ERROR_CODES_SOT.md` 中定义的错误码
@@ -104,7 +131,7 @@ interface BEGenOutput {
 4. **业务规则**: 必须实现 `BUSINESS_RULES.md` 中的规则
 5. **API 规范**: 必须符合 `API_SOT.md` 中的端点定义
 
-### 4.3 技术栈约束
+### 4.4 技术栈约束
 
 - FastAPI 0.100+
 - SQLAlchemy 2.x (声明式映射)
@@ -213,6 +240,16 @@ PRE_ANALYSIS_CONTEXT:
 <THINKING_CHAIN>
 请按以下步骤思考：
 
+0. **模块归属判定** (AI_ANTI_HALLUCINATION_GUARD.md 必填)
+   - 确认任务属于哪个核心模块:
+     □ pitcher (投手管理) - 日报填报、投手信息、投手看板
+     □ finance (财务管理) - 流水、冲正、对账、期间锁
+     □ ad_account (广告账号管理) - 账户、代理商、归属、归因
+     □ project (项目管理) - 项目、客户、单价规则
+   - 验证目标文件/表在该模块可写范围内
+   - 如果无法明确归属，STOP 并询问用户
+   - 如果跨模块写入，STOP 并报错
+
 1. **SoT 映射**
    - 从 API_SOT 定位本次要实现的 API 端点
    - 从 BUSINESS_RULES 找到相关业务规则 (BR-XXX-YYY)
@@ -231,14 +268,21 @@ PRE_ANALYSIS_CONTEXT:
    - 生成 Service 层业务逻辑 (带 SoT 注释)
    - 生成 Router 层端点 (带 SoT 注释)
 
-4. **自检**
+4. **自检** (管理者一致性自检清单)
+   - 检查模块边界: 写入的表是否在可写范围内
    - 检查状态枚举是否与 STATE_MACHINE 一致
    - 检查错误码是否在 ERROR_CODES 中定义
    - 检查字段类型是否与 DATA_SCHEMA 一致
    - 检查是否有禁区代码
+   - 【财务模块额外检查】:
+     □ ledger 是否只 INSERT
+     □ CONFIRM 前是否检查 fx_status=LOCKED
+     □ 金额符号是否符合 AMOUNT_SIGN_RULES
+     □ 冲正是否使用 REV_{id}_v1 格式
 
 5. **输出**
    - 生成 changes 字典
+   - 记录所属模块 (module)
    - 记录引用的 SoT 条款
    - 记录潜在风险点
 </THINKING_CHAIN>
@@ -327,16 +371,48 @@ POST_REVIEW_RESULT:
 
 ## 6. Self-Check Checklist
 
-生成代码后，必须进行以下自检：
+生成代码后，必须进行以下自检 (AI_ANTI_HALLUCINATION_GUARD.md Appendix A)：
 
 | 检查项 | 验证方法 | P0/P1 |
 |--------|---------|-------|
-| 状态枚举一致性 | 对比 STATE_MACHINE.md | P0 |
+| **模块归属确认** | 任务属于 pitcher/finance/ad_account/project 之一 | P0 |
+| **写入权限检查** | 目标表在该模块可写范围内 | P0 |
+| 状态枚举一致性 | 对比 STATE_MACHINE.md (7 状态) | P0 |
+| 角色合规 | 对比 6 角色 (pitcher/account_manager/finance/supervisor/ceo/admin) | P0 |
 | 错误码合规 | 查找 ERROR_CODES_SOT.md | P0 |
 | 字段类型匹配 | 对比 DATA_SCHEMA.md | P0 |
 | 禁区检查 | 不生成 models/migrations | P0 |
 | 权限检查 | 对比 AUTH_SPEC.md | P1 |
 | 账本规则 | 对比 LEDGER_SOT.md | P1 |
+
+**财务模块额外检查** (module=finance 时必须):
+
+| 检查项 | 验证方法 | P0/P1 |
+|--------|---------|-------|
+| ledger 只 INSERT | 无 UPDATE/DELETE 语句 | P0 |
+| CONFIRMED 门禁 | 检查 fx_status=LOCKED | P0 |
+| 金额符号规则 | 对比 AMOUNT_SIGN_RULES | P0 |
+| 冲正格式 | 使用 REV_{id}_v1 格式 | P0 |
+| 期间锁检查 | 调用 is_period_locked() | P1 |
+
+**跨模块交互检查**:
+
+| 检查项 | 验证方法 | P0/P1 |
+|--------|---------|-------|
+| 只读其他模块数据 | 仅使用 SELECT/GET | P0 |
+| 不写入其他模块表 | 无跨模块 INSERT/UPDATE/DELETE | P0 |
+| ID 引用传递 | 使用外键 ID 而非嵌入对象 | P1 |
+| 服务调用审计 | 跨模块调用需记录日志 | P1 |
+
+**幻觉抑制最终确认** (输出前必须):
+
+| 确认项 | 验证方法 | 阻断级别 |
+|--------|---------|----------|
+| 状态值来源 | 每个状态值可追溯到 STATE_MACHINE.md | BLOCKING |
+| 角色值来源 | 每个角色可追溯到 frozenset 白名单 | BLOCKING |
+| 字段值来源 | 每个字段可追溯到 DATA_SCHEMA.md | BLOCKING |
+| 错误码来源 | 每个错误码可追溯到 ERROR_CODES_SOT.md | BLOCKING |
+| 无虚构 API | 调用的 API 在项目中存在 | BLOCKING |
 
 ## 7. Example
 
@@ -376,6 +452,8 @@ POST_REVIEW_RESULT:
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.3 | 2025-12-22 | P1 修复：添加模块表边界、跨模块交互检查、幻觉抑制最终确认 |
+| v2.2 | 2025-12-22 | P0 修复：添加模块归属判定步骤、完善 Self-Check 清单 |
 | v2.0 | 2025-12-06 | 重构：对齐 AI_CODE_FACTORY_DEV_GUIDE_v2.0，增加 SoT refs 输出 |
 | v1.0 | 2025-11-01 | 初始版本 |
 

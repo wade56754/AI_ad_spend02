@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""更新用户目录下的 MCP 配置文件，添加 context7"""
+"""更新用户目录下的 MCP 配置文件，添加 context7 和 playwright"""
 import json
 import os
 from pathlib import Path
@@ -38,6 +38,16 @@ if "context7" not in config["mcpServers"]:
         ]
     }
 
+# 添加或更新 playwright（如果不存在）
+if "playwright" not in config["mcpServers"]:
+    config["mcpServers"]["playwright"] = {
+        "command": "npx",
+        "args": [
+            "-y",
+            "@playwright/mcp@latest"
+        ]
+    }
+
 # 写入配置文件
 with open(mcp_config_path, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=2, ensure_ascii=False)
@@ -45,6 +55,6 @@ with open(mcp_config_path, 'w', encoding='utf-8') as f:
 print(f"[OK] MCP config updated: {mcp_config_path}")
 print(f"[OK] Configured MCP servers:")
 for server_name in sorted(config["mcpServers"].keys()):
-    status = "[OK]" if server_name in ["sequential-thinking", "context7"] else "    "
+    status = "[OK]" if server_name in ["sequential-thinking", "context7", "playwright"] else "    "
     print(f"   {status} {server_name}")
 

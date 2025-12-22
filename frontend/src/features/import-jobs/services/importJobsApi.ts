@@ -12,7 +12,7 @@ import type {
   ImportJobListParams,
 } from '../types';
 
-const BASE_URL = '/api/import_jobs';
+const BASE_URL = '/api/v1/import-jobs';
 
 /** 获取导入任务列表 */
 export async function getImportJobs(params?: ImportJobListParams) {

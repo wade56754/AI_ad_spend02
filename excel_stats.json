@@ -1,0 +1,282 @@
+{
+  "total_rows": 396,
+  "columns": [
+    "日期",
+    "地区",
+    "投手",
+    "账户名称/ID",
+    "账户种类",
+    "代理商",
+    "平台",
+    "转点截图Today MAX",
+    "转点截图yesterday MAX",
+    "备注",
+    "手续费",
+    "实际消耗",
+    "包含手续费\n的消耗",
+    " ",
+    " .1"
+  ],
+  "unique_values": {
+    "地区": {
+      "count": 5,
+      "values": [
+        "印度",
+        "新加坡",
+        "加拿大",
+        "爱尔兰",
+        "巴西"
+      ]
+    },
+    "投手": {
+      "count": 8,
+      "values": [
+        "HY",
+        "LD",
+        "LM",
+        "YJ",
+        "YK",
+        "JK",
+        "YJ ",
+        "HW"
+      ]
+    },
+    "账户种类": {
+      "count": 11,
+      "values": [
+        "越南盾主题户",
+        "美金户",
+        "绑卡户",
+        "印尼美金户",
+        "越南美金户",
+        "二不限",
+        "越南盾",
+        "印尼盾",
+        "欧洲户",
+        "TK海外主体全球户",
+        "新加坡户"
+      ]
+    },
+    "代理商": {
+      "count": 17,
+      "values": [
+        "海总&志诚三不限",
+        "印度户印尼企业户",
+        "B哥-fb三不限10➕1",
+        "深圳芳林子",
+        "Y-5208 FB欧/美户",
+        "凤凰&洛阳",
+        "谷歌-饭团",
+        "谷歌共享户/老户",
+        "路人互动-海总（50-7）山治",
+        "GT&papa欧20+8+1",
+        "十月二不限——（泰华）",
+        "Anthony - FKZ",
+        "FKZ",
+        "泰华&ME-FB海外户",
+        "海总-黑泽",
+        "官方授权户",
+        "路人互动-系统"
+      ]
+    },
+    "平台": {
+      "count": 2,
+      "values": [
+        "FB",
+        "TK"
+      ]
+    }
+  },
+  "spend_stats": {
+    "total": 13627.556817499999,
+    "avg": 67.13082176108374,
+    "max": 1031.52,
+    "min": -1.16
+  },
+  "by_buyer": [
+    {
+      "buyer": "HW",
+      "total_spend": 0.37,
+      "record_count": 1
+    },
+    {
+      "buyer": "HY",
+      "total_spend": 1285.8206825,
+      "record_count": 31
+    },
+    {
+      "buyer": "JK",
+      "total_spend": 355.18784,
+      "record_count": 15
+    },
+    {
+      "buyer": "LD",
+      "total_spend": 506.07968,
+      "record_count": 11
+    },
+    {
+      "buyer": "LM",
+      "total_spend": 3009.58352,
+      "record_count": 42
+    },
+    {
+      "buyer": "YJ",
+      "total_spend": 892.5079750000001,
+      "record_count": 19
+    },
+    {
+      "buyer": "YJ ",
+      "total_spend": 124.7,
+      "record_count": 2
+    },
+    {
+      "buyer": "YK",
+      "total_spend": 7453.3071199999995,
+      "record_count": 82
+    }
+  ],
+  "by_supplier": [
+    {
+      "supplier": "Anthony - FKZ",
+      "total_spend": 35.87,
+      "record_count": 1
+    },
+    {
+      "supplier": "B哥-fb三不限10➕1",
+      "total_spend": 3225.9900000000002,
+      "record_count": 44
+    },
+    {
+      "supplier": "FKZ",
+      "total_spend": 2167.81,
+      "record_count": 22
+    },
+    {
+      "supplier": "GT&papa欧20+8+1",
+      "total_spend": 129.1,
+      "record_count": 5
+    },
+    {
+      "supplier": "Y-5208 FB欧/美户",
+      "total_spend": 1913.84532,
+      "record_count": 24
+    },
+    {
+      "supplier": "凤凰&洛阳",
+      "total_spend": 217.89000000000001,
+      "record_count": 8
+    },
+    {
+      "supplier": "十月二不限——（泰华）",
+      "total_spend": 276.55,
+      "record_count": 6
+    },
+    {
+      "supplier": "印度户印尼企业户",
+      "total_spend": 734.6189375,
+      "record_count": 12
+    },
+    {
+      "supplier": "官方授权户",
+      "total_spend": 2396.69,
+      "record_count": 7
+    },
+    {
+      "supplier": "泰华&ME-FB海外户",
+      "total_spend": 0.01,
+      "record_count": 1
+    },
+    {
+      "supplier": "海总&志诚三不限",
+      "total_spend": 2081.37256,
+      "record_count": 54
+    },
+    {
+      "supplier": "海总-黑泽",
+      "total_spend": 81.07,
+      "record_count": 3
+    },
+    {
+      "supplier": "深圳芳林子",
+      "total_spend": 60.43,
+      "record_count": 8
+    },
+    {
+      "supplier": "谷歌-饭团",
+      "total_spend": 2.81,
+      "record_count": 1
+    },
+    {
+      "supplier": "谷歌共享户/老户",
+      "total_spend": 3.06,
+      "record_count": 1
+    },
+    {
+      "supplier": "路人互动-海总（50-7）山治",
+      "total_spend": 34.93,
+      "record_count": 2
+    },
+    {
+      "supplier": "路人互动-系统",
+      "total_spend": 265.51,
+      "record_count": 4
+    }
+  ],
+  "by_account_type": [
+    {
+      "account_type": "TK海外主体全球户",
+      "total_spend": 199.45,
+      "record_count": 4
+    },
+    {
+      "account_type": "二不限",
+      "total_spend": 4355.94,
+      "record_count": 56
+    },
+    {
+      "account_type": "印尼盾",
+      "total_spend": 580.1389375,
+      "record_count": 4
+    },
+    {
+      "account_type": "印尼美金户",
+      "total_spend": 428.28,
+      "record_count": 13
+    },
+    {
+      "account_type": "新加坡户",
+      "total_spend": 67.67,
+      "record_count": 1
+    },
+    {
+      "account_type": "欧洲户",
+      "total_spend": 61.42999999999999,
+      "record_count": 4
+    },
+    {
+      "account_type": "绑卡户",
+      "total_spend": 2448.3199999999997,
+      "record_count": 12
+    },
+    {
+      "account_type": "美金户",
+      "total_spend": 3683.21,
+      "record_count": 48
+    },
+    {
+      "account_type": "越南盾",
+      "total_spend": 686.86056,
+      "record_count": 11
+    },
+    {
+      "account_type": "越南盾主题户",
+      "total_spend": 868.96732,
+      "record_count": 17
+    },
+    {
+      "account_type": "越南美金户",
+      "total_spend": 183.31,
+      "record_count": 2
+    }
+  ]
+}

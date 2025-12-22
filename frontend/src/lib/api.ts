@@ -81,12 +81,15 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 /**
  * Get authentication token from storage
+ *
+ * Note: 与 useAuth.ts 中的 AUTH_TOKEN_KEY 保持一致
  */
 function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
 
-  // Try localStorage first, then sessionStorage
+  // 优先使用 auth-token (与 useAuth.ts 一致)，然后尝试旧的 access_token
   return (
+    localStorage.getItem('auth-token') ||
     localStorage.getItem('access_token') ||
     sessionStorage.getItem('access_token')
   );
@@ -132,8 +135,10 @@ export const ApiError = ApiRequestError;
 
 /**
  * Handle API error response
+ * @param response - The fetch response object
+ * @param requestUrl - The URL that was requested (used for context-aware error handling)
  */
-async function handleErrorResponse(response: Response): Promise<never> {
+async function handleErrorResponse(response: Response, requestUrl?: string): Promise<never> {
   let error: ApiError;
 
   try {
@@ -147,17 +152,42 @@ async function handleErrorResponse(response: Response): Promise<never> {
     };
   }
 
-  // Handle 401 - redirect to login
+  // Handle 401 - clear ALL tokens and redirect to login
+  // SoT Reference: AUTH_SPEC.md v2.0 §7.4
   if (response.status === 401) {
     if (typeof window !== 'undefined') {
-      // Clear tokens
-      localStorage.removeItem('access_token');
-      sessionStorage.removeItem('access_token');
+      const path = window.location.pathname;
+      const isAuthPage = path.includes('/login') || path.includes('/register');
+      // Check if this is a /auth/me request (checking login status)
+      const isAuthMeRequest = requestUrl?.includes('/auth/me');
 
-      // Redirect to login (unless already on login page)
-      if (!window.location.pathname.includes('/login')) {
+      // Only clear tokens and suppress error for /auth/me requests on auth pages
+      // This allows login/register 401 errors (wrong password) to show normally
+      if (isAuthMeRequest) {
+        // Clear ALL auth tokens (aligned with useAuth.ts token keys)
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('auth-user');
+        localStorage.removeItem('refresh-token');
+        localStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token');
+        // Clear cookie
+        document.cookie = 'access_token=; path=/; max-age=0';
+
+        // On login/register pages, silently fail for /auth/me requests
+        if (isAuthPage) {
+          const silentError = new ApiRequestError(
+            'Session expired',
+            'AUTH_401',
+            401
+          );
+          (silentError as ApiRequestError & { silent?: boolean }).silent = true;
+          throw silentError;
+        }
+
+        // Redirect to login for other pages
         window.location.href = '/login';
       }
+      // For non-auth/me 401 errors (like login failure), let them pass through normally
     }
   }
 
@@ -216,7 +246,7 @@ export async function apiFetch<T>(
 
   // Handle errors
   if (!response.ok) {
-    await handleErrorResponse(response);
+    await handleErrorResponse(response, fullUrl);
   }
 
   // Handle empty response (204 No Content)
@@ -258,15 +288,52 @@ export async function apiFetchPaginated<T>(
   url: string,
   options: ApiFetchOptions = {}
 ): Promise<PaginatedResponse<T>> {
-  const response = await apiFetch<Partial<PaginatedResponse<T>>>(url, options);
+  // For paginated endpoints, we need to handle the full envelope
+  const { body, headers: customHeaders, ...restOptions } = options;
 
-  // Normalize response to support both formats
-  const items = response.items || response.data || [];
-  const meta = response.meta || {
-    total: response.total || 0,
-    page: response.page || 1,
-    page_size: response.page_size || 20,
-    total_pages: response.total_pages || 1,
+  const reqHeaders: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...customHeaders,
+  };
+
+  const token = getAuthToken();
+  if (token) {
+    (reqHeaders as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
+
+  const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
+  const response = await fetch(fullUrl, {
+    ...restOptions,
+    headers: reqHeaders,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  if (!response.ok) {
+    await handleErrorResponse(response, fullUrl);
+  }
+
+  const envelope = await response.json();
+
+  // Handle envelope format { success, data, meta }
+  if ('success' in envelope && !envelope.success && envelope.error) {
+    throw new ApiRequestError(
+      envelope.error.message,
+      envelope.error.code,
+      response.status,
+      envelope.error.details
+    );
+  }
+
+  // Extract items from envelope.data (which is an array)
+  const items = Array.isArray(envelope.data) ? envelope.data : (envelope.data?.items || []);
+
+  // Extract meta from envelope.meta
+  const meta = envelope.meta?.pagination || envelope.meta || {
+    total: envelope.total || items.length,
+    page: envelope.page || 1,
+    page_size: envelope.page_size || 20,
+    total_pages: envelope.total_pages || 1,
   };
 
   return {
@@ -385,7 +452,7 @@ export async function apiUpload<T>(
   });
 
   if (!response.ok) {
-    await handleErrorResponse(response);
+    await handleErrorResponse(response, fullUrl);
   }
 
   const data = await response.json();
@@ -420,7 +487,7 @@ export async function apiDownload(
   });
 
   if (!response.ok) {
-    await handleErrorResponse(response);
+    await handleErrorResponse(response, fullUrl);
   }
 
   const blob = await response.blob();

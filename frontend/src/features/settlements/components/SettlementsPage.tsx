@@ -170,50 +170,85 @@ export function SettlementsPage() {
         </div>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Statistics Cards - v3.0 优化版 */}
       {statistics && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">结算总数</div>
-              <div className="text-2xl font-bold text-gray-900">{statistics.total_settlements}</div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">总金额</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {statistics.total_amount?.toLocaleString() || 0}
+            <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">结算总数</p>
+                  <p className="text-3xl font-bold text-gray-900 tabular-nums">{statistics.total_settlements}</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-slate-600" />
+                </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">待结算金额</div>
-              <div className="text-2xl font-bold text-yellow-600">
-                {statistics.pending_amount?.toLocaleString() || 0}
+            <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">总金额</p>
+                  <p className="text-3xl font-bold text-gray-900 tabular-nums">
+                    ¥{statistics.total_amount?.toLocaleString() || 0}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">已支付金额</div>
-              <div className="text-2xl font-bold text-green-600">
-                {statistics.paid_amount?.toLocaleString() || 0}
+            <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">待结算金额</p>
+                  <p className="text-3xl font-bold text-amber-600 tabular-nums">
+                    ¥{statistics.pending_amount?.toLocaleString() || 0}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-amber-600" />
+                </div>
               </div>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center gap-2">
-                <div className="text-sm text-gray-500">逾期</div>
-                {(statistics.overdue_count || 0) > 0 && (
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                )}
+            <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">已支付金额</p>
+                  <p className="text-3xl font-bold text-green-600 tabular-nums">
+                    ¥{statistics.paid_amount?.toLocaleString() || 0}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-green-600" />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-red-600">
-                {statistics.overdue_count || 0}
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">逾期</p>
+                    {(statistics.overdue_count || 0) > 0 && (
+                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                    )}
+                  </div>
+                  <p className="text-3xl font-bold text-red-600 tabular-nums">
+                    {statistics.overdue_count || 0}
+                  </p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Filters */}
+      {/* Filters - v3.0 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-400" />
@@ -271,9 +306,9 @@ export function SettlementsPage() {
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content - v3.0 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <LoadingSpinner size="lg" label="加载中..." />

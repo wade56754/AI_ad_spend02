@@ -70,8 +70,8 @@ async def create_supplier(
         service = SupplierService(db)
         supplier = service.create_supplier(
             request=request,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=supplier, message="供应商创建成功")
     except PermissionDeniedError as e:
@@ -100,8 +100,8 @@ async def list_suppliers(
     try:
         service = SupplierService(db)
         suppliers, total = service.get_suppliers(
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role"),
+            current_user_id=current_user.id,
+            current_user_role=current_user.role,
             page=page,
             page_size=page_size,
             status=status,
@@ -131,8 +131,8 @@ async def get_supplier_statistics(
     try:
         service = SupplierService(db)
         stats = service.get_supplier_statistics(
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=stats, message="获取统计信息成功")
     except PermissionDeniedError as e:
@@ -154,8 +154,8 @@ async def get_supplier(
         service = SupplierService(db)
         supplier = service.get_supplier(
             supplier_id=supplier_id,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=supplier, message="获取供应商成功")
     except ResourceNotFoundError as e:
@@ -181,8 +181,8 @@ async def update_supplier(
         supplier = service.update_supplier(
             supplier_id=supplier_id,
             request=request,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=supplier, message="供应商更新成功")
     except ResourceNotFoundError as e:
@@ -209,8 +209,8 @@ async def delete_supplier(
         service = SupplierService(db)
         service.delete_supplier(
             supplier_id=supplier_id,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=None, message="供应商删除成功")
     except ResourceNotFoundError as e:
@@ -238,8 +238,8 @@ async def get_supplier_accounts(
         service = SupplierService(db)
         accounts, total = service.get_supplier_accounts(
             supplier_id=supplier_id,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role"),
+            current_user_id=current_user.id,
+            current_user_role=current_user.role,
             page=page,
             page_size=page_size
         )
@@ -273,8 +273,8 @@ async def get_supplier_ledger_summary(
         service = SupplierService(db)
         summary = service.get_supplier_ledger_summary(
             supplier_id=supplier_id,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role"),
+            current_user_id=current_user.id,
+            current_user_role=current_user.role,
             start_date=start_date,
             end_date=end_date
         )
@@ -302,7 +302,7 @@ async def get_supplier_fee_rate(
     SoT Ref: FINANCIAL_REFACTOR_PLAN.md Phase 4
     """
     # 权限检查
-    role = current_user.get("role")
+    role = current_user.role
     if role not in ["admin", "finance"]:
         return error_response(
             code="AUTH_003",
@@ -337,7 +337,7 @@ async def update_supplier_fee_rate(
     SoT Ref: FINANCIAL_REFACTOR_PLAN.md Phase 4
     """
     # 权限检查
-    role = current_user.get("role")
+    role = current_user.role
     if role not in ["admin", "finance"]:
         return error_response(
             code="FEE_021",
@@ -351,7 +351,7 @@ async def update_supplier_fee_rate(
             supplier_id=supplier_id,
             new_rate=request.fee_rate,
             fee_type=request.fee_type,
-            user_id=current_user.get("id")
+            user_id=current_user.id
         )
         return success_response(data=result, message="费率更新成功")
     except ResourceNotFoundError as e:

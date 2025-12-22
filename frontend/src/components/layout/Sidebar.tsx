@@ -10,6 +10,7 @@ import {
   FolderKanban,
   CreditCard,
   Users,
+  UserCog,
   FileText,
   DollarSign,
   Settings,
@@ -38,12 +39,13 @@ interface SidebarProps {
 const navigation: NavigationItem[] = [
   { name: '仪表盘', href: '/', icon: LayoutDashboard },
   { name: '项目管理', href: '/projects', icon: FolderKanban, badge: 8 },
-  { name: '渠道账户', href: '/ad-accounts', icon: Users, badge: 5 },
+  { name: '广告账号管理', href: '/ad-accounts', icon: Users, badge: 5 },
   { name: '日报管理', href: '/reports', icon: FileText, badge: 12 },
   { name: '财务管理', href: '/finance', icon: DollarSign },
   { name: '数据统计', href: '/analytics', icon: BarChart3 },
   { name: '广告投放', href: '/campaigns', icon: Target },
   { name: 'AI监控', href: '/ai-monitoring', icon: TrendingUp },
+  { name: '用户管理', href: '/users', icon: UserCog },
   { name: '系统设置', href: '/settings', icon: Settings },
 ];
 

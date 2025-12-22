@@ -11,7 +11,8 @@ from backend.core.db import get_db
 from backend.core.logging import log_requests
 from backend.core.response import success_response, error_response
 from backend.core.error_codes import BusinessErrorCodes
-from backend.core.security import AuthenticatedUser, get_current_user
+from backend.core.dependencies import get_current_user
+from backend.models import User
 from backend.models import Channel, Log
 from backend.schemas import ChannelCreate, ChannelRead, ChannelUpdate
 
@@ -19,20 +20,22 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/channels", tags=["channels"])
 
 
-@router.get("/", response_model=dict)
+@router.get("", response_model=dict)
 @log_requests("channels")
 def list_channels(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     is_active: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     query = db.query(Channel)
 
+    # is_active 映射到 status 列
     if is_active is not None:
-        query = query.filter(Channel.is_active == is_active)
+        status_value = 'active' if is_active else 'inactive'
+        query = query.filter(Channel.status == status_value)
 
     if search:
         like_pattern = f"%{search}%"
@@ -59,7 +62,7 @@ def list_channels(
 @log_requests("channels")
 def get_channel(
     channel_id: UUID,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     channel = db.query(Channel).filter(Channel.id == channel_id).first()
@@ -73,31 +76,19 @@ def get_channel(
     return success_response(data=data)
 
 
-@router.post("/", response_model=dict, status_code=201)
+@router.post("", response_model=dict, status_code=201)
 @log_requests("channels")
 def create_channel(
     payload: ChannelCreate,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
-    # 过滤掉 Channel 模型不支持的字段
-    channel_data = payload.dict()
-    # Channel 模型只支持: name, channel_code, status, country, notes
-    # 移除 schema 中但模型不支持的字段
-    channel_data.pop('service_fee_type', None)
-    channel_data.pop('service_fee_value', None)
-    channel_data.pop('is_active', None)  # 使用 status 字段替代
-    channel_data.pop('created_by', None)  # 不在模型中
-    channel_data.pop('updated_by', None)  # 不在模型中
-    
-    # 如果没有 channel_code，使用 name 生成
-    if 'channel_code' not in channel_data or not channel_data['channel_code']:
-        channel_data['channel_code'] = channel_data.get('name', '').lower().replace(' ', '_')
-    
-    # 如果没有 status，根据 is_active 设置
-    if 'status' not in channel_data:
-        is_active = payload.dict().get('is_active', True)
-        channel_data['status'] = 'active' if is_active else 'inactive'
+    # 使用 model_dump() 获取数据 (Pydantic v2)
+    channel_data = payload.model_dump(exclude_unset=True)
+
+    # 确保有默认状态
+    if 'status' not in channel_data or not channel_data['status']:
+        channel_data['status'] = 'active'
 
     # 手动生成 UUID（避免依赖 PostgreSQL 的 gen_random_uuid 函数）
     channel_data['id'] = uuid4()
@@ -108,10 +99,10 @@ def create_channel(
 
     log_entry = Log(
         id=str(uuid4()),  # Log.id 是 String(36)
-        actor_id=str(payload.created_by) if payload.created_by else None,  # 转换为字符串
+        actor_id=str(current_user.id) if current_user else None,
         action="create_channel",
         target_table="channels",
-        target_id=str(channel.id),  # 转换为字符串
+        target_id=str(channel.id),
         before_data=None,
         after_data=jsonable_encoder(ChannelRead.model_validate(channel, from_attributes=True).model_dump()),
     )
@@ -128,7 +119,7 @@ def create_channel(
 def update_channel(
     channel_id: UUID,
     payload: ChannelUpdate,
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> dict:
     channel = db.query(Channel).filter(Channel.id == channel_id).first()
@@ -139,57 +130,33 @@ def update_channel(
             status_code=404
         )
 
-    # 过滤掉 Channel 模型不支持的字段
-    update_data = payload.dict(exclude_unset=True)
-    # Channel 模型只支持: name, channel_code, status, country, notes
-    # 移除 schema 中但模型不支持的字段
-    update_data.pop('service_fee_type', None)
-    update_data.pop('service_fee_value', None)
-    update_data.pop('created_by', None)
-    update_data.pop('updated_by', None)
-    
-    # 处理 is_active -> status 映射
-    if 'is_active' in update_data:
-        update_data['status'] = 'active' if update_data.pop('is_active') else 'inactive'
-    
-    # 更新字段
-    for key, value in update_data.items():
-        if hasattr(channel, key):
-            setattr(channel, key, value)
-
+    # 记录更新前状态
     before_state = jsonable_encoder(ChannelRead.model_validate(channel, from_attributes=True).model_dump())
 
-    # 过滤掉 Channel 模型不支持的字段和只读属性
-    update_data = payload.dict(exclude_unset=True)
-    # 移除 schema 中但模型不支持的字段
-    update_data.pop('service_fee_type', None)
-    update_data.pop('service_fee_value', None)
-    update_data.pop('created_by', None)
-    update_data.pop('updated_by', None)
-    
-    # 处理 is_active -> status 映射（is_active 是只读属性）
-    if 'is_active' in update_data:
-        update_data['status'] = 'active' if update_data.pop('is_active') else 'inactive'
-    
+    # 获取更新数据 (Pydantic v2)
+    update_data = payload.model_dump(exclude_unset=True)
+
     # 更新字段（跳过只读属性）
     for key, value in update_data.items():
         if hasattr(channel, key) and not isinstance(getattr(type(channel), key, None), property):
             setattr(channel, key, value)
 
-    log_entry = Log(
-        id=str(uuid4()),  # Log.id 是 String(36)
-        actor_id=str(update_data.get("updated_by")) if update_data.get("updated_by") else None,  # 转换为字符串
-        action="update_channel",
-        target_table="channels",
-        target_id=str(channel.id),  # 转换为字符串
-        before_data=before_state,
-        after_data=None,
-    )
-    db.add(log_entry)
-
     db.flush()
     db.refresh(channel)
-    log_entry.after_data = jsonable_encoder(ChannelRead.model_validate(channel, from_attributes=True).model_dump())
+
+    # 记录更新后状态
+    after_state = jsonable_encoder(ChannelRead.model_validate(channel, from_attributes=True).model_dump())
+
+    log_entry = Log(
+        id=str(uuid4()),
+        actor_id=str(current_user.id) if current_user else None,
+        action="update_channel",
+        target_table="channels",
+        target_id=str(channel.id),
+        before_data=before_state,
+        after_data=after_state,
+    )
+    db.add(log_entry)
 
     db.commit()
     db.refresh(channel)

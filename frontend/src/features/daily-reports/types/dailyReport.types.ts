@@ -5,6 +5,14 @@
  * - STATE_MACHINE.md v2.6 Section 8 (8-state machine)
  * - DATA_SCHEMA.md v5.2 (daily_reports table)
  * - DAILY_REPORT_SOT.md v2.0
+ *
+ * v2.0 新增:
+ * - region: 投放地区
+ * - platform: 广告平台 (FB/Google/TikTok)
+ * - follows_count: 进粉数
+ * - result_count: 成效数
+ * - cost_per_follow: 单粉成本 (计算字段)
+ * - cost_per_result: 单次成效费用 (计算字段)
  */
 
 import type { UUID, ISODateString, DateString, Money } from '@/types';
@@ -28,34 +36,73 @@ export type DailyReportStatus =
   | 'final_confirmed'
   | 'final_locked';
 
+// === Platform & Region Types (v2.0) ===
+
+export type AdPlatform = 'FB' | 'Google' | 'TikTok' | 'Other';
+
+export type AdRegion =
+  | 'Turkey' | 'India' | 'Italy' | 'Germany' | 'Brazil' | 'UK' | 'Korea' | 'France'
+  | 'Malaysia' | 'Japan' | 'Austria' | 'Spain' | 'Nigeria' | 'Singapore' | 'Belgium'
+  | 'Sweden' | 'Canada' | 'Indonesia' | 'USA' | 'Ireland' | 'Other';
+
+export type Currency = 'USD' | 'CNY';
+
 // === Entity Types ===
 
 export interface DailyReport {
-  id: UUID;
-  project_id: UUID;
+  id: number;
+  ad_account_id: number;
   report_date: DateString;
   status: DailyReportStatus;
 
-  // Raw data (editable in raw_submitted)
+  // 投手提交字段 (v2.0)
   raw_spend: Money;
-  raw_impressions: number;
-  raw_clicks: number;
-  raw_conversions: number;
+  follows_count: number;  // 进粉数
+  result_count: number;   // 成效数
+  region?: AdRegion;      // 投放地区
+  platform?: AdPlatform;  // 广告平台
+  currency: Currency;     // 货币类型
+
+  // 系统计算字段 (v2.0)
+  cost_per_follow?: Money;   // 单粉成本 = raw_spend / follows_count
+  cost_per_result?: Money;   // 单次成效费用 = raw_spend / result_count
+
+  // 兼容旧字段
+  raw_impressions?: number;
+  raw_clicks?: number;
+  raw_conversions?: number;
+  conversions_raw?: number;
 
   // Trend analysis (set in trend_pending)
-  trend_score?: number;
-  trend_alert_level?: 'normal' | 'warning' | 'critical';
-  trend_notes?: string;
+  trend_flag?: 'normal' | 'flagged' | 'resolved';
+  trend_flag_reason?: string;
+  trend_resolution_note?: string;
 
   // Final confirmed data (immutable after final_confirmed)
   final_spend?: Money;
   final_impressions?: number;
   final_clicks?: number;
   final_conversions?: number;
+  conversions_final?: number;
+  real_spend?: Money;
+
+  // 广告信息
+  campaign_name?: string;
+  ad_group_name?: string;
+  ad_creative_name?: string;
+
+  // 聚合字段
+  ad_account_name?: string;
+  project_id?: number;
+  project_name?: string;
 
   // Metadata
-  submitted_by: UUID;
-  confirmed_by?: UUID;
+  submitted_by?: UUID;
+  created_by?: UUID;
+  created_by_name?: string;
+  submitter_name?: string;  // 投手名称 (v2.1)
+  team_name?: string;       // 团队名称 (v2.1)
+  audit_user_id?: UUID;
   locked_at?: ISODateString;
   created_at: ISODateString;
   updated_at: ISODateString;
@@ -64,36 +111,71 @@ export interface DailyReport {
 // === List/Filter Types ===
 
 export interface DailyReportFilters {
-  project_id?: UUID;
+  ad_account_id?: number;
+  project_id?: number;
   status?: DailyReportStatus | DailyReportStatus[];
   start_date?: DateString;
   end_date?: DateString;
+  region?: AdRegion;
+  platform?: AdPlatform;
+  team_id?: string;       // 团队ID (UUID, v2.1)
+  submitter_name?: string; // 投手名称 (v2.1)
   search?: string;
 }
 
 export interface DailyReportListParams extends DailyReportFilters {
   page?: number;
   page_size?: number;
-  sort_by?: 'report_date' | 'status' | 'raw_spend' | 'created_at';
+  sort_by?: 'report_date' | 'status' | 'raw_spend' | 'follows_count' | 'result_count' | 'created_at';
   sort_order?: 'asc' | 'desc';
 }
 
 // === Form Types ===
 
+/**
+ * 日报创建表单 - 投手提交原始数据
+ *
+ * 必填字段:
+ * - report_date: 报告日期
+ * - ad_account_id: 广告账户ID
+ * - raw_spend: 广告消耗
+ * - follows_count: 进粉数
+ * - result_count: 成效数
+ * - region: 投放地区
+ */
 export interface DailyReportCreateInput {
-  project_id: UUID;
   report_date: DateString;
-  raw_spend: number; // cents
-  raw_impressions: number;
-  raw_clicks: number;
-  raw_conversions: number;
+  ad_account_id: number;
+  raw_spend: number;       // 广告消耗 (USD)
+  follows_count: number;   // 进粉数
+  result_count: number;    // 成效数
+  region: AdRegion;        // 投放地区
+  platform?: AdPlatform;   // 广告平台 (可选)
+  currency?: Currency;     // 货币类型 (默认 USD)
+  campaign_name?: string;
+  ad_group_name?: string;
+  ad_creative_name?: string;
+  impressions?: number;
+  clicks?: number;
+  notes?: string;
 }
 
+/**
+ * 日报更新表单 - 仅可更新原始提交字段
+ */
 export interface DailyReportUpdateInput {
   raw_spend?: number;
-  raw_impressions?: number;
-  raw_clicks?: number;
-  raw_conversions?: number;
+  follows_count?: number;
+  result_count?: number;
+  region?: AdRegion;
+  platform?: AdPlatform;
+  currency?: Currency;
+  campaign_name?: string;
+  ad_group_name?: string;
+  ad_creative_name?: string;
+  impressions?: number;
+  clicks?: number;
+  notes?: string;
 }
 
 export interface TrendResolveInput {
@@ -144,3 +226,41 @@ export const STATUS_CONFIG: Record<DailyReportStatus, { label: string; variant: 
   final_confirmed: { label: '终审确认', variant: 'success' },
   final_locked: { label: '已锁定', variant: 'default' },
 };
+
+// === Platform & Region Options (v2.0) ===
+
+export const PLATFORM_OPTIONS: Array<{ value: AdPlatform; label: string }> = [
+  { value: 'FB', label: 'Facebook' },
+  { value: 'Google', label: 'Google Ads' },
+  { value: 'TikTok', label: 'TikTok' },
+  { value: 'Other', label: '其他' },
+];
+
+export const REGION_OPTIONS: Array<{ value: AdRegion; label: string }> = [
+  { value: 'Turkey', label: '土耳其' },
+  { value: 'India', label: '印度' },
+  { value: 'Italy', label: '意大利' },
+  { value: 'Germany', label: '德国' },
+  { value: 'Brazil', label: '巴西' },
+  { value: 'UK', label: '英国' },
+  { value: 'Korea', label: '韩国' },
+  { value: 'France', label: '法国' },
+  { value: 'Malaysia', label: '马来西亚' },
+  { value: 'Japan', label: '日本' },
+  { value: 'Austria', label: '奥地利' },
+  { value: 'Spain', label: '西班牙' },
+  { value: 'Nigeria', label: '尼日利亚' },
+  { value: 'Singapore', label: '新加坡' },
+  { value: 'Belgium', label: '比利时' },
+  { value: 'Sweden', label: '瑞典' },
+  { value: 'Canada', label: '加拿大' },
+  { value: 'Indonesia', label: '印度尼西亚' },
+  { value: 'USA', label: '美国' },
+  { value: 'Ireland', label: '爱尔兰' },
+  { value: 'Other', label: '其他' },
+];
+
+export const CURRENCY_OPTIONS: Array<{ value: Currency; label: string }> = [
+  { value: 'USD', label: '美元 (USD)' },
+  { value: 'CNY', label: '人民币 (CNY)' },
+];

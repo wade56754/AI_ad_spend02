@@ -168,14 +168,16 @@ export function BudgetProgress({
     return 'bg-green-500';
   };
 
+  // 使用固定 locale 避免 SSR hydration 不匹配
   const formatAmount = (amount: number) => {
+    const formatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 });
     if (currency === 'CNY') {
       if (amount >= 10000) {
         return `¥${(amount / 10000).toFixed(1)}万`;
       }
-      return `¥${amount.toLocaleString()}`;
+      return `¥${formatter.format(amount)}`;
     }
-    return `${currency} ${amount.toLocaleString()}`;
+    return `${currency} ${formatter.format(amount)}`;
   };
 
   const sizeStyles = {
@@ -255,7 +257,9 @@ export function ProjectStatsCard({
         <div>
           <p className="text-sm text-muted-foreground">{title}</p>
           <p className="text-2xl font-bold mt-1">
-            {typeof value === 'number' ? value.toLocaleString() : value}
+            {typeof value === 'number'
+              ? new Intl.NumberFormat('zh-CN').format(value)
+              : value}
           </p>
           {trend && (
             <p className={cn(

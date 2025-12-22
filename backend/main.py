@@ -17,6 +17,7 @@ from backend.routers import (
     health,
     projects,
     authentication,
+    users,  # ✅ 用户管理API (API_SOT v9.0 §5)
     ad_accounts,
     ad_spend,
     channels,
@@ -43,7 +44,8 @@ from backend.routers import (
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name, debug=settings.debug)
+# 禁用 redirect_slashes 避免 307 重定向导致 Authorization header 丢失
+app = FastAPI(title=settings.app_name, debug=settings.debug, redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
@@ -59,6 +61,7 @@ API_V1_PREFIX = "/api/v1"
 app.include_router(health.router, prefix=API_V1_PREFIX)  # 健康检查
 app.include_router(projects.router, prefix=API_V1_PREFIX)  # 项目管理
 app.include_router(authentication.router, prefix=API_V1_PREFIX)  # 用户认证
+app.include_router(users.router, prefix=API_V1_PREFIX)  # 用户管理 ✅ 新增 (API_SOT v9.0 §5)
 app.include_router(ad_spend.router, prefix=API_V1_PREFIX)  # 广告消耗
 app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)  # 广告账户
 app.include_router(channels.router, prefix=API_V1_PREFIX)  # 渠道管理
@@ -206,6 +209,10 @@ async def handle_validation_exception(_: Request, exc: RequestValidationError) -
 
 @app.exception_handler(Exception)
 async def handle_unexpected_exception(_: Request, exc: Exception) -> JSONResponse:
+    import traceback
+    import sys
+    error_msg = f"Unexpected exception: {type(exc).__name__}: {exc}\n{traceback.format_exc()}"
+    print(error_msg, file=sys.stderr, flush=True)
     message = str(exc) if settings.debug else "Internal server error"
     return fail(code=SystemErrorCodes.INTERNAL_ERROR.code, message=message, status_code=SystemErrorCodes.INTERNAL_ERROR.status_code)
 

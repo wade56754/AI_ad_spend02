@@ -100,6 +100,7 @@ class Buyer(Base, TimestampMixin, SerializableMixin):
         "AdAccount",
         foreign_keys="AdAccount.buyer_id",
         lazy="dynamic",
+        overlaps="buyer",
         doc="负责的账户"
     )
 

@@ -66,13 +66,13 @@ export function ProfitTable({
 
   const getNameField = (item: ProfitItem): string => {
     if ('project_name' in item) return item.project_name as string;
-    if ('account_name' in item) return item.account_name as string;
+    if ('ad_account_name' in item) return item.ad_account_name as string;
     if ('channel_name' in item) return item.channel_name as string;
     return 'Unknown';
   };
 
   const getIdField = (item: ProfitItem): number => {
-    if ('project_id' in item && !('account_name' in item)) return item.project_id;
+    if ('project_id' in item && !('ad_account_name' in item)) return item.project_id;
     if ('ad_account_id' in item) return item.ad_account_id;
     if ('channel_id' in item) return item.channel_id;
     return 0;

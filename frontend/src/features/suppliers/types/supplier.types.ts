@@ -129,8 +129,8 @@ export interface SupplierLedgerSummary {
 
 export interface SupplierAccount {
   id: number;
-  account_id: string;
-  account_name: string;
+  account_code: string; // 对齐 init_schema.sql - 账户代码
+  name: string; // 对齐 init_schema.sql - 账户名称
   platform: string;
   status: string;
   balance: number;

@@ -28,8 +28,8 @@ const BASE_PATH = '/api/v1/reports';
  * GET /api/v1/reports/dashboard
  */
 export async function getDashboard(): Promise<DashboardSummary> {
-  const response = await apiFetch<{ data: DashboardSummary }>(`${BASE_PATH}/dashboard`);
-  return response.data;
+  // apiFetch already extracts .data from the envelope
+  return apiFetch<DashboardSummary>(`${BASE_PATH}/dashboard`);
 }
 
 // ========== Performance Report ==========
@@ -51,8 +51,8 @@ export async function getPerformanceReport(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/performance?${query}` : `${BASE_PATH}/performance`;
 
-  const response = await apiFetch<{ data: PerformanceReportResponse }>(url);
-  return response.data;
+  // apiFetch already extracts .data from the envelope
+  return apiFetch<PerformanceReportResponse>(url);
 }
 
 // ========== Profit Report ==========
@@ -73,8 +73,8 @@ export async function getProfitReport(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/profit?${query}` : `${BASE_PATH}/profit`;
 
-  const response = await apiFetch<{ data: ProfitReportResponse }>(url);
-  return response.data;
+  // apiFetch already extracts .data from the envelope
+  return apiFetch<ProfitReportResponse>(url);
 }
 
 // ========== Reconciliation Report ==========
@@ -94,8 +94,8 @@ export async function getReconciliationReport(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/reconciliation?${query}` : `${BASE_PATH}/reconciliation`;
 
-  const response = await apiFetch<{ data: ReconciliationReportResponse }>(url);
-  return response.data;
+  // apiFetch already extracts .data from the envelope
+  return apiFetch<ReconciliationReportResponse>(url);
 }
 
 // ========== Financial Summary ==========
@@ -116,8 +116,8 @@ export async function getFinancialSummary(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/financial?${query}` : `${BASE_PATH}/financial`;
 
-  const response = await apiFetch<{ data: FinancialSummaryResponse }>(url);
-  return response.data;
+  // apiFetch already extracts .data from the envelope
+  return apiFetch<FinancialSummaryResponse>(url);
 }
 
 // ========== Trend Report ==========
@@ -139,6 +139,6 @@ export async function getTrendReport(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/trends/${metric}?${query}` : `${BASE_PATH}/trends/${metric}`;
 
-  const response = await apiFetch<{ data: TrendReportResponse }>(url);
-  return response.data;
+  // apiFetch already extracts .data from the envelope
+  return apiFetch<TrendReportResponse>(url);
 }

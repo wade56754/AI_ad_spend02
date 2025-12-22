@@ -1,13 +1,13 @@
 # MASTER.md - AI 广告代投系统架构宪法
 
 > **文档性质**: 系统唯一入口，所有代码实现的最高裁决依据
+> **核心目标**: 支撑老板决策，而不是替代人做判断
 > **约束级别**: 强制执行，违反本文档定义的不变量视为 P0 缺陷
-> **裁判优先级**: 本文档 > 所有 SoT 文档 > 所有开发指南
-> **版本**: v3.6
-> **status**: frozen
-> **基准**: SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Layer Freeze v1.0, PROJECT.md v1.2, OpenSpec v1.0
+> **版本**: v4.4
+> **status**: active
+> **基准**: BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md, SoT Freeze v2.6
 > **owner**: wade
-> **last_reviewed**: 2025-12-01
+> **last_reviewed**: 2025-12-22
 
 ---
 
@@ -15,686 +15,926 @@
 
 | 术语 | 定义 |
 |------|------|
-| 终态 | `final_locked` 状态，数据冻结，不可逆转 |
-| 红冲 | REVERSAL，通过反向账务事件修正错误，不修改历史 |
-| 镜像记录 | 同一业务事件在 PROJECT 与 SUPPLIER 账本各产生一笔记录 |
-| 业务不可变量 | 无论系统如何演进，永远为真的业务事实 |
-| Freeze | 治理机制，禁止在冻结期间修改受保护内容 |
+| Phase 1 | 照亮阶段：系统记录事实、展示状态、提示异常，不强制阻断 |
+| Phase 2 | 问责阶段：系统引入约束、强制审批、考核关联 |
+| 业务事实 | 客观发生的事，系统必须记录（消耗、充值、审批） |
+| 管理状态 | 计算或判断的结果，系统展示（CPL、毛利、异常标记） |
+| 管理裁决 | 需要人决定的事，系统不替代（批准/拒绝、继续/终止） |
+| 项目负责人 | 对项目盈亏负责的角色，是资金使用效率的责任人 |
+| 红冲 | REVERSAL，通过反向账务事件修正错误，不修改历史（Phase 2） |
+| CPL | Cost Per Lead，单粉成本，= 消耗 / 进粉 |
+| SoT | Source of Truth，唯一事实源，某类数据的权威来源表 |
+| 冷启动期 | 新项目上线前 7 天，CPL 不考核 |
+| 低量场景 | 进粉数 < 5，CPL 标记为「低量不稳定」 |
+| 预计盈亏 | Phase 1 使用的简化盈亏口径，用于观察 |
+| 确认盈亏 | Phase 2 使用的完整盈亏口径，用于结算 |
 
 ---
 
-## 第一章 系统哲学
+## 第一章 系统目标与管理原则（老板视角）
 
-### 1.1 业务问题
+### 1.1 系统的唯一目标
 
-AI 广告代投系统管理三方资金流转：
-- **客户** → 充值至项目账户 → 按粉数计费扣款
-- **平台** → 管理项目账本（收入侧）与供应商账本（成本侧）
-- **供应商** → 接收充值 → 按真实消耗扣款
+**本系统的唯一目标是：支撑老板决策，而不是替代人做判断。**
 
-### 1.2 核心风险
+系统是「工具」，用于：
+- 记录事实（消耗、充值、审批）
+- 展示状态（盈亏、CPL、异常）
+- 提示风险（超标、亏损、超预算）
 
-| 风险类型 | 风险描述 | 后果 |
-|---------|---------|------|
-| 数据篡改 | 投手虚报粉数 | 虚增收入 |
-| 账务混乱 | 收入与成本混记 | 无法对账 |
-| 审计断裂 | 直接修改已锁定数据 | 审计链不可追溯 |
+系统不是「裁判」，不替代人做：
+- 继续/调整/终止 的决策
+- 批准/拒绝 的判断
+- 追责/处罚 的裁决
 
-### 1.3 解决方案
+### 1.2 核心管理目标（三权清晰）
 
-本系统通过以下五大机制防止风险：
+```
+┌────────────────────────────────────────────────────────────────┐
+│                       三权清晰                                 │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  【谁对钱负责】                                                │
+│  ├── 项目负责人：申请充值，对使用效率负责                      │
+│  ├── 财务：审核合规，守住资金出口                              │
+│  └── 老板：最终批准，承担资金风险                              │
+│                                                                │
+│  【谁对结果负责】                                              │
+│  ├── 投手：对每日 CPL 达标负责                                 │
+│  ├── 主管：对团队产出负监督责任                                │
+│  └── 项目负责人：对项目盈亏负责                                │
+│                                                                │
+│  【谁能在过程中纠偏】                                          │
+│  ├── 日级：主管看日报 → 发现异常 → 沟通调整                   │
+│  ├── 周级：项目负责人看盈亏 → 提前预警                        │
+│  ├── 月级：老板确认结算 → 继续/调整/终止                      │
+│  └── 随时：老板发现重大异常 → 冻结/终止                       │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
 
-**1. 双账本架构 (Dual-Ledger)**
-- PROJECT 账本：仅记录收入（客户充值、粉数计费）
-- SUPPLIER 账本：仅记录成本（供应商充值、真实消耗）
-- 禁止混合：任何角色不得在单一账本中同时记录收入与成本
+> **Phase 1 责任定义说明**：上述「负责」在 Phase 1 仅指「对数据可解释」，即：
+> - 投手需解释 CPL 数据，但不因 CPL 不达标被惩罚
+> - 主管需解释团队产出，但不因产出不佳被追责
+> - 项目负责人需解释盈亏，但不因亏损被直接问责
+> - **Phase 2 启用后，「负责」才与考核/追责挂钩**
 
-**2. 三数据流分离 (Triple-Stream)**
-- Raw 数据流：投手提交，用于趋势风控，永不计费/计成本
-- Real 数据流：运营录入，用于成本核算
-- Final 数据流：运营确认，用于计费
-- 禁止反向：程序禁止从 final 反推 raw
+### 1.3 系统定位
 
-**3. 8 状态机强制流转 (State Machine)**
-- 每个状态对应唯一权限边界
-- 终态 `final_locked` 后数据冻结
-- 禁止逆转：任何角色不得绕过状态机直接修改
+**管理责任必须先落实，系统只是让责任更清晰。**
 
-**4. 审计不可逆 (Immutable Audit Trail)**
-- 账本余额 = SUM(所有 ledger_entries.amount)
-- 禁止 UPDATE 任何 ledger_entries 记录
-- 禁止 DELETE 任何 ledger_entries 记录
-- 修正唯一方式：REVERSAL（红冲），产生反向事件
-- 数学不变量：`净值 = SUM(原事件) + SUM(REVERSAL事件)`
+| 管理目标 | 系统如何支撑 | 系统不做什么 |
+|----------|-------------|-------------|
+| 钱有负责人 | 记录每笔充值申请与审批 | 不替老板批准/拒绝 |
+| 结果有责任人 | 展示项目盈亏与负责人 | 不替老板追责 |
+| 风险可纠偏 | 高亮异常、生成报表 | 不自动暂停/冻结 |
 
-**5. 职责分离 (Separation of Duties)**
-- 投手：仅可提交 raw 数据
-- 运营：仅可录入 real/final 数据
-- 财务：仅可执行 REVERSAL/TRANSFER
-- 禁止越权：任何角色不得修改上游数据
+### 1.4 核心风险与系统应对
+
+| 风险类型 | 风险描述 | 系统应对（Phase 1） | 系统应对（Phase 2） |
+|---------|---------|-------------------|-------------------|
+| 资金失控 | 钱花了不知道找谁 | 记录申请与审批流程 | 无批准不打款 |
+| 结果无人负责 | 项目亏了没人承担 | 展示项目负责人与盈亏 | 考核关联 |
+| 问题事后发现 | 月底才知道亏损 | 日报高亮、周度汇总 | 自动预警 |
 
 ---
 
-## 第二章 系统不可变量
+## 第二章 责任模型
 
-### INV-001: 双账本独立核算
+### 2.1 资金责任链
 
-**PROJECT 账本** (收入侧)
-
-计费公式：
 ```
-revenue = conversions_final × projects.unit_price
-```
-- `conversions_final` 来源: `daily_reports.conversions_final`
-- `unit_price` 来源: `projects.unit_price`（`final_locked` 后冻结）
-
-计费触发条件：
-- 状态流转至终态
-- `conversions_final > 0`
-
-计费账本记录：
-- `ledger_entries.type = REVENUE`
-- `ledger_entries.category = PROJECT`
-- `ledger_entries.amount = +revenue`（正值，增加余额）
-
-充值：客户充值时创建账本记录：
-- `ledger_entries.type = RECHARGE`
-- `ledger_entries.category = PROJECT`
-- `ledger_entries.amount = +充值金额`
-
-**SUPPLIER 账本** (成本侧)
-
-成本公式：
-```
-cost = real_spend × (1 + suppliers.fee_rate)
-```
-- `real_spend` 来源: `daily_reports.real_spend`
-- `fee_rate` 来源: `suppliers.fee_rate`
-
-成本触发条件：
-- 状态流转至终态
-- `real_spend > 0`
-
-成本账本记录：
-- `ledger_entries.type = COST`
-- `ledger_entries.category = SUPPLIER`
-- `ledger_entries.amount = -cost`（负值，扣减余额）
-
-充值：财务充值时创建账本记录：
-- `ledger_entries.type = RECHARGE`
-- `ledger_entries.category = SUPPLIER`
-- `ledger_entries.amount = +充值金额`
-
-**余额计算公式（唯一）**
-```
-projects.balance = SUM(ledger_entries.amount) WHERE category = 'PROJECT'
-suppliers.balance = SUM(ledger_entries.amount) WHERE category = 'SUPPLIER'
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          资金责任链                                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   项目负责人申请 → 财务审核 → 老板批准 → 项目负责人负责使用             │
+│        │              │           │              │                      │
+│    提交理由      检查预算     承担风险      对效率负责                   │
+│                                                                         │
+│   Phase 1：有流程，可紧急绕行                                           │
+│   Phase 2：无批准不打款                                                 │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**日报计费/计成本触发规则**
+**资金环节责任表**
 
-终态触发时，分别判断：
-- 若 `conversions_final > 0`：产生 `type = REVENUE, category = PROJECT`
-- 若 `real_spend > 0`：产生 `type = COST, category = SUPPLIER`
-- 两笔记录引用同一 `daily_report_id`（若两者皆触发）
-- 若两者皆为零：不产生任何账本记录，禁止流转至终态
+| 资金环节 | 责任人 | 责任边界 | 考核依据 |
+|----------|--------|----------|----------|
+| 充值审批 | 老板 | 批准即承担最终风险 | 资金回收率 |
+| 资金使用 | 项目负责人 | 充值额度内的使用效率 | 消耗/产出比 |
+| 日常消耗 | 投手 | 每日消耗与效果匹配 | CPL 达标率 |
 
-**账本隔离约束**
-- 禁止在 PROJECT 账本记录 COST 类型
-- 禁止在 SUPPLIER 账本记录 REVENUE 类型
-- 禁止跨 category 进行余额聚合查询
+### 2.2 结果责任链
 
-**来源**: `LEDGER_SOT.md` v1.1
-
----
-
-### INV-002: 三数据流职责分离
-
-**数据流定义**
-
-| 数据流 | 字段 | 录入角色 | 用途 | 计费/计成本 | 冻结时机 |
-|--------|------|----------|------|-------------|----------|
-| Raw | `conversions_raw`, `raw_spend` | 投手 | 趋势风控 | 永不参与 | `trend_ok` 后冻结 |
-| Real | `real_spend` | 运营 | 成本核算 | 仅计成本 | `final_locked` 后冻结 |
-| Final | `conversions_final` | 运营 | 计费 | 仅计收入 | `final_locked` 后冻结 |
-
-**单向流动约束**
-- 允许：运营人工参考 raw 数据录入 real 数据
-- 允许：运营人工参考 real 数据确认 final 数据
-- 禁止：程序自动从 final 反推 raw
-- 禁止：程序自动从 real 反推 raw
-
-**计费/计成本约束**
-- 禁止使用 `conversions_raw` 计费
-- 禁止使用 `raw_spend` 计成本
-- 禁止在 `state < final_confirmed` 时触发计费
-- 禁止在 `state < final_pending` 时触发计成本
-- 禁止 `conversions_final = 0` 时触发计费
-- 禁止 `real_spend = 0` 时触发计成本
-
-**来源**: `DAILY_REPORT_SOT.md` v1.0
-
----
-
-### INV-003: 8 状态机强制流转
-
-**状态机哲学**
-- 状态 = 权限边界
-- 状态 = 账务触发条件
-- 状态 = 审计锚点
-
-**标准流转路径**
 ```
-null → raw_submitted → trend_pending → trend_ok → final_pending
-     → final_confirmed → final_locked
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          结果责任链                                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   投手执行 → 主管监督 → 项目负责人对盈亏负责 → 老板最终决策             │
+│      │           │              │                  │                    │
+│   CPL达标    团队产出       项目盈亏          公司盈亏                  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**异常流转路径**
-```
-trend_pending → trend_flagged → trend_resolved → final_pending
-```
+| 层级 | 责任人 | 负责什么 | 考核周期 | Phase 1 后果 | Phase 2 后果 |
+|------|--------|----------|----------|-------------|-------------|
+| 项目 | 项目负责人 | 项目盈亏 | 月度 | 复盘/沟通 | 复盘/调整/更换 |
+| 团队 | 主管 | 投手产出 | 周度 | 沟通/记录 | 调整分工 |
+| 个人 | 投手 | CPL 达标 | 日度 | 沟通/记录 | 警告/暂停 |
 
-**前置条件与触发规则**
+> **Phase 1 特别说明**：Phase 1 阶段，不达标后果仅为「沟通与记录」，不触发任何惩罚性措施。
 
-| 目标状态 | 前置状态 | 必要条件 | 触发者 |
-|---------|---------|---------|--------|
-| `raw_submitted` | `null` | `conversions_raw IS NOT NULL AND raw_spend IS NOT NULL` | 投手 |
-| `trend_pending` | `raw_submitted` | 无 | 系统 |
-| `trend_ok` | `trend_pending` | 趋势检查通过（参见 BUSINESS_RULES.md BR-TREND-001） | 系统 |
-| `trend_flagged` | `trend_pending` | 趋势检查异常（参见 BUSINESS_RULES.md BR-TREND-002） | 系统 |
-| `trend_resolved` | `trend_flagged` | 人工审核通过 | 运营 |
-| `final_pending` | `trend_ok` 或 `trend_resolved` | 无 | 系统 |
-| `final_confirmed` | `final_pending` | `conversions_final IS NOT NULL AND real_spend IS NOT NULL` | 运营 |
-| `final_locked` | `final_confirmed` | `conversions_final > 0 OR real_spend > 0` | 系统（触发计费/计成本） |
+### 2.3 纠偏权分层
 
-**禁止的状态转换**
-- 禁止 `trend_flagged` → `final_pending`（必须经过 `trend_resolved`）
-- 禁止 `raw_submitted` → `final_pending`（必须经过趋势检查）
-- 禁止 `final_locked` → 任何其他状态（终态不可逆）
-- 禁止任何状态 → `null`（禁止重置）
+| 时机 | 纠偏人 | 触发条件 | Phase 1 行为 | Phase 2 行为 |
+|------|--------|----------|-------------|-------------|
+| 日级 | 主管 | CPL 超标、消耗突增 | 沟通调整 | 暂停建议 |
+| 周级 | 项目负责人 | 周盈亏异常、进度落后 | 自行汇报 | 必须汇报 |
+| 月级 | 老板 | 月度亏损、资金风险 | 自由裁决 | 按规则执行 |
+| 随时 | 老板 | 重大异常 | 随时介入 | 冻结/终止 |
 
-**终态保护**
+### 2.4 角色定义（7 角色）
 
-终态后，以下字段冻结：
-- `daily_reports.conversions_final`
-- `daily_reports.real_spend`
-- `daily_reports.conversions_raw`
-- `projects.unit_price`（关联项目）
-- `suppliers.fee_rate`（关联供应商）
-
-**修正机制（红冲）**
-
-触发条件：发现终态日报数据错误
-
-执行角色：财务（FINANCE）
-
-执行约束：
-- 必须提供外部审批单号（`approval_ref`，非空、不可重复）
-- 必须全额红冲（不允许部分红冲）
-- 必须同时红冲两个账本（若原日报同时产生了两笔记录）
-
-执行步骤：
-1. 若原日报产生了 REVENUE 记录：创建 `ledger_entries.type = REVERSAL, category = PROJECT, amount = -revenue`
-2. 若原日报产生了 COST 记录：创建 `ledger_entries.type = REVERSAL, category = SUPPLIER, amount = +cost`
-3. 更新 `daily_reports.reversal_id`
-4. 保持 `daily_reports.state = final_locked`（状态不变）
-5. 如需重新计费，创建新 `daily_report` 记录
-
-**红冲符号约束**
-- REVENUE 红冲：`amount = -revenue`（负值，抵消原正值）
-- COST 红冲：`amount = +cost`（正值，抵消原负值）
-- 数学验证：`原 REVENUE + REVERSAL = 0`，`原 COST + REVERSAL = 0`
-
-**红冲禁止条款**
-- 禁止对 REVERSAL 记录再次执行 REVERSAL
-- 禁止删除 REVERSAL 记录
-- 禁止修改 REVERSAL 记录
-
-**来源**: `STATE_MACHINE.md` v2.6
-
----
-
-### INV-004: 职责分离
+| 角色ID | 中文名 | 职责范围 | 系统权限 |
+|--------|-------|---------|---------|
+| ceo | 老板 | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
+| project_owner | 项目负责人 | 项目盈亏、资金使用效率、团队协调 | 申请充值，查看项目，提交周报 |
+| finance | 财务 | 资金出入准确、数据真实、对账 | 审核充值，更新资金表，锁定结算 |
+| supervisor | 主管 | 团队产出、投手管理、日常监督 | 审核日报，查看团队，标记异常 |
+| pitcher | 投手 | CPL 达标、日报准确、执行投放 | 填报日报，查看自己数据 |
+| account_manager | 户管 | 账户分配、账户状态监控 | 管理账户分配 |
+| admin | 管理员 | 系统配置 | 系统设置（不参与业务） |
 
 **角色权限矩阵**
 
 | 角色 | 允许操作 | 禁止操作 |
 |------|---------|---------|
-| 投手 (AD_OPERATOR) | 创建日报、填写 raw 数据、提交至 `raw_submitted` | 修改 final/real 数据、修改状态至 final_*、查看他人日报 |
-| 运营 (OPERATIONS) | 录入 real_spend、确认 conversions_final、审核 trend_flagged | 修改 raw 数据、修改状态至 raw_submitted、删除日报 |
-| 财务 (FINANCE) | 执行 REVERSAL、执行 TRANSFER、查看账本、导出报表 | 修改日报任何字段、修改日报状态、删除账本记录 |
-| 管理员 (ADMIN) | 查看所有数据、导出审计报表、配置系统参数 | 绕过状态机、删除 final_locked 记录、执行 REVERSAL |
+| ceo | 查看全部、批准充值、锁定结算、终止项目 | 直接修改业务数据 |
+| project_owner | 申请充值、查看项目、提交周报、调配投手 | 批准自己的申请、修改他人数据 |
+| finance | 审核充值、更新资金表、对账、锁定结算 | 批准充值、修改日报 |
+| supervisor | 审核日报、标记异常、查看团队 | 修改 raw 数据、批准充值 |
+| pitcher | 填报日报、查看自己数据 | 修改他人日报、查看财务数据 |
 
-**跨角色约束**
-- 禁止单一用户同时拥有 AD_OPERATOR 和 OPERATIONS 角色
-- 禁止单一用户同时拥有 OPERATIONS 和 FINANCE 角色
-- 财务执行 REVERSAL 必须提供外部审批单号
+### 2.5 责任归属表（总览）
 
-**权限边界强制执行**
-- 禁止投手修改 `conversions_final`
-- 禁止运营修改 `conversions_raw`
-- 禁止财务修改 `daily_reports.state`
-- 禁止任何角色在终态后直接 UPDATE 日报
+| 角色 | 对谁负责 | 负责什么 | Phase 1 权力 | Phase 2 新增权力 |
+|------|----------|----------|-------------|-----------------|
+| 老板 | 公司 | 资金安全、公司盈亏 | 批准充值、终止项目 | 追责 |
+| 财务 | 老板 | 资金出入准确、数据真实 | 拒绝不合规充值 | 锁定结算 |
+| 项目负责人 | 老板 | 项目盈亏、回款进度 | 调配投手、申请充值 | 暂停项目 |
+| 主管 | 项目负责人 | 团队产出、投手管理 | 调整分工、沟通反馈 | 暂停账户、警告投手 |
+| 投手 | 主管 | CPL 达标、日报准确 | 调整投放策略 | - |
 
-**越权 = 合规违规 = 账务风险**
-
-**来源**: `AUTH_SPEC.md` v2.0, `RLS_POLICIES_SOT.md` v1.0
+> **Phase 1 特别说明**：Phase 1 阶段，主管的权力仅限于「沟通反馈」，不包含「暂停账户、警告投手」等惩罚性操作。
 
 ---
 
-## 第三章 业务不可变量 (Business Invariants)
-
-业务不可变量来源于 PROJECT.md v1.2，作为系统级约束强制执行。
-
-### BI-01 账务记录不可篡改
-
-已锁定（final_locked）的账务记录：
-- 不可修改金额
-- 不可修改归属
-- 不可删除
-
-错误修正唯一方式：红冲（REVERSAL）。
-
-**映射**: INV-001「审计不可逆」
-
----
-
-### BI-02 广告账户生命周期不可回溯
-
-广告账户状态变化是单向的：
-- 正常 → 受限 → 死号
-- 死号永远是死号
-
-死号业务可迁移至新账户，原账户不可复活。
-
-**映射**: STATE_MACHINE.md §7.1
-
----
-
-### BI-03 收益归属不可重分配
-
-投手已确认的收益归属：
-- 不因事后协商而改变
-- 不因团队调整而转移
-- 不因项目变更而重算
-
-对账错误唯一修正方式：红冲后重新归属。
-
-**映射**: BUSINESS_RULES.md BR-RPT-005
-
----
-
-### BI-04 账务必须源于日报
-
-账务记录的唯一合法来源是已锁定（final_locked）的日报。
-
-以下不能直接成为账务：
-- Excel 导入数据
-- 截图或口头描述
-- 第三方平台打款通知
-
-**映射**: DAILY_REPORT_SOT.md §1, INV-001
-
----
-
-### BI-05 角色职责不可越界
-
-每个角色只能操作其职责范围内的业务对象。
-职责边界由 INV-004 定义，不可局部覆盖。
-
-**映射**: INV-004, AUTH_SPEC.md §5
-
----
-
-## 第四章 永久禁止行为 (Prohibited)
-
-本章定义业务宇宙维度的禁止行为，不因版本迭代而改变。
-违反任一条 = 合规违规 = 审计风险。
-
-### D-01 手动改写账务历史
-
-禁止：
-- 修改已有 LedgerEntry
-- 人工覆盖账务
-- 删除账务记录
-
-**映射**: INV-001, BI-01
-
----
-
-### D-02 跳过日报直入账本
-
-禁止：
-- 绕过 DailyReport 直接写 Ledger
-- Excel 导入自动生成 entry
-
-**映射**: BI-04
-
----
-
-### D-03 将死号标记为恢复
-
-禁止：
-- 关闭迁移流程直接复用原账号
-- 直接在原账号上继续业务
-
-**映射**: BI-02
-
----
-
-### D-04 未审计数据做决策
-
-禁止：
-- 根据截图/口头信息修改收益
-- 用非系统数据触发结算
-
-**映射**: INV-002
-
----
-
-### D-05 事后重分配收益
-
-禁止：
-- 项目层面强制改投手收益
-- 事后佣金策略修订影响历史记录
-
-**映射**: BI-03
-
----
-
-### D-06 业务试验进入正式账本
-
-禁止：
-- A/B 实验直接写 final ledger
-- 非生产数据进入结算闭环
-
-**映射**: INV-003「终态保护」
-
----
-
-## 第五章 Freeze 机制
-
-Freeze 是治理机制，不是建议。
-
-### FZ-01 文档冻结
-
-当 PROJECT.md 与 MASTER.md 同步锁定版本后：
-- 任何新增目标/业务范围变更 = 新版本
-- 禁止在当前版本中追加业务能力
-
----
-
-### FZ-02 开发冻结
-
-当 ARCHITECTURE.md / DOMAIN.md 进入版本合并阶段：
-- 禁止删除功能
-- 禁止扩大范围
-- 禁止引入新业务逻辑
-
-解冻条件：新 STATE_MACHINE vX.Y 正式发布。
-
----
-
-### FZ-03 发布冻结
-
-当部署进入生产候补阶段：
-- 仅允许 BUGFIX
-- 禁止新增功能
-- 禁止指标增强
-- 禁止策略实验
-
----
-
-## 第五章附录 规范变更管理 (OpenSpec)
-
-### OS-01 OpenSpec 唯一变更通道
-
-涉及以下内容的变更，**必须**先通过 OpenSpec change 流程（PROPOSE → IMPLEMENT → ARCHIVE）：
-
-| 变更类型 | 示例 | 必须走 OpenSpec |
-|---------|------|-----------------|
-| 状态机修改 | 新增状态、修改流转规则 | ✅ 强制 |
-| 错误码变更 | 新增/修改错误码定义 | ✅ 强制 |
-| 账本规则变更 | 分录类型、余额计算公式 | ✅ 强制 |
-| API 契约变更 | 新增端点、修改请求/响应格式 | ✅ 强制 |
-| 数据库结构变更 | 新增/修改表、字段、约束 | ✅ 强制 |
-| 业务规则变更 | 新增/修改 BR-* 规则 | ✅ 强制 |
-| Bug 修复 | 恢复到既有 spec 行为 | ❌ 可跳过 |
-| 文档 typo | 拼写错误、格式调整 | ❌ 可跳过 |
-| 依赖更新 | 非破坏性版本升级 | ❌ 可跳过 |
-
-### OS-02 SoT 投影与禁止直接编辑
-
-**禁止操作**：
-- ❌ 直接编辑 `openspec/specs/` 目录下的任何文件
-- ❌ 在 commit 中不包含 change-id 而修改 SoT 文档
-
-**强制路径**：
-1. 创建 OpenSpec change（`openspec/changes/<change-id>/`）
-2. 编写 spec deltas（使用 `## ADDED|MODIFIED|REMOVED Requirements`）
-3. 验证通过（`openspec validate <change-id> --strict`）
-4. 获得审批后实施
-5. 归档变更（`openspec archive <change-id>`）→ 自动更新 `openspec/specs/`
-
-### OS-03 裁判链与 OpenSpec 对齐
-
-OpenSpec 的 spec deltas 必须与 SoT 裁判链保持一致：
+## 第三章 Phase 1 / Phase 2 执行边界
+
+### 3.1 Phase 1（照亮）
+
+**目标**：让问题「可见」，而不是「问责」
+
+**原则**：
+
+| 原则 | 说明 | 系统禁止 |
+|------|------|----------|
+| 可见优先 | 数据透明，老板能看到问题 | 不允许系统自动惩罚 |
+| 解释责任 | 责任人需解释数据，但不追责 | 不允许因亏损直接问责 |
+| 软性提醒 | 异常只高亮提示，不阻断流程 | 不允许自动冻结/停项目 |
+| 人工裁决 | 所有重要决策由人做出 | 不允许系统替代人判断 |
+
+**系统能做**：
+- ✓ 记录充值申请与审批流程
+- ✓ 高亮异常数据（CPL 超标、消耗突增）
+- ✓ 生成周度/月度汇总报表
+- ✓ 展示项目盈亏与责任人
+
+**系统不能做**：
+- ✗ 自动拒绝充值申请
+- ✗ 自动暂停投手账户
+- ✗ 自动冻结项目
+- ✗ 强制要求填写周报
+
+### 3.2 Phase 2（问责）
+
+**相比 Phase 1 新增的约束**：
+
+| 功能 | Phase 1 | Phase 2 |
+|------|---------|---------|
+| 充值审批 | 有流程，可绕行 | 无批准不打款 |
+| 日报审核 | 可选审核 + 高亮 | 必须审核 + 暂停建议 |
+| 周度简报 | 可选提交 | 必须提交 + 考核 |
+| 项目管理 | 无预算约束 | 必须有预算才能启用 |
+| 月度结算 | 可修改 | 锁定后不可修改 |
+| 异常处理 | 提示 | 系统阻断 |
+
+**纠偏权升级**：
 
 ```
-MASTER.md (本文档) > STATE_MACHINE.md > DATA_SCHEMA.md > API_SOT.md
-> ERROR_CODES_SOT.md > BUSINESS_RULES.md > AUTH_SPEC.md > LEDGER_SOT.md
+Phase 1                          Phase 2
+───────                          ───────
+主管：看到问题 → 沟通            主管：看到问题 → 暂停账户权限
+项目负责人：解释进展             项目负责人：承担盈亏责任
+老板：自由决策                   老板：按规则执行（终止/追责）
 ```
 
-**约束**：
-- OpenSpec change 不得违反高优先级文档的定义
-- 若需修改高优先级文档，必须同时更新所有受影响的下游文档
-- 冲突解决：以裁判链高优先级文档为准
+### 3.3 功能对照表
 
-### OS-04 变更追溯要求
+| 页面 | Phase 1 功能 | Phase 2 新增功能 |
+|------|-------------|-----------------|
+| 老板驾驶舱 | ✓ 全功能 | 异常自动预警推送 |
+| 资金总览 | ✓ 全功能 | 资金占用预警 |
+| 项目盈亏看板 | ✓ 全功能 | 连续亏损强制标记 |
+| 充值审批 | 流程记录（可绕行） | 无批准不打款（强制） |
+| 日报审核 | 可选审核 + 高亮 | 必须审核 + 暂停建议 |
+| 周度简报 | 可选提交 | 必须提交 + 考核关联 |
+| 项目管理 | ✓ 全功能 | 预算必填 + 超预算阻断 |
+| 投手管理 | ✓ 全功能 | 绩效关联 |
+| 消耗明细 | ✓ 全功能 | - |
+| 月度结算 | 可修改 | 锁定后不可修改 |
 
-**每次 SoT 变更必须包含**：
-- `change-id`：OpenSpec 变更标识（如 `add-topup-v2`）
-- `affected_specs`：受影响的 SoT 文档列表
-- `commit message`：包含 `[change-id]` 标记
+### 3.4 Phase 2 启动前提
 
-**违规检测**：
-- 发现直接修改 SoT 且 commit 中无 change-id → 视为违规变更
-- 违规变更将被 revert，需重新走 OpenSpec 流程
+Phase 2 功能的启用必须满足以下条件：
+
+```
+1. Phase 1 已稳定运行至少 2 个月
+2. 日报填报率 > 90%
+3. 周报提交率 > 80%
+4. 团队对责任划分无重大异议
+5. 老板明确批准启动 Phase 2
+```
+
+**Feature Flag 控制**：
+
+```python
+# 环境变量控制 Phase 2 功能
+PHASE2_TOPUP_ENFORCEMENT = false      # 充值强制审批
+PHASE2_DAILY_REPORT_REQUIRED = false  # 日报必须审核
+PHASE2_WEEKLY_BRIEF_REQUIRED = false  # 周报必须提交
+PHASE2_SETTLEMENT_LOCK = false        # 结算锁定
+```
 
 ---
 
-## 第六章 SoT 裁判链
+## 第四章 系统行为约束
+
+### 4.1 系统必须做的事（记录事实）
+
+| 业务事实 | 系统行为 | 数据表 | 必须字段 |
+|----------|----------|--------|----------|
+| 每日消耗 | 必须记录 | ad_spend_daily | date, account_id, spend |
+| 每日进粉 | 必须记录 | daily_report | date, project_id, pitcher_id, conversions |
+| 充值申请 | 必须记录 | topup_request | project_id, amount, applicant_id |
+| 审批结果 | 必须记录 | topup_request | finance_status, ceo_status |
+| 项目信息 | 必须记录 | project | name, owner_id, status |
+
+> **字段命名规则**：所有外键字段必须使用 `_id` 后缀（如 `project_id`），禁止使用不带后缀的实体名（如 `project`）。
+
+**daily_report 字段 Phase 边界**：
+
+| 字段 | Phase 1 | Phase 2 | 说明 |
+|------|---------|---------|------|
+| date | ✓ 必须 | ✓ 必须 | 日报日期 |
+| project_id | ✓ 必须 | ✓ 必须 | 所属项目 |
+| pitcher_id | ✓ 必须 | ✓ 必须 | 填报投手 |
+| spend | ✓ 必须 | ✓ 必须 | 投手自报消耗（**非消耗 SoT**，仅用于趋势对比） |
+| conversions | ✓ 必须 | ✓ 必须 | 投手填报进粉 |
+| real_spend | ○ 可选 | ✓ 必须 | 运营确认消耗（Phase 2 新增） |
+| conversions_final | ○ 可选 | ✓ 必须 | 运营确认进粉（Phase 2 新增） |
+
+> ✓ = 必须字段，○ = 可选字段（允许为空）
+> Phase 1 阶段，`real_spend` 和 `conversions_final` 字段可不填写。
+
+**消耗口径区分（重要）**：
+| 字段 | 来源 | 用途 | SoT 级别 |
+|------|------|------|---------|
+| `ad_spend_daily.spend` | 代理商后台（Excel 导入） | 计费/结算/盈亏计算 | ✓ 消耗 SoT |
+| `daily_report.spend` | 投手自报 | 趋势对比/差异展示 | ✗ 非 SoT |
+
+> **强制约束**：Phase 1 的消耗 SoT 只能是 `ad_spend_daily.spend`，禁止使用 `daily_report.spend` 作为消耗来源。
+
+### 4.2 系统可以做的事（展示状态）
+
+| 管理状态 | 系统行为 | 展示位置 | 计算公式 |
+|----------|----------|----------|----------|
+| CPL | 自动计算 | 日报审核、盈亏看板 | spend / conversions |
+| 毛利 | 自动计算 | 项目盈亏看板 | revenue - cost |
+| 异常标记 | 自动判断 | 日报审核（高亮） | CPL > target × 1.3 |
+| 趋势图表 | 自动生成 | 驾驶舱 | 7日/30日聚合 |
+| 预算进度 | 自动计算 | 项目管理 | used / budget |
+
+### 4.3 系统禁止做的事
+
+**Phase 1 禁止**：
+
+| 禁止行为 | 原因 | Phase 2 是否允许 |
+|----------|------|-----------------|
+| 自动拒绝充值申请 | 需老板判断 | 超预算可阻断 |
+| 自动暂停投手账户 | 需主管判断 | 连续异常可建议 |
+| 自动冻结项目 | 需老板决策 | 超预算可阻断 |
+| 替代人做裁决 | 人工裁决优先 | 仍需人确认 |
+| 强制必填字段 | 允许数据不完整 | 关键字段必填 |
+
+**永久禁止**：
+
+| 禁止行为 | 原因 | 映射 |
+|----------|------|------|
+| 删除已锁定数据 | 审计链不可断 | BI-04 |
+| 修改历史账务 | 账务不可篡改 | BI-04 |
+| 绕过审批直接打款 | 资金安全 | BI-02 |
+
+### 4.4 数据现实约束（必须接受）
+
+**本系统必须接受以下数据现实，不得假设理想状态：**
+
+| 现实 | 系统如何处理 | 禁止假设 |
+|------|-------------|----------|
+| 数据来自 Excel | 支持导入，标记来源 | 数据一定一致 |
+| 历史数据不完美 | 允许人工标注，不强制校验 | 历史一定可追溯 |
+| 手续费不总是可计算 | 允许手动录入 | 手续费一定可算 |
+| 回款存在延迟 | 允许标记「未回款」 | 回款一定及时 |
+| 预付款跨项目 | 允许人工分配 | 资金一定对应 |
+| 对账有差异 | 展示差异，人工裁决 | 系统=账单 |
+
+### 4.5 业务口径与边界场景定义
+
+> 本节定义系统中所有关键业务指标的计算口径，确保管理可审计、工程可实现。
+
+#### 4.5.1 KPI 口径定义
+
+| 指标 | Phase 1 口径（观察用） | Phase 2 口径（考核用） | 说明 |
+|------|----------------------|----------------------|------|
+| CPL | `ad_spend_daily.spend / daily_report.conversions` | `daily_report.real_spend / daily_report.conversions_final` | 单粉成本 |
+| 日消耗 | `ad_spend_daily.spend` | `daily_report.real_spend` | 当日广告消耗 |
+| 日进粉 | `daily_report.conversions` | `daily_report.conversions_final` | 当日转化数 |
+
+**Phase 1 特别说明**：
+- 投手 KPI（CPL）在 Phase 1 仅用于「观察与沟通」，**不用于问责与考核**
+- 系统可高亮异常，但不触发处罚逻辑
+- 主管使用 CPL 发现问题 → 沟通调整 → 记录过程
+
+#### 4.5.2 边界场景处理规则
+
+| 场景 | 系统行为 | Phase 1 | Phase 2 |
+|------|---------|---------|---------|
+| `conversions = 0` | CPL 显示 `"--"` | 不参与排序、不触发异常 | 标记「零转化」 |
+| `conversions < 5` | CPL 标记 `"低量"` | 不触发异常、仅提示 | 触发复核建议 |
+| 新项目前 7 天 | 进入「冷启动期」 | CPL 不考核 | CPL 参考不考核 |
+| `spend = 0` | 跳过该日统计 | 不计入周期汇总 | 不计入周期汇总 |
+
+**代码实现规则**：
+```python
+# 禁止直接计算可能除零的 CPL
+def calculate_cpl(spend: Decimal, conversions: int) -> str | Decimal:
+    if conversions == 0:
+        return "--"  # 显示占位符，禁止返回 0 或 Infinity
+    if conversions < 5:
+        return f"{spend / conversions:.2f} (低量)"
+    return spend / conversions
+```
+
+#### 4.5.3 收入与成本口径
+
+**收入模型**：
+
+| 业务类型 | 收入公式 | 单价来源 | 说明 |
+|---------|---------|---------|------|
+| 自投项目 | `conversions × project.unit_price` | project 表 | 按粉计费 |
+| 代投项目 | `conversions × 合同单价` | 手动录入 | 按合同计费 |
+
+**成本模型**：
+
+| 成本项 | Phase 1 口径 | Phase 2 口径 | SoT 表 |
+|--------|-------------|-------------|--------|
+| 广告消耗 | `ad_spend_daily.spend` | `daily_report.real_spend` | ad_spend_daily |
+| 代理手续费 | 不计入（手动记录） | `spend × agent_fee_rate` | agent_fee_rates |
+| 其他成本 | 不计入 | 手动录入 | project_costs |
+
+**Phase 1 特别说明**：
+- `project.unit_price` 允许为空，此时收入显示 `"待定"`
+- 成本仅使用消耗，不含手续费
+- 盈亏用于「观察」，不用于「结算」
+
+#### 4.5.4 盈亏计算公式
+
+| 指标 | Phase 1 公式（观察用） | Phase 2 公式（结算用） |
+|------|----------------------|----------------------|
+| 预计收入 | `conversions × unit_price` | `conversions_final × unit_price` |
+| 预计成本 | `SUM(ad_spend_daily.spend)` | `SUM(real_spend) + 手续费` |
+| 预计毛利 | `预计收入 - 预计成本` | `确认收入 - 确认成本` |
+| 毛利率 | `毛利 / 收入 × 100%` | `毛利 / 收入 × 100%` |
+
+**注意**：
+- Phase 1 盈亏用于「让老板看到趋势」，不用于「月度结算」
+- Phase 2 盈亏用于「月度锁定结算」，需财务确认
+
+#### 4.5.5 资金口径定义
+
+| 资金指标 | 计算公式 | SoT 表 | 说明 |
+|---------|---------|--------|------|
+| 账户余额 | `SUM(topup_record.amount) - SUM(ad_spend_daily.spend)` | topup_record + ad_spend_daily | 可用余额 |
+| 累计充值 | `SUM(topup_record.amount WHERE status='completed')` | topup_record | 已完成充值 |
+| 累计消耗 | `SUM(ad_spend_daily.spend)` | ad_spend_daily | 权威消耗源 |
+| 累计回款 | `SUM(receivable.amount WHERE status='received')` | receivable | 已回款总额 |
+| 应收款 | `SUM(conversions × unit_price) - 累计回款` | daily_report + receivable | 待回款金额 |
+| 资金占用 | `累计充值 - 累计回款` | 计算值 | 资金被占用 |
+
+**回款 SoT 定义（receivable 表）**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| project_id | UUID | 关联项目（外键） |
+| amount | DECIMAL | 单笔回款金额 |
+| status | ENUM | `received`=已回款, `pending`=待回款 |
+| received_at | TIMESTAMP | 回款时间（status=received 时必填） |
+| source | STRING | 回款来源（客户名称/转账单号） |
+| recorded_by | UUID | 录入人（finance 角色） |
+
+> **已回款的唯一事实源**：`receivable.amount WHERE status='received'`
+> Phase 1 阶段，receivable 表由财务手工录入；Phase 2 阶段，可与财务系统对接。
+
+**数据权威性（SoT）**：
+- **消耗的唯一事实源**：`ad_spend_daily.spend`（Phase 1）或 `daily_report.real_spend`（Phase 2），详见 §4.5.7
+- **进粉的唯一事实源**：`daily_report.conversions`（Phase 1）或 `daily_report.conversions_final`（Phase 2），详见 §4.5.7
+- **充值的唯一事实源**：`topup_record.amount`
+
+> **字段级 SoT 约束**：SoT 必须精确到字段，禁止表级声明。计费/结算必须读取 Phase 对应的字段。
+
+#### 4.5.6 数据来源与权威性
+
+| 数据表 | 数据来源 | 录入方式 | 权威性说明 |
+|--------|---------|---------|-----------|
+| ad_spend_daily | 代理商后台 | Excel 导入 / 手工录入 | 消耗的唯一事实源 |
+| daily_report | 投手填报 | 系统填报 | 进粉的唯一事实源 |
+| topup_record | 财务录入 | 系统录入 | 充值的唯一事实源 |
+| receivable | 财务录入 | 手工录入 / Excel 导入 | 回款的唯一事实源 |
+| project | 管理员维护 | 系统录入 | 项目信息来源 |
+
+**数据冲突处理**：
+
+| 冲突场景 | 处理规则 | 说明 |
+|---------|---------|------|
+| `ad_spend_daily.spend ≠ daily_report.spend` | 以 `ad_spend_daily` 为准 | 消耗以代理商数据为准 |
+| `daily_report.conversions ≠ CRM 数据` | 以 `daily_report` 为准 | 进粉以投手填报为准（Phase 1） |
+| 同一天同一账户多条记录 | 展示差异，人工裁决 | 禁止系统自动合并 |
+
+**Phase 2 升级**：
+- 进粉以 `conversions_final`（supervisor 或 finance 确认）为准
+- 消耗以 `real_spend`（supervisor 或 finance 确认）为准
+
+> **角色映射**：此处「确认」操作由 `supervisor` 或 `finance` 角色执行，具体由项目确定。
+
+#### 4.5.7 SoT Phase 迁移规则
+
+> 本节明确 SoT（唯一事实源）在 Phase 切换时的字段变化规则。
+
+**进粉 SoT 迁移**：
+
+| Phase | SoT 字段 | 录入角色 | 用途 |
+|-------|----------|----------|------|
+| Phase 1 | `daily_report.conversions` | pitcher | 观察、高亮、沟通 |
+| Phase 2 | `daily_report.conversions_final` | supervisor/finance | 计费、考核、结算 |
+
+**消耗 SoT 迁移**：
+
+| Phase | SoT 字段 | 数据来源 | 用途 |
+|-------|----------|----------|------|
+| Phase 1 | `ad_spend_daily.spend` | Excel 导入 / 手工录入 | 观察、高亮、沟通 |
+| Phase 2 | `daily_report.real_spend` | supervisor/finance 确认 | 成本核算、结算 |
+
+**迁移触发条件**：
+```
+Phase 2 SoT 启用条件：
+1. PHASE2_DAILY_REPORT_REQUIRED = true
+2. daily_report.conversions_final 已填写
+3. daily_report.real_spend 已填写
+```
+
+**向后兼容规则**：
+- Phase 2 启用后，`conversions` 和 `spend` 仍保留，用于趋势对比
+- 计费和结算仅使用 `conversions_final` 和 `real_spend`
+- 若 Phase 2 字段为空，降级使用 Phase 1 字段并标记「待确认」
+
+**计费/结算读取约束（强制）**：
+```python
+# Phase 2 计费/结算代码约束
+def get_conversions_for_billing(report: DailyReport, phase: str) -> int:
+    if phase == "phase2":
+        # Phase 2：必须读取 conversions_final，禁止读取 conversions
+        if report.conversions_final is None:
+            raise ValueError("Phase 2 计费必须使用 conversions_final")
+        return report.conversions_final
+    else:
+        # Phase 1：读取 conversions（观察用，不用于结算）
+        return report.conversions
+```
+
+---
+
+## 第五章 核心业务不变量
+
+### BI-01: 责任归属必须明确
+
+**每个项目必须有且仅有一个项目负责人。**
+
+- 项目负责人对项目盈亏负责
+- 项目负责人是资金使用效率的责任人
+- 项目负责人变更必须有记录
+
+**映射**: 第二章 责任模型
+
+### BI-02: 资金流转必须有记录
+
+**每一笔资金流转必须有完整记录。**
+
+- 充值申请必须记录申请人、金额、理由
+- 审批结果必须记录审批人、时间、状态
+- 打款必须关联审批记录
+
+**映射**: 第四章 §4.1
+
+### BI-03: 人工裁决优先于系统判断
+
+**所有需要「决策」的场景，必须由人做出。**
+
+- 系统可以「建议」，但不能「强制」（Phase 1）
+- 系统可以「阻断」，但必须人确认（Phase 2）
+- 异常场景必须留有人工处理入口
+
+**映射**: 第四章 §4.3
+
+### BI-04: 账务修正通过红冲（Phase 2）
+
+**已锁定的账务记录不可直接修改，只能通过红冲修正。**
+
+- 禁止 UPDATE 已锁定的账务记录
+- 禁止 DELETE 已锁定的账务记录
+- 修正唯一方式：创建反向 REVERSAL 记录
+
+**Phase 2 完整启用时强制执行。**
+
+**映射**: 第九章 INV-001
+
+---
+
+## 第六章 MVP 系统模块与 10 个核心页面
+
+### 6.1 模块与页面对应关系
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     MVP 系统模块架构                                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  【老板视角模块】                                                        │
+│  ├── 页面 1：老板驾驶舱 (Dashboard)                                     │
+│  ├── 页面 2：资金总览 (Fund Overview)                                   │
+│  └── 页面 3：项目盈亏看板 (Project P&L)                                 │
+│                                                                         │
+│  【流程管理模块】                                                        │
+│  ├── 页面 4：充值审批 (Topup Approval)                                  │
+│  ├── 页面 5：日报审核 (Daily Report Review)                             │
+│  └── 页面 6：周度简报 (Weekly Brief)                                    │
+│                                                                         │
+│  【数据管理模块】                                                        │
+│  ├── 页面 7：项目管理 (Project Management)                              │
+│  ├── 页面 8：投手管理 (Media Buyer Management)                          │
+│  └── 页面 9：消耗明细 (Spend Detail)                                    │
+│                                                                         │
+│  【结算模块】                                                            │
+│  └── 页面 10：月度结算 (Monthly Settlement)                             │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 6.2 每个页面的职责边界
+
+| # | 页面 | 解决什么问题 | 核心数据 |
+|---|------|-------------|----------|
+| 1 | 老板驾驶舱 | 今天公司怎么样？ | 总消耗、总进粉、整体CPL、预计毛利 |
+| 2 | 资金总览 | 钱在哪里？能收回多少？ | 累计充值、累计消耗、余额、应收款 |
+| 3 | 项目盈亏看板 | 哪个项目赚/亏？ | 消耗、进粉、CPL、毛利、负责人 |
+| 4 | 充值审批 | 该不该批这笔钱？ | 申请金额、理由、当前余额、审批状态 |
+| 5 | 日报审核 | 投手今天干得怎样？ | 消耗、进粉、CPL、异常标记 |
+| 6 | 周度简报 | 项目这周进展如何？ | 周消耗、周进粉、问题、下周计划 |
+| 7 | 项目管理 | 有哪些项目？谁负责？ | 项目名、负责人、预算、目标 |
+| 8 | 投手管理 | 有哪些投手？负责什么？ | 姓名、团队、主管、分配账户 |
+| 9 | 消耗明细 | 某天/某账户消耗多少？ | 日期、账户、消耗、进粉、CPL |
+| 10 | 月度结算 | 这个月赚了还是亏了？ | 总消耗、总进粉、毛利、锁定状态 |
+
+### 6.3 页面与责任模型的映射
+
+| 责任问题 | 对应页面 | 系统如何支撑 |
+|----------|----------|-------------|
+| 谁对钱负责？ | 页面 4（充值审批） | 记录申请人、审批人、审批结果 |
+| 钱在哪里？ | 页面 2（资金总览） | 展示充值、消耗、余额、应收 |
+| 谁对结果负责？ | 页面 7（项目管理） | 展示项目负责人 |
+| 项目赚钱吗？ | 页面 3（盈亏看板） | 展示项目盈亏与负责人 |
+| 投手干得怎样？ | 页面 5（日报审核） | 主管审核，高亮异常 |
+| 需要纠偏吗？ | 页面 1（驾驶舱） | 展示异常项目数、待审批数 |
+
+### 6.4 开发优先级
+
+**P0 - 第一批上线（核心 MVP）**：
+```
+├── 页面 1：老板驾驶舱
+├── 页面 2：资金总览
+├── 页面 3：项目盈亏看板
+└── 页面 7：项目管理
+```
+
+**P1 - 第二批上线（流程核心）**：
+```
+├── 页面 4：充值审批
+├── 页面 5：日报审核
+└── 页面 9：消耗明细
+```
+
+**P2 - 第三批上线（完善功能）**：
+```
+├── 页面 6：周度简报
+├── 页面 8：投手管理
+└── 页面 10：月度结算
+```
+
+### 6.5 核心页面最小字段集（Phase 1）
+
+> 以下为 Phase 1 每个页面的最小必须字段，**禁止在 Phase 1 引入表中未列出的字段**。
+
+#### 页面 1：老板驾驶舱
+
+| 字段 | 来源 | 口径 | 必须 |
+|------|------|------|------|
+| 本月总消耗 | ad_spend_daily | SUM(spend) | ✓ |
+| 本月总进粉 | daily_report | SUM(conversions) | ✓ |
+| 整体 CPL | 计算 | 总消耗 / 总进粉（§4.5.2 规则） | ✓ |
+| 预计毛利 | 计算 | §4.5.4 公式 | ✓ |
+| 活跃项目数 | project | COUNT(status='active') | ✓ |
+| 异常项目数 | 计算 | CPL > target × 1.3 | ✓ |
+| 待审批充值数 | topup_request | COUNT(status='pending') | ✓ |
+
+#### 页面 2：资金总览
+
+| 字段 | 来源 | 口径 | 必须 |
+|------|------|------|------|
+| 累计充值 | topup_record | SUM(amount WHERE status='completed') | ✓ |
+| 累计消耗 | ad_spend_daily | SUM(spend) | ✓ |
+| 当前余额 | 计算 | §4.5.5 公式 | ✓ |
+| 应收款 | 计算 | §4.5.5 公式 | ✓ |
+| 资金占用 | 计算 | §4.5.5 公式 | ○ |
+
+#### 页面 3：项目盈亏看板
+
+| 字段 | 来源 | 口径 | 必须 |
+|------|------|------|------|
+| 项目名 | project | name | ✓ |
+| 项目负责人 | project | owner_id → user.name | ✓ |
+| 累计消耗 | ad_spend_daily | SUM(spend) | ✓ |
+| 累计进粉 | daily_report | SUM(conversions) | ✓ |
+| CPL | 计算 | §4.5.1 公式 | ✓ |
+| 预计毛利 | 计算 | §4.5.4 公式 | ✓ |
+| 异常标记 | 计算 | CPL > target × 1.3 | ○ |
+
+#### 页面 5：日报审核
+
+| 字段 | 来源 | 口径 | 必须 |
+|------|------|------|------|
+| 日期 | daily_report | date | ✓ |
+| 投手 | daily_report | pitcher_id → user.name | ✓ |
+| 项目 | daily_report | project_id → project.name | ✓ |
+| 消耗 | daily_report | spend | ✓ |
+| 进粉 | daily_report | conversions | ✓ |
+| CPL | 计算 | §4.5.1 公式 | ✓ |
+| 异常标记 | 计算 | §4.5.2 规则 | ○ |
+
+> ✓ = 必须字段，○ = 可选字段
+> 其他页面字段集参见 MVP_PHASE_DESIGN.md
+
+---
+
+## 第七章 AI 编码防幻觉原则
+
+### AH-01: 禁止假设数据一致
+
+**禁止**：
+- AI 不得假设「系统消耗 = 代理商账单」
+- AI 不得假设「所有项目有预算」
+- AI 不得假设「所有账户有分配投手」
+
+**必须**：
+- 遇到数据缺失，标记为「待人工确认」或允许为空
+- 遇到数据不一致，展示差异而非强制校验
+- 允许字段为空，不强制 NOT NULL（除关键字段）
+
+### AH-02: 禁止自动做管理裁决
+
+**禁止**：
+- AI 不得生成「自动拒绝充值申请」的代码
+- AI 不得生成「自动暂停投手账户」的代码
+- AI 不得生成「自动终止项目」的代码
+
+**必须**：
+- 所有「决策」场景，展示信息 + 等待人操作
+- 最多生成「建议」，不生成「强制」
+- Phase 1 的所有约束都是「提示」而非「阻断」
+
+### AH-03: 禁止引入 SoT 未定义的概念
+
+**禁止**：
+- AI 不得创建 DATA_SCHEMA 未定义的字段
+- AI 不得创建 MVP_PHASE_DESIGN 未定义的页面
+- AI 不得创建 ERROR_CODES_SOT 未定义的错误码
+
+**必须**：
+- 发现 SoT 缺失，停止生成代码
+- 标注缺失信息，询问用户
+- 不自行补充「合理推测」
+
+### AH-04: 必须遵循 Phase 1 软性原则
+
+**禁止**：
+- 在 Phase 1 代码中实现「强制阻断」
+- 在 Phase 1 代码中实现「自动惩罚」
+- 在 Phase 1 代码中实现「必填强制」
+
+**必须**：
+- Phase 1 的约束 = 提示 + 高亮 + 记录
+- Phase 2 功能用 feature flag 控制，默认关闭
+- 阻断功能的代码需注释「Phase 2 启用」
+
+### AH-05: 遇到歧义必须停止并询问
+
+**触发条件**：
+- 业务流程中未覆盖的场景
+- 多个 SoT 文档有冲突
+- 用户需求与 Phase 1 原则冲突
+
+**处理方式**：
+- 停止生成代码
+- 列出歧义点
+- 询问用户如何处理
+
+---
+
+## 第八章 SoT 裁判链与文档索引
+
+### 8.1 裁判链优先级
 
 当多份文档对同一概念有不同定义时，按以下优先级解决冲突：
 
 ```
-0. MASTER.md (本文档)           → 架构宪法，最高优先级
-1. STATE_MACHINE.md            → 状态定义与转换
-2. DATA_SCHEMA.md              → 表结构与字段
-3. LEDGER_SOT.md               → 账本规则
-4. BUSINESS_RULES.md           → 业务规则
-5. API_SOT.md                  → API 定义
-6. ERROR_CODES_SOT.md          → 错误码
-7. AUTH_SPEC.md                → 认证授权
-8. DAILY_REPORT_SOT.md         → 日报规则
-9. RECONCILIATION_SOT.md       → 对账规则
-10. TRANSFER_SOT.md            → 转账规则
-11. SUBAGENT_PROTOCOL.md       → AI Agent 协议定义
-12. AGENT_SECURITY_SPEC.md     → AI Agent 安全规范
-13. AGENT_ORCHESTRATION_PIPELINE.md → AI Agent 编排流程
+0. MASTER.md (本文档)                    → 架构宪法，最高优先级
+1. BUSINESS_FLOW_MANAGEMENT.md          → 业务流程与责任模型
+2. MVP_PHASE_DESIGN.md                  → Phase 边界与页面定义
+3. STATE_MACHINE.md                     → 状态定义与转换
+4. DATA_SCHEMA.md                       → 表结构与字段
+5. LEDGER_SOT.md                        → 账本规则（Phase 2）
+6. BUSINESS_RULES.md                    → 业务规则
+7. API_SOT.md                           → API 定义
+8. ERROR_CODES_SOT.md                   → 错误码
+9. AUTH_SPEC.md                         → 认证授权
 ```
 
-**冲突解决规则**
+### 8.2 文档索引
+
+**Tier 1: 架构宪法**
+- **docs/1.overview/MASTER.md** v4.0 - 系统唯一入口（本文档）
+- **dataset/out/BUSINESS_FLOW_MANAGEMENT.md** - 业务流程优化方案
+- **dataset/out/MVP_PHASE_DESIGN.md** - MVP 分阶段执行方案
+
+**Tier 2: 单源真相 (docs/2.sot/)**
+- **STATE_MACHINE.md** - 状态定义与转换规则
+- **DATA_SCHEMA.md** - 数据库表结构与字段定义
+- **LEDGER_SOT.md** - 双账本规则与计费公式（Phase 2）
+- **BUSINESS_RULES.md** - 业务规则与约束
+- **API_SOT.md** - API 端点定义与规范
+- **ERROR_CODES_SOT.md** - 错误码定义
+- **AUTH_SPEC.md** - 认证授权规范
+
+**Tier 3: 实施指南 (docs/3.dev-guides/)**
+- **BACKEND_DEV_GUIDE.md** - 后端开发指南
+- **FRONTEND_RULES.md** - 前端开发规则
+- **TESTING_GUIDE.md** - 测试指南
+
+### 8.3 冲突解决规则
+
 1. 高优先级文档的定义覆盖低优先级文档
 2. 发现冲突时，必须在代码中标注冲突及解决方案
-3. 同优先级文档冲突时，由系统架构师裁决（需提交 RFC）
+3. 同优先级文档冲突时，由系统架构师裁决
 4. 无法解决时，停止生成代码并询问用户
 
-**裁判链强制执行**
+**裁判链强制执行**：
 - 禁止引用低优先级文档覆盖高优先级文档
-- 禁止"灵活处理"或"自行判断"
-
-**来源**: `CLAUDE.md` v3.0
+- 禁止「灵活处理」或「自行判断」
 
 ---
 
-## 第七章 代码约束
+## 第九章 技术约束（Phase 2 完整启用）
 
-### 7.1 禁止事项
+> 本章内容在 Phase 1 简化执行，Phase 2 完整启用。
 
-参见第二章 INV-001 至 INV-004 的所有禁止条款。
+### INV-001: 双账本架构
 
-**额外禁止事项**
-- 禁止创建 SoT 未定义的字段、状态、角色、API
-- 禁止在代码中硬编码状态枚举（必须引用 STATE_MACHINE.md）
-- 禁止自定义错误码（必须来自 ERROR_CODES_SOT.md）
+**Phase 1 简化**：按项目记账，不强制 PROJECT/SUPPLIER 分离
 
-### 7.2 强制要求
+**Phase 2 完整启用**：
 
-**TypeScript strict mode**
-- `tsconfig.json` 必须设置 `strict: true`
-- 禁止使用 `any` 类型
-- 所有 API 响应必须定义 Zod schema
+- PROJECT 账本：仅记录收入（客户充值、粉数计费）
+- SUPPLIER 账本：仅记录成本（供应商充值、真实消耗）
+- 禁止混合：任何角色不得在单一账本中同时记录收入与成本
 
-**Result 模式错误处理**
-- 业务逻辑禁止 `throw Error`
-- 必须返回 `Result<T, E>`
+**余额计算公式**：
+```
+balance = SUM(所有 ledger_entries.amount)
+```
 
-**禁止魔法数字**
-- 硬编码数值必须定义为命名常量
-- 常量必须注释来源业务规则编号
+### INV-002: 三数据流分离
 
-**测试覆盖率 80%+**
-- 新增功能必须包含单元测试
-- 状态机转换必须测试所有允许和禁止的路径
-- 账本操作必须测试所有类型
+**Phase 1 简化**：日报 + 消耗，不强制 raw/real/final 分离
 
----
+**Phase 2 完整启用**：
 
-## 第八章 关键决策条款
+| 数据流 | 字段 | 录入角色 | 用途 |
+|--------|------|----------|------|
+| Raw | conversions_raw, raw_spend | pitcher（投手） | 趋势风控 |
+| Real | real_spend | supervisor（主管）或 finance（财务） | 成本核算 |
+| Final | conversions_final | supervisor（主管）或 finance（财务） | 计费 |
 
-### 8.1 开发新功能
+> **角色映射说明**：文档中出现的「运营」指代 `supervisor` 或 `finance` 角色，
+> 具体由项目确定。禁止新增角色，必须复用 §2.4 定义的 7 角色。
 
-1. 查询对应 SoT 文档（按裁判链优先级）
-2. 确认所有字段来自 `DATA_SCHEMA.md`
-3. 确认所有状态转换符合 `STATE_MACHINE.md`
-4. 确认所有错误码来自 `ERROR_CODES_SOT.md`
-5. 涉及账本操作，必须先读 `LEDGER_SOT.md`
-6. 涉及权限控制，必须先读 `AUTH_SPEC.md`
-7. 涉及三数据流，必须先读 `DAILY_REPORT_SOT.md`
+### INV-003: 状态机流转
 
-### 8.2 修改现有代码
+**Phase 1 简化**：三状态（待审核 → 已审核 → 已锁定）
 
-1. 定位相关 SoT 文档
-2. 检查修改是否违反 INV-001 至 INV-004
-3. 检查是否需要更新测试
-4. 检查是否需要 Alembic 迁移
-5. 检查是否需要更新 API 文档
-6. 检查是否需要更新 RLS 策略
+**Phase 2 完整启用**：8 状态机
 
-### 8.3 SoT 未覆盖场景
+```
+raw_submitted → trend_pending → trend_ok → final_pending
+             → final_confirmed → final_locked
 
-1. 标注缺失信息
-2. 停止生成代码
-3. 询问用户是否提交 RFC
-4. 扩展 SoT 必须经系统架构师审批
+异常路径：trend_pending → trend_flagged → trend_resolved → final_pending
+```
 
----
+### INV-004: 职责分离
 
-## 第九章 文档索引
+**Phase 1 简化**：按角色控制可见性
 
-### Tier 1: 架构宪法
+**Phase 2 完整启用**：
 
-- **docs/1.overview/MASTER.md** v3.6 - 系统唯一入口（本文档）
-- **docs/1.overview/PROJECT.md** v1.2 - 业务定义与边界声明
+- 禁止单一用户同时拥有 pitcher 和 supervisor 角色
+- 禁止单一用户同时拥有 supervisor 和 finance 角色
+- 财务执行 REVERSAL 必须提供外部审批单号
 
-### Tier 2: 单源真相 (docs/2.sot/)
+### INV-005: Phase 2 阻断状态定义
 
-**首次开发必读（按优先级顺序）**
-1. **docs/2.sot/STATE_MACHINE.md** - 状态定义与转换规则
-2. **docs/2.sot/DATA_SCHEMA.md** - 数据库表结构与字段定义
-3. **docs/2.sot/LEDGER_SOT.md** - 双账本规则与计费公式
-4. **docs/2.sot/BUSINESS_RULES.md** - 业务规则与约束
+> 本节定义 Phase 2 启用后，系统阻断触发的状态变化和解除方式。
 
-**核心 SoT**
-- **docs/2.sot/API_SOT.md** - API 端点定义与规范
-- **docs/2.sot/ERROR_CODES_SOT.md** - 错误码定义
-- **docs/2.sot/AUTH_SPEC.md** - 认证授权规范
-- **docs/2.sot/RLS_POLICIES_SOT.md** - 行级安全策略
+**阻断类型与状态**：
 
-**领域 SoT**
-- **docs/2.sot/DAILY_REPORT_SOT.md** - 日报数据流规则
-- **docs/2.sot/RECONCILIATION_SOT.md** - 对账规则
-- **docs/2.sot/TRANSFER_SOT.md** - 转账规则
+| 阻断类型 | 触发条件 | 状态变化 | 解除方式 |
+|---------|---------|---------|---------|
+| 充值阻断 | 申请金额 > 剩余预算 | `topup_request.status = 'blocked_budget'` | 老板调整预算 + 重新审批 |
+| 项目阻断 | 累计消耗 > 项目预算 | `project.status = 'budget_exceeded'` | 老板调整预算 + 手动解除 |
+| 日报阻断 | 连续 3 天 CPL > target × 1.5 | `daily_report.alert_level = 'critical'` | 主管确认 + 调整策略 |
 
-### Tier 3: 实施指南 (docs/3.dev-guides/)
+**阻断记录表 `block_events`**：
 
-**架构与设计**
-- **docs/3.dev-guides/DDD_API_ARCHITECTURE.md** - DDD 架构设计
-- **docs/3.dev-guides/API_DEVELOPMENT_FLOW.md** - API 开发流程
-- **docs/3.dev-guides/API_RULEBOOK.md** - API 规则手册
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID | 主键 |
+| block_type | ENUM | 阻断类型（budget/performance/manual） |
+| entity_type | STRING | 被阻断实体类型 |
+| entity_id | UUID | 被阻断实体 ID |
+| reason | TEXT | 阻断原因 |
+| blocked_by | UUID | 触发人（系统则为 null） |
+| blocked_at | TIMESTAMP | 阻断时间 |
+| resolved_by | UUID | 解除人 |
+| resolved_at | TIMESTAMP | 解除时间 |
 
-**开发指南**
-- **docs/3.dev-guides/BACKEND_DEV_GUIDE.md** - 后端开发指南
-- **docs/3.dev-guides/BACKEND_SETUP.md** - 后端环境设置
-- **docs/3.dev-guides/FRONTEND_RULES.md** - 前端开发规则
-- **docs/3.dev-guides/FRONTEND_SETUP.md** - 前端环境设置
-- **docs/3.dev-guides/DEVELOPMENT_STANDARDS.md** - 开发标准
-
-**质量保证**
-- **docs/3.dev-guides/TESTING_GUIDE.md** - 测试指南
-
-### Tier 4: 架构层 (docs/4.architecture/)
-
-**系统架构视图**
-- **docs/4.architecture/ARCH_LAYER_OVERVIEW.md** - 架构层总览
-- **docs/4.architecture/SYSTEM_CONTEXT_VIEW.md** - 系统上下文视图（C4 Level 1）
-- **docs/4.architecture/BOUNDED_CONTEXT_MAP.md** - DDD 限界上下文映射
-- **docs/4.architecture/SERVICE_COMPONENT_VIEW.md** - 服务组件视图（C4 Level 2/3）
-- **docs/4.architecture/DATA_FLOW_VIEW.md** - 数据流视图
-- **docs/4.architecture/ERROR_HANDLING_STRATEGY.md** - 错误处理策略
-- **docs/4.architecture/PERFORMANCE_AND_CAPACITY_GUIDE.md** - 性能与容量规划
-
-### Tier 5: 基础设施层 (docs/5.infrastructure/)
-
-**基础设施规范**
-- **docs/5.infrastructure/INFRA_OVERVIEW.md** - 基础设施层总览
-- **docs/5.infrastructure/CI_PIPELINE_SPEC.md** - CI/CD 流水线规范
-- **docs/5.infrastructure/DEPLOYMENT_PIPELINE_SPEC.md** - 部署流水线规范
-- **docs/5.infrastructure/ENVIRONMENT_VARIABLES_GUIDE.md** - 环境变量指南
-- **docs/5.infrastructure/OBSERVABILITY_GUIDE.md** - 可观测性指南
-
-### Tier 6: AI Agent 层 (docs/6.agent-layer/)
-
-**AI Agent 系统规范**
-- **docs/6.agent-layer/AGENT_LAYER_OVERVIEW.md** - Agent 层总览与定位
-- **docs/6.agent-layer/SUBAGENT_PROTOCOL.md** - Sub-Agent 协议定义（裁判链优先级 #11）
-- **docs/6.agent-layer/AGENT_SECURITY_SPEC.md** - Agent 安全规范（裁判链优先级 #12）
-- **docs/6.agent-layer/AGENT_ORCHESTRATION_PIPELINE.md** - Agent 编排流程（裁判链优先级 #13）
-- **docs/6.agent-layer/CODEX_LOOP_SPEC.md** - Codex Loop 规范（代码级 Agent 操作）
-- **docs/6.agent-layer/AGENT_VERSIONING_RULES.md** - Agent 版本管理规则
-- **docs/6.agent-layer/AGENT_SKILL_REGISTRY.md** - Agent Skill 注册表
-
-### 快速导航
-
-**在 Cursor 中使用**:
-- 使用 `@file:docs/1.overview/MASTER.md` 引用本文档
-- 使用 `@codebase docs/2.sot/` 搜索 SoT 文档
-- 使用 `@file:docs/2.sot/STATE_MACHINE.md` 引用特定 SoT 文档
+**Phase 1 行为**：
+- Phase 1 不触发阻断
+- 系统只记录「应该阻断」的事件，但不执行
+- 管理者可查看「如果是 Phase 2，会发生什么」
 
 ---
 
 ## 第十章 最终裁决
 
 1. **信息不在 SoT 中** → 停止生成代码 → 标注缺失 → 询问用户
-2. **发现文档冲突** → 引用裁判链 → 标注冲突 → 无法解决则提交 RFC
-3. **禁止直接修改 models/** → 必须检查 DATA_SCHEMA.md → Alembic 迁移 → DBA 审核
-4. **禁止绕过状态机** → 状态变更必须遵循前置条件
-5. **禁止混合账本** → PROJECT 与 SUPPLIER 独立
-6. **禁止终态直接修改** → 终态后唯一方式为红冲
-7. **禁止违反 BI-01 至 BI-05** → 业务不可变量强制执行
-8. **禁止违反 D-01 至 D-06** → 永久禁止行为不可豁免
-9. **禁止违反 FZ-01 至 FZ-03** → Freeze 期间不可修改受保护内容
+2. **发现文档冲突** → 引用裁判链 → 标注冲突 → 无法解决则询问
+3. **Phase 1 禁止阻断** → 只能提示、高亮、记录，不能强制
+4. **人工裁决优先** → 系统可建议，不可替代人做决策
+5. **数据不完美是常态** → 允许缺失、不一致，展示差异由人裁决
+6. **责任必须明确** → 每个项目必须有负责人
+7. **资金必须有记录** → 每笔充值必须有申请、审批、打款记录
 
 ---
 
@@ -703,17 +943,85 @@ MASTER.md (本文档) > STATE_MACHINE.md > DATA_SCHEMA.md > API_SOT.md
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
 | v3.0 | 2025-11-24 | 初始版本，基于 SoT Freeze v1.0 | 系统架构师 |
-| v3.1 | 2025-11-24 | 修复红冲符号错误，添加余额计算公式 | 系统架构师 |
-| v3.2 | 2025-11-24 | 补充日报计费触发规则 | 系统架构师 |
-| v3.3 | 2025-11-25 | 对齐 CLAUDE.md v3.0，完善裁判链 | 系统架构师 |
-| v3.4 | 2025-11-25 | 整合 PROJECT.md v1.2：业务不可变量、永久禁止行为、Freeze 机制 | Master Architect |
-| v3.5 | 2025-11-27 | 扩展至 6 层架构：新增 Agent Layer（第 6 层），扩展裁判链至 13 项，更新文档索引 | Master Architect |
-| v3.6 | 2025-12-01 | 新增第五章附录「规范变更管理 (OpenSpec)」：OS-01 至 OS-04，确立 OpenSpec 为唯一变更通道 | Master Architect |
+| v3.6 | 2025-12-01 | 新增 OpenSpec 规范变更管理 | Master Architect |
+| v4.0 | 2025-12-22 | 重大重构：以管理责任为核心，新增 Phase 边界、责任模型、AI 防幻觉原则 | Master Architect |
+| v4.1 | 2025-12-22 | 补丁修复：新增 §4.5 业务口径定义、§6.5 最小字段集、§9.5 阻断状态定义 | Master Architect |
+| v4.2 | 2025-12-22 | P0 逻辑修复：Phase 1 问责冲突、daily_report 字段边界、运营角色映射、SoT 迁移规则 | Master Architect |
+| v4.3 | 2025-12-22 | P0 一致性修复：daily_report 字段命名统一、SoT 字段级消歧、计费/结算读取约束 | Master Architect |
+| v4.4 | 2025-12-22 | P0 最终修复：Phase 1 隐性问责消除、日报消耗与平台消耗 SoT 消歧、已回款 SoT 明确 | Master Architect |
+
+**v4.4 P0 最终修复**：
+- §1.2 新增"Phase 1 责任定义说明"，明确"负责"在 Phase 1 = "对数据可解释"
+- §4.1 daily_report.spend 说明改为"非消耗 SoT"，新增消耗口径区分表
+- §4.5.5 新增"累计回款"指标和 receivable 表完整定义
+- §4.5.6 补充 receivable 表为"回款的唯一事实源"
+
+**v4.3 P0 一致性修复**：
+- §4.1 必须字段表：`project` → `project_id`，补充 `pitcher_id`
+- §4.1 新增字段命名规则：外键必须使用 `_id` 后缀
+- §4.5.5 SoT 声明：表级 → 字段级，并引用 §4.5.7
+- §4.5.7 新增计费/结算读取约束代码示例
+
+**v4.2 P0 修复**：
+- §2.2 表格增加 Phase 区分，Phase 1 后果改为"沟通/记录"
+- §2.5 表格增加 Phase 权力区分，Phase 1 主管无惩罚权
+- §4.1 新增 daily_report 字段 Phase 边界说明
+- §9 INV-002 "运营"角色映射为 supervisor/finance
+- §4.5.7 新增 SoT Phase 迁移规则
+
+**v4.1 补丁变化**：
+- 新增 §4.5 业务口径与边界场景定义（KPI/收入/成本/盈亏/资金口径）
+- 新增 §4.5.2 边界场景处理规则（0 转化/低量/冷启动）
+- 新增 §4.5.6 数据来源与权威性（SoT 表定义）
+- 新增 §6.5 核心页面最小字段集（Phase 1）
+- 新增 §9.5 Phase 2 阻断状态定义
+- 补充术语：CPL、SoT、冷启动期、低量场景、预计盈亏、确认盈亏
+
+**v4.0 主要变化**：
+- 开篇从「三方资金流转」改为「支撑老板决策」
+- 新增「责任模型」章节（第二章）
+- 新增「Phase 1 / Phase 2 边界」章节（第三章）
+- 新增「项目负责人」角色
+- 新增「AI 编码防幻觉原则」章节（第七章）
+- 原 INV 章节下沉为「Phase 2 完整启用」
+- 裁判链新增 BUSINESS_FLOW_MANAGEMENT.md 和 MVP_PHASE_DESIGN.md
 
 ---
 
-**文档版本**: v3.6
-**最后更新**: 2025-12-01
-**对齐文档**: PROJECT.md v1.2, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Layer Freeze v1.0, CLAUDE.md v3.0
+## 附录 B: Phase 1 功能清单
+
+| 模块 | 功能 | 系统行为 |
+|------|------|----------|
+| 驾驶舱 | 全局概览 | 展示关键指标 |
+| 资金 | 资金总览 | 展示充值、消耗、余额 |
+| 盈亏 | 项目盈亏 | 展示项目盈亏与负责人 |
+| 充值 | 审批流程 | 记录申请、审批，可绕行 |
+| 日报 | 填报与审核 | 高亮异常，可选审核 |
+| 周报 | 项目简报 | 可选提交 |
+| 项目 | 基础管理 | 维护项目信息 |
+| 投手 | 人员管理 | 维护投手信息 |
+| 消耗 | 数据查询 | 查询消耗明细 |
+| 结算 | 月度对账 | 展示差异，可修改 |
+
+---
+
+## 附录 C: Phase 2 功能清单
+
+| 模块 | 功能 | 系统行为 |
+|------|------|----------|
+| 充值 | 强制审批 | 无批准不打款 |
+| 充值 | 预算约束 | 超预算自动阻断 |
+| 日报 | 必须审核 | 主管必须每日审核 |
+| 日报 | 暂停建议 | 连续异常触发建议 |
+| 周报 | 必须提交 | 周五下班前必须提交 |
+| 项目 | 预算必填 | 必须有预算才能启用 |
+| 结算 | 锁定机制 | 锁定后不可修改 |
+| 账务 | 红冲机制 | 修正通过反向记录 |
+
+---
+
+**文档版本**: v4.4
+**最后更新**: 2025-12-22
+**基准文档**: BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
 **维护者**: 系统架构师
-**变更审批**: 所有修改必须经过 RFC 流程
+**变更审批**: 重大修改需经老板确认

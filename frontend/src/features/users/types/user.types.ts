@@ -51,7 +51,7 @@ export interface UpdateUserRequest {
 
 export interface UserListParams {
   role?: UserRole;
-  status?: UserStatus;
+  is_active?: boolean;
   search?: string;
   page?: number;
   page_size?: number;

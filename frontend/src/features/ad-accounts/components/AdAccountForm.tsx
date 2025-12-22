@@ -43,18 +43,18 @@ interface Project {
 
 interface AdAccount {
   id?: number;
-  account_name: string;
+  name: string; // 对齐 init_schema.sql - 账户名称
   platform: "facebook" | "tiktok" | "google" | "twitter";
-  account_id: string;
+  account_code: string; // 对齐 init_schema.sql - 账户代码
   account_type: "personal" | "business";
   currency: string;
   timezone: string;
-  spending_limit: number;
+  spend_limit: number; // 对齐 init_schema.sql - 消耗限额
   daily_budget?: number;
-  account_status: "active" | "paused" | "banned" | "pending";
-  assigned_user_id?: number;
+  status: "new" | "testing" | "active" | "suspended" | "dead" | "archived"; // 对齐 STATE_MACHINE.md
+  owner_id?: string; // 对齐 init_schema.sql - 负责人 (UUID)
   project_id?: number;
-  notes: string;
+  notes?: string;
   auto_optimization?: boolean;
   notification_settings?: {
     budget_alert: boolean;
@@ -111,15 +111,15 @@ export function AdAccountForm({
   mode,
 }: AdAccountFormProps) {
   const [formData, setFormData] = useState<AdAccount>({
-    account_name: "",
+    name: "",
     platform: "facebook",
-    account_id: "",
+    account_code: "",
     account_type: "business",
-    currency: "USD",
+    currency: "CNY",
     timezone: "Asia/Shanghai",
-    spending_limit: 5000,
+    spend_limit: 5000,
     daily_budget: undefined,
-    account_status: "pending",
+    status: "new",
     notes: "",
     auto_optimization: false,
     notification_settings: {
@@ -161,9 +161,9 @@ export function AdAccountForm({
     }
   };
 
-  // 验证账户ID
-  const validateAccountId = async () => {
-    if (!formData.account_id || !formData.platform) return;
+  // 验证账户代码
+  const validateAccountCode = async () => {
+    if (!formData.account_code || !formData.platform) return;
 
     setValidating(true);
     setAccountValid(null);
@@ -171,7 +171,7 @@ export function AdAccountForm({
     try {
       const response = await apiPost<{ data?: { valid: boolean } }>(`/api/v1/ad-accounts/validate`, {
         platform: formData.platform,
-        account_id: formData.account_id,
+        account_code: formData.account_code,
       });
 
       setAccountValid(response.data?.valid ?? false);
@@ -187,20 +187,20 @@ export function AdAccountForm({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.account_name.trim()) {
-      newErrors.account_name = "账户名称不能为空";
+    if (!formData.name?.trim()) {
+      newErrors.name = "账户名称不能为空";
     }
 
-    if (!formData.account_id.trim()) {
-      newErrors.account_id = "账户ID不能为空";
+    if (!formData.account_code?.trim()) {
+      newErrors.account_code = "账户代码不能为空";
     }
 
     if (accountValid === false) {
-      newErrors.account_id = "账户ID无效或已被占用";
+      newErrors.account_code = "账户代码无效或已被占用";
     }
 
-    if (!formData.spending_limit || formData.spending_limit <= 0) {
-      newErrors.spending_limit = "消耗限额必须大于0";
+    if (!formData.spend_limit || formData.spend_limit <= 0) {
+      newErrors.spend_limit = "消耗限额必须大于0";
     }
 
     if (formData.daily_budget && formData.daily_budget <= 0) {
@@ -233,15 +233,15 @@ export function AdAccountForm({
   // 重置表单
   const resetForm = () => {
     setFormData({
-      account_name: "",
+      name: "",
       platform: "facebook",
-      account_id: "",
+      account_code: "",
       account_type: "business",
-      currency: "USD",
+      currency: "CNY",
       timezone: "Asia/Shanghai",
-      spending_limit: 5000,
+      spend_limit: 5000,
       daily_budget: undefined,
-      account_status: "pending",
+      status: "new",
       notes: "",
       auto_optimization: false,
       notification_settings: {
@@ -279,15 +279,15 @@ export function AdAccountForm({
     }
   }, [open]);
 
-  // 账户ID变化时验证
+  // 账户代码变化时验证
   useEffect(() => {
-    if (formData.account_id && formData.platform) {
+    if (formData.account_code && formData.platform) {
       const timer = setTimeout(() => {
-        validateAccountId();
+        validateAccountCode();
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [formData.account_id, formData.platform]);
+  }, [formData.account_code, formData.platform]);
 
   const platformConfig = platformConfigs[formData.platform];
 
@@ -351,27 +351,27 @@ export function AdAccountForm({
                   </Label>
                   <Input
                     id="accountName"
-                    value={formData.account_name}
-                    onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="输入账户名称"
-                    className={errors.account_name ? "border-red-500" : ""}
+                    className={errors.name ? "border-red-500" : ""}
                   />
-                  {errors.account_name && (
-                    <p className="text-sm text-red-500 mt-1">{errors.account_name}</p>
+                  {errors.name && (
+                    <p className="text-sm text-red-500 mt-1">{errors.name}</p>
                   )}
                 </div>
 
                 <div>
-                  <Label htmlFor="accountId">
-                    账户ID <span className="text-red-500">*</span>
+                  <Label htmlFor="accountCode">
+                    账户代码 <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
-                      id="accountId"
-                      value={formData.account_id}
-                      onChange={(e) => setFormData({ ...formData, account_id: e.target.value })}
+                      id="accountCode"
+                      value={formData.account_code}
+                      onChange={(e) => setFormData({ ...formData, account_code: e.target.value })}
                       placeholder={`${platformConfig.idPrefix}1234567890`}
-                      className={errors.account_id ? "border-red-500" : ""}
+                      className={errors.account_code ? "border-red-500" : ""}
                     />
                     {validating && (
                       <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
@@ -384,8 +384,8 @@ export function AdAccountForm({
                       )
                     )}
                   </div>
-                  {errors.account_id && (
-                    <p className="text-sm text-red-500 mt-1">{errors.account_id}</p>
+                  {errors.account_code && (
+                    <p className="text-sm text-red-500 mt-1">{errors.account_code}</p>
                   )}
                 </div>
 
@@ -446,16 +446,17 @@ export function AdAccountForm({
                 <div>
                   <Label htmlFor="status">初始状态</Label>
                   <Select
-                    value={formData.account_status}
-                    onValueChange={(value: string) => setFormData({ ...formData, account_status: value as "active" | "pending" | "paused" | "banned" })}
+                    value={formData.status}
+                    onValueChange={(value: string) => setFormData({ ...formData, status: value as "new" | "testing" | "active" | "suspended" | "dead" | "archived" })}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">待审核</SelectItem>
+                      <SelectItem value="new">新建</SelectItem>
+                      <SelectItem value="testing">测试中</SelectItem>
                       <SelectItem value="active">活跃</SelectItem>
-                      <SelectItem value="paused">暂停</SelectItem>
+                      <SelectItem value="suspended">暂停</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -463,12 +464,12 @@ export function AdAccountForm({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="assignedUser">负责人</Label>
+                  <Label htmlFor="ownerId">负责人</Label>
                   <Select
-                    value={formData.assigned_user_id?.toString()}
+                    value={formData.owner_id?.toString()}
                     onValueChange={(value) => setFormData({
                       ...formData,
-                      assigned_user_id: value ? parseInt(value) : undefined
+                      owner_id: value || undefined
                     })}
                   >
                     <SelectTrigger>
@@ -538,22 +539,22 @@ export function AdAccountForm({
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="spendingLimit">
-                    月度消耗限额 <span className="text-red-500">*</span>
+                  <Label htmlFor="spendLimit">
+                    消耗限额 <span className="text-red-500">*</span>
                   </Label>
                   <Input
-                    id="spendingLimit"
+                    id="spendLimit"
                     type="number"
-                    value={formData.spending_limit}
+                    value={formData.spend_limit}
                     onChange={(e) => setFormData({
                       ...formData,
-                      spending_limit: parseFloat(e.target.value) || 0
+                      spend_limit: parseFloat(e.target.value) || 0
                     })}
-                    placeholder="输入月度消耗限额"
-                    className={errors.spending_limit ? "border-red-500" : ""}
+                    placeholder="输入消耗限额"
+                    className={errors.spend_limit ? "border-red-500" : ""}
                   />
-                  {errors.spending_limit && (
-                    <p className="text-sm text-red-500 mt-1">{errors.spending_limit}</p>
+                  {errors.spend_limit && (
+                    <p className="text-sm text-red-500 mt-1">{errors.spend_limit}</p>
                   )}
                 </div>
 

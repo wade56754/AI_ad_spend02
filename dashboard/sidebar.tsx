@@ -10,7 +10,7 @@ interface SidebarProps {
 const MENU_ITEMS = [
   { id: 'workbench', label: '工作台概览', icon: '📊' },
   { id: 'projects', label: '项目管理', icon: '📁' },
-  { id: 'channels', label: '渠道账户', icon: '🔗' },
+  { id: 'channels', label: '广告账号管理', icon: '🔗' },
   { id: 'reports', label: '日报管理', icon: '📈', badge: 2 },
   { id: 'settings', label: '系统设置', icon: '⚙️' },
 ]

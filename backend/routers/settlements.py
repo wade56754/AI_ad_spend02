@@ -51,8 +51,8 @@ async def create_settlement(
         service = SettlementService(db)
         settlement = service.create_settlement(
             request=request,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=settlement, message="结算创建成功")
     except PermissionDeniedError as e:
@@ -83,8 +83,8 @@ async def list_settlements(
     try:
         service = SettlementService(db)
         settlements, total = service.get_settlements(
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role"),
+            current_user_id=current_user.id,
+            current_user_role=current_user.role,
             page=page,
             page_size=page_size,
             settlement_type=settlement_type,
@@ -120,8 +120,8 @@ async def get_settlement_statistics(
     try:
         service = SettlementService(db)
         stats = service.get_settlement_statistics(
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role"),
+            current_user_id=current_user.id,
+            current_user_role=current_user.role,
             start_date=start_date,
             end_date=end_date
         )
@@ -143,8 +143,8 @@ async def get_overdue_settlements(
     try:
         service = SettlementService(db)
         settlements = service.get_overdue_settlements(
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=settlements, message="获取逾期结算成功")
     except PermissionDeniedError as e:
@@ -166,8 +166,8 @@ async def get_settlement(
         service = SettlementService(db)
         settlement = service.get_settlement(
             settlement_id=settlement_id,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=settlement, message="获取结算成功")
     except ResourceNotFoundError as e:
@@ -194,8 +194,8 @@ async def update_settlement(
         settlement = service.update_settlement(
             settlement_id=settlement_id,
             request=request,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=settlement, message="结算更新成功")
     except ResourceNotFoundError as e:
@@ -222,8 +222,8 @@ async def submit_settlement(
         service = SettlementService(db)
         settlement = service.submit_settlement(
             settlement_id=settlement_id,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=settlement, message="结算已提交审批")
     except ResourceNotFoundError as e:
@@ -252,8 +252,8 @@ async def approve_settlement(
         settlement = service.approve_settlement(
             settlement_id=settlement_id,
             request=request,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         action_msg = "审批通过" if request.action == "approve" else "已拒绝"
         return success_response(data=settlement, message=f"结算{action_msg}")
@@ -284,8 +284,8 @@ async def record_payment(
         settlement = service.record_payment(
             settlement_id=settlement_id,
             request=request,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role")
+            current_user_id=current_user.id,
+            current_user_role=current_user.role
         )
         return success_response(data=settlement, message="支付记录成功")
     except ResourceNotFoundError as e:
@@ -313,8 +313,8 @@ async def cancel_settlement(
         service = SettlementService(db)
         settlement = service.cancel_settlement(
             settlement_id=settlement_id,
-            current_user_id=current_user.get("id"),
-            current_user_role=current_user.get("role"),
+            current_user_id=current_user.id,
+            current_user_role=current_user.role,
             reason=reason
         )
         return success_response(data=settlement, message="结算已取消")

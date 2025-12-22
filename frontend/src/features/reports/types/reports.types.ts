@@ -92,8 +92,8 @@ export interface PerformanceReportItem {
   project_name: string | null;
   channel_id: number | null;
   channel_name: string | null;
-  account_id: number | null;
-  account_name: string | null;
+  ad_account_id: number | null;
+  ad_account_name: string | null; // JOIN 填充: ad_accounts.name
   date: string | null;
   total_spend: number;
   total_leads: number;
@@ -179,8 +179,8 @@ export interface ReconciliationReportResponse {
 
 // Financial Summary
 export interface FinancialSummaryItem {
-  account_id: number;
-  account_name: string;
+  ad_account_id: number;
+  ad_account_name: string; // JOIN 填充: ad_accounts.name
   project_id: number | null;
   project_name: string | null;
   channel_id: number | null;

@@ -1,85 +1,128 @@
 """
 广告账户模型 - 核心业务实体
 
-RLS 策略：用户只能访问分配给自己的账户（assigned_to = auth.uid()）
+对齐 DATA_SCHEMA.md v5.2 和 init_schema.sql §5.1
+字段来源: init_schema.sql 第 315-332 行
 """
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import Column, BigInteger, String, Text, Integer, Numeric, Index, CheckConstraint, ForeignKey, DateTime
+from sqlalchemy import Column, BigInteger, String, Text, Numeric, Index, CheckConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from backend.models.base import Base, TimestampMixin, AssignableMixin
+from backend.models.base import Base, TimestampMixin
 from backend.models.enums import AdAccountStatus, UserRole
 from backend.models.mixins.serializable import SerializableMixin
 from backend.models.mixins.rls_aware import RLSAwareMixin
 
 
-class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, SerializableMixin):
+class AdAccount(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     """
     广告账户表 - 核心业务实体
 
-    字段：
-    - id: 主键
-    - project_id/channel_id: 外键
-    - assigned_to: 负责人（来自 AssignableMixin）
-    - account_code: 账户代码（唯一）
-    - account_name: 账户名称
-    - status: 账户状态（new/testing/active/suspended/dead/archived）
-    - balance: 账户余额
-    - opened_at/died_at: 开户/死号时间
-    - death_reason/death_loss: 死号原因和损失
-    - notes: 备注
-    - created_at/updated_at: 时间戳（自动管理）
+    对齐 init_schema.sql §5.1 ad_accounts 表定义
+
+    字段（与数据库完全对齐）：
+    - id: BIGSERIAL 主键
+    - project_id: BIGINT 项目外键
+    - channel_id: UUID 渠道外键
+    - supplier_id: UUID 供应商外键
+    - owner_id: UUID 负责人外键
+    - name: VARCHAR(200) 账户名称
+    - account_code: VARCHAR(100) 账户代码（唯一）
+    - status: VARCHAR(20) 账户状态
+    - status_reason: TEXT 状态原因
+    - spend_limit: DECIMAL(15,2) 消耗限额
+    - currency: VARCHAR(10) 货币
+    - timezone: VARCHAR(50) 时区
+    - created_by/updated_by: UUID 创建/更新者
+    - created_at/updated_at: TIMESTAMPTZ 时间戳
     """
     __tablename__ = 'ad_accounts'
 
     # RLS 配置
-    __rls_user_field__ = 'assigned_to'
+    __rls_user_field__ = 'owner_id'
     __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_OPERATOR]
     __rls_readonly_roles__ = [UserRole.FINANCE]
 
     # 序列化配置
-    __json_include_relationships__ = ['project', 'channel', 'assignee']
+    __json_include_relationships__ = ['project', 'channel', 'owner']
 
-    # 主键
+    # 主键 - BIGSERIAL
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="账户ID")
 
-    # 外键
-    project_id = Column(BigInteger, ForeignKey('projects.id', ondelete='CASCADE'), nullable=False)
-    # 外键：UUID（对齐 DATA_SCHEMA.md 3.2.9）
-    channel_id = Column(PGUUID(as_uuid=True), ForeignKey('channels.id', ondelete='CASCADE'), nullable=False)
+    # 外键 - 对齐 init_schema.sql
+    project_id = Column(
+        BigInteger,
+        ForeignKey('projects.id', ondelete='RESTRICT'),
+        nullable=False,
+        comment="项目ID"
+    )
+    channel_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('channels.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="渠道ID"
+    )
+    supplier_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('suppliers.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="供应商ID"
+    )
+    owner_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+        comment="负责人ID"
+    )
+    team_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('teams.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+        comment="所属团队ID"
+    )
+    buyer_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('buyers.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+        comment="所属投手ID"
+    )
 
-    # Phase 1 Financial SoT 新增外键
-    team_id = Column(PGUUID(as_uuid=True), ForeignKey('teams.id', ondelete='SET NULL'), nullable=True, comment="团队ID")
-    buyer_id = Column(PGUUID(as_uuid=True), ForeignKey('buyers.id', ondelete='SET NULL'), nullable=True, comment="投手ID")
-    supplier_id = Column(PGUUID(as_uuid=True), ForeignKey('suppliers.id', ondelete='SET NULL'), nullable=True, comment="供应商ID")
+    # 基本信息 - 对齐 init_schema.sql
+    name = Column(String(200), nullable=True, comment="账户名称")
+    account_code = Column(String(100), unique=True, nullable=True, comment="账户代码")
+    status = Column(String(20), nullable=True, comment="账户状态")
+    status_reason = Column(Text, nullable=True, comment="状态原因")
 
-    # 基本信息
-    account_code = Column(String(50), unique=True, nullable=False, comment="账户代码")
-    account_name = Column(String(100), nullable=True, comment="账户名称")
-    status = Column(String(20), nullable=False, comment="账户状态")
-    balance = Column(Numeric(15, 2), nullable=False, default=Decimal('0.00'), comment="账户余额")
+    # 消耗配置
+    spend_limit = Column(
+        Numeric(15, 2),
+        nullable=False,
+        default=Decimal('0.00'),
+        server_default='0.00',
+        comment="消耗限额"
+    )
+    currency = Column(String(10), nullable=False, default='CNY', server_default='CNY', comment="货币")
+    timezone = Column(String(50), nullable=False, default='Asia/Shanghai', server_default='Asia/Shanghai', comment="时区")
 
-    # 时间字段
-    opened_at = Column(DateTime(timezone=True), nullable=True, comment="开户时间")
-    died_at = Column(DateTime(timezone=True), nullable=True, comment="死号时间")
-
-    # 死号相关
-    death_reason = Column(Text, nullable=True, comment="死号原因")
-    death_loss = Column(Numeric(15, 2), nullable=True, comment="死号损失")
-
-    # 其他
-    notes = Column(Text, nullable=True, comment="备注")
-
-    # Phase 1 Financial SoT 新增字段
-    account_type = Column(String(50), nullable=True, comment="账户类型 (美金户/越南盾户/企业户...)")
-    platform = Column(String(20), nullable=True, comment="平台 (FB/TK/Google)")
-    region = Column(String(50), nullable=True, comment="地区")
-
-    # 并发控制
-    version = Column(Integer, nullable=False, server_default='1', comment="乐观锁版本号")
+    # 审计字段 - 对齐 init_schema.sql
+    created_by = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="创建者ID"
+    )
+    updated_by = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('users.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="更新者ID"
+    )
 
     # ========== 关系定义 ==========
 
@@ -99,19 +142,26 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
         doc="所属渠道"
     )
 
+    # 多对一：账户 -> 供应商
+    supplier = relationship(
+        "Supplier",
+        foreign_keys=[supplier_id],
+        lazy="joined",
+        doc="供应商"
+    )
+
     # 多对一：账户 -> 负责人
-    assignee = relationship(
+    owner = relationship(
         "User",
-        foreign_keys="AdAccount.assigned_to",
+        foreign_keys=[owner_id],
         lazy="selectin",
         doc="负责人（投手）"
     )
 
-    # Phase 1 Financial SoT 新增关系
     # 多对一：账户 -> 团队
     team = relationship(
         "Team",
-        foreign_keys="AdAccount.team_id",
+        foreign_keys=[team_id],
         lazy="joined",
         doc="所属团队"
     )
@@ -119,64 +169,58 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
     # 多对一：账户 -> 投手
     buyer = relationship(
         "Buyer",
-        foreign_keys="AdAccount.buyer_id",
+        foreign_keys=[buyer_id],
         lazy="joined",
-        doc="负责投手"
+        doc="所属投手"
     )
 
-    # 多对一：账户 -> 供应商
-    supplier = relationship(
-        "Supplier",
-        foreign_keys="AdAccount.supplier_id",
-        lazy="joined",
-        doc="供应商"
-    )
-
-    # 约束与索引
+    # 约束与索引 - 对齐 init_schema.sql
     __table_args__ = (
         CheckConstraint(
             "status IN ('new', 'testing', 'active', 'suspended', 'dead', 'archived')",
             name='chk_ad_accounts_status'
         ),
-        Index('idx_ad_accounts_project_id', 'project_id'),
-        Index('idx_ad_accounts_channel_id', 'channel_id'),
+        Index('idx_ad_accounts_project', 'project_id'),
+        Index('idx_ad_accounts_channel', 'channel_id'),
         Index('idx_ad_accounts_status', 'status'),
-        Index('idx_ad_accounts_assigned_to', 'assigned_to'),
-        Index('idx_ad_accounts_created_at', 'created_at'),
-        # Phase 1 Financial SoT 新增索引
-        Index('idx_ad_accounts_team_id', 'team_id'),
-        Index('idx_ad_accounts_buyer_id', 'buyer_id'),
-        Index('idx_ad_accounts_supplier_id', 'supplier_id'),
-        Index('idx_ad_accounts_platform', 'platform'),
+        Index('idx_ad_accounts_supplier', 'supplier_id'),
+        Index('idx_ad_accounts_team', 'team_id'),
+        Index('idx_ad_accounts_buyer', 'buyer_id'),
     )
 
     def __repr__(self):
         return f"<AdAccount(id={self.id}, code='{self.account_code}', status='{self.status}')>"
 
-    # ========== 业务属性 ==========
+    # ========== 向后兼容属性 ==========
 
     @property
-    def assigned_user_id(self):
-        """
-        向后兼容别名：返回 assigned_to 的值
+    def assigned_to(self):
+        """向后兼容：返回 owner_id"""
+        return self.owner_id
 
-        注意：此属性为向后兼容保留，新代码应使用 assigned_to
-        """
-        return self.assigned_to
+    @assigned_to.setter
+    def assigned_to(self, value):
+        """向后兼容：设置 owner_id"""
+        self.owner_id = value
 
-    @assigned_user_id.setter
-    def assigned_user_id(self, value):
-        """
-        向后兼容别名：设置 assigned_to 的值
+    @property
+    def account_name(self):
+        """向后兼容：返回 name"""
+        return self.name
 
-        注意：此属性为向后兼容保留，新代码应使用 assigned_to
-        """
-        self.assigned_to = value
+    @account_name.setter
+    def account_name(self, value):
+        """向后兼容：设置 name"""
+        self.name = value
+
+    # ========== 业务属性 ==========
 
     @property
     def status_enum(self) -> AdAccountStatus:
         """返回状态枚举对象"""
-        return AdAccountStatus(self.status)
+        if self.status:
+            return AdAccountStatus(self.status)
+        return AdAccountStatus.NEW
 
     @property
     def is_active(self) -> bool:
@@ -211,6 +255,7 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
 
         old_status = self.status
         self.status = new_status.value
+        self.status_reason = reason
 
         from backend.models.accounts.account_history import AccountStatusHistory
         history = AccountStatusHistory(
@@ -234,24 +279,16 @@ class AdAccount(Base, TimestampMixin, AssignableMixin, RLSAwareMixin, Serializab
             return query
 
         if user_role == UserRole.MEDIA_BUYER:
-            return query.filter(cls.assigned_to == user_id)
+            return query.filter(cls.owner_id == user_id)
 
         if user_role == UserRole.FINANCE:
             return query
 
-        return query.filter(cls.assigned_to == user_id)
+        return query.filter(cls.owner_id == user_id)
 
     @classmethod
     def get_active_accounts(cls, session, user_id: UUID, user_role: UserRole):
         """获取用户可访问的活跃账户"""
         return cls.get_user_accessible_query(session, user_id, user_role).filter(
             cls.status == AdAccountStatus.ACTIVE.value
-        )
-
-    @classmethod
-    def get_low_balance_accounts(cls, session, user_id: UUID, user_role: UserRole, threshold: Decimal):
-        """获取余额低于阈值的账户"""
-        return cls.get_user_accessible_query(session, user_id, user_role).filter(
-            cls.balance < threshold,
-            cls.status.in_([AdAccountStatus.ACTIVE.value, AdAccountStatus.TESTING.value])
         )

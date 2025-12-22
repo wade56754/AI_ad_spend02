@@ -57,7 +57,7 @@
 ### 1.2 五个不可违背的规则
 
 1. **数据库字段禁止自创** - 所有字段必须在 DATA_SCHEMA.md 中定义
-2. **角色限定为5个** - `admin`/`finance`/`data_operator`/`account_manager`/`media_buyer`
+2. **角色限定为5个（技术层）** - `admin`/`finance`/`data_operator`/`account_manager`/`media_buyer`（业务层角色映射见 AUTH_SPEC.md §2.2A）
 3. **响应必须使用 Envelope** - 使用 `success_response`/`error_response`
 4. **前端必须通过 apiFetch** - 禁止直接 fetch 或其他 HTTP 库
 5. **开发顺序强制执行** - Schema → Service → Router → Test → Exception Handler
@@ -82,6 +82,28 @@
 | **SUPPLIER** | 供应商成本账本 | `supplier_id` | `COST`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL` | `cost = real_spend + fee` |
 
 **引用**: SYSTEM_OVERVIEW.md 第5章、DATA_SCHEMA.md 3.4.4节
+
+### 1.4 Phase 边界说明（MASTER v4.4 对齐）
+
+> **引用**: MASTER.md v4.4 §2.5、§4.1
+
+#### 1.4.1 数据流 Phase 适用性
+
+| 数据流 | Phase 1 | Phase 2 |
+|-------|---------|---------|
+| raw数据流 | 正常使用 | 正常使用 |
+| real数据流 | 可选使用（简化模式可跳过） | 强制使用 |
+| final数据流 | 可选使用（简化模式可跳过） | 强制使用（计费基准） |
+
+#### 1.4.2 API 行为 Phase 差异
+
+| API 类型 | Phase 1 行为 | Phase 2 行为 |
+|---------|-------------|-------------|
+| 日报状态转换 | 支持简化 3 状态跳转 | 完整 8 状态流程 |
+| 充值审批 | 无预算阻断 | 可启用预算阻断 |
+| 项目暂停 | 仅标记状态 | 可联动阻断投放 |
+
+**Phase 1 核心原则**：API 只做「记录」与「查询」，不做「阻断」或「惩罚」。
 
 ---
 

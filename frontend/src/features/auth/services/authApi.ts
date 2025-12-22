@@ -90,3 +90,22 @@ export async function refreshToken(): Promise<AuthResponse> {
     method: 'POST',
   });
 }
+
+/**
+ * Reset password with token
+ * POST /api/v1/auth/reset-password
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+  refreshToken?: string | null
+): Promise<void> {
+  await apiFetch(`${BASE_PATH}/reset-password`, {
+    method: 'POST',
+    body: {
+      token,
+      new_password: newPassword,
+      refresh_token: refreshToken || undefined,
+    },
+  });
+}

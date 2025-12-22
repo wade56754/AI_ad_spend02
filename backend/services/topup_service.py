@@ -52,7 +52,7 @@ from backend.models.ledger import LedgerEntryType
 
 
 class TopupService:
-    """充值管理服务类"""
+    """充值管理服务类 - v2.1 修复字段引用"""
 
     def __init__(self, db: Session):
         self.db = db
@@ -143,18 +143,25 @@ class TopupService:
         # 应用搜索条件
         if status:
             query = query.filter(TopupRequest.status == status)
-        if urgency:
-            query = query.filter(TopupRequest.urgency_level == urgency)
+        # urgency_level 字段不存在，忽略此过滤条件
+        # if urgency:
+        #     query = query.filter(TopupRequest.urgency_level == urgency)
         if ad_account_id:
             query = query.filter(TopupRequest.ad_account_id == ad_account_id)
+        # project_id 需要通过 ad_account 关系查询
         if project_id:
-            query = query.filter(TopupRequest.project_id == project_id)
+            query = query.join(AdAccount).filter(AdAccount.project_id == project_id)
         if start_date:
             query = query.filter(TopupRequest.created_at >= start_date)
         if end_date:
             query = query.filter(TopupRequest.created_at <= end_date + timedelta(days=1))
+        # request_no 字段不存在，使用 id 作为替代
         if request_no:
-            query = query.filter(TopupRequest.request_no.like(f"%{request_no}%"))
+            try:
+                req_id = int(request_no)
+                query = query.filter(TopupRequest.id == req_id)
+            except ValueError:
+                pass  # 忽略无效的 request_no
 
         # 计算总数
         total = query.count()
@@ -578,6 +585,35 @@ class TopupService:
         )
 
         return logs
+
+    def get_status_stats(self, current_user: User) -> dict:
+        """获取各状态的充值申请数量统计（前端使用）"""
+        # 应用权限过滤
+        base_query = self.db.query(TopupRequest)
+        base_query = self._apply_permission_filter(base_query, current_user)
+
+        # 各状态统计 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        stats = {
+            "draft": base_query.filter(TopupRequest.status == TopupStatus.DRAFT.value).count(),
+            "pending_review": base_query.filter(TopupRequest.status == TopupStatus.PENDING_REVIEW.value).count(),
+            "finance_approve": base_query.filter(TopupRequest.status == TopupStatus.FINANCE_APPROVE.value).count(),
+            "paid": base_query.filter(TopupRequest.status == TopupStatus.PAID.value).count(),
+            "completed": base_query.filter(TopupRequest.status == TopupStatus.COMPLETED.value).count(),
+            "rejected": base_query.filter(TopupRequest.status == TopupStatus.REJECTED.value).count(),
+            "cancelled": base_query.filter(TopupRequest.status == TopupStatus.CANCELLED.value).count(),
+        }
+
+        # 汇总统计
+        stats["total"] = sum(stats.values())
+        stats["pending"] = stats["pending_review"] + stats["finance_approve"]  # 待处理总数
+
+        # 金额统计
+        total_amount = base_query.with_entities(
+            func.coalesce(func.sum(TopupRequest.amount), 0)
+        ).scalar() or Decimal(0)
+        stats["total_amount"] = float(total_amount)
+
+        return stats
 
     def get_statistics(
         self,
