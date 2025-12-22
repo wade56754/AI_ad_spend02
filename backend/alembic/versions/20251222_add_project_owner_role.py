@@ -30,7 +30,7 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 
 # revision identifiers, used by Alembic.
 revision = '20251222_add_project_owner_role'
-down_revision = '20251221_add_daily_report_fields'
+down_revision = '20251221_daily_report_fields'
 branch_labels = None
 depends_on = None
 

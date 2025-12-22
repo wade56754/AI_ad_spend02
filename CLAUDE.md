@@ -126,8 +126,9 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 
 # AI 广告代投系统 - Claude Code 项目指令
 
-> **文档版本**: v3.4 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + MASTER.md v4.4)
+> **文档版本**: v3.5 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + MASTER.md v4.4)
 > **强制级别**: 自动加载，所有会话生效
+> **最后更新**: 2025-12-22
 
 ---
 
@@ -345,7 +346,46 @@ Phase 2（问责）：引入约束、强制审批、考核关联
 
 **生效日期**: 2025-12-22 | **基准**: ASDD Freeze + SoT Freeze v2.6 + MASTER.md v4.4
 
+---
+
+## 项目记忆 (最近工作)
+
+### 2025-12-22 完成的工作
+
+1. **CSV 数据导入** - 完成历史日报数据导入
+   - 导入 4765 条 CSV 记录
+   - 创建 61 个投手用户和对应的 ad_accounts
+   - 成功导入 2312 条日报 (状态: raw_submitted)
+   - 脚本: `scripts/simple_import.py`
+
+2. **项目成员管理 API** - 完成 CRUD 接口
+   - Schemas: `backend/schemas/project_member.py`
+   - Service: `backend/services/project_member_service.py`
+   - Router: `backend/routers/project_members.py`
+   - 18 个单元测试全部通过
+   - Commit: `0f6e953`
+
+3. **文档清理与归档** - 整理 docs/ 目录
+   - 扫描 175 个 markdown 文件
+   - 归档 17 个过时/重复文档
+   - 删除重复目录: `docs/testing/`, `docs/4.testing/`, `docs/6.agent-layer/archive/`
+   - 活跃文档: 117 个, 归档文档: 59 个
+   - 健康评分: 87 → 92/100
+   - 清单: `docs/archive/2025-12-doc-cleanup/CLEANUP_MANIFEST.md`
+
+### 数据库当前状态
+
+| 表 | 记录数 |
+|---|--------|
+| daily_reports | 8,176 |
+| ad_accounts | 260 |
+| users | 94 |
+| projects | 4 |
+
+---
+
 **版本历史**:
+- v3.5 (2025-12-22): 添加项目记忆，记录 CSV 导入、项目成员 API、文档清理工作
 - v3.4 (2025-12-22): 对齐 MASTER.md v4.4 - 更新为 7 角色定义，移除 AI_GUARD 引用，添加 AH-01~AH-05 防幻觉原则
 - v3.3 (2025-12-22): 同步 6 角色定义，添加 CORE_MODULES.md 引用
 - v3.2 (2025-12-17): 整合 Cursor Rules 六大分类体系，添加 YAML frontmatter

@@ -3,11 +3,18 @@
 
 参考: STATE_MACHINE.md v2.6
 参考: Saleor OrderStatus 设计
+
+角色兼容性说明 (MASTER.md v4.4 §2.4):
+- 状态机中使用技术角色名 (data_operator, media_buyer)
+- 通过 role_mapping.role_in_list() 支持业务角色名 (supervisor, pitcher)
+- 等价角色组: supervisor ↔ data_operator, pitcher ↔ media_buyer, ceo ↔ admin
 """
 
 from enum import Enum
 from typing import Dict, List, Optional, Callable, Any
 from dataclasses import dataclass
+
+from backend.core.role_mapping import role_in_list, expand_role_list
 
 
 class DailyReportStatus(str, Enum):
@@ -122,17 +129,37 @@ class StateMachine:
         to_state: str,
         user_role: Optional[str] = None,
     ) -> None:
-        """执行状态转换"""
+        """
+        执行状态转换
+
+        Args:
+            entity: 状态实体（需要有 status 属性）
+            from_state: 当前状态
+            to_state: 目标状态
+            user_role: 用户角色（支持业务角色和技术角色）
+
+        Raises:
+            StateTransitionError: 转换不允许或权限不足
+
+        Note:
+            使用 role_in_list() 进行角色检查，支持等价角色：
+            - supervisor ↔ data_operator
+            - pitcher ↔ media_buyer
+            - ceo ↔ admin
+        """
         key = (from_state, to_state)
         if key not in self._transitions:
             raise StateTransitionError(from_state, to_state)
 
         t = self._transitions[key]
 
-        if t.required_roles and user_role not in t.required_roles:
+        # 使用 role_in_list 支持等价角色（如 supervisor = data_operator）
+        if t.required_roles and not role_in_list(user_role, t.required_roles):
+            # 展开等价角色以便在错误消息中显示
+            expanded_roles = expand_role_list(t.required_roles)
             raise StateTransitionError(
                 from_state, to_state,
-                f"需要角色 {t.required_roles}, 当前角色 {user_role}"
+                f"需要角色 {expanded_roles}, 当前角色 {user_role}"
             )
 
         if t.guard and not t.guard(entity):

@@ -34,6 +34,7 @@ from backend.routers import (
     reports,  # ✅ 报表管理API (v2.0 - 完整重构)
     agents,  # ✅ Agent Platform API (新增)
     spend,  # ✅ 消耗导入API (Financial SoT Phase 2)
+    dashboard,  # ✅ CEO驾驶舱API (Phase C - MASTER.md v4.4 §6.5)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
@@ -79,6 +80,7 @@ app.include_router(reconciliation.router, prefix=API_V1_PREFIX)  # 对账管理 
 app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表管理 ✅ v2.0 完整重构
 app.include_router(agents.router, prefix=API_V1_PREFIX)  # Agent Platform ✅ 新增
 app.include_router(spend.router, prefix=API_V1_PREFIX)  # 消耗导入 ✅ Financial SoT Phase 2
+app.include_router(dashboard.router, prefix=API_V1_PREFIX)  # CEO驾驶舱 ✅ Phase C - MASTER.md v4.4 §6.5
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 

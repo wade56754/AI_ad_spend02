@@ -8,8 +8,10 @@ import logging
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
 from typing import List, Optional, Tuple, Dict, Any
+from enum import Enum as PyEnum
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+from pydantic import BaseModel, Field
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from io import BytesIO
@@ -648,6 +650,199 @@ async def delete_daily_report(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+# ============ 统一审核端点 (Phase C) ============
+
+from enum import Enum as PyEnum
+
+
+class ReviewAction(str, PyEnum):
+    """审核动作枚举"""
+    APPROVE = "approve"           # 通过（流转到下一状态）
+    REJECT = "reject"             # 驳回（退回原始状态或标记异常）
+    REQUEST_REVISION = "request_revision"  # 要求修改（退回投手修改）
+
+
+class DailyReportReviewRequest(BaseModel):
+    """统一审核请求"""
+    action: str = Field(..., description="审核动作: approve/reject/request_revision")
+    audit_notes: Optional[str] = Field(None, max_length=500, description="审核说明")
+
+
+class DailyReportReviewResponse(BaseModel):
+    """统一审核响应"""
+    report_id: int
+    old_status: str
+    new_status: str
+    action: str
+    message: str
+    warnings: List[str] = Field(default_factory=list, description="Phase 1 警告信息")
+
+
+@router.post(
+    "/{report_id}/review",
+    response_model=StandardResponse[DailyReportReviewResponse],
+    summary="统一审核日报",
+    description="""
+    统一的日报审核端点，支持多种审核动作。
+
+    **动作说明:**
+    - `approve`: 通过审核，流转到下一状态
+    - `reject`: 驳回，标记异常或退回
+    - `request_revision`: 要求投手修改
+
+    **状态机流转规则 (STATE_MACHINE.md v2.6):**
+    - trend_pending + approve → trend_ok
+    - trend_pending + reject → trend_flagged
+    - trend_flagged + approve → trend_resolved
+    - trend_flagged + request_revision → raw_submitted
+    - final_pending + approve → final_confirmed
+
+    **权限:** supervisor/data_operator/admin
+    """
+)
+async def review_daily_report(
+    report_id: int,
+    request: DailyReportReviewRequest,
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["data_operator", "admin", "supervisor"]))
+):
+    """
+    统一审核日报 API
+
+    根据当前状态和动作，自动选择正确的状态流转路径。
+
+    Phase 1 行为：
+    - 记录审核操作
+    - 返回 warnings 字段提示潜在问题
+    - 不阻断任何操作
+    """
+    from backend.core.role_mapping import role_in_list
+    from backend.core.phase_config import get_phase_config
+
+    try:
+        # 获取日报当前状态
+        report = service.get_daily_report(report_id, current_user)
+        old_status = report.status
+        warnings = []
+
+        # 验证动作有效性
+        action = request.action.lower()
+        if action not in ["approve", "reject", "request_revision"]:
+            return error_response(
+                code="VAL_001",
+                message=f"无效的审核动作: {action}，允许的值: approve/reject/request_revision",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 根据当前状态和动作确定目标状态
+        transition_map = {
+            # (current_status, action) -> target_status
+            ("trend_pending", "approve"): "trend_ok",
+            ("trend_pending", "reject"): "trend_flagged",
+            ("trend_flagged", "approve"): "trend_resolved",
+            ("trend_flagged", "request_revision"): "raw_submitted",
+            ("trend_ok", "approve"): "final_pending",
+            ("trend_resolved", "approve"): "final_pending",
+            ("final_pending", "approve"): "final_confirmed",
+            ("final_pending", "reject"): "trend_flagged",  # 退回到异常状态
+        }
+
+        transition_key = (old_status, action)
+        if transition_key not in transition_map:
+            return error_response(
+                code="STATE_400",
+                message=f"当前状态 '{old_status}' 不支持 '{action}' 操作",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        target_status = transition_map[transition_key]
+
+        # 构造审核请求
+        audit_request = DailyReportAuditRequest(audit_notes=request.audit_notes)
+
+        # 执行状态流转
+        if target_status == "trend_ok":
+            report = service._transition_daily_report(
+                report_id=report_id,
+                target_status=DailyReportStatus.TREND_OK,
+                audit_request=audit_request,
+                current_user=current_user
+            )
+        elif target_status == "trend_flagged":
+            report = service.flag_trend_anomaly(report_id, audit_request, current_user)
+            warnings.append("日报已标记为趋势异常，需人工复核")
+        elif target_status == "trend_resolved":
+            report = service.resolve_trend_anomaly(report_id, audit_request, current_user)
+        elif target_status == "raw_submitted":
+            # 退回投手修改
+            report.status = "raw_submitted"
+            report.trend_flag = "normal"
+            report.trend_flag_reason = None
+            service.db.commit()
+            warnings.append("日报已退回投手修改")
+        elif target_status == "final_pending":
+            # 使用 enter_final_pending
+            report = service._transition_daily_report(
+                report_id=report_id,
+                target_status=DailyReportStatus.FINAL_PENDING,
+                audit_request=audit_request,
+                current_user=current_user
+            )
+        elif target_status == "final_confirmed":
+            report = service.confirm_final_report(report_id, audit_request, current_user)
+
+        # Phase 1 警告
+        phase_config = get_phase_config()
+        if phase_config.is_phase1_enabled():
+            if action == "approve" and old_status == "trend_flagged":
+                warnings.append("[Phase 1] 趋势异常已通过审核，Phase 2 将启用更严格的校验")
+
+        new_status = report.status
+
+        # 构建响应
+        action_messages = {
+            "approve": "审核通过",
+            "reject": "审核驳回",
+            "request_revision": "已要求修改"
+        }
+
+        response = DailyReportReviewResponse(
+            report_id=report_id,
+            old_status=old_status,
+            new_status=new_status,
+            action=action,
+            message=f"{action_messages.get(action, action)}: {old_status} → {new_status}",
+            warnings=warnings
+        )
+
+        logger.info(
+            f"Daily report reviewed: id={report_id}, action={action}, "
+            f"{old_status} → {new_status}, user={current_user.id}"
+        )
+
+        return success_response(data=response, message=response.message)
+
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.exception(f"Error in review_daily_report: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="审核失败",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 

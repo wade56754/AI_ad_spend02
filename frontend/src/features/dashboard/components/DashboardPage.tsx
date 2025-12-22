@@ -130,22 +130,34 @@ export function DashboardPage() {
   };
 
   // Mock data - TODO: Replace with actual API call using React Query
+  // 按照 MASTER.md §6.5 核心页面最小字段集 (Phase 1)
   const stats = {
+    // §6.5 必须字段 - 本月核心指标
+    month_spend: 2856800.00,           // 本月总消耗 - ad_spend_daily SUM(spend)
+    month_conversions: 72580,           // 本月总进粉 - daily_report SUM(conversions)
+    overall_cpl: 39.36,                 // 整体 CPL - 总消耗/总进粉 (§4.5.2 规则)
+    estimated_profit: 568000.00,        // 预计毛利 - §4.5.4 公式
+    active_projects: 12,                // 活跃项目数 - project COUNT(status='active')
+    abnormal_projects: 3,               // 异常项目数 - CPL > target × 1.3
+    pending_topups: 3,                  // 待审批充值数 - topup_request COUNT(status='pending')
+    // 今日视角 (辅助信息)
     today_spend: 125680.50,
     today_conversions: 3256,
     today_revenue: 162500.00,
     today_profit: 36819.50,
+    // 变化率
     spend_change: 12.5,
     conversions_change: 8.3,
-    revenue_change: 10.8,
+    cpl_change: -5.2,                   // CPL 下降是好事
     profit_change: 15.2,
-    pending_topups: 3,
+    // 其他待处理
     pending_settlements: 2,
     pending_reconciliations: 5,
     pending_imports: 1,
-    active_projects: 12,
     active_accounts: 45,
     total_balance: 856000.00,
+    // CPL 目标
+    cpl_target: 35.00,
   };
 
   // Mock trend data - 基于全局时间范围生成
@@ -321,16 +333,16 @@ export function DashboardPage() {
         </Link>
       </div>
 
-      {/* Today's Stats - 4 columns with enhanced info */}
+      {/* §6.5 核心指标 - 本月概览 (MASTER.md 必须字段) */}
       <section>
-        <h2 className="text-2xl font-semibold text-foreground mb-4">今日概览</h2>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">本月概览</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
-            title="今日消耗"
-            value={formatCurrency(stats.today_spend)}
+            title="本月总消耗"
+            value={formatCurrency(stats.month_spend)}
             change={stats.spend_change}
             average7d={average7d.spend}
-            target="预算 ¥100k-130k"
+            target={`今日 ${formatCurrency(stats.today_spend)}`}
             icon={<DollarSign className="h-6 w-6" />}
             color="blue"
             onClick={() => setActiveMetric('spend')}
@@ -338,11 +350,11 @@ export function DashboardPage() {
             testId="dashboard-stat-card-spend"
           />
           <StatCard
-            title="今日粉数"
-            value={stats.today_conversions.toLocaleString()}
+            title="本月总进粉"
+            value={stats.month_conversions.toLocaleString()}
             change={stats.conversions_change}
             average7d={average7d.conversions}
-            target="目标 3000+/日"
+            target={`今日 ${stats.today_conversions.toLocaleString()}`}
             icon={<Users className="h-6 w-6" />}
             color="purple"
             onClick={() => setActiveMetric('conversions')}
@@ -350,28 +362,55 @@ export function DashboardPage() {
             testId="dashboard-stat-card-conversions"
           />
           <StatCard
-            title="今日收入"
-            value={formatCurrency(stats.today_revenue)}
-            change={stats.revenue_change}
-            average7d={average7d.revenue}
-            target="目标 ¥150k+"
+            title="整体 CPL"
+            value={`¥${stats.overall_cpl.toFixed(2)}`}
+            change={stats.cpl_change}
+            target={`目标 ¥${stats.cpl_target}`}
             icon={<BarChart3 className="h-6 w-6" />}
-            color="green"
-            onClick={() => setActiveMetric('revenue')}
-            isActive={activeMetric === 'revenue'}
-            testId="dashboard-stat-card-revenue"
+            color={stats.overall_cpl > stats.cpl_target * 1.3 ? 'red' : stats.overall_cpl > stats.cpl_target ? 'orange' : 'green'}
+            testId="dashboard-stat-card-cpl"
           />
           <StatCard
-            title="今日利润"
-            value={formatCurrency(stats.today_profit)}
+            title="预计毛利"
+            value={formatCurrency(stats.estimated_profit)}
             change={stats.profit_change}
             average7d={average7d.profit}
-            target="目标 ROAS ≥ 1.8"
+            target={`今日 ${formatCurrency(stats.today_profit)}`}
             icon={<Target className="h-6 w-6" />}
-            color="orange"
+            color={stats.estimated_profit >= 0 ? 'green' : 'red'}
             onClick={() => setActiveMetric('profit')}
             isActive={activeMetric === 'profit'}
             testId="dashboard-stat-card-profit"
+          />
+        </div>
+      </section>
+
+      {/* §6.5 运营状态指标 */}
+      <section>
+        <h2 className="text-2xl font-semibold text-foreground mb-4">运营状态</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard
+            title="活跃项目数"
+            value={stats.active_projects.toString()}
+            icon={<Target className="h-6 w-6" />}
+            color="blue"
+            testId="dashboard-stat-card-active-projects"
+          />
+          <StatCard
+            title="异常项目数"
+            value={stats.abnormal_projects.toString()}
+            target="CPL 超标 30%+"
+            icon={<BarChart3 className="h-6 w-6" />}
+            color={stats.abnormal_projects > 0 ? 'red' : 'green'}
+            testId="dashboard-stat-card-abnormal-projects"
+          />
+          <StatCard
+            title="待审批充值"
+            value={stats.pending_topups.toString()}
+            target="需老板审批"
+            icon={<Wallet className="h-6 w-6" />}
+            color={stats.pending_topups > 0 ? 'orange' : 'green'}
+            testId="dashboard-stat-card-pending-topups"
           />
         </div>
       </section>
