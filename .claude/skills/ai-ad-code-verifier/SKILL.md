@@ -1,13 +1,18 @@
 ---
 name: ai-ad-code-verifier
-version: "2.3"
+version: "2.4"
 status: ready_for_production
 layer: skill
 owner: wade
 last_reviewed: 2025-12-22
 baseline:
-  - MASTER.md v3.5
+  - MASTER.md v4.4
+  - STATE_MACHINE.md v2.6
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
+new_features_v2_4:
+  - Phase 1/2 边界检查（PhaseConfig）
+  - AH-01~05 防幻觉检查（AntiHallucinationChecker）
+  - SoT 动态加载器（SotLoader）
 code_sources:
   - project: HallOumi
     github: https://github.com/vectara/hallucination-leaderboard
