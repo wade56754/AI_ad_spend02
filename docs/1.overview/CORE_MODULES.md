@@ -3,7 +3,7 @@
 > **文档性质**: 核心业务模块定义与规则摘要
 > **版本**: v1.0
 > **status**: draft
-> **基准**: AI编程指导文档 V5.2, MASTER.md v3.6
+> **基准**: AI编程指导文档 V5.2, MASTER.md v4.4
 > **owner**: wade
 > **last_reviewed**: 2025-12-22
 
@@ -537,6 +537,7 @@ def calculate_revenue(conversions: int, price_rules: dict) -> Decimal:
 | pitcher | 填报日报 | - | - | - |
 | account_manager | 查看绩效 | - | 全部功能 | - |
 | supervisor | 审核日报、绩效看板 | - | 查看 | 单价配置 |
+| project_owner | 查看绩效 | 申请充值 | 查看 | 全部功能 |
 | finance | - | 全部功能 | 查看 | 查看 |
 | ceo | 绩效看板 | 关账审批、报表 | 查看 | 利润分析 |
 | admin | 投手信息 | - | 代理商管理 | 甲方管理 |

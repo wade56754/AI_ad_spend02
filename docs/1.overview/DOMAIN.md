@@ -4,7 +4,7 @@
 > **约束级别**: 项目级，作为开发者查阅 SoT 的入口
 > **版本**: v1.1
 > **status**: frozen
-> **基准**: MASTER.md v3.7, PROJECT.md v1.3, CORE_MODULES.md v1.0
+> **基准**: MASTER.md v4.4, PROJECT.md v1.3, CORE_MODULES.md v1.0
 > **owner**: wade
 > **last_reviewed**: 2025-12-22
 
@@ -82,18 +82,19 @@ DOMAIN.md 是 SoT 体系的导航入口，职责如下：
 └─────────────┘      └─────────────┘
 ```
 
-### 2.3 6 角色与模块权限
+### 2.3 7 角色与模块权限
 
 | 角色 | 投手管理 | 财务管理 | 账号管理 | 项目管理 |
 |------|---------|---------|---------|---------|
 | pitcher | 填报日报 | - | 使用账户 | - |
 | account_manager | - | - | 全部功能 | - |
 | supervisor | 审核日报 | 查看 | 监控 | 配置单价 |
+| project_owner | 查看绩效 | 申请充值 | 查看 | 全部功能 |
 | finance | 查看 | 全部功能 | - | 查看利润 |
 | ceo | 查看 | 审批关账 | 查看 | 查看 |
 | admin | 配置 | 配置 | 配置 | 配置 |
 
-> 引用: PROJECT.md v1.3 §4, MASTER.md v3.7 INV-004
+> 引用: PROJECT.md v1.3 §4, MASTER.md v4.4 INV-004
 
 ---
 

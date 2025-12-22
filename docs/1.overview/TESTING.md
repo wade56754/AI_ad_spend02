@@ -4,7 +4,7 @@
 > **约束级别**: 项目级，所有测试实现必须遵循本文档定义的策略与约束
 > **版本**: v1.0
 > **status**: frozen
-> **基准**: MASTER.md v3.4, ARCHITECTURE.md v1.0, PATTERNS.md v1.0
+> **基准**: MASTER.md v4.4, ARCHITECTURE.md v1.0, PATTERNS.md v1.0
 > **owner**: wade
 > **last_reviewed**: 2025-11-27
 
