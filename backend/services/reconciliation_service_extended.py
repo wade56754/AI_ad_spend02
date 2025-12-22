@@ -1,7 +1,20 @@
 """
 对账管理扩展服务
 处理对账批次、对账详情、差异处理等完整对账流程
+
+.. deprecated::
+    此模块计划在 v2.5 中合并到 reconciliation_service.py。
+    请优先使用 reconciliation_service.py 中的 ReconciliationService。
+    详见: 重构任务 P1-001
 """
+import warnings
+
+warnings.warn(
+    "reconciliation_service_extended.py 已计划废弃。"
+    "请使用 reconciliation_service.py 中的 ReconciliationService。",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from datetime import datetime, date
 from decimal import Decimal

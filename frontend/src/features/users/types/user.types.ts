@@ -10,6 +10,7 @@ export enum UserRole {
   DATA_OPERATOR = 'data_operator',
   ACCOUNT_MANAGER = 'account_manager',
   MEDIA_BUYER = 'media_buyer',
+  PROJECT_OWNER = 'project_owner',
 }
 
 export enum UserStatus {
@@ -67,6 +68,7 @@ export interface UserListResponse {
 export const USER_ROLE_OPTIONS = [
   { value: UserRole.ADMIN, label: '管理员', color: 'red' },
   { value: UserRole.FINANCE, label: '财务', color: 'green' },
+  { value: UserRole.PROJECT_OWNER, label: '项目负责人', color: 'cyan' },
   { value: UserRole.DATA_OPERATOR, label: '数据运营', color: 'blue' },
   { value: UserRole.ACCOUNT_MANAGER, label: '客户经理', color: 'purple' },
   { value: UserRole.MEDIA_BUYER, label: '投手', color: 'orange' },

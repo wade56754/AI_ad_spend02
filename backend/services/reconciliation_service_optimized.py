@@ -2,7 +2,20 @@
 对账管理服务 - 性能优化版本
 Version: 2.0
 Author: Claude协作开发
+
+.. deprecated::
+    此模块计划在 v2.5 中合并到 reconciliation_service.py。
+    优化的查询逻辑将集成到主版本中。
+    详见: 重构任务 P1-001
 """
+import warnings
+
+warnings.warn(
+    "reconciliation_service_optimized.py 已计划废弃。"
+    "优化逻辑将合并到 reconciliation_service.py。",
+    DeprecationWarning,
+    stacklevel=2
+)
 
 from datetime import datetime, date
 from decimal import Decimal
