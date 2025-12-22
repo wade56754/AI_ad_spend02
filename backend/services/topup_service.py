@@ -48,6 +48,12 @@ from backend.core.state_machine import (
 from backend.utils.id_generator import generate_request_no
 from backend.models.finance.ledger import LedgerEntry
 from backend.models.ledger import LedgerEntryType
+from backend.core.phase_config import (
+    get_phase_config,
+    should_enforce_topup,
+    should_block_negative_balance,
+    log_phase_warning
+)
 # from backend.utils.audit import create_audit_log  # 暂时注释
 
 
@@ -948,7 +954,12 @@ class TopupService:
         raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ-206")
 
     def _check_account_balance_limit(self, ad_account_id: int, requested_amount: Decimal):
-        """检查账户余额上限"""
+        """检查账户余额上限
+
+        Phase-aware 行为 (MASTER.md v4.4 §8):
+        - Phase 1: 超过上限记录警告，但不阻断
+        - Phase 2: 超过上限抛出异常
+        """
         # 计算当前已充值金额
         current_balance = (
             self.db.query(func.coalesce(func.sum(TopupTransaction.paid_amount), 0))
@@ -963,10 +974,22 @@ class TopupService:
         )
 
         if current_balance + requested_amount > self.MAX_ACCOUNT_BALANCE:
-            raise BusinessLogicError(
-                f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
-                error_code="BIZ-202"
-            )
+            if should_enforce_topup():
+                # Phase 2: 强制阻断
+                raise BusinessLogicError(
+                    f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
+                    error_code="BIZ-202"
+                )
+            else:
+                # Phase 1: 仅记录警告，不阻断
+                log_phase_warning(
+                    feature="topup_balance_limit",
+                    message=f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
+                    ad_account_id=ad_account_id,
+                    current_balance=str(current_balance),
+                    requested_amount=str(requested_amount),
+                    limit=str(self.MAX_ACCOUNT_BALANCE)
+                )
 
     def _check_daily_request_limit(self, ad_account_id: int, user_id: int):
         """检查每日申请次数限制"""

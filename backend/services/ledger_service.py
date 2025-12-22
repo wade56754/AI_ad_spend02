@@ -53,8 +53,18 @@ from sqlalchemy import and_, or_, func, desc
 from backend.core.db import get_db_session
 from backend.core.error_codes import ErrorCode
 from backend.core.response import ApiResponse, PaginatedResponse
+from backend.core.phase_config import (
+    get_phase_config,
+    should_block_negative_balance,
+    should_lock_settlement,
+    log_phase_warning
+)
 from backend.models.ledger import LedgerTransaction, AccountBalance, BudgetAllocation, TransactionType, TransactionStatus
 from backend.services.audit_service import AuditService, BusinessAction
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class LedgerService:
@@ -75,6 +85,92 @@ class LedgerService:
 
     禁止直接在 Router/API 层调用，必须通过业务 Service 层
     """
+
+    @staticmethod
+    def validate_spend_balance(
+        account_id: UUID,
+        amount: Decimal,
+        project_id: UUID = None
+    ) -> tuple[bool, Optional[str]]:
+        """
+        验证消耗前余额是否充足
+
+        Phase-aware 行为 (MASTER.md v4.4 §8):
+        - Phase 1: 余额不足时记录警告，但允许继续（负余额投放）
+        - Phase 2: 余额不足时返回 False，阻止交易
+
+        Args:
+            account_id: 账户ID
+            amount: 消耗金额
+            project_id: 项目ID（可选）
+
+        Returns:
+            tuple[bool, Optional[str]]: (是否可继续, 消息)
+        """
+        with get_db_session() as session:
+            # 获取当前余额
+            balance = session.query(AccountBalance).filter(
+                and_(
+                    AccountBalance.account_id == account_id if account_id else AccountBalance.account_id.is_(None),
+                    AccountBalance.project_id == project_id if project_id else AccountBalance.project_id.is_(None)
+                )
+            ).first()
+
+            if not balance:
+                # 没有余额记录，视为余额为 0
+                available = Decimal('0')
+            else:
+                available = balance.available_balance or Decimal('0')
+
+            # 检查是否会产生负余额
+            if available < amount:
+                message = (
+                    f"账户余额不足: 可用余额={available}, 消耗金额={amount}, "
+                    f"缺口={amount - available}"
+                )
+
+                if should_block_negative_balance():
+                    # Phase 2: 阻止负余额交易
+                    logger.warning(f"[Phase2] {message}")
+                    return False, message
+                else:
+                    # Phase 1: 警告但允许
+                    log_phase_warning(
+                        feature="negative_balance_block",
+                        message=message,
+                        account_id=str(account_id),
+                        available_balance=str(available),
+                        spend_amount=str(amount)
+                    )
+                    return True, f"[警告] {message}"
+
+            return True, None
+
+    @staticmethod
+    def check_settlement_lock(
+        transaction_date: date
+    ) -> tuple[bool, Optional[str]]:
+        """
+        检查交易日期是否在结算锁定期内
+
+        Phase-aware 行为 (MASTER.md v4.4 §8):
+        - Phase 1: 锁定期修改仅警告
+        - Phase 2: 锁定期内禁止修改
+
+        Args:
+            transaction_date: 交易日期
+
+        Returns:
+            tuple[bool, Optional[str]]: (是否可操作, 消息)
+        """
+        # TODO: 实现结算期判断逻辑
+        # 暂时返回允许
+        if should_lock_settlement():
+            logger.debug(f"[Phase2] Settlement lock enabled, checking date {transaction_date}")
+            # 这里应该检查 transaction_date 是否在已结算期间
+            pass
+
+        return True, None
 
     @staticmethod
     def create_transaction(

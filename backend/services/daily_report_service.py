@@ -47,6 +47,12 @@ from backend.schemas.daily_report import (
     DailyReportImportError,
     RealSpendRequest,
 )
+from backend.core.phase_config import (
+    get_phase_config,
+    should_enforce_daily_report,
+    should_lock_settlement,
+    log_phase_warning
+)
 
 # 创建logger实例
 logger = logging.getLogger(__name__)
@@ -69,6 +75,57 @@ class DailyReportService:
             logger.error(f"Transaction failed, rolling back: {str(e)}", exc_info=True)
             self.db.rollback()
             raise
+
+    def check_daily_report_compliance(
+        self,
+        user_id: int,
+        days_threshold: int = 3
+    ) -> tuple[bool, Optional[str]]:
+        """
+        检查用户日报填报合规性
+
+        Phase-aware 行为 (MASTER.md v4.4 §8):
+        - Phase 1: 记录警告，返回 (True, warning_message)
+        - Phase 2: 超过阈值返回 (False, error_message)
+
+        Args:
+            user_id: 用户ID
+            days_threshold: 允许的最大未填报天数
+
+        Returns:
+            tuple[bool, Optional[str]]: (是否合规, 消息)
+        """
+        from datetime import timedelta
+
+        # 计算未填报天数
+        today = date.today()
+        cutoff_date = today - timedelta(days=days_threshold)
+
+        # 查询最近的日报
+        latest_report = self.db.query(DailyReport).filter(
+            DailyReport.created_by == user_id,
+            DailyReport.report_date >= cutoff_date
+        ).order_by(desc(DailyReport.report_date)).first()
+
+        if latest_report:
+            return True, None
+
+        # 无日报或日报过期
+        message = f"用户 {user_id} 已超过 {days_threshold} 天未提交日报"
+
+        if should_enforce_daily_report():
+            # Phase 2: 强制要求
+            logger.warning(f"[Phase2] {message}")
+            return False, message
+        else:
+            # Phase 1: 仅警告
+            log_phase_warning(
+                feature="daily_report_required",
+                message=message,
+                user_id=user_id,
+                days_threshold=days_threshold
+            )
+            return True, f"[警告] {message}"
 
     def create_daily_report(
         self,
@@ -607,6 +664,11 @@ class DailyReportService:
             f"Locking final report with billing: report_id={report_id}, "
             f"user={current_user.id} ({current_user.role})"
         )
+
+        # Phase-aware: 结算锁定检查 (MASTER.md v4.4 §8)
+        # Phase 2 模式下，已锁定的报告无法再修改
+        if should_lock_settlement():
+            logger.debug(f"[Phase2] Settlement lock enabled, checking report {report_id}")
 
         # 获取日报（带关联的广告账户）
         report = self.db.query(DailyReport).options(
