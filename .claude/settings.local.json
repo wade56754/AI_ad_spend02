@@ -145,5 +145,78 @@
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ]
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/session_start.py",
+            "statusMessage": "加载 SoT 裁判链和 Phase 1 约束..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/load_context.py",
+            "statusMessage": "加载 SoT 文档上下文..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/pre_tool_use.py",
+            "statusMessage": "检查代码合规性..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/phase1_guard.py",
+            "statusMessage": "Phase 1 原则守护..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/pre_tool_use.py",
+            "statusMessage": "检查代码合规性..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/phase1_guard.py",
+            "statusMessage": "Phase 1 原则守护..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/auto_format.py",
+            "statusMessage": "自动格式化代码..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/stop.py",
+            "statusMessage": "发送会话结束通知..."
+          }
+        ]
+      }
+    ]
+  }
 }
