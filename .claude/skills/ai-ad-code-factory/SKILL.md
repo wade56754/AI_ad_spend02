@@ -232,7 +232,7 @@ code_sources:
       output_mode: "files" | "diff" | "preview"      // 输出模式 (默认 files)
     }
 
-    模块边界定义 (AI_ANTI_HALLUCINATION_GUARD.md v1.0):
+    模块边界定义 (STATE_MACHINE.md v2.6 §2 角色与模块权限):
     {
       pitcher: {
         可写表: [daily_reports, pitchers(仅自己)],
@@ -483,7 +483,7 @@ code_sources:
        6. 禁止行为 (Forbidden Actions)
   ====================================================== -->
   <forbidden_actions>
-    <!-- 模块边界规则 (AI_ANTI_HALLUCINATION_GUARD.md) -->
+    <!-- 模块边界规则 (STATE_MACHINE.md v2.6 §2) -->
     <forbidden id="CF-001">
       <action>不指定 module 参数直接生成代码</action>
       <correct_action>必须指定 module: pitcher | finance | ad_account | project</correct_action>

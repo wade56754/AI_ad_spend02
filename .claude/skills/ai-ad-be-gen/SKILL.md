@@ -96,7 +96,7 @@ interface BEGenOutput {
 | `backend/models/**` | ❌ 禁止 | 数据库模型 |
 | `migrations/**` | ❌ 禁止 | 数据库迁移 |
 
-### 4.2 模块表边界 (AI_ANTI_HALLUCINATION_GUARD.md v1.0)
+### 4.2 模块表边界 (STATE_MACHINE.md v2.6 §2 角色与模块权限)
 
 按模块划分的数据表写入边界:
 
@@ -240,7 +240,7 @@ PRE_ANALYSIS_CONTEXT:
 <THINKING_CHAIN>
 请按以下步骤思考：
 
-0. **模块归属判定** (AI_ANTI_HALLUCINATION_GUARD.md 必填)
+0. **模块归属判定** (STATE_MACHINE.md v2.6 §2 - 必填)
    - 确认任务属于哪个核心模块:
      □ pitcher (投手管理) - 日报填报、投手信息、投手看板
      □ finance (财务管理) - 流水、冲正、对账、期间锁
@@ -371,14 +371,14 @@ POST_REVIEW_RESULT:
 
 ## 6. Self-Check Checklist
 
-生成代码后，必须进行以下自检 (AI_ANTI_HALLUCINATION_GUARD.md Appendix A)：
+生成代码后，必须进行以下自检 (STATE_MACHINE.md v2.6 §2 合规检查)：
 
 | 检查项 | 验证方法 | P0/P1 |
 |--------|---------|-------|
 | **模块归属确认** | 任务属于 pitcher/finance/ad_account/project 之一 | P0 |
 | **写入权限检查** | 目标表在该模块可写范围内 | P0 |
-| 状态枚举一致性 | 对比 STATE_MACHINE.md (7 状态) | P0 |
-| 角色合规 | 对比 6 角色 (pitcher/account_manager/finance/supervisor/ceo/admin) | P0 |
+| 状态枚举一致性 | 对比 STATE_MACHINE.md (8 状态: raw_submitted → ... → final_locked) | P0 |
+| 角色合规 | 对比 5 技术角色 (admin/finance/data_operator/account_manager/media_buyer) | P0 |
 | 错误码合规 | 查找 ERROR_CODES_SOT.md | P0 |
 | 字段类型匹配 | 对比 DATA_SCHEMA.md | P0 |
 | 禁区检查 | 不生成 models/migrations | P0 |

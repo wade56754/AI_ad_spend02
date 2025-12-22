@@ -87,8 +87,8 @@ code_sources:
     ┌───────────────────────▼─────────────────────────────────┐
     │  Layer 3: SpecComplianceVerifier (优先级 30)             │
     │  - SoT 合规验证 (状态/角色/字段/错误码)                   │
-    │  - 日报 7 状态验证 (DRAFT...REVISED)                     │
-    │  - 6 角色验证 (pitcher/account_manager/finance/...)      │
+    │  - 日报 8 状态验证 (raw_submitted...final_locked)       │
+    │  - 5 技术角色验证 (admin/finance/data_operator/account_manager/media_buyer) │
     └───────────────────────┬─────────────────────────────────┘
                             │
     ┌───────────────────────▼─────────────────────────────────┐
@@ -199,7 +199,7 @@ code_sources:
     - SOT-008: 直接修改 balance
     - SOT-009: 跨模块写入 (违反模块边界)
 
-    财务规则 (FIN) - AI_ANTI_HALLUCINATION_GUARD.md:
+    财务规则 (FIN) - LEDGER_SOT.md v1.1 + STATE_MACHINE.md v2.6:
     - FIN-001: UPDATE ledger 表 (禁止)
     - FIN-002: DELETE ledger 表 (禁止)
     - FIN-003: CONFIRMED 时缺少 fx_status=LOCKED 检查
@@ -417,25 +417,25 @@ code_sources:
        6. SoT 合规验证详情
   ====================================================== -->
   <sot_compliance_details>
-    <!-- 状态值白名单 (AI_ANTI_HALLUCINATION_GUARD.md v1.0) -->
+    <!-- 状态值白名单 (STATE_MACHINE.md v2.6 全局状态表) -->
 
     日报状态机 (STATE_MACHINE.md v2.6 + DATA_SCHEMA.md v5.2):
     ```python
-    # 使用 frozenset 确保不可变
+    # 使用 frozenset 确保不可变 (对齐 backend/models/enums.py)
     REPORT_STATUS = frozenset([
-        'DRAFT',            # 草稿
-        'SUBMITTED',        # 已提交
-        'PLATFORM_MATCHED', # 平台数据已匹配
-        'DIFF_FLAGGED',     # 差异标记
-        'CONFIRMED',        # 已确认
-        'REJECTED',         # 已拒绝
-        'REVISED'           # 已修订
+        'raw_submitted',    # 投手提交原始粉数
+        'trend_pending',    # 等待趋势风控检查
+        'trend_ok',         # 趋势正常
+        'trend_flagged',    # 趋势异常,需人工复核
+        'trend_resolved',   # 运营确认异常已解决
+        'final_pending',    # 等待最终粉数确认
+        'final_confirmed',  # 最终粉数已确认
+        'final_locked'      # 已进入计费,锁定(终态)
     ])
 
     # 已废弃状态 (会触发 SOT-002):
-    # raw_submitted, trend_pending, trend_ok, trend_flagged,
-    # trend_resolved, final_pending, final_confirmed, final_locked
-    # (这些是旧版 8 状态，已弃用)
+    # DRAFT, SUBMITTED, PLATFORM_MATCHED, DIFF_FLAGGED, CONFIRMED, REJECTED, REVISED
+    # (这些是旧版 7 状态,已弃用)
     ```
 
     Ledger 状态机:
