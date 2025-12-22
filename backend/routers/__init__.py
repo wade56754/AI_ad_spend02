@@ -4,6 +4,7 @@
 from . import (
     health,
     projects,
+    project_members,  # 项目成员管理 (MASTER.md v4.4 §2.4)
     authentication,
     users,  # 用户管理 (API_SOT v9.0 §5)
     ad_spend,
@@ -26,6 +27,7 @@ from . import (
 __all__ = [
     "health",
     "projects",
+    "project_members",
     "authentication",
     "users",
     "ad_spend",

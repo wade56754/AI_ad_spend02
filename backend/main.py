@@ -16,6 +16,7 @@ from backend.exceptions.custom_exceptions import BaseCustomException
 from backend.routers import (
     health,
     projects,
+    project_members,  # ✅ 项目成员管理API (MASTER.md v4.4 §2.4)
     authentication,
     users,  # ✅ 用户管理API (API_SOT v9.0 §5)
     ad_accounts,
@@ -60,6 +61,7 @@ API_V1_PREFIX = "/api/v1"
 # 注册核心API路由
 app.include_router(health.router, prefix=API_V1_PREFIX)  # 健康检查
 app.include_router(projects.router, prefix=API_V1_PREFIX)  # 项目管理
+app.include_router(project_members.router, prefix=API_V1_PREFIX)  # 项目成员管理 ✅ MASTER.md v4.4
 app.include_router(authentication.router, prefix=API_V1_PREFIX)  # 用户认证
 app.include_router(users.router, prefix=API_V1_PREFIX)  # 用户管理 ✅ 新增 (API_SOT v9.0 §5)
 app.include_router(ad_spend.router, prefix=API_V1_PREFIX)  # 广告消耗
