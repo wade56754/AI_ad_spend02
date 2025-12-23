@@ -1,5 +1,5 @@
 ---
-version: v4.0
+version: v4.1
 status: active
 layer: sot
 owner: tech-lead
@@ -12,7 +12,7 @@ baseline:
 
 # 业务规则大全 (Business Rules)
 
-> **版本**: v4.0
+> **版本**: v4.1
 > **基准**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
 > **最后更新**: 2025-12-24
 
@@ -90,29 +90,59 @@ MASTER.md v4.4 > STATE_MACHINE.md v2.6 > DATA_SCHEMA.md v5.2
 
 ### 2.2 资金管控链
 
+来源：MASTER.md v4.4 §2.1
+
 ```
-老板批准 → 财务审核 → 项目负责人申请 → 户管分配 → 投手使用
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          资金责任链                                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   项目负责人申请 → 财务审核 → 老板批准 → 户管分配 → 投手使用            │
+│        │              │           │          │          │               │
+│    提交理由      检查预算     承担风险    账户调配    消耗资金           │
+│                                                                         │
+│   Phase 1：有流程，可紧急绕行                                           │
+│   Phase 2：无批准不打款                                                 │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 **职责边界**：
-- **老板 (ceo)**：最终批准权，查看全公司资金状态
-- **财务 (finance)**：审核合规性，执行充值/结算
-- **项目负责人 (project_owner)**：项目预算申请，消耗监控
-- **户管 (account_manager)**：账户调配，状态监控
-- **投手 (pitcher)**：消耗资金，提交日报
 
-### 2.3 结果负责链
+| 角色 | 职责 | 资金环节权限 |
+|------|------|-------------|
+| 项目负责人 (project_owner) | 提交充值申请，对资金使用效率负责 | 申请 |
+| 财务 (finance) | 审核合规性，复核数据 | 审核 |
+| 老板 (ceo) | 最终批准，承担资金风险 | 批准 |
+| 户管 (account_manager) | 账户调配，状态监控 | 分配 |
+| 投手 (pitcher) | 消耗资金，提交日报 | 使用 |
+
+### 2.3 结果责任链
+
+来源：MASTER.md v4.4 §2.2
 
 ```
-投手执行 → 主管日审 → 项目负责人周审 → 老板月审
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          结果责任链                                      │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│   投手执行 → 主管监督 → 项目负责人对盈亏负责 → 老板最终决策             │
+│      │           │              │                  │                    │
+│   CPL达标    团队产出       项目盈亏          公司盈亏                  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**考核周期**：
-| 周期 | 责任人 | 审核内容 |
-|------|--------|----------|
-| 日 | 主管 | 投手日报、CPL 达标 |
-| 周 | 项目负责人 | 项目 ROAS、资金使用 |
-| 月 | 老板 | 公司盈亏、资金安全 |
+**考核周期与后果**：
+
+| 层级 | 责任人 | 负责什么 | 考核周期 | Phase 1 后果 | Phase 2 后果 |
+|------|--------|----------|----------|-------------|-------------|
+| 个人 | 投手 | CPL 达标 | 日度 | 沟通/记录 | 警告/暂停 |
+| 团队 | 主管 | 投手产出 | 周度 | 沟通/记录 | 调整分工 |
+| 项目 | 项目负责人 | 项目盈亏 | 月度 | 复盘/沟通 | 复盘/调整/更换 |
+| 公司 | 老板 | 公司盈亏 | 月度 | 自由裁决 | 按规则执行 |
+
+> **Phase 1 说明**：不达标后果仅为「沟通与记录」，不触发任何惩罚性措施。
 
 ### 2.4 纠偏机制
 
@@ -124,11 +154,11 @@ MASTER.md v4.4 > STATE_MACHINE.md v2.6 > DATA_SCHEMA.md v5.2
 
 ---
 
-## 第3章 开发铁律 (5 条)
+## 第3章 开发铁律 (6 条)
 
 ### DEV-001 金额必须用 Decimal
 
-**规则描述**：所有金额字段必须使用 Decimal(12,2) 类型存储，禁止使用 Float。
+**规则描述**：所有金额字段必须使用 Decimal(15,2) 类型存储，禁止使用 Float。
 
 **原因**：Float 存在精度丢失问题，财务数据必须精确。
 
@@ -139,7 +169,7 @@ from sqlalchemy import Column, Numeric
 
 class AdAccount(Base):
     # 正确：使用 Numeric
-    balance = Column(Numeric(12, 2), nullable=False, default=Decimal("0.00"))
+    balance = Column(Numeric(15, 2), nullable=False, default=Decimal("0.00"))
 
     # 错误：使用 Float
     # balance = Column(Float)
@@ -322,71 +352,308 @@ def update_user(
 
 ### DEV-005 终态不可回退
 
-**规则描述**：状态机的终态 (`final_locked`) 不可回退到任何前置状态。
+**规则描述**：状态机的终态不可回退到任何前置状态，修正只能通过红冲机制。
 
 **终态定义**（来源：STATE_MACHINE.md v2.6）：
-- `final_locked` - 日报最终锁定
-- `approved` - 充值已批准
-- `settled` - 月度已结算
+
+| 实体 | 终态 | 说明 |
+|------|------|------|
+| 日报 (daily_reports) | `final_locked` | 计费锁定，不可修改 |
+| 充值 (topup_requests) | `completed` | 充值完成 |
+| 充值 (topup_requests) | `rejected` | 审核拒绝 |
+| 充值 (topup_requests) | `cancelled` | 申请取消 |
+| 对账 (reconciliation_batches) | `completed` | 对账完成 |
+| 项目 (projects) | `archived` | 项目归档 |
+| 账户 (ad_accounts) | `archived` | 账户归档 |
+
+> **修正机制**：终态数据错误只能通过 REVERSAL（红冲）进行修正，不可直接回退状态。
 
 **后端实现**：
 ```python
-from backend.core.state_machine import StateMachine
-
-class DailyReportService:
-    def transition_status(self, report_id: UUID, new_status: str, user: User):
-        report = self.get_report(report_id)
-
-        # 状态机自动阻止终态回退
-        if not StateMachine.can_transition(report.status, new_status):
-            raise BusinessError(
-                code="STATE-002",
-                message=f"无法从 {report.status} 转换到 {new_status}"
-            )
-
-        report.status = new_status
-        return report
-
-# 状态机定义
-DAILY_REPORT_TRANSITIONS = {
-    "raw_submitted": ["trend_pending"],
-    "trend_pending": ["trend_ok", "trend_flagged"],
-    "trend_ok": ["final_pending"],
-    "trend_flagged": ["trend_resolved"],
-    "trend_resolved": ["final_pending"],
-    "final_pending": ["final_confirmed"],
-    "final_confirmed": ["final_locked"],
-    "final_locked": [],  # 终态，无后续状态
+TERMINAL_STATES = {
+    "daily_reports": ["final_locked"],
+    "topup_requests": ["completed", "rejected", "cancelled"],
+    "reconciliation_batches": ["completed"],
+    "projects": ["archived"],
+    "ad_accounts": ["archived"]
 }
+
+def validate_transition(entity: str, current: str, target: str):
+    if current in TERMINAL_STATES.get(entity, []):
+        raise BusinessError(
+            code="STATE-002",
+            message=f"{entity} 已处于终态 {current}，不可转换到 {target}"
+        )
 ```
 
 **违规检测**：
 ```python
-# 单元测试
-def test_final_locked_cannot_transition():
-    """终态不可回退测试"""
+def test_terminal_state_protection():
+    """终态保护测试"""
     report = DailyReport(status="final_locked")
 
     with pytest.raises(BusinessError) as exc:
-        service.transition_status(report.id, "final_confirmed", admin_user)
+        service.transition(report.id, "final_confirmed")
 
     assert exc.value.code == "STATE-002"
 ```
 
 ---
 
-## 第4章 业务规则模块索引
+### DEV-006 账务只追加不修改
 
-### 4.1 日报模块 (BR-RPT-*)
+**规则描述**：账本记录 (ledger_entries) 只能追加，禁止修改或删除已有记录。
 
-| 编号 | 规则名称 | 级别 | 参考 |
+**来源**：MASTER.md v4.4 INV-001, LEDGER_SOT.md v1.1
+
+**设计原因**：
+- 保证财务数据完整性和可追溯性
+- 支持审计合规
+- 符合会计准则（账务不可篡改）
+
+**后端实现**：
+```python
+class LedgerService:
+    def add_entry(
+        self,
+        account_id: UUID,
+        amount: Decimal,
+        entry_type: str,
+        reference_id: UUID = None
+    ) -> LedgerEntry:
+        """正确：只追加新记录"""
+        current_balance = self.get_balance(account_id)
+
+        entry = LedgerEntry(
+            account_id=account_id,
+            amount=amount,
+            entry_type=entry_type,
+            balance_after=current_balance + amount,
+            reference_id=reference_id,
+            created_at=datetime.now(timezone.utc)
+        )
+        db.add(entry)
+        db.commit()
+        return entry
+
+    def correct_error(
+        self,
+        original_entry_id: UUID,
+        reason: str,
+        operator_id: UUID
+    ) -> LedgerEntry:
+        """正确：通过红冲修正错误"""
+        original = self.get_entry(original_entry_id)
+
+        # 创建反向记录（红冲）
+        reversal = LedgerEntry(
+            account_id=original.account_id,
+            amount=-original.amount,  # 反向金额
+            entry_type="REVERSAL",
+            reference_id=original.id,
+            reason=reason,
+            created_by=operator_id
+        )
+        db.add(reversal)
+        db.commit()
+        return reversal
+
+    # 禁止：直接修改
+    # def update_entry(self, entry_id: UUID, new_amount: Decimal):
+    #     entry = self.get_entry(entry_id)
+    #     entry.amount = new_amount  # 违反 INV-001
+
+    # 禁止：直接删除
+    # def delete_entry(self, entry_id: UUID):
+    #     entry = self.get_entry(entry_id)
+    #     db.delete(entry)  # 违反 INV-001
+```
+
+**绑定规则**: INV-001, BR-FIN-005
+
+**错误码**: `LEDGER-001`（账本记录不可修改）
+
+**违规检测**：
+```bash
+# 检测直接 update/delete ledger_entries
+grep -rn "\.amount\s*=" backend/services/ | grep -i ledger
+grep -rn "db\.delete" backend/services/ | grep -i ledger
+```
+
+---
+
+## 第4章 业务规则模块索引 (9 模块)
+
+### 4.0 模块总览
+
+| 模块编号 | 模块名称 | 规则数 | 优先级 | SoT 来源 |
+|----------|----------|--------|--------|----------|
+| BR-AUTH | 认证授权 | 5 | P0 | AUTH_SPEC.md v2.0 |
+| BR-USER | 用户管理 | 4 | P1 | DATA_SCHEMA.md §2.1 |
+| BR-PROJ | 项目管理 | 5 | P0 | DATA_SCHEMA.md §2.2 |
+| BR-CHAN | 渠道管理 | 3 | P1 | DATA_SCHEMA.md §2.3 |
+| BR-ACCT | 账户管理 | 6 | P0 | DATA_SCHEMA.md §2.4 |
+| BR-FIN | 财务管理 | 7 | P0 | LEDGER_SOT.md v1.1 |
+| BR-RECON | 对账管理 | 4 | P1 | STATE_MACHINE.md §4 |
+| BR-RPT | 日报管理 | 8 | P0 | STATE_MACHINE.md §2 |
+| BR-DATA | 数据规则 | 5 | P0 | DATA_SCHEMA.md v5.2 |
+
+---
+
+### 4.1 BR-AUTH 认证授权模块
+
+来源：AUTH_SPEC.md v2.0
+
+| 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
-| BR-RPT-001 | 日报提交时间限制 | P1 | STATE_MACHINE.md §2.1 |
-| BR-RPT-002 | CPL 计算公式 | P0 | 本文档 §4.1.1 |
-| BR-RPT-003 | 零转化日报处理 | P1 | STATE_MACHINE.md §2.3 |
-| BR-RPT-004 | 日报锁定条件 | P0 | STATE_MACHINE.md §2.5 |
+| BR-AUTH-001 | Supabase JWT 验证 | P0 | 所有 API 必须验证 JWT |
+| BR-AUTH-002 | 角色不可变 | P0 | 见 DEV-004 |
+| BR-AUTH-003 | 7 角色定义 | P0 | ceo/project_owner/finance/supervisor/pitcher/account_manager/admin |
+| BR-AUTH-004 | 数据权限隔离 | P0 | 投手只能看自己的日报 |
+| BR-AUTH-005 | API 权限矩阵 | P1 | 参考 API_SOT.md §7 |
 
-#### 4.1.1 BR-RPT-002 CPL 计算公式
+---
+
+### 4.2 BR-USER 用户管理模块
+
+来源：DATA_SCHEMA.md v5.2 §2.1
+
+| 编号 | 规则名称 | 级别 | 说明 |
+|------|----------|------|------|
+| BR-USER-001 | 用户唯一性 | P0 | email 全局唯一 |
+| BR-USER-002 | 用户软删除 | P1 | 禁止物理删除，使用 deleted_at |
+| BR-USER-003 | 用户-角色关联 | P1 | 一个用户一个角色（当前版本） |
+| BR-USER-004 | 用户-项目关联 | P1 | 通过 project_members 表 |
+
+---
+
+### 4.3 BR-PROJ 项目管理模块
+
+来源：DATA_SCHEMA.md v5.2 §2.2
+
+| 编号 | 规则名称 | 级别 | 说明 |
+|------|----------|------|------|
+| BR-PROJ-001 | 项目唯一性 | P0 | project_code 唯一 |
+| BR-PROJ-002 | 项目成员角色 | P1 | pitcher/project_owner/supervisor |
+| BR-PROJ-003 | 项目状态流转 | P1 | active → paused → archived |
+| BR-PROJ-004 | 项目负责人 | P0 | owner_id 指向 project_owner 角色 |
+| BR-PROJ-005 | 项目预算控制 | P1 | daily_budget / monthly_budget |
+
+---
+
+### 4.4 BR-CHAN 渠道管理模块
+
+来源：DATA_SCHEMA.md v5.2 §2.3
+
+| 编号 | 规则名称 | 级别 | 说明 |
+|------|----------|------|------|
+| BR-CHAN-001 | 渠道唯一性 | P0 | channel_code 唯一 |
+| BR-CHAN-002 | 渠道状态 | P1 | active / inactive |
+| BR-CHAN-003 | 渠道-账户关联 | P1 | 一个账户属于一个渠道 |
+
+---
+
+### 4.5 BR-ACCT 账户管理模块
+
+来源：DATA_SCHEMA.md v5.2 §2.4
+
+| 编号 | 规则名称 | 级别 | 说明 |
+|------|----------|------|------|
+| BR-ACCT-001 | 账户唯一性 | P0 | account_id（平台账户ID）唯一 |
+| BR-ACCT-002 | 账户分配 | P1 | 户管分配给投手 |
+| BR-ACCT-003 | 账户状态 | P1 | normal/warning/suspended/archived |
+| BR-ACCT-004 | 账户余额 | P0 | 只能通过 ledger_entries 更新 |
+| BR-ACCT-005 | 账户-项目关联 | P1 | 多对一 |
+| BR-ACCT-006 | 负余额警告 | P1 | Phase 1: 警告不阻断 |
+
+---
+
+### 4.6 BR-FIN 财务管理模块
+
+来源：LEDGER_SOT.md v1.1, STATE_MACHINE.md v2.6 §3
+
+| 编号 | 规则名称 | 级别 | 说明 |
+|------|----------|------|------|
+| BR-FIN-001 | 账本只追加 | P0 | INV-001, 禁止 UPDATE/DELETE |
+| BR-FIN-002 | 金额精度 | P0 | Decimal(15,2) |
+| BR-FIN-003 | 资金审批流程 | P0 | 项目负责人 → 财务 → 老板 |
+| BR-FIN-004 | 充值状态机 | P0 | 7 状态，见下文 |
+| BR-FIN-005 | 充值终态 | P0 | completed/rejected/cancelled |
+| BR-FIN-006 | 月度锁定 | P1 | 锁定后禁止修改 |
+| BR-FIN-007 | 利润计算 | P1 | 收入 - 消耗 - 返点 |
+
+#### 4.6.1 BR-FIN-004 充值状态机 (7 状态)
+
+来源：STATE_MACHINE.md v2.6 §3
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        充值状态机 (7 状态)                              │
+├────────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│   ┌─────────┐  提交   ┌────────────────┐  财务审核  ┌────────────────┐ │
+│   │  draft  │ ──────→ │ pending_review │ ─────────→ │ finance_approve│ │
+│   └─────────┘         └────────────────┘            └────────────────┘ │
+│        │                      │                            │           │
+│        │                      │ 拒绝                       │ 老板批准  │
+│        │                      ↓                            ↓           │
+│        │              ┌────────────┐                ┌──────────┐       │
+│        │              │  rejected  │ ← 拒绝 ───────│   paid   │       │
+│        │              └────────────┘                └──────────┘       │
+│        │                                                   │           │
+│        │ 取消                                              │ 确认到账  │
+│        ↓                                                   ↓           │
+│   ┌────────────┐                                   ┌────────────┐      │
+│   │ cancelled  │                                   │ completed  │      │
+│   └────────────┘                                   └────────────┘      │
+│                                                                        │
+│   终态：completed, rejected, cancelled                                 │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+**状态说明**：
+
+| 状态 | 中文 | 操作者 | 后续动作 |
+|------|------|--------|----------|
+| draft | 草稿 | 项目负责人 | 提交 / 取消 |
+| pending_review | 待审核 | - | 等待财务 |
+| finance_approve | 财务已批 | 财务 | 等待老板 |
+| paid | 已打款 | 老板 | 等待到账 |
+| completed | 已完成 | 户管 | 终态 |
+| rejected | 已拒绝 | 财务/老板 | 终态 |
+| cancelled | 已取消 | 项目负责人 | 终态 |
+
+---
+
+### 4.7 BR-RECON 对账管理模块
+
+来源：STATE_MACHINE.md v2.6 §4
+
+| 编号 | 规则名称 | 级别 | 说明 |
+|------|----------|------|------|
+| BR-RECON-001 | 对账批次唯一性 | P0 | 同账户同月唯一 |
+| BR-RECON-002 | 对账状态流转 | P1 | pending → in_review → completed |
+| BR-RECON-003 | 对账差异处理 | P1 | Phase 1: 记录不阻断 |
+| BR-RECON-004 | 对账锁定 | P0 | completed 后不可修改 |
+
+---
+
+### 4.8 BR-RPT 日报管理模块
+
+来源：STATE_MACHINE.md v2.6 §2
+
+| 编号 | 规则名称 | 级别 | 说明 |
+|------|----------|------|------|
+| BR-RPT-001 | 日报唯一性 | P0 | 同投手+同账户+同日期唯一 |
+| BR-RPT-002 | 日报 8 状态机 | P0 | 见 STATE_MACHINE.md §2.1 |
+| BR-RPT-003 | CPL 计算 | P0 | spend / conversions，0转化=null |
+| BR-RPT-004 | 零转化处理 | P1 | Phase 1: 警告标记 |
+| BR-RPT-005 | 日报锁定 | P0 | final_locked 终态不可回退 |
+| BR-RPT-006 | 三数据流 | P0 | raw/real/final 分阶段 |
+| BR-RPT-007 | 提交时间 | P1 | T+0 提交 raw 数据 |
+| BR-RPT-008 | 审核时间 | P1 | T+1 前完成 trend 审核 |
+
+#### 4.8.1 BR-RPT-003 CPL 计算公式
 
 ```
 CPL = spend / conversions
@@ -407,66 +674,19 @@ def calculate_cpl(spend: Decimal, conversions: int) -> Decimal | None:
     return (spend / conversions).quantize(Decimal("0.01"))
 ```
 
-### 4.2 充值模块 (BR-TOP-*)
+---
 
-| 编号 | 规则名称 | 级别 | 参考 |
+### 4.9 BR-DATA 数据规则模块
+
+来源：DATA_SCHEMA.md v5.2
+
+| 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
-| BR-TOP-001 | 充值审批流程 | P0 | STATE_MACHINE.md §3 |
-| BR-TOP-002 | 充值金额限制 | P1 | LEDGER_SOT.md §2 |
-| BR-TOP-003 | 账户余额更新 | P0 | 本文档 §4.2.1 |
-
-#### 4.2.1 BR-TOP-003 账户余额更新
-
-**规则**：账户余额只能通过 `ledger_entries` 记录更新，禁止直接修改 `balance` 字段。
-
-```python
-# 正确：通过账本记录更新
-def add_balance(account_id: UUID, amount: Decimal, reason: str):
-    entry = LedgerEntry(
-        account_id=account_id,
-        amount=amount,
-        balance_after=account.balance + amount,
-        reason=reason
-    )
-    db.add(entry)
-    account.balance += amount
-    db.commit()
-
-# 错误：直接修改余额
-# account.balance += 1000
-# db.commit()
-```
-
-### 4.3 账户模块 (BR-ACC-*)
-
-| 编号 | 规则名称 | 级别 | 参考 |
-|------|----------|------|------|
-| BR-ACC-001 | 账户分配规则 | P1 | DATA_SCHEMA.md §3 |
-| BR-ACC-002 | 账户状态管理 | P1 | STATE_MACHINE.md §4 |
-| BR-ACC-003 | 负余额处理 | P0 | LEDGER_SOT.md §3 |
-
-### 4.4 项目模块 (BR-PRJ-*)
-
-| 编号 | 规则名称 | 级别 | 参考 |
-|------|----------|------|------|
-| BR-PRJ-001 | 项目成员角色限制 | P1 | DATA_SCHEMA.md §2.5 |
-| BR-PRJ-002 | 项目预算分配 | P1 | LEDGER_SOT.md §4 |
-| BR-PRJ-003 | 项目状态流转 | P1 | STATE_MACHINE.md §5 |
-
-### 4.5 结算模块 (BR-STL-*)
-
-| 编号 | 规则名称 | 级别 | 参考 |
-|------|----------|------|------|
-| BR-STL-001 | 月度结算周期 | P0 | BUSINESS_FLOW_MANAGEMENT.md §3 |
-| BR-STL-002 | 结算锁定规则 | P0 | STATE_MACHINE.md §6 |
-| BR-STL-003 | 利润计算公式 | P0 | 本文档 §4.5.1 |
-
-#### 4.5.1 BR-STL-003 利润计算公式
-
-```
-项目利润 = 收入 - 消耗 - 返点
-ROAS = 收入 / 消耗
-```
+| BR-DATA-001 | 金额类型 | P0 | Decimal(15,2), 禁止 Float |
+| BR-DATA-002 | 时间类型 | P0 | TIMESTAMPTZ, UTC 存储 |
+| BR-DATA-003 | 软删除 | P1 | deleted_at 标记 |
+| BR-DATA-004 | 审计字段 | P1 | created_at/updated_at/created_by |
+| BR-DATA-005 | 主键类型 | P0 | UUID v4 |
 
 ---
 
@@ -481,8 +701,9 @@ ROAS = 收入 / 消耗
 | DEV-003 | `test_services.py` | `test_soft_delete_only` |
 | DEV-004 | `test_auth.py` | `test_role_immutable` |
 | DEV-005 | `test_state_machine.py` | `test_final_state_no_transition` |
-| BR-RPT-002 | `test_daily_report.py` | `test_cpl_calculation` |
-| BR-TOP-003 | `test_ledger.py` | `test_balance_via_ledger` |
+| DEV-006 | `test_ledger.py` | `test_ledger_append_only` |
+| BR-RPT-003 | `test_daily_report.py` | `test_cpl_calculation` |
+| BR-ACCT-004 | `test_ledger.py` | `test_balance_via_ledger` |
 
 ### 5.2 测试覆盖要求
 
@@ -543,6 +764,7 @@ ROAS = 收入 / 消耗
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v4.1 | 2025-12-24 | 业务流程对齐修复：(1) 金额精度 Decimal(12,2)→Decimal(15,2)；(2) 资金管控链顺序修正；(3) 结果责任链添加 Phase 后果；(4) 终态定义修正为 completed/rejected/cancelled；(5) 新增 DEV-006 账本不变量；(6) 业务规则模块 5→9 模块重构 |
 | v4.0 | 2025-12-24 | 重构：从索引文档升级为完整业务规则大全；升级 7 角色；添加完整铁律定义 |
 | v3.2 | 2025-12-20 | 对齐 MASTER.md v3.6，更新裁判链 |
 | v3.1 | 2025-12-15 | 添加 BR-STL 结算模块规则 |
