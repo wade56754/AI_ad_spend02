@@ -1,13 +1,13 @@
 # API 开发与使用规范（API Single Source of Truth）
 
-> **文档版本**: v9.0 (端点级完整版)
+> **文档版本**: v9.1 (对齐 MASTER.md v4.4)
 > **status**: frozen
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
+> **last_reviewed**: 2025-12-23
 > **文档类型**: 项目唯一真相源（SoT）
 > **适用范围**: 所有后端API开发与前端API调用
 > **规范级别**: 🔴 强制执行
-> **最后更新**: 2025-01-22
+> **最后更新**: 2025-12-23
 > **文档定位**: 端点级API规范,任何开发者仅凭本文档即可完成API开发/调用/测试
 
 ---
@@ -40,6 +40,7 @@
 11. [Ledger API（资金账本）](#11-ledger-api资金账本)
 11A. [Finance Profit API（财务利润统计）](#11a-finance-profit-api财务利润统计)
 12. [Reconciliation API（对账管理）](#12-reconciliation-api对账管理)
+12W. [Weekly Briefs API（周报管理）](#12w-weekly-briefs-api周报管理)
 13. [全局规范参考](#13-全局规范参考)
 
 ---
@@ -48,19 +49,34 @@
 
 ### 1.1 唯一真相源（强制依赖）
 
+- **系统宪法**: [`../1.overview/MASTER.md`](../1.overview/MASTER.md) v4.4 - 系统全局规则、角色定义、Phase 边界
 - **数据定义**: [`./DATA_SCHEMA.md`](./DATA_SCHEMA.md) v5.2 - 表结构、字段、类型的唯一来源
 - **状态机定义**: [`./STATE_MACHINE.md`](./STATE_MACHINE.md) v2.6 - 业务状态流转的唯一来源
-- **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v3.1 - 业务约束的唯一来源
+- **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v3.2 - 业务约束的唯一来源
 - **错误码**: [`./ERROR_CODES_SOT.md`](./ERROR_CODES_SOT.md) v2.1 - 错误码定义的唯一来源
-- **系统架构**: [`../1.overview/SYSTEM_OVERVIEW.md`](../1.overview/SYSTEM_OVERVIEW.md) v2.0 - 系统架构的唯一来源
+- **认证授权**: [`./AUTH_SPEC.md`](./AUTH_SPEC.md) v2.0 - 权限矩阵的唯一来源
 
 ### 1.2 五个不可违背的规则
 
 1. **数据库字段禁止自创** - 所有字段必须在 DATA_SCHEMA.md 中定义
-2. **角色限定为5个（技术层）** - `admin`/`finance`/`data_operator`/`account_manager`/`media_buyer`（业务层角色映射见 AUTH_SPEC.md §2.2A）
+2. **角色限定为7个** - 见下方角色定义表（来源: MASTER.md v4.4 §2.4）
 3. **响应必须使用 Envelope** - 使用 `success_response`/`error_response`
 4. **前端必须通过 apiFetch** - 禁止直接 fetch 或其他 HTTP 库
 5. **开发顺序强制执行** - Schema → Service → Router → Test → Exception Handler
+
+#### 1.2.1 角色定义（7 角色，来源: MASTER.md v4.4 §2.4）
+
+| 角色 | 系统角色名 | 职责边界 | 典型操作 |
+|------|-----------|---------|---------|
+| 老板 | `ceo` | 资金安全、公司盈亏、最终决策 | 批准充值、锁定结算、查看全部 |
+| 项目负责人 | `project_owner` | 项目盈亏、资金使用效率 | 申请充值、查看项目、提交周报 |
+| 财务 | `finance` | 资金出入准确、数据真实、对账 | 审核充值、确认付款、查看账本 |
+| 主管 | `supervisor` | 团队产出、投手管理、日常监督 | 审核日报、标记异常、查看团队 |
+| 投手 | `pitcher` | CPL 达标、日报准确、执行投放 | 填报日报、查看自己数据 |
+| 户管 | `account_manager` | 账户分配、账户状态监控 | 分配账户、标记死号、余额迁移 |
+| 管理员 | `admin` | 系统配置（不参与业务） | 用户管理、系统配置 |
+
+> **旧角色映射说明**: 文档中出现的 `media_buyer` 等同于 `pitcher`，`data_operator` 等同于 `supervisor`。新开发应使用 7 角色标准名称。
 
 ### 1.3 三数据流与双账本（核心概念）
 
@@ -72,7 +88,7 @@
 | **real数据流** | `real_spend` | 运营 | T+1 12:00前 | 成本核算 |
 | **final数据流** | `conversions_final` | 运营 | T+1 14:00前 | 计费基准 |
 
-**引用**: SYSTEM_OVERVIEW.md 第4章、BRD v3.1第4章
+**引用**: MASTER.md v4.4 §4（三数据流）、BUSINESS_RULES.md v3.2
 
 #### 双账本（PROJECT/SUPPLIER）
 
@@ -81,7 +97,7 @@
 | **PROJECT** | 项目收入账本 | `project_id` | `REVENUE`, `REVERSAL` | `revenue = conversions_final × unit_price` |
 | **SUPPLIER** | 供应商成本账本 | `supplier_id` | `COST`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL` | `cost = real_spend + fee` |
 
-**引用**: SYSTEM_OVERVIEW.md 第5章、DATA_SCHEMA.md 3.4.4节
+**引用**: LEDGER_SOT.md v1.1、DATA_SCHEMA.md v5.2 §3.4.4
 
 ### 1.4 Phase 边界说明（MASTER v4.4 对齐）
 
@@ -809,7 +825,7 @@ final_pending → final_confirmed → final_locked
 - 数据表: DATA_SCHEMA.md 3.3.1节
 - 状态机: STATE_MACHINE.md 第8章（粉数确认状态机）
 - 业务规则: BR-RPT-001, BR-RPT-002, BR-RPT-004, BR-RPT-005
-- 三数据流: SYSTEM_OVERVIEW.md 第4章
+- 三数据流: MASTER.md v4.4 §4
 
 ### 9.2 POST `/api/v1/daily-reports` - 提交日报（raw粉数）
 
@@ -920,7 +936,7 @@ final_pending → final_confirmed → final_locked
 - 业务规则: BR-RPT-001（提交约束）, BR-RPT-005（粉数确认流程）
 - 数据表: DATA_SCHEMA.md 3.3.1节
 - 状态机: STATE_MACHINE.md 第8章
-- 三数据流: SYSTEM_OVERVIEW.md 第4.1节
+- 三数据流: MASTER.md v4.4 §4
 
 #### 权限
 
@@ -1445,7 +1461,7 @@ def check_trend_risk(report: DailyReport):
 **引用**:
 - 业务规则: BR-RPT-004（终态保护）, BR-RPT-005（计费锁定）
 - 数据表: DATA_SCHEMA.md 3.3.1, 3.4.4节
-- 双账本: SYSTEM_OVERVIEW.md 第5章
+- 双账本: LEDGER_SOT.md v1.1
 
 #### 权限
 
@@ -1833,7 +1849,7 @@ with db.begin():
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.4.4节
-- 双账本: SYSTEM_OVERVIEW.md 第5章
+- 双账本: LEDGER_SOT.md v1.1
 - 业务规则: BR-FIN-005（双写一致性）
 
 ---
@@ -1853,7 +1869,7 @@ with db.begin():
 
 **错误码**: PROFIT_001 ~ PROFIT_008（详见 ERROR_CODES_SOT.md v2.1）
 
-**计费公式**（来自 BUSINESS_RULES.md v3.1）:
+**计费公式**（来自 BUSINESS_RULES.md v3.2）:
 - `revenue = conversions_final × unit_price`
 - `cost = real_spend + fee`
 - `profit = revenue - cost`
@@ -1861,7 +1877,7 @@ with db.begin():
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.3.1节 `daily_reports`, 3.2.1节 `projects`, 3.2.9节 `ad_accounts`
-- 业务规则: BUSINESS_RULES.md v3.1 利润计算公式
+- 业务规则: BUSINESS_RULES.md v3.2 利润计算公式
 - 权限矩阵: AUTH_SPEC.md v2.0
 
 ---
@@ -2194,6 +2210,92 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 ---
 
+## 12W. Weekly Briefs API（周报管理）
+
+> **来源**: B3-weekly-brief.md §4.1
+> **状态**: 新增模块
+
+### 12W.1 端点总览
+
+| 方法 | 路径 | 功能 | 权限 | 状态 |
+|------|------|------|------|------|
+| GET | `/api/v1/weekly-briefs` | 获取周报列表 | 角色过滤 | implemented |
+| GET | `/api/v1/weekly-briefs/stats` | 获取周报统计 | `ceo`, `supervisor` | implemented |
+| GET | `/api/v1/weekly-briefs/{brief_id}` | 获取周报详情 | 角色过滤 | implemented |
+| POST | `/api/v1/weekly-briefs` | 创建周报 | `project_owner`, `admin` | implemented |
+| PUT | `/api/v1/weekly-briefs/{brief_id}` | 更新周报 | `project_owner`(草稿), `admin` | implemented |
+| POST | `/api/v1/weekly-briefs/{brief_id}/submit` | 提交周报 | `project_owner`, `admin` | implemented |
+| GET | `/api/v1/weekly-briefs/export` | 导出周报 | `project_owner`, `ceo`, `admin` | planned |
+| GET | `/api/v1/weekly-briefs/projects/{project_id}/weekly-summary` | 项目周数据汇总 | 角色过滤 | implemented |
+
+### 12W.2 数据模型
+
+**周报状态机** (2 状态):
+```
+draft → submitted
+```
+
+**请求 Schema (创建)**:
+
+| 字段 | 类型 | 必填 | 约束 | 说明 |
+|------|------|------|------|------|
+| `project_id` | integer | ✅ | >0 | 项目ID |
+| `week_start` | date | ✅ | 必须是周一 | 周开始日期 |
+| `achievements` | string | 否 | ≤5000字符 | 本周成果 |
+| `issues` | string | 否 | ≤5000字符 | 遇到问题 |
+| `solutions` | string | 否 | ≤5000字符 | 解决方案 |
+| `next_week_plan` | string | 否 | ≤5000字符 | 下周计划 |
+
+**响应 Schema**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | integer | 周报ID |
+| `project_id` | integer | 项目ID |
+| `project_name` | string | 项目名称 |
+| `week_start` | date | 周开始日期 |
+| `week_end` | date | 周结束日期 |
+| `week_label` | string | 周次标签 (如 "2025-W51") |
+| `submitter_id` | UUID | 提交人ID |
+| `submitter_name` | string | 提交人姓名 |
+| `status` | string | 状态 (draft/submitted) |
+| `weekly_spend` | decimal | 周消耗 (自动汇总) |
+| `weekly_conversions` | integer | 周进粉 (自动汇总) |
+| `weekly_cpl` | decimal | 周CPL (自动计算) |
+| `cpl_trend` | decimal | CPL环比 |
+| `achievements` | string | 本周成果 |
+| `issues` | string | 遇到问题 |
+| `solutions` | string | 解决方案 |
+| `next_week_plan` | string | 下周计划 |
+| `submitted_at` | datetime | 提交时间 |
+| `created_at` | datetime | 创建时间 |
+| `updated_at` | datetime | 更新时间 |
+
+### 12W.3 权限矩阵
+
+| 操作 | ceo | project_owner | supervisor | finance | pitcher | admin |
+|------|-----|---------------|------------|---------|---------|-------|
+| 列表查询 | 全部 | 自己项目 | 团队项目 | 全部(只读) | ❌ | 全部 |
+| 详情查询 | ✅ | 自己项目 | 团队项目 | ✅ | ❌ | ✅ |
+| 创建 | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| 更新(草稿) | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| 提交 | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| 统计查询 | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
+
+### 12W.4 业务规则
+
+- **BR-WB-001**: 每项目每周只能有一份周报
+- **BR-WB-002**: `week_start` 必须是周一
+- **BR-WB-003**: 创建时自动汇总 `weekly_spend` 和 `weekly_conversions`
+- **BR-WB-004**: 只有草稿状态可以更新
+- **BR-WB-005**: 提交后状态不可回退 (Phase 1 不强制)
+
+**引用**:
+- 数据表: DATA_SCHEMA.md (weekly_briefs 表)
+- 业务规则: BUSINESS_RULES.md v3.2
+
+---
+
 ## 12I. Health API（健康检查）
 
 ### 12I.1 端点总览
@@ -2208,17 +2310,25 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 ### 13.1 核心常量定义
 
-#### 13.1.1 角色常量
+#### 13.1.1 角色常量（7 角色，来源: MASTER.md v4.4 §2.4）
 
 ```python
 # backend/core/constants.py
 VALID_ROLES = [
-    "admin",           # 系统管理员
-    "finance",         # 财务
-    "data_operator",   # 数据操作员/户管
-    "account_manager", # 客户经理
-    "media_buyer"      # 投手
+    "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
+    "project_owner",   # 项目负责人 - 项目盈亏、资金使用效率
+    "finance",         # 财务 - 资金出入准确、数据真实、对账
+    "supervisor",      # 主管 - 团队产出、投手管理、日常监督
+    "pitcher",         # 投手 - CPL 达标、日报准确、执行投放
+    "account_manager", # 户管 - 账户分配、账户状态监控
+    "admin"            # 管理员 - 系统配置（不参与业务）
 ]
+
+# 旧角色映射（兼容性）
+ROLE_ALIASES = {
+    "media_buyer": "pitcher",      # 旧名 → 新名
+    "data_operator": "supervisor"  # 旧名 → 新名
+}
 ```
 
 #### 13.1.2 状态枚举（严格对齐 STATE_MACHINE.md v2.6）
@@ -2363,10 +2473,18 @@ try {
 **文档性质**: 项目强制规范
 **执行级别**: 🔴 必须严格遵守
 **违规处理**: PR自动拒绝 / 代码回滚
-**最后更新**: 2025-01-22
-**版本**: v9.0 (端点级完整版)
+**最后更新**: 2025-12-23
+**版本**: v9.1 (对齐 MASTER.md v4.4)
 
-**v9.0 更新说明**:
+**v9.1 更新说明** (2025-12-23):
+- 修复 SYSTEM_OVERVIEW.md 断链引用（已归档），更新为 MASTER.md v4.4
+- 统一角色定义为 7 角色（ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）
+- 添加旧角色映射说明（media_buyer→pitcher, data_operator→supervisor）
+- 更新 BUSINESS_RULES.md 版本引用 v3.1 → v3.2
+- 新增 Weekly Briefs API（§12W）章节
+- 更新 SoT 引用清单，添加 MASTER.md 和 AUTH_SPEC.md
+
+**v9.0 更新说明** (2025-01-22):
 - 完全重写为端点级API规范
 - 新增所有核心模块的详细端点定义（Users/Projects/Channels/AdAccounts/DailyReports/Topup/Ledger/Reconciliation）
 - 每个端点包含完整的Request/Response Schema、字段映射、错误码、权限、并发控制、事务边界
@@ -2376,4 +2494,4 @@ try {
 - 所有字段严格对齐 DATA_SCHEMA.md v5.2
 - 所有状态流转严格对齐 STATE_MACHINE.md v2.6
 - 所有错误码严格对齐 ERROR_CODES_SOT.md v2.1
-- 所有业务规则严格对齐 BUSINESS_RULES.md v3.1
+- 所有业务规则严格对齐 BUSINESS_RULES.md v3.2
