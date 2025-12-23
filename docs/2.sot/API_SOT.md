@@ -1,6 +1,6 @@
 # API 开发与使用规范（API Single Source of Truth）
 
-> **文档版本**: v9.2 (对齐 MASTER.md v4.4)
+> **文档版本**: v9.3 (对齐 MASTER.md v4.4, BUSINESS_RULES.md v4.1)
 > **status**: frozen
 > **owner**: wade
 > **last_reviewed**: 2025-12-24
@@ -53,7 +53,7 @@
 - **系统宪法**: [`../1.overview/MASTER.md`](../1.overview/MASTER.md) v4.4 - 系统全局规则、角色定义、Phase 边界
 - **数据定义**: [`./DATA_SCHEMA.md`](./DATA_SCHEMA.md) v5.2 - 表结构、字段、类型的唯一来源
 - **状态机定义**: [`./STATE_MACHINE.md`](./STATE_MACHINE.md) v2.6 - 业务状态流转的唯一来源
-- **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v3.2 - 业务约束的唯一来源
+- **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v4.1 - 业务约束的唯一来源
 - **错误码**: [`./ERROR_CODES_SOT.md`](./ERROR_CODES_SOT.md) v2.1 - 错误码定义的唯一来源
 - **认证授权**: [`./AUTH_SPEC.md`](./AUTH_SPEC.md) v2.0 - 权限矩阵的唯一来源
 
@@ -85,11 +85,11 @@
 
 | 数据流 | 字段 | 提交者 | 时效性 | 用途 |
 |-------|------|--------|--------|------|
-| **raw数据流** | `conversions_raw`, `raw_spend` | 投手 | T+0 23:59前 | 趋势监控，风控检查 |
-| **real数据流** | `real_spend` | 运营 | T+1 12:00前 | 成本核算 |
-| **final数据流** | `conversions_final` | 运营 | T+1 14:00前 | 计费基准 |
+| **raw数据流** | `conversions_raw`, `raw_spend` | 投手 (pitcher) | T+0 23:59前 | 趋势监控，风控检查 |
+| **real数据流** | `real_spend` | 主管 (supervisor) | T+1 12:00前 | 成本核算 |
+| **final数据流** | `conversions_final` | 主管 (supervisor) | T+1 14:00前 | 计费基准 |
 
-**引用**: MASTER.md v4.4 §4（三数据流）、BUSINESS_RULES.md v4.0
+**引用**: MASTER.md v4.4 §4（三数据流）、BUSINESS_RULES.md v4.1
 
 #### 双账本（PROJECT/SUPPLIER）
 
@@ -451,7 +451,7 @@ async def create_resource(
 | `user.username` | string | `users.username` | 用户名 |
 | `user.full_name` | string | `users.full_name` | 真实姓名 |
 | `user.email` | string | `users.email` | 邮箱 |
-| `user.role` | string | `users.role` | 角色（技术层 5 个值，见 §1.2.1 角色定义） |
+| `user.role` | string | `users.role` | 角色（7 角色，见 §1.2.1 角色定义） |
 | `user.is_active` | boolean | `users.is_active` | 账号可用性 |
 | `user.created_at` | ISO 8601 | `users.created_at` | 创建时间 |
 | `access_token` | string | Supabase Auth | JWT访问令牌 |
@@ -565,7 +565,7 @@ GET /api/v1/users?page=1&page_size=20&role=pitcher&is_active=true
 | `username` | string | `users.username` | 用户名 |
 | `full_name` | string | `users.full_name` | 真实姓名 |
 | `email` | string | `users.email` | 邮箱 |
-| `role` | string | `users.role` | 角色（技术层 5 个值，见 §1.2.1 角色定义） |
+| `role` | string | `users.role` | 角色（7 角色，见 §1.2.1 角色定义） |
 | `department` | string | `users.department` | 部门 |
 | `is_active` | boolean | `users.is_active` | 账号可用性 |
 | `created_at` | ISO 8601 | `users.created_at` | 创建时间 |
@@ -2115,7 +2115,7 @@ with db.begin():
 
 **错误码**: PROFIT_001 ~ PROFIT_008（详见 ERROR_CODES_SOT.md v2.1）
 
-**计费公式**（来自 BUSINESS_RULES.md v4.0）:
+**计费公式**（来自 BUSINESS_RULES.md v4.1）:
 - `revenue = conversions_final × unit_price`
 - `cost = real_spend + fee`
 - `profit = revenue - cost`
@@ -2123,7 +2123,7 @@ with db.begin():
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.3.1节 `daily_reports`, 3.2.1节 `projects`, 3.2.9节 `ad_accounts`
-- 业务规则: BUSINESS_RULES.md v4.0 利润计算公式
+- 业务规则: BUSINESS_RULES.md v4.1 利润计算公式
 - 权限矩阵: AUTH_SPEC.md v2.0
 
 ---
@@ -2538,7 +2538,7 @@ draft → submitted
 
 **引用**:
 - 数据表: DATA_SCHEMA.md (weekly_briefs 表)
-- 业务规则: BUSINESS_RULES.md v4.0
+- 业务规则: BUSINESS_RULES.md v4.1
 
 ---
 
@@ -2720,7 +2720,13 @@ try {
 **执行级别**: 🔴 必须严格遵守
 **违规处理**: PR自动拒绝 / 代码回滚
 **最后更新**: 2025-12-24
-**版本**: v9.2 (对齐 MASTER.md v4.4)
+**版本**: v9.3 (对齐 MASTER.md v4.4, BUSINESS_RULES.md v4.1)
+
+**v9.3 更新说明** (2025-12-24):
+- 统一 BUSINESS_RULES.md 版本引用为 v4.1（原 v3.2/v4.0）
+- 修复三数据流"运营"角色描述为"主管 (supervisor)"，对齐 7 角色定义
+- 修正用户角色描述"技术层 5 个值"为"7 角色"
+- 所有角色引用统一使用标准 7 角色名称
 
 **v9.2 更新说明** (2025-12-24):
 - 统一角色名称：`media_buyer` → `pitcher`, `data_operator` → `supervisor`
@@ -2747,4 +2753,4 @@ try {
 - 所有字段严格对齐 DATA_SCHEMA.md v5.2
 - 所有状态流转严格对齐 STATE_MACHINE.md v2.6
 - 所有错误码严格对齐 ERROR_CODES_SOT.md v2.1
-- 所有业务规则严格对齐 BUSINESS_RULES.md v4.0
+- 所有业务规则严格对齐 BUSINESS_RULES.md v4.1
