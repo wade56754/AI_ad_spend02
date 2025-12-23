@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format, subDays } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { apiGet, apiRequest, ApiError } from "@/lib/api";
+import { apiGet, apiRequest, isApiError } from "@/lib/api";
 import {
   LineChart,
   Line,
@@ -118,19 +118,21 @@ export function DailyReportsDashboard({
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const response = await apiGet<DashboardData>("/api/v1/daily-reports/dashboard", {
+      const response = await apiGet<{ data?: DashboardData } | DashboardData>("/api/v1/daily-reports/dashboard", {
         start_date: format(dateRange.start, "yyyy-MM-dd"),
         end_date: format(dateRange.end, "yyyy-MM-dd"),
       });
 
-      if (response.data) {
-        setData(response.data);
+      // Handle both { data: ... } envelope and direct data formats
+      const dashboardData = 'data' in response && response.data ? response.data : response as DashboardData;
+      if (dashboardData && 'summary' in dashboardData) {
+        setData(dashboardData);
       } else {
         toast.error("获取数据失败");
       }
     } catch (error) {
       console.error("获取仪表板数据错误:", error);
-      if (error instanceof ApiError) {
+      if (isApiError(error)) {
         toast.error(error.message || "获取数据失败");
       } else {
         toast.error("获取数据失败");
@@ -170,12 +172,12 @@ export function DailyReportsDashboard({
         type: "dashboard",
       }).toString();
 
-      const response = await apiRequest(`/api/v1/daily-reports/export?${queryString}`, {
+      const response = await apiRequest<{ data?: unknown }>(`/api/v1/daily-reports/export?${queryString}`, {
         method: "GET",
       });
 
       // 如果返回的是文件数据（通常以 base64 或其他形式）
-      if (response.data) {
+      if (response && (response as { data?: unknown }).data) {
         // 如果后端返回的是 blob URL 或 base64 数据
         const blob = new Blob([JSON.stringify(response.data)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         const url = window.URL.createObjectURL(blob);
@@ -190,7 +192,7 @@ export function DailyReportsDashboard({
       }
     } catch (error) {
       console.error("导出错误:", error);
-      if (error instanceof ApiError) {
+      if (isApiError(error)) {
         toast.error(error.message || "导出失败");
       } else {
         toast.error("导出失败");
@@ -273,7 +275,7 @@ export function DailyReportsDashboard({
             </div>
             <div className="mt-2 flex items-center text-sm">
               <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                日均 ¥{(data.summary.total_spend / Math.max(data.trends.length, 1)).toFixed(0)}
+                日均 ¥{((Number(data.summary.total_spend) || 0) / Math.max(data.trends.length, 1)).toFixed(0)}
               </Badge>
             </div>
           </CardContent>
@@ -290,7 +292,7 @@ export function DailyReportsDashboard({
             </div>
             <div className="mt-2 flex items-center text-sm">
               <Badge variant="secondary" className="bg-green-100 text-green-800">
-                平均 CPL ¥{data.summary.avg_cpl.toFixed(2)}
+                平均 CPL ¥{(Number(data.summary.avg_cpl) || 0).toFixed(2)}
               </Badge>
             </div>
           </CardContent>
@@ -307,7 +309,7 @@ export function DailyReportsDashboard({
             </div>
             <div className="mt-2 flex items-center text-sm">
               <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                平均 CPA ¥{data.summary.avg_cpa.toFixed(2)}
+                平均 CPA ¥{(Number(data.summary.avg_cpa) || 0).toFixed(2)}
               </Badge>
             </div>
           </CardContent>
@@ -318,7 +320,7 @@ export function DailyReportsDashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">平均 ROI</p>
-                <p className="text-2xl font-bold">{data.summary.avg_roas.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{(Number(data.summary.avg_roas) || 0).toFixed(2)}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-muted-foreground" />
             </div>

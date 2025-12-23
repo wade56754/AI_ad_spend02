@@ -1,8 +1,13 @@
 /**
- * Projects Page Component
+ * ProjectsPage Component
  *
- * Main page for project management with filters, stats, and team management
- * SoT: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6 Section 5
+ * SoT: docs/10.module-specs/C1-project-mgmt.md §3.1 页面布局
+ * SoT: DATA_SCHEMA.md v5.2 (projects entity)
+ * SoT: STATE_MACHINE.md v2.6 Section 5 (项目状态机)
+ *
+ * 一句话定义: 让老板/项目负责人了解"有哪些项目？谁负责？"
+ *
+ * @module features/projects/components
  */
 
 'use client';
@@ -38,7 +43,7 @@ import {
   ProjectStatsCard,
   ProjectStatusLegend,
 } from './ProjectStatusBadge';
-import { useProjects, useProjectStatistics } from '../hooks';
+import { useProjects, useProjectStatistics, useRefreshProjects } from '../hooks';
 import type { Project, ProjectStatus, ProjectListParams } from '../types';
 import { PROJECT_STATUS_CONFIG } from '../types';
 
@@ -62,9 +67,12 @@ export function ProjectsPage() {
   // View mode
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
 
-  // Data fetching
-  const { data: projectsData, refetch } = useProjects(filters);
+  // Data fetching - SoT: C1-project-mgmt.md §4 API 接口
+  const { data: projectsData } = useProjects(filters);
   const { data: statsData } = useProjectStatistics();
+
+  // 刷新 hook - SoT: C1-project-mgmt.md §2.4 数据刷新策略
+  const { refreshAll } = useRefreshProjects();
 
   const stats = statsData?.data;
   const totalProjects = projectsData?.meta?.pagination?.total ?? 0;
@@ -127,12 +135,13 @@ export function ProjectsPage() {
     }
   };
 
-  // Format currency
+  // Format currency - 使用固定格式避免 SSR hydration 不匹配
   const formatCurrency = (amount: number) => {
     if (amount >= 10000) {
       return `¥${(amount / 10000).toFixed(1)}万`;
     }
-    return `¥${amount.toLocaleString()}`;
+    // 使用 Intl.NumberFormat 固定 locale 避免 hydration 问题
+    return `¥${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 }).format(amount)}`;
   };
 
   return (
@@ -144,7 +153,7 @@ export function ProjectsPage() {
           <p className="text-muted-foreground">管理广告投放项目及预算</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => refreshAll()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             刷新
           </Button>
@@ -320,7 +329,8 @@ export function ProjectsPage() {
                     const count =
                       stats?.[`${status}_projects` as keyof typeof stats] ?? 0;
                     const total = stats?.total_projects ?? 1;
-                    const percent = ((count as number) / total) * 100;
+                    // 使用 Math.round 避免浮点精度导致的 hydration 不匹配
+                    const percent = Math.round(((count as number) / total) * 100);
 
                     return (
                       <div
@@ -389,7 +399,7 @@ export function ProjectsPage() {
                         style={{
                           width: `${
                             stats?.total_budget
-                              ? Math.min((stats.total_spent / stats.total_budget) * 100, 100)
+                              ? Math.round(Math.min((stats.total_spent / stats.total_budget) * 100, 100))
                               : 0
                           }%`,
                         }}

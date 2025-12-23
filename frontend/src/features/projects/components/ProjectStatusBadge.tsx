@@ -19,6 +19,7 @@ import {
   Pause,
   CheckCircle,
   XCircle,
+  FileEdit,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,8 +27,9 @@ import type { ProjectStatus } from '../types';
 
 /**
  * Status configuration with icons, colors, and descriptions
+ * (Component-specific version with icons)
  */
-export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, {
+export const PROJECT_STATUS_BADGE_CONFIG: Record<ProjectStatus, {
   label: string;
   icon: LucideIcon;
   variant: 'default' | 'success' | 'warning' | 'destructive' | 'outline';
@@ -35,6 +37,14 @@ export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, {
   textColor: string;
   description: string;
 }> = {
+  planning: {
+    label: '规划中',
+    icon: FileEdit,
+    variant: 'outline',
+    bgColor: 'bg-gray-50',
+    textColor: 'text-gray-700',
+    description: '项目规划阶段，准备启动',
+  },
   active: {
     label: '进行中',
     icon: Play,
@@ -86,7 +96,7 @@ export function ProjectStatusBadge({
   size = 'default',
   className,
 }: ProjectStatusBadgeProps) {
-  const config = PROJECT_STATUS_CONFIG[status];
+  const config = PROJECT_STATUS_BADGE_CONFIG[status];
 
   if (!config) {
     return <Badge variant="outline">未知状态</Badge>;
@@ -167,14 +177,16 @@ export function BudgetProgress({
     return 'bg-green-500';
   };
 
+  // 使用固定 locale 避免 SSR hydration 不匹配
   const formatAmount = (amount: number) => {
+    const formatter = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 });
     if (currency === 'CNY') {
       if (amount >= 10000) {
         return `¥${(amount / 10000).toFixed(1)}万`;
       }
-      return `¥${amount.toLocaleString()}`;
+      return `¥${formatter.format(amount)}`;
     }
-    return `${currency} ${amount.toLocaleString()}`;
+    return `${currency} ${formatter.format(amount)}`;
   };
 
   const sizeStyles = {
@@ -254,7 +266,9 @@ export function ProjectStatsCard({
         <div>
           <p className="text-sm text-muted-foreground">{title}</p>
           <p className="text-2xl font-bold mt-1">
-            {typeof value === 'number' ? value.toLocaleString() : value}
+            {typeof value === 'number'
+              ? new Intl.NumberFormat('zh-CN').format(value)
+              : value}
           </p>
           {trend && (
             <p className={cn(
@@ -278,7 +292,7 @@ export function ProjectStatsCard({
 export function ProjectStatusLegend() {
   return (
     <div className="flex flex-wrap gap-4">
-      {(Object.entries(PROJECT_STATUS_CONFIG) as [ProjectStatus, typeof PROJECT_STATUS_CONFIG[ProjectStatus]][]).map(
+      {(Object.entries(PROJECT_STATUS_BADGE_CONFIG) as [ProjectStatus, typeof PROJECT_STATUS_BADGE_CONFIG[ProjectStatus]][]).map(
         ([status, config]) => {
           const Icon = config.icon;
           return (

@@ -16,7 +16,7 @@ from math import ceil
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, HTTPException, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
@@ -32,7 +32,7 @@ from backend.schemas.import_job import (
 from backend.services.import_job_service import ImportJobService
 from backend.services.log_service import LogService
 from backend.core.dependencies import require_role
-from backend.core.response import success_response, paginated_response
+from backend.core.response import success_response, paginated_response, error_response
 from backend.exceptions.custom_exceptions import (
     ValidationError,
     ResourceNotFoundError,
@@ -41,7 +41,7 @@ from backend.exceptions.custom_exceptions import (
 )
 
 
-router = APIRouter(prefix="/import_jobs", tags=["导入任务"])
+router = APIRouter(prefix="/import-jobs", tags=["导入任务"])
 
 
 def get_import_job_service(db: Session = Depends(get_db)) -> ImportJobService:
@@ -71,17 +71,11 @@ async def upload_import_file(
         # 读取文件内容
         file_content = await file.read()
         if not file_content:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "VAL_001", "message": "文件内容为空"}
-            )
+            return error_response(code="VALIDATION_001", message="文件内容为空", status_code=400)
 
         # 检查文件类型
         if not file.filename or not file.filename.lower().endswith('.csv'):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "VAL_002", "message": "仅支持CSV格式文件"}
-            )
+            return error_response(code="VALIDATION_002", message="仅支持CSV格式文件", status_code=400)
 
         # 上传并解析
         job, parsed_rows, errors = await service.upload_and_parse(
@@ -127,20 +121,11 @@ async def upload_import_file(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except BusinessLogicError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=409)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"code": "SYS_001", "message": str(e)}
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 任务列表与详情 ==========
@@ -188,10 +173,7 @@ async def list_import_jobs(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/statistics", response_model=dict)
@@ -210,10 +192,7 @@ async def get_import_statistics(
         return success_response(data=statistics.model_dump())
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/{job_id}", response_model=dict)
@@ -238,20 +217,11 @@ async def get_import_job(
         return success_response(data=job_data.model_dump())
 
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except PermissionDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "AUTH_003", message=str(e), status_code=403)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/{job_id}/progress", response_model=dict)
@@ -284,15 +254,9 @@ async def get_import_job_progress(
         return success_response(data=progress.model_dump())
 
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/{job_id}/errors", response_model=dict)
@@ -328,15 +292,9 @@ async def get_import_job_errors(
         )
 
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 任务操作端点 ==========
@@ -371,20 +329,11 @@ async def start_import_job(
         )
 
     except BusinessLogicError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.post("/{job_id}/cancel", response_model=dict)
@@ -417,25 +366,13 @@ async def cancel_import_job(
         )
 
     except BusinessLogicError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except PermissionDeniedError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "AUTH_003", message=str(e), status_code=403)
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.delete("/{job_id}", response_model=dict)
@@ -467,20 +404,11 @@ async def delete_import_job(
         return success_response(message="任务已删除")
 
     except BusinessLogicError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 重复检查端点 ==========
@@ -500,10 +428,7 @@ async def check_duplicate_file(
     try:
         file_content = await file.read()
         if not file_content:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "VAL_001", "message": "文件内容为空"}
-            )
+            return error_response(code="VALIDATION_001", message="文件内容为空", status_code=400)
 
         file_hash = hashlib.sha256(file_content).hexdigest()
         existing_job = await service.check_duplicate(file_hash)
@@ -529,7 +454,4 @@ async def check_duplicate_file(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)

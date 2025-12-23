@@ -11,11 +11,14 @@ from backend.core.config import get_settings
 from backend.core.db import get_engine
 from backend.core.response import fail, ok, success_response, error_response, StandardResponse
 from backend.core.error_codes import SystemErrorCodes, ValidationErrorCodes
+from backend.exceptions.custom_exceptions import BaseCustomException
 # 导入核心路由模块
 from backend.routers import (
     health,
     projects,
+    project_members,  # ✅ 项目成员管理API (MASTER.md v4.4 §2.4)
     authentication,
+    users,  # ✅ 用户管理API (API_SOT v9.0 §5)
     ad_accounts,
     ad_spend,
     channels,
@@ -30,6 +33,8 @@ from backend.routers import (
     reconciliation,  # ✅ 对账管理API (新启用)
     reports,  # ✅ 报表管理API (v2.0 - 完整重构)
     agents,  # ✅ Agent Platform API (新增)
+    spend,  # ✅ 消耗导入API (Financial SoT Phase 2)
+    dashboard,  # ✅ CEO驾驶舱API (Phase C - MASTER.md v4.4 §6.5)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
@@ -41,7 +46,8 @@ from backend.routers import (
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name, debug=settings.debug)
+# 禁用 redirect_slashes 避免 307 重定向导致 Authorization header 丢失
+app = FastAPI(title=settings.app_name, debug=settings.debug, redirect_slashes=False)
 
 app.add_middleware(
     CORSMiddleware,
@@ -56,7 +62,9 @@ API_V1_PREFIX = "/api/v1"
 # 注册核心API路由
 app.include_router(health.router, prefix=API_V1_PREFIX)  # 健康检查
 app.include_router(projects.router, prefix=API_V1_PREFIX)  # 项目管理
+app.include_router(project_members.router, prefix=API_V1_PREFIX)  # 项目成员管理 ✅ MASTER.md v4.4
 app.include_router(authentication.router, prefix=API_V1_PREFIX)  # 用户认证
+app.include_router(users.router, prefix=API_V1_PREFIX)  # 用户管理 ✅ 新增 (API_SOT v9.0 §5)
 app.include_router(ad_spend.router, prefix=API_V1_PREFIX)  # 广告消耗
 app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)  # 广告账户
 app.include_router(channels.router, prefix=API_V1_PREFIX)  # 渠道管理
@@ -71,6 +79,8 @@ app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅
 app.include_router(reconciliation.router, prefix=API_V1_PREFIX)  # 对账管理 ✅ 新启用
 app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表管理 ✅ v2.0 完整重构
 app.include_router(agents.router, prefix=API_V1_PREFIX)  # Agent Platform ✅ 新增
+app.include_router(spend.router, prefix=API_V1_PREFIX)  # 消耗导入 ✅ Financial SoT Phase 2
+app.include_router(dashboard.router, prefix=API_V1_PREFIX)  # CEO驾驶舱 ✅ Phase C - MASTER.md v4.4 §6.5
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 
@@ -143,6 +153,31 @@ async def handle_http_exception(_: Request, exc: HTTPException) -> JSONResponse:
     return fail(code=code, message=message, status_code=exc.status_code)
 
 
+@app.exception_handler(BaseCustomException)
+async def handle_custom_exception(_: Request, exc: BaseCustomException) -> JSONResponse:
+    """
+    处理自定义业务异常，返回符合 SoT 约定的 StandardResponse 格式
+
+    SoT Ref: ERROR_CODES_SOT.md v2.1 第 1.3 节 (Envelope 格式)
+
+    支持的异常类型:
+    - BusinessLogicError (400)
+    - ResourceNotFoundError (404)
+    - PermissionDeniedError (403)
+    - ResourceConflictError (409)
+    - ValidationError (422)
+    - AuthenticationError (401)
+    - StateTransitionError (400)
+    - 其他 BaseCustomException 子类
+    """
+    return error_response(
+        code=exc.error_code,
+        message=exc.message,
+        status_code=exc.status_code,
+        details=exc.details
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def handle_validation_exception(_: Request, exc: RequestValidationError) -> JSONResponse:
     """
@@ -178,6 +213,10 @@ async def handle_validation_exception(_: Request, exc: RequestValidationError) -
 
 @app.exception_handler(Exception)
 async def handle_unexpected_exception(_: Request, exc: Exception) -> JSONResponse:
+    import traceback
+    import sys
+    error_msg = f"Unexpected exception: {type(exc).__name__}: {exc}\n{traceback.format_exc()}"
+    print(error_msg, file=sys.stderr, flush=True)
     message = str(exc) if settings.debug else "Internal server error"
     return fail(code=SystemErrorCodes.INTERNAL_ERROR.code, message=message, status_code=SystemErrorCodes.INTERNAL_ERROR.status_code)
 

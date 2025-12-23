@@ -298,7 +298,7 @@ def test_user(db_session):
         id=uuid4(),
         email="test@example.com",
         username="testuser",
-        hashed_password="$2b$12$test_hashed_password_placeholder",
+        password_hash="$2b$12$test_hashed_password_placeholder",
         role=UserRole.ADMIN,
         is_active=True,
     )
@@ -315,7 +315,7 @@ def admin_user(db_session):
         id=uuid4(),
         email="admin@example.com",
         username="admin_user",
-        hashed_password="$2b$12$test_hashed_password_placeholder",
+        password_hash="$2b$12$test_hashed_password_placeholder",
         role=UserRole.ADMIN,
         is_active=True,
     )
@@ -332,7 +332,7 @@ def finance_user(db_session):
         id=uuid4(),
         email="finance@example.com",
         username="finance_user",
-        hashed_password="$2b$12$test_hashed_password_placeholder",
+        password_hash="$2b$12$test_hashed_password_placeholder",
         role=UserRole.FINANCE,
         is_active=True,
     )
@@ -349,7 +349,7 @@ def data_operator_user(db_session):
         id=uuid4(),
         email="data_op@example.com",
         username="data_operator_user",
-        hashed_password="$2b$12$test_hashed_password_placeholder",
+        password_hash="$2b$12$test_hashed_password_placeholder",
         role=UserRole.DATA_OPERATOR,
         is_active=True,
     )
@@ -366,7 +366,7 @@ def account_manager_user(db_session):
         id=uuid4(),
         email="am@example.com",
         username="account_manager_user",
-        hashed_password="$2b$12$test_hashed_password_placeholder",
+        password_hash="$2b$12$test_hashed_password_placeholder",
         role=UserRole.ACCOUNT_MANAGER,
         is_active=True,
     )
@@ -383,7 +383,7 @@ def media_buyer_user(db_session):
         id=uuid4(),
         email="buyer@example.com",
         username="media_buyer_user",
-        hashed_password="$2b$12$test_hashed_password_placeholder",
+        password_hash="$2b$12$test_hashed_password_placeholder",
         role=UserRole.MEDIA_BUYER,
         is_active=True,
     )
@@ -539,13 +539,16 @@ def test_project_2(db_session, test_user):
 
 @pytest.fixture(scope="function")
 def test_channel(db_session):
-    """创建测试渠道"""
+    """创建测试渠道
+
+    Channel 模型字段 (channel.py):
+    - id, name, platform, status, risk_level, created_by, channel_metadata
+    """
     channel = Channel(
         id=uuid4(),
         name="Facebook",
-        channel_code="FB",
+        platform="Meta",
         status="active",
-        country="US",
     )
     db_session.add(channel)
     db_session.commit()
@@ -555,15 +558,20 @@ def test_channel(db_session):
 
 @pytest.fixture(scope="function")
 def test_ad_account(db_session, test_project, test_channel, media_buyer_user):
-    """创建测试广告账户"""
+    """创建测试广告账户
+
+    AdAccount 模型字段 (ad_account.py):
+    - id, project_id, channel_id, supplier_id, owner_id, team_id, buyer_id
+    - name, account_code, status, status_reason
+    """
     account = AdAccount(
         id=1,
         account_code="ACT_TEST_001",
-        account_name="测试广告账户",
+        name="测试广告账户",
         status="active",
         project_id=test_project.id,
         channel_id=test_channel.id,
-        assigned_to=media_buyer_user.id,  # 分配给 media_buyer_user，以便权限检查通过
+        owner_id=media_buyer_user.id,  # 分配给 media_buyer_user，以便权限检查通过
     )
     db_session.add(account)
     db_session.commit()
@@ -577,11 +585,11 @@ def test_ad_account_2(db_session, test_project, test_channel, media_buyer_user):
     account = AdAccount(
         id=2,
         account_code="ACT_TEST_002",
-        account_name="测试广告账户2",
+        name="测试广告账户2",
         status="active",
         project_id=test_project.id,
         channel_id=test_channel.id,
-        assigned_to=media_buyer_user.id,
+        owner_id=media_buyer_user.id,
     )
     db_session.add(account)
     db_session.commit()

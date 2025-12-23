@@ -8,11 +8,13 @@
 
 // === Status Enum ===
 
+// SoT 对齐: STATE_MACHINE.md v2.6 Section 5 - 项目状态机
 export type ProjectStatus =
-  | 'active'
-  | 'paused'
-  | 'completed'
-  | 'cancelled';
+  | 'planning'    // 规划中 (初始状态)
+  | 'active'      // 进行中
+  | 'paused'      // 已暂停
+  | 'completed'   // 已完成 (终态)
+  | 'cancelled';  // 已取消 (终态)
 
 // === Entity Types ===
 
@@ -27,6 +29,13 @@ export interface Project {
   currency: string;
   start_date?: string;
   end_date?: string;
+  // 新增: MASTER.md v4.4 §6.2 - 项目负责人
+  owner_id?: number;
+  owner_name?: string;
+  // 新增: 目标 CPL 和单粉价格
+  target_cpl?: number | null;
+  unit_price?: number | null;
+  // 兼容旧字段
   account_manager_id?: number;
   account_manager_name?: string;
   total_spent: number;
@@ -95,6 +104,11 @@ export interface ProjectCreateInput {
   currency?: string;
   start_date?: string;
   end_date?: string;
+  // 新增: 项目负责人、目标CPL、单价
+  owner_id?: number;
+  target_cpl?: number;
+  unit_price?: number;
+  // 兼容旧字段
   account_manager_id?: number;
 }
 
@@ -107,6 +121,11 @@ export interface ProjectUpdateInput {
   budget?: number;
   start_date?: string;
   end_date?: string;
+  // 新增: 项目负责人、目标CPL、单价
+  owner_id?: number;
+  target_cpl?: number;
+  unit_price?: number;
+  // 兼容旧字段
   account_manager_id?: number;
 }
 
@@ -120,11 +139,13 @@ export interface ProjectMemberAssignInput {
 export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, {
   label: string;
   variant: 'default' | 'success' | 'warning' | 'error';
+  description: string;
 }> = {
-  active: { label: '进行中', variant: 'success' },
-  paused: { label: '已暂停', variant: 'warning' },
-  completed: { label: '已完成', variant: 'default' },
-  cancelled: { label: '已取消', variant: 'error' },
+  planning: { label: '规划中', variant: 'default', description: '项目准备阶段' },
+  active: { label: '进行中', variant: 'success', description: '正常投放' },
+  paused: { label: '已暂停', variant: 'warning', description: '暂停投放' },
+  completed: { label: '已完成', variant: 'default', description: '项目结束' },
+  cancelled: { label: '已取消', variant: 'error', description: '项目取消' },
 };
 
 export const PROJECT_ROLE_CONFIG: Record<string, { label: string }> = {

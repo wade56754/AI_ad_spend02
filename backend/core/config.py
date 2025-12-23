@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     jwt_refresh_token_expire_days: int = Field(7, ge=1, le=365, description="JWT刷新令牌过期时间（天）")
     encryption_key: str = Field(..., min_length=32, description="数据加密密钥")
 
+    # 前端URL配置
+    frontend_url: str = Field("http://localhost:3000", description="前端URL，用于邮件重定向")
+
     # Supabase配置 - 从环境变量读取，无硬编码
     supabase_url: str = Field(..., description="Supabase项目URL")
     supabase_anon_key: str = Field(..., min_length=20, description="Supabase匿名密钥")

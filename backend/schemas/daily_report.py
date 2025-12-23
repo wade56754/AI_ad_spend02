@@ -18,26 +18,40 @@ class DailyReportCreateRequest(BaseModel):
     """
     日报创建请求 - 对齐 API_SOT.md v9.0 第 9.2 节
 
-    字段命名遵循 SoT 三数据流规范:
-    - conversions_raw / raw_spend: raw 数据流（投手提交）
-    - real_spend: real 数据流（运营录入）
-    - conversions_final: final 数据流（运营确认）
+    投手提交原始数据:
+    - raw_spend: 广告消耗
+    - follows_count: 进粉数
+    - result_count: 成效数
+    - region: 地区
+
+    系统自动计算:
+    - cost_per_follow: 单粉成本 = raw_spend / follows_count
+    - cost_per_result: 单次成效费用 = raw_spend / result_count
     """
     model_config = ConfigDict(from_attributes=True)
 
     # 必填字段
     report_date: date = Field(..., description="报表日期（≤今天）")
     ad_account_id: int = Field(..., gt=0, description="广告账户ID")
-    conversions_raw: int = Field(..., ge=0, description="原始粉数（raw数据流）")
-    raw_spend: Decimal = Field(..., ge=0, description="原始消耗（raw数据流）DECIMAL(15,2)")
+    raw_spend: Decimal = Field(..., ge=0, description="广告消耗（USD）DECIMAL(15,2)")
+
+    # 新增必填字段 (v2.0)
+    follows_count: int = Field(..., ge=0, description="进粉数")
+    result_count: int = Field(..., ge=0, description="成效数")
+    region: str = Field(..., max_length=50, description="投放地区（Turkey/India/Brazil等）")
 
     # 可选字段
+    platform: Optional[str] = Field(None, max_length=20, description="广告平台（FB/Google/TikTok）")
+    currency: str = Field("USD", max_length=10, description="货币类型（USD/CNY）")
     campaign_name: Optional[str] = Field(None, max_length=200, description="广告系列名称")
     ad_group_name: Optional[str] = Field(None, max_length=200, description="广告组名称")
     ad_creative_name: Optional[str] = Field(None, max_length=200, description="广告创意名称")
     impressions: int = Field(0, ge=0, description="展示次数/曝光量")
     clicks: int = Field(0, ge=0, description="点击次数")
     notes: Optional[str] = Field(None, max_length=1000, description="备注说明")
+
+    # 兼容旧字段（可选）
+    conversions_raw: Optional[int] = Field(None, ge=0, description="原始粉数（raw数据流，兼容旧版）")
 
     # NOTE: 报表日期验证（BIZ_201）移至 service 层，以返回正确的 HTTP 状态码和错误码
     # Pydantic 验证会返回 422，而业务规则要求返回 400 + BIZ_201
@@ -52,17 +66,29 @@ class DailyReportCreateRequest(BaseModel):
 
 
 class DailyReportUpdateRequest(BaseModel):
-    """日报更新请求 - 仅允许更新 raw 数据流字段"""
+    """日报更新请求 - 仅允许更新投手提交的原始数据"""
     model_config = ConfigDict(from_attributes=True)
 
+    # 核心字段（投手提交）
+    raw_spend: Optional[Decimal] = Field(None, ge=0, description="广告消耗（USD）")
+    follows_count: Optional[int] = Field(None, ge=0, description="进粉数")
+    result_count: Optional[int] = Field(None, ge=0, description="成效数")
+    region: Optional[str] = Field(None, max_length=50, description="投放地区")
+    platform: Optional[str] = Field(None, max_length=20, description="广告平台（FB/Google/TikTok）")
+    currency: Optional[str] = Field(None, max_length=10, description="货币类型（USD/CNY）")
+
+    # 广告信息
     campaign_name: Optional[str] = Field(None, max_length=200)
     ad_group_name: Optional[str] = Field(None, max_length=200)
     ad_creative_name: Optional[str] = Field(None, max_length=200)
+
+    # 其他指标
     impressions: Optional[int] = Field(None, ge=0)
     clicks: Optional[int] = Field(None, ge=0)
-    conversions_raw: Optional[int] = Field(None, ge=0, description="原始粉数（raw数据流）")
-    raw_spend: Optional[Decimal] = Field(None, ge=0, description="原始消耗（raw数据流）")
     notes: Optional[str] = Field(None, max_length=1000)
+
+    # 兼容旧字段
+    conversions_raw: Optional[int] = Field(None, ge=0, description="原始粉数（兼容旧版）")
 
     @field_validator('clicks')
     def validate_clicks_vs_impressions(cls, v, info):
@@ -117,6 +143,14 @@ class DailyReportQueryParams(BaseModel):
     media_buyer_id: Optional[int] = Field(None, gt=0, description="投手ID")
     project_id: Optional[int] = Field(None, gt=0, description="项目ID")
 
+    # 新增筛选字段 (v2.0)
+    region: Optional[str] = Field(None, max_length=50, description="投放地区")
+    platform: Optional[str] = Field(None, max_length=20, description="广告平台（FB/Google/TikTok）")
+
+    # 新增筛选字段 (v2.1) - 团队和投手筛选
+    team_id: Optional[str] = Field(None, max_length=50, description="团队ID (UUID)")
+    submitter_name: Optional[str] = Field(None, max_length=50, description="投手名称（模糊匹配）")
+
     @field_validator('report_date_end')
     def validate_date_range(cls, v, info):
         """验证日期范围"""
@@ -130,10 +164,15 @@ class DailyReportResponse(BaseModel):
     """
     日报响应 - 对齐 API_SOT.md v9.0 第 9.2 节 Response Schema
 
-    包含三数据流字段:
-    - conversions_raw / raw_spend: raw 数据流
-    - real_spend: real 数据流
-    - conversions_final: final 数据流
+    投手提交字段:
+    - raw_spend: 广告消耗
+    - follows_count: 进粉数
+    - result_count: 成效数
+    - region: 地区
+
+    系统计算字段:
+    - cost_per_follow: 单粉成本
+    - cost_per_result: 单次成效费用
     """
     model_config = ConfigDict(from_attributes=True)
 
@@ -153,12 +192,19 @@ class DailyReportResponse(BaseModel):
     ad_group_name: Optional[str] = None
     ad_creative_name: Optional[str] = None
 
+    # 新增字段 (v2.0) - 投手提交
+    region: Optional[str] = None  # 投放地区
+    platform: Optional[str] = None  # 广告平台 (FB/Google/TikTok)
+    follows_count: int = 0  # 进粉数
+    result_count: int = 0  # 成效数
+    currency: str = "USD"  # 货币类型
+
     # 指标字段
     impressions: int = 0
     clicks: int = 0
 
     # 三数据流字段
-    conversions_raw: int = 0  # raw 数据流 - 原始粉数
+    conversions_raw: int = 0  # raw 数据流 - 原始粉数（兼容）
     raw_spend: Decimal = Decimal("0.00")  # raw 数据流 - 原始消耗
     real_spend: Decimal = Decimal("0.00")  # real 数据流 - 真实消耗
     fee: Decimal = Decimal("0.00")  # 手续费
@@ -178,10 +224,28 @@ class DailyReportResponse(BaseModel):
     # 用户信息
     created_by: Optional[str] = None  # UUID
     created_by_name: Optional[str] = None
+    submitter_name: Optional[str] = None  # 投手名称
+    team_name: Optional[str] = None  # 团队名称
 
     # 时间戳
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    @computed_field
+    @property
+    def cost_per_follow(self) -> Decimal:
+        """单粉成本 = 广告消耗 / 进粉数"""
+        if self.follows_count == 0:
+            return Decimal('0.00')
+        return self.raw_spend / Decimal(self.follows_count)
+
+    @computed_field
+    @property
+    def cost_per_result(self) -> Decimal:
+        """单次成效费用 = 广告消耗 / 成效数"""
+        if self.result_count == 0:
+            return Decimal('0.00')
+        return self.raw_spend / Decimal(self.result_count)
 
     @computed_field
     @property

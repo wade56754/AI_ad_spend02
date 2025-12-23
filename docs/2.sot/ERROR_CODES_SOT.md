@@ -84,6 +84,7 @@
 | `DB_` | 数据库错误 | 数据库连接、查询、约束错误 | 400, 409, 500 | 5 |
 | `STATE_` | 状态机错误 | 状态流转、终态保护等错误 | 400, 403, 409 | 6 |
 | `TREND_` | 趋势风控错误 | 粉数确认趋势检查相关错误 | 200, 400 | 4 |
+| `PROFIT_` | 利润统计错误 | 利润聚合、报表生成相关错误 | 400, 403, 404, 409, 500 | 8 |
 
 ### 2.3 数字编码分段规则
 
@@ -140,6 +141,13 @@
 - `001-009`: 趋势风控触发
 - `010-019`: 风控复核相关
 - `020-099`: 预留扩展
+
+#### PROFIT_ 类（001-099）
+
+- `001-009`: 数据与周期相关
+- `010-019`: 权限相关
+- `020-029`: 聚合与报表相关
+- `030-099`: 预留扩展
 
 ---
 
@@ -412,6 +420,62 @@ def update_real_spend(report_id: int, real_spend: Decimal):
             message="trend_flagged状态必须复核",
             code=TrendErrorCodes.REVIEW_REQUIRED.code  # TREND_002
         )
+```
+
+---
+
+### 4.8 利润统计错误类（PROFIT_）
+
+**引用**: `PROFIT_SOT.md v1.1` - 利润表自动化模块规范
+
+**业务背景**: Finance Profit 模块负责利润聚合计算、多维度报表生成、周期聚合统计。错误码覆盖数据查询、权限控制、聚合计算、报表生成等场景。
+
+| 错误码 | 消息 | HTTP | 触发场景 | 状态 |
+|--------|------|------|----------|------|
+| `PROFIT_001` | 指定期间无数据 | 404 | 查询期间无 final_locked 日报数据 | USED |
+| `PROFIT_002` | 周期参数无效 | 400 | period_start > period_end 或日期为未来 | USED |
+| `PROFIT_003` | 项目不存在 | 404 | project_id 对应的项目不存在 | USED |
+| `PROFIT_004` | 账户不存在 | 404 | ad_account_id 对应的账户不存在 | USED |
+| `PROFIT_005` | 无权限访问 | 403 | 用户角色无权访问该利润数据 | USED |
+| `PROFIT_006` | 聚合计算失败 | 500 | 利润聚合过程中发生内部错误 | USED |
+| `PROFIT_007` | 报表生成失败 | 500 | 利润报表快照生成失败 | USED |
+| `PROFIT_008` | 数据已锁定 | 409 | 尝试修改已锁定的利润聚合数据 | USED |
+
+**权限矩阵**:
+
+| 端点 | admin | finance | account_manager | media_buyer | data_operator |
+|------|-------|---------|-----------------|-------------|---------------|
+| POST /generate | ✅ | ✅ | ❌ | ❌ | ❌ |
+| GET /monthly | ✅ | ✅ | ❌ | ❌ | ❌ |
+| GET /daily | ✅ | ✅ | ❌ | ❌ | ❌ |
+| GET /projects/{id} | ✅ | ✅ | ✅ (own) | ❌ | ✅ |
+| GET /accounts/{id} | ✅ | ✅ | ✅ | ✅ (own) | ✅ |
+| GET /summary | ✅ | ✅ | ❌ | ❌ | ❌ |
+
+**使用示例**:
+```python
+from backend.core.error_codes import ProfitErrorCodes
+
+# 场景1: 无数据
+if not aggregates:
+    raise ResourceNotFoundException(
+        message="指定期间无数据",
+        code=ProfitErrorCodes.NO_DATA.code  # PROFIT_001
+    )
+
+# 场景2: 权限不足
+if user.role == "media_buyer" and endpoint == "/monthly":
+    raise AuthorizationException(
+        message="无权限访问月度利润表",
+        code=ProfitErrorCodes.PERMISSION_DENIED.code  # PROFIT_005
+    )
+
+# 场景3: 数据已锁定
+if aggregate.is_locked:
+    raise BusinessRuleException(
+        message="数据已锁定，不可修改",
+        code=ProfitErrorCodes.DATA_LOCKED.code  # PROFIT_008
+    )
 ```
 
 ---

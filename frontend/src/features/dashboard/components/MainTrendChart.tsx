@@ -1,12 +1,12 @@
 /**
  * MainTrendChart Component
  *
- * 主趋势图 - 多指标合并展示
- * - 支持切换显示不同指标(消耗/收入/利润)
- * - 包含自动总结文案区域
- * - 查看明细按钮
+ * SoT: docs/10.module-specs/A1-dashboard.md §3.2 组件清单
  *
- * Based on UI_DESIGN_SYSTEM.md v2.0
+ * 主趋势图 - 多指标合并展示
+ * - 支持切换显示不同指标(消耗/收入/利润/进粉)
+ * - 包含自动总结文案区域 (AI 洞察)
+ * - 查看明细按钮 → 跳转消耗明细页
  */
 
 'use client';
@@ -149,7 +149,7 @@ export function MainTrendChart({
     if (data.length === 0) return null;
 
     const values = data
-      .map((d) => d[config.dataKey] as number)
+      .map((d) => (d as unknown as Record<string, unknown>)[config.dataKey] as number)
       .filter((v) => v !== undefined);
     const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
     const latest = values[values.length - 1];
@@ -291,7 +291,7 @@ export function generateSummary(
 
   const config = METRIC_CONFIG[metric];
   const values = data
-    .map((d) => d[config.dataKey] as number)
+    .map((d) => (d as unknown as Record<string, unknown>)[config.dataKey] as number)
     .filter((v) => v !== undefined);
 
   const avg = values.reduce((sum, v) => sum + v, 0) / values.length;

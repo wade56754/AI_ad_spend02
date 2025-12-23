@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,8 +52,25 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
     }
   };
 
-  const formatAmount = (amount: number) => {
-    return `¥${amount.toFixed(2)}`;
+  const formatAmount = (amount: number | undefined | null) => {
+    const num = Number(amount) || 0;
+    if (num >= 10000) {
+      return `¥${(num / 10000).toFixed(1)}万`;
+    }
+    return `¥${num.toFixed(2)}`;
+  };
+
+  // 预算进度颜色规则 - C1-project-mgmt.md §3.5
+  const getProgressColor = (usage: number) => {
+    if (usage >= 90) return 'bg-red-500';
+    if (usage >= 70) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
+  // 格式化 CPL
+  const formatCPL = (cpl: number | null | undefined) => {
+    if (cpl === null || cpl === undefined) return '--';
+    return `¥${cpl.toFixed(2)}`;
   };
 
   if (isLoading) {
@@ -78,9 +94,11 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead>项目名称</TableHead>
+            <TableHead>负责人</TableHead>
             <TableHead>客户</TableHead>
             <TableHead>预算使用</TableHead>
-            <TableHead>账户数</TableHead>
+            <TableHead className="text-right">目标CPL</TableHead>
+            <TableHead className="text-right">单价</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="w-[80px]">操作</TableHead>
           </TableRow>
@@ -88,7 +106,7 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
         <TableBody>
           {projects.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground">
+              <TableCell colSpan={8} className="text-center text-muted-foreground">
                 暂无数据
               </TableCell>
             </TableRow>
@@ -98,15 +116,17 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
               const usagePercent = project.budget > 0
                 ? Math.min((project.total_spent / project.budget) * 100, 100)
                 : 0;
+              // 获取负责人名称 (优先 owner_name，兼容旧字段)
+              const ownerName = project.owner_name || project.account_manager_name;
               return (
                 <TableRow key={project.id}>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{project.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {project.account_manager_name || '未分配经理'}
-                      </div>
-                    </div>
+                    <div className="font-medium">{project.name}</div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={ownerName ? 'text-foreground' : 'text-muted-foreground'}>
+                      {ownerName || '未分配'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <div>
@@ -117,18 +137,24 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      <Progress value={usagePercent} className="h-2" />
+                    <div className="space-y-1 min-w-[120px]">
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${getProgressColor(usagePercent)} transition-all`}
+                          style={{ width: `${usagePercent}%` }}
+                        />
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {formatAmount(project.total_spent)} / {formatAmount(project.budget)}
+                        <span className="ml-1">({usagePercent.toFixed(0)}%)</span>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div>
-                      <span className="text-green-600">{project.active_accounts}</span>
-                      <span className="text-muted-foreground"> / {project.total_accounts}</span>
-                    </div>
+                  <TableCell className="text-right">
+                    {formatCPL(project.target_cpl)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCPL(project.unit_price)}
                   </TableCell>
                   <TableCell>
                     <Badge

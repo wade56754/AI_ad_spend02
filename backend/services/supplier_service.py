@@ -30,8 +30,7 @@ from backend.schemas.supplier import (
     SupplierStatus,
 )
 
-# TODO: Import actual Supplier model when created
-# from backend.models import Supplier, User, AdAccount
+from backend.models.finance.supplier import Supplier
 
 
 class SupplierService:
@@ -101,23 +100,45 @@ class SupplierService:
 
         权限：admin, finance, account_manager 可查看所有
         """
-        # TODO: Replace with actual model query
-        # query = self.db.query(Supplier)
-        #
-        # if status:
-        #     query = query.filter(Supplier.status == status)
-        # if country:
-        #     query = query.filter(Supplier.country == country)
-        # if search:
-        #     query = query.filter(Supplier.name.ilike(f"%{search}%"))
-        #
-        # total = query.count()
-        # suppliers = query.order_by(desc(Supplier.created_at)).offset(
-        #     (page - 1) * page_size
-        # ).limit(page_size).all()
+        query = self.db.query(Supplier)
 
-        # Placeholder return
-        return [], 0
+        if status:
+            query = query.filter(Supplier.status == status)
+        if country:
+            query = query.filter(Supplier.country == country)
+        if search:
+            query = query.filter(Supplier.name.ilike(f"%{search}%"))
+
+        total = query.count()
+        suppliers = query.order_by(desc(Supplier.created_at)).offset(
+            (page - 1) * page_size
+        ).limit(page_size).all()
+
+        # Convert to dict list
+        result = []
+        for s in suppliers:
+            result.append({
+                'id': s.id,
+                'name': s.name,
+                'code': getattr(s, 'code', None),
+                'contact_name': s.contact_name,
+                'contact_email': s.contact_email,
+                'contact_phone': s.contact_phone,
+                'base_currency': s.base_currency,
+                'payment_method': s.payment_method,
+                'platform': s.platform,
+                'status': s.status,
+                'fee_rate': float(s.fee_rate) if s.fee_rate else None,
+                'fee_type': s.fee_type,
+                'country': s.country,
+                'notes': s.notes,
+                'total_accounts': s.total_accounts,
+                'total_spend': float(s.total_spend) if s.total_spend else 0,
+                'created_at': s.created_at.isoformat() if s.created_at else None,
+                'updated_at': s.updated_at.isoformat() if s.updated_at else None,
+            })
+
+        return result, total
 
     def get_supplier(
         self,

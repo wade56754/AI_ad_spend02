@@ -1,7 +1,19 @@
 /**
  * Daily Reports React Query Hooks
  *
- * TanStack Query v5 hooks for daily reports data fetching and mutations
+ * TanStack Query v5 hooks for daily report management
+ *
+ * SoT: docs/10.module-specs/B2-daily-report-review.md §5 API 接口
+ * SoT: STATE_MACHINE.md v2.6 Section 8 (日报 8 状态机)
+ * SoT: API_SOT.md v9.0 Section 5.4 (Daily Reports endpoints)
+ *
+ * 一句话定义: 管理日报的数据获取和状态变更
+ *
+ * 日报 8 状态机:
+ *   raw_submitted → trend_pending → trend_ok/trend_flagged
+ *   → trend_resolved → final_pending → final_confirmed → final_locked
+ *
+ * @module features/daily-reports/hooks
  */
 
 import {
@@ -40,7 +52,7 @@ import type {
   DailyReportStatus,
 } from '../types';
 
-// === Query Hooks ===
+// ========== Query Hooks ==========
 
 /**
  * Fetch paginated daily reports list
@@ -292,7 +304,7 @@ export function useLockReport(
 }
 
 /**
- * Bulk submit for trend
+ * 批量提交趋势审核
  */
 export function useBulkSubmitForTrend(
   options?: UseMutationOptions<
@@ -310,4 +322,48 @@ export function useBulkSubmitForTrend(
     },
     ...options,
   });
+}
+
+// ========== Refresh Hook ==========
+
+/**
+ * 刷新日报数据
+ * SoT: B2-daily-report-review.md §2.4 数据刷新策略
+ *
+ * @example
+ * ```tsx
+ * const { refreshAll, refreshList, refreshStats } = useRefreshDailyReports();
+ * // 刷新所有日报数据
+ * refreshAll();
+ * // 仅刷新列表
+ * refreshList();
+ * // 仅刷新统计
+ * refreshStats();
+ * ```
+ */
+export function useRefreshDailyReports() {
+  const queryClient = useQueryClient();
+
+  return {
+    /** 刷新所有日报数据 */
+    refreshAll: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyReports.all });
+    },
+    /** 刷新日报列表 */
+    refreshList: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyReports.lists() });
+    },
+    /** 刷新日报统计 */
+    refreshStats: () => {
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.dailyReports.all, 'stats'] });
+    },
+    /** 刷新单个日报详情 */
+    refreshDetail: (id: string) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyReports.detail(id) });
+    },
+    /** 刷新项目日报列表 */
+    refreshByProject: (projectId: string) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dailyReports.byProject(projectId, {}) });
+    },
+  };
 }

@@ -26,7 +26,7 @@ interface HeaderProps {
 const breadcrumbMap: Record<string, { label: string; href?: string; icon?: React.ReactNode }> = {
   '/': { label: '工作台概览' },
   '/projects': { label: '项目管理', href: '/projects' },
-  '/ad-accounts': { label: '渠道账户', href: '/ad-accounts' },
+  '/ad-accounts': { label: '广告账号管理', href: '/ad-accounts' },
   '/daily-reports': { label: '日报管理', href: '/daily-reports' },
   '/reconciliation': { label: '对账管理', href: '/reconciliation' },
   '/topup': { label: '充值管理', href: '/topup' },

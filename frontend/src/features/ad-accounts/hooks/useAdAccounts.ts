@@ -32,7 +32,7 @@ import type {
 export function useAdAccounts(
   params: AdAccountListParams = {},
   options?: Omit<UseQueryOptions<{
-    data: AdAccount[];
+    items: AdAccount[];
     meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
   }>, 'queryKey' | 'queryFn'>
 ) {

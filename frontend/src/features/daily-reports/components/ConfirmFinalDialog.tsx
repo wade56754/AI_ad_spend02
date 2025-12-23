@@ -25,6 +25,16 @@ import { CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { useConfirmFinal } from '../hooks';
 import { toast } from 'sonner';
 import type { DailyReport, FinalConfirmInput } from '../types';
+import type { Money } from '@/types/common';
+
+// Helper to extract numeric value from string | number | Money
+const getNumericSpend = (value: string | number | Money | undefined | null): number => {
+  if (value === undefined || value === null) return 0;
+  if (typeof value === 'string') return parseFloat(value) || 0;
+  if (typeof value === 'number') return value;
+  // Money object
+  return value.amount;
+};
 
 interface ConfirmFinalDialogProps {
   open: boolean;
@@ -52,12 +62,10 @@ export function ConfirmFinalDialog({
   useEffect(() => {
     if (open && report) {
       setFormData({
-        final_spend: typeof report.raw_spend === 'string'
-          ? parseFloat(report.raw_spend)
-          : report.raw_spend,
-        final_impressions: report.raw_impressions,
-        final_clicks: report.raw_clicks,
-        final_conversions: report.raw_conversions,
+        final_spend: getNumericSpend(report.raw_spend),
+        final_impressions: report.raw_impressions ?? 0,
+        final_clicks: report.raw_clicks ?? 0,
+        final_conversions: report.raw_conversions ?? 0,
         confirmation_notes: '',
       });
     }
@@ -91,7 +99,7 @@ export function ConfirmFinalDialog({
     }
 
     confirmFinal.mutate({
-      id: report.id,
+      id: String(report.id),
       input: formData,
     });
   };
@@ -101,12 +109,10 @@ export function ConfirmFinalDialog({
   };
 
   // Calculate differences
-  const spendDiff = formData.final_spend - (typeof report.raw_spend === 'string'
-    ? parseFloat(report.raw_spend)
-    : report.raw_spend);
-  const impressionsDiff = formData.final_impressions - report.raw_impressions;
-  const clicksDiff = formData.final_clicks - report.raw_clicks;
-  const conversionsDiff = formData.final_conversions - report.raw_conversions;
+  const spendDiff = formData.final_spend - getNumericSpend(report.raw_spend);
+  const impressionsDiff = formData.final_impressions - (report.raw_impressions ?? 0);
+  const clicksDiff = formData.final_clicks - (report.raw_clicks ?? 0);
+  const conversionsDiff = formData.final_conversions - (report.raw_conversions ?? 0);
 
   const hasChanges = spendDiff !== 0 || impressionsDiff !== 0 || clicksDiff !== 0 || conversionsDiff !== 0;
 
@@ -143,9 +149,7 @@ export function ConfirmFinalDialog({
               <div>
                 <Label className="text-muted-foreground text-xs">原始消耗</Label>
                 <div className="font-medium">
-                  ¥{(typeof report.raw_spend === 'string'
-                    ? parseFloat(report.raw_spend)
-                    : report.raw_spend / 100).toFixed(2)}
+                  ¥{(getNumericSpend(report.raw_spend) / 100).toFixed(2)}
                 </div>
               </div>
               <div>
@@ -171,7 +175,7 @@ export function ConfirmFinalDialog({
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <Label className="text-muted-foreground text-xs">原始展示</Label>
-                <div className="font-medium">{report.raw_impressions.toLocaleString()}</div>
+                <div className="font-medium">{(report.raw_impressions ?? 0).toLocaleString()}</div>
               </div>
               <div>
                 <Label htmlFor="final_impressions">最终展示 *</Label>
@@ -195,7 +199,7 @@ export function ConfirmFinalDialog({
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <Label className="text-muted-foreground text-xs">原始点击</Label>
-                <div className="font-medium">{report.raw_clicks.toLocaleString()}</div>
+                <div className="font-medium">{(report.raw_clicks ?? 0).toLocaleString()}</div>
               </div>
               <div>
                 <Label htmlFor="final_clicks">最终点击 *</Label>
@@ -219,7 +223,7 @@ export function ConfirmFinalDialog({
             <div className="grid grid-cols-3 gap-4 items-center">
               <div>
                 <Label className="text-muted-foreground text-xs">原始转化</Label>
-                <div className="font-medium">{report.raw_conversions.toLocaleString()}</div>
+                <div className="font-medium">{(report.raw_conversions ?? 0).toLocaleString()}</div>
               </div>
               <div>
                 <Label htmlFor="final_conversions">最终转化 *</Label>

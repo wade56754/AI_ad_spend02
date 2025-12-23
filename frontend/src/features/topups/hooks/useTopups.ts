@@ -1,7 +1,15 @@
 /**
  * Topups React Query Hooks
  *
- * TanStack Query v5 hooks for topup requests
+ * TanStack Query v5 hooks for topup request management
+ *
+ * SoT: docs/10.module-specs/B1-topup-approval.md §5 API 接口
+ * SoT: STATE_MACHINE.md v2.6 Section 3 (充值 7 状态机)
+ * SoT: API_SOT.md v9.0 Section 5.6 (Topup endpoints)
+ *
+ * 一句话定义: 管理充值申请的数据获取和状态变更
+ *
+ * @module features/topups/hooks
  */
 
 import {
@@ -18,6 +26,7 @@ import {
   getTopup,
   getTopupsByProject,
   createTopup,
+  reviewTopup,
   approveTopup,
   rejectTopup,
   completeTopup,
@@ -33,7 +42,7 @@ import type {
   TopupStatus,
 } from '../types';
 
-// === Query Hooks ===
+// ========== Query Hooks ==========
 
 /**
  * Fetch paginated topup list
@@ -170,7 +179,9 @@ export function useCompleteTopup(
 }
 
 /**
- * Cancel topup mutation
+ * 取消充值申请
+ * draft | pending_review | finance_approve → cancelled
+ * SoT: STATE_MACHINE.md v2.6 Section 3
  */
 export function useCancelTopup(
   options?: UseMutationOptions<TopupRequest, Error, string>
@@ -185,4 +196,66 @@ export function useCancelTopup(
     },
     ...options,
   });
+}
+
+/**
+ * 数据复核通过
+ * pending_review → finance_approve
+ * SoT: STATE_MACHINE.md v2.6 Section 3
+ */
+export function useReviewTopup(
+  options?: UseMutationOptions<TopupRequest, Error, { id: string; input?: TopupApproveInput }>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }) => reviewTopup(id, input),
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(queryKeys.topups.detail(id), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
+    },
+    ...options,
+  });
+}
+
+// ========== Refresh Hook ==========
+
+/**
+ * 刷新充值申请数据
+ * SoT: B1-topup-approval.md §2.4 数据刷新策略
+ *
+ * @example
+ * ```tsx
+ * const { refreshAll, refreshList, refreshStats } = useRefreshTopups();
+ * // 刷新所有充值数据
+ * refreshAll();
+ * // 仅刷新列表
+ * refreshList();
+ * ```
+ */
+export function useRefreshTopups() {
+  const queryClient = useQueryClient();
+
+  return {
+    /** 刷新所有充值数据 */
+    refreshAll: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.all });
+    },
+    /** 刷新充值列表 */
+    refreshList: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
+    },
+    /** 刷新充值统计 */
+    refreshStats: () => {
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.topups.all, 'stats'] });
+    },
+    /** 刷新单个充值详情 */
+    refreshDetail: (id: string) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.detail(id) });
+    },
+    /** 刷新项目充值列表 */
+    refreshByProject: (projectId: string) => {
+      queryClient.invalidateQueries({ queryKey: ['topups', 'byProject', projectId] });
+    },
+  };
 }

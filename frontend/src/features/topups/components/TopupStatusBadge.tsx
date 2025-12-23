@@ -165,9 +165,10 @@ export function TopupProgress({
   return (
     <div className={cn('flex items-center', className)}>
       {PROGRESS_STEPS.map((step, index) => {
-        const isCompleted = currentStep > step.status === status ? index + 1 : index;
-        const isCurrent = TOPUP_STATUS_CONFIG[step.status]?.step === currentStep;
-        const isPast = (TOPUP_STATUS_CONFIG[step.status]?.step ?? 0) < currentStep;
+        const stepNumber = TOPUP_STATUS_CONFIG[step.status]?.step ?? 0;
+        const isCurrent = stepNumber === currentStep;
+        const isPast = stepNumber < currentStep;
+        const isCompleted = isPast;
 
         return (
           <div key={step.status} className="flex items-center">

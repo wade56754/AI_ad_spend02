@@ -418,8 +418,7 @@ export function TrendChart({
                           width: isHovered ? '10px' : '6px',
                           height: isHovered ? '10px' : '6px',
                           backgroundColor: colors.dot,
-                          boxShadow: '0 0 0 2px white',
-                          ringColor: colors.dot,
+                          boxShadow: `0 0 0 2px white, 0 0 0 3px ${colors.dot}`,
                         }}
                       />
                     )}

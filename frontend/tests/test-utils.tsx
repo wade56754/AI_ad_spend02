@@ -24,11 +24,6 @@ export function createTestQueryClient(): QueryClient {
         retry: false,
       },
     },
-    logger: {
-      log: console.log,
-      warn: console.warn,
-      error: () => {}, // 禁用错误日志，避免测试输出混乱
-    },
   })
 }
 

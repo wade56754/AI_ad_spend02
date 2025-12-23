@@ -44,6 +44,13 @@ export interface ProfitSummaryItem {
 export interface ProfitByProjectItem {
   project_id: number;
   project_name: string;
+  // 新增字段 - MASTER.md §6.5 页面 3 必须字段
+  owner_id?: number;          // 项目负责人 ID
+  owner_name?: string;        // 项目负责人姓名
+  cpl?: number | null;        // CPL = spend / conversions
+  cpl_target?: number | null; // CPL 目标
+  is_abnormal?: boolean;      // 异常标记 = CPL > target × 1.3
+  // 原有字段
   total_conversions: number;
   avg_unit_price: number;
   total_revenue: number;
@@ -57,7 +64,7 @@ export interface ProfitByProjectItem {
 
 export interface ProfitByAccountItem {
   ad_account_id: number;
-  account_name: string;
+  ad_account_name: string; // JOIN 填充: ad_accounts.name
   project_id: number;
   project_name: string;
   total_conversions: number;
@@ -124,6 +131,8 @@ export interface ProfitByProjectResponse {
   total_cost: number;
   total_profit: number;
   overall_profit_margin: number;
+  // 新增字段 - MASTER.md §6.5
+  abnormal_count?: number;  // 异常项目数
 }
 
 export interface ProfitByAccountResponse {

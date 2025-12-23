@@ -2,7 +2,12 @@
  * Projects React Query Hooks
  *
  * TanStack Query v5 hooks for project management
- * SoT 对齐: DATA_SCHEMA.md v5.2
+ *
+ * SoT: docs/10.module-specs/C1-project-mgmt.md §4 API 接口
+ * SoT: DATA_SCHEMA.md v5.2 (projects entity)
+ * SoT: STATE_MACHINE.md v2.6 Section 5 (项目状态机)
+ *
+ * @module features/projects/hooks
  */
 
 import {
@@ -152,4 +157,46 @@ export function useRemoveMember(
     },
     ...options,
   });
+}
+
+// ========== Refresh Hook ==========
+
+/**
+ * 刷新项目管理数据
+ * SoT: C1-project-mgmt.md §2.4 数据刷新策略
+ *
+ * @example
+ * ```tsx
+ * const { refreshAll, refreshList, refreshStatistics } = useRefreshProjects();
+ * // 刷新所有项目数据
+ * refreshAll();
+ * // 仅刷新列表
+ * refreshList();
+ * ```
+ */
+export function useRefreshProjects() {
+  const queryClient = useQueryClient();
+
+  return {
+    /** 刷新所有项目数据 */
+    refreshAll: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+    },
+    /** 刷新项目列表 */
+    refreshList: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.lists() });
+    },
+    /** 刷新项目统计 */
+    refreshStatistics: () => {
+      queryClient.invalidateQueries({ queryKey: [...queryKeys.projects.all, 'statistics'] });
+    },
+    /** 刷新单个项目详情 */
+    refreshDetail: (id: number) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) });
+    },
+    /** 刷新项目成员 */
+    refreshMembers: (projectId: number) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.projects.members(projectId) });
+    },
+  };
 }

@@ -12,12 +12,9 @@ from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.models import User
-# 导入真实的JWT验证逻辑
-from backend.core.security import (
-    get_current_user as security_get_current_user,
-    get_current_active_user as security_get_current_active_user,
-    AuthenticatedUser
-)
+# 使用本地 JWT 认证服务 (已从 Supabase 迁移到本地 JWT)
+from backend.services.local_auth_service import LocalAuthService
+from backend.core.security import AuthenticatedUser
 from backend.core.error_codes import AuthErrorCodes, SystemErrorCodes
 
 # HTTP Bearer认证方案
@@ -34,7 +31,7 @@ def _auth_user_to_db_user(
     将 AuthenticatedUser 转换为 models.User
 
     Args:
-        auth_user: JWT验证后的用户对象
+        auth_user: JWT验证后的用户对象 (来自 Supabase)
         db: 数据库会话
 
     Returns:
@@ -42,11 +39,10 @@ def _auth_user_to_db_user(
 
     Raises:
         HTTPException: 401 - 用户ID格式无效
-        HTTPException: 404 - 用户在数据库中不存在
 
     Note:
-        严格模式: JWT中的用户ID必须对应数据库中的有效User记录
-        如果用户不存在,将抛出404错误而不是构造临时对象
+        自动同步模式: 如果 Supabase 用户在本地不存在，自动创建
+        这确保了 Supabase 认证用户能无缝使用系统
     """
     try:
         # 尝试将字符串ID转为UUID
@@ -69,20 +65,39 @@ def _auth_user_to_db_user(
         logger.debug(f"User {user_uuid} found in database, role: {db_user.role}")
         return db_user
 
-    # 用户在数据库中不存在,拒绝请求
-    # 生产环境中JWT中的用户ID必须对应有效的数据库记录
-    logger.error(
-        f"User {user_uuid} not found in database. "
-        f"JWT contains valid user ID but no corresponding database record exists. "
+    # 用户在本地数据库不存在，自动创建
+    # 这发生在用户通过 Supabase 注册但本地 users 表尚未同步的情况
+    logger.info(
+        f"User {user_uuid} not found in database, auto-creating. "
         f"Email: {auth_user.email}, Role: {auth_user.role}"
     )
-    raise HTTPException(
-        status_code=AuthErrorCodes.USER_NOT_FOUND.status_code,
-        detail={
-            "code": AuthErrorCodes.USER_NOT_FOUND.code,
-            "message": AuthErrorCodes.USER_NOT_FOUND.message
-        }
-    )
+
+    try:
+        # 从 Supabase 用户信息创建本地用户记录
+        new_user = User(
+            id=user_uuid,
+            email=auth_user.email or f"{user_uuid}@placeholder.local",
+            username=auth_user.email.split("@")[0] if auth_user.email else str(user_uuid)[:8],
+            role=auth_user.role or "media_buyer",  # 默认角色
+            is_active=True
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        logger.info(f"Auto-created user {user_uuid} with role {new_user.role}")
+        return new_user
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to auto-create user {user_uuid}: {e}")
+        raise HTTPException(
+            status_code=AuthErrorCodes.USER_NOT_FOUND.status_code,
+            detail={
+                "code": AuthErrorCodes.USER_NOT_FOUND.code,
+                "message": "用户同步失败，请联系管理员"
+            }
+        )
 
 
 async def get_current_user_optional(
@@ -99,10 +114,29 @@ async def get_current_user_optional(
         return None
 
     try:
-        # 使用真实的JWT验证
-        auth_user = security_get_current_user(
-            authorization=f"Bearer {credentials.credentials}",
-            db=db
+        # 使用本地 JWT 服务验证令牌
+        local_auth = LocalAuthService(db)
+        user_data = await local_auth.verify_token(credentials.credentials)
+
+        if not user_data:
+            raise HTTPException(
+                status_code=AuthErrorCodes.TOKEN_INVALID.status_code,
+                detail={
+                    "code": AuthErrorCodes.TOKEN_INVALID.code,
+                    "message": "认证令牌无效"
+                }
+            )
+
+        # 从本地 JWT 返回的用户数据中提取信息
+        user_info = user_data.get("user")
+        profile = user_data.get("profile")
+
+        # 创建 AuthenticatedUser 用于转换
+        auth_user = AuthenticatedUser(
+            id=str(user_info.get("id")),
+            role=profile.get("role") if profile else None,
+            email=user_info.get("email"),
+            raw_claims=user_data.get("raw_claims", {})
         )
         return _auth_user_to_db_user(auth_user, db)
     except HTTPException:
@@ -144,10 +178,29 @@ async def get_current_active_user(
         )
 
     try:
-        # 使用真实的JWT验证（调用 get_current_user 而非 get_current_active_user）
-        auth_user = security_get_current_user(
-            authorization=f"Bearer {credentials.credentials}",
-            db=db
+        # 使用本地 JWT 服务验证令牌
+        local_auth = LocalAuthService(db)
+        user_data = await local_auth.verify_token(credentials.credentials)
+
+        if not user_data:
+            raise HTTPException(
+                status_code=AuthErrorCodes.TOKEN_INVALID.status_code,
+                detail={
+                    "code": AuthErrorCodes.TOKEN_INVALID.code,
+                    "message": "认证令牌无效"
+                }
+            )
+
+        # 从本地 JWT 返回的用户数据中提取信息
+        user_info = user_data.get("user")
+        profile = user_data.get("profile")
+
+        # 创建 AuthenticatedUser 用于转换
+        auth_user = AuthenticatedUser(
+            id=str(user_info.get("id")),
+            role=profile.get("role") if profile else None,
+            email=user_info.get("email"),
+            raw_claims=user_data.get("raw_claims", {})
         )
 
         # 转换为DB User对象
@@ -185,13 +238,18 @@ get_current_user = get_current_active_user
 
 
 def require_role(allowed_roles: Union[str, List[str]]):
-    """角色权限装饰器
+    """角色权限装饰器 (用于 Depends)
 
     Args:
         allowed_roles: 允许的角色列表，单个角色可以是字符串
 
     Returns:
         依赖函数
+
+    Usage:
+        @router.get("/admin")
+        async def admin_endpoint(user: User = Depends(require_role(["admin"]))):
+            ...
     """
     if isinstance(allowed_roles, str):
         allowed_roles = [allowed_roles]
@@ -210,6 +268,34 @@ def require_role(allowed_roles: Union[str, List[str]]):
         return current_user
 
     return role_checker
+
+
+def check_user_role(user: User, allowed_roles: Union[str, List[str]]) -> None:
+    """直接检查用户角色 (用于路由函数内部)
+
+    Args:
+        user: 当前用户对象
+        allowed_roles: 允许的角色列表，单个角色可以是字符串
+
+    Raises:
+        HTTPException: 403 - 权限不足
+
+    Usage:
+        async def my_endpoint(current_user: User = Depends(get_current_user)):
+            check_user_role(current_user, ["admin", "finance"])
+            # 继续处理...
+    """
+    if isinstance(allowed_roles, str):
+        allowed_roles = [allowed_roles]
+
+    if user.role not in allowed_roles:
+        raise HTTPException(
+            status_code=AuthErrorCodes.PERMISSION_DENIED.status_code,
+            detail={
+                "code": AuthErrorCodes.PERMISSION_DENIED.code,
+                "message": f"权限不足，需要角色: {', '.join(allowed_roles)}"
+            }
+        )
 
 
 def require_admin():

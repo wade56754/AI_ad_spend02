@@ -16,7 +16,7 @@ interface AppLayoutProps {
 const MENU_ITEMS = [
   { id: 'workbench', label: '工作台概览', icon: '📊', path: '/' },
   { id: 'projects', label: '项目管理', icon: '📁', path: '/projects' },
-  { id: 'ad-accounts', label: '渠道账户', icon: '🔗', path: '/ad-accounts' },
+  { id: 'ad-accounts', label: '广告账号管理', icon: '🔗', path: '/ad-accounts' },
   { id: 'daily-reports', label: '日报管理', icon: '📈', path: '/daily-reports' },
   { id: 'reconciliation', label: '对账管理', icon: '💰', path: '/reconciliation' },
   { id: 'topup', label: '充值管理', icon: '💳', path: '/topup' },

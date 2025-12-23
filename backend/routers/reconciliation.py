@@ -13,7 +13,7 @@ from typing import List, Optional
 import io
 import json
 
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -43,7 +43,7 @@ from backend.schemas.reconciliation import (
 )
 from backend.services.reconciliation_service import ReconciliationService
 from backend.services.audit_log_service import AuditLogService
-from backend.core.response import success_response, paginated_response
+from backend.core.response import success_response, paginated_response, error_response
 from backend.utils.export import export_to_excel, export_to_pdf, export_to_json
 from backend.exceptions.custom_exceptions import (
     ValidationError,
@@ -126,10 +126,7 @@ async def get_reconciliation_batches(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.post("/batches", response_model=dict)
@@ -159,15 +156,9 @@ async def create_reconciliation_batch(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/batches/{batch_id}", response_model=dict)
@@ -204,20 +195,11 @@ async def get_reconciliation_batch(
         return success_response(data=batch_data)
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except PermissionError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "AUTH_003", message=str(e), status_code=403)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.post("/batches/{batch_id}/run", response_model=dict)
@@ -247,20 +229,11 @@ async def run_reconciliation(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/batches/{batch_id}/details", response_model=dict)
@@ -315,10 +288,7 @@ async def get_reconciliation_details(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.put("/details/{detail_id}/review", response_model=dict)
@@ -349,20 +319,11 @@ async def review_reconciliation_detail(
         )
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.post("/details/{detail_id}/adjust", response_model=dict)
@@ -401,20 +362,11 @@ async def create_adjustment(
         )
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/statistics", response_model=dict)
@@ -437,10 +389,7 @@ async def get_reconciliation_statistics(
         return success_response(data=statistics)
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/export")
@@ -495,10 +444,7 @@ async def export_reconciliation_data(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/reports", response_model=dict)
@@ -548,10 +494,7 @@ async def get_reconciliation_reports(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.post("/reports", response_model=dict)
@@ -581,15 +524,9 @@ async def generate_reconciliation_report(
         )
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 批次状态转换端点 (STATE_MACHINE.md v2.6 第16.6节) ==========
@@ -623,20 +560,11 @@ async def submit_batch(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.put("/batches/{batch_id}/approve", response_model=dict)
@@ -668,20 +596,11 @@ async def approve_batch(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.put("/batches/{batch_id}/request-adjustment", response_model=dict)
@@ -714,20 +633,11 @@ async def request_adjustment(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.put("/batches/{batch_id}/resubmit", response_model=dict)
@@ -759,20 +669,11 @@ async def resubmit_batch(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.put("/batches/{batch_id}/complete", response_model=dict)
@@ -805,20 +706,11 @@ async def complete_batch(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.put("/batches/{batch_id}/force-complete", response_model=dict)
@@ -851,25 +743,13 @@ async def force_complete_batch(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except PermissionError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "AUTH_003", message=str(e), status_code=403)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 明细状态转换端点 (STATE_MACHINE.md v2.6 第16.7节) ==========
@@ -903,20 +783,11 @@ async def confirm_detail(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.put("/details/{detail_id}/adjust", response_model=dict)
@@ -959,20 +830,11 @@ async def adjust_detail(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 批次更新/删除端点 (RECONCILIATION_SOT.md §12) ==========
@@ -1010,25 +872,13 @@ async def update_batch(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except PermissionError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "AUTH_003", message=str(e), status_code=403)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.delete("/batches/{batch_id}", response_model=dict)
@@ -1060,25 +910,13 @@ async def delete_batch(
         return success_response(message="批次删除成功")
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except PermissionError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "AUTH_003", message=str(e), status_code=403)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 明细单独查询端点 ==========
@@ -1099,20 +937,11 @@ async def get_detail_by_id(
         )
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except PermissionError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "AUTH_003", message=str(e), status_code=403)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 调整记录端点 ==========
@@ -1151,10 +980,7 @@ async def get_adjustments(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.get("/adjustments/{adjustment_id}", response_model=dict)
@@ -1173,15 +999,9 @@ async def get_adjustment_by_id(
         )
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.post("/adjustments/{adjustment_id}/execute", response_model=dict)
@@ -1217,20 +1037,11 @@ async def execute_adjustment(
         )
 
     except ValidationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code, message=str(e), status_code=400)
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 # ========== 报告详情/删除端点 ==========
@@ -1251,15 +1062,9 @@ async def get_report_by_id(
         )
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
 @router.delete("/reports/{report_id}", response_model=dict)
@@ -1285,12 +1090,6 @@ async def delete_report(
         return success_response(message="报告删除成功")
 
     except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": e.error_code, "message": str(e)}
-        )
+        return error_response(code=e.error_code or "SYS_004", message=str(e), status_code=404)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
-        )
+        return error_response(code="SYS_001", message=str(e), status_code=500)

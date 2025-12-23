@@ -4,7 +4,7 @@ Version: 1.0
 Author: Claude协作开发
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 import structlog
 
@@ -16,9 +16,9 @@ from pydantic import BaseModel, EmailStr, Field
 from backend.core.db import get_db
 from backend.core.logging import log_requests
 from backend.core.error_codes import AuthErrorCodes, SystemErrorCodes, ValidationErrorCodes, BusinessErrorCodes
-from backend.core.security import AuthenticatedUser
-from backend.deps.supabase_auth import get_current_user
-from backend.services.supabase_auth_service import supabase_auth_service
+# AuthenticatedUser 已被 Dict[str, Any] 替代，改用本地 JWT 认证
+from backend.deps.local_auth import get_current_user  # 使用本地认证
+from backend.services.local_auth_service import LocalAuthService  # 使用本地认证服务
 from backend.core.response import success_response, error_response
 from backend.exceptions import ValidationError, AuthenticationError
 
@@ -56,8 +56,9 @@ class ResetPasswordRequest(BaseModel):
 
 class ResetPasswordConfirmRequest(BaseModel):
     """确认重置密码请求"""
-    token: str = Field(..., description="重置令牌")
+    token: str = Field(..., description="重置令牌 (access_token)")
     new_password: str = Field(..., min_length=8, description="新密码")
+    refresh_token: Optional[str] = Field(None, description="刷新令牌 (用于 Supabase recovery flow)")
 
 
 class RefreshTokenRequest(BaseModel):
@@ -69,7 +70,8 @@ class RefreshTokenRequest(BaseModel):
 @log_requests("auth")
 async def login(
     request: LoginRequest,
-    request_obj: Request = None
+    request_obj: Request = None,
+    db: Session = Depends(get_db)
 ):
     """
     用户登录
@@ -77,8 +79,9 @@ async def login(
     权限: 公开接口
     """
     try:
-        # 使用Supabase登录，返回用户信息和会话
-        result = await supabase_auth_service.login_user(
+        # 使用本地 JWT 认证服务
+        auth_service = LocalAuthService(db)
+        result = await auth_service.login_user(
             email=request.identifier,
             password=request.password,
             remember_me=request.remember_me,
@@ -92,12 +95,14 @@ async def login(
 
     except HTTPException as e:
         error_code = AuthErrorCodes.INVALID_CREDENTIALS if e.status_code == 401 else AuthErrorCodes.LOGIN_FAILED
+        error_msg = e.detail if isinstance(e.detail, str) else e.detail.get("message", "登录失败")
         return error_response(
             code=error_code.code,
-            message=e.detail,
+            message=error_msg,
             status_code=e.status_code
         )
     except Exception as e:
+        logger.error(f"Login error: {e}")
         return error_response(
             code=AuthErrorCodes.LOGIN_FAILED.code,
             message="登录失败，请稍后重试",
@@ -108,7 +113,8 @@ async def login(
 @router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
 @log_requests("auth")
 async def register(
-    request: RegisterRequest
+    request: RegisterRequest,
+    db: Session = Depends(get_db)
 ):
     """
     用户注册
@@ -116,33 +122,43 @@ async def register(
     权限: 公开接口
     """
     try:
-        result = await supabase_auth_service.register_user(
+        logger.info(f"[REGISTER_DEBUG] Starting registration for: {request.email}")
+        # 使用本地 JWT 认证服务
+        auth_service = LocalAuthService(db)
+        logger.info(f"[REGISTER_DEBUG] LocalAuthService created")
+        result = await auth_service.register_user(
             email=request.email,
             password=request.password,
             username=request.username,
             full_name=request.full_name
         )
+        logger.info(f"[REGISTER_DEBUG] Registration successful: {result.get('user', {}).get('id')}")
 
         return success_response(
             data=result,
-            message="注册成功，请查看邮箱验证邮件",
+            message="注册成功",
             status_code=201
         )
 
     except HTTPException as e:
-        if "duplicate" in str(e.detail).lower() or "已被注册" in str(e.detail):
+        logger.error(f"[REGISTER_DEBUG] HTTPException: {e.detail}")
+        error_msg = e.detail if isinstance(e.detail, str) else e.detail.get("message", "注册失败")
+        if "duplicate" in str(error_msg).lower() or "已被注册" in str(error_msg) or "已被使用" in str(error_msg):
             error_code = AuthErrorCodes.EMAIL_ALREADY_EXISTS
         else:
             error_code = AuthErrorCodes.REGISTER_FAILED
         return error_response(
             code=error_code.code,
-            message=e.detail,
+            message=error_msg,
             status_code=e.status_code
         )
     except Exception as e:
+        logger.error(f"[REGISTER_DEBUG] General Exception: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(f"[REGISTER_DEBUG] Traceback: {traceback.format_exc()}")
         return error_response(
             code=AuthErrorCodes.REGISTER_FAILED.code,
-            message="注册失败，请稍后重试",
+            message=str(e),  # Return actual error for debugging
             status_code=500
         )
 
@@ -150,7 +166,8 @@ async def register(
 @router.post("/refresh", response_model=dict)
 @log_requests("auth")
 async def refresh_token(
-    request: RefreshTokenRequest
+    request: RefreshTokenRequest,
+    db: Session = Depends(get_db)
 ):
     """
     刷新访问令牌
@@ -158,7 +175,8 @@ async def refresh_token(
     权限: 公开接口（需要有效的refresh_token）
     """
     try:
-        token_info = await supabase_auth_service.refresh_token(request.refresh_token)
+        auth_service = LocalAuthService(db)
+        token_info = await auth_service.refresh_token(request.refresh_token)
 
         return success_response(
             data=token_info,
@@ -168,10 +186,11 @@ async def refresh_token(
     except HTTPException as e:
         return error_response(
             code=AuthErrorCodes.TOKEN_REFRESH_FAILED.code,
-            message=e.detail,
+            message=e.detail if isinstance(e.detail, str) else e.detail.get("message", "令牌刷新失败"),
             status_code=e.status_code
         )
     except Exception as e:
+        logger.error(f"Refresh token error: {e}")
         return error_response(
             code=AuthErrorCodes.TOKEN_REFRESH_FAILED.code,
             message="令牌刷新失败",
@@ -183,6 +202,7 @@ async def refresh_token(
 @log_requests("auth")
 async def logout(
     request: Request,
+    db: Session = Depends(get_db),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
@@ -198,7 +218,8 @@ async def logout(
         user_id = current_user.get("user", {}).get("id")
 
         # 登出
-        await supabase_auth_service.logout_user(token, user_id)
+        auth_service = LocalAuthService(db)
+        await auth_service.logout_user(token, user_id)
 
         return success_response(
             data={"logged_out_at": datetime.now(timezone.utc).isoformat()},
@@ -206,6 +227,7 @@ async def logout(
         )
 
     except Exception as e:
+        logger.error(f"Logout error: {e}")
         return error_response(
             code=AuthErrorCodes.LOGOUT_FAILED.code,
             message="登出失败",
@@ -218,33 +240,27 @@ async def logout(
 async def logout_all(
     request: Request,
     db: Session = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """登出所有设备"""
     try:
-        auth_service = SupabaseAuthService()
-
         # 获取Authorization头
         authorization = request.headers.get("authorization")
-        token = authorization.removeprefix("Bearer ").strip() if authorization else None
+        token = authorization.removeprefix("Bearer ").strip() if authorization else ""
 
-        # 记录登出日志
-        await auth_service.update_user_last_activity(
-            current_user.id,
-            "logout_all",
-            {}
+        user_id = current_user.get("user", {}).get("id")
+
+        # 登出当前会话并使所有会话失效
+        auth_service = LocalAuthService(db)
+        await auth_service.logout_user(token, user_id)
+
+        return success_response(
+            data={"logged_out_at": datetime.now(timezone.utc).isoformat()},
+            message="已从所有设备登出"
         )
 
-        # 登出所有设备
-        success = await auth_service.logout(token or "", logout_all=True)
-
-        if success:
-            return success_response(
-                data={"logged_out_at": datetime.utcnow().isoformat()},
-                message="已从所有设备登出"
-            )
-
     except Exception as e:
+        logger.error(f"Logout all error: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="全设备登出失败",
@@ -292,6 +308,7 @@ async def get_current_user_info(
 @log_requests("auth")
 async def change_password(
     request: ChangePasswordRequest,
+    db: Session = Depends(get_db),
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """
@@ -300,11 +317,19 @@ async def change_password(
     权限: 需要认证
     """
     try:
-        # 注意：Supabase不支持验证旧密码，只能直接更新
-        # 生产环境中应该实现额外的旧密码验证逻辑
-        await supabase_auth_service.update_password(
-            new_password=request.new_password,
-            access_token=""  # Token从请求头获取
+        user_id = current_user.get("user", {}).get("id")
+        if not user_id:
+            return error_response(
+                code=AuthErrorCodes.USER_NOT_FOUND.code,
+                message="用户不存在",
+                status_code=404
+            )
+
+        auth_service = LocalAuthService(db)
+        await auth_service.change_password(
+            user_id=user_id,
+            old_password=request.old_password,
+            new_password=request.new_password
         )
 
         return success_response(
@@ -314,10 +339,11 @@ async def change_password(
     except HTTPException as e:
         return error_response(
             code=AuthErrorCodes.PASSWORD_CHANGE_FAILED.code,
-            message=e.detail,
+            message=e.detail if isinstance(e.detail, str) else e.detail.get("message", "密码修改失败"),
             status_code=e.status_code
         )
     except Exception as e:
+        logger.error(f"Change password error: {e}")
         return error_response(
             code=AuthErrorCodes.PASSWORD_CHANGE_FAILED.code,
             message="密码修改失败",
@@ -333,8 +359,8 @@ async def forgot_password(
 ):
     """忘记密码"""
     try:
-        auth_service = SupabaseAuthService()
-        success = await auth_service.reset_password_request(request.email)
+        auth_service = LocalAuthService(db)
+        await auth_service.reset_password(request.email)
 
         # 为了安全，总是返回成功
         return success_response(
@@ -342,6 +368,7 @@ async def forgot_password(
         )
 
     except Exception as e:
+        logger.error(f"Forgot password error: {e}")
         # 不暴露具体错误
         return success_response(
             message="如果邮箱存在，重置密码链接已发送"
@@ -356,10 +383,11 @@ async def reset_password(
 ):
     """重置密码"""
     try:
-        auth_service = SupabaseAuthService()
+        auth_service = LocalAuthService(db)
         success = await auth_service.reset_password_confirm(
             reset_token=request.token,
-            new_password=request.new_password
+            new_password=request.new_password,
+            refresh_token=request.refresh_token
         )
 
         if success:
@@ -367,13 +395,14 @@ async def reset_password(
                 message="密码重置成功"
             )
 
-    except ValidationError as e:
+    except HTTPException as e:
         return error_response(
             code=ValidationErrorCodes.INVALID_INPUT.code,
-            message=str(e),
-            status_code=ValidationErrorCodes.INVALID_INPUT.status_code
+            message=e.detail if isinstance(e.detail, str) else e.detail.get("message", "密码重置失败"),
+            status_code=e.status_code
         )
     except Exception as e:
+        logger.error(f"Reset password error: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="密码重置失败",
@@ -389,7 +418,7 @@ async def verify_email(
 ):
     """验证邮箱"""
     try:
-        auth_service = SupabaseAuthService()
+        auth_service = LocalAuthService(db)
         success = await auth_service.verify_email(token)
 
         if success:
@@ -404,6 +433,7 @@ async def verify_email(
             )
 
     except Exception as e:
+        logger.error(f"Verify email error: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="邮箱验证失败",
@@ -415,12 +445,20 @@ async def verify_email(
 @log_requests("auth")
 async def resend_verification(
     db: Session = Depends(get_db),
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """重新发送验证邮件"""
     try:
-        auth_service = SupabaseAuthService()
-        success = await auth_service.send_email_verification(int(current_user.id))
+        user_email = current_user.get("user", {}).get("email")
+        if not user_email:
+            return error_response(
+                code=AuthErrorCodes.USER_NOT_FOUND.code,
+                message="用户不存在",
+                status_code=404
+            )
+
+        auth_service = LocalAuthService(db)
+        success = await auth_service.resend_verification_email(user_email)
 
         if success:
             return success_response(
@@ -434,6 +472,7 @@ async def resend_verification(
             )
 
     except Exception as e:
+        logger.error(f"Resend verification error: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="发送验证邮件失败",
@@ -444,15 +483,17 @@ async def resend_verification(
 @router.post("/verify-token", response_model=dict)
 @log_requests("auth")
 async def verify_token(
-    current_user: AuthenticatedUser = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """验证令牌有效性"""
+    user_info = current_user.get("user", {})
+    raw_claims = current_user.get("raw_claims", {})
     return success_response(
         data={
             "valid": True,
-            "user_id": current_user.id,
-            "role": current_user.role,
-            "expires_at": current_user.raw_claims.get("exp")
+            "user_id": user_info.get("id"),
+            "role": user_info.get("role"),
+            "expires_at": raw_claims.get("exp")
         }
     )
 
@@ -467,39 +508,28 @@ async def login_oauth(
 ):
     """OAuth2登录（兼容性）"""
     try:
-        auth_service = SupabaseAuthService()
-        user, token_info = await auth_service.authenticate(
-            identifier=form_data.username,
-            password=form_data.password
-        )
-
-        # 获取客户端IP
-        client_ip = request_obj.client.host if request_obj else None
-
-        # 记录登录日志
-        await auth_service.update_user_last_activity(
-            user.id,
-            "login",
-            {"ip": client_ip}
+        auth_service = LocalAuthService(db)
+        result = await auth_service.login_user(
+            email=form_data.username,
+            password=form_data.password,
+            request=request_obj
         )
 
         return success_response(
-            data={
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "full_name": user.full_name,
-                    "role": user.role,
-                    "is_active": user.is_active
-                },
-                "token": token_info
-            }
+            data=result,
+            message="登录成功"
         )
 
-    except AuthenticationError as e:
+    except HTTPException as e:
         return error_response(
             code=AuthErrorCodes.INVALID_CREDENTIALS.code,
-            message=str(e),
-            status_code=401
+            message=e.detail if isinstance(e.detail, str) else e.detail.get("message", "登录失败"),
+            status_code=e.status_code
+        )
+    except Exception as e:
+        logger.error(f"OAuth login error: {e}")
+        return error_response(
+            code=AuthErrorCodes.LOGIN_FAILED.code,
+            message="登录失败，请稍后重试",
+            status_code=500
         )

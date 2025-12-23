@@ -2,6 +2,7 @@
  * Ad Accounts Table Component
  *
  * SoT 对齐: STATE_MACHINE.md v2.6 Section 7
+ * 对齐: init_schema.sql §5.1 ad_accounts 表
  */
 
 'use client';
@@ -27,7 +28,7 @@ import {
 import { MoreHorizontal, PlayCircle, PauseCircle, Archive, Skull } from 'lucide-react';
 import { useAdAccounts, useUpdateAdAccountStatus } from '../hooks';
 import { AD_ACCOUNT_STATUS_CONFIG, ALLOWED_TRANSITIONS } from '../types';
-import type { AdAccount, AdAccountListParams } from '../types';
+import type { AdAccount, AdAccountListParams, AdAccountStatus } from '../types';
 
 export function AdAccountsTable() {
   const [params, setParams] = useState<AdAccountListParams>({
@@ -42,10 +43,10 @@ export function AdAccountsTable() {
     setParams((prev) => ({ ...prev, page: newPage }));
   };
 
-  const handleStatusChange = (id: string, status: string) => {
+  const handleStatusChange = (id: number, status: AdAccountStatus) => {
     statusMutation.mutate({
-      id,
-      input: { status: status as any },
+      id: String(id),
+      input: { status },
     });
   };
 
@@ -61,7 +62,7 @@ export function AdAccountsTable() {
     );
   }
 
-  const accounts = data?.data ?? [];
+  const accounts = data?.items ?? [];
   const pagination = data?.meta?.pagination;
 
   return (
@@ -86,16 +87,17 @@ export function AdAccountsTable() {
             </TableRow>
           ) : (
             accounts.map((account) => {
-              const statusConfig = AD_ACCOUNT_STATUS_CONFIG[account.status];
-              const allowedTransitions = ALLOWED_TRANSITIONS[account.status] || [];
+              const status = account.status ?? 'new';
+              const statusConfig = AD_ACCOUNT_STATUS_CONFIG[status];
+              const allowedTransitions = ALLOWED_TRANSITIONS[status] || [];
               return (
                 <TableRow key={account.id}>
-                  <TableCell className="font-medium">{account.name}</TableCell>
+                  <TableCell className="font-medium">{account.name || '-'}</TableCell>
                   <TableCell className="font-mono text-xs">
-                    {account.project_id.slice(0, 8)}...
+                    {account.project_id}
                   </TableCell>
                   <TableCell className="font-mono text-xs">
-                    {account.channel_id.slice(0, 8)}...
+                    {account.channel_id ? account.channel_id.slice(0, 8) + '...' : '-'}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -111,9 +113,9 @@ export function AdAccountsTable() {
                     >
                       {statusConfig.label}
                     </Badge>
-                    {account.dead_reason && (
+                    {account.status_reason && (
                       <span className="ml-2 text-xs text-muted-foreground">
-                        ({account.dead_reason})
+                        ({account.status_reason})
                       </span>
                     )}
                   </TableCell>

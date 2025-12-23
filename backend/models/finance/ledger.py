@@ -1,9 +1,18 @@
 """
 总账模型 - 资金流水记录
+
+Phase 1 Financial SoT 新增字段:
+- entity_type: 实体类型 (SUPPLIER/PROJECT/ACCOUNT/TEAM)
+- entity_id: 实体ID
+- event_id: 财务事件ID (FK to financial_events)
+- idempotency_key: 幂等键
+- direction: 方向 (DEBIT/CREDIT)
 """
 from decimal import Decimal
 from datetime import datetime
+from uuid import UUID
 from sqlalchemy import Column, BigInteger, String, Text, Numeric, DateTime, Index, CheckConstraint, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -86,6 +95,18 @@ class LedgerEntry(Base, SerializableMixin):
         comment="创建时间"
     )
 
+    # Phase 1 Financial SoT 新增字段
+    entity_type = Column(String(20), nullable=True, comment="实体类型 (SUPPLIER/PROJECT/ACCOUNT/TEAM)")
+    entity_id = Column(String(100), nullable=True, comment="实体ID")
+    event_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('financial_events.id', ondelete='SET NULL'),
+        nullable=True,
+        comment="财务事件ID"
+    )
+    idempotency_key = Column(String(255), nullable=True, unique=False, comment="幂等键")
+    direction = Column(String(10), nullable=True, comment="方向 (DEBIT/CREDIT)")
+
     # ========== 关系定义 ==========
 
     # 多对一：分录 -> 广告账户
@@ -96,15 +117,36 @@ class LedgerEntry(Base, SerializableMixin):
         doc="所属广告账户"
     )
 
+    # Phase 1 Financial SoT 新增关系
+    # 多对一：分录 -> 财务事件
+    financial_event = relationship(
+        "FinancialEvent",
+        foreign_keys=[event_id],
+        lazy="joined",
+        doc="关联财务事件"
+    )
+
     # 约束和索引 - 必须与 LEDGER_SOT.md v1.1 第2.2节保持一致
     __table_args__ = (
         CheckConstraint(
             "entry_type IN ('REVENUE', 'COST', 'TOPUP', 'TRANSFER_OUT', 'TRANSFER_IN', 'REVERSAL')",
             name='chk_ledger_entries_entry_type'
         ),
+        # Phase 1 Financial SoT 新增约束
+        CheckConstraint(
+            "entity_type IN ('SUPPLIER', 'PROJECT', 'ACCOUNT', 'TEAM') OR entity_type IS NULL",
+            name='chk_ledger_entries_entity_type'
+        ),
+        CheckConstraint(
+            "direction IN ('DEBIT', 'CREDIT') OR direction IS NULL",
+            name='chk_ledger_entries_direction'
+        ),
         Index('idx_ledger_entries_ad_account_id', 'ad_account_id'),
         Index('idx_ledger_entries_entry_date', 'entry_date'),
         Index('idx_ledger_entries_entry_type', 'entry_type'),
+        # Phase 1 Financial SoT 新增索引
+        Index('idx_ledger_entries_entity', 'entity_type', 'entity_id'),
+        Index('idx_ledger_entries_event_id', 'event_id'),
     )
 
     def __repr__(self):

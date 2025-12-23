@@ -4,7 +4,9 @@
 from . import (
     health,
     projects,
+    project_members,  # 项目成员管理 (MASTER.md v4.4 §2.4)
     authentication,
+    users,  # 用户管理 (API_SOT v9.0 §5)
     ad_spend,
     ad_accounts,
     channels,
@@ -19,12 +21,15 @@ from . import (
     reconciliation,  # 对账管理
     reports,  # 报表管理
     agents,  # Agent 管理
+    spend,  # 消耗导入 (Financial SoT Phase 2)
 )
 
 __all__ = [
     "health",
     "projects",
+    "project_members",
     "authentication",
+    "users",
     "ad_spend",
     "ad_accounts",
     "channels",
@@ -39,6 +44,7 @@ __all__ = [
     "reconciliation",
     "reports",
     "agents",
+    "spend",
 ]
 
 

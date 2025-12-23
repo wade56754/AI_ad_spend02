@@ -11,16 +11,23 @@ class UserRole(str, Enum):
     """
     用户角色枚举
 
-    必须与 STATE_MACHINE.md v2.6 第2章保持严格一致。
-    合法角色：admin, finance, data_operator, account_manager, media_buyer
+    必须与 MASTER.md v4.4 §2.4 保持严格一致。
+    7 个业务角色映射到 6 个技术角色:
+    - admin: 系统管理员 (映射: ceo, admin)
+    - finance: 财务
+    - data_operator: 数据运营 (映射: supervisor)
+    - account_manager: 账户管理员
+    - media_buyer: 广告投手 (映射: pitcher)
+    - project_owner: 项目负责人 (新增)
 
-    SoT Reference: STATE_MACHINE.md v2.6 §2
+    SoT Reference: MASTER.md v4.4 §2.4, STATE_MACHINE.md v2.6 §2
     """
     ADMIN = "admin"                      # 系统管理员
     FINANCE = "finance"                  # 财务
     DATA_OPERATOR = "data_operator"      # 数据运营
     ACCOUNT_MANAGER = "account_manager"  # 账户管理员
     MEDIA_BUYER = "media_buyer"          # 广告投手
+    PROJECT_OWNER = "project_owner"      # 项目负责人 (MASTER.md v4.4 新增)
 
 
 class ChannelStatus(str, Enum):

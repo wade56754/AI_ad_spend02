@@ -257,7 +257,7 @@ async def list_projects(
 
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message="获取项目列表失败",
             status_code=500
         )
@@ -288,7 +288,7 @@ async def create_project(
 
     except (ResourceConflictError, BusinessLogicError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -324,7 +324,7 @@ async def get_project_statistics(
         )
     except Exception as e:
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message="获取统计信息失败",
             status_code=500
         )
@@ -349,7 +349,7 @@ async def get_project(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -385,13 +385,13 @@ async def update_project(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
     except (ResourceConflictError, BusinessLogicError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -422,7 +422,7 @@ async def delete_project(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -434,7 +434,7 @@ async def delete_project(
         )
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -464,7 +464,7 @@ async def assign_member(
 
     except (ResourceNotFoundError, ResourceConflictError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -501,7 +501,7 @@ async def get_project_members(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -536,7 +536,7 @@ async def remove_member(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -572,7 +572,7 @@ async def add_expense(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )
@@ -627,7 +627,7 @@ async def get_project_expenses(
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="SYS_004",
+            code="SYS-004",
             message=str(e),
             status_code=404
         )

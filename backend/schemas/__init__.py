@@ -8,7 +8,7 @@ Author: Claude协作开发
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -75,14 +75,14 @@ class ProjectRead(ProjectBase, TimestampMixin, ORMBase):
     id: UUID
 
 
-# Channels
+# Channels - 匹配 init_schema.sql 中的 channels 表
 class ChannelBase(BaseModel):
     name: str
-    service_fee_type: str = "percent"
-    service_fee_value: Decimal = Decimal("0")
-    is_active: bool = True
+    platform: Optional[str] = None
+    status: Optional[str] = "active"  # active/inactive
+    risk_level: Optional[str] = None  # low/medium/high
     created_by: Optional[UUID] = None
-    updated_by: Optional[UUID] = None
+    channel_metadata: Optional[Dict[str, Any]] = None  # JSONB 存储扩展数据
 
 
 class ChannelCreate(ChannelBase):
@@ -91,27 +91,45 @@ class ChannelCreate(ChannelBase):
 
 class ChannelUpdate(BaseModel):
     name: Optional[str] = None
-    service_fee_type: Optional[str] = None
-    service_fee_value: Optional[Decimal] = None
-    is_active: Optional[bool] = None
-    created_by: Optional[UUID] = None
-    updated_by: Optional[UUID] = None
+    platform: Optional[str] = None
+    status: Optional[str] = None
+    risk_level: Optional[str] = None
+    channel_metadata: Optional[Dict[str, Any]] = None
 
 
 class ChannelRead(ChannelBase, TimestampMixin, ORMBase):
     id: UUID
 
 
-# Ad Accounts
+# Ad Accounts - 对齐 init_schema.sql §5.1 ad_accounts 表
 class AdAccountBase(BaseModel):
-    name: str
-    project_id: UUID
-    channel_id: UUID
-    assigned_user_id: Optional[UUID] = None
-    status: str = AdAccountStatus.NEW.value  # 使用枚举默认值
-    dead_reason: Optional[str] = None
-    created_by: Optional[UUID] = None
-    updated_by: Optional[UUID] = None
+    """
+    广告账户基础字段 - 对齐 init_schema.sql 第 315-332 行
+
+    字段说明：
+    - project_id: 项目ID (BIGINT)
+    - channel_id: 渠道ID (UUID)
+    - supplier_id: 供应商ID (UUID)
+    - owner_id: 负责人ID (UUID)
+    - name: 账户名称 (VARCHAR 200)
+    - account_code: 账户代码 (VARCHAR 100, UNIQUE)
+    - status: 账户状态
+    - status_reason: 状态原因
+    - spend_limit: 消耗限额
+    - currency: 货币
+    - timezone: 时区
+    """
+    project_id: int  # BigInteger
+    channel_id: Optional[UUID] = None
+    supplier_id: Optional[UUID] = None
+    owner_id: Optional[UUID] = None  # 负责人
+    name: Optional[str] = None  # 账户名称
+    account_code: Optional[str] = None  # 账户代码
+    status: Optional[str] = AdAccountStatus.NEW.value
+    status_reason: Optional[str] = None
+    spend_limit: Decimal = Decimal("0.00")
+    currency: str = "CNY"
+    timezone: str = "Asia/Shanghai"
 
 
 class AdAccountCreate(AdAccountBase):
@@ -120,23 +138,29 @@ class AdAccountCreate(AdAccountBase):
 
 class AdAccountUpdate(BaseModel):
     name: Optional[str] = None
-    project_id: Optional[UUID] = None
+    project_id: Optional[int] = None
     channel_id: Optional[UUID] = None
-    assigned_user_id: Optional[UUID] = None
+    supplier_id: Optional[UUID] = None
+    owner_id: Optional[UUID] = None
     status: Optional[str] = None
-    dead_reason: Optional[str] = None
+    status_reason: Optional[str] = None
+    spend_limit: Optional[Decimal] = None
+    currency: Optional[str] = None
+    timezone: Optional[str] = None
     created_by: Optional[UUID] = None
     updated_by: Optional[UUID] = None
 
 
 class AdAccountStatusUpdate(BaseModel):
     status: str
-    updated_by: Optional[UUID] = None
-    dead_reason: Optional[str] = None
+    status_reason: Optional[str] = None
 
 
 class AdAccountRead(AdAccountBase, TimestampMixin, ORMBase):
-    id: UUID
+    """广告账户读取响应 - 对齐 init_schema.sql"""
+    id: int  # BigInteger
+    created_by: Optional[UUID] = None
+    updated_by: Optional[UUID] = None
 
 
 # Ad Spend Daily

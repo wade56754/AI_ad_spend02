@@ -2,10 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+ * 数据可视化颜色系统 (Chart Colors)
+ *
+ * 遵循 UI_DESIGN_SYSTEM.md v2.0 Section 2.4
+ * 确保 Light/Dark 模式下具有 WCAG AA 级对比度
+ * ============================================================================ */
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+
+  /* Chart Colors - Light Mode */
+  --chart-primary: #2563EB;   /* Blue-600 - 消耗/支出 (核心指标) */
+  --chart-success: #16A34A;   /* Green-600 - 收入/ROAS (正向指标) */
+  --chart-warning: #D97706;   /* Amber-600 - 利润 (关注指标) */
+  --chart-info: #7C3AED;      /* Violet-600 - 粉丝数/点击 (辅助指标) */
+  --chart-grid: #E2E8F0;      /* Slate-200 - 图表网格线/坐标轴 */
+  --chart-tooltip: #FFFFFF;   /* White - 浮层背景色 */
+
+  /* Chart Colors - 扩展色板 (多系列图表) */
+  --chart-secondary: #0891B2; /* Cyan-600 - 第二系列 */
+  --chart-tertiary: #DB2777;  /* Pink-600 - 第三系列 */
+  --chart-quaternary: #EA580C;/* Orange-600 - 第四系列 */
+}
+
+/* Dark Mode - 提高亮度确保对比度 */
+.dark {
+  /* Chart Colors - Dark Mode */
+  --chart-primary: #60A5FA;   /* Blue-400 */
+  --chart-success: #4ADE80;   /* Green-400 */
+  --chart-warning: #FBBF24;   /* Amber-400 */
+  --chart-info: #A78BFA;      /* Violet-400 */
+  --chart-grid: #27272A;      /* Zinc-800 */
+  --chart-tooltip: #18181B;   /* Zinc-900 */
+
+  /* Chart Colors - 扩展色板 (多系列图表) */
+  --chart-secondary: #22D3EE; /* Cyan-400 */
+  --chart-tertiary: #F472B6;  /* Pink-400 */
+  --chart-quaternary: #FB923C;/* Orange-400 */
 }
 
 body {
@@ -16,4 +52,39 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
+}
+
+/* ============================================================================
+ * 图表工具类 (Utility Classes)
+ * ============================================================================ */
+
+@layer utilities {
+  /* 图表文字颜色 */
+  .text-chart-primary { color: var(--chart-primary); }
+  .text-chart-success { color: var(--chart-success); }
+  .text-chart-warning { color: var(--chart-warning); }
+  .text-chart-info { color: var(--chart-info); }
+
+  /* 图表背景颜色 */
+  .bg-chart-primary { background-color: var(--chart-primary); }
+  .bg-chart-success { background-color: var(--chart-success); }
+  .bg-chart-warning { background-color: var(--chart-warning); }
+  .bg-chart-info { background-color: var(--chart-info); }
+  .bg-chart-tooltip { background-color: var(--chart-tooltip); }
+
+  /* 图表边框颜色 */
+  .border-chart-grid { border-color: var(--chart-grid); }
+
+  /* 图表填充颜色 (带透明度) */
+  .fill-chart-primary { fill: var(--chart-primary); }
+  .fill-chart-success { fill: var(--chart-success); }
+  .fill-chart-warning { fill: var(--chart-warning); }
+  .fill-chart-info { fill: var(--chart-info); }
+
+  /* 图表描边颜色 */
+  .stroke-chart-primary { stroke: var(--chart-primary); }
+  .stroke-chart-success { stroke: var(--chart-success); }
+  .stroke-chart-warning { stroke: var(--chart-warning); }
+  .stroke-chart-info { stroke: var(--chart-info); }
+  .stroke-chart-grid { stroke: var(--chart-grid); }
 }

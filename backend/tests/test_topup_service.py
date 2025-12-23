@@ -679,7 +679,7 @@ class TestTopupService:
                     reason="测试拒绝"
                 )
 
-            assert "STATE-002" in str(exc.value) or "不能执行拒绝操作" in str(exc.value)
+            assert "STATE_400" in str(exc.value) or "不能执行拒绝操作" in str(exc.value)
 
         def test_reject_permission_denied(self, topup_service, media_buyer_user, sample_ad_account, admin_user, db_session):
             """测试无权限拒绝失败"""
@@ -782,7 +782,7 @@ class TestTopupService:
                     reason="测试取消"
                 )
 
-            assert "STATE-002" in str(exc.value) or "不能取消" in str(exc.value)
+            assert "STATE_400" in str(exc.value) or "不能取消" in str(exc.value)
 
         def test_cancel_others_request_permission_denied(self, topup_service, data_operator_user, media_buyer_user, sample_ad_account, db_session):
             """测试非申请人非管理员取消他人申请失败"""
@@ -867,7 +867,7 @@ class TestTopupService:
                     current_user=finance_user
                 )
 
-            assert "STATE-002" in str(exc.value) or "不能确认收款" in str(exc.value)
+            assert "STATE_400" in str(exc.value) or "不能确认收款" in str(exc.value)
 
         def test_confirm_paid_permission_denied(self, topup_service, data_operator_user, sample_ad_account, admin_user, db_session):
             """测试无权限确认收款失败"""

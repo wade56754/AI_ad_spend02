@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '20251120_add_version_fields_p0'
-down_revision = None  # 需要根据实际最新迁移文件修改
+down_revision = '20251118_phase0'  # 依赖 phase0 创建的 topup_requests 表
 branch_labels = None
 depends_on = None
 

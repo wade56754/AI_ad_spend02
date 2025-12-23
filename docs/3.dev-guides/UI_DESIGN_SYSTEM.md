@@ -1,9 +1,9 @@
 ---
-version: v2.0
+version: v2.1
 status: ready_for_production
 layer: dev-guide
 owner: wade
-last_reviewed: 2025-12-09
+last_reviewed: 2025-12-21
 baseline: MASTER.md v3.5, SoT Freeze v2.6, FRONTEND_STYLE_GUIDE v2.1
 ---
 
@@ -94,15 +94,68 @@ baseline: MASTER.md v3.5, SoT Freeze v2.6, FRONTEND_STYLE_GUIDE v2.1
 | `final_confirmed` | `success` | 已确认 | `FileCheck2` |
 | `final_locked` | `locked` | 已锁定 | `Lock` |
 
-### 2.4 图表颜色
+### 2.4 数据可视化系统 (Data Viz Colors)
 
-| 用途 | 颜色值 | Tailwind 类 |
-|------|--------|-------------|
-| 消耗/支出 | `#3B82F6` | `text-blue-500` |
-| 收入 | `#22C55E` | `text-green-500` |
-| 利润 | `#F59E0B` | `text-amber-500` |
-| 粉数 | `#8B5CF6` | `text-violet-500` |
-| 辅助线 | `#94A3B8` | `text-slate-400` |
+> **原则**: 图表颜色必须通过 CSS 变量管理，确保在 Light/Dark 模式下均具有 WCAG AA 级对比度。
+
+#### 语义化图表颜色 Token
+
+| 语义 Token | CSS 变量 | Light Mode (参考) | Dark Mode (参考) | 用途说明 |
+|------------|----------|-------------------|------------------|----------|
+| `chart-primary` | `--chart-primary` | `#2563EB` (Blue-600) | `#60A5FA` (Blue-400) | 消耗/支出 (核心指标) |
+| `chart-success` | `--chart-success` | `#16A34A` (Green-600) | `#4ADE80` (Green-400) | 收入/ROAS (正向指标) |
+| `chart-warning` | `--chart-warning` | `#D97706` (Amber-600) | `#FBBF24` (Amber-400) | 利润 (关注指标) |
+| `chart-info` | `--chart-info` | `#7C3AED` (Violet-600) | `#A78BFA` (Violet-400) | 粉丝数/点击 (辅助指标) |
+| `chart-grid` | `--chart-grid` | `#E2E8F0` (Slate-200) | `#27272A` (Zinc-800) | 图表网格线/坐标轴 |
+| `chart-tooltip` | `--chart-tooltip` | `#FFFFFF` | `#18181B` | 浮层背景色 |
+
+#### Tailwind 配置
+
+```typescript
+// tailwind.config.ts
+theme: {
+  extend: {
+    colors: {
+      chart: {
+        primary: "var(--chart-primary)",
+        success: "var(--chart-success)",
+        warning: "var(--chart-warning)",
+        info:    "var(--chart-info)",
+        grid:    "var(--chart-grid)",
+        tooltip: "var(--chart-tooltip)",
+      }
+    }
+  }
+}
+```
+
+#### 使用示例
+
+```tsx
+// 图表组件中使用
+<LineChart
+  data={data}
+  colors={{
+    spend: 'var(--chart-primary)',    // 消耗
+    revenue: 'var(--chart-success)',  // 收入
+    profit: 'var(--chart-warning)',   // 利润
+  }}
+/>
+
+// Tailwind 类使用
+<div className="text-chart-primary">消耗: ¥12,345</div>
+<div className="bg-chart-tooltip border border-chart-grid">...</div>
+```
+
+#### 旧版颜色映射 (向后兼容)
+
+| 用途 | 新 Token | 旧写法 | 迁移说明 |
+|------|----------|--------|----------|
+| 消耗/支出 | `chart-primary` | `text-blue-500` | 使用 `text-chart-primary` |
+| 收入 | `chart-success` | `text-green-500` | 使用 `text-chart-success` |
+| 利润 | `chart-warning` | `text-amber-500` | 使用 `text-chart-warning` |
+| 粉数 | `chart-info` | `text-violet-500` | 使用 `text-chart-info` |
+| 辅助线 | `chart-grid` | `text-slate-400` | 使用 `text-chart-grid` |
 
 ---
 
@@ -504,11 +557,12 @@ Caption: text-xs (12px)
 |------|------|----------|------|
 | v0.1 | 2025-11-27 | 初始框架（TODO 占位） | wade |
 | v2.0 | 2025-12-09 | **全面重写**：<br>- 完善颜色系统（品牌色、语义色、状态色）<br>- 对齐 STATE_MACHINE.md v2.6 状态颜色<br>- 添加排版系统详细规范<br>- 添加间距系统（4px 网格）<br>- 添加组件库规范（shadcn/ui）<br>- 添加图标系统（lucide-react）<br>- 添加响应式断点<br>- 添加主题系统<br>- 添加交互模式规范<br>- 添加 SoT 对齐规则 | Claude |
+| v2.1 | 2025-12-21 | **增强数据可视化系统**：<br>- Section 2.4 重写为语义化图表颜色 Token<br>- 添加 CSS 变量支持 Light/Dark 模式<br>- 添加 Tailwind chart 颜色配置<br>- 添加扩展色板（secondary/tertiary/quaternary）<br>- 添加向后兼容迁移指南 | Claude |
 
 ---
 
-**文档版本**: v2.0
+**文档版本**: v2.1
 **状态**: ready_for_production
-**最后更新**: 2025-12-09
+**最后更新**: 2025-12-21
 **维护者**: wade
 **基准**: MASTER.md v3.5, SoT Freeze v2.6, FRONTEND_STYLE_GUIDE v2.1

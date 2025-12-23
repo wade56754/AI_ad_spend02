@@ -1,8 +1,23 @@
 /**
- * Daily Reports Page Component
+ * DailyReportsPage Component
  *
- * Main page for daily report management with filters, stats, and 8-state workflow
- * SoT: STATE_MACHINE.md v2.6 Section 8
+ * SoT: docs/10.module-specs/B2-daily-report-review.md §4.1 页面布局
+ * SoT: STATE_MACHINE.md v2.6 Section 8 (日报 8 状态机)
+ * SoT: API_SOT.md v9.0 Section 5.4 (Daily Reports endpoints)
+ *
+ * 一句话定义: 让主管/财务了解"投手今天干得怎样？有无异常？"
+ *
+ * 日报 8 状态机:
+ *   raw_submitted → trend_pending → trend_ok/trend_flagged
+ *   → trend_resolved → final_pending → final_confirmed → final_locked
+ *
+ * 视觉规范 (v3.0):
+ * - 打破三明治布局，统一筛选容器
+ * - KPI卡片去边框加投影，图标带色块背景
+ * - 状态Tab替代状态说明
+ * - 页面背景灰色，内容块白色
+ *
+ * @module features/daily-reports/components
  */
 
 'use client';
@@ -18,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -26,94 +40,214 @@ import {
   Download,
   Upload,
   RefreshCw,
-  Filter,
+  ChevronDown,
   BarChart3,
+  List,
   FileText,
   AlertTriangle,
   Clock,
   Lock,
+  Search,
+  X,
+  Filter,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DailyReportsTable } from './DailyReportsTable';
-import { StatusLegend } from './StatusBadge';
-import { useDailyReports, useDailyReportStats } from '../hooks';
+import { useDailyReports, useDailyReportStats, useRefreshDailyReports } from '../hooks';
 import type { DailyReportStatus, DailyReportListParams } from '../types';
-import { STATUS_CONFIG } from '../types';
+import { STATUS_CONFIG, PLATFORM_OPTIONS, REGION_OPTIONS } from '../types';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch, apiDownload } from '@/lib/api';
+import { toast } from 'sonner';
 
-/**
- * Stat card for displaying report statistics
- */
+// ============================================================================
+// 类型定义
+// ============================================================================
+
+interface TeamOption {
+  id: string;
+  name: string;
+  code: string;
+}
+
+// ============================================================================
+// Hooks - 筛选选项
+// ============================================================================
+
+const useTeamOptions = () => {
+  return useQuery({
+    queryKey: ['daily-reports', 'filter-options', 'teams'],
+    queryFn: async () => {
+      return await apiFetch<TeamOption[]>('/api/v1/daily-reports/filter-options/teams');
+    },
+  });
+};
+
+const useSubmitterOptions = () => {
+  return useQuery({
+    queryKey: ['daily-reports', 'filter-options', 'submitters'],
+    queryFn: async () => {
+      return await apiFetch<string[]>('/api/v1/daily-reports/filter-options/submitters');
+    },
+  });
+};
+
+// ============================================================================
+// 子组件 - KPI 卡片 (v3.0 去边框+投影+色块图标)
+// ============================================================================
+
 interface StatCardProps {
   title: string;
   value: number;
   icon: React.ComponentType<{ className?: string }>;
-  variant?: 'default' | 'success' | 'warning' | 'error';
+  color: 'slate' | 'blue' | 'amber' | 'red' | 'green';
+  isActive?: boolean;
   onClick?: () => void;
 }
 
-function StatCard({ title, value, icon: Icon, variant = 'default', onClick }: StatCardProps) {
-  const variantStyles = {
-    default: 'bg-gray-50 text-gray-700',
-    success: 'bg-green-50 text-green-700',
-    warning: 'bg-amber-50 text-amber-700',
-    error: 'bg-red-50 text-red-700',
-  };
+const colorConfig = {
+  slate: { iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
+  blue:  { iconBg: 'bg-blue-50',   iconColor: 'text-blue-600' },
+  amber: { iconBg: 'bg-amber-50',  iconColor: 'text-amber-600' },
+  red:   { iconBg: 'bg-red-50',    iconColor: 'text-red-600' },
+  green: { iconBg: 'bg-green-50',  iconColor: 'text-green-600' },
+};
+
+function StatCard({ title, value, icon: Icon, color, isActive, onClick }: StatCardProps) {
+  const colors = colorConfig[color];
 
   return (
-    <Card
+    <div
       className={cn(
-        'cursor-pointer transition-all hover:shadow-md',
-        onClick && 'hover:ring-2 hover:ring-primary/20'
+        'bg-white rounded-xl p-5 cursor-pointer transition-all duration-200',
+        'shadow-sm hover:shadow-md',
+        isActive && 'ring-2 ring-primary ring-offset-2'
       )}
       onClick={onClick}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1">{value}</p>
-          </div>
-          <div className={cn('p-3 rounded-full', variantStyles[variant])}>
-            <Icon className="h-5 w-5" />
-          </div>
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+            {title}
+          </p>
+          <p className="text-3xl font-bold text-gray-900 tabular-nums tracking-tight">
+            {value.toLocaleString()}
+          </p>
         </div>
-      </CardContent>
-    </Card>
+        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', colors.iconBg)}>
+          <Icon className={cn('h-5 w-5', colors.iconColor)} />
+        </div>
+      </div>
+    </div>
   );
 }
 
+// ============================================================================
+// 子组件 - 状态 Tab (v3.0 Segmented Control 风格)
+// ============================================================================
+
+interface StatusTabsProps {
+  value: DailyReportStatus | 'all';
+  onChange: (status: DailyReportStatus | 'all') => void;
+  stats?: Record<DailyReportStatus, number>;
+}
+
+function StatusTabs({ value, onChange, stats }: StatusTabsProps) {
+  const totalCount = stats
+    ? Object.values(stats).reduce((sum, count) => sum + count, 0)
+    : 0;
+
+  const tabs: Array<{
+    key: DailyReportStatus | 'all';
+    label: string;
+    count: number;
+    highlight?: boolean;
+  }> = [
+    { key: 'all', label: '全部', count: totalCount },
+    { key: 'trend_pending', label: '待审核', count: (stats?.trend_pending ?? 0) + (stats?.final_pending ?? 0), highlight: true },
+    { key: 'trend_flagged', label: '异常', count: stats?.trend_flagged ?? 0, highlight: true },
+    { key: 'final_locked', label: '已完成', count: stats?.final_locked ?? 0 },
+  ];
+
+  return (
+    <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+      {tabs.map((tab) => (
+        <button
+          key={tab.key}
+          onClick={() => onChange(tab.key)}
+          className={cn(
+            'px-4 py-2 text-sm font-medium rounded-md transition-all',
+            value === tab.key
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          )}
+        >
+          {tab.label}
+          {tab.count > 0 && (
+            <span className={cn(
+              'ml-2 px-2 py-0.5 text-xs rounded-full',
+              tab.highlight && tab.count > 0
+                ? 'bg-red-100 text-red-700'
+                : value === tab.key
+                  ? 'bg-gray-100 text-gray-700'
+                  : 'bg-gray-200 text-gray-600'
+            )}>
+              {tab.count}
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================================
+// 主组件
+// ============================================================================
+
 export function DailyReportsPage() {
-  // Filter state
+  // ========== State ==========
   const [filters, setFilters] = useState<DailyReportListParams>({
     page: 1,
     page_size: 20,
     sort_by: 'report_date',
     sort_order: 'desc',
   });
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined,
   });
   const [statusFilter, setStatusFilter] = useState<DailyReportStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'stats'>('table');
 
-  // Data fetching
-  const { data: reportsData, refetch } = useDailyReports(filters);
+  // ========== Data Fetching ==========
+  // SoT: B2-daily-report-review.md §5 API 接口
+  const { data: reportsData, isLoading } = useDailyReports(filters);
+  const { refreshAll } = useRefreshDailyReports();
   const { data: stats } = useDailyReportStats({
     start_date: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
     end_date: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
   });
+  const { data: teamOptions = [] } = useTeamOptions();
+  const { data: submitterOptions = [] } = useSubmitterOptions();
 
-  // Handle filter changes
+  // ========== Handlers ==========
   const handleStatusFilter = (status: DailyReportStatus | 'all') => {
     setStatusFilter(status);
     setFilters((prev) => ({
       ...prev,
       status: status === 'all' ? undefined : status,
+      page: 1,
+    }));
+  };
+
+  const handleFilterChange = (key: keyof DailyReportListParams, value: string | undefined) => {
+    setFilters((prev) => ({
+      ...prev,
+      [key]: value === 'all' ? undefined : value,
       page: 1,
     }));
   };
@@ -148,215 +282,321 @@ export function DailyReportsPage() {
     });
   };
 
-  // Calculate stats from data
+  // 导出功能
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const params = new URLSearchParams();
+      if (filters.start_date) params.set('start_date', filters.start_date);
+      if (filters.end_date) params.set('end_date', filters.end_date);
+      if (filters.status) {
+        const statusValue = Array.isArray(filters.status) ? filters.status.join(',') : filters.status;
+        params.set('status', statusValue);
+      }
+      if (filters.team_id) params.set('team_id', filters.team_id);
+      if (filters.submitter_name) params.set('submitter_name', filters.submitter_name);
+      if (filters.region) params.set('region', filters.region);
+      if (filters.platform) params.set('platform', filters.platform);
+      params.set('format', 'xlsx');
+
+      const filename = `daily-reports-${format(new Date(), 'yyyyMMdd-HHmmss')}.xlsx`;
+      await apiDownload(`/api/v1/daily-reports/export?${params.toString()}`, { saveAs: filename });
+      toast.success('导出成功', { description: `文件已保存: ${filename}` });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('导出失败', { description: error instanceof Error ? error.message : '请稍后重试' });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // ========== Computed ==========
   const totalReports = reportsData?.meta?.pagination?.total ?? 0;
   const pendingCount = (stats?.trend_pending ?? 0) + (stats?.final_pending ?? 0);
   const flaggedCount = stats?.trend_flagged ?? 0;
   const lockedCount = stats?.final_locked ?? 0;
 
+  const hasActiveFilters = filters.team_id || filters.submitter_name ||
+    filters.region || filters.platform || filters.search ||
+    dateRange.from || statusFilter !== 'all';
+
+  // ========== Render ==========
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
+    <div className="min-h-screen bg-gray-50 -m-6 p-6 space-y-6">
+      {/* ====== Header ====== */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">日报管理</h1>
-          <p className="text-muted-foreground">管理广告消耗日报数据及审批流程</p>
+          <h1 className="text-2xl font-bold text-gray-900">日报管理</h1>
+          <p className="text-sm text-gray-500 mt-1">广告消耗日报数据及审批流程</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refreshAll()}
+            disabled={isLoading}
+            className="text-gray-600"
+          >
+            <RefreshCw className={cn('h-4 w-4 mr-2', isLoading && 'animate-spin')} />
             刷新
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="bg-white">
             <Upload className="h-4 w-4 mr-2" />
-            批量导入
+            导入
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            导出
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleExport}
+            disabled={isExporting}
+          >
+            <Download className={cn('h-4 w-4 mr-2', isExporting && 'animate-pulse')} />
+            {isExporting ? '导出中...' : '导出'}
           </Button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* ====== KPI Cards (去边框+投影+色块图标) ====== */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="总日报数"
+          title="总日报"
           value={totalReports}
           icon={FileText}
+          color="slate"
+          isActive={statusFilter === 'all'}
           onClick={() => handleStatusFilter('all')}
         />
         <StatCard
           title="待审核"
           value={pendingCount}
           icon={Clock}
-          variant="warning"
+          color="amber"
+          isActive={statusFilter === 'trend_pending' || statusFilter === 'final_pending'}
           onClick={() => handleStatusFilter('trend_pending')}
         />
         <StatCard
           title="异常待处理"
           value={flaggedCount}
           icon={AlertTriangle}
-          variant="error"
+          color="red"
+          isActive={statusFilter === 'trend_flagged'}
           onClick={() => handleStatusFilter('trend_flagged')}
         />
         <StatCard
           title="已锁定"
           value={lockedCount}
           icon={Lock}
-          variant="success"
+          color="green"
+          isActive={statusFilter === 'final_locked'}
           onClick={() => handleStatusFilter('final_locked')}
         />
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <CardTitle className="text-base">筛选条件</CardTitle>
-            </div>
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              清除筛选
+      {/* ====== Unified Filter Panel (白色容器，统一筛选) ====== */}
+      <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+        {/* Row 1: 搜索 + 常用筛选 */}
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* 搜索框 (加宽 + 提示文案) */}
+          <div className="relative flex-1 max-w-md min-w-[240px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="搜索项目名称 / 账户ID / 投手姓名..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              className="pl-10 h-10 bg-gray-50 border-gray-200 focus:bg-white"
+            />
+          </div>
+
+          {/* 日期范围 */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  'h-10 w-[200px] justify-start text-left font-normal bg-gray-50 border-gray-200',
+                  !dateRange.from && 'text-gray-500'
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>{format(dateRange.from, 'MM/dd')} - {format(dateRange.to, 'MM/dd')}</>
+                  ) : (
+                    format(dateRange.from, 'yyyy-MM-dd')
+                  )
+                ) : (
+                  '选择日期范围'
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                // @ts-expect-error - shadcn/ui Calendar mode="range" 类型定义问题
+                selected={dateRange.from ? { from: dateRange.from, to: dateRange.to } : undefined}
+                onSelect={(range: unknown) => {
+                  const r = range as { from?: Date; to?: Date } | undefined;
+                  handleDateRangeChange({ from: r?.from, to: r?.to });
+                }}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* 团队 */}
+          <Select
+            value={filters.team_id || 'all'}
+            onValueChange={(v) => handleFilterChange('team_id', v)}
+          >
+            <SelectTrigger className="h-10 w-[140px] bg-gray-50 border-gray-200">
+              <SelectValue placeholder="团队" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部团队</SelectItem>
+              {teamOptions.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* 投手 */}
+          <Select
+            value={filters.submitter_name || 'all'}
+            onValueChange={(v) => handleFilterChange('submitter_name', v)}
+          >
+            <SelectTrigger className="h-10 w-[140px] bg-gray-50 border-gray-200">
+              <SelectValue placeholder="投手" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部投手</SelectItem>
+              {submitterOptions.map((name) => (
+                <SelectItem key={name} value={name}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* 高级筛选 */}
+          <Button
+            variant="ghost"
+            className="h-10 text-gray-600"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            高级筛选
+            <ChevronDown className={cn('ml-1 h-4 w-4 transition-transform', showAdvanced && 'rotate-180')} />
+          </Button>
+
+          {/* 清除筛选 */}
+          {hasActiveFilters && (
+            <Button variant="ghost" className="h-10 text-gray-500" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-1" />
+              清除
+            </Button>
+          )}
+
+          {/* 视图切换 */}
+          <div className="ml-auto flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 px-3"
+              onClick={() => setViewMode('table')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'stats' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="h-8 px-3"
+              onClick={() => setViewMode('stats')}
+            >
+              <BarChart3 className="h-4 w-4" />
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Date Range Picker */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-[260px] justify-start text-left font-normal',
-                    !dateRange.from && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange.from ? (
-                    dateRange.to ? (
-                      <>
-                        {format(dateRange.from, 'MM/dd')} -{' '}
-                        {format(dateRange.to, 'MM/dd')}
-                      </>
-                    ) : (
-                      format(dateRange.from, 'yyyy-MM-dd')
-                    )
-                  ) : (
-                    '选择日期范围'
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="range"
-                  selected={dateRange.from && dateRange.to ? [dateRange.from, dateRange.to] : dateRange.from ? [dateRange.from] : undefined}
-                  onSelect={(dates) => {
-                    if (!dates) {
-                      handleDateRangeChange({ from: undefined, to: undefined });
-                    } else if (Array.isArray(dates)) {
-                      handleDateRangeChange({
-                        from: dates[0],
-                        to: dates.length > 1 ? dates[1] : undefined
-                      });
-                    } else {
-                      handleDateRangeChange({ from: dates, to: undefined });
-                    }
-                  }}
-                  numberOfMonths={2}
-                />
-              </PopoverContent>
-            </Popover>
+        </div>
 
-            {/* Status Filter */}
+        {/* Row 2: 高级筛选（默认折叠） */}
+        {showAdvanced && (
+          <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
+            {/* 地区 */}
             <Select
-              value={statusFilter}
-              onValueChange={(value) => handleStatusFilter(value as DailyReportStatus | 'all')}
+              value={filters.region || 'all'}
+              onValueChange={(v) => handleFilterChange('region', v)}
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="选择状态" />
+              <SelectTrigger className="h-10 w-[140px] bg-gray-50 border-gray-200">
+                <SelectValue placeholder="地区" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                  <SelectItem key={status} value={status}>
-                    {config.label}
-                  </SelectItem>
+                <SelectItem value="all">全部地区</SelectItem>
+                {REGION_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* Search */}
-            <div className="flex items-center gap-2">
-              <Input
-                placeholder="搜索项目/账户..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-[200px]"
-              />
-              <Button variant="secondary" size="sm" onClick={handleSearch}>
-                搜索
-              </Button>
-            </div>
-          </div>
-
-          {/* Status Legend */}
-          <div className="mt-4 pt-4 border-t">
-            <p className="text-xs text-muted-foreground mb-2">状态说明</p>
-            <StatusLegend />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tabs for different views */}
-      <Tabs defaultValue="table" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="table" className="gap-2">
-            <FileText className="h-4 w-4" />
-            列表视图
-          </TabsTrigger>
-          <TabsTrigger value="stats" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            统计视图
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="table">
-          <Card>
-            <CardContent className="p-0">
-              <DailyReportsTable />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="stats">
-          <Card>
-            <CardHeader>
-              <CardTitle>状态分布统计</CardTitle>
-              <CardDescription>各状态的日报数量分布</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                  <div
-                    key={status}
-                    className="p-4 rounded-lg border text-center cursor-pointer hover:bg-gray-50"
-                    onClick={() => handleStatusFilter(status as DailyReportStatus)}
-                  >
-                    <p className="text-3xl font-bold">
-                      {stats?.[status as DailyReportStatus] ?? 0}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">{config.label}</p>
-                  </div>
+            {/* 平台 */}
+            <Select
+              value={filters.platform || 'all'}
+              onValueChange={(v) => handleFilterChange('platform', v)}
+            >
+              <SelectTrigger className="h-10 w-[140px] bg-gray-50 border-gray-200">
+                <SelectValue placeholder="平台" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部平台</SelectItem>
+                {PLATFORM_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Row 3: 状态 Tab (替代原状态说明) */}
+        <div className="pt-4 border-t border-gray-100">
+          <StatusTabs
+            value={statusFilter}
+            onChange={handleStatusFilter}
+            stats={stats}
+          />
+        </div>
+      </div>
+
+      {/* ====== Content ====== */}
+      {viewMode === 'table' ? (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <DailyReportsTable filters={filters} onFiltersChange={setFilters} />
+        </div>
+      ) : (
+        <Card className="shadow-sm border-0">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">状态分布统计</CardTitle>
+            <CardDescription>各状态的日报数量分布</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Object.entries(STATUS_CONFIG).map(([status, config]) => (
+                <div
+                  key={status}
+                  className={cn(
+                    'p-5 rounded-xl bg-gray-50 text-center cursor-pointer transition-all',
+                    'hover:bg-gray-100',
+                    statusFilter === status && 'ring-2 ring-primary bg-white shadow-sm'
+                  )}
+                  onClick={() => handleStatusFilter(status as DailyReportStatus)}
+                >
+                  <p className="text-3xl font-bold text-gray-900 tabular-nums">
+                    {stats?.[status as DailyReportStatus] ?? 0}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">{config.label}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -140,12 +140,130 @@ async def list_topup_requests(
         )
 
     except Exception as e:
+        import traceback
+        print(f"[TOPUP_LIST_ERROR] {e}")
+        traceback.print_exc()
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="获取充值申请列表失败",
+            message=f"获取充值申请列表失败: {str(e)}",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
+
+# ============================================
+# 静态路由必须在 /{request_id} 之前定义
+# ============================================
+
+@router.get(
+    "/stats",
+    response_model=StandardResponse[dict],
+    summary="获取充值状态统计"
+)
+async def get_topup_stats(
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(get_current_user)
+):
+    """获取充值状态统计API（前端使用）"""
+    try:
+        # 获取各状态的统计数量
+        stats = service.get_status_stats(current_user)
+        return success_response(data=stats, message="获取统计成功")
+    except Exception as e:
+        import traceback
+        print(f"[TOPUP_STATS_ERROR] {e}")
+        traceback.print_exc()
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message=f"获取统计信息失败: {str(e)}",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/statistics",
+    response_model=StandardResponse[TopupStatisticsResponse],
+    summary="获取充值统计详情"
+)
+async def get_statistics(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
+):
+    """获取充值统计API"""
+    try:
+        stats = service.get_statistics(
+            current_user=current_user,
+            start_date=start_date,
+            end_date=end_date
+        )
+        stats_response = TopupStatisticsResponse.model_validate(stats)
+        return success_response(data=stats_response)
+    except Exception as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取统计信息失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/dashboard",
+    response_model=StandardResponse[TopupDashboardResponse],
+    summary="获取仪表板数据"
+)
+async def get_dashboard(
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(get_current_user)
+):
+    """获取仪表板数据API"""
+    try:
+        dashboard_data = service.get_dashboard_data(current_user)
+        dashboard_response = TopupDashboardResponse.model_validate(dashboard_data)
+        return success_response(data=dashboard_response)
+    except Exception as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取仪表板数据失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/export",
+    response_model=StandardResponse[List[dict]],
+    summary="导出充值记录"
+)
+async def export_requests(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    status: Optional[str] = Query(None),
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(require_role(["admin", "finance"]))
+):
+    """导出充值记录API"""
+    try:
+        export_data = service.export_requests(
+            current_user=current_user,
+            start_date=start_date,
+            end_date=end_date,
+            status=status
+        )
+        return success_response(
+            data=export_data,
+            message="导出数据生成成功"
+        )
+    except Exception as e:
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="导出数据失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+# ============================================
+# 带路径参数的路由
+# ============================================
 
 @router.post(
     "",
@@ -181,7 +299,7 @@ async def create_topup_request(
 
     except (BusinessLogicError, ResourceConflictError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -264,7 +382,7 @@ async def data_review_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -310,7 +428,7 @@ async def finance_approve_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -356,7 +474,7 @@ async def mark_as_paid(
         )
     except (BusinessLogicError, PermissionDeniedError, ResourceConflictError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -455,7 +573,7 @@ async def reject_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -508,7 +626,7 @@ async def cancel_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -562,7 +680,7 @@ async def confirm_paid_request(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=400
         )
@@ -606,60 +724,6 @@ async def get_approval_logs(
 
 
 @router.get(
-    "/statistics",
-    response_model=StandardResponse[TopupStatisticsResponse],
-    summary="获取充值统计"
-)
-async def get_statistics(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
-):
-    """获取充值统计API"""
-    try:
-        stats = service.get_statistics(
-            current_user=current_user,
-            start_date=start_date,
-            end_date=end_date
-        )
-        stats_response = TopupStatisticsResponse.model_validate(stats)
-
-        return success_response(data=stats_response)
-
-    except Exception as e:
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="获取统计信息失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
-        )
-
-
-@router.get(
-    "/dashboard",
-    response_model=StandardResponse[TopupDashboardResponse],
-    summary="获取仪表板数据"
-)
-async def get_dashboard(
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
-):
-    """获取仪表板数据API"""
-    try:
-        dashboard_data = service.get_dashboard_data(current_user)
-        dashboard_response = TopupDashboardResponse.model_validate(dashboard_data)
-
-        return success_response(data=dashboard_response)
-
-    except Exception as e:
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="获取仪表板数据失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
-        )
-
-
-@router.get(
     "/accounts/{account_id}/balance",
     response_model=StandardResponse[AdAccountBalance],
     summary="获取账户余额"
@@ -687,38 +751,4 @@ async def get_account_balance(
             code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
             message=str(e),
             status_code=403
-        )
-
-
-@router.get(
-    "/export",
-    response_model=StandardResponse[List[dict]],
-    summary="导出充值记录"
-)
-async def export_requests(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    status: Optional[str] = Query(None),
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["admin", "finance"]))
-):
-    """导出充值记录API"""
-    try:
-        export_data = service.export_requests(
-            current_user=current_user,
-            start_date=start_date,
-            end_date=end_date,
-            status=status
-        )
-
-        return success_response(
-            data=export_data,
-            message="导出数据生成成功"
-        )
-
-    except Exception as e:
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="导出数据失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )

@@ -40,14 +40,25 @@ from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceConflictError
 )
+from backend.core.state_machine import (
+    TOPUP_STATE_MACHINE,
+    StateTransitionError,
+    TopupStatus as SMTopupStatus,
+)
 from backend.utils.id_generator import generate_request_no
 from backend.models.finance.ledger import LedgerEntry
 from backend.models.ledger import LedgerEntryType
+from backend.core.phase_config import (
+    get_phase_config,
+    should_enforce_topup,
+    should_block_negative_balance,
+    log_phase_warning
+)
 # from backend.utils.audit import create_audit_log  # 暂时注释
 
 
 class TopupService:
-    """充值管理服务类"""
+    """充值管理服务类 - v2.1 修复字段引用"""
 
     def __init__(self, db: Session):
         self.db = db
@@ -73,7 +84,7 @@ class TopupService:
         if request_data.requested_amount > self.MAX_SINGLE_AMOUNT:
             raise BusinessLogicError(
                 f"单笔充值金额不能超过{self.MAX_SINGLE_AMOUNT}",
-                error_code="BIZ_201"
+                error_code="BIZ-201"
             )
 
         # 3. 检查账户余额上限
@@ -138,18 +149,25 @@ class TopupService:
         # 应用搜索条件
         if status:
             query = query.filter(TopupRequest.status == status)
-        if urgency:
-            query = query.filter(TopupRequest.urgency_level == urgency)
+        # urgency_level 字段不存在，忽略此过滤条件
+        # if urgency:
+        #     query = query.filter(TopupRequest.urgency_level == urgency)
         if ad_account_id:
             query = query.filter(TopupRequest.ad_account_id == ad_account_id)
+        # project_id 需要通过 ad_account 关系查询
         if project_id:
-            query = query.filter(TopupRequest.project_id == project_id)
+            query = query.join(AdAccount).filter(AdAccount.project_id == project_id)
         if start_date:
             query = query.filter(TopupRequest.created_at >= start_date)
         if end_date:
             query = query.filter(TopupRequest.created_at <= end_date + timedelta(days=1))
+        # request_no 字段不存在，使用 id 作为替代
         if request_no:
-            query = query.filter(TopupRequest.request_no.like(f"%{request_no}%"))
+            try:
+                req_id = int(request_no)
+                query = query.filter(TopupRequest.id == req_id)
+            except ValueError:
+                pass  # 忽略无效的 request_no
 
         # 计算总数
         total = query.count()
@@ -187,7 +205,7 @@ class TopupService:
 
         if not request:
             # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
-            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ_002")
+            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ-002")
 
         # 检查访问权限
         self._check_request_access(request, current_user)
@@ -206,22 +224,17 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "data_review")
 
-        # 检查状态流转 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
-        if request.status != TopupStatus.PENDING_REVIEW.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能进行数据审核",
-                error_code="BIZ_203"
-            )
-
         old_status = request.status
         # 数据审核通过后进入 finance_approve，拒绝则进入 rejected
         new_status = TopupStatus.FINANCE_APPROVE.value if review_data.action == "approve" else TopupStatus.REJECTED.value
+
+        # 使用状态机验证并执行转换
+        self._validate_transition(request, new_status, current_user.role, "数据审核")
 
         # 更新审核信息
         request.data_reviewed_by = current_user.id
         request.data_reviewed_at = datetime.utcnow()
         request.data_review_notes = review_data.notes
-        request.status = new_status
 
         # 记录审批日志
         self._create_approval_log(
@@ -250,17 +263,17 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "finance_approve")
 
-        # 检查状态流转 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
-        if request.status != TopupStatus.FINANCE_APPROVE.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能进行财务审批",
-                error_code="BIZ_203"
-            )
-
         old_status = request.status
-        # 财务审批通过后保持 finance_approve（等待打款），拒绝则进入 rejected
-        # 注：这里保持在 finance_approve 状态，下一步是 mark_as_paid
-        new_status = TopupStatus.FINANCE_APPROVE.value if approval_data.action == "approve" else TopupStatus.REJECTED.value
+
+        if approval_data.action == "approve":
+            # 财务审批通过: finance_approve → paid (直接进入已打款状态)
+            new_status = TopupStatus.PAID.value
+        else:
+            # 财务拒绝: finance_approve → rejected
+            new_status = TopupStatus.REJECTED.value
+
+        # 使用状态机验证并执行转换
+        self._validate_transition(request, new_status, current_user.role, "财务审批")
 
         # 更新审批信息
         request.finance_approved_by = current_user.id
@@ -268,7 +281,6 @@ class TopupService:
         request.finance_approve_notes = approval_data.notes
         request.actual_amount = approval_data.actual_amount
         request.payment_method = approval_data.payment_method.value if approval_data.payment_method else None
-        request.status = new_status
 
         # 记录审批日志
         self._create_approval_log(
@@ -304,27 +316,11 @@ class TopupService:
         """
         request = self.get_request_by_id(request_id, current_user)
 
-        # 验证权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
-        allowed_roles = [UserRole.DATA_OPERATOR.value, UserRole.FINANCE.value, UserRole.ADMIN.value]
-        if current_user.role not in allowed_roles:
-            raise PermissionDeniedError(
-                "只有数据员、财务或管理员可以拒绝充值申请",
-                error_code="AUTH-003"
-            )
-
-        # 检查状态流转 - 只能从 pending_review 或 finance_approve 拒绝
-        valid_statuses = [TopupStatus.PENDING_REVIEW.value, TopupStatus.FINANCE_APPROVE.value]
-        if request.status not in valid_statuses:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能执行拒绝操作，只能从 pending_review 或 finance_approve 状态拒绝",
-                error_code="STATE-002"
-            )
-
         old_status = request.status
         new_status = TopupStatus.REJECTED.value
 
-        # 更新状态
-        request.status = new_status
+        # 使用状态机验证并执行转换 (状态机会验证角色权限)
+        self._validate_transition(request, new_status, current_user.role, "拒绝")
         request.rejected_at = datetime.utcnow()
         request.rejected_by = current_user.id
         request.rejection_reason = reason
@@ -373,19 +369,11 @@ class TopupService:
                 error_code="AUTH-003"
             )
 
-        # 检查状态流转 - 只能从 draft 或 pending_review 取消
-        valid_statuses = [TopupStatus.DRAFT.value, TopupStatus.PENDING_REVIEW.value]
-        if request.status not in valid_statuses:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能取消，只能在 draft 或 pending_review 状态取消",
-                error_code="STATE-002"
-            )
-
         old_status = request.status
         new_status = TopupStatus.CANCELLED.value
 
-        # 更新状态
-        request.status = new_status
+        # 使用状态机验证并执行转换 (取消操作无角色限制)
+        self._validate_transition(request, new_status, current_user.role, "取消")
         request.cancelled_at = datetime.utcnow()
         request.cancelled_by = current_user.id
         request.cancellation_reason = reason
@@ -426,26 +414,11 @@ class TopupService:
         """
         request = self.get_request_by_id(request_id, current_user)
 
-        # 验证权限 - 只有财务或管理员可以确认收款
-        allowed_roles = [UserRole.FINANCE.value, UserRole.ADMIN.value]
-        if current_user.role not in allowed_roles:
-            raise PermissionDeniedError(
-                "只有财务或管理员可以确认收款",
-                error_code="AUTH-003"
-            )
-
-        # 检查状态流转 - 只能从 paid 确认
-        if request.status != TopupStatus.PAID.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能确认收款，只能从 paid 状态确认",
-                error_code="STATE-002"
-            )
-
         old_status = request.status
         new_status = TopupStatus.COMPLETED.value
 
-        # 更新状态
-        request.status = new_status
+        # 使用状态机验证并执行转换 (状态机会验证 finance 角色)
+        self._validate_transition(request, new_status, current_user.role, "确认收款")
         request.completed_at = datetime.utcnow()
         if transaction_id:
             request.transaction_id = transaction_id
@@ -511,20 +484,18 @@ class TopupService:
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "finance_approve")
 
-        # 检查状态 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
-        if request.status != TopupStatus.FINANCE_APPROVE.value:
-            raise BusinessLogicError(
-                f"当前状态({request.status})不能标记为已打款",
-                error_code="BIZ_203"
-            )
-
         # 检查是否已打款
         if request.paid_at:
-            raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ_207")
+            raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ-207")
 
-        # 更新打款信息 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        old_status = request.status
+        new_status = TopupStatus.PAID.value
+
+        # 使用状态机验证并执行转换 (状态机会验证 finance 角色)
+        self._validate_transition(request, new_status, current_user.role, "标记已打款")
+
+        # 更新打款信息
         request.paid_at = datetime.utcnow()
-        request.status = TopupStatus.PAID.value
         if paid_data.transaction_id:
             request.transaction_id = paid_data.transaction_id
 
@@ -620,6 +591,35 @@ class TopupService:
         )
 
         return logs
+
+    def get_status_stats(self, current_user: User) -> dict:
+        """获取各状态的充值申请数量统计（前端使用）"""
+        # 应用权限过滤
+        base_query = self.db.query(TopupRequest)
+        base_query = self._apply_permission_filter(base_query, current_user)
+
+        # 各状态统计 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
+        stats = {
+            "draft": base_query.filter(TopupRequest.status == TopupStatus.DRAFT.value).count(),
+            "pending_review": base_query.filter(TopupRequest.status == TopupStatus.PENDING_REVIEW.value).count(),
+            "finance_approve": base_query.filter(TopupRequest.status == TopupStatus.FINANCE_APPROVE.value).count(),
+            "paid": base_query.filter(TopupRequest.status == TopupStatus.PAID.value).count(),
+            "completed": base_query.filter(TopupRequest.status == TopupStatus.COMPLETED.value).count(),
+            "rejected": base_query.filter(TopupRequest.status == TopupStatus.REJECTED.value).count(),
+            "cancelled": base_query.filter(TopupRequest.status == TopupStatus.CANCELLED.value).count(),
+        }
+
+        # 汇总统计
+        stats["total"] = sum(stats.values())
+        stats["pending"] = stats["pending_review"] + stats["finance_approve"]  # 待处理总数
+
+        # 金额统计
+        total_amount = base_query.with_entities(
+            func.coalesce(func.sum(TopupRequest.amount), 0)
+        ).scalar() or Decimal(0)
+        stats["total_amount"] = float(total_amount)
+
+        return stats
 
     def get_statistics(
         self,
@@ -770,7 +770,6 @@ class TopupService:
             base_query
             .options(
                 joinedload(TopupRequest.ad_account),
-                joinedload(TopupRequest.project),
                 joinedload(TopupRequest.requester)
             )
             .filter(TopupRequest.status != TopupStatus.COMPLETED.value)
@@ -856,7 +855,6 @@ class TopupService:
         # 加载关联数据
         requests = (
             query.options(
-                joinedload(TopupRequest.project),
                 joinedload(TopupRequest.ad_account),
                 joinedload(TopupRequest.requester),
                 joinedload(TopupRequest.data_reviewer),
@@ -894,12 +892,50 @@ class TopupService:
 
     # ===== 私有方法 =====
 
+    def _validate_transition(
+        self,
+        request: TopupRequest,
+        target_status: str,
+        user_role: str,
+        action_name: str
+    ) -> None:
+        """
+        使用状态机验证状态转换
+
+        Args:
+            request: 充值申请实体
+            target_status: 目标状态
+            user_role: 用户角色
+            action_name: 操作名称 (用于错误消息)
+
+        Raises:
+            BusinessLogicError: 状态转换非法或权限不足
+        """
+        current_status = request.status
+
+        # 检查是否可以转换
+        if not TOPUP_STATE_MACHINE.can_transition(current_status, target_status):
+            allowed = TOPUP_STATE_MACHINE.get_allowed_transitions(current_status)
+            raise BusinessLogicError(
+                f"当前状态({current_status})不能执行{action_name}操作，"
+                f"允许的目标状态: {allowed or '无'}",
+                error_code="STATE_400"
+            )
+
+        # 使用状态机执行转换 (会验证角色权限)
+        try:
+            TOPUP_STATE_MACHINE.transition(
+                request, current_status, target_status, user_role
+            )
+        except StateTransitionError as e:
+            raise BusinessLogicError(str(e), error_code="STATE_400")
+
     def _validate_ad_account_access(self, ad_account_id: int, current_user: User) -> AdAccount:
         """验证广告账户访问权限"""
         ad_account = self.db.query(AdAccount).filter(AdAccount.id == ad_account_id).first()
 
         if not ad_account:
-            raise ResourceNotFoundError("广告账户不存在", error_code="SYS_004")
+            raise ResourceNotFoundError("广告账户不存在", error_code="SYS-004")
 
         # 管理员和财务可以访问所有账户 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
         if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
@@ -915,10 +951,15 @@ class TopupService:
             if ad_account.assigned_to == current_user.id:
                 return ad_account
 
-        raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ_206")
+        raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ-206")
 
     def _check_account_balance_limit(self, ad_account_id: int, requested_amount: Decimal):
-        """检查账户余额上限"""
+        """检查账户余额上限
+
+        Phase-aware 行为 (MASTER.md v4.4 §8):
+        - Phase 1: 超过上限记录警告，但不阻断
+        - Phase 2: 超过上限抛出异常
+        """
         # 计算当前已充值金额
         current_balance = (
             self.db.query(func.coalesce(func.sum(TopupTransaction.paid_amount), 0))
@@ -933,10 +974,22 @@ class TopupService:
         )
 
         if current_balance + requested_amount > self.MAX_ACCOUNT_BALANCE:
-            raise BusinessLogicError(
-                f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
-                error_code="BIZ_202"
-            )
+            if should_enforce_topup():
+                # Phase 2: 强制阻断
+                raise BusinessLogicError(
+                    f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
+                    error_code="BIZ-202"
+                )
+            else:
+                # Phase 1: 仅记录警告，不阻断
+                log_phase_warning(
+                    feature="topup_balance_limit",
+                    message=f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
+                    ad_account_id=ad_account_id,
+                    current_balance=str(current_balance),
+                    requested_amount=str(requested_amount),
+                    limit=str(self.MAX_ACCOUNT_BALANCE)
+                )
 
     def _check_daily_request_limit(self, ad_account_id: int, user_id: int):
         """检查每日申请次数限制"""
@@ -957,7 +1010,7 @@ class TopupService:
         if request_count >= self.MAX_DAILY_REQUESTS:
             raise BusinessLogicError(
                 f"同一账户24小时内最多只能申请{self.MAX_DAILY_REQUESTS}次充值",
-                error_code="BIZ_204"
+                error_code="BIZ-204"
             )
 
     def _apply_permission_filter(self, query, current_user: User):
@@ -990,7 +1043,7 @@ class TopupService:
 
         # 账户管理员查看自己项目的申请
         if current_user.role == UserRole.ACCOUNT_MANAGER.value:
-            if request.project and request.project.account_manager_id == current_user.id:
+            if request.ad_account and request.ad_account.project and request.ad_account.project.account_manager_id == current_user.id:
                 return
 
         # 媒体买家查看自己的申请
@@ -998,7 +1051,7 @@ class TopupService:
             if request.requested_by == current_user.id:
                 return
 
-        raise PermissionDeniedError("无权限查看该充值申请", error_code="BIZ_206")
+        raise PermissionDeniedError("无权限查看该充值申请", error_code="BIZ-206")
 
     def _get_request_for_action(
         self,
@@ -1011,10 +1064,10 @@ class TopupService:
 
         # 验证操作权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
         if action == "data_review" and current_user.role != UserRole.DATA_OPERATOR.value:
-            raise PermissionDeniedError("只有数据员可以进行数据审核", error_code="BIZ_206")
+            raise PermissionDeniedError("只有数据员可以进行数据审核", error_code="BIZ-206")
 
         if action == "finance_approve" and current_user.role != UserRole.FINANCE.value:
-            raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ_206")
+            raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ-206")
 
         return request
 

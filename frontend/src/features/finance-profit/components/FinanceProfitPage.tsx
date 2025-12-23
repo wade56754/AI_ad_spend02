@@ -1,15 +1,23 @@
 /**
  * FinanceProfitPage Component
  *
- * Main page for finance profit analysis
- * SoT 对齐: BUSINESS_RULES.md v3.1
+ * SoT: docs/10.module-specs/A3-project-pnl.md §3.1 页面布局
+ * SoT: MASTER.md v4.4 §6.5 页面 3 项目盈亏字段集
+ * SoT: BUSINESS_RULES.md v3.2: 利润计算公式
+ *   - revenue = conversions_final × unit_price
+ *   - cost = real_spend + fee
+ *   - profit = revenue - cost
+ *   - profit_margin = profit / revenue × 100
+ *
+ * 一句话定义: 让老板/项目负责人快速了解"每个项目赚了多少钱？谁在亏钱？"
+ *
+ * @module features/finance-profit/components
  */
 
 'use client';
 
 import React from 'react';
-import { DollarSign, RefreshCw, Calendar, Filter } from 'lucide-react';
-import { LoadingSpinner } from '@/modules/shared/components/feedback/LoadingSpinner';
+import { DollarSign, RefreshCw, Calendar } from 'lucide-react';
 import { ErrorDisplay } from '@/modules/shared/components/feedback/ErrorDisplay';
 import {
   useProfitOverview,
@@ -17,6 +25,7 @@ import {
   useProfitByAccount,
   useProfitByChannel,
   useProfitTrend,
+  useRefreshProfit,
 } from '../hooks';
 import {
   ProfitDimension,
@@ -48,19 +57,17 @@ export function FinanceProfitPage() {
     granularity,
   };
 
-  // Queries
+  // Queries - SoT: A3-project-pnl.md §5 API 接口
   const {
     data: overviewData,
     isLoading: overviewLoading,
     isError: overviewError,
     error: overviewErrorObj,
-    refetch: refetchOverview,
   } = useProfitOverview();
 
   const {
     data: projectData,
     isLoading: projectLoading,
-    refetch: refetchProject,
   } = useProfitByProject(dimensionParams, {
     enabled: dimension === ProfitDimension.PROJECT,
   });
@@ -68,7 +75,6 @@ export function FinanceProfitPage() {
   const {
     data: accountData,
     isLoading: accountLoading,
-    refetch: refetchAccount,
   } = useProfitByAccount(dimensionParams, {
     enabled: dimension === ProfitDimension.ACCOUNT,
   });
@@ -76,7 +82,6 @@ export function FinanceProfitPage() {
   const {
     data: channelData,
     isLoading: channelLoading,
-    refetch: refetchChannel,
   } = useProfitByChannel(dimensionParams, {
     enabled: dimension === ProfitDimension.CHANNEL,
   });
@@ -84,8 +89,10 @@ export function FinanceProfitPage() {
   const {
     data: trendData,
     isLoading: trendLoading,
-    refetch: refetchTrend,
   } = useProfitTrend(trendParams);
+
+  // 刷新 hook - SoT: A3-project-pnl.md §2.4 数据刷新策略
+  const { refreshAll } = useRefreshProfit();
 
   // Get current dimension data
   const getCurrentDimensionData = () => {
@@ -125,19 +132,9 @@ export function FinanceProfitPage() {
 
   // Handlers
   const handleRefreshAll = () => {
-    refetchOverview();
-    refetchTrend();
-    switch (dimension) {
-      case ProfitDimension.PROJECT:
-        refetchProject();
-        break;
-      case ProfitDimension.ACCOUNT:
-        refetchAccount();
-        break;
-      case ProfitDimension.CHANNEL:
-        refetchChannel();
-        break;
-    }
+    // 使用 refreshAll 刷新所有利润数据
+    // SoT: A3-project-pnl.md §2.4 数据刷新策略
+    refreshAll();
   };
 
   const handleDateRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,9 +211,9 @@ export function FinanceProfitPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
-        {/* Overview Cards */}
+        {/* Overview Cards - SoT: A3-project-pnl.md §3.2 组件清单 */}
         {overviewError ? (
-          <ErrorDisplay error={overviewErrorObj} onRetry={refetchOverview} />
+          <ErrorDisplay error={overviewErrorObj} onRetry={refreshAll} />
         ) : overviewData ? (
           <ProfitOverviewCard data={overviewData} loading={overviewLoading} />
         ) : overviewLoading ? (

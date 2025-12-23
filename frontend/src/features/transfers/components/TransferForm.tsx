@@ -33,9 +33,9 @@ import { Button } from '@/components/ui/button';
 import { useCreateTransfer } from '../hooks';
 
 const transferSchema = z.object({
-  source_ad_account_id: z.number({ required_error: '请输入源账户ID' }).int().positive('账户ID必须为正整数'),
-  target_ad_account_id: z.number({ required_error: '请输入目标账户ID' }).int().positive('账户ID必须为正整数'),
-  transfer_amount: z.number({ required_error: '请输入迁移金额' }).positive('迁移金额必须大于0'),
+  source_ad_account_id: z.number({ message: '请输入源账户ID' }).int().positive('账户ID必须为正整数'),
+  target_ad_account_id: z.number({ message: '请输入目标账户ID' }).int().positive('账户ID必须为正整数'),
+  transfer_amount: z.number({ message: '请输入迁移金额' }).positive('迁移金额必须大于0'),
   reason: z.string().max(500, '原因不能超过500字').optional(),
 }).refine(data => data.source_ad_account_id !== data.target_ad_account_id, {
   message: '源账户和目标账户不能相同',

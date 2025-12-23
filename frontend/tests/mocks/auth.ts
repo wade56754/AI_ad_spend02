@@ -4,7 +4,7 @@
  * 提供认证相关的 mock 工具函数
  */
 
-import { UserRole } from '@/src/types/auth'
+import { UserRole } from '@/features/auth/types/auth.types'
 
 /**
  * Mock 用户数据
@@ -109,21 +109,21 @@ export const mockUsers = {
     username: 'financeuser',
     role: 'finance' as UserRole,
   },
-  dataOperator: {
+  data_operator: {
     ...mockUser,
     id: 'user-operator-id-001',
     email: 'operator@example.com',
     username: 'operatoruser',
     role: 'data_operator' as UserRole,
   },
-  accountManager: {
+  account_manager: {
     ...mockUser,
     id: 'user-am-id-001',
     email: 'am@example.com',
     username: 'amuser',
     role: 'account_manager' as UserRole,
   },
-  mediaBuyer: {
+  media_buyer: {
     ...mockUser,
     id: 'user-buyer-id-001',
     email: 'buyer@example.com',

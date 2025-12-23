@@ -2,7 +2,17 @@
  * Settlements React Query Hooks
  *
  * TanStack Query v5 hooks for settlement management
- * SoT 对齐: DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1
+ *
+ * SoT: docs/10.module-specs/D1-monthly-settlement.md §6.1 前端代码块
+ * SoT: DATA_SCHEMA.md v5.2
+ * SoT: LEDGER_SOT.md v1.1
+ *
+ * 一句话定义: 管理结算的数据获取和状态变更（通用结算 + 月度结算）
+ *
+ * 月度结算状态机 (D1-monthly-settlement.md §2.4):
+ *   pending → draft → confirmed → locked (终态)
+ *
+ * Author: AI 代码工厂 v2.4
  */
 
 import {
@@ -26,6 +36,15 @@ import {
   approveSettlement,
   recordPayment,
   cancelSettlement,
+  // 月度结算 API
+  getMonthlySettlements,
+  getMonthlySettlement,
+  getMonthlySettlementSummary,
+  generateMonthlySettlement,
+  confirmMonthlySettlement,
+  lockMonthlySettlement,
+  unlockMonthlySettlement,
+  exportMonthlySettlement,
 } from '../services';
 import type {
   Settlement,
@@ -36,6 +55,13 @@ import type {
   SettlementPaymentInput,
   SettlementStatistics,
   SettlementPayment,
+  // 月度结算类型
+  MonthlySettlement,
+  MonthlySettlementListParams,
+  MonthlySettlementListResponse,
+  MonthlySettlementSummary,
+  GenerateMonthlySettlementRequest,
+  MonthlySettlementActionRequest,
 } from '../types';
 
 // ========== Query Hooks ==========
@@ -231,4 +257,196 @@ export function useCancelSettlement(
     },
     ...options,
   });
+}
+
+// ========== 月度结算 Query Hooks (D1-monthly-settlement.md §6.1) ==========
+
+/**
+ * 获取月度结算列表
+ */
+export function useMonthlySettlements(
+  params: MonthlySettlementListParams = {},
+  options?: Omit<UseQueryOptions<MonthlySettlementListResponse>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: ['monthlySettlements', 'list', params],
+    queryFn: () => getMonthlySettlements(params),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    ...options,
+  });
+}
+
+/**
+ * 获取月度结算详情
+ */
+export function useMonthlySettlement(
+  id: number,
+  options?: Omit<UseQueryOptions<MonthlySettlement>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: ['monthlySettlements', 'detail', id],
+    queryFn: () => getMonthlySettlement(id),
+    enabled: id > 0,
+    ...options,
+  });
+}
+
+/**
+ * 获取月度结算汇总
+ */
+export function useMonthlySettlementSummary(
+  month?: string,
+  options?: Omit<UseQueryOptions<MonthlySettlementSummary>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: ['monthlySettlements', 'summary', month],
+    queryFn: () => getMonthlySettlementSummary(month),
+    staleTime: 1000 * 60 * 5,
+    ...options,
+  });
+}
+
+// ========== 月度结算 Mutation Hooks ==========
+
+/**
+ * 生成月度结算
+ * SoT: D1-monthly-settlement.md §4.1
+ */
+export function useGenerateMonthlySettlement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: GenerateMonthlySettlementRequest) => generateMonthlySettlement(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements'] });
+    },
+  });
+}
+
+/**
+ * 确认月度结算
+ * 状态转换: draft → confirmed
+ * SoT: D1-monthly-settlement.md §2.4
+ */
+export function useConfirmMonthlySettlement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input?: MonthlySettlementActionRequest }) =>
+      confirmMonthlySettlement(id, input),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements'] });
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements', 'detail', id] });
+    },
+  });
+}
+
+/**
+ * 锁定月度结算
+ * 状态转换: confirmed → locked (终态)
+ * SoT: D1-monthly-settlement.md §2.4
+ */
+export function useLockMonthlySettlement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input?: MonthlySettlementActionRequest }) =>
+      lockMonthlySettlement(id, input),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements'] });
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements', 'detail', id] });
+    },
+  });
+}
+
+/**
+ * 解锁月度结算 (admin only)
+ * 状态转换: locked → confirmed
+ * SoT: D1-monthly-settlement.md §4.1
+ */
+export function useUnlockMonthlySettlement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input?: MonthlySettlementActionRequest }) =>
+      unlockMonthlySettlement(id, input),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements'] });
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements', 'detail', id] });
+    },
+  });
+}
+
+/**
+ * 导出月度结算报表
+ */
+export function useExportMonthlySettlement() {
+  return useMutation({
+    mutationFn: (month?: string) => exportMonthlySettlement(month),
+    onSuccess: (blob, month) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `月度结算_${month || new Date().toISOString().slice(0, 7)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+  });
+}
+
+// ========== Refresh Hooks ==========
+
+/**
+ * 刷新结算数据
+ * SoT: D1-monthly-settlement.md 数据刷新策略
+ *
+ * @example
+ * ```tsx
+ * const { refreshAll, refreshList, refreshStatistics, refreshMonthly } = useRefreshSettlements();
+ * // 刷新所有结算数据
+ * refreshAll();
+ * // 仅刷新列表
+ * refreshList();
+ * // 仅刷新统计
+ * refreshStatistics();
+ * // 仅刷新月度结算
+ * refreshMonthly();
+ * ```
+ */
+export function useRefreshSettlements() {
+  const queryClient = useQueryClient();
+
+  return {
+    /** 刷新所有结算数据 */
+    refreshAll: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settlements.all });
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements'] });
+    },
+    /** 刷新通用结算列表 */
+    refreshList: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settlements.lists() });
+    },
+    /** 刷新结算统计 */
+    refreshStatistics: () => {
+      queryClient.invalidateQueries({ queryKey: ['settlements', 'statistics'] });
+    },
+    /** 刷新逾期结算 */
+    refreshOverdue: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settlements.overdue() });
+    },
+    /** 刷新单个结算详情 */
+    refreshDetail: (id: number) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.settlements.detail(id) });
+    },
+    /** 刷新月度结算数据 */
+    refreshMonthly: () => {
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements'] });
+    },
+    /** 刷新月度结算汇总 */
+    refreshMonthlySummary: (month?: string) => {
+      queryClient.invalidateQueries({ queryKey: ['monthlySettlements', 'summary', month] });
+    },
+  };
 }

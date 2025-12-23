@@ -12,6 +12,7 @@ export enum UserRole {
   DATA_OPERATOR = 'data_operator',
   ACCOUNT_MANAGER = 'account_manager',
   MEDIA_BUYER = 'media_buyer',
+  PROJECT_OWNER = 'project_owner',
 }
 
 export const USER_ROLE_CONFIG: Record<UserRole, {
@@ -28,6 +29,11 @@ export const USER_ROLE_CONFIG: Record<UserRole, {
     label: '财务',
     description: '财务人员，管理充值、结算、对账',
     level: 80,
+  },
+  [UserRole.PROJECT_OWNER]: {
+    label: '项目负责人',
+    description: '项目负责人，对项目盈亏负责，管理项目资金使用',
+    level: 70,
   },
   [UserRole.DATA_OPERATOR]: {
     label: '数据运营',
@@ -92,6 +98,12 @@ export interface AuthResponse {
   refresh_token?: string;
   expires_in: number;
   token_type: string;
+  // Supabase 返回格式兼容
+  session?: {
+    access_token: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
 }
 
 export interface AuthState {

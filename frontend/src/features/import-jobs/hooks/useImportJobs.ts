@@ -1,10 +1,19 @@
 /**
- * Import Jobs Hooks
+ * Import Jobs React Query Hooks
  *
  * TanStack Query v5 hooks for import-jobs module
+ * SoT 对齐: DATA_SCHEMA.md v5.2
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type UseQueryOptions,
+  type UseMutationOptions,
+} from '@tanstack/react-query';
+import { queryKeys } from '@/lib/api';
+import type { PaginatedResponse } from '@/lib/api';
 import {
   getImportJobs,
   getImportJob,
@@ -15,105 +24,154 @@ import {
   deleteImportJob,
   uploadImportFile,
 } from '../services';
-import type { ImportJobListParams } from '../types';
+import type {
+  ImportJob,
+  ImportJobListParams,
+  ImportJobProgress,
+  ImportJobStatistics,
+} from '../types';
 
-/** Query Keys */
-export const importJobsKeys = {
-  all: ['importJobs'] as const,
-  lists: () => [...importJobsKeys.all, 'list'] as const,
-  list: (params?: ImportJobListParams) => [...importJobsKeys.lists(), params] as const,
-  details: () => [...importJobsKeys.all, 'detail'] as const,
-  detail: (id: number) => [...importJobsKeys.details(), id] as const,
-  progress: (id: number) => [...importJobsKeys.all, 'progress', id] as const,
-  statistics: () => [...importJobsKeys.all, 'statistics'] as const,
-};
+// ========== Query Hooks ==========
 
-/** 获取导入任务列表 */
-export function useImportJobs(params?: ImportJobListParams) {
+/**
+ * 获取导入任务列表
+ */
+export function useImportJobs(
+  params: ImportJobListParams = {},
+  options?: Omit<UseQueryOptions<PaginatedResponse<ImportJob>>, 'queryKey' | 'queryFn'>
+) {
   return useQuery({
-    queryKey: importJobsKeys.list(params),
+    queryKey: queryKeys.importJobs.list(params as Record<string, any>),
     queryFn: () => getImportJobs(params),
+    ...options,
   });
 }
 
-/** 获取导入任务详情 */
-export function useImportJob(id: number) {
+/**
+ * 获取导入任务详情
+ */
+export function useImportJob(
+  id: number,
+  options?: Omit<UseQueryOptions<ImportJob>, 'queryKey' | 'queryFn'>
+) {
   return useQuery({
-    queryKey: importJobsKeys.detail(id),
+    queryKey: queryKeys.importJobs.detail(String(id)),
     queryFn: () => getImportJob(id),
     enabled: !!id,
+    ...options,
   });
 }
 
-/** 获取导入任务进度 */
-export function useImportJobProgress(id: number, options?: { enabled?: boolean; refetchInterval?: number }) {
+/**
+ * 获取导入任务进度
+ * 支持轮询模式用于实时更新
+ */
+export function useImportJobProgress(
+  id: number,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?: number;
+  } & Omit<UseQueryOptions<ImportJobProgress>, 'queryKey' | 'queryFn' | 'enabled' | 'refetchInterval'>
+) {
+  const { enabled, refetchInterval, ...restOptions } = options || {};
+
   return useQuery({
-    queryKey: importJobsKeys.progress(id),
+    queryKey: queryKeys.importJobs.progress(String(id)),
     queryFn: () => getImportJobProgress(id),
-    enabled: options?.enabled !== false && !!id,
-    refetchInterval: options?.refetchInterval,
+    enabled: enabled !== false && !!id,
+    refetchInterval,
+    ...restOptions,
   });
 }
 
-/** 获取导入任务统计 */
-export function useImportJobStatistics() {
+/**
+ * 获取导入任务统计
+ */
+export function useImportJobStatistics(
+  options?: Omit<UseQueryOptions<ImportJobStatistics>, 'queryKey' | 'queryFn'>
+) {
   return useQuery({
-    queryKey: importJobsKeys.statistics(),
-    queryFn: () => getImportJobStatistics(),
+    queryKey: queryKeys.importJobs.statistics(),
+    queryFn: getImportJobStatistics,
+    ...options,
   });
 }
 
-/** 上传导入文件 */
-export function useUploadImportFile() {
+// ========== Mutation Hooks ==========
+
+/**
+ * 上传导入文件
+ */
+export function useUploadImportFile(
+  options?: UseMutationOptions<ImportJob, Error, { file: File; jobType: string }>
+) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ file, jobType }: { file: File; jobType: string }) =>
-      uploadImportFile(file, jobType),
+    mutationFn: ({ file, jobType }) => uploadImportFile(file, jobType),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.statistics() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.statistics() });
     },
+    ...options,
   });
 }
 
-/** 开始处理导入任务 */
-export function useStartImportJob() {
+/**
+ * 开始处理导入任务
+ */
+export function useStartImportJob(
+  options?: UseMutationOptions<ImportJob, Error, number>
+) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => startImportJob(id),
+    mutationFn: startImportJob,
+    onSuccess: (data, id) => {
+      queryClient.setQueryData(queryKeys.importJobs.detail(String(id)), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.statistics() });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 取消导入任务
+ */
+export function useCancelImportJob(
+  options?: UseMutationOptions<ImportJob, Error, number>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: cancelImportJob,
+    onSuccess: (data, id) => {
+      queryClient.setQueryData(queryKeys.importJobs.detail(String(id)), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.progress(String(id)) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.statistics() });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 删除导入任务
+ */
+export function useDeleteImportJob(
+  options?: UseMutationOptions<void, Error, number>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteImportJob,
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.statistics() });
+      queryClient.removeQueries({ queryKey: queryKeys.importJobs.detail(String(id)) });
+      queryClient.removeQueries({ queryKey: queryKeys.importJobs.progress(String(id)) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.importJobs.statistics() });
     },
-  });
-}
-
-/** 取消导入任务 */
-export function useCancelImportJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => cancelImportJob(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.statistics() });
-    },
-  });
-}
-
-/** 删除导入任务 */
-export function useDeleteImportJob() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => deleteImportJob(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: importJobsKeys.statistics() });
-    },
+    ...options,
   });
 }

@@ -22,6 +22,8 @@ class SQLAlchemyMockBuilder:
         channel_id: Any = None,
         assigned_to: int = 50,
         balance: Decimal = None,
+        daily_budget: Decimal = None,
+        total_budget: Decimal = None,
         **kwargs
     ) -> Mock:
         """
@@ -35,6 +37,8 @@ class SQLAlchemyMockBuilder:
             channel_id: 渠道ID
             assigned_to: 负责人ID
             balance: 账户余额
+            daily_budget: 日预算 (测试用，实际模型暂无此字段)
+            total_budget: 总预算 (测试用，实际模型暂无此字段)
             **kwargs: 其他字段
 
         Returns:
@@ -42,7 +46,8 @@ class SQLAlchemyMockBuilder:
         """
         from backend.models import AdAccount
 
-        mock = Mock(spec=AdAccount)
+        # 使用 MagicMock 以便支持尚未在模型中定义的字段
+        mock = MagicMock(spec=AdAccount)
         mock.id = kwargs.get('id', 1)
         mock.account_code = account_code
         mock.account_name = account_name
@@ -60,6 +65,14 @@ class SQLAlchemyMockBuilder:
         mock.version = kwargs.get('version', 1)
         mock.created_at = kwargs.get('created_at', datetime.utcnow())
         mock.updated_at = kwargs.get('updated_at', None)
+
+        # 预算字段 (测试用，未来可能加入模型)
+        mock.daily_budget = daily_budget or Decimal("1000.00")
+        mock.total_budget = total_budget or Decimal("30000.00")
+
+        # 状态相关时间字段
+        mock.activated_date = kwargs.get('activated_date', None)
+        mock.suspended_date = kwargs.get('suspended_date', None)
 
         # 设置其他字段
         for key, value in kwargs.items():

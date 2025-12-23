@@ -28,7 +28,7 @@ export async function getAdAccounts(params: AdAccountListParams = {}) {
   const url = query ? `${BASE_PATH}?${query}` : BASE_PATH;
 
   const response = await apiFetch<{
-    data: AdAccount[];
+    items: AdAccount[];
     meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
   }>(url);
 

@@ -111,7 +111,7 @@ export function ActionButtons({
 
     // Execute simple actions directly
     try {
-      await actions.executeAction(actionName, report.id);
+      await actions.executeAction(actionName, String(report.id));
       onActionComplete?.();
     } catch {
       // Error is handled by the mutation
@@ -162,13 +162,13 @@ export function ActionButtons({
         <FlagTrendDialog
           open={flagDialogOpen}
           onOpenChange={setFlagDialogOpen}
-          reportId={report.id}
+          reportId={String(report.id)}
           onSuccess={onActionComplete}
         />
         <ResolveFlagDialog
           open={resolveDialogOpen}
           onOpenChange={setResolveDialogOpen}
-          reportId={report.id}
+          reportId={String(report.id)}
           onSuccess={onActionComplete}
         />
         <ConfirmFinalDialog
@@ -219,13 +219,13 @@ export function ActionButtons({
         <FlagTrendDialog
           open={flagDialogOpen}
           onOpenChange={setFlagDialogOpen}
-          reportId={report.id}
+          reportId={String(report.id)}
           onSuccess={onActionComplete}
         />
         <ResolveFlagDialog
           open={resolveDialogOpen}
           onOpenChange={setResolveDialogOpen}
-          reportId={report.id}
+          reportId={String(report.id)}
           onSuccess={onActionComplete}
         />
         <ConfirmFinalDialog
@@ -298,13 +298,13 @@ export function ActionButtons({
       <FlagTrendDialog
         open={flagDialogOpen}
         onOpenChange={setFlagDialogOpen}
-        reportId={report.id}
+        reportId={String(report.id)}
         onSuccess={onActionComplete}
       />
       <ResolveFlagDialog
         open={resolveDialogOpen}
         onOpenChange={setResolveDialogOpen}
-        reportId={report.id}
+        reportId={String(report.id)}
         onSuccess={onActionComplete}
       />
       <ConfirmFinalDialog

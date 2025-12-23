@@ -12,7 +12,7 @@ import type {
   ImportJobListParams,
 } from '../types';
 
-const BASE_URL = '/api/import_jobs';
+const BASE_URL = '/api/v1/import-jobs';
 
 /** 获取导入任务列表 */
 export async function getImportJobs(params?: ImportJobListParams) {
@@ -64,23 +64,20 @@ export async function deleteImportJob(id: number) {
 
 /** 上传导入文件 */
 export async function uploadImportFile(file: File, jobType: string) {
-  const formData = new FormData();
-  formData.append('file', file);
-
   // 使用 apiUpload 处理文件上传，自动添加认证 header
-  const response = await apiUpload<ImportJob>(`${BASE_URL}/upload?job_type=${jobType}`, formData);
+  const response = await apiUpload<ImportJob>(
+    `${BASE_URL}/upload?job_type=${jobType}`,
+    file
+  );
   return response;
 }
 
 /** 检查文件重复 */
 export async function checkDuplicateFile(file: File) {
-  const formData = new FormData();
-  formData.append('file', file);
-
   // 使用 apiUpload 处理文件上传，自动添加认证 header
   const response = await apiUpload<{ isDuplicate: boolean; existingJobId?: number }>(
     `${BASE_URL}/check-duplicate`,
-    formData
+    file
   );
   return response;
 }

@@ -46,14 +46,14 @@ def account_manager_user():
 
 
 @pytest.fixture
-def advertiser_user():
-    """分析师用户 fixture (受限权限)"""
+def limited_user():
+    """受限用户 fixture (投手权限)"""
     return AuthenticatedUser(
-        id="analyst-001",
-        role=UserRole.ANALYST.value,
-        email="analyst@example.com",
+        id="buyer-001",
+        role=UserRole.MEDIA_BUYER.value,
+        email="buyer@example.com",
         raw_claims={},
-        permissions=["project_read", "report_read"],  # 仅只读权限
+        permissions=[],
         is_active=True
     )
 
@@ -133,18 +133,19 @@ class TestRolePermissions:
         assert Permission.SYSTEM_CONFIG not in am_permissions
         assert Permission.PROJECT_DELETE not in am_permissions  # 通常不允许删除
 
-    def test_advertiser_permissions(self):
-        """测试分析师权限配置"""
-        analyst_permissions = ROLE_PERMISSIONS[UserRole.ANALYST]
+    def test_media_buyer_permissions(self):
+        """测试投手权限配置"""
+        buyer_permissions = ROLE_PERMISSIONS[UserRole.MEDIA_BUYER]
 
-        # 分析师应该只有查看权限
-        assert Permission.PROJECT_READ in analyst_permissions
-        assert Permission.DAILY_REPORT_READ in analyst_permissions
-        assert Permission.REPORT_READ in analyst_permissions
+        # 投手应该有的权限
+        assert Permission.ACCOUNT_READ in buyer_permissions
+        assert Permission.DAILY_REPORT_CREATE in buyer_permissions
+        assert Permission.DAILY_REPORT_READ in buyer_permissions
+        assert Permission.REPORT_READ in buyer_permissions
 
-        # 分析师不应该有管理权限
-        assert Permission.PROJECT_CREATE not in analyst_permissions
-        assert Permission.TOPUP_APPROVE not in analyst_permissions
+        # 投手不应该有管理权限
+        assert Permission.PROJECT_CREATE not in buyer_permissions
+        assert Permission.SYSTEM_CONFIG not in buyer_permissions
 
     def test_all_roles_have_permissions(self):
         """测试所有角色都配置了权限"""
@@ -171,11 +172,11 @@ class TestCheckUserPermission:
         assert check_user_permission(account_manager_user, [Permission.PROJECT_READ]) is True
         assert check_user_permission(account_manager_user, [Permission.SYSTEM_CONFIG]) is False
 
-    def test_advertiser_has_read_only(self, advertiser_user):
-        """测试广告主只读权限"""
-        assert check_user_permission(advertiser_user, [Permission.PROJECT_READ]) is True
-        assert check_user_permission(advertiser_user, [Permission.PROJECT_CREATE]) is False
-        assert check_user_permission(advertiser_user, [Permission.PROJECT_DELETE]) is False
+    def test_media_buyer_has_limited_permissions(self, limited_user):
+        """测试投手权限受限"""
+        assert check_user_permission(limited_user, [Permission.ACCOUNT_READ]) is True
+        assert check_user_permission(limited_user, [Permission.PROJECT_CREATE]) is False
+        assert check_user_permission(limited_user, [Permission.PROJECT_DELETE]) is False
 
     def test_inactive_user_no_permissions(self):
         """测试非活跃用户无权限"""
@@ -212,16 +213,16 @@ class TestRequirePermissionsDecorator:
         result = permission_dep(admin_user)
         assert result == admin_user
 
-    def test_require_permissions_advertiser_fail(self, advertiser_user):
-        """测试广告主权限检查失败"""
+    def test_require_permissions_limited_fail(self, limited_user):
+        """测试投手权限检查失败"""
         permission_dep = require_permissions(Permission.PROJECT_CREATE)
 
         with pytest.raises(HTTPException) as exc_info:
-            permission_dep(advertiser_user)
+            permission_dep(limited_user)
 
         assert exc_info.value.status_code == 403
 
-    def test_require_multiple_permissions(self, admin_user, advertiser_user):
+    def test_require_multiple_permissions(self, admin_user, limited_user):
         """测试多权限检查"""
         permission_dep = require_permissions(Permission.PROJECT_DELETE, Permission.SYSTEM_CONFIG)
 
@@ -229,9 +230,9 @@ class TestRequirePermissionsDecorator:
         result = permission_dep(admin_user)
         assert result == admin_user
 
-        # 广告主应该失败
+        # 投手应该失败
         with pytest.raises(HTTPException):
-            permission_dep(advertiser_user)
+            permission_dep(limited_user)
 
 
 # ==================== 权限依赖测试 ====================
@@ -252,12 +253,12 @@ class TestRequirePermissionsDependency:
         except HTTPException:
             pytest.fail("管理员应该拥有 USER_MANAGE 权限")
 
-    def test_require_permissions_deny(self, advertiser_user):
+    def test_require_permissions_deny(self, limited_user):
         """测试权限依赖拒绝无权用户"""
         permission_dep = require_permissions(Permission.USER_MANAGE)
 
         with pytest.raises(HTTPException) as exc_info:
-            permission_dep(advertiser_user)
+            permission_dep(limited_user)
 
         assert exc_info.value.status_code == 403
 
@@ -273,7 +274,7 @@ class TestPermissionEdgeCases:
         """测试空权限列表"""
         user = AuthenticatedUser(
             id="test-001",
-            role=UserRole.ANALYST.value,
+            role=UserRole.MEDIA_BUYER.value,
             email="test@example.com",
             raw_claims={},
             permissions=[],
@@ -281,7 +282,7 @@ class TestPermissionEdgeCases:
         )
 
         # 确保有基本权限
-        assert len(ROLE_PERMISSIONS[UserRole.ANALYST]) > 0
+        assert len(ROLE_PERMISSIONS[UserRole.MEDIA_BUYER]) > 0
 
     def test_nonexistent_role(self):
         """测试不存在的角色"""
@@ -317,10 +318,10 @@ class TestPermissionIntegration:
             is_active=True
         )
 
-        analyst = AuthenticatedUser(
-            id="analyst-001",
-            role=UserRole.ANALYST.value,
-            email="analyst@example.com",
+        buyer = AuthenticatedUser(
+            id="buyer-001",
+            role=UserRole.MEDIA_BUYER.value,
+            email="buyer@example.com",
             raw_claims={},
             permissions=[],
             is_active=True
@@ -332,23 +333,23 @@ class TestPermissionIntegration:
         assert check_user_permission(admin, [Permission.PROJECT_READ]) is True
         assert check_user_permission(admin, [Permission.PROJECT_DELETE]) is True
 
-        # 2. 分析师只能查看
-        assert check_user_permission(analyst, [Permission.PROJECT_READ]) is True
-        assert check_user_permission(analyst, [Permission.PROJECT_CREATE]) is False
-        assert check_user_permission(analyst, [Permission.PROJECT_DELETE]) is False
+        # 2. 投手权限受限
+        assert check_user_permission(buyer, [Permission.ACCOUNT_READ]) is True
+        assert check_user_permission(buyer, [Permission.PROJECT_CREATE]) is False
+        assert check_user_permission(buyer, [Permission.PROJECT_DELETE]) is False
 
     def test_permission_hierarchy(self):
         """测试权限层级关系"""
-        # 管理员 > 客户经理 > 数据运营 > 分析师
+        # 管理员 > 数据运营 > 客户经理 > 投手 (按权限数量)
         admin_perms = set(ROLE_PERMISSIONS[UserRole.ADMIN])
-        am_perms = set(ROLE_PERMISSIONS[UserRole.ACCOUNT_MANAGER])
         op_perms = set(ROLE_PERMISSIONS[UserRole.DATA_OPERATOR])
-        analyst_perms = set(ROLE_PERMISSIONS[UserRole.ANALYST])
+        am_perms = set(ROLE_PERMISSIONS[UserRole.ACCOUNT_MANAGER])
+        buyer_perms = set(ROLE_PERMISSIONS[UserRole.MEDIA_BUYER])
 
-        # 验证层级
+        # 验证管理员权限最多
+        assert len(admin_perms) > len(op_perms)
         assert len(admin_perms) > len(am_perms)
-        assert len(am_perms) > len(op_perms)
-        assert len(op_perms) >= len(analyst_perms)
+        assert len(admin_perms) > len(buyer_perms)
 
 
 if __name__ == "__main__":

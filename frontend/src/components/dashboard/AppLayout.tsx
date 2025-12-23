@@ -16,22 +16,24 @@ interface AppLayoutProps {
 const MENU_ITEMS = [
   { id: 'workbench', label: '工作台概览', icon: '📊', path: '/' },
   { id: 'projects', label: '项目管理', icon: '📁', path: '/projects' },
-  { id: 'ad-accounts', label: '渠道账户', icon: '🔗', path: '/ad-accounts' },
+  { id: 'finance', label: '财务中心', icon: '💵', path: '/finance' },
+  { id: 'ad-accounts', label: '广告账号管理', icon: '🔗', path: '/ad-accounts' },
   { id: 'daily-reports', label: '日报管理', icon: '📈', path: '/daily-reports' },
   { id: 'reconciliation', label: '对账管理', icon: '💰', path: '/reconciliation' },
-  { id: 'topup', label: '充值管理', icon: '💳', path: '/topup' },
+  { id: 'topups', label: '充值管理', icon: '💳', path: '/topups' },
   { id: 'reports', label: '数据报表', icon: '📊', path: '/reports' },
-  { id: 'cost-analysis', label: '成本分析', icon: '📉', path: '/cost-analysis' },
-  { id: 'data-import', label: '数据导入', icon: '📥', path: '/data-import' },
+  { id: 'suppliers', label: '供应商管理', icon: '🏢', path: '/suppliers' },
+  { id: 'settlements', label: '结算管理', icon: '📋', path: '/settlements' },
+  { id: 'import-jobs', label: '数据导入', icon: '📥', path: '/import-jobs' },
   { id: 'users', label: '用户管理', icon: '👥', path: '/users' },
-  { id: 'audit', label: '审计日志', icon: '🔍', path: '/audit' },
+  { id: 'cost-analysis', label: '成本分析', icon: '📉', path: '/cost-analysis' },
+  { id: 'audit-logs', label: '审计日志', icon: '🔍', path: '/audit-logs' },
   { id: 'settings', label: '系统设置', icon: '⚙️', path: '/settings' },
 ];
 
 const BOTTOM_MENU_ITEMS = [
   { id: 'profile', label: '个人中心', icon: '👤', path: '/profile' },
   { id: 'help', label: '帮助中心', icon: '❓', path: '/help' },
-  { id: 'contact', label: '联系我们', icon: '💬', path: '/contact' },
   { id: 'logout', label: '退出登录', icon: '🚪', highlight: true },
 ];
 
@@ -56,17 +58,11 @@ export function AppLayout({
     // 查找对应的路由
     const menuItem = [...MENU_ITEMS, ...BOTTOM_MENU_ITEMS].find(item => item.id === menuId);
 
-    if (menuItem?.path) {
-      router.push(menuItem.path);
-    } else if (menuId === 'logout') {
+    if (menuId === 'logout') {
       // TODO: 集成 useAuth().logout() 清除 token
       router.push('/login');
-    } else if (menuId === 'help') {
-      // 打开帮助文档或新页面
-      window.open('/docs', '_blank');
-    } else if (menuId === 'contact') {
-      // 打开联系方式或反馈页面
-      router.push('/contact');
+    } else if (menuItem?.path) {
+      router.push(menuItem.path);
     }
   };
 

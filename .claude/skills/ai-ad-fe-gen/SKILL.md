@@ -1,10 +1,10 @@
 ---
 name: ai-ad-fe-gen
-version: "2.3"
+version: "2.4"
 status: production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-07
+last_reviewed: 2025-12-22
 
 sot_dependencies:
   required:
@@ -95,7 +95,34 @@ interface FEGenOutput {
 | `frontend/node_modules/**` | ❌ 禁止 | 依赖目录 |
 | `frontend/.next/**` | ❌ 禁止 | 构建产物 |
 
-### 4.2 技术栈约束
+### 4.2 模块 API 边界 (STATE_MACHINE.md v2.6 §2 角色与模块权限)
+
+按模块划分的 API 调用边界:
+
+```yaml
+module_api_boundaries:
+  pitcher:
+    writable_apis: [/daily-reports/*, /pitchers/me]
+    readonly_apis: [/ad-accounts/*, /projects/*, /agencies/*]
+    forbidden_apis: [/ledger/*, /settlements/*, /period-locks/*]
+
+  finance:
+    writable_apis: [/ledger/*, /settlements/*, /period-locks/*, /recon/*]
+    readonly_apis: [/daily-reports/*, /ad-accounts/*, /pitchers/*]
+    forbidden_apis: []
+
+  ad_account:
+    writable_apis: [/ad-accounts/*, /agencies/*, /spend-imports/*]
+    readonly_apis: [/pitchers/*, /projects/*, /daily-reports/*]
+    forbidden_apis: [/ledger/*, /settlements/*]
+
+  project:
+    writable_apis: [/projects/*, /clients/*, /pricing-rules/*]
+    readonly_apis: [/pitchers/*, /ad-accounts/*]
+    forbidden_apis: [/ledger/*, /daily-reports/* (POST/PUT)]
+```
+
+### 4.3 技术栈约束
 
 - **框架**: Next.js 14+ (App Router)
 - **UI 库**: shadcn/ui + Tailwind CSS
@@ -103,7 +130,7 @@ interface FEGenOutput {
 - **表单**: React Hook Form + Zod
 - **类型**: TypeScript strict mode
 
-### 4.3 前端开发规范
+### 4.4 前端开发规范
 
 1. **模块结构**:
    ```
@@ -219,6 +246,16 @@ PRE_ANALYSIS_CONTEXT:
 <THINKING_CHAIN>
 请按以下步骤思考：
 
+0. **模块归属判定** (STATE_MACHINE.md v2.6 §2 - 必填)
+   - 确认任务属于哪个核心模块:
+     □ pitcher (投手管理) - 日报填报、投手信息、投手看板
+     □ finance (财务管理) - 流水、冲正、对账、期间锁
+     □ ad_account (广告账号管理) - 账户、代理商、归属、归因
+     □ project (项目管理) - 项目、客户、单价规则
+   - 验证目标文件在该模块可写范围内
+   - 如果无法明确归属，STOP 并询问用户
+   - 如果跨模块写入，STOP 并报错
+
 1. **API 契约分析**
    - 从 API_SOT 或 API_CONTRACT 定位需要对接的接口
    - 确定请求参数和响应类型
@@ -227,6 +264,7 @@ PRE_ANALYSIS_CONTEXT:
 2. **状态机分析**
    - 从 STATE_MACHINE 确认状态枚举定义
    - 确定状态显示样式（颜色、图标、文案）
+   - 使用 frozenset 白名单中的值
 
 3. **模块结构规划**
    - 确定需要创建/修改的文件
@@ -242,9 +280,11 @@ PRE_ANALYSIS_CONTEXT:
    - 生成页面骨架 (PageShell)
    - 【增强】复用 PRE_ANALYSIS_CONTEXT 中识别的组件
 
-5. **自检**
-   - 检查类型是否完整
+5. **自检** (管理者一致性自检清单)
+   - 检查模块边界: 文件是否在可写范围内
+   - 检查类型是否完整 (无 any)
    - 检查状态枚举是否与 STATE_MACHINE 一致
+   - 检查角色是否在 6 个合法角色内
    - 检查是否遵循 UI 设计规范
    - 检查是否有禁区代码
 </THINKING_CHAIN>
@@ -728,20 +768,45 @@ export function TopupsPageShell() {
 
 ## 7. Self-Check Checklist
 
+生成代码后，必须进行以下自检 (STATE_MACHINE.md v2.6 §2 合规检查)：
+
 | 检查项 | 验证方法 | P0/P1 |
 |--------|---------|-------|
+| **模块归属确认** | 任务属于 pitcher/finance/ad_account/project 之一 | P0 |
+| **写入权限检查** | 目标文件在该模块可写范围内 | P0 |
 | 类型完整性 | 无 any 类型 | P0 |
-| 状态枚举一致性 | 对比 STATE_MACHINE.md | P0 |
+| 状态枚举一致性 | 对比 STATE_MACHINE.md (8 状态: raw_submitted → ... → final_locked) | P0 |
+| 角色合规 | 对比 5 技术角色 (admin/finance/data_operator/account_manager/media_buyer) | P0 |
 | API 对接正确性 | 对比 API_SOT.md | P0 |
 | 禁区检查 | 不生成 node_modules/.next | P0 |
 | UI 组件使用 | 使用 shadcn/ui | P1 |
 | Hook 命名规范 | use 前缀 | P1 |
 | 错误处理 | 有 error 状态展示 | P1 |
 
+**跨模块交互检查**:
+
+| 检查项 | 验证方法 | P0/P1 |
+|--------|---------|-------|
+| 只读其他模块数据 | 仅使用 GET API | P0 |
+| 不写入其他模块 | 无跨模块 POST/PUT/DELETE | P0 |
+| ID 引用传递 | 使用 ID 而非嵌入对象 | P1 |
+
+**幻觉抑制最终确认** (输出前必须):
+
+| 确认项 | 验证方法 | 阻断级别 |
+|--------|---------|----------|
+| 状态值来源 | 每个状态值可追溯到 STATE_MACHINE.md | BLOCKING |
+| 角色值来源 | 每个角色可追溯到 frozenset 白名单 | BLOCKING |
+| 类型定义来源 | 每个类型可追溯到 API_SOT.md 响应结构 | BLOCKING |
+| 组件引用 | 所有 import 的组件在项目中存在 | BLOCKING |
+| API 端点 | 调用的 API 端点在 API_SOT.md 中定义 | BLOCKING |
+
 ## 8. Version History
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.4 | 2025-12-22 | P1 修复：添加模块 API 边界、幻觉抑制最终确认 |
+| v2.3 | 2025-12-22 | P0 修复：添加模块归属判定步骤、跨模块交互检查 |
 | v2.1 | 2025-12-07 | 增强：集成 SuperClaude pre_analysis 和 post_review |
 | v2.0 | 2025-12-06 | 重构：对齐 AI_CODE_FACTORY_DEV_GUIDE_v2.0，增加完整代码模板 |
 | v1.0 | 2025-11-01 | 初始版本 |

@@ -2,12 +2,18 @@
  * Finance Profit React Query Hooks
  *
  * TanStack Query v5 hooks for profit analysis
- * SoT 对齐: BUSINESS_RULES.md v3.1
+ *
+ * SoT: docs/10.module-specs/A3-project-pnl.md §2.4 数据刷新策略
+ * SoT: MASTER.md v4.4 §6.5 页面 3 项目盈亏字段集
+ * SoT: BUSINESS_RULES.md v3.2: 利润计算公式
+ *
+ * @module features/finance-profit/hooks
  */
 
 import {
   useQuery,
   useMutation,
+  useQueryClient,
   type UseQueryOptions,
 } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/api';
@@ -137,6 +143,52 @@ export function usePrefetchProfitData() {
   return {
     prefetchOverview: () => {
       // Implementation would use queryClient.prefetchQuery
+    },
+  };
+}
+
+// ========== Refresh Hook ==========
+
+/**
+ * 刷新利润分析数据
+ * SoT: A3-project-pnl.md §2.4 数据刷新策略
+ *
+ * @example
+ * ```tsx
+ * const { refreshAll, refreshOverview } = useRefreshProfit();
+ * // 刷新所有数据
+ * refreshAll();
+ * // 仅刷新概览
+ * refreshOverview();
+ * ```
+ */
+export function useRefreshProfit() {
+  const queryClient = useQueryClient();
+
+  return {
+    /** 刷新所有利润数据 */
+    refreshAll: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.financeProfit.all });
+    },
+    /** 刷新利润概览 */
+    refreshOverview: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.financeProfit.overview() });
+    },
+    /** 刷新按项目利润 */
+    refreshByProject: () => {
+      queryClient.invalidateQueries({ queryKey: ['financeProfit', 'byProject'] });
+    },
+    /** 刷新按账户利润 */
+    refreshByAccount: () => {
+      queryClient.invalidateQueries({ queryKey: ['financeProfit', 'byAccount'] });
+    },
+    /** 刷新按渠道利润 */
+    refreshByChannel: () => {
+      queryClient.invalidateQueries({ queryKey: ['financeProfit', 'byChannel'] });
+    },
+    /** 刷新利润趋势 */
+    refreshTrend: () => {
+      queryClient.invalidateQueries({ queryKey: ['financeProfit', 'trend'] });
     },
   };
 }

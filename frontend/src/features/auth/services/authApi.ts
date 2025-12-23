@@ -20,11 +20,11 @@ const BASE_PATH = '/api/v1/auth';
  * POST /api/v1/auth/login
  */
 export async function login(data: LoginRequest): Promise<AuthResponse> {
-  const response = await apiFetch<{ data: AuthResponse }>(`${BASE_PATH}/login`, {
+  // apiFetch already unwraps envelope { success, data } -> data
+  return apiFetch<AuthResponse>(`${BASE_PATH}/login`, {
     method: 'POST',
     body: data,
   });
-  return response.data;
 }
 
 /**
@@ -32,11 +32,11 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
  * POST /api/v1/auth/register
  */
 export async function register(data: RegisterRequest): Promise<AuthResponse> {
-  const response = await apiFetch<{ data: AuthResponse }>(`${BASE_PATH}/register`, {
+  // apiFetch already unwraps envelope { success, data } -> data
+  return apiFetch<AuthResponse>(`${BASE_PATH}/register`, {
     method: 'POST',
     body: data,
   });
-  return response.data;
 }
 
 /**
@@ -54,8 +54,8 @@ export async function logout(): Promise<void> {
  * GET /api/v1/auth/me
  */
 export async function getCurrentUser(): Promise<User> {
-  const response = await apiFetch<{ data: User }>(`${BASE_PATH}/me`);
-  return response.data;
+  // apiFetch already unwraps envelope { success, data } -> data
+  return apiFetch<User>(`${BASE_PATH}/me`);
 }
 
 /**
@@ -85,8 +85,27 @@ export async function forgotPassword(email: string): Promise<void> {
  * POST /api/v1/auth/refresh
  */
 export async function refreshToken(): Promise<AuthResponse> {
-  const response = await apiFetch<{ data: AuthResponse }>(`${BASE_PATH}/refresh`, {
+  // apiFetch already unwraps envelope { success, data } -> data
+  return apiFetch<AuthResponse>(`${BASE_PATH}/refresh`, {
     method: 'POST',
   });
-  return response.data;
+}
+
+/**
+ * Reset password with token
+ * POST /api/v1/auth/reset-password
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+  refreshToken?: string | null
+): Promise<void> {
+  await apiFetch(`${BASE_PATH}/reset-password`, {
+    method: 'POST',
+    body: {
+      token,
+      new_password: newPassword,
+      refresh_token: refreshToken || undefined,
+    },
+  });
 }

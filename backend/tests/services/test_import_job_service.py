@@ -180,7 +180,7 @@ class TestGetJobById:
             await import_job_service.get_job_by_id(
                 1,
                 current_user_id=sample_user_id,
-                user_role=UserRole.ANALYST.value
+                user_role=UserRole.MEDIA_BUYER.value
             )
 
         assert "无权限访问此导入任务" in str(exc.value)
@@ -232,7 +232,7 @@ class TestGetJobs:
 
         jobs, total = await import_job_service.get_jobs(
             current_user_id=sample_user_id,
-            user_role=UserRole.ANALYST.value
+            user_role=UserRole.MEDIA_BUYER.value
         )
 
         assert total == 1
@@ -540,7 +540,7 @@ class TestCancelJob:
 
         with patch.object(import_job_service, 'get_job_by_id', new=AsyncMock(return_value=sample_job)):
             with pytest.raises(PermissionDeniedError) as exc:
-                await import_job_service.cancel_job(1, sample_user_id, UserRole.ANALYST.value)
+                await import_job_service.cancel_job(1, sample_user_id, UserRole.MEDIA_BUYER.value)
 
             assert "无权限取消此任务" in str(exc.value)
 
@@ -611,7 +611,8 @@ class TestGetStatistics:
         """测试管理员统计"""
         mock_query = Mock()
         mock_query.filter.return_value = mock_query
-        mock_query.count.side_effect = [100, 20, 10, 60, 5, 5]  # total, pending, processing, completed, failed, cancelled
+        # total, pending, processing, completed, failed, cancelled, then 4 job types
+        mock_query.count.side_effect = [100, 20, 10, 60, 5, 5, 25, 25, 25, 25]
 
         mock_row_stats = Mock()
         mock_row_stats.total_processed = 10000
@@ -637,7 +638,8 @@ class TestGetStatistics:
         """测试普通用户统计（只看自己的）"""
         mock_query = Mock()
         mock_query.filter.return_value = mock_query
-        mock_query.count.side_effect = [10, 2, 1, 6, 1, 0]
+        # total, pending, processing, completed, failed, cancelled, then 4 job types
+        mock_query.count.side_effect = [10, 2, 1, 6, 1, 0, 3, 3, 2, 2]
 
         mock_row_stats = Mock()
         mock_row_stats.total_processed = 1000
@@ -651,7 +653,7 @@ class TestGetStatistics:
 
         stats = await import_job_service.get_statistics(
             current_user_id=sample_user_id,
-            user_role=UserRole.ANALYST.value
+            user_role=UserRole.MEDIA_BUYER.value
         )
 
         assert stats.total_jobs == 10

@@ -1,7 +1,29 @@
 /**
- * AdSpendPage Component
+ * Ad Spend Page Component
  *
- * 广告消耗数据页面
+ * SoT: docs/10.module-specs/C3-spend-detail.md §3.1 页面布局
+ * SoT: MASTER.md v4.4 §4.5.7 - 消耗 SoT = ad_spend_daily.spend
+ * SoT: API_SOT.md v9.0 (Ad Spend endpoints)
+ *
+ * 一句话定义: 让用户查看"某天/某账户消耗多少？"
+ *
+ * 消耗 SoT 约束 (C3-spend-detail.md §1.4):
+ *   Phase 1: ad_spend_daily.spend (Excel 导入)
+ *   Phase 2: daily_report.real_spend (supervisor/finance 确认)
+ *
+ * 页面布局 (C3-spend-detail.md §3.1):
+ * - 页面头部: 标题 + 导出/刷新按钮
+ * - 筛选区: 日期范围 + 项目 + 渠道 + 账户
+ * - KPI 卡片: 总消耗 / 总粉数 / 平均CPA / 平均CTR
+ * - 数据表格: 消耗明细列表 + 分页
+ *
+ * 权限 (C3-spend-detail.md §5.1):
+ * - ceo, finance: 查看全部、导出
+ * - supervisor: 查看团队数据
+ * - pitcher: 仅自己负责账户
+ * - admin: 全部权限 + 导入
+ *
+ * Author: AI 代码工厂 v2.4
  */
 
 'use client';
@@ -21,11 +43,11 @@ import {
   Eye,
 } from 'lucide-react';
 
-// Mock data
+// Mock data - 对齐 adSpend.types.ts
 const mockSpendData = [
   {
     id: 1,
-    account_name: '账户A-抖音',
+    ad_account_name: '账户A-抖音',
     project_name: '项目Alpha',
     channel_name: '抖音',
     report_date: '2024-12-08',
@@ -39,7 +61,7 @@ const mockSpendData = [
   },
   {
     id: 2,
-    account_name: '账户B-快手',
+    ad_account_name: '账户B-快手',
     project_name: '项目Beta',
     channel_name: '快手',
     report_date: '2024-12-08',
@@ -53,7 +75,7 @@ const mockSpendData = [
   },
   {
     id: 3,
-    account_name: '账户C-百度',
+    ad_account_name: '账户C-百度',
     project_name: '项目Gamma',
     channel_name: '百度',
     report_date: '2024-12-08',
@@ -293,7 +315,7 @@ export function AdSpendPage() {
                 {mockSpendData.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {item.account_name}
+                      {item.ad_account_name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {item.project_name}

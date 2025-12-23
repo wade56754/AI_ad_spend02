@@ -877,7 +877,7 @@ async def get_profit_by_project(
     if start_date and end_date and end_date < start_date:
         return StandardResponse.error(
             message="开始日期不能晚于结束日期",
-            code="BIZ_001",
+            code="BIZ-001",
             status_code=400
         )
 
@@ -931,7 +931,7 @@ async def get_profit_by_account(
     if start_date and end_date and end_date < start_date:
         return StandardResponse.error(
             message="开始日期不能晚于结束日期",
-            code="BIZ_001",
+            code="BIZ-001",
             status_code=400
         )
 
@@ -941,7 +941,7 @@ async def get_profit_by_account(
         if not project:
             return StandardResponse.error(
                 message=f"项目不存在: project_id={project_id}",
-                code="BIZ_002",
+                code="BIZ-002",
                 status_code=404
             )
 
@@ -991,7 +991,7 @@ async def get_profit_by_channel(
     if start_date and end_date and end_date < start_date:
         return StandardResponse.error(
             message="开始日期不能晚于结束日期",
-            code="BIZ_001",
+            code="BIZ-001",
             status_code=400
         )
 
@@ -1044,7 +1044,7 @@ async def get_profit_trend(
     if start_date and end_date and end_date < start_date:
         return StandardResponse.error(
             message="开始日期不能晚于结束日期",
-            code="BIZ_001",
+            code="BIZ-001",
             status_code=400
         )
 
@@ -1053,7 +1053,7 @@ async def get_profit_trend(
     if granularity not in valid_granularities:
         return StandardResponse.error(
             message=f"无效的粒度值: {granularity}",
-            code="BIZ_001",
+            code="BIZ-001",
             status_code=400
         )
 
@@ -1109,7 +1109,7 @@ async def compare_profit(
         if not project:
             return StandardResponse.error(
                 message=f"项目不存在: project_id={pid}",
-                code="BIZ_002",
+                code="BIZ-002",
                 status_code=404
             )
 

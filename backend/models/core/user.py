@@ -16,21 +16,22 @@ from backend.models.mixins.serializable import SerializableMixin
 class User(Base, TimestampMixin, SerializableMixin):
     """
     系统用户表
-    
+
     字段：
     - id: UUID 主键（Supabase auth.uid）
     - username: 用户名（唯一）
     - email: 邮箱（唯一）
-    - hashed_password: 密码哈希
     - role: 角色（admin/finance/data_manager/media_buyer/client）
     - is_active: 是否激活
     - created_at/updated_at: 时间戳（自动管理）
+
+    NOTE: 密码管理由 Supabase Auth 处理，本地不存储密码
     """
     __tablename__ = 'users'
-    
+
     # 序列化配置
-    __json_hidden__ = ['hashed_password']  # 隐藏密码字段
-    
+    __json_hidden__ = []  # 无需隐藏字段
+
     # 主键
     id = Column(
         PGUUID(as_uuid=True),
@@ -38,12 +39,14 @@ class User(Base, TimestampMixin, SerializableMixin):
         server_default=func.gen_random_uuid(),
         comment="用户UUID（Supabase auth.uid）"
     )
-    
+
     # 基本信息
     username = Column(String(50), unique=True, nullable=False, comment="用户名")
     email = Column(String(100), unique=True, nullable=False, comment="邮箱")
-    hashed_password = Column(String(255), nullable=False, comment="密码哈希")
-    
+
+    # 密码哈希 - 使用本地 JWT 认证
+    password_hash = Column(String(255), nullable=True, comment="密码哈希(bcrypt)")
+
     # 角色与状态
     role = Column(String(20), nullable=False, comment="角色")
     is_active = Column(Boolean, nullable=False, default=True, comment="是否激活")

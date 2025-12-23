@@ -21,7 +21,7 @@ interface SidebarProps {
 const DEFAULT_MENU_ITEMS = [
   { id: 'workbench', label: '工作台概览', icon: '📊', path: '/' },
   { id: 'projects', label: '项目管理', icon: '📁', path: '/projects' },
-  { id: 'channels', label: '渠道账户', icon: '🔗', path: '/ad-accounts' },
+  { id: 'channels', label: '广告账号管理', icon: '🔗', path: '/ad-accounts' },
   { id: 'reports', label: '日报管理', icon: '📈', badge: 2, path: '/daily-reports' },
   { id: 'settings', label: '系统设置', icon: '⚙️', path: '/settings' },
 ];

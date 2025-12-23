@@ -1,13 +1,17 @@
 """
 权限管理模块
 提供角色和权限检查功能
+
+SoT Reference: MASTER.md v4.4 §2.4 (角色定义)
 """
 
 from functools import wraps
-from typing import Callable, Iterable, List, Union, Dict, Any
+from typing import Callable, Iterable, List, Union, Dict, Any, Optional
 from enum import Enum
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
 from backend.core.error_codes import ErrorCode
 from backend.core.security import (
@@ -16,6 +20,7 @@ from backend.core.security import (
     require_roles as _require_roles,
     require_permissions as _require_permissions
 )
+from backend.core.database import get_db
 from backend.models.enums import UserRole
 
 
@@ -129,14 +134,8 @@ ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
         Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE,
         Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE,
         Permission.REPORT_READ
-    ],
-    UserRole.ANALYST: [
-        # 分析师权限 - 👁 项目管理(只读)、👁 账户管理(只读)、👁 日报管理(只读)、👁 报表查看
-        Permission.PROJECT_READ,
-        Permission.ACCOUNT_READ,
-        Permission.DAILY_REPORT_READ,
-        Permission.REPORT_READ, Permission.REPORT_EXPORT
     ]
+    # 注意: ANALYST 角色已移除 (SoT 仅定义 5 个合法角色)
 }
 
 
@@ -183,8 +182,10 @@ def check_user_permission(user: AuthenticatedUser, required_permissions: Iterabl
     if not required_permissions:
         return True
 
-    user_permissions = set(get_user_permissions(user))
-    required_perms = set(str(p) for p in required_permissions)
+    # 获取用户权限值集合
+    user_permissions = set(p.value if isinstance(p, Permission) else p for p in get_user_permissions(user))
+    # 获取所需权限值集合
+    required_perms = set(p.value if isinstance(p, Permission) else p for p in required_permissions)
 
     return required_perms.issubset(user_permissions)
 
@@ -202,7 +203,7 @@ def require_permissions(*permissions: Union[str, Permission]):
     权限检查装饰器
     要求用户具有所有指定权限
     """
-    return _require_permissions(*(str(p) for p in permissions))
+    return _require_permissions(*(p.value if isinstance(p, Permission) else p for p in permissions))
 
 
 def require_any_role(*roles: str):
@@ -362,4 +363,183 @@ def media_buyer_required(user: AuthenticatedUser = Depends(get_current_active_us
             detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要投手权限"}
         )
     return user
+
+
+# ============================================================================
+# 项目负责人权限守卫
+# ============================================================================
+
+def require_project_owner(project_id: int):
+    """
+    项目负责人权限守卫
+
+    检查当前用户是否为指定项目的负责人（project_members.role = 'owner'）
+
+    根据 MASTER.md v4.4 §2.4:
+    - project_owner 角色通过 project_members 表确定
+    - 用户在 project_members 表中 role = 'owner' 即为该项目的负责人
+    - admin 角色可以绕过此检查
+
+    Args:
+        project_id: 项目 ID
+
+    Returns:
+        FastAPI 依赖函数
+
+    Raises:
+        HTTPException 403: 非项目负责人
+
+    Usage:
+        @router.put("/projects/{project_id}/budget")
+        async def update_project_budget(
+            project_id: int,
+            user: AuthenticatedUser = Depends(require_project_owner(project_id))
+        ):
+            ...
+    """
+    def project_owner_dependency(
+        current_user: AuthenticatedUser = Depends(get_current_active_user),
+        db: Session = Depends(get_db)
+    ) -> AuthenticatedUser:
+        # admin 可以绕过检查
+        if current_user.role == UserRole.ADMIN.value:
+            return current_user
+
+        # 延迟导入避免循环依赖
+        from backend.models.core.project_member import ProjectMember
+
+        # 查询 project_members 表
+        membership = db.query(ProjectMember).filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == UUID(str(current_user.id))
+        ).first()
+
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": ErrorCode.PERMISSION_DENIED,
+                    "message": "您不是此项目的成员"
+                }
+            )
+
+        if membership.role != 'owner':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": ErrorCode.PERMISSION_DENIED,
+                    "message": "此操作需要项目负责人权限"
+                }
+            )
+
+        return current_user
+
+    return project_owner_dependency
+
+
+def is_project_owner(
+    user_id: UUID,
+    project_id: int,
+    db: Session
+) -> bool:
+    """
+    检查用户是否为项目负责人（非装饰器版本）
+
+    用于 Service 层中的权限检查
+
+    Args:
+        user_id: 用户 UUID
+        project_id: 项目 ID
+        db: 数据库会话
+
+    Returns:
+        True = 是项目负责人
+        False = 不是项目负责人
+    """
+    from backend.models.core.project_member import ProjectMember
+
+    membership = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id,
+        ProjectMember.user_id == user_id
+    ).first()
+
+    return membership is not None and membership.role == 'owner'
+
+
+def get_user_owned_projects(
+    user_id: UUID,
+    db: Session
+) -> List[int]:
+    """
+    获取用户作为负责人的所有项目 ID
+
+    Args:
+        user_id: 用户 UUID
+        db: 数据库会话
+
+    Returns:
+        项目 ID 列表
+    """
+    from backend.models.core.project_member import ProjectMember
+
+    memberships = db.query(ProjectMember.project_id).filter(
+        ProjectMember.user_id == user_id,
+        ProjectMember.role == 'owner'
+    ).all()
+
+    return [m.project_id for m in memberships]
+
+
+def require_project_member(project_id: int, allowed_roles: List[str] = None):
+    """
+    项目成员权限守卫
+
+    检查当前用户是否为指定项目的成员，可选限制角色
+
+    Args:
+        project_id: 项目 ID
+        allowed_roles: 允许的项目角色列表，默认 ['owner', 'member', 'viewer']
+
+    Returns:
+        FastAPI 依赖函数
+    """
+    if allowed_roles is None:
+        allowed_roles = ['owner', 'member', 'viewer']
+
+    def project_member_dependency(
+        current_user: AuthenticatedUser = Depends(get_current_active_user),
+        db: Session = Depends(get_db)
+    ) -> AuthenticatedUser:
+        # admin 可以绕过检查
+        if current_user.role == UserRole.ADMIN.value:
+            return current_user
+
+        from backend.models.core.project_member import ProjectMember
+
+        membership = db.query(ProjectMember).filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == UUID(str(current_user.id))
+        ).first()
+
+        if not membership:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": ErrorCode.PERMISSION_DENIED,
+                    "message": "您不是此项目的成员"
+                }
+            )
+
+        if membership.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "code": ErrorCode.PERMISSION_DENIED,
+                    "message": f"此操作需要以下项目角色之一: {', '.join(allowed_roles)}"
+                }
+            )
+
+        return current_user
+
+    return project_member_dependency
 

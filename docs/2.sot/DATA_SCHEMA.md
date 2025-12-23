@@ -8,7 +8,7 @@
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
-> - 实现规范 → `../1.overview/MASTER.md` v3.6
+> - 实现规范 → `../1.overview/MASTER.md` v4.4
 > - 状态机 → `STATE_MACHINE.md` v2.6（任何状态字段必须引用对应状态机）
 > - 业务规则 → `BUSINESS_RULES.md` v3.2
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
@@ -25,7 +25,18 @@
 - **权限**: 当前版本仅在应用层（Service + `@require_role`）执行 RBAC，数据库 RLS 规划中未启用  
 - **时间字段**: 统一使用 `TIMESTAMPTZ`，默认 `NOW()`，应用层使用 UTC  
 - **金额字段**: 一律 `DECIMAL(15,2)`，默认 `0.00`，借方为正、贷方为负值  
-- **角色枚举**: 仅允许 `admin`, `finance`, `data_operator`, `account_manager`, `media_buyer`；旧角色名只允许出现在“历史兼容”说明  
+- **角色枚举**: 仅允许 7 个标准角色（MASTER.md v4.4 §2.4）：
+  - `ceo` - 老板
+  - `project_owner` - 项目负责人
+  - `finance` - 财务
+  - `supervisor` - 主管
+  - `pitcher` - 投手
+  - `account_manager` - 户管
+  - `admin` - 管理员
+
+**历史角色映射** (仅用于理解旧代码，新代码禁止使用):
+- `media_buyer` → `pitcher`
+- `data_operator` → `supervisor`  
 - **状态字段**: 仅引用 `STATE_MACHINE.md` 中的定义，禁止在本文件重复列举或扩展新枚举  
 - **主键/外键**:  
   - 用户、渠道等跨系统实体：主键使用 UUID（对齐 Supabase/外部系统 ID）  
@@ -79,6 +90,7 @@
 | `reconciliation_reports` | 对账报告 | BIGSERIAL | implemented |
 | `profit_aggregates` | 利润聚合（L2汇总层） | BIGSERIAL | planned |
 | `profit_report_snapshots` | 利润报表快照 | BIGSERIAL | planned |
+| `receivable` | 回款记录表（SoT：已回款） | BIGSERIAL | planned |
 
 ---
 
@@ -101,7 +113,7 @@
 | `username` | VARCHAR(50) | UNIQUE | 用户名 |
 | `full_name` | VARCHAR(100) | | 真实姓名 |
 | `email` | VARCHAR(255) | 可空 | 冗余字段，方便联查 |
-| `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 仅 `admin/finance/data_operator/account_manager/media_buyer` |
+| `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 7 个标准角色：`ceo/project_owner/finance/supervisor/pitcher/account_manager/admin`（MASTER.md v4.4 §2.4） |
 | `department` / `position` | VARCHAR(100) | | 组织信息 |
 | `account_manager_id` | UUID | FK → `users.id` | 投手关联户管 |
 | `is_active` | BOOLEAN | DEFAULT true | 账号可用性 |
@@ -394,7 +406,29 @@
 
 索引：`idx_ledger_project`, `idx_ledger_supplier`, `idx_ledger_entry_type`, `idx_ledger_type`.
 
-#### 3.4.5 `suppliers`（implemented）
+#### 3.4.5 `receivable`（planned）
+
+> **引用**: MASTER.md v4.4 §4.5.5 —— `receivable.amount WHERE status='received'` 为「已回款」的唯一事实源
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 回款记录唯一标识 |
+| `project_id` | BIGINT | FK → `projects.id` NOT NULL | 所属项目 |
+| `amount` | DECIMAL(15,2) | NOT NULL | 回款金额 |
+| `status` | VARCHAR(20) | NOT NULL DEFAULT 'pending' | 回款状态：`pending`（待确认）/ `received`（已到账）/ `cancelled`（已取消） |
+| `received_at` | TIMESTAMPTZ | | 实际到账时间 |
+| `source` | VARCHAR(50) | | 回款来源（客户名/渠道等） |
+| `recorded_by` | UUID | FK → `users.id` NOT NULL | 记录人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**:
+- `status` CHECK 约束：`pending/received/cancelled`
+- 已回款 SoT 计算公式：`SUM(receivable.amount WHERE status='received')`
+
+索引：`idx_receivable_project`, `idx_receivable_status`, `idx_receivable_received_at`.
+
+#### 3.4.6 `suppliers`（implemented）
 
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
@@ -408,7 +442,7 @@
 
 索引：`idx_suppliers_code`, `idx_suppliers_status`.
 
-#### 3.4.6 `transfer_requests`（implemented）
+#### 3.4.7 `transfer_requests`（implemented）
 
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
@@ -551,10 +585,10 @@
    - 通知 API/前端/QA  
 2. **AI 使用要求**：prompt 中必须包含本文件及所有互锁 SoT，AI 禁止自创字段/状态/角色。  
 3. **自检清单**：  
-   - [ ] 主键/外键类型一致  
-   - [ ] 金额字段使用 `DECIMAL(15,2)` 并说明借贷规则  
-   - [ ] 状态字段引用 `STATE_MACHINE.md` 对应状态机  
-   - [ ] 角色字段只出现 5 个合法值  
+   - [ ] 主键/外键类型一致
+   - [ ] 金额字段使用 `DECIMAL(15,2)` 并说明借贷规则
+   - [ ] 状态字段引用 `STATE_MACHINE.md` 对应状态机
+   - [ ] 角色字段只出现 7 个合法值（MASTER.md v4.4 §2.4）
    - [ ] 索引/约束在迁移与本文件中都有记录  
 4. **审阅频率**：每次数据库结构变更后立即更新本文件；若长期无变更也需至少每季度审查一次。
 

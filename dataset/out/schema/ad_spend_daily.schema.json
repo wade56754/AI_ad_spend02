@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "平台广告消耗明细表（日+账户粒度）",
+  "description": "Domain: 数据域 | Grain: 每日每账户消耗记录",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "2025-07-01",
+        "2025-07-01",
+        "2025-07-01"
+      ]
+    },
+    "region": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "DE",
+        "IN",
+        "IN"
+      ]
+    },
+    "media_buyer": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "HW",
+        "SG",
+        "HW"
+      ]
+    },
+    "platform_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "1815567322519393",
+        "549740840492004",
+        "768369575850195"
+      ]
+    },
+    "account_name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "FV92-zs-tthd-1642",
+        "Momentus_client3-140425-5",
+        "VH_HK_9_ZYA-004"
+      ]
+    },
+    "account_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "美金户",
+        "印度户",
+        "印度户"
+      ]
+    },
+    "agent": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "开户美国三不限户",
+        "深圳芳林子",
+        "深圳芳林子"
+      ]
+    },
+    "platform": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "nan",
+        "65000.0",
+        "1268.202143"
+      ]
+    },
+    "spend_today_cumulative": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "0.04",
+        "63251.55775",
+        "3152.472375"
+      ]
+    },
+    "spend_yesterday_cumulative": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "50.0",
+        "16.4472",
+        "803.74"
+      ]
+    },
+    "fee": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "1748.44225",
+        "1268.202143",
+        "3516.82075"
+      ]
+    },
+    "actual_spend": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "2083.793474",
+        "1485.825631",
+        "4191.34697"
+      ]
+    },
+    "spend_with_fee": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "examples": [
+        "14.900028",
+        "2.2898",
+        "71.10862"
+      ]
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "examples": [
+        "335.3512236",
+        "217.6234877",
+        "674.5262199"
+      ]
+    }
+  },
+  "required": [
+    "date",
+    "region",
+    "media_buyer",
+    "platform_id",
+    "account_name",
+    "account_type",
+    "agent",
+    "platform"
+  ]
+}

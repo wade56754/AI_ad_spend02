@@ -789,6 +789,180 @@ class TrendErrorCodes:
 
 
 # ============================================
+# 对账错误码 (RECON_xxx)
+# 对齐 STATE_MACHINE.md v2.6 §14.4
+# ============================================
+
+class ReconciliationErrorCodes:
+    """对账错误码 (STATE_MACHINE.md v2.6 §14.4)"""
+
+    # 批次完成前置条件错误 (001-009)
+    PENDING_DETAILS_EXIST = ErrorCode(
+        "RECON_001",
+        "存在未处理的对账明细",
+        400
+    )
+
+    ADJUSTMENT_NO_LEDGER = ErrorCode(
+        "RECON_002",
+        "调整未生成账本分录",
+        400
+    )
+
+    REPORT_NOT_GENERATED = ErrorCode(
+        "RECON_003",
+        "对账报告未生成",
+        400
+    )
+
+    # Invariants 校验错误 (010-019)
+    DEBIT_CREDIT_IMBALANCE = ErrorCode(
+        "RECON_010",
+        "借贷不平衡",
+        400
+    )
+
+    SUPPLIER_NEGATIVE_BALANCE = ErrorCode(
+        "RECON_011",
+        "代理商余额为负",
+        400
+    )
+
+    ORPHAN_LEDGER_ENTRIES = ErrorCode(
+        "RECON_012",
+        "存在孤立分录",
+        400
+    )
+
+    CONFIRMED_EVENT_NOT_POSTED = ErrorCode(
+        "RECON_013",
+        "已确认事件未入账",
+        400
+    )
+
+    BALANCE_LEDGER_MISMATCH = ErrorCode(
+        "RECON_014",
+        "余额字段与账本不一致",
+        400
+    )
+
+    # 对账操作错误 (020-029)
+    BATCH_NOT_FOUND = ErrorCode(
+        "RECON_020",
+        "对账批次不存在",
+        404
+    )
+
+    DETAIL_NOT_FOUND = ErrorCode(
+        "RECON_021",
+        "对账明细不存在",
+        404
+    )
+
+    ADJUSTMENT_NOT_FOUND = ErrorCode(
+        "RECON_022",
+        "调整记录不存在",
+        404
+    )
+
+    BATCH_ALREADY_COMPLETED = ErrorCode(
+        "RECON_023",
+        "对账批次已完成",
+        400
+    )
+
+    # Excel 对比错误 (030-039)
+    EXCEL_COMPARISON_FAILED = ErrorCode(
+        "RECON_030",
+        "Excel对比失败",
+        400
+    )
+
+    SUPPLIER_NOT_FOUND = ErrorCode(
+        "RECON_031",
+        "供应商不存在",
+        404
+    )
+
+    SNAPSHOT_NOT_FOUND = ErrorCode(
+        "RECON_032",
+        "余额快照不存在",
+        404
+    )
+
+
+# ============================================
+# 手续费错误码 (FEE_xxx)
+# ============================================
+
+class FeeErrorCodes:
+    """手续费相关错误码 (FINANCIAL_REFACTOR_PLAN.md Phase 4)"""
+
+    # 供应商费率错误 (001-009)
+    SUPPLIER_NOT_FOUND = ErrorCode(
+        "FEE_001",
+        "供应商不存在",
+        404
+    )
+
+    INVALID_FEE_RATE = ErrorCode(
+        "FEE_002",
+        "费率无效，必须在0-1之间",
+        400
+    )
+
+    INVALID_FEE_TYPE = ErrorCode(
+        "FEE_003",
+        "费率类型无效，必须是PERCENTAGE或FIXED",
+        400
+    )
+
+    FEE_RATE_NOT_CONFIGURED = ErrorCode(
+        "FEE_004",
+        "供应商未配置费率",
+        400
+    )
+
+    # 计算错误 (010-019)
+    CALCULATION_ERROR = ErrorCode(
+        "FEE_010",
+        "手续费计算失败",
+        500
+    )
+
+    NEGATIVE_SPEND_AMOUNT = ErrorCode(
+        "FEE_011",
+        "消耗金额不能为负数",
+        400
+    )
+
+    OVERFLOW_ERROR = ErrorCode(
+        "FEE_012",
+        "金额计算溢出",
+        400
+    )
+
+    # 费率更新错误 (020-029)
+    UPDATE_FAILED = ErrorCode(
+        "FEE_020",
+        "费率更新失败",
+        500
+    )
+
+    PERMISSION_DENIED = ErrorCode(
+        "FEE_021",
+        "无权更新费率",
+        403
+    )
+
+    EFFECTIVE_DATE_INVALID = ErrorCode(
+        "FEE_022",
+        "生效日期无效",
+        400
+    )
+
+
+# ============================================
 # 错误码字典 (用于快速查找)
 # ============================================
 
@@ -855,6 +1029,16 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "BIZ_605": BusinessErrorCodes.BUDGET_QUERY_ERROR,
     "BIZ_606": BusinessErrorCodes.BUDGET_CREATE_ERROR,
     "BIZ_607": BusinessErrorCodes.STATISTICS_QUERY_ERROR,
+    "BIZ_610": BusinessErrorCodes.TRANSFER_DUPLICATE_REQUEST,
+    "BIZ_611": BusinessErrorCodes.TRANSFER_SAME_ACCOUNT,
+    "BIZ_612": BusinessErrorCodes.TRANSFER_SOURCE_NOT_DEAD,
+    "BIZ_613": BusinessErrorCodes.TRANSFER_TARGET_NOT_ACTIVE,
+    "BIZ_614": BusinessErrorCodes.TRANSFER_CROSS_SUPPLIER,
+    "BIZ_615": BusinessErrorCodes.TRANSFER_ALREADY_PROCESSED,
+    "BIZ_616": BusinessErrorCodes.TRANSFER_INSUFFICIENT_BALANCE,
+    "BIZ_617": BusinessErrorCodes.TRANSFER_INVALID_AMOUNT,
+    "BIZ_618": BusinessErrorCodes.TRANSFER_LEDGER_ERROR,
+    "BIZ_619": BusinessErrorCodes.TRANSFER_STATE_ERROR,
     "BIZ_700": BusinessErrorCodes.READY_CHECK_FAILED,
 
     # 系统错误
@@ -909,6 +1093,35 @@ ERROR_CODE_MAP: Dict[str, ErrorCode] = {
     "TREND_010": TrendErrorCodes.RESOLUTION_NOTE_MISSING,
     "TREND_011": TrendErrorCodes.ALREADY_RESOLVED,
     "TREND_012": TrendErrorCodes.INVALID_RESOLUTION_ACTION,
+
+    # 对账错误 (STATE_MACHINE.md v2.6 §14.4)
+    "RECON_001": ReconciliationErrorCodes.PENDING_DETAILS_EXIST,
+    "RECON_002": ReconciliationErrorCodes.ADJUSTMENT_NO_LEDGER,
+    "RECON_003": ReconciliationErrorCodes.REPORT_NOT_GENERATED,
+    "RECON_010": ReconciliationErrorCodes.DEBIT_CREDIT_IMBALANCE,
+    "RECON_011": ReconciliationErrorCodes.SUPPLIER_NEGATIVE_BALANCE,
+    "RECON_012": ReconciliationErrorCodes.ORPHAN_LEDGER_ENTRIES,
+    "RECON_013": ReconciliationErrorCodes.CONFIRMED_EVENT_NOT_POSTED,
+    "RECON_014": ReconciliationErrorCodes.BALANCE_LEDGER_MISMATCH,
+    "RECON_020": ReconciliationErrorCodes.BATCH_NOT_FOUND,
+    "RECON_021": ReconciliationErrorCodes.DETAIL_NOT_FOUND,
+    "RECON_022": ReconciliationErrorCodes.ADJUSTMENT_NOT_FOUND,
+    "RECON_023": ReconciliationErrorCodes.BATCH_ALREADY_COMPLETED,
+    "RECON_030": ReconciliationErrorCodes.EXCEL_COMPARISON_FAILED,
+    "RECON_031": ReconciliationErrorCodes.SUPPLIER_NOT_FOUND,
+    "RECON_032": ReconciliationErrorCodes.SNAPSHOT_NOT_FOUND,
+
+    # 手续费错误 (FINANCIAL_REFACTOR_PLAN.md Phase 4)
+    "FEE_001": FeeErrorCodes.SUPPLIER_NOT_FOUND,
+    "FEE_002": FeeErrorCodes.INVALID_FEE_RATE,
+    "FEE_003": FeeErrorCodes.INVALID_FEE_TYPE,
+    "FEE_004": FeeErrorCodes.FEE_RATE_NOT_CONFIGURED,
+    "FEE_010": FeeErrorCodes.CALCULATION_ERROR,
+    "FEE_011": FeeErrorCodes.NEGATIVE_SPEND_AMOUNT,
+    "FEE_012": FeeErrorCodes.OVERFLOW_ERROR,
+    "FEE_020": FeeErrorCodes.UPDATE_FAILED,
+    "FEE_021": FeeErrorCodes.PERMISSION_DENIED,
+    "FEE_022": FeeErrorCodes.EFFECTIVE_DATE_INVALID,
 }
 
 

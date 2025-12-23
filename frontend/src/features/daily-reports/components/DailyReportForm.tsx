@@ -7,27 +7,35 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Calculator, Save, X, Plus, Minus } from "lucide-react";
+import { Calculator, Save, X, DollarSign, Users, Target, MapPin, Tv } from "lucide-react";
 import { toast } from "sonner";
-import { apiPost, apiPut, ApiError } from "@/lib/api";
+import { apiPost, apiPut, isApiError } from "@/lib/api";
+import {
+  DailyReportCreateInput,
+  AdPlatform,
+  AdRegion,
+  Currency,
+  PLATFORM_OPTIONS,
+  REGION_OPTIONS,
+  CURRENCY_OPTIONS,
+} from "../types/dailyReport.types";
 
 // 类型定义
-interface DailyReport {
+interface DailyReportFormData {
   id?: number;
   report_date: string;
   ad_account_id: number;
+  raw_spend: number;
+  follows_count: number;
+  result_count: number;
+  region: AdRegion | '';
+  platform: AdPlatform | '';
+  currency: Currency;
   campaign_name: string;
   ad_group_name: string;
   ad_creative_name: string;
   impressions: number;
   clicks: number;
-  spend: number;
-  conversions: number;
-  new_follows: number;
-  cpa?: number;
-  cpl?: number;
-  roas?: number;
   notes: string;
 }
 
@@ -39,7 +47,7 @@ interface AdAccount {
 }
 
 interface DailyReportFormProps {
-  report?: DailyReport | null;
+  report?: Partial<DailyReportFormData> | null;
   adAccounts: AdAccount[];
   onSuccess: () => void;
   onCancel: () => void;
@@ -51,98 +59,120 @@ export function DailyReportForm({
   onSuccess,
   onCancel,
 }: DailyReportFormProps) {
-  const [formData, setFormData] = useState<DailyReport>({
+  const [formData, setFormData] = useState<DailyReportFormData>({
     report_date: report?.report_date || new Date().toISOString().split("T")[0],
     ad_account_id: report?.ad_account_id || 0,
+    raw_spend: report?.raw_spend || 0,
+    follows_count: report?.follows_count || 0,
+    result_count: report?.result_count || 0,
+    region: report?.region || '',
+    platform: report?.platform || '',
+    currency: report?.currency || 'USD',
     campaign_name: report?.campaign_name || "",
     ad_group_name: report?.ad_group_name || "",
     ad_creative_name: report?.ad_creative_name || "",
     impressions: report?.impressions || 0,
     clicks: report?.clicks || 0,
-    spend: report?.spend || 0,
-    conversions: report?.conversions || 0,
-    new_follows: report?.new_follows || 0,
-    cpa: report?.cpa || 0,
-    cpl: report?.cpl || 0,
-    roas: report?.roas || 0,
     notes: report?.notes || "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [calculatorInput, setCalculatorInput] = useState("");
-  const [calculatorResult, setCalculatorResult] = useState(0);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // 派生指标计算 - 使用 useMemo 替代 useEffect
-  // 这些值完全由其他状态派生，不需要存储为独立状态
+  // 系统自动计算的指标
   const derivedMetrics = useMemo(() => {
-    const cpl = formData.new_follows > 0 ? formData.spend / formData.new_follows : 0;
-    const cpa = formData.conversions > 0 ? formData.spend / formData.conversions : 0;
-    // 假设ROI为5（可以根据实际情况调整）
-    const roas = formData.spend > 0 ? (formData.conversions * 5) / formData.spend : 0;
+    const costPerFollow = formData.follows_count > 0
+      ? formData.raw_spend / formData.follows_count
+      : 0;
+    const costPerResult = formData.result_count > 0
+      ? formData.raw_spend / formData.result_count
+      : 0;
 
     return {
-      cpl: parseFloat(cpl.toFixed(2)),
-      cpa: parseFloat(cpa.toFixed(2)),
-      roas: parseFloat(roas.toFixed(2)),
+      cost_per_follow: parseFloat(costPerFollow.toFixed(2)),
+      cost_per_result: parseFloat(costPerResult.toFixed(2)),
     };
-  }, [formData.spend, formData.conversions, formData.new_follows]);
+  }, [formData.raw_spend, formData.follows_count, formData.result_count]);
 
   // 处理输入变化
   const handleInputChange = (
-    field: keyof DailyReport,
+    field: keyof DailyReportFormData,
     value: string | number
   ) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: field === "report_date" || field === "ad_account_id"
-        ? value
-        : field === "spend" || field === "cpl" || field === "cpa" || field === "roas"
-        ? parseFloat(value.toString()) || 0
-        : typeof value === "number"
-        ? value
-        : value.toString(),
+      [field]: value,
     }));
   };
 
-  // 计算器功能
-  const handleCalculator = (operation: string) => {
-    try {
-      if (operation === "=") {
-        const result = eval(calculatorInput);
-        setCalculatorResult(parseFloat(result.toFixed(2)));
-      } else if (operation === "C") {
-        setCalculatorInput("");
-        setCalculatorResult(0);
-      } else {
-        setCalculatorInput(calculatorInput + operation);
-      }
-    } catch (error) {
-      toast.error("计算错误");
-    }
+  // 处理数字输入
+  const handleNumberChange = (field: keyof DailyReportFormData, value: string) => {
+    const numValue = field === 'raw_spend'
+      ? parseFloat(value) || 0
+      : parseInt(value) || 0;
+    handleInputChange(field, numValue);
   };
 
-  // 应用计算结果
-  const applyCalculatorResult = (field: "spend" | "cpl" | "cpa" | "roas") => {
-    handleInputChange(field, calculatorResult);
-    setShowCalculator(false);
-    setCalculatorInput("");
-    setCalculatorResult(0);
+  // 验证表单
+  const validateForm = (): boolean => {
+    if (!formData.ad_account_id) {
+      toast.error("请选择广告账户");
+      return false;
+    }
+    if (!formData.region) {
+      toast.error("请选择投放地区");
+      return false;
+    }
+    if (formData.raw_spend < 0) {
+      toast.error("广告消耗不能为负数");
+      return false;
+    }
+    if (formData.follows_count < 0) {
+      toast.error("进粉数不能为负数");
+      return false;
+    }
+    if (formData.result_count < 0) {
+      toast.error("成效数不能为负数");
+      return false;
+    }
+    return true;
   };
 
   // 提交表单
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      const submitData: DailyReportCreateInput = {
+        report_date: formData.report_date,
+        ad_account_id: formData.ad_account_id,
+        raw_spend: formData.raw_spend,
+        follows_count: formData.follows_count,
+        result_count: formData.result_count,
+        region: formData.region as AdRegion,
+        platform: formData.platform as AdPlatform || undefined,
+        currency: formData.currency,
+        campaign_name: formData.campaign_name || undefined,
+        ad_group_name: formData.ad_group_name || undefined,
+        ad_creative_name: formData.ad_creative_name || undefined,
+        impressions: formData.impressions || undefined,
+        clicks: formData.clicks || undefined,
+        notes: formData.notes || undefined,
+      };
+
       const endpoint = report?.id
         ? `/api/v1/daily-reports/${report.id}`
         : "/api/v1/daily-reports";
 
       const response = report?.id
-        ? await apiPut(endpoint, formData)
-        : await apiPost(endpoint, formData);
+        ? await apiPut<{ data?: unknown }>(endpoint, submitData)
+        : await apiPost<{ data?: unknown }>(endpoint, submitData);
 
       if (response.data) {
         toast.success(report?.id ? "更新成功" : "创建成功");
@@ -152,7 +182,7 @@ export function DailyReportForm({
       }
     } catch (error) {
       console.error("提交错误:", error);
-      if (error instanceof ApiError) {
+      if (isApiError(error)) {
         toast.error(error.message || "操作失败");
       } else {
         toast.error("操作失败");
@@ -162,45 +192,19 @@ export function DailyReportForm({
     }
   };
 
-  // 批量导入数据（从剪贴板）
-  const handleBatchImport = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      const lines = text.split("\n");
-
-      // 假设格式：广告系列名称,广告组名称,展示次数,点击次数,消耗,转化数,新增粉丝
-      if (lines.length > 0) {
-        const [campaign, group, impressions, clicks, spend, conversions, follows] =
-          lines[0].split(",").map(item => item.trim());
-
-        if (campaign && group) {
-          setFormData(prev => ({
-            ...prev,
-            campaign_name: campaign,
-            ad_group_name: group,
-            impressions: parseInt(impressions) || 0,
-            clicks: parseInt(clicks) || 0,
-            spend: parseFloat(spend) || 0,
-            conversions: parseInt(conversions) || 0,
-            new_follows: parseInt(follows) || 0,
-          }));
-          toast.success("数据导入成功");
-        }
-      }
-    } catch (error) {
-      toast.error("导入失败，请检查剪贴板格式");
-    }
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* 基本信息 */}
       <Card>
         <CardHeader>
-          <CardTitle>基本信息</CardTitle>
-          <CardDescription>填写日报的基本信息</CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5" />
+            日报提交
+          </CardTitle>
+          <CardDescription>投手每日提交消耗、进粉、成效数据</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* 日期和账户 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="report_date">日期 *</Label>
@@ -233,350 +237,251 @@ export function DailyReportForm({
             </div>
           </div>
 
+          {/* 地区和平台 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="campaign_name">广告系列名称 *</Label>
-              <Input
-                id="campaign_name"
-                value={formData.campaign_name}
-                onChange={(e) => handleInputChange("campaign_name", e.target.value)}
-                placeholder="输入广告系列名称"
-                required
-              />
+              <Label htmlFor="region" className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                投放地区 *
+              </Label>
+              <Select
+                value={formData.region}
+                onValueChange={(value) => handleInputChange("region", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择地区" />
+                </SelectTrigger>
+                <SelectContent>
+                  {REGION_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ad_group_name">广告组名称 *</Label>
-              <Input
-                id="ad_group_name"
-                value={formData.ad_group_name}
-                onChange={(e) => handleInputChange("ad_group_name", e.target.value)}
-                placeholder="输入广告组名称"
-                required
-              />
+              <Label htmlFor="platform" className="flex items-center gap-1">
+                <Tv className="w-4 h-4" />
+                广告平台
+              </Label>
+              <Select
+                value={formData.platform}
+                onValueChange={(value) => handleInputChange("platform", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择平台" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLATFORM_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ad_creative_name">广告创意名称</Label>
-              <Input
-                id="ad_creative_name"
-                value={formData.ad_creative_name}
-                onChange={(e) => handleInputChange("ad_creative_name", e.target.value)}
-                placeholder="输入广告创意名称"
-              />
+              <Label htmlFor="currency">货币类型</Label>
+              <Select
+                value={formData.currency}
+                onValueChange={(value) => handleInputChange("currency", value as Currency)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择货币" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* 数据指标 */}
+      {/* 核心数据 - 投手提交 */}
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>数据指标</CardTitle>
-              <CardDescription>填写广告投放的关键数据</CardDescription>
+          <CardTitle>核心数据</CardTitle>
+          <CardDescription>填写今日广告投放的核心指标</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="raw_spend" className="flex items-center gap-1">
+                <DollarSign className="w-4 h-4" />
+                广告消耗 ({formData.currency}) *
+              </Label>
+              <Input
+                id="raw_spend"
+                type="number"
+                step="0.01"
+                value={formData.raw_spend}
+                onChange={(e) => handleNumberChange("raw_spend", e.target.value)}
+                placeholder="0.00"
+                min="0"
+                className="text-lg font-semibold"
+              />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleBatchImport}
-            >
-              从剪贴板导入
+
+            <div className="space-y-2">
+              <Label htmlFor="follows_count" className="flex items-center gap-1">
+                <Users className="w-4 h-4" />
+                进粉数 *
+              </Label>
+              <Input
+                id="follows_count"
+                type="number"
+                value={formData.follows_count}
+                onChange={(e) => handleNumberChange("follows_count", e.target.value)}
+                placeholder="0"
+                min="0"
+                className="text-lg font-semibold"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="result_count" className="flex items-center gap-1">
+                <Target className="w-4 h-4" />
+                成效数 *
+              </Label>
+              <Input
+                id="result_count"
+                type="number"
+                value={formData.result_count}
+                onChange={(e) => handleNumberChange("result_count", e.target.value)}
+                placeholder="0"
+                min="0"
+                className="text-lg font-semibold"
+              />
+            </div>
+          </div>
+
+          {/* 系统计算的指标 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+            <div className="space-y-2">
+              <Label className="text-muted-foreground flex items-center gap-1">
+                <Calculator className="w-4 h-4" />
+                单粉成本 (自动计算)
+              </Label>
+              <Input
+                type="text"
+                value={`${formData.currency} ${derivedMetrics.cost_per_follow.toFixed(2)}`}
+                readOnly
+                className="bg-muted font-semibold"
+              />
+              <p className="text-xs text-muted-foreground">= 广告消耗 / 进粉数</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-muted-foreground flex items-center gap-1">
+                <Calculator className="w-4 h-4" />
+                单次成效费用 (自动计算)
+              </Label>
+              <Input
+                type="text"
+                value={`${formData.currency} ${derivedMetrics.cost_per_result.toFixed(2)}`}
+                readOnly
+                className="bg-muted font-semibold"
+              />
+              <p className="text-xs text-muted-foreground">= 广告消耗 / 成效数</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 高级选项 (可折叠) */}
+      <Card>
+        <CardHeader className="cursor-pointer" onClick={() => setShowAdvanced(!showAdvanced)}>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-sm">高级选项</CardTitle>
+              <CardDescription>广告系列、展示、点击等详细信息</CardDescription>
+            </div>
+            <Button type="button" variant="ghost" size="sm">
+              {showAdvanced ? "收起" : "展开"}
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="impressions">展示次数</Label>
-              <Input
-                id="impressions"
-                type="number"
-                value={formData.impressions}
-                onChange={(e) => handleInputChange("impressions", e.target.value)}
-                placeholder="0"
-                min="0"
-              />
+        {showAdvanced && (
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="campaign_name">广告系列名称</Label>
+                <Input
+                  id="campaign_name"
+                  value={formData.campaign_name}
+                  onChange={(e) => handleInputChange("campaign_name", e.target.value)}
+                  placeholder="输入广告系列名称"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ad_group_name">广告组名称</Label>
+                <Input
+                  id="ad_group_name"
+                  value={formData.ad_group_name}
+                  onChange={(e) => handleInputChange("ad_group_name", e.target.value)}
+                  placeholder="输入广告组名称"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ad_creative_name">广告创意名称</Label>
+                <Input
+                  id="ad_creative_name"
+                  value={formData.ad_creative_name}
+                  onChange={(e) => handleInputChange("ad_creative_name", e.target.value)}
+                  placeholder="输入广告创意名称"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="impressions">展示次数</Label>
+                <Input
+                  id="impressions"
+                  type="number"
+                  value={formData.impressions}
+                  onChange={(e) => handleNumberChange("impressions", e.target.value)}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="clicks">点击次数</Label>
+                <Input
+                  id="clicks"
+                  type="number"
+                  value={formData.clicks}
+                  onChange={(e) => handleNumberChange("clicks", e.target.value)}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="clicks">点击次数</Label>
-              <Input
-                id="clicks"
-                type="number"
-                value={formData.clicks}
-                onChange={(e) => handleInputChange("clicks", e.target.value)}
-                placeholder="0"
-                min="0"
+              <Label htmlFor="notes">备注说明</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleInputChange("notes", e.target.value)}
+                placeholder="填写备注信息..."
+                rows={3}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="spend">
-                消耗金额 (¥)
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowCalculator(true);
-                    setCalculatorInput(formData.spend.toString());
-                  }}
-                >
-                  <Calculator className="w-3 h-3" />
-                </Button>
-              </Label>
-              <Input
-                id="spend"
-                type="number"
-                step="0.01"
-                value={formData.spend}
-                onChange={(e) => handleInputChange("spend", e.target.value)}
-                placeholder="0.00"
-                min="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="conversions">转化数</Label>
-              <Input
-                id="conversions"
-                type="number"
-                value={formData.conversions}
-                onChange={(e) => handleInputChange("conversions", e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="new_follows">新增粉丝数</Label>
-              <Input
-                id="new_follows"
-                type="number"
-                value={formData.new_follows}
-                onChange={(e) => handleInputChange("new_follows", e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>单粉成本 (¥)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={derivedMetrics.cpl}
-                readOnly
-                className="bg-gray-50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>单次转化成本 (¥)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={derivedMetrics.cpa}
-                readOnly
-                className="bg-gray-50"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>ROI / ROAS</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={derivedMetrics.roas}
-              readOnly
-              className="bg-gray-50"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 备注 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>备注说明</CardTitle>
-          <CardDescription>添加额外的说明或注意事项</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={formData.notes}
-            onChange={(e) => handleInputChange("notes", e.target.value)}
-            placeholder="填写备注信息..."
-            rows={3}
-          />
-        </CardContent>
-      </Card>
-
-      {/* 计算器弹窗 */}
-      {showCalculator && (
-        <Card className="fixed right-4 top-1/2 transform -translate-y-1/2 w-64 shadow-lg z-50">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-sm">计算器</CardTitle>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCalculator(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Input
-              value={calculatorInput}
-              onChange={(e) => setCalculatorInput(e.target.value)}
-              placeholder="输入计算表达式"
-            />
-            <div className="text-right text-lg font-semibold">
-              = {calculatorResult}
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("7")}
-              >
-                7
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("8")}
-              >
-                8
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("9")}
-              >
-                9
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("/")}
-              >
-                ÷
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("4")}
-              >
-                4
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("5")}
-              >
-                5
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("6")}
-              >
-                6
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("*")}
-              >
-                ×
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("1")}
-              >
-                1
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("2")}
-              >
-                2
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("3")}
-              >
-                3
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("-")}
-              >
-                -
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("0")}
-              >
-                0
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator(".")}
-              >
-                .
-              </Button>
-              <Button
-                type="button"
-                onClick={() => handleCalculator("=")}
-              >
-                =
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleCalculator("+")}
-              >
-                +
-              </Button>
-            </div>
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => handleCalculator("C")}
-                className="flex-1"
-              >
-                清除
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => applyCalculatorResult("spend")}
-                className="flex-1"
-              >
-                应用到消耗
-              </Button>
             </div>
           </CardContent>
-        </Card>
-      )}
+        )}
+      </Card>
 
       {/* 操作按钮 */}
       <div className="flex justify-end space-x-4">
@@ -598,7 +503,7 @@ export function DailyReportForm({
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              {report?.id ? "更新" : "保存"}
+              {report?.id ? "更新" : "提交日报"}
             </>
           )}
         </Button>

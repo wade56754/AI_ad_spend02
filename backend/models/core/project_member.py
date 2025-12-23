@@ -20,9 +20,14 @@ class ProjectMember(Base, TimestampMixin, SerializableMixin):
     - id: 主键
     - project_id: 项目ID（外键）
     - user_id: 用户ID（外键）
-    - role: 项目内角色（project_admin/member/viewer）
+    - role: 项目内角色（owner/member/viewer）
     - permissions: 扩展权限配置（JSONB）
     - created_at/updated_at: 时间戳（自动管理）
+
+    约束：
+    - 每个项目最多一个 owner（通过部分唯一索引实现）
+
+    SoT Reference: MASTER.md v4.4 §2.4
     """
     __tablename__ = 'project_members'
 
@@ -50,10 +55,10 @@ class ProjectMember(Base, TimestampMixin, SerializableMixin):
 
     # 业务字段
     role = Column(
-        String(50),
+        String(20),
         nullable=False,
         default='member',
-        comment="项目内角色：project_admin/member/viewer"
+        comment="项目内角色：owner/member/viewer (MASTER.md v4.4)"
     )
     permissions = Column(
         JSONB,
@@ -93,14 +98,14 @@ class ProjectMember(Base, TimestampMixin, SerializableMixin):
     # ========== 业务属性 ==========
 
     @property
-    def is_admin(self) -> bool:
-        """是否是项目管理员"""
-        return self.role == 'project_admin'
+    def is_owner(self) -> bool:
+        """是否是项目负责人"""
+        return self.role == 'owner'
 
     @property
     def can_edit(self) -> bool:
         """是否可以编辑项目"""
-        return self.role in ['project_admin', 'member']
+        return self.role in ['owner', 'member']
 
     @property
     def is_viewer_only(self) -> bool:
@@ -109,13 +114,13 @@ class ProjectMember(Base, TimestampMixin, SerializableMixin):
 
     # ========== 业务方法 ==========
 
-    def grant_admin(self):
-        """授予管理员权限"""
-        self.role = 'project_admin'
+    def grant_owner(self):
+        """授予项目负责人权限"""
+        self.role = 'owner'
 
-    def revoke_admin(self):
-        """撤销管理员权限，降级为普通成员"""
-        if self.role == 'project_admin':
+    def revoke_owner(self):
+        """撤销负责人权限，降级为普通成员"""
+        if self.role == 'owner':
             self.role = 'member'
 
     def set_viewer_only(self):

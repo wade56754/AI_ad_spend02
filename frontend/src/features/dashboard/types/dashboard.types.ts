@@ -1,7 +1,8 @@
 /**
  * Dashboard Types
  *
- * Based on DASHBOARD_FRONTEND_DESIGN_v1.2.md
+ * SoT: docs/10.module-specs/A1-dashboard.md
+ * SoT: MASTER.md v4.4 §6.5 核心页面最小字段集
  */
 
 // ============ 统计卡片类型 ============
@@ -135,4 +136,112 @@ export interface DashboardFilters {
   dateTo?: string;
   projectId?: string;
   channel?: string;
+}
+
+// ============ API 响应类型 (SoT: A1-dashboard.md §5.2) ============
+
+/**
+ * GET /api/v1/dashboard/overview 响应
+ * SoT: A1-dashboard.md §5.2
+ */
+export interface DashboardOverviewResponse {
+  success: boolean;
+  data: {
+    // MASTER.md §6.5 必须字段
+    total_spend: number;           // 本月总消耗
+    total_conversions: number;     // 本月总进粉
+    total_revenue: number;         // 本月总收入
+    total_profit: number;          // 预计毛利
+    cpl: number;                   // 整体 CPL
+    // 变化率
+    spend_change: number;
+    conversions_change: number;
+    revenue_change: number;
+    profit_change: number;
+    // 运营状态
+    active_projects: number;       // 活跃项目数
+    abnormal_projects: number;     // 异常项目数 (CPL > target × 1.3)
+    pending_topups: number;        // 待审批充值数
+    // 扩展字段
+    cpl_target?: number;           // CPL 目标
+    today_spend?: number;
+    today_conversions?: number;
+    today_revenue?: number;
+    today_profit?: number;
+  };
+  message: string;
+}
+
+/**
+ * GET /api/v1/dashboard/trend 响应
+ * SoT: A1-dashboard.md §5.2
+ */
+export interface DashboardTrendResponse {
+  success: boolean;
+  data: {
+    points: Array<{
+      date: string;
+      spend: number;
+      revenue: number;
+      profit: number;
+      conversions: number;
+    }>;
+    summary: {
+      trend: 'up' | 'down' | 'stable';
+      change_percent: number;
+      description: string;
+    };
+  };
+  message: string;
+}
+
+/**
+ * GET /api/v1/dashboard/top-projects 响应
+ * SoT: A1-dashboard.md §5.1
+ */
+export interface DashboardTopProjectsResponse {
+  success: boolean;
+  data: {
+    top_spend: Array<{
+      id: string;
+      name: string;
+      spend: number;
+      change: number;
+    }>;
+    worst_roas: Array<{
+      id: string;
+      name: string;
+      roas: number;
+      spend: number;
+    }>;
+  };
+  message: string;
+}
+
+/**
+ * GET /api/v1/dashboard/pending-counts 响应
+ * SoT: A1-dashboard.md §5.1
+ */
+export interface DashboardPendingCountsResponse {
+  success: boolean;
+  data: {
+    pending_topups: number;
+    pending_settlements: number;
+    pending_reconciliations: number;
+    pending_imports: number;
+  };
+  message: string;
+}
+
+// ============ API 请求参数类型 ============
+
+export interface DashboardOverviewParams {
+  date_from: string;  // YYYY-MM-DD
+  date_to: string;    // YYYY-MM-DD
+}
+
+export interface DashboardTrendParams {
+  date_from: string;
+  date_to: string;
+  metrics?: ('spend' | 'revenue' | 'profit' | 'conversions')[];
 }

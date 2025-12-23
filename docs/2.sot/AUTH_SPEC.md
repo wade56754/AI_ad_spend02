@@ -153,6 +153,27 @@ CREATE INDEX idx_users_email ON users(email);
 - �?角色一旦创建，仅`admin`可修改（需记录审计日志�?
 - �?角色修改必须通过API，禁止直接UPDATE数据�?
 
+### 2.2A 业务层角色映射（MASTER v4.4 对齐）
+
+> **引用**: MASTER.md v4.4 §2.4
+
+技术层维持 5 角色 CHECK 约束不变，业务层（老板视角）通过以下映射对齐 MASTER 定义：
+
+| MASTER 业务角色 | 技术层角色 | 实现方式 |
+|----------------|-----------|---------|
+| ceo | admin | 直接使用 admin 角色 |
+| project_owner | - | 通过 `users.is_project_owner=true` 或 `project_members` 表标识 |
+| finance | finance | 直接使用 finance 角色 |
+| supervisor | data_operator | 直接使用 data_operator 角色 |
+| pitcher | media_buyer | 直接使用 media_buyer 角色 |
+| account_manager | account_manager | 直接使用 account_manager 角色 |
+| admin | admin | 直接使用 admin 角色 |
+
+**映射规则**:
+- `project_owner` 不新增角色枚举，通过业务属性（用户表字段或 project_members 关联）实现
+- 文档中出现的「运营」指代 `supervisor`（data_operator）或 `finance` 角色
+- 禁止新增角色枚举，必须复用上述 5 个技术层角色
+
 ### 2.3 JSONB字段结构
 
 #### 2.3.1 preferences JSONB字段
@@ -1073,6 +1094,40 @@ def list_reports_for_account_manager(self, user_id: str, filters: Dict):
 
     return query.all()
 ```
+
+### 5.X Phase 权限边界（MASTER v4.4 对齐）
+
+> **引用**: MASTER.md v4.4 §2.5（Phase 1/Phase 2 执行边界）
+
+#### 5.X.1 Phase 1 权限行为
+
+| 角色 | Phase 1 权限行为 | 禁止行为 |
+|------|-----------------|---------|
+| admin | 全部权限可用 | 禁止自动惩罚性操作 |
+| finance | 资金审批、账本查看 | 禁止自动阻断充值 |
+| data_operator | 日报审核、数据录入 | 禁止自动降级投手绩效 |
+| account_manager | 项目管理、充值初审 | 禁止自动冻结项目 |
+| media_buyer | 日报提交、充值申请 | 禁止自动扣罚 |
+
+**Phase 1 核心原则**：
+- 所有数据操作正常执行
+- 预警/提示正常显示
+- **禁止系统自动执行任何惩罚性操作**（扣罚、降级、冻结）
+- 问责结果仅记录，不触发自动处罚
+
+#### 5.X.2 Phase 2 新增权限（需 Feature Flag）
+
+| Feature Flag | 启用后行为 | 涉及角色 |
+|-------------|-----------|---------|
+| `ENABLE_BUDGET_BLOCK` | 超预算阻断充值 | finance |
+| `ENABLE_DAILY_REPORT_FULL_SM` | 8 状态完整审核流程 | data_operator |
+| `ENABLE_PROJECT_SUSPEND_BLOCK` | suspended 状态阻断投放 | admin |
+| `ENABLE_AUTO_PENALTY` | 自动惩罚性操作 | admin |
+
+**Phase 2 启用条件**：
+- Phase 1 稳定运行 2 个月
+- 老板书面确认启用
+- 相关 Feature Flag 设为 `true`
 
 ---
 

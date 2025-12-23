@@ -1,15 +1,17 @@
 """
 日报管理API路由
-Version: 1.0
+Version: 1.1
 Author: Claude协作开发
 """
 
 import logging
 from datetime import datetime, date
 from decimal import Decimal, InvalidOperation
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
+from enum import Enum as PyEnum
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+from pydantic import BaseModel, Field
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from io import BytesIO
@@ -256,6 +258,10 @@ async def list_daily_reports(
     status: Optional[str] = Query(None, pattern="^(raw_submitted|trend_pending|trend_ok|trend_flagged|trend_resolved|final_pending|final_confirmed|final_locked)$", description="日报状态（8状态机）"),
     media_buyer_id: Optional[int] = Query(None, description="投手ID"),
     project_id: Optional[int] = Query(None, description="项目ID"),
+    region: Optional[str] = Query(None, description="投放地区"),
+    platform: Optional[str] = Query(None, description="广告平台（FB/Google/TikTok）"),
+    team_id: Optional[str] = Query(None, description="团队ID (UUID)"),
+    submitter_name: Optional[str] = Query(None, description="投手名称（模糊匹配）"),
     service: DailyReportService = Depends(get_daily_report_service),
     current_user: User = Depends(get_current_user)
 ):
@@ -270,17 +276,43 @@ async def list_daily_reports(
             ad_account_id=ad_account_id,
             status=status,
             media_buyer_id=media_buyer_id,
-            project_id=project_id
+            project_id=project_id,
+            region=region,
+            platform=platform,
+            team_id=team_id,
+            submitter_name=submitter_name
         )
 
         # 获取日报列表
         reports, total = service.get_daily_reports(params, current_user, page, page_size)
 
-        # 转换为响应格式
-        report_responses = [
-            DailyReportResponse.model_validate(report)
-            for report in reports
-        ]
+        # 转换为响应格式，填充投手和团队信息
+        report_responses = []
+        for report in reports:
+            # 准备额外字段
+            report_submitter_name = None
+            report_team_name = None
+
+            # 填充投手名称
+            if report.submitter:
+                report_submitter_name = report.submitter.username or report.submitter.email
+            elif report.ad_account and report.ad_account.name:
+                # 从账户名提取投手名（格式: "投手名_平台_地区"）
+                account_parts = report.ad_account.name.split('_')
+                if len(account_parts) >= 1:
+                    report_submitter_name = account_parts[0]
+
+            # 填充团队名称（通过 ad_account -> team）
+            if report.ad_account and report.ad_account.team:
+                report_team_name = report.ad_account.team.name
+
+            # 创建响应对象，使用 model_copy 更新额外字段
+            resp = DailyReportResponse.model_validate(report)
+            resp = resp.model_copy(update={
+                'submitter_name': report_submitter_name,
+                'team_name': report_team_name
+            })
+            report_responses.append(resp)
 
         # 返回分页响应
         return paginated_response(
@@ -292,7 +324,7 @@ async def list_daily_reports(
 
     except (BusinessLogicError, ResourceNotFoundError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -357,7 +389,7 @@ async def create_daily_report(
     except BusinessLogicError as e:
         # BIZ_201: 报表日期为未来日期 → 400
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -372,6 +404,120 @@ async def create_daily_report(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/stats",
+    response_model=StandardResponse[dict],
+    summary="获取日报状态统计",
+    description="获取各状态的日报数量统计"
+)
+async def get_daily_report_stats(
+    project_id: Optional[int] = Query(None, description="项目ID"),
+    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取日报状态统计API - 返回各状态的日报数量
+
+    8状态机统计 (STATE_MACHINE.md v2.6):
+    - raw_submitted: 原始提交
+    - trend_pending: 趋势待审
+    - trend_ok: 趋势通过
+    - trend_flagged: 趋势异常
+    - trend_resolved: 异常已处理
+    - final_pending: 终审待审
+    - final_confirmed: 终审确认
+    - final_locked: 已锁定
+    """
+    try:
+        stats = service.get_status_stats(
+            current_user=current_user,
+            project_id=project_id,
+            start_date=start_date,
+            end_date=end_date
+        )
+        return success_response(data=stats)
+    except Exception as e:
+        logger.exception(f"Unexpected error in get_daily_report_stats: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="系统内部错误",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+# ============ 筛选选项端点 (v2.1) - 必须在 /{report_id} 之前 ============
+
+from backend.models.finance.team import Team
+from backend.models.accounts.ad_account import AdAccount
+
+
+@router.get(
+    "/filter-options/teams",
+    response_model=StandardResponse[List[Dict[str, Any]]],
+    summary="获取团队筛选选项",
+    description="获取可用的团队列表，用于筛选下拉"
+)
+async def get_team_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取团队筛选选项 API (v2.1)
+    返回所有激活状态的团队
+    """
+    try:
+        teams = db.query(Team).filter(Team.status == "active").order_by(Team.name).all()
+        options = [{"id": t.id, "name": t.name, "code": t.code} for t in teams]
+        return success_response(data=options)
+    except Exception as e:
+        logger.exception(f"Error getting team options: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取团队选项失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
+@router.get(
+    "/filter-options/submitters",
+    response_model=StandardResponse[List[str]],
+    summary="获取投手筛选选项",
+    description="从账户名提取的投手列表，用于筛选下拉"
+)
+async def get_submitter_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取投手筛选选项 API (v2.1)
+    从广告账户名称中提取投手名前缀（格式: 投手名_平台_地区）
+    """
+    try:
+        # 获取所有账户名
+        accounts = db.query(AdAccount.name).distinct().all()
+
+        # 提取投手名（账户名的第一段）
+        submitters = set()
+        for (name,) in accounts:
+            if name and '_' in name:
+                submitter = name.split('_')[0]
+                if submitter:
+                    submitters.add(submitter)
+
+        # 排序返回
+        sorted_submitters = sorted(list(submitters))
+        return success_response(data=sorted_submitters)
+    except Exception as e:
+        logger.exception(f"Error getting submitter options: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取投手选项失败",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
 
@@ -456,7 +602,7 @@ async def update_daily_report(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -508,6 +654,199 @@ async def delete_daily_report(
         )
 
 
+# ============ 统一审核端点 (Phase C) ============
+
+from enum import Enum as PyEnum
+
+
+class ReviewAction(str, PyEnum):
+    """审核动作枚举"""
+    APPROVE = "approve"           # 通过（流转到下一状态）
+    REJECT = "reject"             # 驳回（退回原始状态或标记异常）
+    REQUEST_REVISION = "request_revision"  # 要求修改（退回投手修改）
+
+
+class DailyReportReviewRequest(BaseModel):
+    """统一审核请求"""
+    action: str = Field(..., description="审核动作: approve/reject/request_revision")
+    audit_notes: Optional[str] = Field(None, max_length=500, description="审核说明")
+
+
+class DailyReportReviewResponse(BaseModel):
+    """统一审核响应"""
+    report_id: int
+    old_status: str
+    new_status: str
+    action: str
+    message: str
+    warnings: List[str] = Field(default_factory=list, description="Phase 1 警告信息")
+
+
+@router.post(
+    "/{report_id}/review",
+    response_model=StandardResponse[DailyReportReviewResponse],
+    summary="统一审核日报",
+    description="""
+    统一的日报审核端点，支持多种审核动作。
+
+    **动作说明:**
+    - `approve`: 通过审核，流转到下一状态
+    - `reject`: 驳回，标记异常或退回
+    - `request_revision`: 要求投手修改
+
+    **状态机流转规则 (STATE_MACHINE.md v2.6):**
+    - trend_pending + approve → trend_ok
+    - trend_pending + reject → trend_flagged
+    - trend_flagged + approve → trend_resolved
+    - trend_flagged + request_revision → raw_submitted
+    - final_pending + approve → final_confirmed
+
+    **权限:** supervisor/data_operator/admin
+    """
+)
+async def review_daily_report(
+    report_id: int,
+    request: DailyReportReviewRequest,
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["data_operator", "admin", "supervisor"]))
+):
+    """
+    统一审核日报 API
+
+    根据当前状态和动作，自动选择正确的状态流转路径。
+
+    Phase 1 行为：
+    - 记录审核操作
+    - 返回 warnings 字段提示潜在问题
+    - 不阻断任何操作
+    """
+    from backend.core.role_mapping import role_in_list
+    from backend.core.phase_config import get_phase_config
+
+    try:
+        # 获取日报当前状态
+        report = service.get_daily_report(report_id, current_user)
+        old_status = report.status
+        warnings = []
+
+        # 验证动作有效性
+        action = request.action.lower()
+        if action not in ["approve", "reject", "request_revision"]:
+            return error_response(
+                code="VAL_001",
+                message=f"无效的审核动作: {action}，允许的值: approve/reject/request_revision",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 根据当前状态和动作确定目标状态
+        transition_map = {
+            # (current_status, action) -> target_status
+            ("trend_pending", "approve"): "trend_ok",
+            ("trend_pending", "reject"): "trend_flagged",
+            ("trend_flagged", "approve"): "trend_resolved",
+            ("trend_flagged", "request_revision"): "raw_submitted",
+            ("trend_ok", "approve"): "final_pending",
+            ("trend_resolved", "approve"): "final_pending",
+            ("final_pending", "approve"): "final_confirmed",
+            ("final_pending", "reject"): "trend_flagged",  # 退回到异常状态
+        }
+
+        transition_key = (old_status, action)
+        if transition_key not in transition_map:
+            return error_response(
+                code="STATE_400",
+                message=f"当前状态 '{old_status}' 不支持 '{action}' 操作",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        target_status = transition_map[transition_key]
+
+        # 构造审核请求
+        audit_request = DailyReportAuditRequest(audit_notes=request.audit_notes)
+
+        # 执行状态流转
+        if target_status == "trend_ok":
+            report = service._transition_daily_report(
+                report_id=report_id,
+                target_status=DailyReportStatus.TREND_OK,
+                audit_request=audit_request,
+                current_user=current_user
+            )
+        elif target_status == "trend_flagged":
+            report = service.flag_trend_anomaly(report_id, audit_request, current_user)
+            warnings.append("日报已标记为趋势异常，需人工复核")
+        elif target_status == "trend_resolved":
+            report = service.resolve_trend_anomaly(report_id, audit_request, current_user)
+        elif target_status == "raw_submitted":
+            # 退回投手修改
+            report.status = "raw_submitted"
+            report.trend_flag = "normal"
+            report.trend_flag_reason = None
+            service.db.commit()
+            warnings.append("日报已退回投手修改")
+        elif target_status == "final_pending":
+            # 使用 enter_final_pending
+            report = service._transition_daily_report(
+                report_id=report_id,
+                target_status=DailyReportStatus.FINAL_PENDING,
+                audit_request=audit_request,
+                current_user=current_user
+            )
+        elif target_status == "final_confirmed":
+            report = service.confirm_final_report(report_id, audit_request, current_user)
+
+        # Phase 1 警告
+        phase_config = get_phase_config()
+        if phase_config.is_phase1_enabled():
+            if action == "approve" and old_status == "trend_flagged":
+                warnings.append("[Phase 1] 趋势异常已通过审核，Phase 2 将启用更严格的校验")
+
+        new_status = report.status
+
+        # 构建响应
+        action_messages = {
+            "approve": "审核通过",
+            "reject": "审核驳回",
+            "request_revision": "已要求修改"
+        }
+
+        response = DailyReportReviewResponse(
+            report_id=report_id,
+            old_status=old_status,
+            new_status=new_status,
+            action=action,
+            message=f"{action_messages.get(action, action)}: {old_status} → {new_status}",
+            warnings=warnings
+        )
+
+        logger.info(
+            f"Daily report reviewed: id={report_id}, action={action}, "
+            f"{old_status} → {new_status}, user={current_user.id}"
+        )
+
+        return success_response(data=response, message=response.message)
+
+    except ResourceNotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.exception(f"Error in review_daily_report: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="审核失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+        )
+
+
 # ============ 8 状态机流转端点 (STATE_MACHINE.md v2.6) ============
 
 
@@ -542,7 +881,7 @@ async def flag_trend_anomaly(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -585,7 +924,7 @@ async def resolve_trend_anomaly(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -628,7 +967,7 @@ async def update_real_spend(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -671,7 +1010,7 @@ async def confirm_final_report(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -714,7 +1053,7 @@ async def lock_final_report(
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -796,7 +1135,7 @@ async def batch_import_daily_reports(
 
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_ERROR",
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -959,7 +1298,7 @@ async def import_daily_reports_from_file(
     except Exception as e:
         logger.error(f"Unexpected error in file import: {e}", exc_info=True)
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message=f"文件处理失败：{str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
@@ -1100,7 +1439,7 @@ async def export_daily_reports(
     except Exception as e:
         logger.error(f"Unexpected error in export: {e}", exc_info=True)
         return error_response(
-            code="SYS_500",
+            code="SYS-500",
             message=f"导出失败：{str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
@@ -1283,7 +1622,7 @@ async def execute_trend_check(
 
     except ValueError as e:
         return error_response(
-            code="STATE_001",
+            code="STATE_400",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -1328,7 +1667,7 @@ async def trigger_trend_check(
 
     except ValueError as e:
         return error_response(
-            code="STATE_001",
+            code="STATE_400",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -1511,3 +1850,5 @@ async def get_trend_pending_count(
             message="获取待检查数量失败",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
+
+

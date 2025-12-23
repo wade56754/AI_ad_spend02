@@ -321,9 +321,9 @@ class TestProjectService:
             user2 = User(
                 id=uuid4(),
                 email="user2@example.com",
-                username="user2_analyst",
+                username="user2_data_operator",
                 hashed_password="$2b$12$test_hashed_password_placeholder",
-                role=UserRole.ANALYST,
+                role=UserRole.DATA_OPERATOR,
                 is_active=True,
             )
             db_session.add_all([user1, user2])
@@ -337,7 +337,7 @@ class TestProjectService:
             member2 = ProjectMember(
                 project_id=sample_project.id,
                 user_id=user2.id,
-                role="analyst"
+                role="data_operator"
             )
             db_session.add_all([member1, member2])
             db_session.commit()

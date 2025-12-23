@@ -96,7 +96,7 @@ interface ReconciliationReport {
 
   risk_assessment: {
     high_risk_accounts: Array<{
-      account_name: string;
+      ad_account_name: string; // JOIN 填充: ad_accounts.name
       platform: string;
       difference: number;
       difference_percentage: number;
@@ -548,7 +548,7 @@ export function ReconciliationReportViewer({
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, count }) => `${name}: ${count}`}
+                      label={(entry: { name?: string; value?: number }) => `${entry.name}: ${entry.value}`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="count"
@@ -654,7 +654,7 @@ export function ReconciliationReportViewer({
                       <div key={index} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <div className="font-medium">{account.account_name}</div>
+                            <div className="font-medium">{account.ad_account_name}</div>
                             <div className="text-sm text-gray-600">{account.platform}</div>
                           </div>
                           <div className="text-right">

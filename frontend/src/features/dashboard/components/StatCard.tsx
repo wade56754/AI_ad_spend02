@@ -1,13 +1,14 @@
 /**
  * StatCard Component (Enhanced)
  *
+ * SoT: docs/10.module-specs/A1-dashboard.md §3.2 组件清单
+ *
  * 增强版 KPI 卡片:
  * - 主数值: 大字显示
  * - 副信息1: 较昨日变化百分比 (明确说明对比维度)
  * - 副信息2: 7日均值
+ * - 目标/预算: 显示 CPL 目标或预算范围
  * - 交互: 点击可切换主图指标
- *
- * Based on UI_DESIGN_SYSTEM.md v2.0
  */
 
 'use client';

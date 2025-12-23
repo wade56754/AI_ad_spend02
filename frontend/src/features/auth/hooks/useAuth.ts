@@ -28,6 +28,8 @@ import type {
 const AUTH_TOKEN_KEY = 'auth-token';
 const AUTH_REFRESH_TOKEN_KEY = 'refresh-token';
 const AUTH_USER_KEY = 'auth-user';
+// Cookie 名称 - 与 middleware.ts 保持一致
+const AUTH_COOKIE_NAME = 'access_token';
 
 /**
  * Get stored auth token
@@ -38,20 +40,27 @@ export function getAuthToken(): string | null {
 }
 
 /**
- * Set auth token
+ * Set auth token (同时设置 localStorage 和 Cookie)
+ * Cookie 供 middleware 使用，localStorage 供客户端使用
  */
 export function setAuthToken(token: string): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(AUTH_TOKEN_KEY, token);
+  // 设置 Cookie 供 middleware 验证
+  // HttpOnly: false 允许 JS 访问, Secure: 生产环境启用, SameSite: Lax 防 CSRF
+  const isSecure = window.location.protocol === 'https:';
+  document.cookie = `${AUTH_COOKIE_NAME}=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
 }
 
 /**
- * Remove auth token
+ * Remove auth token (同时清除 localStorage 和 Cookie)
  */
 export function removeAuthToken(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(AUTH_USER_KEY);
+  // 清除 Cookie
+  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0`;
 }
 
 /**
@@ -64,7 +73,18 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Get stored user from localStorage for initial data
+  const getStoredUser = (): User | undefined => {
+    try {
+      const stored = localStorage.getItem(AUTH_USER_KEY);
+      return stored ? JSON.parse(stored) : undefined;
+    } catch {
+      return undefined;
+    }
+  };
+
   // Get current user query
+  // SoT Reference: AUTH_SPEC.md v2.0 §7.4 - 401 errors should clear tokens silently
   const {
     data: user,
     isLoading,
@@ -72,20 +92,55 @@ export function useAuth() {
     refetch: refetchUser,
   } = useQuery({
     queryKey: ['auth', 'user'],
-    queryFn: getCurrentUser,
+    queryFn: async () => {
+      try {
+        return await getCurrentUser();
+      } catch (error: unknown) {
+        // Handle ALL auth errors silently - just clear tokens and return null
+        // This prevents expired token errors from showing as toasts
+        // api.ts already handles 401 by clearing tokens
+        const apiError = error as { status?: number; silent?: boolean };
+
+        // For 401 errors or silent errors, just return null
+        if (apiError?.status === 401 || apiError?.silent) {
+          removeAuthToken();
+          return null;
+        }
+
+        // For other errors, still return null to prevent toast display
+        // Auth errors should never show toasts - just redirect to login
+        console.warn('[useAuth] getCurrentUser failed:', error);
+        return null;
+      }
+    },
     enabled: !!getAuthToken(),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    // Use stored user as initial data to avoid flash of unauthenticated state
+    initialData: getStoredUser,
+    // Keep previous data when query fails (e.g., network error, 401 from expired token)
+    placeholderData: (previousData) => previousData,
+    // Don't throw errors for auth queries - handle them silently
+    throwOnError: false,
+    // Skip global error handler toast for auth queries
+    meta: { skipErrorToast: true },
+    // Don't cache failed results
+    gcTime: 0,
   });
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: loginApi,
     onSuccess: (data) => {
-      setAuthToken(data.access_token);
+      // Token 在 data.session.access_token (后端返回结构)
+      const token = data.session?.access_token || data.access_token;
+      if (token) {
+        setAuthToken(token);
+      }
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
       queryClient.setQueryData(['auth', 'user'], data.user);
-      router.push('/dashboard');
+      // Redirect to home page (dashboard is under (dashboard) route group at /)
+      router.push('/');
     },
   });
 
@@ -93,10 +148,15 @@ export function useAuth() {
   const registerMutation = useMutation({
     mutationFn: registerApi,
     onSuccess: (data) => {
-      setAuthToken(data.access_token);
+      // Token 在 data.session.access_token (后端返回结构)
+      const token = data.session?.access_token || data.access_token;
+      if (token) {
+        setAuthToken(token);
+      }
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
       queryClient.setQueryData(['auth', 'user'], data.user);
-      router.push('/dashboard');
+      // Redirect to home page (dashboard is under (dashboard) route group at /)
+      router.push('/');
     },
   });
 
@@ -194,7 +254,7 @@ export function useRequireAuth(redirectTo = '/login') {
 /**
  * Hook to require specific role
  */
-export function useRequireRole(allowedRoles: string[], redirectTo = '/dashboard') {
+export function useRequireRole(allowedRoles: string[], redirectTo = '/') {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 

@@ -10,7 +10,7 @@ from decimal import Decimal
 from uuid import UUID
 from datetime import date
 from sqlalchemy import Column, BigInteger, String, Text, Integer, Numeric, Date, DateTime, Index, CheckConstraint, ForeignKey, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -26,11 +26,14 @@ class Channel(Base, TimestampMixin, SerializableMixin):
     字段：
     - id: 主键
     - name: 渠道名称
-    - channel_code: 渠道代码（唯一）
+    - platform: 平台（如 Facebook, Google Ads）
     - status: 渠道状态（active/inactive）
-    - country: 国家/地区
-    - notes: 备注
+    - risk_level: 风险等级（low/medium/high）
+    - created_by: 创建者
+    - metadata: 扩展数据
     - created_at/updated_at: 时间戳（自动管理）
+
+    NOTE: 匹配 init_schema.sql 中的 channels 表定义
     """
     __tablename__ = 'channels'
 
@@ -40,12 +43,14 @@ class Channel(Base, TimestampMixin, SerializableMixin):
     # 主键：UUID（对齐 DATA_SCHEMA.md 3.2.4）
     id = Column(PGUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid(), comment="渠道ID")
 
-    # 基本信息
-    name = Column(String(50), nullable=False, comment="渠道名称")
-    channel_code = Column(String(20), unique=True, nullable=False, comment="渠道代码")
-    status = Column(String(20), nullable=False, comment="渠道状态")
-    country = Column(String(10), nullable=True, comment="国家/地区")
-    notes = Column(Text, nullable=True, comment="备注")
+    # 基本信息 - 匹配 init_schema.sql
+    name = Column(String(200), nullable=False, comment="渠道名称")
+    platform = Column(String(50), nullable=True, comment="平台")
+    status = Column(String(20), nullable=True, comment="渠道状态")
+    risk_level = Column(String(20), nullable=True, comment="风险等级")
+    created_by = Column(PGUUID(as_uuid=True), nullable=True, comment="创建者ID")
+    # 注意: 'metadata' 是 SQLAlchemy 保留字，使用 channel_metadata 或直接映射到 metadata 列
+    channel_metadata = Column('metadata', JSONB, nullable=False, server_default='{}', comment="扩展数据")
 
     # ========== 关系定义 ==========
 
@@ -78,16 +83,20 @@ class Channel(Base, TimestampMixin, SerializableMixin):
         doc="渠道的表现统计"
     )
 
-    # 约束
+    # 约束 - 匹配 init_schema.sql
     __table_args__ = (
         CheckConstraint(
             "status IN ('active', 'inactive')",
             name='chk_channels_status'
         ),
+        CheckConstraint(
+            "risk_level IN ('low', 'medium', 'high')",
+            name='chk_channels_risk_level'
+        ),
     )
 
     def __repr__(self):
-        return f"<Channel(id={self.id}, name='{self.name}', code='{self.channel_code}')>"
+        return f"<Channel(id={self.id}, name='{self.name}', platform='{self.platform}')>"
 
     # ========== 业务属性 ==========
 
@@ -121,11 +130,11 @@ class Channel(Base, TimestampMixin, SerializableMixin):
         ).all()
 
     @classmethod
-    def get_by_code(cls, session, channel_code: str):
-        """根据渠道代码获取渠道"""
+    def get_by_platform(cls, session, platform: str):
+        """根据平台获取渠道"""
         return session.query(cls).filter(
-            cls.channel_code == channel_code
-        ).first()
+            cls.platform == platform
+        ).all()
 
 
 class ChannelReview(Base, TimestampMixin, SerializableMixin):

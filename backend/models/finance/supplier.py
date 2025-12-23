@@ -97,6 +97,11 @@ class Supplier(Base, TimestampMixin, UserScopeMixin, SerializableMixin):
     total_accounts = Column(BigInteger, nullable=False, default=0, comment="关联广告账户数")
     total_spend = Column(Numeric(15, 2), nullable=False, default=Decimal('0.00'), comment="总消耗金额")
 
+    # Phase 1 Financial SoT 新增字段
+    fee_rate = Column(Numeric(5, 4), nullable=True, default=Decimal('0.1000'), comment="手续费率 (0.01-0.15)")
+    fee_type = Column(String(20), nullable=True, default='PERCENTAGE', comment="费率类型 (PERCENTAGE/FIXED)")
+    platform = Column(String(20), nullable=True, comment="平台 (FB/TK/Google)")
+
     # ========== 关系定义 ==========
 
     # 多对一：供应商 -> 创建者
@@ -135,10 +140,21 @@ class Supplier(Base, TimestampMixin, UserScopeMixin, SerializableMixin):
             "payment_method IN ('bank_transfer', 'wire', 'paypal', 'crypto', 'other')",
             name='chk_suppliers_payment_method'
         ),
+        # Phase 1 Financial SoT 新增约束
+        CheckConstraint(
+            "fee_type IN ('PERCENTAGE', 'FIXED') OR fee_type IS NULL",
+            name='chk_suppliers_fee_type'
+        ),
+        CheckConstraint(
+            "(fee_rate >= 0 AND fee_rate <= 1) OR fee_rate IS NULL",
+            name='chk_suppliers_fee_rate_range'
+        ),
         Index('idx_suppliers_name', 'name'),
         Index('idx_suppliers_status', 'status'),
         Index('idx_suppliers_country', 'country'),
         Index('idx_suppliers_created_by', 'created_by'),
+        # Phase 1 Financial SoT 新增索引
+        Index('idx_suppliers_platform', 'platform'),
     )
 
     def __repr__(self):

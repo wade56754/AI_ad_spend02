@@ -84,8 +84,8 @@ export function ReconciliationTable() {
                     {recon.period_start} ~ {recon.period_end}
                   </TableCell>
                   <TableCell>{typeConfig.label}</TableCell>
-                  <TableCell>{formatAmount(recon.expected_spend as number)}</TableCell>
-                  <TableCell>{formatAmount(recon.actual_spend as number)}</TableCell>
+                  <TableCell>{formatAmount(recon.expected_spend as unknown as number)}</TableCell>
+                  <TableCell>{formatAmount(recon.actual_spend as unknown as number)}</TableCell>
                   <TableCell
                     className={
                       recon.threshold_exceeded
@@ -93,7 +93,7 @@ export function ReconciliationTable() {
                         : 'text-muted-foreground'
                     }
                   >
-                    {formatAmount(recon.discrepancy as number)} (
+                    {formatAmount(recon.discrepancy as unknown as number)} (
                     {recon.discrepancy_percentage.toFixed(2)}%)
                     {recon.threshold_exceeded && (
                       <Badge variant="destructive" className="ml-2">

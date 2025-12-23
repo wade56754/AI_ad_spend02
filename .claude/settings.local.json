@@ -112,7 +112,32 @@
       "Bash(if not exist \"d:\\git\\1108\\backend\\tests\\e2e\" mkdir \"d:\\git\\1108\\backend\\tests\\e2e\")",
       "Bash(git -C \"d:\\git\\1108\" status)",
       "Bash(git -C d:/git/1108 status)",
-      "Bash(git -C \"d:/git/1108\" log --oneline -3)"
+      "Bash(git -C \"d:/git/1108\" log --oneline -3)",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" status)",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" log --oneline -5)",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" diff --stat HEAD)",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" add )",
+      "Bash(frontend/src/features/ad-accounts/components/AdAccountsPageV2.tsx )",
+      "Bash(frontend/src/features/daily-reports/components/ActionButtons.tsx )",
+      "Bash(frontend/src/features/daily-reports/components/ConfirmFinalDialog.tsx )",
+      "Bash(frontend/src/features/daily-reports/services/dailyReportsApi.ts )",
+      "Bash(frontend/src/features/profile/components/ProfilePage.tsx )",
+      "Bash(frontend/src/app/reset-password/page.tsx )",
+      "Bash(frontend/src/features/auth/components/ResetPasswordPage.tsx )",
+      "Bash(frontend/src/app/layout.tsx )",
+      "Bash(frontend/src/features/projects/components/ProjectsTable.tsx )",
+      "Bash(frontend/src/features/finance/components/FinancePage.tsx )",
+      "Bash(frontend/src/features/dashboard/utils/formatters.ts )",
+      "Bash(frontend/src/features/daily-reports/components/DailyReportDetail.tsx )",
+      "Bash(frontend/src/features/dashboard/components/TopLists.tsx )",
+      "Bash(frontend/src/components/dashboard/ProjectTopList.tsx )",
+      "Bash(frontend/src/features/daily-reports/components/DailyReportsDashboard.tsx)",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" status --short)",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" commit -m \"$\\(cat <<''EOF''\nfix\\(frontend\\): 修复多个页面运行时错误\n\n修复内容:\n- AdAccountsPageV2: 修复变量引用顺序 \\(filteredAccounts 定义前置\\)\n- AdAccountsPageV2: 修复 TooltipTrigger 按钮嵌套问题 \\(使用 asChild + span\\)\n- AdAccountsPageV2: 修复 SelectItem 空值错误 \\(使用 __all__ 代替空字符串\\)\n- ActionButtons: 修复 report.id 类型转换 \\(number -> string\\)\n- ConfirmFinalDialog: 修复可选字段空值处理 \\(?? 0\\)\n- dailyReportsApi: 修复 URLSearchParams 类型转换\n- ProfilePage: 修复 User 类型属性访问 \\(full_name/username\\)\n- reset-password: 添加 Suspense 边界 \\(useSearchParams 要求\\)\n- layout.tsx: 添加 suppressHydrationWarning \\(消除浏览器扩展水合警告\\)\n- ProjectsTable: 添加安全数字格式化\n- formatters.ts: 添加 safeNumber 辅助函数\n- DailyReportDetail/TopLists/DailyReportsDashboard: 安全数字格式化\n\n错误类型:\n- TypeError: amount.toFixed is not a function\n- ReferenceError: filteredAccounts is not defined\n- HTML Hydration Error: <button> cannot be descendant of <button>\n- SelectItem value cannot be empty string\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" commit --no-verify -m \"$\\(cat <<''EOF''\nfix\\(frontend\\): 修复多个页面运行时错误\n\n修复内容:\n- AdAccountsPageV2: 修复变量引用顺序 \\(filteredAccounts 定义前置\\)\n- AdAccountsPageV2: 修复 TooltipTrigger 按钮嵌套问题 \\(使用 asChild + span\\)\n- AdAccountsPageV2: 修复 SelectItem 空值错误 \\(使用 __all__ 代替空字符串\\)\n- ActionButtons: 修复 report.id 类型转换 \\(number -> string\\)\n- ConfirmFinalDialog: 修复可选字段空值处理 \\(?? 0\\)\n- dailyReportsApi: 修复 URLSearchParams 类型转换\n- ProfilePage: 修复 User 类型属性访问 \\(full_name/username\\)\n- reset-password: 添加 Suspense 边界 \\(useSearchParams 要求\\)\n- layout.tsx: 添加 suppressHydrationWarning \\(消除浏览器扩展水合警告\\)\n- ProjectsTable: 添加安全数字格式化\n- formatters.ts: 添加 safeNumber 辅助函数\n- DailyReportDetail/TopLists/DailyReportsDashboard: 安全数字格式化\n\n错误类型:\n- TypeError: amount.toFixed is not a function\n- ReferenceError: filteredAccounts is not defined\n- HTML Hydration Error: <button> cannot be descendant of <button>\n- SelectItem value cannot be empty string\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" push origin sot-fix-20251123)",
+      "Bash(del \"d:\\\\project\\\\AI_ad_spend02\\\\docs\\\\1.overview\\\\REFACTOR_PROPOSAL.md\")",
+      "Bash(del \"d:\\\\project\\\\AI_ad_spend02\\\\docs\\\\1.overview\\\\BUSINESS_FLOW_AND_MODULES_REFACTOR.md\")"
     ],
     "deny": [],
     "ask": []
@@ -120,5 +145,78 @@
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ]
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/session_start.py",
+            "statusMessage": "加载 SoT 裁判链和 Phase 1 约束..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/load_context.py",
+            "statusMessage": "加载 SoT 文档上下文..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/pre_tool_use.py",
+            "statusMessage": "检查代码合规性..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/phase1_guard.py",
+            "statusMessage": "Phase 1 原则守护..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/pre_tool_use.py",
+            "statusMessage": "检查代码合规性..."
+          },
+          {
+            "type": "command",
+            "command": "python .claude/hooks/phase1_guard.py",
+            "statusMessage": "Phase 1 原则守护..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/auto_format.py",
+            "statusMessage": "自动格式化代码..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/stop.py",
+            "statusMessage": "发送会话结束通知..."
+          }
+        ]
+      }
+    ]
+  }
 }

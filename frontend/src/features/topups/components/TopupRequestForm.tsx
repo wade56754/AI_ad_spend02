@@ -42,16 +42,16 @@ import {
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
-// 类型定义
+// 类型定义 - 对齐 init_schema.sql §5.1
 interface AdAccount {
   id: number;
-  account_name: string;
+  name: string; // 账户名称
   platform: string;
-  account_id: string;
+  account_code: string; // 账户代码
   current_balance: number;
   currency: string;
-  spending_limit: number;
-  assigned_user_name: string;
+  spend_limit: number; // 消耗限额
+  owner_name: string; // 负责人名称 (JOIN 填充)
   status: string;
 }
 
@@ -107,39 +107,39 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
     scheduled_date: "",
   });
 
-  // 模拟数据
+  // 模拟数据 - 对齐 init_schema.sql §5.1
   const [adAccounts] = useState<AdAccount[]>([
     {
       id: 1,
-      account_name: "Facebook广告账户01",
+      name: "Facebook广告账户01",
       platform: "facebook",
-      account_id: "act_1234567890",
+      account_code: "act_1234567890",
       current_balance: 5000,
       currency: "CNY",
-      spending_limit: 100000,
-      assigned_user_name: "张三",
+      spend_limit: 100000,
+      owner_name: "张三",
       status: "active"
     },
     {
       id: 2,
-      account_name: "TikTok广告账户02",
+      name: "TikTok广告账户02",
       platform: "tiktok",
-      account_id: "adv_0987654321",
+      account_code: "adv_0987654321",
       current_balance: 2000,
       currency: "CNY",
-      spending_limit: 80000,
-      assigned_user_name: "李四",
+      spend_limit: 80000,
+      owner_name: "李四",
       status: "active"
     },
     {
       id: 3,
-      account_name: "Google Ads账户03",
+      name: "Google Ads账户03",
       platform: "google",
-      account_id: "123-456-7890",
+      account_code: "123-456-7890",
       current_balance: 8000,
       currency: "CNY",
-      spending_limit: 120000,
-      assigned_user_name: "王五",
+      spend_limit: 120000,
+      owner_name: "王五",
       status: "active"
     },
   ]);
@@ -283,7 +283,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
         supporting_documents: formData.supporting_documents,
       };
 
-      await onSubmit(requestData);
+      await onSubmit(requestData as unknown as TopupFormData);
       onClose();
       // 重置表单
       setFormData({
@@ -344,9 +344,9 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                         <div className="flex items-center justify-between w-full">
                           <div className="flex items-center gap-2">
                             <span>{getPlatformIcon(account.platform)}</span>
-                            <span>{account.account_name}</span>
+                            <span>{account.name}</span>
                           </div>
-                          <div className={`text-xs ${getBalanceStatusColor(account.current_balance, account.spending_limit)}`}>
+                          <div className={`text-xs ${getBalanceStatusColor(account.current_balance, account.spend_limit)}`}>
                             ¥{account.current_balance.toLocaleString()}
                           </div>
                         </div>
@@ -358,10 +358,10 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md">
                     <div className="grid grid-cols-2 gap-2">
                       <div>平台: <span className="font-medium capitalize">{selectedAccount.platform}</span></div>
-                      <div>账户ID: <span className="font-medium">{selectedAccount.account_id}</span></div>
-                      <div>当前余额: <span className={`font-medium ${getBalanceStatusColor(selectedAccount.current_balance, selectedAccount.spending_limit)}`}>¥{selectedAccount.current_balance.toLocaleString()}</span></div>
-                      <div>消费限额: <span className="font-medium">¥{selectedAccount.spending_limit.toLocaleString()}</span></div>
-                      <div>负责人: <span className="font-medium">{selectedAccount.assigned_user_name}</span></div>
+                      <div>账户代码: <span className="font-medium">{selectedAccount.account_code}</span></div>
+                      <div>当前余额: <span className={`font-medium ${getBalanceStatusColor(selectedAccount.current_balance, selectedAccount.spend_limit)}`}>¥{selectedAccount.current_balance.toLocaleString()}</span></div>
+                      <div>消耗限额: <span className="font-medium">¥{selectedAccount.spend_limit.toLocaleString()}</span></div>
+                      <div>负责人: <span className="font-medium">{selectedAccount.owner_name}</span></div>
                       <div>状态: <span className="font-medium">{selectedAccount.status === "active" ? "正常" : "异常"}</span></div>
                     </div>
                   </div>
@@ -659,7 +659,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   <div>
                     <Label className="text-sm text-gray-600">广告账户</Label>
                     <div className="font-medium">
-                      {selectedAccount ? selectedAccount.account_name : "未选择"}
+                      {selectedAccount ? selectedAccount.name : "未选择"}
                     </div>
                   </div>
                   <div>
