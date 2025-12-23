@@ -1,9 +1,34 @@
+---
+version: v1.1
+status: active
+layer: integration
+owner: frontend-team
+last_reviewed: 2025-12-24
+baseline: MASTER.md v4.4, API_SOT.md v9.1
+---
+
 # API对接清单
 
-> **文档版本**: v1.0
-> **最后更新**: 2025-12-10
+> **文档版本**: v1.1
+> **最后更新**: 2025-12-24
 > **文档类型**: 开发清单
 > **适用范围**: 前端开发人员
+>
+> **⚠️ SoT 引用声明**:
+> - **API 规范**: 严格遵循 `API_SOT.md` v9.1
+> - **角色定义**: 严格遵循 `MASTER.md` v4.4 §2.4 (7 角色)
+> - **状态机**: 严格遵循 `STATE_MACHINE.md` v2.6 (8 状态)
+>
+> **7 角色系统** (来源: MASTER.md v4.4 §2.4):
+> | 角色 | 系统角色名 | 职责 |
+> |------|-----------|------|
+> | 老板 | `ceo` | 资金安全、公司盈亏、最终决策 |
+> | 项目负责人 | `project_owner` | 项目盈亏、资金使用效率 |
+> | 财务 | `finance` | 资金出入准确、数据真实、对账 |
+> | 主管 | `supervisor` | 团队产出、投手管理、日常监督 |
+> | 投手 | `pitcher` | CPL 达标、日报准确、执行投放 |
+> | 户管 | `account_manager` | 账户分配、账户状态监控 |
+> | 管理员 | `admin` | 系统配置（不参与业务） |
 
 ---
 
@@ -162,8 +187,8 @@ interface ProjectQueryParams {
 |------|------|------|------|------|--------|----------|
 | `/daily-reports` | GET | 获取日报列表 | 需认证 | ✅ | P0 | /daily-reports |
 | `/daily-reports/{id}` | GET | 获取日报详情 | 需认证 | ✅ | P0 | /daily-reports/[id] |
-| `/daily-reports` | POST | 创建日报 | media_buyer | ✅ | P0 | /daily-reports |
-| `/daily-reports/{id}` | PUT | 更新日报 | media_buyer | ✅ | P0 | /daily-reports/[id] |
+| `/daily-reports` | POST | 创建日报 | pitcher | ✅ | P0 | /daily-reports |
+| `/daily-reports/{id}` | PUT | 更新日报 | pitcher | ✅ | P0 | /daily-reports/[id] |
 | `/daily-reports/{id}` | DELETE | 删除日报 | admin | ✅ | P2 | /daily-reports |
 
 **实现要点**:
@@ -190,7 +215,7 @@ interface DailyReportCreateRequest {
 
 | 端点 | 方法 | 功能 | 权限 | 状态 | 优先级 | 前端页面 |
 |------|------|------|------|------|--------|----------|
-| `/daily-reports/{id}/audit` | POST | 审核日报 | data_operator | ✅ | P0 | /daily-reports/[id] |
+| `/daily-reports/{id}/audit` | POST | 审核日报 | supervisor | ✅ | P0 | /daily-reports/[id] |
 | `/daily-reports/{id}/audit-logs` | GET | 审核日志 | 需认证 | ✅ | P1 | /daily-reports/[id] |
 
 **实现要点**:
@@ -215,7 +240,7 @@ interface DailyReportAuditRequest {
 |------|------|------|------|------|--------|----------|
 | `/daily-reports/statistics` | GET | 日报统计 | 需认证 | ✅ | P0 | /dashboard |
 | `/daily-reports/export` | POST | 导出Excel | 需认证 | ✅ | P1 | /daily-reports |
-| `/daily-reports/import` | POST | 导入Excel | media_buyer | ✅ | P1 | /daily-reports |
+| `/daily-reports/import` | POST | 导入Excel | pitcher | ✅ | P1 | /daily-reports |
 
 **实现要点**:
 - 统计卡片展示
@@ -233,9 +258,9 @@ interface DailyReportAuditRequest {
 |------|------|------|------|------|--------|----------|
 | `/topups` | GET | 获取充值列表 | 需认证 | ✅ | P0 | /topups |
 | `/topups/{id}` | GET | 获取充值详情 | 需认证 | ✅ | P0 | /topups/[id] |
-| `/topups` | POST | 创建充值申请 | media_buyer | ✅ | P0 | /topups |
-| `/topups/{id}` | PUT | 更新充值申请 | media_buyer | ✅ | P1 | /topups/[id] |
-| `/topups/{id}` | DELETE | 取消充值申请 | media_buyer | ✅ | P1 | /topups |
+| `/topups` | POST | 创建充值申请 | pitcher | ✅ | P0 | /topups |
+| `/topups/{id}` | PUT | 更新充值申请 | pitcher | ✅ | P1 | /topups/[id] |
+| `/topups/{id}` | DELETE | 取消充值申请 | pitcher | ✅ | P1 | /topups |
 
 **实现要点**:
 - 投手创建充值申请
@@ -257,7 +282,7 @@ interface TopupRequestCreate {
 
 | 端点 | 方法 | 功能 | 权限 | 状态 | 优先级 | 前端页面 |
 |------|------|------|------|------|--------|----------|
-| `/topups/{id}/data-review` | POST | 数据审核 | data_operator | ✅ | P0 | /topups/[id] |
+| `/topups/{id}/data-review` | POST | 数据审核 | supervisor | ✅ | P0 | /topups/[id] |
 | `/topups/{id}/finance-approval` | POST | 财务审批 | finance | ✅ | P0 | /topups/[id] |
 | `/topups/{id}/mark-paid` | POST | 标记已打款 | finance | ✅ | P0 | /topups/[id] |
 | `/topups/{id}/receipt` | POST | 上传凭证 | finance | ✅ | P1 | /topups/[id] |
@@ -406,8 +431,8 @@ interface SettlementCreate {
 |------|------|------|------|------|--------|----------|
 | `/reconciliation` | GET | 获取对账列表 | 需认证 | ✅ | P0 | /reconciliation |
 | `/reconciliation/{id}` | GET | 获取对账详情 | 需认证 | ✅ | P0 | /reconciliation/[id] |
-| `/reconciliation` | POST | 创建对账 | data_operator | ✅ | P0 | /reconciliation |
-| `/reconciliation/{id}` | PUT | 更新对账 | data_operator | ✅ | P1 | /reconciliation/[id] |
+| `/reconciliation` | POST | 创建对账 | supervisor | ✅ | P0 | /reconciliation |
+| `/reconciliation/{id}` | PUT | 更新对账 | supervisor | ✅ | P1 | /reconciliation/[id] |
 
 **实现要点**:
 - 对账列表
@@ -429,7 +454,7 @@ interface ReconciliationCreate {
 | 端点 | 方法 | 功能 | 权限 | 状态 | 优先级 | 前端页面 |
 |------|------|------|------|------|--------|----------|
 | `/reconciliation/{id}/mismatches` | GET | 获取差异列表 | 需认证 | ✅ | P0 | /reconciliation/[id] |
-| `/reconciliation/{id}/resolve` | POST | 解决差异 | data_operator | ✅ | P1 | /reconciliation/[id] |
+| `/reconciliation/{id}/resolve` | POST | 解决差异 | supervisor | ✅ | P1 | /reconciliation/[id] |
 
 **实现要点**:
 - 差异列表
@@ -509,14 +534,14 @@ interface ReconciliationCreate {
 | 端点 | 方法 | 功能 | 权限 | 状态 | 优先级 |
 |------|------|------|------|------|--------|
 | `/transfers` | GET | 获取转移列表 | 需认证 | ✅ | P2 |
-| `/transfers` | POST | 创建转移 | data_operator | ✅ | P2 |
+| `/transfers` | POST | 创建转移 | supervisor | ✅ | P2 |
 
 ### 10.5 数据导入 (/api/v1/import-jobs)
 
 | 端点 | 方法 | 功能 | 权限 | 状态 | 优先级 |
 |------|------|------|------|------|--------|
 | `/import-jobs` | GET | 获取导入任务 | 需认证 | ✅ | P2 |
-| `/import-jobs` | POST | 创建导入任务 | data_operator | ✅ | P2 |
+| `/import-jobs` | POST | 创建导入任务 | supervisor | ✅ | P2 |
 | `/import-jobs/{id}` | GET | 获取任务详情 | 需认证 | ✅ | P2 |
 
 ---
@@ -713,4 +738,4 @@ export default function ProjectsPage() {
 **相关文档**:
 - [FRONTEND_BACKEND_INTEGRATION.md](./FRONTEND_BACKEND_INTEGRATION.md) - 集成方案
 - [QUICK_START.md](./QUICK_START.md) - 快速启动
-- [API_SOT.md](../2.sot/API_SOT.md) - API规范
+- [API_SOT.md v9.1](../2.sot/API_SOT.md) - API规范 (单一真相来源)
