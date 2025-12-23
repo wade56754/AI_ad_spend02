@@ -1,10 +1,10 @@
 ---
-version: v2.1
+version: v2.2
 status: ready_for_production
 layer: dev-guide
-last_reviewed: 2025-12-01
+last_reviewed: 2025-12-23
 owner: wade
-baseline: MASTER.md v3.6, SoT Freeze v2.6, OpenSpec v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, OpenSpec v1.0
 ---
 
 # API Development Flow
@@ -47,7 +47,7 @@ graph TD
 1. **Step 1**: 定位并阅读相关 SoT 文档，理解业务规则和约束
 2. **Step 2**: 基于 DATA_SCHEMA v5.2 定义 Pydantic Schema
 3. **Step 3**: 实现业务逻辑，嵌入不可变量检查（INV-001/002/003）
-4. **Step 4**: 定义 FastAPI 路由，对齐 API_SOT v9.0
+4. **Step 4**: 定义 FastAPI 路由，对齐 API_SOT v9.1
 5. **Step 5**: 编写单测和集成测试，覆盖正常流程和异常场景
 6. **Step 6**: 更新 API 文档和开发日志
 
@@ -62,12 +62,12 @@ graph TD
 
 **操作步骤**：
 
-1. **定位相关 SoT 文档**（按优先级查阅）：
+1. **定位相关 SoT 文档**（按裁判链优先级查阅）：
    ```
-   STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
-   → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1 → AUTH_SPEC.md v2.0
-   → LEDGER_SOT.md v1.1 → DAILY_REPORT_SOT.md v1.0 → TRANSFER_SOT.md v1.0
-   → RECONCILIATION_SOT.md v1.0
+   MASTER.md v4.4 → STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2
+   → BUSINESS_RULES.md v3.2 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
+   → AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.1
+   → 专项 SoT（DAILY_REPORT/TRANSFER/RECONCILIATION）
    ```
 
 2. **提取关键信息**：
@@ -83,9 +83,10 @@ graph TD
    - 是否涉及账务操作（需遵循 LEDGER_SOT v1.1）？
 
 **示例场景**：开发"提交日报"API
+- 查阅 `MASTER.md` v4.4 §2.4：确认操作角色为 `pitcher`（投手）
 - 查阅 `STATE_MACHINE.md` v2.6 第 8.2 节：确认 `raw_submitted` → `trend_pending` 转换条件
-- 查阅 `BUSINESS_RULES.md` v3.1 第 BR-RPT-001：确认提交时的数据完整性要求
-- 查阅 `API_SOT.md` v9.0：确认端点路径为 `POST /api/v1/daily-reports/{report_id}/submit`
+- 查阅 `BUSINESS_RULES.md` v3.2 第 BR-RPT-001：确认提交时的数据完整性要求
+- 查阅 `API_SOT.md` v9.1：确认端点路径为 `POST /api/v1/daily-reports/{report_id}/submit`
 
 ### 3.3 Step 2: Schema 层实现
 
@@ -96,22 +97,24 @@ graph TD
 1. **Request Schema 规范**：
    ```python
    # backend/schemas/daily_report.py
-   from pydantic import BaseModel, Field, validator
+   from pydantic import BaseModel, Field, field_validator, ConfigDict
    from datetime import date
 
    class DailyReportSubmitRequest(BaseModel):
-       """日报提交请求（对齐 DATA_SCHEMA v5.2 DailyReport 表）"""
+       """日报提交请求（对齐 DATA_SCHEMA v5.2 daily_reports 表）"""
+       model_config = ConfigDict(from_attributes=True)
+
        report_date: date = Field(..., description="日报日期")
-       platform: str = Field(..., description="平台名称（fb/google/tiktok）")
        ad_account_id: int = Field(..., description="广告账户 ID")
        raw_spend: float = Field(..., ge=0, description="原始花费（CNY）")
-       raw_conversions: int = Field(..., ge=0, description="转化数")
+       conversions_raw: int = Field(..., ge=0, description="原始转化数")
 
-       @validator('platform')
-       def validate_platform(cls, v):
-           allowed = ['fb', 'google', 'tiktok']
-           if v not in allowed:
-               raise ValueError(f"平台必须是 {allowed} 之一")
+       @field_validator('report_date')
+       @classmethod
+       def validate_report_date(cls, v):
+           from datetime import date as dt
+           if v > dt.today():
+               raise ValueError("日报日期不能是未来日期")
            return v
    ```
 
@@ -119,21 +122,20 @@ graph TD
    ```python
    class DailyReportResponse(BaseModel):
        """日报响应（映射 DailyReport 模型）"""
+       model_config = ConfigDict(from_attributes=True)  # Pydantic v2 语法
+
        id: int
        report_date: date
-       status: str  # 必须来自 STATE_MACHINE v2.6
+       status: str  # 必须来自 STATE_MACHINE v2.6 (8 状态)
        raw_spend: float
-       final_spend: float | None
+       real_spend: float | None
        created_at: datetime
-
-       class Config:
-           orm_mode = True  # 允许从 SQLAlchemy 模型转换
    ```
 
 3. **字段对齐检查**：
    - 所有字段名必须与 `DATA_SCHEMA.md` v5.2 表定义一致
-   - 枚举值（如 platform）必须与 BUSINESS_RULES v3.1 对齐
-   - 状态字段（status）必须使用 STATE_MACHINE v2.6 定义的值
+   - 枚举值必须与 BUSINESS_RULES v3.2 对齐
+   - 状态字段（status）必须使用 STATE_MACHINE v2.6 定义的 8 状态值
 
 ### 3.4 Step 3: Service 层实现
 
@@ -141,7 +143,7 @@ graph TD
 
 **核心规范**：
 
-#### 3.4.1 不可变量检查（MASTER.md v3.4 定义）
+#### 3.4.1 不可变量检查（MASTER.md v4.4 定义）
 
 所有 Service 层代码必须显式检查以下不可变量：
 
@@ -181,15 +183,16 @@ graph TD
 - **INV-003: 日报状态单向流转**
   ```python
   def validate_status_transition(current: str, target: str):
-      # STATE_MACHINE v2.6 定义的合法转换
+      # STATE_MACHINE v2.6 定义的 8 状态合法转换
       allowed_transitions = {
-          'draft': ['raw_submitted'],
           'raw_submitted': ['trend_pending'],
           'trend_pending': ['trend_ok', 'trend_flagged'],
+          'trend_ok': ['final_pending'],
           'trend_flagged': ['trend_resolved'],
           'trend_resolved': ['final_pending'],
           'final_pending': ['final_confirmed'],
           'final_confirmed': ['final_locked'],
+          'final_locked': [],  # 终态，不可转换
       }
 
       if target not in allowed_transitions.get(current, []):
@@ -249,11 +252,11 @@ class DailyReportService:
 
 ### 3.5 Step 4: Router 层实现
 
-**目标**: 定义 FastAPI 路由，对齐 API_SOT v9.0。
+**目标**: 定义 FastAPI 路由，对齐 API_SOT v9.1。
 
 **规范要求**：
 
-1. **路径命名规范**（API_SOT v9.0 Section 2）：
+1. **路径命名规范**（API_SOT v9.1 Section 2）：
    ```python
    # backend/routers/daily_reports.py
    from fastapi import APIRouter, Depends
@@ -284,7 +287,7 @@ class DailyReportService:
    - 使用 `require_permission(resource:action)` 格式
    - 权限定义参见 AUTH_SPEC v2.0 Section 3
 
-3. **响应码规范**（API_SOT v9.0 Section 4）：
+3. **响应码规范**（API_SOT v9.1 Section 4）：
    - 成功创建: 201
    - 成功更新/提交: 200
    - 客户端错误: 400/403/404
@@ -372,7 +375,7 @@ class DailyReportService:
 
 **更新清单**：
 
-1. **API_SOT.md v9.0 更新**（如果新增端点）：
+1. **API_SOT.md v9.1 更新**（如果新增端点）：
    ```markdown
    ### POST /api/v1/daily-reports/{report_id}/submit
 
@@ -515,31 +518,40 @@ raise PermissionError(
 
 ## 5. Relation to SoT
 
-本文档依赖以下 SoT 文档（SoT Freeze v1.0）：
+本文档依赖以下 SoT 文档（SoT Freeze v2.6）：
 
 | SoT 文档 | 版本 | 用途 |
 |---------|------|------|
+| `MASTER.md` | v4.4 | 系统宪法、7 角色定义、AI 防幻觉原则 |
 | `STATE_MACHINE.md` | v2.6 | 8 状态机定义，状态转换规则 |
 | `DATA_SCHEMA.md` | v5.2 | 数据模型字段定义 |
-| `BUSINESS_RULES.md` | v3.1 | 业务规则编号（BR-XXX-001） |
-| `API_SOT.md` | v9.0 | API 端点路径、权限、响应码规范 |
+| `BUSINESS_RULES.md` | v3.2 | 业务规则编号（BR-XXX-001） |
+| `API_SOT.md` | v9.1 | API 端点路径、权限、响应码规范 |
 | `ERROR_CODES_SOT.md` | v2.1 | 错误码定义（VAL-001, STATE-001 等） |
 | `AUTH_SPEC.md` | v2.0 | 权限模型、鉴权规范 |
 | `LEDGER_SOT.md` | v1.1 | 账本系统规范（账务操作相关 API） |
-| `DAILY_REPORT_SOT.md` | v1.0 | 日报专项规范 |
-| `TRANSFER_SOT.md` | v1.0 | 转账专项规范 |
-| `RECONCILIATION_SOT.md` | v1.0 | 对账专项规范 |
 
-**SoT 裁判链优先级**：
+**SoT 裁判链优先级**（来源: MASTER.md v4.4）：
 ```
-STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
-→ API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1 → AUTH_SPEC.md v2.0
-→ LEDGER_SOT.md v1.1 → 专项 SoT（DAILY_REPORT/TRANSFER/RECONCILIATION）
+MASTER.md v4.4 → STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2
+→ BUSINESS_RULES.md v3.2 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
+→ AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.1
 ```
+
+**7 角色定义**（来源: MASTER.md v4.4 §2.4）：
+| 角色 | 系统角色名 | 职责边界 |
+|------|-----------|---------|
+| 老板 | `ceo` | 资金安全、公司盈亏、最终决策 |
+| 项目负责人 | `project_owner` | 项目盈亏、资金使用效率 |
+| 财务 | `finance` | 资金出入准确、数据真实、对账 |
+| 主管 | `supervisor` | 团队产出、投手管理、日常监督 |
+| 投手 | `pitcher` | CPL 达标、日报准确、执行投放 |
+| 户管 | `account_manager` | 账户分配、账户状态监控 |
+| 管理员 | `admin` | 系统配置（不参与业务） |
 
 ## 6. Invariants Checkpoints
 
-开发过程中必须检查以下不可变量（MASTER.md v3.4 定义）：
+开发过程中必须检查以下不可变量（MASTER.md v4.4 定义）：
 
 - **INV-001**: 账务只追加，不修改
   - ❌ 禁止: 直接修改 `balance` 字段
@@ -555,8 +567,8 @@ STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.1
 
 ## 7. References
 
-- [MASTER.md](../1.overview/MASTER.md) v3.4 - 文档架构和不可变量定义
-- [SoT 文档集](../2.sot/) - 完整 SoT Freeze v1.0 规范
-- [PROJECT_RULES.md](../../.claude/PROJECT_RULES.md) v3.1 - Claude Code 项目规则
+- [MASTER.md](../1.overview/MASTER.md) v4.4 - 系统宪法、角色定义、不可变量
+- [SoT 文档集](../2.sot/) - 完整 SoT Freeze v2.6 规范
+- [PROJECT_RULES.md](../../.claude/PROJECT_RULES.md) v3.5 - Claude Code 项目规则
 - [FastAPI 官方文档](https://fastapi.tiangolo.com/) - 路由和依赖注入
-- [Pydantic 官方文档](https://docs.pydantic.dev/) - Schema 定义规范
+- [Pydantic v2 官方文档](https://docs.pydantic.dev/latest/) - Schema 定义规范
