@@ -4,7 +4,7 @@ status: active
 layer: architecture-audit
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ---
 
 # Architecture Layer Audit Report v1.0
@@ -12,7 +12,7 @@ baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 > **Audit Date**: 2025-11-27
 > **Audit Scope**: docs/4.architecture (7 active documents)
 > **Auditor**: ai-ad-doc-system-auditor + ai-ad-sot-doc-pipeline
-> **Baseline**: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+> **Baseline**: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 
 ---
 
@@ -63,13 +63,13 @@ No blocking defects found. All documents:
 
 No high-priority issues found. All documents:
 - ✅ Complete metadata (version, status, layer, owner, last_reviewed, baseline)
-- ✅ Correct baseline format: "MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1"
+- ✅ Correct baseline format: "MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1"
 - ✅ All SoT references use correct versions:
   - STATE_MACHINE.md v2.6 ✅
   - DATA_SCHEMA.md v5.2 ✅
-  - API_SOT.md v9.0 ✅
+  - API_SOT.md v9.3 ✅
   - ERROR_CODES_SOT.md v2.1 ✅
-  - BUSINESS_RULES.md v3.1 ✅
+  - BUSINESS_RULES.md v4.1 ✅
   - AUTH_SPEC.md v2.0 ✅
   - LEDGER_SOT.md v1.1 ✅
 - ✅ All Dev-Guides references exist and align with Freeze v2.1
@@ -141,14 +141,14 @@ status: draft
 layer: architecture (or architecture-audit)
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ```
 
 ### 5.2 Baseline Alignment
 
 **Baseline Format**: ✅ **Correct in all documents**
 
-Expected: `MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1`
+Expected: `MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1`
 
 Verification:
 - ARCH_LAYER_OVERVIEW.md: ✅ Correct
@@ -181,7 +181,7 @@ Verification:
 
 ### 6.2 Invariants Compliance (INV-001/002/003)
 
-**引用**: MASTER.md v3.4 §2
+**引用**: MASTER.md v4.4 §2
 
 **Verification**: ✅ **All invariants reflected in architecture design**
 
@@ -246,7 +246,7 @@ Verification:
 
 ## 9. Traceability Assessment
 
-### 9.1 Traceability to MASTER.md v3.4
+### 9.1 Traceability to MASTER.md v4.4
 
 **Verification**: ✅ **All architecture decisions traceable to MASTER.md**
 

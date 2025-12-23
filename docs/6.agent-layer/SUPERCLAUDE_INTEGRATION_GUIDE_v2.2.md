@@ -1878,8 +1878,8 @@ else:
 当前 SoT 版本基线：
 - STATE_MACHINE.md v2.6
 - DATA_SCHEMA.md v5.2
-- BUSINESS_RULES.md v3.2
-- API_SOT.md v9.0
+- BUSINESS_RULES.md v4.1
+- API_SOT.md v9.3
 ```
 
 ---

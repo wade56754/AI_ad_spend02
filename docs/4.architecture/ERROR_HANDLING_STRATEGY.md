@@ -4,7 +4,7 @@ status: draft
 layer: architecture
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ---
 
 # Error Handling Strategy (错误处理策略)
@@ -24,8 +24,8 @@ baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 
 **引用**:
 - **ERROR_CODES_SOT.md v2.1**: 错误码定义
-- **API_SOT.md v9.0**: API响应规范
-- **BUSINESS_RULES.md v3.1**: 业务规则校验
+- **API_SOT.md v9.3**: API响应规范
+- **BUSINESS_RULES.md v4.1**: 业务规则校验
 - **STATE_MACHINE.md v2.6**: 状态机错误
 
 ## 2. Error Classification (错误分类)
@@ -858,7 +858,7 @@ except BusinessRuleException as e:
 - **§4 错误码完整清单**: 59个错误码详细定义
 - **§5 自定义异常类与错误码映射**: 9个异常类
 
-### 8.2 References to BUSINESS_RULES.md v3.1
+### 8.2 References to BUSINESS_RULES.md v4.1
 
 - **BR-RPT-001**: 日报提交约束 → BIZ_201
 - **BR-FIN-003**: 金额字段合规性约束 → VALIDATION_002

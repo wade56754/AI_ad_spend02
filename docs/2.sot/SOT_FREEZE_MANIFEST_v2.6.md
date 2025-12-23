@@ -304,8 +304,8 @@ docs/1.overview/ (Frozen v1.0 on 2025-11-27)
 docs/2.sot/ (Frozen v2.6 on 2025-11-27) ← THIS LAYER
     ├─ STATE_MACHINE.md v2.6 (Frozen)
     ├─ DATA_SCHEMA.md v5.2 (Frozen)
-    ├─ BUSINESS_RULES.md v3.2 (Frozen)
-    ├─ API_SOT.md v9.0 (Frozen)
+    ├─ BUSINESS_RULES.md v4.1 (Frozen)
+    ├─ API_SOT.md v9.3 (Frozen)
     └─ [8 more SoT documents] (Frozen)
          ▼
 docs/3.dev-guides/ (Not yet frozen)
@@ -318,7 +318,7 @@ docs/3.dev-guides/ (Not yet frozen)
 | MASTER.md v3.4 | SoT Freeze v1.0 | ✅ Yes |
 | PROJECT.md v1.2 | SoT Freeze v1.0 | ✅ Yes |
 | DOMAIN.md v1.0 | DATA_SCHEMA.md v5.2 | ✅ Yes |
-| PATTERNS.md v1.0 | API_SOT.md v9.0 | ✅ Yes |
+| PATTERNS.md v1.0 | API_SOT.md v9.3 | ✅ Yes |
 | TESTING.md v1.0 | STATE_MACHINE.md v2.6 | ✅ Yes |
 
 **Layer Coupling**: ✅ Fully aligned

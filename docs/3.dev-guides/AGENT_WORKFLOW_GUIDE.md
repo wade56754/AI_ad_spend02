@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+baseline: MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # AI Agent Workflow Guide
@@ -155,8 +155,8 @@ sequenceDiagram
 Priority Order (from CLAUDE.md and PROJECT_RULES.md v3.1):
 1. STATE_MACHINE.md v2.6 → Status definitions, valid transitions
 2. DATA_SCHEMA.md v5.2 → Table schemas, field types
-3. BUSINESS_RULES.md v3.1 → Validation rules (BR-XXX-001)
-4. API_SOT.md v9.0 → Endpoint paths, request/response formats
+3. BUSINESS_RULES.md v4.1 → Validation rules (BR-XXX-001)
+4. API_SOT.md v9.3 → Endpoint paths, request/response formats
 5. ERROR_CODES_SOT.md v2.1 → Error codes (VAL-001, STATE-001)
 6. AUTH_SPEC.md v2.0 → Permission requirements
 7. LEDGER_SOT.md v1.1 → Accounting rules (if finance-related)
@@ -180,8 +180,8 @@ Query SoT for implementing "Submit Daily Report" feature:
 
 1. Check STATE_MACHINE.md v2.6 §8 for daily_reports.status transitions
 2. Verify DATA_SCHEMA.md v5.2 §3.3.1 for DailyReport table fields
-3. Extract BR-RPT-001 from BUSINESS_RULES.md v3.1 (submission validation)
-4. Confirm API path from API_SOT.md v9.0 (POST /api/v1/daily-reports/{id}/submit)
+3. Extract BR-RPT-001 from BUSINESS_RULES.md v4.1 (submission validation)
+4. Confirm API path from API_SOT.md v9.3 (POST /api/v1/daily-reports/{id}/submit)
 5. Map error codes from ERROR_CODES_SOT.md v2.1 (VAL-001, STATE-001)
 6. Check AUTH_SPEC.md v2.0 for daily_report:submit permission
 
@@ -301,7 +301,7 @@ SoT Requirements:
    - Rule IDs: [BR-XXX-001, BR-XXX-002]
    - Validation: [rule_description]
 
-4. Invariants (from MASTER.md v3.4):
+4. Invariants (from MASTER.md v4.4):
    - INV-001: [applicable? yes/no]
    - INV-002: [applicable? yes/no]
    - INV-003: [applicable? yes/no]
@@ -331,7 +331,7 @@ SoT Alignment:
    - Status Badge Colors: [mapping per FRONTEND_DEVELOPMENT_RULES.md §9.2]
    - Allowed Actions: [per current state]
 
-2. API Integration (API_SOT.md v9.0):
+2. API Integration (API_SOT.md v9.3):
    - Endpoints: [list endpoints]
    - Request Schema: [schema structure]
    - Response Schema: [schema structure]
@@ -359,10 +359,10 @@ Context:
 Generate [DOCUMENT_TYPE] for [MODULE/FEATURE].
 
 Baseline SoT Documents:
-- MASTER.md v3.4 (system constitution)
+- MASTER.md v4.4 (system constitution)
 - STATE_MACHINE.md v2.6 (if state-related)
 - DATA_SCHEMA.md v5.2 (if data-related)
-- API_SOT.md v9.0 (if API-related)
+- API_SOT.md v9.3 (if API-related)
 - [other relevant SoT documents]
 
 Document Requirements:
@@ -371,7 +371,7 @@ Document Requirements:
 - Layer: dev-guide (or appropriate layer)
 - Owner: [owner_name]
 - Last Reviewed: [current_date]
-- Baseline: MASTER.md v3.4, SoT Freeze v1.0
+- Baseline: MASTER.md v4.4, SoT Freeze v1.0
 
 Content Structure:
 1. Purpose (Why this document exists)
@@ -510,7 +510,7 @@ graph TD
 
 # Integration Tests (API Endpoints)
 /sc:test POST /api/v1/daily-reports/{id}/submit --type=integration
-  - Test request/response schema (API_SOT.md v9.0)
+  - Test request/response schema (API_SOT.md v9.3)
   - Test permission requirements (AUTH_SPEC.md v2.0)
   - Test state transitions via API
   - Test error responses (Envelope format)
@@ -612,8 +612,8 @@ sequenceDiagram
   - Check STATE_MACHINE.md v2.6 alignment
   - Check ERROR_CODES_SOT.md v2.1 usage
   - Check DATA_SCHEMA.md v5.2 field names
-  - Check MASTER.md v3.4 invariants (INV-001/002/003)
-  - Check API_SOT.md v9.0 endpoint paths
+  - Check MASTER.md v4.4 invariants (INV-001/002/003)
+  - Check API_SOT.md v9.3 endpoint paths
   - Generate review report with violations
 ```
 
@@ -641,12 +641,12 @@ sequenceDiagram
 - [ ] Data types correct (Decimal for money, TIMESTAMPTZ for dates)
 - [ ] Foreign key types match referenced primary keys
 
-### 4. Invariant Compliance (MASTER.md v3.4)
+### 4. Invariant Compliance (MASTER.md v4.4)
 - [ ] INV-001: Ledger-only for balance (LEDGER_SOT.md v1.1)
 - [ ] INV-002: Terminal state check in Service layer
 - [ ] INV-003: State transition validation
 
-### 5. API Compliance (API_SOT.md v9.0)
+### 5. API Compliance (API_SOT.md v9.3)
 - [ ] Endpoint paths match API_SOT.md §9
 - [ ] Request/response schemas match
 - [ ] HTTP status codes correct (200/201/400/403/404/500)
@@ -680,7 +680,7 @@ sequenceDiagram
 |------|-------|----------|---------|
 | SoT Documents | `docs/2.sot/` | STATE_MACHINE.md | DATA_SCHEMA.md v5.2 |
 | Dev Guides | `docs/3.dev-guides/` | API_DEVELOPMENT_FLOW.md | This document |
-| API Specs | `docs/2.sot/` | API_SOT.md | API_SOT.md v9.0 |
+| API Specs | `docs/2.sot/` | API_SOT.md | API_SOT.md v9.3 |
 | Testing Guides | `docs/3.dev-guides/` | TESTING_GUIDE.md | Test strategy |
 
 **Document Frontmatter** (required):
@@ -691,7 +691,7 @@ status: ready_for_production
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v1.0
 ---
 ```
 
@@ -701,7 +701,7 @@ baseline: MASTER.md v3.4, SoT Freeze v1.0
 ```bash
 /sc:document "Agent Workflow Guide" --template=dev-guide
   - Layer: docs/3.dev-guides/
-  - Baseline: MASTER.md v3.4, SoT Freeze v1.0
+  - Baseline: MASTER.md v4.4, SoT Freeze v1.0
   - References: API_DEVELOPMENT_FLOW.md, FRONTEND_DEVELOPMENT_RULES.md
   - Include: Workflow diagrams (Mermaid)
   - Include: Example prompts
@@ -714,7 +714,7 @@ baseline: MASTER.md v3.4, SoT Freeze v1.0
 - Status: `draft`, `ready_for_production`, `deprecated`
 - Layer: `dev-guide`, `sot`, `overview`, `appendix`
 - Owner: `wade` (or appropriate owner)
-- Baseline: `MASTER.md v3.4, SoT Freeze v1.0`
+- Baseline: `MASTER.md v4.4, SoT Freeze v1.0`
 - All code examples must be runnable (no pseudocode)
 - All SoT references with version numbers
 - Mermaid diagrams for workflows
@@ -775,8 +775,8 @@ Implement DailyReportService.submit_report() method:
 SoT Context:
 - STATE_MACHINE.md v2.6 §8.2: raw_submitted → trend_pending
 - DATA_SCHEMA.md v5.2 §3.3.1: DailyReport table fields
-- BUSINESS_RULES.md v3.1 BR-RPT-001: Submission validation
-- MASTER.md v3.4 INV-002: Terminal state check
+- BUSINESS_RULES.md v4.1 BR-RPT-001: Submission validation
+- MASTER.md v4.4 INV-002: Terminal state check
 
 Requirements:
 1. Validate current_status != 'final_locked' (INV-002)
@@ -836,7 +836,7 @@ Make a function to submit reports.
 ### 2. Re-load SoT Context
 - [ ] STATE_MACHINE.md v2.6 (relevant sections)
 - [ ] DATA_SCHEMA.md v5.2 (relevant tables)
-- [ ] BUSINESS_RULES.md v3.1 (relevant rules)
+- [ ] BUSINESS_RULES.md v4.1 (relevant rules)
 - [ ] ERROR_CODES_SOT.md v2.1 (relevant codes)
 
 ### 3. Validate Progress
@@ -1096,8 +1096,8 @@ class DailyReportService:
 
         SoT References:
         - STATE_MACHINE.md v2.6 §8.2: draft → raw_submitted
-        - BUSINESS_RULES.md v3.1 BR-RPT-001: Submission validation
-        - MASTER.md v3.4 INV-002: Terminal state immutability
+        - BUSINESS_RULES.md v4.1 BR-RPT-001: Submission validation
+        - MASTER.md v4.4 INV-002: Terminal state immutability
         - ERROR_CODES_SOT.md v2.1: VAL-001, STATE-001
         """
         report = self.db.query(DailyReport).get(report_id)
@@ -1109,7 +1109,7 @@ class DailyReportService:
                 message=f"Report {report_id} not found"
             )
 
-        # INV-002: Terminal state immutability (MASTER.md v3.4)
+        # INV-002: Terminal state immutability (MASTER.md v4.4)
         if report.status in ['final_locked', 'cancelled']:
             # ERROR_CODES_SOT.md v2.1: VAL-001
             raise ValidationError(
@@ -1229,8 +1229,8 @@ class TestDailyReportService:
 
     SoT References:
     - STATE_MACHINE.md v2.6 §8.2: 8-state lifecycle
-    - BUSINESS_RULES.md v3.1 BR-RPT-001: Submission validation
-    - MASTER.md v3.4 INV-002: Terminal state immutability
+    - BUSINESS_RULES.md v4.1 BR-RPT-001: Submission validation
+    - MASTER.md v4.4 INV-002: Terminal state immutability
     """
 
     def test_submit_report_success(self, db_session, sample_report):
@@ -1261,7 +1261,7 @@ class TestDailyReportService:
         """
         Test INV-002: Terminal state immutability.
 
-        SoT: MASTER.md v3.4 INV-002
+        SoT: MASTER.md v4.4 INV-002
         Terminal states: final_locked, cancelled
         Expected error: VAL-001 (ERROR_CODES_SOT.md v2.1)
         """
@@ -1458,7 +1458,7 @@ class TestDailyReportService:
 # Agent command
 /sc:brainstorm "Approve Topup Request" feature
   - Query STATE_MACHINE.md v2.6 for topup_requests.status
-  - Extract business rules from BUSINESS_RULES.md v3.1
+  - Extract business rules from BUSINESS_RULES.md v4.1
   - Check permissions from AUTH_SPEC.md v2.0
   - Identify error codes from ERROR_CODES_SOT.md v2.1
 ```
@@ -1474,7 +1474,7 @@ class TestDailyReportService:
 - Target state: finance_approve
 - Valid transition: pending_review → finance_approve
 
-**BUSINESS_RULES.md v3.1**:
+**BUSINESS_RULES.md v4.1**:
 - BR-TOP-002: Only finance role can approve topups
 - BR-TOP-003: Approver cannot be the requester
 
@@ -1497,7 +1497,7 @@ class TestDailyReportService:
 2. Service: TopupService.approve_topup() with BR-TOP-002/003 checks
 3. Router: POST /api/v1/topups/{id}/approve with @require_permission('topup:approve')
 4. Tests: Unit (Service) + Integration (API)
-5. Docs: Update API_SOT.md v9.0
+5. Docs: Update API_SOT.md v9.3
 ```
 
 **Step 2: Implementation**
@@ -1530,8 +1530,8 @@ class TopupService:
 
         SoT References:
         - STATE_MACHINE.md v2.6 §5: pending_review → finance_approve
-        - BUSINESS_RULES.md v3.1 BR-TOP-002: Finance role required
-        - BUSINESS_RULES.md v3.1 BR-TOP-003: No self-approval
+        - BUSINESS_RULES.md v4.1 BR-TOP-002: Finance role required
+        - BUSINESS_RULES.md v4.1 BR-TOP-003: No self-approval
         - ERROR_CODES_SOT.md v2.1: VAL-001, STATE-001, BIZ-001
         """
         topup = self.db.query(TopupRequest).get(topup_id)
@@ -1605,7 +1605,7 @@ class TestTopupServiceApprove:
     """
     Test TopupService.approve_topup()
 
-    SoT: STATE_MACHINE.md v2.6 §5, BUSINESS_RULES.md v3.1 BR-TOP-002/003
+    SoT: STATE_MACHINE.md v2.6 §5, BUSINESS_RULES.md v4.1 BR-TOP-002/003
     """
 
     def test_approve_topup_success(self, db_session, pending_topup, finance_user):
@@ -1671,7 +1671,7 @@ class TestTopupServiceApprove:
 ```bash
 # Agent command
 /sc:implement API endpoint POST /api/v1/topups/{id}/approve
-  - SoT: API_SOT.md v9.0
+  - SoT: API_SOT.md v9.3
   - Service: TopupService.approve_topup()
   - Permission: topup:approve (AUTH_SPEC.md v2.0)
   - Include: Integration tests
@@ -1703,7 +1703,7 @@ async def approve_topup(
     Approve topup request.
 
     SoT References:
-    - API_SOT.md v9.0: POST /api/v1/topups/{id}/approve
+    - API_SOT.md v9.3: POST /api/v1/topups/{id}/approve
     - AUTH_SPEC.md v2.0: topup:approve permission (finance role)
     - STATE_MACHINE.md v2.6 §5: pending_review → finance_approve
     """
@@ -1770,9 +1770,9 @@ async def approve_topup(
    ↓
 2. DATA_SCHEMA.md v5.2 → Table schemas (DailyReport fields)
    ↓
-3. BUSINESS_RULES.md v3.1 → Validation rules (BR-RPT-001)
+3. BUSINESS_RULES.md v4.1 → Validation rules (BR-RPT-001)
    ↓
-4. API_SOT.md v9.0 → API specifications (POST /api/v1/daily-reports/{id}/submit)
+4. API_SOT.md v9.3 → API specifications (POST /api/v1/daily-reports/{id}/submit)
    ↓
 5. ERROR_CODES_SOT.md v2.1 → Error codes (VAL-001, STATE-001)
    ↓

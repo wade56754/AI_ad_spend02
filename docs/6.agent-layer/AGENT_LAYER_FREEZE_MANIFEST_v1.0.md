@@ -4,7 +4,7 @@ status: ready_for_production
 layer: agent-layer
 owner: wade
 last_reviewed: 2025-12-07
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4, SoT Freeze v2.6
 upstream_sot:
   tier3:
     - AI_CODE_FACTORY_DEV_GUIDE_v2.3.md
@@ -70,7 +70,7 @@ upstream_sot:
 Tier-1 SoT (docs/2.sot/)
     ├── STATE_MACHINE.md v2.6
     ├── DATA_SCHEMA.md v5.2
-    ├── BUSINESS_RULES.md v3.2
+    ├── BUSINESS_RULES.md v4.1
     └── ...
          ↓
 Tier-3 SoT (docs/6.agent-layer/)
@@ -91,7 +91,7 @@ Layer 6 Specs (docs/6.agent-layer/)
 | Agent Layer 文档 | 依赖的上游层版本 |
 |-----------------|----------------|
 | **所有文档** | AI_CODE_FACTORY_DEV_GUIDE_v2.3 |
-| **所有文档** | MASTER.md v3.5 |
+| **所有文档** | MASTER.md v4.4 |
 | **所有文档** | SoT Freeze v2.6 |
 | **所有文档** | SUPERCLAUDE_INTEGRATION_GUIDE_v2.2 |
 
@@ -226,7 +226,7 @@ Layer 6 Specs (docs/6.agent-layer/)
 - [x] ✅ P1 问题 = 0
 - [x] ✅ YAML frontmatter 完整且一致
 - [x] ✅ baseline 对齐 AI_CODE_FACTORY_DEV_GUIDE_v2.3
-- [x] ✅ baseline 对齐 MASTER.md v3.5
+- [x] ✅ baseline 对齐 MASTER.md v4.4
 - [x] ✅ SoT 引用正确 (版本号明确)
 - [x] ✅ upstream_sot 字段已添加到规范文档
 
@@ -258,7 +258,7 @@ Layer 6 Specs (docs/6.agent-layer/)
 - ✅ AGENT_SKILL_REGISTRY.md → archive/AGENT_SKILL_REGISTRY_v1.0.md
 - ✅ AI_CODE_DEV_ORCHESTRATION_SOT.md → archive/AI_CODE_DEV_ORCHESTRATION_SOT_v1.0.md
 
-**更新** (baseline 从 MASTER.md v3.4 升级到 v3.5):
+**更新** (baseline 从 MASTER.md v4.4 升级到 v3.5):
 - ✅ SUBAGENT_PROTOCOL.md - 添加 upstream_sot: DEV_GUIDE §9.3
 - ✅ AGENT_SECURITY_SPEC.md - 添加 upstream_sot: DEV_GUIDE §2.3
 - ✅ AGENT_ORCHESTRATION_PIPELINE.md - 添加 upstream_sot: DEV_GUIDE §9.6
@@ -348,7 +348,7 @@ graph TB
     subgraph "Tier-1 SoT (docs/2.sot/)"
         STATE[STATE_MACHINE v2.6]
         DATA[DATA_SCHEMA v5.2]
-        MASTER[MASTER.md v3.5]
+        MASTER[MASTER.md v4.4]
     end
 
     MASTER --> DEV_GUIDE

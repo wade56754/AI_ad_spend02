@@ -4,7 +4,7 @@ status: draft
 layer: architecture
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ---
 
 # System Context View (C4 Level 1)
@@ -30,10 +30,10 @@ Level 3: Component (SERVICE_COMPONENT_VIEW.md) - 组件(类/模块)
 Level 4: Code (代码实现) - 不在架构文档范围
 ```
 
-### 1.3 Baseline References (MASTER.md v3.4, PROJECT.md)
+### 1.3 Baseline References (MASTER.md v4.4, PROJECT.md)
 
 **基准文档**:
-- **MASTER.md v3.4**: 系统架构宪法，定义三大不可变量
+- **MASTER.md v4.4**: 系统架构宪法，定义三大不可变量
 - **PROJECT.md v1.2**: 项目能力边界，定义系统功能范围
 - **AUTH_SPEC.md v2.0**: 用户角色定义
 
@@ -41,7 +41,7 @@ Level 4: Code (代码实现) - 不在架构文档范围
 
 ### 2.1 AI Ad Spend Management System Scope
 
-**系统核心职责** (引用自 MASTER.md v3.4 §1):
+**系统核心职责** (引用自 MASTER.md v4.4 §1):
 - 管理三方资金流转 (客户 → 平台 → 供应商)
 - 双账本记账 (PROJECT账本收入侧 + SUPPLIER账本成本侧)
 - 8状态机流转 (raw_submitted → ... → final_locked)
@@ -120,7 +120,7 @@ media_buyer (基础操作)
 - **集成方式**: REST API (HTTPS)
 - **数据流向**: Meta Ads → AI Ad Spend System
 - **更新频率**: T+1 (每日凌晨拉取前一天数据)
-- **引用**: API_SOT.md v9.0 §External APIs
+- **引用**: API_SOT.md v9.3 §External APIs
 
 #### 3.2.2 Email Service
 - **用途**: 发送通知邮件 (充值审批、日报异常、账户预警)
@@ -173,7 +173,7 @@ C4Context
 
 ## 5. Integration Patterns
 
-### 5.1 Meta Ads API Integration (API_SOT.md v9.0 §External APIs)
+### 5.1 Meta Ads API Integration (API_SOT.md v9.3 §External APIs)
 
 **集成模式**: 定时拉取 (Scheduled Pull)
 
@@ -272,7 +272,7 @@ async def submit_daily_report(report_id: int, current_user: User):
 - 财务数据隔离: 仅finance角色可见财务报表
 - 启用条件: 用户量超过1000时重新评估
 
-### 6.3 API Rate Limiting (API_SOT.md v9.0)
+### 6.3 API Rate Limiting (API_SOT.md v9.3)
 
 **限流策略** (未实施，规划中):
 - 匿名请求: 10 req/min
@@ -283,7 +283,7 @@ async def submit_daily_report(report_id: int, current_user: User):
 
 ## 7. Traceability
 
-### 7.1 References to MASTER.md v3.4 §3-6
+### 7.1 References to MASTER.md v4.4 §3-6
 
 - **§1 系统哲学**: 双账本架构、三数据流分离、8状态机流转
 - **§2 系统不可变量**: INV-001/002/003
@@ -297,7 +297,7 @@ async def submit_daily_report(report_id: int, current_user: User):
 - **§4 权限模型**: 资源权限格式 `resource:action`
 - **§5 认证流程**: JWT认证机制
 
-### 7.3 References to API_SOT.md v9.0
+### 7.3 References to API_SOT.md v9.3
 
 - **§2 路由规范**: `/api/v1` 路由前缀
 - **§External APIs**: Meta Ads API集成规范

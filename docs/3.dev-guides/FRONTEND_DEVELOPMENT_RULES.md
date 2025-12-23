@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 last_reviewed: 2025-11-27
 owner: wade
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+baseline: MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # Frontend Development Rules

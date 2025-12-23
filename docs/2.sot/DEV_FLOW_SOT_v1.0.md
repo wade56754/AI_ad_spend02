@@ -255,7 +255,7 @@ black --check backend/services/{module}_service.py
 ## 2. SoT 对齐
 - STATE_MACHINE.md v2.6: 状态 {states}
 - DATA_SCHEMA.md v5.2: 字段 {fields}
-- BUSINESS_RULES.md v3.2: 规则 {rules}
+- BUSINESS_RULES.md v4.1: 规则 {rules}
 
 ## 3. 变更清单
 | 文件 | 变更类型 | 说明 |

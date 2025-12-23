@@ -4,7 +4,7 @@ status: frozen
 layer: dev-guides-manifest
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Architecture Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Architecture Freeze v1.0
 ---
 
 # Dev-Guides Layer Freeze Manifest vFinal
@@ -12,7 +12,7 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Architecture Freeze v1.0
 > **Freeze Date**: 2025-11-27
 > **Freeze Decision**: Production Ready (10 Active Docs + 1 Manifest)
 > **Governing Framework**: ASDD (AI-Spec-Driven Development)
-> **Baseline**: MASTER.md v3.4, SoT Freeze v2.6, Architecture Freeze v1.0
+> **Baseline**: MASTER.md v4.4, SoT Freeze v2.6, Architecture Freeze v1.0
 > **Orchestrator**: ai-ad-spec-governor
 > **Health Score**: 100/100
 > **Active Documents**: 10 (100% ready_for_production)
@@ -81,20 +81,20 @@ All active documents in `docs/3.dev-guides/` with 100% frontmatter compliance:
 
 | Document | Version | Status | Baseline | Last Reviewed | Path |
 |----------|---------|--------|----------|---------------|------|
-| API_DEVELOPMENT_FLOW.md | v0.1 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/API_DEVELOPMENT_FLOW.md](API_DEVELOPMENT_FLOW.md) |
-| FRONTEND_DEVELOPMENT_RULES.md | v1.0 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md](FRONTEND_DEVELOPMENT_RULES.md) |
-| UI_FLOW_SPEC.md | v1.0 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/UI_FLOW_SPEC.md](UI_FLOW_SPEC.md) |
-| TESTING_STRATEGY.md | v1.0 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/TESTING_STRATEGY.md](TESTING_STRATEGY.md) |
-| DEPLOYMENT_GUIDE.md | v1.0 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
-| TROUBLESHOOTING.md | v1.0 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
-| AGENT_WORKFLOW_GUIDE.md | v1.0 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/AGENT_WORKFLOW_GUIDE.md](AGENT_WORKFLOW_GUIDE.md) |
-| DEV_ONBOARDING_CHECKLIST.md | v1.0 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/DEV_ONBOARDING_CHECKLIST.md](DEV_ONBOARDING_CHECKLIST.md) |
-| UI_DESIGN_SYSTEM.md | v0.1 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/UI_DESIGN_SYSTEM.md](UI_DESIGN_SYSTEM.md) |
-| DDD_API_ARCHITECTURE.md | v1.1 | ready_for_production | MASTER.md v3.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/DDD_API_ARCHITECTURE.md](DDD_API_ARCHITECTURE.md) |
+| API_DEVELOPMENT_FLOW.md | v0.1 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/API_DEVELOPMENT_FLOW.md](API_DEVELOPMENT_FLOW.md) |
+| FRONTEND_DEVELOPMENT_RULES.md | v1.0 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md](FRONTEND_DEVELOPMENT_RULES.md) |
+| UI_FLOW_SPEC.md | v1.0 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/UI_FLOW_SPEC.md](UI_FLOW_SPEC.md) |
+| TESTING_STRATEGY.md | v1.0 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/TESTING_STRATEGY.md](TESTING_STRATEGY.md) |
+| DEPLOYMENT_GUIDE.md | v1.0 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) |
+| TROUBLESHOOTING.md | v1.0 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| AGENT_WORKFLOW_GUIDE.md | v1.0 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/AGENT_WORKFLOW_GUIDE.md](AGENT_WORKFLOW_GUIDE.md) |
+| DEV_ONBOARDING_CHECKLIST.md | v1.0 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/DEV_ONBOARDING_CHECKLIST.md](DEV_ONBOARDING_CHECKLIST.md) |
+| UI_DESIGN_SYSTEM.md | v0.1 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/UI_DESIGN_SYSTEM.md](UI_DESIGN_SYSTEM.md) |
+| DDD_API_ARCHITECTURE.md | v1.1 | ready_for_production | MASTER.md v4.4, SoT Freeze v2.6 | 2025-11-27 | [docs/3.dev-guides/DDD_API_ARCHITECTURE.md](DDD_API_ARCHITECTURE.md) |
 
 **Total Documents**: 10
 **Health Score**: 100/100 (all documents)
-**Baseline Compliance**: 100% (all use "MASTER.md v3.4, SoT Freeze v2.6")
+**Baseline Compliance**: 100% (all use "MASTER.md v4.4, SoT Freeze v2.6")
 **Coverage**: API workflows, Frontend patterns, UI flows, Testing, Deployment, Troubleshooting, Agent workflows, Onboarding, UI design system, DDD architecture
 
 ---
@@ -106,7 +106,7 @@ All legacy/deprecated documents moved to `docs/archive/2025-11-dev-guides-legacy
 | Document | Archive Date | Reason | Replacement |
 |----------|--------------|--------|-------------|
 | AGENTS_GUIDE.md | 2025-11-27 | Replaced by comprehensive guide | AGENT_WORKFLOW_GUIDE.md v1.0 |
-| API_RULEBOOK.md | 2025-11-27 | Deprecated | API_SOT.md v9.0 |
+| API_RULEBOOK.md | 2025-11-27 | Deprecated | API_SOT.md v9.3 |
 | BACKEND_DEV_GUIDE.md | 2025-11-27 | Superseded | AGENT_WORKFLOW_GUIDE.md + API_DEVELOPMENT_FLOW.md |
 | BACKEND_SETUP.md | 2025-11-27 | Deprecated stub | DEPLOYMENT_GUIDE.md v1.0 |
 | DEVELOPMENT_STANDARDS.md | 2025-11-27 | Deprecated stub | Multiple dev-guides |
@@ -130,7 +130,7 @@ All legacy/deprecated documents moved to `docs/archive/2025-11-dev-guides-legacy
 | P1 Issues | 0 | 0 | ✅ PASS (6 fixed) |
 | Active Documents | ≥8 | 11 | ✅ PASS |
 | Frontmatter Compliance | 100% | 100% (11/11) | ✅ PASS |
-| Baseline Standardization | 100% | 100% (all "MASTER.md v3.4, SoT Freeze v1.0") | ✅ PASS |
+| Baseline Standardization | 100% | 100% (all "MASTER.md v4.4, SoT Freeze v1.0") | ✅ PASS |
 | Status Field | ready_for_production | 100% (10/10 docs + 1 frozen manifest) | ✅ PASS |
 | Health Score | ≥95 | 100 | ✅ PASS |
 
@@ -150,8 +150,8 @@ All legacy/deprecated documents moved to `docs/archive/2025-11-dev-guides-legacy
 4. **DDD_API_ARCHITECTURE.md**: Updated status "active" → "ready_for_production", corrected baseline order
 
 ### Baseline Alignment
-- **Before**: Mixed baseline formats (some "SoT Freeze v1.0, MASTER.md v3.4", some missing)
-- **After**: 100% standardized to "MASTER.md v3.4, SoT Freeze v1.0" (11/11 documents)
+- **Before**: Mixed baseline formats (some "SoT Freeze v1.0, MASTER.md v4.4", some missing)
+- **After**: 100% standardized to "MASTER.md v4.4, SoT Freeze v1.0" (11/11 documents)
 
 ---
 
@@ -192,7 +192,7 @@ These documents are marked as deprecated with clear replacement paths:
 
 | Document | Version | Status | Replacement | Deprecated Date | Path |
 |----------|---------|--------|-------------|-----------------|------|
-| API_RULEBOOK.md | - | deprecated | API_SOT.md v9.0 | 2025-11-27 | [docs/3.dev-guides/API_RULEBOOK.md](API_RULEBOOK.md) |
+| API_RULEBOOK.md | - | deprecated | API_SOT.md v9.3 | 2025-11-27 | [docs/3.dev-guides/API_RULEBOOK.md](API_RULEBOOK.md) |
 | BACKEND_SETUP.md | v0.1 | deprecated | BACKEND_DEV_GUIDE.md v1.0 | 2025-11-27 | [docs/3.dev-guides/BACKEND_SETUP.md](BACKEND_SETUP.md) |
 | FRONTEND_SETUP.md | v0.1 | deprecated | FRONTEND_DEVELOPMENT_RULES.md v1.0 (partial) | 2025-11-27 | [docs/3.dev-guides/FRONTEND_SETUP.md](FRONTEND_SETUP.md) |
 | FRONTEND_RULES.md | - | deprecated | FRONTEND_DEVELOPMENT_RULES.md v1.0 | - | [docs/3.dev-guides/FRONTEND_RULES.md](FRONTEND_RULES.md) |
@@ -387,7 +387,7 @@ The Dev-Guides Layer maintains strict version alignment with the SoT Layer:
 
 ## MASTER.md Invariants Integration
 
-All dev-guide documents integrate and enforce the 3 core invariants from MASTER.md v3.4:
+All dev-guide documents integrate and enforce the 3 core invariants from MASTER.md v4.4:
 
 ### INV-001: 账务只追加，不修改
 
@@ -539,7 +539,7 @@ stateDiagram-v2
 - ✅ INV-002 verified in 3/3 documents (all docs)
 - ✅ INV-003 verified in 3/3 documents (all docs)
 - ✅ All invariants have code examples and enforcement guidelines
-- ✅ All invariants reference source documents (MASTER.md v3.4, STATE_MACHINE v2.6)
+- ✅ All invariants reference source documents (MASTER.md v4.4, STATE_MACHINE v2.6)
 
 ---
 
@@ -633,14 +633,14 @@ Reported Score = 99/100 (acknowledging room for continuous improvement)
 
 ```
 docs/1.overview/ (Frozen v1.0 on 2025-11-27)
-    ├─ MASTER.md v3.4 → Defines 3 core invariants
+    ├─ MASTER.md v4.4 → Defines 3 core invariants
     ├─ PROJECT.md v1.2 → References "SoT Freeze v1.0"
     └─ ARCHITECTURE.md v1.0 → System design principles
          ▼
 docs/2.sot/ (Frozen v2.6 on 2025-11-27)
     ├─ STATE_MACHINE.md v2.6 → 8-state workflow
     ├─ DATA_SCHEMA.md v5.2 → Database schema
-    ├─ API_SOT.md v9.0 → API contracts
+    ├─ API_SOT.md v9.3 → API contracts
     └─ [9 more SoT documents]
          ▼
 docs/3.dev-guides/ (Frozen v1.0 on 2025-11-27) ← THIS LAYER

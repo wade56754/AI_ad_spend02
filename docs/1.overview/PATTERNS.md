@@ -432,7 +432,7 @@ raise BusinessError(code="MY_CUSTOM_ERROR", ...)  # 未在 SoT 定义
 
 **检测方式**: 比对 API 响应与 API_SOT.md 中的 Schema 定义。
 
-> 引用: API_SOT.md v9.0
+> 引用: API_SOT.md v9.3
 
 ---
 
@@ -911,5 +911,5 @@ ALTER TABLE daily_reports DROP COLUMN conversions_raw;
 
 **文档版本**: v1.0
 **最后更新**: 2025-11-25
-**对齐文档**: MASTER.md v3.4, ARCHITECTURE.md v1.0, DOMAIN.md v1.0
+**对齐文档**: MASTER.md v4.4, ARCHITECTURE.md v1.0, DOMAIN.md v1.0
 **维护者**: Tech Lead

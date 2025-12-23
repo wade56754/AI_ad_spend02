@@ -31,7 +31,7 @@
 
 ### 成功标准
 - ✅ 5个核心功能100%可用
-- ✅ 遵循SoT裁判链 (STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → API_SOT.md v9.0)
+- ✅ 遵循SoT裁判链 (STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → API_SOT.md v9.3)
 - ✅ Token自动刷新机制完成
 - ✅ 日报8状态流转完整实现
 - ✅ 充值双重审核流程可用
@@ -505,7 +505,7 @@ export function useAuth() {
 
 ### 2.1 后端部分
 
-**已完成的API** (SoT: API_SOT.md v9.0 § 6):
+**已完成的API** (SoT: API_SOT.md v9.3 § 6):
 - ✅ `GET /api/v1/projects` - 项目列表 (支持分页、筛选)
 - ✅ `POST /api/v1/projects` - 创建项目
 - ✅ `GET /api/v1/projects/{id}` - 项目详情
@@ -590,7 +590,7 @@ export interface ProjectListParams {
 ```typescript
 /**
  * Projects list hook
- * SoT: API_SOT.md v9.0 § 6
+ * SoT: API_SOT.md v9.3 § 6
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -639,7 +639,7 @@ export function useProjects(params?: ProjectListParams) {
 
 ### 3.1 后端部分
 
-**已完成的API** (SoT: API_SOT.md v9.0 § 9):
+**已完成的API** (SoT: API_SOT.md v9.3 § 9):
 - ✅ `GET /api/v1/daily-reports` - 日报列表
 - ✅ `POST /api/v1/daily-reports` - 创建日报 (raw_submitted)
 - ✅ `GET /api/v1/daily-reports/{id}` - 日报详情
@@ -806,7 +806,7 @@ export function useConfirmFinal(reportId: number) {
 
 ### 4.1 后端部分
 
-**已完成的API** (SoT: API_SOT.md v9.0 § 10):
+**已完成的API** (SoT: API_SOT.md v9.3 § 10):
 - ✅ `GET /api/v1/topups` - 充值列表
 - ✅ `POST /api/v1/topups` - 创建充值申请
 - ✅ `GET /api/v1/topups/{id}` - 充值详情
@@ -903,7 +903,7 @@ export function useFinanceApproval(topupId: number) {
 
 ### 5.1 后端部分
 
-**已完成的API** (SoT: API_SOT.md v9.0 § 13):
+**已完成的API** (SoT: API_SOT.md v9.3 § 13):
 - ✅ `GET /api/v1/reports/dashboard` - 仪表盘数据
 - ✅ `GET /api/v1/reports/performance` - 绩效报表
 - ✅ `GET /api/v1/reports/profit` - 利润报表
@@ -915,7 +915,7 @@ export function useFinanceApproval(topupId: number) {
 ```typescript
 /**
  * Dashboard data hook
- * SoT: API_SOT.md v9.0 § 13
+ * SoT: API_SOT.md v9.3 § 13
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -1154,7 +1154,7 @@ export function useDashboard() {
 | 日报管理 | DATA_SCHEMA.md v5.2 | § 3.3.1 daily_reports表 |
 | 充值管理 | STATE_MACHINE.md v2.6 | § 9 充值状态机 |
 | 充值管理 | LEDGER_SOT.md v1.1 | § 2 双账本体系 |
-| 仪表盘 | API_SOT.md v9.0 | § 13 报表中心API |
+| 仪表盘 | API_SOT.md v9.3 | § 13 报表中心API |
 
 ### B. 错误码快速参考
 

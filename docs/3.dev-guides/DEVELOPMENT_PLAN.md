@@ -7,7 +7,7 @@ owner: wade
 last_reviewed: 2025-12-19
 baseline:
   - GO_LIVE_ACCEPTANCE.md v1.1
-  - MASTER.md v3.6
+  - MASTER.md v4.4
 ---
 
 # DEVELOPMENT_PLAN.md - AI 广告代投系统开发计划表

@@ -304,8 +304,8 @@ Level 0: 宪法级 (MANDATORY)
 Level 1: SoT 核心 (frozen)
 ├── STATE_MACHINE.md v2.6
 ├── DATA_SCHEMA.md v5.2
-├── BUSINESS_RULES.md v3.2
-├── API_SOT.md v9.0
+├── BUSINESS_RULES.md v4.1
+├── API_SOT.md v9.3
 ├── ERROR_CODES_SOT.md v2.1
 ├── AUTH_SPEC.md v2.0
 └── LEDGER_SOT.md v1.1

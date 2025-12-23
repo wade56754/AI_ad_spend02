@@ -27,7 +27,7 @@
 
 ### 1.1 三数据流 (Three Data Flows)
 
-**引用**: MASTER.md v3.4 §4, DATA_SCHEMA.md v5.2 §3.3.1
+**引用**: MASTER.md v4.4 §4, DATA_SCHEMA.md v5.2 §3.3.1
 
 | 术语 | 中文名称 | 字段名 | 提交者 | 时效性 | 用途 |
 |------|---------|--------|--------|--------|------|
@@ -44,7 +44,7 @@
 
 ### 1.2 双账本 (Dual-Ledger System)
 
-**引用**: MASTER.md v3.4 §5, DATA_SCHEMA.md v5.2 §3.4.4, LEDGER_SOT.md v1.1
+**引用**: MASTER.md v4.4 §5, DATA_SCHEMA.md v5.2 §3.4.4, LEDGER_SOT.md v1.1
 
 | 账本类型 | 英文术语 | 字段标识 | 核心实体 | 业务用途 | 允许 entry_type |
 |---------|---------|---------|---------|---------|----------------|
@@ -61,7 +61,7 @@
 
 ### 1.3 粉数确认 (Lead Confirmation)
 
-**引用**: STATE_MACHINE.md v2.6 §8, BUSINESS_RULES.md v3.1 - BR-RPT-005
+**引用**: STATE_MACHINE.md v2.6 §8, BUSINESS_RULES.md v4.1 - BR-RPT-005
 
 | 术语 | 中文 | 英文 | 说明 |
 |------|------|------|------|
@@ -142,7 +142,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ## 3. 角色与权限术语 (Role & Permission Terms)
 
-**引用**: DATA_SCHEMA.md v5.2 §3.1.1, BUSINESS_RULES.md v3.1 - BR-AUTH-001
+**引用**: DATA_SCHEMA.md v5.2 §3.1.1, BUSINESS_RULES.md v4.1 - BR-AUTH-001
 
 ### 3.1 五大固定角色
 
@@ -163,7 +163,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ### 3.2 职责分离 (Separation of Duties - SOD)
 
-**引用**: BUSINESS_RULES.md v3.1 - BR-FIN-002
+**引用**: BUSINESS_RULES.md v4.1 - BR-FIN-002
 
 | 原则 | 说明 | 适用场景 |
 |------|------|---------|
@@ -227,7 +227,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ## 5. API 术语 (API Terms)
 
-**引用**: API_SOT.md v9.0, ERROR_CODES_SOT.md v2.1
+**引用**: API_SOT.md v9.3, ERROR_CODES_SOT.md v2.1
 
 ### 5.1 响应格式 (Envelope)
 
@@ -294,7 +294,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ## 6. 业务流程术语 (Business Process Terms)
 
-**引用**: BUSINESS_RULES.md v3.1
+**引用**: BUSINESS_RULES.md v4.1
 
 ### 6.1 充值流程 (Topup Process)
 
@@ -335,7 +335,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ## 7. 技术架构术语 (Technical Architecture Terms)
 
-**引用**: MASTER.md v3.4
+**引用**: MASTER.md v4.4
 
 ### 7.1 ASDD (AI-Spec-Driven Development)
 
@@ -354,15 +354,15 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 **引用**: PROJECT_RULES.md v3.1 §1
 
 ```
-MASTER.md v3.4 (系统宪法)
+MASTER.md v4.4 (系统宪法)
     ↓
 STATE_MACHINE.md v2.6 (状态定义)
     ↓
 DATA_SCHEMA.md v5.2 (数据结构)
     ↓
-BUSINESS_RULES.md v3.1 (业务规则)
+BUSINESS_RULES.md v4.1 (业务规则)
     ↓
-API_SOT.md v9.0 (API 契约)
+API_SOT.md v9.3 (API 契约)
     ↓
 ERROR_CODES_SOT.md v2.1 (错误码)
     ↓
@@ -377,7 +377,7 @@ LEDGER_SOT.md v1.1 (账本规则)
 
 ### 7.3 四层文档架构
 
-**引用**: MASTER.md v3.4 §文档架构
+**引用**: MASTER.md v4.4 §文档架构
 
 | 层级 | 目录 | 说明 | 适用人员 |
 |------|------|------|---------|

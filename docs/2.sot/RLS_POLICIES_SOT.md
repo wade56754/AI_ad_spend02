@@ -54,7 +54,7 @@ AI_AD_SYSTEM 文档体系
 │
 ├─ DATA_SCHEMA.md v5.2        ← 表结构、字段定义的唯一来源
 ├─ AUTH_SPEC.md v2.0          ← 角色定义、权限控制的唯一来源
-├─ BUSINESS_RULES.md v3.1     ← 业务规则的唯一来源
+├─ BUSINESS_RULES.md v4.1     ← 业务规则的唯一来源
 ├─ STATE_MACHINE.md v2.6      ← 状态流转的唯一来源
 ├─ LEDGER_SOT.md v1.1         ← 账本业务逻辑的唯一来源
 │
@@ -82,7 +82,7 @@ AI_AD_SYSTEM 文档体系
 |-----|-----------|---------|------|
 | **表结构/字段** | DATA_SCHEMA.md v5.2 | 字段名/类型/外键以DATA_SCHEMA为准 | `users.role` CHECK约束 |
 | **角色定义** | AUTH_SPEC.md v2.0 | 5个角色定义以AUTH_SPEC为准 | `admin/finance/...` |
-| **业务规则** | BUSINESS_RULES.md v3.1 | 权限/SOD规则以BUSINESS_RULES为准 | BR-FIN-002（职责分离） |
+| **业务规则** | BUSINESS_RULES.md v4.1 | 权限/SOD规则以BUSINESS_RULES为准 | BR-FIN-002（职责分离） |
 | **状态流转** | STATE_MACHINE.md v2.6 | 状态机逻辑以STATE_MACHINE为准 | 对账状态机、迁移状态机 |
 | **RLS策略** | RLS_POLICIES_SOT.md v2.1 (本文档) | RLS策略设计以本文档为准 | `policy_users_select_self` |
 

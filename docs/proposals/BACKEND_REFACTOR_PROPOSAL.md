@@ -466,7 +466,7 @@ class Response(BaseModel, Generic[T]):
 统一响应格式
 
 借鉴: FastAPI Generic Response 设计
-参考: API_SOT.md v9.0 响应规范
+参考: API_SOT.md v9.3 响应规范
 """
 
 from typing import Any, Generic, TypeVar, Optional, List

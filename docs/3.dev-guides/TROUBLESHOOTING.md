@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+baseline: MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # AI广告代投系统 - 故障排查指南（Troubleshooting Guide）
@@ -758,7 +758,7 @@ async function approveTopup(topupId: number, expectedVersion: number) {
 
 ## 5. 业务逻辑问题（BIZ-*）
 
-> **引用**: BUSINESS_RULES.md v3.1, ERROR_CODES_SOT.md v2.1 4.2节
+> **引用**: BUSINESS_RULES.md v4.1, ERROR_CODES_SOT.md v2.1 4.2节
 
 ### 5.1 BIZ_001: 无效的操作（SOD规则违反）
 
@@ -1535,7 +1535,7 @@ def update_real_spend(self, report_id: int, real_spend: Decimal, user: Dict):
 
 ## 10. 不变式违反问题（INV-*）
 
-> **引用**: MASTER.md v3.4
+> **引用**: MASTER.md v4.4
 
 ### 10.1 INV-001: Ledger-Balance一致性
 
@@ -2024,7 +2024,7 @@ ALTER TABLE users DISABLE ROW LEVEL SECURITY;
 
 ## 13. API契约违反问题
 
-> **引用**: API_SOT.md v9.0
+> **引用**: API_SOT.md v9.3
 
 ### 13.1 响应格式不符合Envelope
 

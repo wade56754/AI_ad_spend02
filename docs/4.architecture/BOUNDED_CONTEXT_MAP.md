@@ -4,7 +4,7 @@ status: ready_for_production
 layer: architecture
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ---
 
 # Bounded Context Map (DDD限界上下文映射)
@@ -33,9 +33,9 @@ baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ### 1.3 Baseline References
 
 **引用**:
-- **MASTER.md v3.4 §1.3**: 双账本架构、三数据流分离、8状态机流转
+- **MASTER.md v4.4 §1.3**: 双账本架构、三数据流分离、8状态机流转
 - **DDD_API_ARCHITECTURE.md**: DDD模式指南
-- **BUSINESS_RULES.md v3.1**: 业务规则编号映射
+- **BUSINESS_RULES.md v4.1**: 业务规则编号映射
 
 ## 2. Domain Classification (域分类)
 
@@ -335,7 +335,7 @@ graph TD
 
 **不采用理由**:
 - 各业务上下文边界清晰，不存在需要共享的核心领域模型
-- 共享内核增加耦合，违反MASTER.md v3.4的独立核算原则
+- 共享内核增加耦合，违反MASTER.md v4.4的独立核算原则
 
 #### 3.3.2 Published Language (发布语言)
 
@@ -526,14 +526,14 @@ ALLOWED_TRANSITIONS = {
 
 ## 7. Traceability (可追溯性)
 
-### 7.1 References to MASTER.md v3.4
+### 7.1 References to MASTER.md v4.4
 
 - **§1.3 解决方案**: 双账本架构 → Financial Ledger Context
 - **§1.3 解决方案**: 三数据流分离 → Daily Report State Machine Context
 - **§1.3 解决方案**: 8状态机强制流转 → Daily Report State Machine Context
 - **§1.3 解决方案**: 审计不可逆 → Audit Logging Context + Financial Ledger Context
 
-### 7.2 References to BUSINESS_RULES.md v3.1
+### 7.2 References to BUSINESS_RULES.md v4.1
 
 - **BR-FIN-003**: 金额字段合规性约束 → Financial Ledger Context
 - **BR-RPT-005**: 粉数确认流程规则 → Daily Report State Machine Context

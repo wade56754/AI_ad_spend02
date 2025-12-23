@@ -952,10 +952,10 @@ MASTER.md → STATE_MACHINE.md → DATA_SCHEMA.md → BUSINESS_RULES.md
 - 修改必须通过 RFC 流程
 
 **当前 Freeze 版本**:
-- MASTER.md v3.4 (ASDD Freeze v1.0)
+- MASTER.md v4.4 (ASDD Freeze v1.0)
 - STATE_MACHINE.md v2.6 (SoT Freeze v1.0)
 - DATA_SCHEMA.md v5.2
-- API_SOT.md v9.0
+- API_SOT.md v9.3
 
 #### 理由
 

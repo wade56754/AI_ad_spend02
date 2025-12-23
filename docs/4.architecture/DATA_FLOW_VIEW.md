@@ -4,7 +4,7 @@ status: ready_for_production
 layer: architecture
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ---
 
 # Data Flow View (数据流视图)
@@ -31,16 +31,16 @@ baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ### 1.3 Baseline References
 
 **引用**:
-- **MASTER.md v3.4 §1.3**: 双账本架构、三数据流分离、8状态机流转
+- **MASTER.md v4.4 §1.3**: 双账本架构、三数据流分离、8状态机流转
 - **STATE_MACHINE.md v2.6 §8**: 粉数确认状态机
 - **LEDGER_SOT.md v1.1**: 双账本流转规则
-- **BUSINESS_RULES.md v3.1**: 业务规则编号
+- **BUSINESS_RULES.md v4.1**: 业务规则编号
 
 ## 2. Core Data Flows (核心数据流)
 
 ### 2.1 Triple-Stream Data Flow (三数据流)
 
-**引用**: MASTER.md v3.4 §INV-002
+**引用**: MASTER.md v4.4 §INV-002
 
 ```mermaid
 graph LR
@@ -158,7 +158,7 @@ stateDiagram-v2
 
 ### 2.3 Dual-Ledger Flow (双账本流转)
 
-**引用**: LEDGER_SOT.md v1.1, MASTER.md v3.4 §INV-001
+**引用**: LEDGER_SOT.md v1.1, MASTER.md v4.4 §INV-001
 
 ```mermaid
 graph TD
@@ -698,7 +698,7 @@ UPDATE daily_reports SET status=final_locked
 
 ## 7. Traceability (可追溯性)
 
-### 7.1 References to MASTER.md v3.4
+### 7.1 References to MASTER.md v4.4
 
 - **§1.3 解决方案**: 三数据流分离 → §2.1 Triple-Stream Data Flow
 - **§1.3 解决方案**: 8状态机流转 → §2.2 8-State State Machine Flow
@@ -717,7 +717,7 @@ UPDATE daily_reports SET status=final_locked
 - **§7**: DailyReport→Ledger映射 → §3.3 Final Confirmation Flow
 - **§12**: 红冲机制 → §3.4 Reversal Flow
 
-### 7.4 References to BUSINESS_RULES.md v3.1
+### 7.4 References to BUSINESS_RULES.md v4.1
 
 - **BR-RPT-001**: 日报提交约束 → §3.1 Daily Report Submission Flow
 - **BR-RPT-005**: 粉数确认流程规则 → §2.1 Triple-Stream Data Flow

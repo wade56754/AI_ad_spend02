@@ -4,7 +4,7 @@ status: ready_for_production
 layer: architecture
 owner: wade
 last_reviewed: 2025-11-28
-baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal
 ---
 
 # Frontend Structure Specification
@@ -181,12 +181,12 @@ modules/shared/
 
 ### 5.1 apiFetch Pattern
 
-All API calls MUST use the centralized `apiFetch` function (API_SOT.md v9.0 Section 2.4).
+All API calls MUST use the centralized `apiFetch` function (API_SOT.md v9.3 Section 2.4).
 
 **Location**: `src/lib/api/apiFetch.ts`
 
 ```typescript
-// Type definitions aligned with API_SOT.md v9.0 Section 4
+// Type definitions aligned with API_SOT.md v9.3 Section 4
 interface ApiResponse<T> {
   success: boolean;
   data: T | null;

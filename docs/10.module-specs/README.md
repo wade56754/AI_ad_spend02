@@ -1,6 +1,6 @@
 # Module Specs - 模块规格书索引
 
-> **版本**: v1.3
+> **版本**: v2.3
 > **更新日期**: 2025-12-23
 > **基准**: MASTER.md v4.4 第六章
 
@@ -87,6 +87,25 @@
 | 编号 | 模块 | 规格书 | 状态 | 解决问题 |
 |------|------|--------|------|---------|
 | D1 | 月度结算 | [D1-monthly-settlement.md](D1-monthly-settlement.md) | :white_check_mark: 已完成 | 这个月赚了还是亏了？ |
+
+### 3.5 后端模块规格书 (AI 代码工厂约束)
+
+| 编号 | 模块 | 规格书 | 状态 | 用途 |
+|------|------|--------|------|------|
+| A1 | 老板驾驶舱 | [A1-dashboard-backend.md](A1-dashboard-backend.md) | :white_check_mark: 已完成 | 约束 KPI 聚合 + 权限过滤 + 趋势分析 |
+| A2 | 资金总览 | [A2-fund-overview-backend.md](A2-fund-overview-backend.md) | :white_check_mark: 已完成 | 约束资金聚合 + 5 指标计算 + 预警 |
+| A3 | 项目盈亏 | [A3-project-pnl-backend.md](A3-project-pnl-backend.md) | :white_check_mark: 已完成 | 约束盈亏聚合 + CPL 异常标记 + 负责人 |
+| B1 | 日报提交 | [B1-daily-report-submit.md](B1-daily-report-submit.md) | :white_check_mark: 已完成 | 约束日报 CRUD + 8状态机前半段 |
+| B2 | 日报审核 | [B2-daily-report-review-backend.md](B2-daily-report-review-backend.md) | :white_check_mark: 已完成 | 约束趋势风控 + 8状态机后半段 |
+| C1 | 充值审批 | [C1-topup-approval-backend.md](C1-topup-approval-backend.md) | :white_check_mark: 已完成 | 约束充值流程 + 7状态机 + 责任追溯 |
+| C2 | 投手管理 | [C2-pitcher-mgmt-backend.md](C2-pitcher-mgmt-backend.md) | :white_check_mark: 已完成 | 约束用户 CRUD + 角色管理 + 软删除 |
+| D1 | 项目管理 | [D1-project-mgmt-backend.md](D1-project-mgmt-backend.md) | :white_check_mark: 已完成 | 约束项目 CRUD + 5状态机 + 成员管理 |
+| C3 | 消耗明细 | [C3-spend-detail-backend.md](C3-spend-detail-backend.md) | :white_check_mark: 已完成 | 约束消耗导入 + 5状态机 + 账本分录 |
+| E1 | 月度结算 | [E1-monthly-settlement-backend.md](E1-monthly-settlement-backend.md) | :white_check_mark: 已完成 | 约束月度盈亏 + 4状态机 + 锁定机制 |
+| B3 | 周度简报 | [B3-weekly-brief-backend.md](B3-weekly-brief-backend.md) | :white_check_mark: 已完成 | 约束周报 CRUD + 2状态机 + 周数据汇总 |
+
+> **后端规格书用途**: 为 AI 代码工厂提供严格约束，防止 AI 幻觉，确保生成代码符合 SoT 规范。
+> **参考指南**: [BACKEND_MODULE_SPEC_GUIDE.md](../3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md)
 
 ---
 
@@ -208,6 +227,16 @@
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.3 | 2025-12-23 | 新增 B3-weekly-brief-backend.md: 周度简报后端规格书，2状态机 + 周数据汇总 |
+| v2.2 | 2025-12-23 | 新增 A3-project-pnl-backend.md: 项目盈亏后端规格书，CPL 异常标记 + 负责人关联 |
+| v2.1 | 2025-12-23 | 新增 A2-fund-overview-backend.md: 资金总览后端规格书，5 指标聚合 + 预警机制 |
+| v2.0 | 2025-12-23 | 新增 A1-dashboard-backend.md: 老板驾驶舱后端规格书，KPI 聚合 + 权限过滤 |
+| v1.9 | 2025-12-23 | 新增 E1-monthly-settlement-backend.md: 月度结算后端规格书，4状态机 + 锁定机制 |
+| v1.8 | 2025-12-23 | 新增 C3-spend-detail-backend.md: 消耗明细后端规格书，5状态机 + 账本分录 |
+| v1.7 | 2025-12-23 | 新增 C2-pitcher-mgmt-backend.md: 投手管理后端规格书，用户 CRUD + 角色映射 |
+| v1.6 | 2025-12-23 | 新增 D1-project-mgmt-backend.md: 项目管理后端规格书，5状态机 + 成员管理 |
+| v1.5 | 2025-12-23 | 新增 C1-topup-approval-backend.md: 充值审批后端规格书，7状态机 + 责任追溯 |
+| v1.4 | 2025-12-23 | 新增后端模块规格书索引 (§3.5): B1-daily-report-submit.md, B2-daily-report-review-backend.md |
 | v1.3 | 2025-12-23 | 新增 TEST_CASES_v3.md：基于 AI_TEST_GUIDE_v2.1.md 全面重构，检查点清单格式、5类测试、7角色覆盖、Playwright 代码规范 |
 | v1.2 | 2025-12-23 | 更新 TEST_CASES.md 至 v2.0：添加跨模块集成测试、UI 通用测试、权限测试完善、状态机非法转换测试 |
 | v1.1 | 2025-12-23 | 添加测试用例文档 TEST_CASES.md |

@@ -10,7 +10,7 @@
 > **适用范围**: 后端开发、前端开发、财务团队、测试工程师
 > **规范级别**: 🟡 待落地（迁移完成后升级为 🔴 强制执行）
 > **文档定位**: 利润表自动化模块的数据模型、API、业务规则、测试的唯一定义
-> **baseline**: DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, STATE_MACHINE.md v2.6, ERROR_CODES_SOT.md v2.1, API_SOT.md v9.0
+> **baseline**: DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, STATE_MACHINE.md v2.6, ERROR_CODES_SOT.md v2.1, API_SOT.md v9.3
 
 ---
 
@@ -35,7 +35,7 @@ AI_AD_SYSTEM 文档体系
 ├─ LEDGER_SOT.md v1.1         ← 双账本逻辑、REVENUE/COST 定义
 ├─ STATE_MACHINE.md v2.6 §8   ← 粉数确认状态机（8状态：raw_submitted→final_locked）
 ├─ ERROR_CODES_SOT.md v2.1    ← 错误码定义
-├─ API_SOT.md v9.0            ← API 规范
+├─ API_SOT.md v9.3            ← API 规范
 │
 └─ PROFIT_SOT.md v1.1 (本文档) ← Profit 模块领域唯一来源
     ├─ 引用 DATA_SCHEMA (新增 profit_aggregates / profit_report_snapshots)

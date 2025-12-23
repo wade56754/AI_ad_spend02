@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-12-01
-baseline: MASTER.md v3.6, SoT Freeze v2.6, OpenSpec v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, OpenSpec v1.0
 ---
 
 # TESTING_STRATEGY.md - AI广告代投系统测试策略
@@ -276,7 +276,7 @@ from backend.schemas.daily_report import DailyReportCreateRequest
 class TestDailyReportBilling:
     """
     测试目标: 验证 INV-001 - PROJECT账本计费公式
-    引用: MASTER.md v3.4 §INV-001
+    引用: MASTER.md v4.4 §INV-001
     公式: revenue = conversions_final × unit_price
     """
 
@@ -318,7 +318,7 @@ class TestDailyReportBilling:
         Given: conversions_final=0
         When: 日报流转至final_locked
         Then: 不生成REVENUE记录
-        引用: MASTER.md v3.4 §INV-001 计费触发条件
+        引用: MASTER.md v4.4 §INV-001 计费触发条件
         """
         service = DailyReportService(db_session)
 
@@ -493,14 +493,14 @@ from decimal import Decimal
 class TestDailyReportAPI:
     """
     测试目标: 验证API契约与权限控制
-    引用: API_SOT.md v9.0 §9
+    引用: API_SOT.md v9.3 §9
     """
 
     def test_create_daily_report_success(self, client, auth_headers, test_ad_account):
         """
         场景: 成功创建日报
         API: POST /api/v1/daily-reports
-        引用: API_SOT.md v9.0 §9.1
+        引用: API_SOT.md v9.3 §9.1
         """
         payload = {
             "report_date": "2024-01-15",
@@ -667,7 +667,7 @@ describe('DailyReportsPage', () => {
     /**
      * 测试目标: 验证日报列表加载
      * API: GET /api/v1/daily-reports
-     * 引用: API_SOT.md v9.0 §9.2
+     * 引用: API_SOT.md v9.3 §9.2
      */
     const mockReports = {
       success: true,
@@ -734,7 +734,7 @@ describe('TopupRequestFlow', () => {
     /**
      * 测试目标: 验证充值申请创建流程
      * API: POST /api/v1/topup-requests
-     * 引用: API_SOT.md v9.0 §10.1
+     * 引用: API_SOT.md v9.3 §10.1
      */
     const user = userEvent.setup()
 
@@ -837,7 +837,7 @@ from decimal import Decimal
 class TestDailyReportAPIContract:
     """
     测试目标: 验证日报API契约
-    引用: API_SOT.md v9.0 §9
+    引用: API_SOT.md v9.3 §9
     """
 
     def test_create_daily_report_request_schema(self, client, auth_headers, test_ad_account):
@@ -866,7 +866,7 @@ class TestDailyReportAPIContract:
     def test_create_daily_report_response_envelope(self, client, auth_headers, test_ad_account):
         """
         场景: 验证响应Envelope格式
-        引用: API_SOT.md v9.0 §4 - 响应格式规范
+        引用: API_SOT.md v9.3 §4 - 响应格式规范
         """
         payload = {
             "report_date": "2024-01-15",
@@ -1109,7 +1109,7 @@ class TestTopupStateMachine:
 
 ### 7.1 系统不变量定义
 
-**引用**: MASTER.md v3.4 第二章
+**引用**: MASTER.md v4.4 第二章
 
 | 不变量编号 | 描述 | 测试类型 |
 |----------|------|---------|
@@ -1128,7 +1128,7 @@ from backend.models import LedgerEntry
 class TestInvariantDualLedger:
     """
     测试目标: 验证 INV-001 - 双账本独立核算不变量
-    引用: MASTER.md v3.4 §INV-001
+    引用: MASTER.md v4.4 §INV-001
     """
 
     def test_project_ledger_only_revenue(self, db_session, test_daily_report):
@@ -1226,7 +1226,7 @@ class TestInvariantDualLedger:
 class TestInvariantTripleStream:
     """
     测试目标: 验证 INV-002 - 三数据流分离
-    引用: MASTER.md v3.4 §1.3
+    引用: MASTER.md v4.4 §1.3
     """
 
     def test_raw_stream_no_billing(self, db_session, test_daily_report):
@@ -1302,7 +1302,7 @@ class TestInvariantTripleStream:
         Given: conversions_final=8
         When: 尝试反推conversions_raw
         Then: conversions_raw保持独立，不受final影响
-        引用: MASTER.md v3.4 §1.3 - 禁止反向
+        引用: MASTER.md v4.4 §1.3 - 禁止反向
         """
         original_raw = test_daily_report.conversions_raw
 
@@ -1323,7 +1323,7 @@ class TestInvariantTripleStream:
 class TestInvariantImmutableAudit:
     """
     测试目标: 验证 INV-003 - 审计不可逆
-    引用: MASTER.md v3.4 §1.3.4
+    引用: MASTER.md v4.4 §1.3.4
     """
 
     def test_ledger_entry_no_update(self, db_session, test_ledger_entry):

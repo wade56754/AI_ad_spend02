@@ -4,7 +4,7 @@ status: candidate_freeze
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-12-03
-baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal
 ---
 
 # FRONTEND_STYLE_GUIDE_v2.1
@@ -1124,7 +1124,7 @@ const config = REPORT_STATUS_CONFIG[report.status]
 
 - [ ] 状态枚举与 STATE_MACHINE.md v2.6 一致
 - [ ] 字段定义与 DATA_SCHEMA.md v5.2 一致
-- [ ] API 路径与 API_SOT.md v9.0 一致
+- [ ] API 路径与 API_SOT.md v9.3 一致
 - [ ] 错误码与 ERROR_CODES_SOT.md v2.1 一致
 - [ ] 权限字符串与 AUTH_SPEC.md v2.0 一致
 
@@ -1182,7 +1182,7 @@ Page → Layout → Feature → Shared → UI
 **状态**: candidate_freeze（待验证）
 **最后更新**: 2025-12-03
 **维护者**: wade
-**基准**: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal
+**基准**: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal
 
 > **变更说明 (v2.0 → v2.1)**:
 > - 技术栈版本改为"以 package.json 为准"

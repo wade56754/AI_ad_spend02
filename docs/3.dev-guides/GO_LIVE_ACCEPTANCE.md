@@ -6,7 +6,7 @@ layer: dev-guide
 owner: wade
 last_reviewed: 2025-12-19
 baseline:
-  - MASTER.md v3.6
+  - MASTER.md v4.4
   - STATE_MACHINE.md v2.6
   - DEPLOYMENT.md v1.0
   - AUTH_SPEC.md v2.0
@@ -19,7 +19,7 @@ baseline:
 > **约束级别**: 强制执行，所有验收项必须通过才能上线
 > **版本**: v1.1
 > **status**: active
-> **基准**: MASTER.md v3.6, STATE_MACHINE.md v2.6, DEPLOYMENT.md v1.0
+> **基准**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DEPLOYMENT.md v1.0
 > **owner**: wade
 > **last_reviewed**: 2025-12-19
 
@@ -258,9 +258,9 @@ baseline:
 | LG-S06 | REVENUE 金额 = conversions_final × unit_price | 计算验证 | ☐ |
 | LG-S07 | COST 金额 = real_spend × (1 + fee_rate) | 计算验证 | ☐ |
 
-### 3.3 业务规则验收 (BUSINESS_RULES.md v3.2)
+### 3.3 业务规则验收 (BUSINESS_RULES.md v4.1)
 
-> 引用: docs/2.sot/BUSINESS_RULES.md v3.2
+> 引用: docs/2.sot/BUSINESS_RULES.md v4.1
 
 | 验收项 | 规则编号 | 验收标准 | 状态 |
 |-------|---------|---------|------|
@@ -532,6 +532,6 @@ npm run test:e2e
 
 **文档版本**: v1.1
 **创建日期**: 2025-12-19
-**对齐文档**: MASTER.md v3.6, STATE_MACHINE.md v2.6, DEPLOYMENT.md v1.0, AUTH_SPEC.md v2.0, ERROR_CODES_SOT.md v2.1
+**对齐文档**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DEPLOYMENT.md v1.0, AUTH_SPEC.md v2.0, ERROR_CODES_SOT.md v2.1
 **维护者**: wade
 **下次审核**: 上线前 3 天

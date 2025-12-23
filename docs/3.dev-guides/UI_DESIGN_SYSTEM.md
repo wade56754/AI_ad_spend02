@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-12-21
-baseline: MASTER.md v3.5, SoT Freeze v2.6, FRONTEND_STYLE_GUIDE v2.1
+baseline: MASTER.md v4.4, SoT Freeze v2.6, FRONTEND_STYLE_GUIDE v2.1
 ---
 
 # UI Design System - AI 广告代投系统
@@ -565,4 +565,4 @@ Caption: text-xs (12px)
 **状态**: ready_for_production
 **最后更新**: 2025-12-21
 **维护者**: wade
-**基准**: MASTER.md v3.5, SoT Freeze v2.6, FRONTEND_STYLE_GUIDE v2.1
+**基准**: MASTER.md v4.4, SoT Freeze v2.6, FRONTEND_STYLE_GUIDE v2.1

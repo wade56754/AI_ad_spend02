@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+baseline: MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # Developer Onboarding Checklist
@@ -118,7 +118,7 @@ Week 3: Advanced Topics + Independent Work
 - [ ] **Verify Understanding (Day 1 Quiz)**
   ```
   Q1: What is the highest-priority document in the system?
-  A: MASTER.md v3.4
+  A: MASTER.md v4.4
 
   Q2: What are the two ledger categories?
   A: PROJECT (revenue side) and SUPPLIER (cost side)
@@ -204,7 +204,7 @@ Week 3: Advanced Topics + Independent Work
     - [ ] Revenue: `conversions_final × unit_price` when `state = final_locked`
     - [ ] Cost: `real_spend × (1 + fee_rate)` when `state = final_locked`
 
-- [ ] **BUSINESS_RULES.md v3.1** (60 minutes)
+- [ ] **BUSINESS_RULES.md v4.1** (60 minutes)
   - [ ] Read `docs/2.sot/BUSINESS_RULES.md` §1-8
   - [ ] Review key rules:
     - [ ] BR-FIN-003: All financial amounts use `DECIMAL(12,2)`
@@ -214,7 +214,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Understand validation rules
   - [ ] Note business constraints not enforced by DB (require application logic)
 
-- [ ] **API_SOT.md v9.0** (60 minutes)
+- [ ] **API_SOT.md v9.3** (60 minutes)
   - [ ] Read `docs/2.sot/API_SOT.md` §1-4
   - [ ] Understand API structure: `/api/v1/{resource}`
   - [ ] Review HTTP method conventions (GET/POST/PUT/DELETE)
@@ -238,8 +238,8 @@ Week 3: Advanced Topics + Independent Work
     - [ ] STATE_MACHINE.md v2.6 (states and transitions)
     - [ ] DATA_SCHEMA.md v5.2 (schema definition)
     - [ ] LEDGER_SOT.md v1.1 (billing/cost triggers)
-    - [ ] BUSINESS_RULES.md v3.1 (validation rules)
-    - [ ] API_SOT.md v9.0 (endpoints: `/daily-reports`)
+    - [ ] BUSINESS_RULES.md v4.1 (validation rules)
+    - [ ] API_SOT.md v9.3 (endpoints: `/daily-reports`)
     - [ ] ERROR_CODES_SOT.md v2.1 (error responses)
   - [ ] Identify any conflicts (should be none if SoT is frozen)
 
@@ -1279,7 +1279,7 @@ A: _______________________
 
     ## SoT References
     - STATE_MACHINE.md v2.6 §8 (valid status values)
-    - API_SOT.md v9.0 §3 (query parameter conventions)
+    - API_SOT.md v9.3 §3 (query parameter conventions)
     - DATA_SCHEMA.md v5.2 §4.7 (daily_reports schema)
 
     ## Backend Changes
@@ -1489,12 +1489,12 @@ A: _______________________
 
 | Document | Estimated Time | Priority |
 |----------|----------------|----------|
-| MASTER.md v3.4 | 45 min | P0 (Day 1) |
+| MASTER.md v4.4 | 45 min | P0 (Day 1) |
 | STATE_MACHINE.md v2.6 | 90 min | P0 (Day 2) |
 | DATA_SCHEMA.md v5.2 | 120 min | P0 (Day 2) |
 | LEDGER_SOT.md v1.1 | 90 min | P0 (Day 3) |
-| BUSINESS_RULES.md v3.1 | 60 min | P0 (Day 3) |
-| API_SOT.md v9.0 | 60 min | P1 (Day 3) |
+| BUSINESS_RULES.md v4.1 | 60 min | P0 (Day 3) |
+| API_SOT.md v9.3 | 60 min | P1 (Day 3) |
 | ERROR_CODES_SOT.md v2.1 | 30 min | P1 (Day 3) |
 | API_DEVELOPMENT_FLOW.md | 90 min | P0 (Day 4) |
 | FRONTEND_DEVELOPMENT_RULES.md | 60 min | P0 (Day 4) |
@@ -1575,8 +1575,8 @@ Q2: raw (conversions_raw, raw_spend), real (real_spend), final (conversions_fina
 Q3: No (AUTH_SPEC.md - only 'data_operator' role can modify conversions_final)
 Q4: conversions_final × projects.unit_price (LEDGER_SOT.md v1.1)
 Q5: trend_ok or trend_flagged (STATE_MACHINE.md v2.6 §8)
-Q6: REVERSAL with approval_ref (MASTER.md v3.4 INV-003)
-Q7: DECIMAL(12,2) (BR-FIN-003 in BUSINESS_RULES.md v3.1)
+Q6: REVERSAL with approval_ref (MASTER.md v4.4 INV-003)
+Q7: DECIMAL(12,2) (BR-FIN-003 in BUSINESS_RULES.md v4.1)
 Q8: Prohibited, should fail (INV-001 Immutable Audit Trail)
 Q9: ERROR_CODES_SOT.md v2.1 (docs/2.sot/ERROR_CODES_SOT.md)
 Q10: completed, rejected, or cancelled (STATE_MACHINE.md v2.6 §11)
@@ -1595,14 +1595,14 @@ Q6: 60% Unit, 30% Integration, 10% E2E (TESTING_STRATEGY.md v1.0 §2)
 Q7: create_reversal_entry() in services/ledger_service.py
 Q8: category CHECK (category IN ('PROJECT', 'SUPPLIER')) in DATA_SCHEMA.md
 Q9: UNIQUE (ad_account_id, report_date) on daily_reports table
-Q10: 80% (MASTER.md v3.4 §7.2)
+Q10: 80% (MASTER.md v4.4 §7.2)
 ```
 
 ### 9.3 Final Assessment Answers (Day 15)
 
 #### Section A: Architecture & SoT
 ```
-1. MASTER.md v3.4 (裁判链 position 0)
+1. MASTER.md v4.4 (裁判链 position 0)
 2. Dual-Ledger, Triple-Stream, 8-State Machine, Immutable Audit Trail, Separation of Duties
 3. final_locked
 4. completed, rejected, cancelled (any terminal state acceptable)
@@ -1645,7 +1645,7 @@ Q10: 80% (MASTER.md v3.4 §7.2)
 #### Section E: Development Practices
 ```
 26. 60% Unit, 30% Integration, 10% E2E (TESTING_STRATEGY.md v1.0)
-27. 80% (MASTER.md v3.4 §7.2)
+27. 80% (MASTER.md v4.4 §7.2)
 28. Result<T, E> pattern (API_DEVELOPMENT_FLOW.md)
 29. Using 'any' type (must use strict typing)
 30. <type>(<scope>): <subject> (e.g., "fix(validation): add date range check")
@@ -1665,7 +1665,7 @@ Q10: 80% (MASTER.md v3.4 §7.2)
 ### Week 1 Completion
 
 - [ ] Development environment setup complete (Day 1)
-- [ ] MASTER.md v3.4 read and understood (Day 1)
+- [ ] MASTER.md v4.4 read and understood (Day 1)
 - [ ] Core SoT documents read (Day 2-3)
 - [ ] Development workflows reviewed (Day 4)
 - [ ] All Week 1 exercises completed (Day 5)
@@ -1748,7 +1748,7 @@ After 3 months on the team, consider:
 **Layer**: dev-guide
 **Owner**: wade
 **Last Reviewed**: 2025-11-27
-**Baseline**: MASTER.md v3.4, SoT Freeze v1.0
+**Baseline**: MASTER.md v4.4, SoT Freeze v1.0
 
 **Change History**:
 

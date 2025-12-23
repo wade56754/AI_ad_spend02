@@ -48,7 +48,7 @@
 | 领域 | 唯一真相�?| 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
 | **数据库字�?* | DATA_SCHEMA.md v5.2 | 字段�?类型/约束以DATA_SCHEMA为准 | `users.role`的CHECK约束 |
-| **业务规则** | BUSINESS_RULES.md v4.0 | 权限/SOD规则以BUSINESS_RULES为准 | BR-USER-002（职责分离） |
+| **业务规则** | BUSINESS_RULES.md v4.1 | 权限/SOD规则以BUSINESS_RULES为准 | BR-USER-002（职责分离） |
 | **错误�?* | ERROR_CODES_SOT.md v2.1 | 错误�?HTTP状态以ERROR_CODES为准 | `AUTH_500`权限不足 |
 | **状态流�?* | STATE_MACHINE.md v2.6 | 业务状态以STATE_MACHINE为准 | 项目/日报状态机 |
 | **Token生命周期** | AUTH_SPEC.md v2.0 (本文�? | Token TTL/刷新策略以本文档为准 | Access Token 1小时 |
@@ -137,7 +137,7 @@ CREATE INDEX idx_users_email ON users(email);
 
 ### 2.2 role五枚举固定定�?
 
-**引用**: BUSINESS_RULES.md v4.0 - BR-AUTH-001, BR-USER-001
+**引用**: BUSINESS_RULES.md v4.1 - BR-AUTH-001, BR-USER-001
 
 | 角色代码 | 角色名称 | 权限级别 | 主要职责 |
 |---------|---------|---------|---------|
@@ -723,7 +723,7 @@ class AuthService:
 
 #### 5.1.1 五个角色完整定义
 
-**引用**: SYSTEM_OVERVIEW.md v2.0 - �?�? BUSINESS_RULES.md v4.0 - BR-USER-001
+**引用**: SYSTEM_OVERVIEW.md v2.0 - �?�? BUSINESS_RULES.md v4.1 - BR-USER-001
 
 ##### 角色1: admin（系统管理员�?
 
@@ -860,7 +860,7 @@ class AuthService:
 
 **定义**: Separation of Duties - 防止内部欺诈和数据篡�?
 
-**引用**: BUSINESS_RULES.md v4.0 - BR-FIN-002, BR-USER-002
+**引用**: BUSINESS_RULES.md v4.1 - BR-FIN-002, BR-USER-002
 
 **SOD规则矩阵**:
 

@@ -105,7 +105,7 @@
 ```markdown
 **引用**: DATA_SCHEMA.md v5.2 §3.3.1 - daily_reports 表
 **引用**: STATE_MACHINE.md v2.6 §8 - 粉数确认状态机
-**引用**: BUSINESS_RULES.md v3.1 - BR-RPT-005
+**引用**: BUSINESS_RULES.md v4.1 - BR-RPT-005
 **引用**: ERROR_CODES_SOT.md v2.1 - STATE_400
 ```
 

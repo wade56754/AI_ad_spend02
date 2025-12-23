@@ -224,7 +224,7 @@ class TestLedgerBalance:
 | 错误码一致性 | MUST | 使用 ERROR_CODES_SOT.md 定义的错误码 |
 | 分页参数 | MUST | page 1-based, size <= 100 |
 
-> 引用: API_SOT.md v9.0, ERROR_CODES_SOT.md v2.1
+> 引用: API_SOT.md v9.3, ERROR_CODES_SOT.md v2.1
 
 ### 5.2 API 响应格式测试
 
@@ -281,7 +281,7 @@ class TestAPIResponse:
 
 ## 第七章 Mock 与 Fixture 规范
 
-> **后端单测环境健康度与兼容性说明**: 见 [docs/testing/BACKEND_TEST_ENV_HEALTH_v1.0.md](../testing/BACKEND_TEST_ENV_HEALTH_v1.0.md)
+> **后端单测环境健康度与兼容性说明**: 见 [docs/8.testing/BACKEND_TEST_ENV_HEALTH_v1.0.md](../8.testing/BACKEND_TEST_ENV_HEALTH_v1.0.md)
 
 ### 7.1 Mock 使用原则
 
@@ -462,5 +462,5 @@ def test_final_locked_prevents_modification():
 
 **文档版本**: v1.0
 **最后更新**: 2025-11-25
-**对齐文档**: MASTER.md v3.4, ARCHITECTURE.md v1.0, PATTERNS.md v1.0
+**对齐文档**: MASTER.md v4.4, ARCHITECTURE.md v1.0, PATTERNS.md v1.0
 **维护者**: QA Lead

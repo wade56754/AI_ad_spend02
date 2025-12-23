@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, API_SOT.md v9.0
+> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, API_SOT.md v9.3
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
@@ -178,7 +178,7 @@ daily_reports
 
 ### 3.1 端点清单
 
-**来源**: API_SOT.md v9.0 §9.2, `backend/routers/daily_reports.py`
+**来源**: API_SOT.md v9.3 §9.2, `backend/routers/daily_reports.py`
 
 | 方法 | 端点 | 描述 | 权限 |
 |------|------|------|------|

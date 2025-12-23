@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+baseline: MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # 部署指南 (Deployment Guide)

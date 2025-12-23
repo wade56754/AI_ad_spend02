@@ -4,7 +4,7 @@ status: ready_for_production
 layer: dev-guide
 last_reviewed: 2025-11-27
 owner: wade
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+baseline: MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # UI Flow Specification
@@ -152,7 +152,7 @@ Response: {
 
 Topup operations allow operators to add funds to ad account balances. Transfer operations move funds between accounts. Both operations must:
 - Create audit trail via `ledger_entries` table (LEDGER_SOT v1.1)
-- Respect balance invariants (MASTER.md v3.4 § 6 INV-001)
+- Respect balance invariants (MASTER.md v4.4 § 6 INV-001)
 - Enforce operator permissions (AUTH_SPEC v2.0 § 5.2)
 
 **Key Business Rules** (BUSINESS_RULES v3.1):

@@ -4,14 +4,14 @@ status: frozen
 layer: infrastructure-manifest
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
 ---
 
 # Infrastructure Layer Freeze Manifest v1.0
 
 > **Freeze Date**: 2025-11-27
 > **Freeze Authority**: ai-ad-spec-governor + ai-ad-doc-system-auditor
-> **Baseline**: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
+> **Baseline**: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
 > **Health Score**: **100/100** ✅
 
 ---
@@ -83,7 +83,7 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 **Required Baseline Format**:
 ```yaml
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
 ```
 
 **Verification**:
@@ -209,7 +209,7 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 - `docker-compose.yml`: ✅ Valid Docker Compose v3.8 syntax
 - `.env.example`: ✅ All required variables documented
 - `alembic.ini`: ✅ Correct SQLAlchemy connection string format
-- Health check endpoints: ✅ Aligned with API_SOT.md v9.0 routing
+- Health check endpoints: ✅ Aligned with API_SOT.md v9.3 routing
 
 **All configuration examples validated**: ✅ **100% accurate**
 
@@ -252,7 +252,7 @@ No optimization suggestions identified. All documents:
 
 ## 7. Traceability Matrix
 
-### 7.1 Traceability to MASTER.md v3.4
+### 7.1 Traceability to MASTER.md v4.4
 
 **Verification**: ✅ **All infrastructure decisions align with MASTER.md system philosophy**
 
@@ -268,7 +268,7 @@ No optimization suggestions identified. All documents:
 |--------------|---------------|---------|
 | DATA_SCHEMA.md v5.2 | CI_PIPELINE_SPEC, DEPLOYMENT_PIPELINE_SPEC | Database migration validation |
 | STATE_MACHINE.md v2.6 | OBSERVABILITY_GUIDE | State transition monitoring |
-| API_SOT.md v9.0 | OBSERVABILITY_GUIDE | Health check endpoint specification |
+| API_SOT.md v9.3 | OBSERVABILITY_GUIDE | Health check endpoint specification |
 | ERROR_CODES_SOT.md v2.1 | CI_PIPELINE_SPEC | Error code testing |
 
 ### 7.3 Traceability to Dev-Guides Layer (Freeze vFinal)
@@ -453,7 +453,7 @@ Infrastructure Layer may be unfrozen if any of the following occur:
 
 | Version | Date | Author | Changes | Baseline |
 |---------|------|--------|---------|----------|
-| v1.0 | 2025-11-27 | wade | Initial freeze - Infrastructure Layer creation | MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0 |
+| v1.0 | 2025-11-27 | wade | Initial freeze - Infrastructure Layer creation | MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0 |
 
 ---
 

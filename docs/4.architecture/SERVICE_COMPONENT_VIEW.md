@@ -4,7 +4,7 @@ status: ready_for_production
 layer: architecture
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ---
 
 # Service Component View (服务组件视图 - C4 Level 2/3)
@@ -33,7 +33,7 @@ Level 4: Code (代码实现) - 不在架构文档范围
 ### 1.3 Baseline References
 
 **引用**:
-- **MASTER.md v3.4**: 系统架构宪法，定义三大不可变量
+- **MASTER.md v4.4**: 系统架构宪法，定义三大不可变量
 - **API_DEVELOPMENT_FLOW.md**: 6步开发流程
 - **DATA_SCHEMA.md v5.2**: 数据库表结构
 - **DDD_API_ARCHITECTURE.md**: 三层架构设计
@@ -927,7 +927,7 @@ graph TD
 
 ## 7. Traceability (可追溯性)
 
-### 7.1 References to MASTER.md v3.4
+### 7.1 References to MASTER.md v4.4
 
 - **§2 INV-001**: 双账本独立核算 → LedgerService
 - **§2 INV-002**: 三数据流分离 → DailyReportService

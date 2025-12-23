@@ -40,7 +40,7 @@
 
 | 变更项 | 说明 |
 |--------|------|
-| 补全 API_SOT 依赖 | 在上游 SoT 依赖表中新增 API_SOT.md v9.0 |
+| 补全 API_SOT 依赖 | 在上游 SoT 依赖表中新增 API_SOT.md v9.3 |
 | 外部 Boilerplate 来源 | 显式记录 sanbercode-api-automation-boilerplate 参考来源及边界 |
 | 修正示例代码 | 修正 conftest.py 中 get_db 导入问题，增加路径说明注释 |
 | SoT 路径速查补全 | 附录 A 中补充 API_SOT 条目 |
@@ -244,7 +244,7 @@ class TestDailyReportFlow:
     SoT 引用：
     - docs/2.sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
     - docs/2.sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* 错误码)
-    - docs/2.sot/API_SOT.md v9.0 (API 端点定义)
+    - docs/2.sot/API_SOT.md v9.3 (API 端点定义)
     """
 
     def test_daily_report_happy_path__raw_to_final_locked(
@@ -815,7 +815,7 @@ def create_topup_request(
 
     SoT 引用：
     - STATE_MACHINE.md v2.6 第10章 (TopupRequest 状态机)
-    - BUSINESS_RULES.md v3.1 (金额限制)
+    - BUSINESS_RULES.md v4.1 (金额限制)
     """
     defaults = {
         "id": uuid4(),
@@ -1057,7 +1057,7 @@ SoT 引用：
 - docs/2.sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* / TREND_* 错误码)
 - docs/2.sot/DAILY_REPORT_SOT.md v1.0 (粉数确认业务规则)
 - docs/2.sot/AUTH_SPEC.md v2.0 (角色权限矩阵)
-- docs/2.sot/API_SOT.md v9.0 (API 端点定义)
+- docs/2.sot/API_SOT.md v9.3 (API 端点定义)
 
 测试覆盖：
 - Happy Path: raw_submitted → ... → final_locked
@@ -2087,7 +2087,7 @@ python -m pytest backend/tests/test_finance_profit_api.py -q  # v1.5.1 新增
 
 **SoT 引用**：
 - STATE_MACHINE.md v2.6
-- API_SOT.md v9.0
+- API_SOT.md v9.3
 - ERROR_CODES_SOT.md v2.1
 - LEDGER_SOT.md v1.1
 

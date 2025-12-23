@@ -4,7 +4,7 @@ status: draft
 layer: architecture
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
+baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ---
 
 # Architecture Layer Overview
@@ -18,7 +18,7 @@ baseline: MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 **ASDD 四层架构**:
 ```
 Layer 1: Overview (概览层)
-  ├── MASTER.md v3.4 (系统架构宪法)
+  ├── MASTER.md v4.4 (系统架构宪法)
   ├── PROJECT.md (项目能力边界)
   ├── DOMAIN.md (领域概念索引)
   └── ARCHITECTURE.md, PATTERNS.md, TESTING.md, DEPLOYMENT.md
@@ -26,9 +26,9 @@ Layer 1: Overview (概览层)
 Layer 2: SoT (Single Source of Truth - 真相源层)
   ├── STATE_MACHINE.md v2.6 (8状态机定义)
   ├── DATA_SCHEMA.md v5.2 (数据结构)
-  ├── API_SOT.md v9.0 (API端点规范)
+  ├── API_SOT.md v9.3 (API端点规范)
   ├── ERROR_CODES_SOT.md v2.1 (错误码)
-  ├── BUSINESS_RULES.md v3.1 (业务规则)
+  ├── BUSINESS_RULES.md v4.1 (业务规则)
   ├── AUTH_SPEC.md v2.0 (认证授权)
   └── LEDGER_SOT.md v1.1 (账本系统)
 
@@ -50,9 +50,9 @@ Layer 4: Architecture (架构视图层) ← 当前层
   └── PERFORMANCE_AND_CAPACITY_GUIDE.md (性能与容量规划)
 ```
 
-### 1.2 Relationship to Overview Layer (MASTER.md v3.4)
+### 1.2 Relationship to Overview Layer (MASTER.md v4.4)
 
-**继承关系**: Architecture Layer 必须严格遵守 MASTER.md v3.4 定义的三大不可变量：
+**继承关系**: Architecture Layer 必须严格遵守 MASTER.md v4.4 定义的三大不可变量：
 
 - **INV-001**: 账务只追加，不修改 (Ledger append-only)
   - 体现在: DATA_FLOW_VIEW.md 的账本流转图
@@ -199,7 +199,7 @@ graph TD
 **追溯格式**:
 ```markdown
 **引用**: STATE_MACHINE.md v2.6 §8.2 (8状态流转规则)
-**引用**: API_SOT.md v9.0 §9 (Daily Reports API端点定义)
+**引用**: API_SOT.md v9.3 §9 (Daily Reports API端点定义)
 **引用**: API_DEVELOPMENT_FLOW.md (6步开发流程)
 ```
 
