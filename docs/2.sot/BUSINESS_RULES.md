@@ -1,13 +1,15 @@
 ---
 version: v4.1
-status: active
+status: frozen
 layer: sot
-owner: tech-lead
+owner: wade
 last_reviewed: 2025-12-24
 baseline:
   - MASTER.md v4.4
   - STATE_MACHINE.md v2.6
   - DATA_SCHEMA.md v5.2
+  - LEDGER_SOT.md v1.1
+  - ERROR_CODES_SOT.md v2.1
 ---
 
 # 业务规则大全 (Business Rules)
@@ -35,7 +37,7 @@ baseline:
 
 ```
 MASTER.md v4.4 > STATE_MACHINE.md v2.6 > DATA_SCHEMA.md v5.2
-> BUSINESS_RULES.md v4.0 > API_SOT.md v9.2 > ERROR_CODES_SOT.md v2.1
+> BUSINESS_RULES.md v4.1 > API_SOT.md v9.1 > ERROR_CODES_SOT.md v2.1
 ```
 
 ### 1.3 角色定义 (7 角色)
@@ -535,7 +537,7 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 |------|----------|------|------|
 | BR-PROJ-001 | 项目唯一性 | P0 | project_code 唯一 |
 | BR-PROJ-002 | 项目成员角色 | P1 | pitcher/project_owner/supervisor |
-| BR-PROJ-003 | 项目状态流转 | P1 | active → paused → archived |
+| BR-PROJ-003 | 项目状态机 | P1 | draft → active → suspended → archived（终态: archived）|
 | BR-PROJ-004 | 项目负责人 | P0 | owner_id 指向 project_owner 角色 |
 | BR-PROJ-005 | 项目预算控制 | P1 | daily_budget / monthly_budget |
 
@@ -561,10 +563,34 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 |------|----------|------|------|
 | BR-ACCT-001 | 账户唯一性 | P0 | account_id（平台账户ID）唯一 |
 | BR-ACCT-002 | 账户分配 | P1 | 户管分配给投手 |
-| BR-ACCT-003 | 账户状态 | P1 | normal/warning/suspended/archived |
+| BR-ACCT-003 | 账户状态机 | P0 | new → testing → active → suspended → dead → archived |
 | BR-ACCT-004 | 账户余额 | P0 | 只能通过 ledger_entries 更新 |
 | BR-ACCT-005 | 账户-项目关联 | P1 | 多对一 |
 | BR-ACCT-006 | 负余额警告 | P1 | Phase 1: 警告不阻断 |
+
+#### 4.5.1 BR-ACCT-003 账户状态机（6 状态）
+
+来源：STATE_MACHINE.md v2.6 §7.1
+
+**状态定义**：
+
+| 状态 | 中文 | 说明 | 是否终态 |
+|------|------|------|---------|
+| `new` | 新建 | 账户初始状态 | ❌ |
+| `testing` | 测试中 | 账户测试阶段 | ❌ |
+| `active` | 活跃 | 正常投放中 | ❌ |
+| `suspended` | 暂停 | 临时停用 | ❌ |
+| `dead` | 死号 | 不可恢复状态 | ✅ |
+| `archived` | 已归档 | 历史归档 | ✅ |
+
+**状态流转**：
+```
+new → testing → active → suspended → dead → archived
+                  ↑          ↓
+                  ←──────────←
+```
+
+> **注意**：dead 状态不可恢复，业务可通过死号迁移 (TRANSFER_SOT.md) 转移至新账户。
 
 ---
 
@@ -613,15 +639,53 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 
 **状态说明**：
 
-| 状态 | 中文 | 操作者 | 后续动作 |
-|------|------|--------|----------|
-| draft | 草稿 | 项目负责人 | 提交 / 取消 |
-| pending_review | 待审核 | - | 等待财务 |
-| finance_approve | 财务已批 | 财务 | 等待老板 |
-| paid | 已打款 | 老板 | 等待到账 |
-| completed | 已完成 | 户管 | 终态 |
-| rejected | 已拒绝 | 财务/老板 | 终态 |
-| cancelled | 已取消 | 项目负责人 | 终态 |
+| 状态 | 中文 | 触发角色 | 说明 |
+|------|------|----------|------|
+| draft | 草稿 | 投手/户管 | 初始状态，可提交或取消 |
+| pending_review | 待数据复核 | - | 等待主管 (data_operator) 复核 |
+| finance_approve | 复核通过 | 主管 | 等待财务 (finance) 支付 |
+| paid | 已支付 | 财务 | 等待入账确认 |
+| completed | 已完成 | 财务/系统 | 终态，已创建账本记录 |
+| rejected | 已拒绝 | 主管/财务 | 终态，审核被拒绝 |
+| cancelled | 已取消 | 申请人 | 终态，申请人主动取消 |
+
+**角色权限矩阵**：
+
+| 状态转换 | 业务角色 | 技术角色 |
+|---------|---------|---------|
+| 创建申请 (→ draft) | 投手、户管 | media_buyer, account_manager |
+| 提交申请 (draft → pending_review) | 申请人 | 申请人本人 |
+| 数据复核 (pending_review → finance_approve/rejected) | 主管 | data_operator |
+| 财务支付 (finance_approve → paid/rejected) | 财务 | finance |
+| 入账确认 (paid → completed) | 财务/系统 | finance, system |
+| 取消申请 (draft/pending_review → cancelled) | 申请人 | 申请人本人, admin |
+
+**职责分离 (SOD)**：
+- 申请人 ≠ 复核人（投手/户管不能复核自己的申请）
+- 复核人 ≠ 终审人（主管不能执行财务支付）
+
+#### 4.6.2 BR-FIN-008 职责分离原则 (SOD)
+
+来源：MASTER.md v4.4 INV-004, AUTH_SPEC.md v2.0 §5
+
+**核心原则**：
+
+| 原则 | 说明 | 适用场景 |
+|------|------|---------|
+| 申请人 ≠ 复核人 | 提交申请者不能自我审批 | 充值申请、日报审核 |
+| 复核人 ≠ 终审人 | 数据复核与财务终审必须分离 | 充值流程 |
+| 操作人 ≠ 审计人 | 执行操作与审计查询需分离 | 审计日志访问 |
+
+**实现代码**：
+```python
+def validate_sod(applicant_id: UUID, operator_id: UUID, action: str):
+    """职责分离校验"""
+    if action == "review" and applicant_id == operator_id:
+        raise BusinessError(
+            code="AUTH-SOD-001",
+            message="申请人不能复核自己的申请"
+        )
+```
 
 ---
 
@@ -632,9 +696,30 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
 | BR-RECON-001 | 对账批次唯一性 | P0 | 同账户同月唯一 |
-| BR-RECON-002 | 对账状态流转 | P1 | pending → in_review → completed |
+| BR-RECON-002 | 对账批次状态机 | P1 | draft → pending_review → approved/needs_adjustment → completed |
 | BR-RECON-003 | 对账差异处理 | P1 | Phase 1: 记录不阻断 |
 | BR-RECON-004 | 对账锁定 | P0 | completed 后不可修改 |
+
+#### 4.7.1 BR-RECON-002 对账批次状态机（5 状态）
+
+来源：STATE_MACHINE.md v2.6 §11.1
+
+**状态定义**：
+
+| 状态 | 中文 | 触发角色 | 是否终态 |
+|------|------|----------|---------|
+| `draft` | 草稿 | finance, data_operator | ❌ |
+| `pending_review` | 待审核 | finance, data_operator | ❌ |
+| `approved` | 已批准 | finance, admin | ❌ |
+| `needs_adjustment` | 需调整 | finance, admin | ❌ |
+| `completed` | 已完成 | finance, admin | ✅ |
+
+**状态流转**：
+```
+draft → pending_review → approved → completed
+                ↓
+          needs_adjustment → approved → completed
+```
 
 ---
 
@@ -673,6 +758,57 @@ def calculate_cpl(spend: Decimal, conversions: int) -> Decimal | None:
         return Decimal("0.00")
     return (spend / conversions).quantize(Decimal("0.01"))
 ```
+
+#### 4.8.2 BR-RPT-006 三数据流定义
+
+来源：MASTER.md v4.4 §4, DATA_SCHEMA.md v5.2 §3.3.1
+
+**数据流定义**：
+
+| 数据流 | 字段 | 提交者 | 时效性 | 用途 |
+|-------|------|--------|--------|------|
+| raw | `conversions_raw`, `raw_spend` | 投手 | T+0 23:59前 | 趋势监控、风控检查 |
+| real | `real_spend` | 主管 | T+1 12:00前 | 成本核算 |
+| final | `conversions_final` | 主管 | T+1 14:00前 | 计费基准 |
+
+**计算公式**：
+```
+收入 = conversions_final × unit_price
+成本 = real_spend + fee
+利润 = 收入 - 成本
+```
+
+**Phase 1 简化模式**：
+- 进粉 SoT：仅使用 `daily_report.conversions`（投手自报值）
+- 消耗 SoT：仅使用 `ad_spend_daily.spend`（外部导入）
+- 不使用 Phase 2 字段：`conversions_raw`, `conversions_final`, `raw_spend`, `real_spend`
+
+#### 4.8.3 BR-RPT-009 Phase 1 简化模式
+
+来源：STATE_MACHINE.md v2.6 §7.5
+
+**Phase 1 简化版（3 状态快速流转）**：
+```
+raw_submitted → trend_ok → final_confirmed
+```
+
+**特性**：
+- ✅ 跳过 trend_pending/trend_flagged/trend_resolved/final_pending
+- ✅ 无趋势风控自动阻断
+- ✅ 无强制终审（不使用 final_pending 等待态）
+- ✅ 数据可见但不阻断
+
+**Phase 2 完整版（8 状态全流程）**：
+```
+raw_submitted → trend_pending → trend_ok/trend_flagged
+→ trend_resolved → final_pending → final_confirmed → final_locked
+```
+
+**启用条件**（MASTER.md v4.4 §3.4）：
+1. Phase 1 稳定运行 2 个月
+2. 日报填报率 ≥ 90%
+3. 老板批准启用
+4. Feature Flag: `PHASE2_DAILY_REPORT_REQUIRED=true`
 
 ---
 
@@ -743,6 +879,7 @@ def calculate_cpl(spend: Decimal, conversions: int) -> Decimal | None:
 
 | 本文档版本 | 兼容的 MASTER.md | 兼容的 STATE_MACHINE.md |
 |------------|------------------|-------------------------|
+| v4.1 | v4.4 | v2.6 |
 | v4.0 | v4.4 | v2.6 |
 | v3.2 | v3.6 | v2.5 |
 
@@ -764,7 +901,7 @@ def calculate_cpl(spend: Decimal, conversions: int) -> Decimal | None:
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v4.1 | 2025-12-24 | 业务流程对齐修复：(1) 金额精度 Decimal(12,2)→Decimal(15,2)；(2) 资金管控链顺序修正；(3) 结果责任链添加 Phase 后果；(4) 终态定义修正为 completed/rejected/cancelled；(5) 新增 DEV-006 账本不变量；(6) 业务规则模块 5→9 模块重构 |
+| v4.1 | 2025-12-24 | 终审对齐修复：(1) 充值状态机角色描述对齐 STATE_MACHINE.md；(2) 账户状态枚举修正为 6 状态；(3) 项目状态添加 draft，修正 paused→suspended；(4) 对账状态流转对齐 5 状态；(5) 裁判链版本号修正；(6) 新增 SOD 职责分离原则；(7) 新增三数据流详细定义；(8) 新增 Phase 1 简化模式说明 |
 | v4.0 | 2025-12-24 | 重构：从索引文档升级为完整业务规则大全；升级 7 角色；添加完整铁律定义 |
 | v3.2 | 2025-12-20 | 对齐 MASTER.md v3.6，更新裁判链 |
 | v3.1 | 2025-12-15 | 添加 BR-STL 结算模块规则 |
