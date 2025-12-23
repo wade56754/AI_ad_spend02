@@ -1,10 +1,10 @@
 ---
-version: v1.1
+version: v1.2
 status: ready_for_production
 layer: dev-guide
 owner: wade
-last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6
+last_reviewed: 2025-12-23
+baseline: MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # AI 广告代投系统 - DDD + API 优先架构设计
@@ -17,8 +17,8 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6
 > **⚠️ SoT 引用声明**:
 > - **数据模型**: 严格遵循 `DATA_SCHEMA.md` v5.2
 > - **状态机**: 严格遵循 `STATE_MACHINE.md` v2.6（禁止重复定义状态）
-> - **API 规范**: 实际路径以 `API_SOT.md` v9.0 为准（本文档为架构设计参考）
-> - **业务规则**: 参考 `BUSINESS_RULES.md` v3.1
+> - **API 规范**: 实际路径以 `API_SOT.md` v9.1 为准（本文档为架构设计参考）
+> - **业务规则**: 参考 `BUSINESS_RULES.md` v3.2
 > - **错误码**: 引用 `ERROR_CODES_SOT.md` v2.1
 >
 > **文档定位**: 本文档为 DDD 架构设计指南，展示理想的领域建模方式。
