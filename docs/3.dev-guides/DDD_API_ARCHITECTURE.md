@@ -1,5 +1,5 @@
 ---
-version: v1.2
+version: v1.3
 status: ready_for_production
 layer: dev-guide
 owner: wade
@@ -80,7 +80,7 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6
 │  Context (IAM)          │  ACL    │  Context                │
 │                         │         │                         │
 │  - Supabase Auth        │         │  - Users                │
-│  - JWT Tokens           │         │  - Roles (5 fixed)      │
+│  - JWT Tokens           │         │  - Roles (7 roles)      │
 │  - RBAC                 │         │  - Permissions          │
 └─────────────────────────┘         └─────────────────────────┘
            │                                    │
@@ -139,9 +139,9 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6
 
 | 领域术语 | 英文 | 上下文 | 定义 |
 |---------|------|--------|------|
-| **投手** | Media Buyer | Campaign, Daily Report | 负责广告投放的操作人员 |
-| **户管** | Account Manager | Campaign | 负责客户项目管理的人员 |
-| **运营** | Data Operator | Daily Report, Financial | 负责数据审核与财务操作的人员 |
+| **投手** | pitcher | Campaign, Daily Report | 负责广告投放的操作人员 (CPL 达标、日报准确) |
+| **户管** | account_manager | Campaign | 账户分配、账户状态监控 |
+| **主管** | supervisor | Daily Report, Financial | 团队产出、投手管理、日常监督 |
 | **粉数** | Conversions | Daily Report | 广告转化用户数（新增粉丝数） |
 | **原始粉数** | Raw Conversions | Daily Report | 投手提交的未审核粉数 |
 | **真实消耗** | Real Spend | Daily Report, Financial | 运营从供应商后台获取的实际消耗金额 |
@@ -605,7 +605,7 @@ class ReconciliationBatch:
 
 > **⚠️ 重要说明**:
 > 本节展示的是 **DDD 理想架构设计** 中的嵌套路由风格（资源层级化）。
-> **实际项目的 API 路径规范以 `API_SOT.md` v9.0 为准**（采用平面化路由）。
+> **实际项目的 API 路径规范以 `API_SOT.md` v9.1 为准**（采用平面化路由）。
 >
 > **路径对照表**:
 > | DDD 理想设计 | API_SOT.md 实际路径 |
@@ -626,7 +626,7 @@ class ReconciliationBatch:
 # DDD 设计路径（示例）- 实际路径见 API_SOT.md
 POST /api/v1/ad-accounts/{ad_account_id}/daily-reports/{report_date}/submit-raw
 Authorization: Bearer {token}
-X-Require-Role: media_buyer
+X-Require-Role: pitcher
 
 Request:
 {
@@ -659,7 +659,7 @@ Domain Event Emitted:
 # 录入真实消耗（运营操作）
 POST /api/v1/ad-accounts/{ad_account_id}/daily-reports/{report_date}/record-real
 Authorization: Bearer {token}
-X-Require-Role: data_operator
+X-Require-Role: supervisor
 
 Request:
 {
@@ -685,7 +685,7 @@ Domain Event Emitted:
 # 确认最终粉数（运营操作）
 POST /api/v1/ad-accounts/{ad_account_id}/daily-reports/{report_date}/confirm-final
 Authorization: Bearer {token}
-X-Require-Role: data_operator
+X-Require-Role: supervisor
 
 Request:
 {
@@ -711,7 +711,7 @@ Domain Event Emitted:
 # 锁定计费（系统自动或运营手动）
 POST /api/v1/ad-accounts/{ad_account_id}/daily-reports/{report_date}/lock
 Authorization: Bearer {token}
-X-Require-Role: data_operator, admin
+X-Require-Role: supervisor, admin
 
 Request: {}
 
@@ -833,7 +833,7 @@ Domain Event Emitted:
 # 创建对账批次
 POST /api/v1/reconciliation-batches
 Authorization: Bearer {token}
-X-Require-Role: data_operator
+X-Require-Role: supervisor
 
 Request:
 {
@@ -864,7 +864,7 @@ Response (201 Created):
 # 批准对账批次
 POST /api/v1/reconciliation-batches/{batch_id}/approve
 Authorization: Bearer {token}
-X-Require-Role: data_operator, admin
+X-Require-Role: supervisor, admin
 
 Request: {}
 
@@ -1391,4 +1391,4 @@ class DailyReport:
 
 **文档结束**
 
-如有疑问，请联系系统架构团队或查阅 [MASTER_SPEC.md](../1.overview/MASTER_SPEC.md)
+如有疑问，请联系系统架构团队或查阅 [MASTER.md](../1.overview/MASTER.md)
