@@ -3,8 +3,14 @@
  *
  * TanStack Query v5 hooks for user management
  *
- * SoT References:
- * - API_SOT.md v9.0 §5 Users API
+ * SoT: docs/10.module-specs/C2-pitcher-mgmt.md §6.1 前端代码块
+ * SoT: MASTER.md v4.4 §2.4 (7 角色定义)
+ * SoT: API_SOT.md v9.0 §5 Users API
+ *
+ * 一句话定义: 管理用户/投手的数据获取和状态变更
+ *
+ * 标准角色 (MASTER.md v4.4):
+ *   ceo, project_owner, finance, supervisor, pitcher, account_manager, admin
  *
  * Author: AI 代码工厂 v2.4
  */
@@ -166,4 +172,44 @@ export function useToggleUserStatus(
     },
     ...options,
   });
+}
+
+// ========== Refresh Hook ==========
+
+/**
+ * 刷新用户/投手数据
+ * SoT: C2-pitcher-mgmt.md 数据刷新策略
+ *
+ * @example
+ * ```tsx
+ * const { refreshAll, refreshList, refreshStats } = useRefreshUsers();
+ * // 刷新所有用户数据
+ * refreshAll();
+ * // 仅刷新列表
+ * refreshList();
+ * // 仅刷新统计
+ * refreshStats();
+ * ```
+ */
+export function useRefreshUsers() {
+  const queryClient = useQueryClient();
+
+  return {
+    /** 刷新所有用户数据 */
+    refreshAll: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+    /** 刷新用户列表 */
+    refreshList: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+    },
+    /** 刷新用户统计 */
+    refreshStats: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.statistics() });
+    },
+    /** 刷新单个用户详情 */
+    refreshDetail: (id: string) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(id) });
+    },
+  };
 }

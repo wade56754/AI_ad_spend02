@@ -1,10 +1,26 @@
 /**
  * Settlement Types - 结算类型定义
  *
- * SoT 对齐:
- * - DATA_SCHEMA.md v5.2 (settlement entity)
- * - LEDGER_SOT.md v1.1 (ledger integration)
- * - backend/routers/settlements.py
+ * SoT: docs/10.module-specs/D1-monthly-settlement.md §2 数据需求
+ * SoT: DATA_SCHEMA.md v5.2 (settlement entity)
+ * SoT: LEDGER_SOT.md v1.1 (ledger integration)
+ * SoT: STATE_MACHINE.md v2.6 Section 12
+ *
+ * 一句话定义: 结算管理（通用结算 + 月度项目结算）
+ *
+ * 通用结算状态机 (7 状态):
+ *   DRAFT → PENDING → APPROVED → PROCESSING → COMPLETED
+ *                  ↘ REJECTED
+ *   任意 → CANCELLED
+ *
+ * 月度结算状态机 (D1-monthly-settlement.md §2.4, 4 状态):
+ *   pending → draft → confirmed → locked (终态)
+ *
+ * Phase 约束 (D1-monthly-settlement.md §1.4):
+ * - Phase 1: 结算可修改，用于观察
+ * - Phase 2: 锁定后不可修改
+ *
+ * Author: AI 代码工厂 v2.4
  */
 
 // ========== 枚举 ==========
@@ -281,5 +297,137 @@ export const SETTLEMENT_TYPE_CONFIG: Record<SettlementType, {
   CLIENT: {
     label: '客户结算',
     icon: 'users',
+  },
+};
+
+// ========== 月度结算类型 (D1-monthly-settlement.md) ==========
+
+/**
+ * 月度结算状态
+ * SoT: D1-monthly-settlement.md §2.4 状态机
+ */
+export type MonthlySettlementStatus = 'pending' | 'draft' | 'confirmed' | 'locked';
+
+/**
+ * 月度结算实体
+ * SoT: D1-monthly-settlement.md §2.2 字段清单
+ */
+export interface MonthlySettlement {
+  id: number;
+  settlement_month: string;       // 结算月份 YYYY-MM
+  project_id: number;
+  project_name: string;
+  owner_name: string;             // 项目负责人
+  total_spend: number;            // 总消耗 (SUM ad_spend_daily.spend)
+  total_conversions: number;      // 总进粉 (SUM daily_reports.conversions)
+  avg_cpl: number;                // 平均CPL = total_spend / total_conversions
+  revenue: number;                // 预计收入 = total_conversions × unit_price
+  gross_profit: number;           // 毛利 = revenue - total_spend
+  profit_rate: number;            // 毛利率 = gross_profit / revenue × 100%
+  status: MonthlySettlementStatus;
+  confirmed_by: number | null;
+  confirmed_by_name: string | null;
+  confirmed_at: string | null;
+  is_locked: boolean;
+  locked_by: number | null;
+  locked_by_name: string | null;
+  locked_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * 月度结算汇总
+ * SoT: D1-monthly-settlement.md §4.2 响应示例
+ */
+export interface MonthlySettlementSummary {
+  settlement_month: string;
+  total_spend: number;
+  total_conversions: number;
+  total_revenue: number;
+  total_profit: number;
+  avg_profit_rate: number;
+  project_count: number;
+  confirmed_count: number;
+  locked_count: number;
+}
+
+/**
+ * 月度结算列表参数
+ */
+export interface MonthlySettlementListParams {
+  month?: string;                // YYYY-MM
+  project_id?: number;
+  status?: MonthlySettlementStatus;
+  page?: number;
+  page_size?: number;
+}
+
+/**
+ * 月度结算列表响应
+ */
+export interface MonthlySettlementListResponse {
+  items: MonthlySettlement[];
+  total: number;
+  page: number;
+  page_size: number;
+  summary: MonthlySettlementSummary;
+}
+
+/**
+ * 生成月度结算请求
+ */
+export interface GenerateMonthlySettlementRequest {
+  month: string;                 // YYYY-MM
+  project_ids?: number[];        // 可选，不传则全部项目
+}
+
+/**
+ * 确认/锁定请求
+ */
+export interface MonthlySettlementActionRequest {
+  confirm?: boolean;
+  notes?: string;
+}
+
+/**
+ * 月度结算状态配置
+ * SoT: D1-monthly-settlement.md §3.3 状态颜色规范
+ */
+export const MONTHLY_SETTLEMENT_STATUS_CONFIG: Record<MonthlySettlementStatus, {
+  label: string;
+  color: 'default' | 'info' | 'warning' | 'success';
+  bgClass: string;
+  textClass: string;
+  description: string;
+}> = {
+  pending: {
+    label: '待生成',
+    color: 'default',
+    bgClass: 'bg-gray-100',
+    textClass: 'text-gray-600',
+    description: '月份结束，待生成结算',
+  },
+  draft: {
+    label: '草稿',
+    color: 'info',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-700',
+    description: '结算草稿，可修改',
+  },
+  confirmed: {
+    label: '已确认',
+    color: 'warning',
+    bgClass: 'bg-orange-100',
+    textClass: 'text-orange-700',
+    description: '已确认，待锁定',
+  },
+  locked: {
+    label: '已锁定',
+    color: 'success',
+    bgClass: 'bg-green-100',
+    textClass: 'text-green-700',
+    description: '已锁定，不可修改',
   },
 };

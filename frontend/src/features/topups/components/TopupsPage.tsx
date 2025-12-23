@@ -1,20 +1,27 @@
 /**
- * Topups Page Component
+ * TopupsPage Component
  *
- * Main page for topup request management with filters and statistics
- * SoT: STATE_MACHINE.md v2.6 Section 9
+ * SoT: docs/10.module-specs/B1-topup-approval.md §3.1 页面布局
+ * SoT: STATE_MACHINE.md v2.6 Section 3 (充值 7 状态机)
+ * SoT: API_SOT.md v9.0 Section 5.6 (Topup endpoints)
  *
- * Refactored: Extracted StatsOverview, FilterPanel, DetailDialog components
+ * 一句话定义: 让财务/项目负责人了解"有哪些充值申请？谁在等审批？"
+ *
+ * 充值 7 状态机:
+ *   draft → pending_review → finance_approve → paid → completed
+ *                  ↓              ↓
+ *              rejected       rejected
+ *
+ * @module features/topups/components
  */
 
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Filter, RefreshCw, Download } from 'lucide-react';
-import { useTopups, useTopupStats } from '../hooks';
+import { useTopups, useTopupStats, useRefreshTopups } from '../hooks';
 import { TopupsTable } from './TopupsTable';
 import { TopupRequestForm } from './TopupRequestForm';
 import { TopupStatusLegend } from './TopupStatusBadge';
@@ -77,9 +84,12 @@ export function TopupsPage() {
     return params;
   }, [activeTab, filters]);
 
-  // Data fetching
-  const { refetch } = useTopups(queryParams);
+  // Data fetching - SoT: B1-topup-approval.md §5 API 接口
+  useTopups(queryParams);
   const { data: statsData, isLoading: isStatsLoading } = useTopupStats();
+
+  // 刷新 hook - SoT: B1-topup-approval.md §2.4 数据刷新策略
+  const { refreshAll } = useRefreshTopups();
 
   // Handlers
   const handleResetFilters = useCallback(() => {
@@ -110,18 +120,18 @@ export function TopupsPage() {
   );
 
   const handleActionSuccess = useCallback(() => {
-    refetch();
+    refreshAll();
     setSelectedTopup(null);
     setApprovalMode(null);
     setShowSubmitDialog(false);
     setShowCancelDialog(false);
-  }, [refetch]);
+  }, [refreshAll]);
 
   const handleCreateFormSubmit = useCallback(async (_data: unknown) => {
     // TODO: Implement actual form submission via API
     setShowCreateForm(false);
-    refetch();
-  }, [refetch]);
+    refreshAll();
+  }, [refreshAll]);
 
   // Tab counts from stats
   const tabCounts = useMemo(() => {
@@ -152,7 +162,7 @@ export function TopupsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <Button variant="outline" size="sm" onClick={() => refreshAll()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>

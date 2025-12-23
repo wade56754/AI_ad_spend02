@@ -1,17 +1,17 @@
 /**
  * DashboardPage Component
  *
- * Main dashboard with metrics overview
- * Based on UI_DESIGN_SYSTEM.md v2.0
+ * SoT: docs/10.module-specs/A1-dashboard.md
+ * SoT: MASTER.md v4.4 §6.5 核心页面最小字段集
  *
- * Layout: PageHeader → StatCards → TrendCharts → BottomSection
- * Spacing: gap-6 (24px) for card grids, gap-8 (32px) for sections
- * Typography: H2 = text-2xl font-semibold
+ * 布局: PageHeader → StatCards → TrendCharts → TopLists → PendingTasks → BottomSection
+ * 间距: gap-6 (24px) 卡片网格, gap-8 (32px) 分区
+ * 排版: H2 = text-2xl font-semibold
  */
 
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   DollarSign,
@@ -25,6 +25,7 @@ import {
 import { useAuth } from '@/features/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Alert as AlertUI, AlertDescription } from '@/components/ui/alert';
 
 import { DashboardHeader } from './DashboardHeader';
 import { StatCard } from './StatCard';
@@ -50,61 +51,47 @@ import {
 } from './MainTrendChart';
 import { TopLists, generateMockTopLists } from './TopLists';
 
+import { useDashboardData, useRefreshDashboard } from '../hooks';
 import type { PendingTask } from '../types';
 
-// 根据日期预设获取天数
-function getDaysFromPreset(preset: DateRangePreset): number {
-  switch (preset) {
-    case 'today': return 1;
-    case '7d': return 7;
-    case '30d': return 30;
-    case 'custom': return 30; // 默认
-    default: return 7;
-  }
-}
+// ============ 工具函数 ============
 
-// 简单的伪随机数生成器（用于保证 SSR 和客户端一致性）
-function seededRandom(seed: number): number {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-}
-
-// Generate mock trend data for main chart (multi-metric)
-function generateMainTrendData(days: number): MainTrendDataPoint[] {
-  const data: MainTrendDataPoint[] = [];
+/**
+ * 根据日期预设获取日期范围
+ * SoT: A1-dashboard.md §2.4 数据刷新策略
+ */
+function getDateRangeFromPresetValue(preset: DateRangePreset): { from: string; to: string } {
   const today = new Date();
-  // 使用固定日期作为基准，确保每次生成相同
   today.setHours(0, 0, 0, 0);
+  const to = today.toISOString().split('T')[0];
 
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-
-    const trendFactor = 1 + (days - i) * 0.002;
-    // 使用日期索引作为种子，确保每次生成相同的"随机"值
-    const seed = i * 12345;
-    const randomFactor = (offset: number) => 1 + (seededRandom(seed + offset) - 0.5) * 0.15;
-
-    const spend = Math.round(120000 * randomFactor(0) * trendFactor);
-    const revenue = Math.round(160000 * randomFactor(1) * trendFactor);
-    const profit = revenue - spend;
-    const conversions = Math.round(3000 * randomFactor(2) * trendFactor);
-
-    data.push({
-      date: date.toISOString().split('T')[0],
-      spend,
-      revenue,
-      profit,
-      conversions,
-    });
+  let from: Date;
+  switch (preset) {
+    case 'today':
+      from = today;
+      break;
+    case '7d':
+      from = new Date(today);
+      from.setDate(from.getDate() - 6);
+      break;
+    case '30d':
+      from = new Date(today);
+      from.setDate(from.getDate() - 29);
+      break;
+    case 'custom':
+    default:
+      from = new Date(today);
+      from.setDate(from.getDate() - 6);
+      break;
   }
 
-  return data;
+  return { from: from.toISOString().split('T')[0], to };
 }
 
 export function DashboardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // ============ 状态管理 ============
 
   // 全局日期范围状态
   const [globalDateRange, setGlobalDateRange] = useState<DateRangePreset>('7d');
@@ -115,10 +102,40 @@ export function DashboardPage() {
   // 告警列表 - 初始为空，避免 hydration 错误
   const [alerts, setAlerts] = useState<Alert[]>([]);
 
+  // ============ 数据获取 (TanStack Query) ============
+  // SoT: A1-dashboard.md §2.4 数据刷新策略
+
+  const dateRange = useMemo(
+    () => getDateRangeFromPresetValue(globalDateRange),
+    [globalDateRange]
+  );
+
+  const {
+    overview,
+    trend,
+    topProjects,
+    pendingCounts,
+    isLoading: isDataLoading,
+    isError,
+    error,
+    queries,
+  } = useDashboardData(dateRange);
+
+  const { refreshAll } = useRefreshDashboard();
+
+  // 检查是否有任何查询正在刷新 (非初次加载)
+  const isRefreshing =
+    (queries.overview.isFetching && !queries.overview.isLoading) ||
+    (queries.trend.isFetching && !queries.trend.isLoading) ||
+    (queries.topProjects.isFetching && !queries.topProjects.isLoading) ||
+    (queries.pendingCounts.isFetching && !queries.pendingCounts.isLoading);
+
   // 在客户端挂载后生成告警数据
   React.useEffect(() => {
     setAlerts(generateMockAlerts());
   }, []);
+
+  // ============ 工具函数 ============
 
   // Helper function for currency formatting
   const formatCurrency = (value: number) => {
@@ -129,41 +146,43 @@ export function DashboardPage() {
     }).format(value);
   };
 
-  // Mock data - TODO: Replace with actual API call using React Query
-  // 按照 MASTER.md §6.5 核心页面最小字段集 (Phase 1)
-  const stats = {
-    // §6.5 必须字段 - 本月核心指标
-    month_spend: 2856800.00,           // 本月总消耗 - ad_spend_daily SUM(spend)
-    month_conversions: 72580,           // 本月总进粉 - daily_report SUM(conversions)
-    overall_cpl: 39.36,                 // 整体 CPL - 总消耗/总进粉 (§4.5.2 规则)
-    estimated_profit: 568000.00,        // 预计毛利 - §4.5.4 公式
-    active_projects: 12,                // 活跃项目数 - project COUNT(status='active')
-    abnormal_projects: 3,               // 异常项目数 - CPL > target × 1.3
-    pending_topups: 3,                  // 待审批充值数 - topup_request COUNT(status='pending')
-    // 今日视角 (辅助信息)
-    today_spend: 125680.50,
-    today_conversions: 3256,
-    today_revenue: 162500.00,
-    today_profit: 36819.50,
-    // 变化率
-    spend_change: 12.5,
-    conversions_change: 8.3,
-    cpl_change: -5.2,                   // CPL 下降是好事
-    profit_change: 15.2,
-    // 其他待处理
-    pending_settlements: 2,
-    pending_reconciliations: 5,
-    pending_imports: 1,
-    active_accounts: 45,
-    total_balance: 856000.00,
-    // CPL 目标
-    cpl_target: 35.00,
-  };
+  // ============ 派生数据 ============
+  // SoT: MASTER.md §6.5 核心页面最小字段集
 
-  // Mock trend data - 基于全局时间范围生成
-  const mainTrendData = useMemo(
-    () => generateMainTrendData(getDaysFromPreset(globalDateRange)),
-    [globalDateRange]
+  // 从 API 响应构建统计数据，提供默认值
+  const stats = useMemo(() => ({
+    // §6.5 必须字段 - 本月核心指标
+    month_spend: overview?.total_spend ?? 0,
+    month_conversions: overview?.total_conversions ?? 0,
+    overall_cpl: overview?.cpl ?? 0,
+    estimated_profit: overview?.total_profit ?? 0,
+    active_projects: overview?.active_projects ?? 0,
+    abnormal_projects: overview?.abnormal_projects ?? 0,
+    pending_topups: pendingCounts?.pending_topups ?? 0,
+    // 今日视角 (扩展字段)
+    today_spend: overview?.today_spend ?? 0,
+    today_conversions: overview?.today_conversions ?? 0,
+    today_revenue: overview?.today_revenue ?? 0,
+    today_profit: overview?.today_profit ?? 0,
+    // 变化率
+    spend_change: overview?.spend_change ?? 0,
+    conversions_change: overview?.conversions_change ?? 0,
+    cpl_change: overview?.cpl ? -((overview.cpl - (overview.cpl_target ?? 35)) / (overview.cpl_target ?? 35) * 100) : 0,
+    profit_change: overview?.profit_change ?? 0,
+    // 其他待处理
+    pending_settlements: pendingCounts?.pending_settlements ?? 0,
+    pending_reconciliations: pendingCounts?.pending_reconciliations ?? 0,
+    pending_imports: pendingCounts?.pending_imports ?? 0,
+    active_accounts: 45, // TODO: 需要后端 API 支持
+    total_balance: 856000.00, // TODO: 需要后端 API 支持
+    // CPL 目标
+    cpl_target: overview?.cpl_target ?? 35.00,
+  }), [overview, pendingCounts]);
+
+  // 转换趋势数据格式
+  const mainTrendData: MainTrendDataPoint[] = useMemo(
+    () => trend?.points ?? [],
+    [trend]
   );
 
   // 生成自动总结
@@ -188,7 +207,10 @@ export function DashboardPage() {
     };
   }, [mainTrendData]);
 
-  // Top lists data - Mock data for now
+  // Top lists data
+  // SoT: A1-dashboard.md §3.2 TopLists 组件
+  // TODO: 后端 API 实现后，使用 topProjects 数据替代 mock
+  // 当前 API 返回简化数据，组件需要完整 CampaignData，暂用 mock
   const topListsData = useMemo(() => generateMockTopLists(), []);
 
   // Pending tasks data
@@ -227,20 +249,16 @@ export function DashboardPage() {
     },
   ];
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      // TODO: Replace with actual API refresh call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } catch (error) {
-      console.error('刷新数据失败:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
+  /**
+   * 刷新所有驾驶舱数据
+   * SoT: A1-dashboard.md §2.4 数据刷新策略
+   */
+  const handleRefresh = () => {
+    refreshAll();
   };
 
-  // Show skeleton loading state while auth is initializing
-  if (isAuthLoading) {
+  // Show skeleton loading state while auth or data is initializing
+  if (isAuthLoading || isDataLoading) {
     return (
       <div className="space-y-8" data-testid="dashboard-loading">
         {/* Header Skeleton */}
@@ -284,6 +302,22 @@ export function DashboardPage() {
             <CardSkeleton />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // 显示错误状态
+  if (isError) {
+    return (
+      <div className="space-y-6" data-testid="dashboard-error">
+        <AlertUI variant="destructive">
+          <AlertDescription>
+            加载驾驶舱数据失败: {error?.message || '未知错误'}
+            <Button variant="outline" size="sm" className="ml-4" onClick={handleRefresh}>
+              重试
+            </Button>
+          </AlertDescription>
+        </AlertUI>
       </div>
     );
   }

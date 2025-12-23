@@ -8,7 +8,13 @@
 'use client';
 
 import React from 'react';
-import { ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type {
   ProfitByProjectItem,
   ProfitByAccountItem,
@@ -78,6 +84,50 @@ export function ProfitTable({
     return 0;
   };
 
+  // 新增: 获取负责人字段 (仅项目维度)
+  const getOwnerName = (item: ProfitItem): string | null => {
+    if ('owner_name' in item && item.owner_name) {
+      return item.owner_name as string;
+    }
+    return null;
+  };
+
+  // 新增: 格式化 CPL 显示
+  // SoT: MASTER.md §4.5.1 - conversions=0 显示 "--"，<5 显示 "(低量)"
+  const formatCPL = (item: ProfitItem): { value: string; isLowVolume: boolean } => {
+    if (!('cpl' in item)) return { value: '--', isLowVolume: false };
+    const cpl = item.cpl as number | null;
+    const conversions = item.total_conversions || 0;
+
+    if (cpl === null || cpl === undefined || conversions === 0) {
+      return { value: '--', isLowVolume: false };
+    }
+    const isLowVolume = conversions < 5;
+    return {
+      value: `¥${cpl.toFixed(2)}${isLowVolume ? ' (低量)' : ''}`,
+      isLowVolume,
+    };
+  };
+
+  // 新增: 检查是否异常
+  const isAbnormal = (item: ProfitItem): boolean => {
+    if ('is_abnormal' in item) {
+      return Boolean(item.is_abnormal);
+    }
+    // 如果后端未计算，前端也可以计算：CPL > target × 1.3
+    if ('cpl' in item && 'cpl_target' in item) {
+      const cpl = item.cpl as number | null;
+      const target = item.cpl_target as number | null;
+      if (cpl && target && target > 0) {
+        return cpl > target * 1.3;
+      }
+    }
+    return false;
+  };
+
+  // 是否为项目维度（显示负责人、CPL、异常列）
+  const isProjectDimension = dimension === 'project';
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow">
@@ -143,6 +193,12 @@ export function ProfitTable({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 名称
               </th>
+              {/* 新增: 负责人列 (仅项目维度) */}
+              {isProjectDimension && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  负责人
+                </th>
+              )}
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('total_conversions')}
@@ -152,6 +208,18 @@ export function ProfitTable({
                   <ArrowUpDown className="h-3 w-3" />
                 </div>
               </th>
+              {/* 新增: CPL 列 (仅项目维度) */}
+              {isProjectDimension && (
+                <th
+                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('cpl')}
+                >
+                  <div className="flex items-center justify-end gap-1">
+                    CPL
+                    <ArrowUpDown className="h-3 w-3" />
+                  </div>
+                </th>
+              )}
               <th
                 className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('total_revenue')}
@@ -188,12 +256,18 @@ export function ProfitTable({
                   <ArrowUpDown className="h-3 w-3" />
                 </div>
               </th>
+              {/* 新增: 异常列 (仅项目维度) */}
+              {isProjectDimension && (
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  异常
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={isProjectDimension ? 9 : 6} className="px-6 py-12 text-center text-gray-500">
                   暂无数据
                 </td>
               </tr>
@@ -202,9 +276,15 @@ export function ProfitTable({
                 const profit = item.total_profit;
                 const margin = item.profit_margin;
                 const isPositive = profit >= 0;
+                const ownerName = getOwnerName(item);
+                const cplInfo = formatCPL(item);
+                const abnormal = isAbnormal(item);
 
                 return (
-                  <tr key={getIdField(item)} className="hover:bg-gray-50">
+                  <tr
+                    key={getIdField(item)}
+                    className={`hover:bg-gray-50 ${abnormal ? 'bg-red-50/50' : ''}`}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <span className="text-sm font-medium text-gray-500 w-6">
@@ -215,9 +295,23 @@ export function ProfitTable({
                         </span>
                       </div>
                     </td>
+                    {/* 新增: 负责人单元格 */}
+                    {isProjectDimension && (
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {ownerName || '--'}
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
                       {item.total_conversions.toLocaleString()}
                     </td>
+                    {/* 新增: CPL 单元格 */}
+                    {isProjectDimension && (
+                      <td className={`px-6 py-4 whitespace-nowrap text-right text-sm ${
+                        abnormal ? 'text-red-600 font-medium' : 'text-gray-900'
+                      }`}>
+                        {cplInfo.value}
+                      </td>
+                    )}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-green-600">
                       {formatCurrency(item.total_revenue)}
                     </td>
@@ -253,6 +347,27 @@ export function ProfitTable({
                         {margin.toFixed(2)}%
                       </span>
                     </td>
+                    {/* 新增: 异常标记单元格 */}
+                    {isProjectDimension && (
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        {abnormal ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center justify-center">
+                                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>CPL 超过目标 30%</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : (
+                          <span className="text-gray-300">-</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })

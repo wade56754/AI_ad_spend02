@@ -1,13 +1,23 @@
 /**
- * Daily Reports Page Component - Visual Refactor v3.0
+ * DailyReportsPage Component
  *
- * 视觉重构版本：
+ * SoT: docs/10.module-specs/B2-daily-report-review.md §4.1 页面布局
+ * SoT: STATE_MACHINE.md v2.6 Section 8 (日报 8 状态机)
+ * SoT: API_SOT.md v9.0 Section 5.4 (Daily Reports endpoints)
+ *
+ * 一句话定义: 让主管/财务了解"投手今天干得怎样？有无异常？"
+ *
+ * 日报 8 状态机:
+ *   raw_submitted → trend_pending → trend_ok/trend_flagged
+ *   → trend_resolved → final_pending → final_confirmed → final_locked
+ *
+ * 视觉规范 (v3.0):
  * - 打破三明治布局，统一筛选容器
  * - KPI卡片去边框加投影，图标带色块背景
  * - 状态Tab替代状态说明
  * - 页面背景灰色，内容块白色
  *
- * SoT: STATE_MACHINE.md v2.6 Section 8
+ * @module features/daily-reports/components
  */
 
 'use client';
@@ -44,7 +54,7 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DailyReportsTable } from './DailyReportsTable';
-import { useDailyReports, useDailyReportStats } from '../hooks';
+import { useDailyReports, useDailyReportStats, useRefreshDailyReports } from '../hooks';
 import type { DailyReportStatus, DailyReportListParams } from '../types';
 import { STATUS_CONFIG, PLATFORM_OPTIONS, REGION_OPTIONS } from '../types';
 import { useQuery } from '@tanstack/react-query';
@@ -214,7 +224,9 @@ export function DailyReportsPage() {
   const [viewMode, setViewMode] = useState<'table' | 'stats'>('table');
 
   // ========== Data Fetching ==========
-  const { data: reportsData, refetch, isLoading } = useDailyReports(filters);
+  // SoT: B2-daily-report-review.md §5 API 接口
+  const { data: reportsData, isLoading } = useDailyReports(filters);
+  const { refreshAll } = useRefreshDailyReports();
   const { data: stats } = useDailyReportStats({
     start_date: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
     end_date: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
@@ -322,7 +334,7 @@ export function DailyReportsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => refetch()}
+            onClick={() => refreshAll()}
             disabled={isLoading}
             className="text-gray-600"
           >

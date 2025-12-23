@@ -19,6 +19,7 @@ import {
   Pause,
   CheckCircle,
   XCircle,
+  FileEdit,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,14 @@ export const PROJECT_STATUS_BADGE_CONFIG: Record<ProjectStatus, {
   textColor: string;
   description: string;
 }> = {
+  planning: {
+    label: '规划中',
+    icon: FileEdit,
+    variant: 'outline',
+    bgColor: 'bg-gray-50',
+    textColor: 'text-gray-700',
+    description: '项目规划阶段，准备启动',
+  },
   active: {
     label: '进行中',
     icon: Play,

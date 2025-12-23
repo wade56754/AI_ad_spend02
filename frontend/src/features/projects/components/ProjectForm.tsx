@@ -47,6 +47,10 @@ const projectSchema = z.object({
   currency: z.string().min(1, '请选择货币'),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
+  // 新增: 项目负责人、目标CPL、单价
+  owner_id: z.number().optional(),
+  target_cpl: z.number().min(0, '目标CPL不能为负').optional(),
+  unit_price: z.number().min(0, '单价不能为负').optional(),
 });
 
 type ProjectFormValues = z.infer<typeof projectSchema>;
@@ -76,7 +80,10 @@ export function ProjectForm({ project, open, onOpenChange }: ProjectFormProps) {
       client_company: '',
       description: '',
       budget: 0,
-      currency: 'USD',
+      currency: 'CNY',
+      owner_id: undefined,
+      target_cpl: undefined,
+      unit_price: undefined,
     },
   });
 
@@ -91,6 +98,9 @@ export function ProjectForm({ project, open, onOpenChange }: ProjectFormProps) {
         currency: project.currency,
         start_date: project.start_date || '',
         end_date: project.end_date || '',
+        owner_id: project.owner_id || project.account_manager_id,
+        target_cpl: project.target_cpl ?? undefined,
+        unit_price: project.unit_price ?? undefined,
       });
     } else {
       form.reset({
@@ -99,7 +109,10 @@ export function ProjectForm({ project, open, onOpenChange }: ProjectFormProps) {
         client_company: '',
         description: '',
         budget: 0,
-        currency: 'USD',
+        currency: 'CNY',
+        owner_id: undefined,
+        target_cpl: undefined,
+        unit_price: undefined,
       });
     }
   }, [project, form]);
@@ -114,6 +127,9 @@ export function ProjectForm({ project, open, onOpenChange }: ProjectFormProps) {
       currency: values.currency,
       start_date: values.start_date || undefined,
       end_date: values.end_date || undefined,
+      owner_id: values.owner_id,
+      target_cpl: values.target_cpl,
+      unit_price: values.unit_price,
     };
 
     if (isEdit && project) {
@@ -260,6 +276,57 @@ export function ProjectForm({ project, open, onOpenChange }: ProjectFormProps) {
                     <FormLabel>结束日期</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 新增: 目标CPL 和 单价 - C1-project-mgmt.md §8.3 */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="target_cpl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>目标CPL (¥)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="如: 35.00"
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          field.onChange(val ? parseFloat(val) : undefined);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="unit_price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>单粉价格 (¥)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="如: 50.00"
+                        value={field.value ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          field.onChange(val ? parseFloat(val) : undefined);
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -1,8 +1,13 @@
 /**
- * Projects Page Component
+ * ProjectsPage Component
  *
- * Main page for project management with filters, stats, and team management
- * SoT: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6 Section 5
+ * SoT: docs/10.module-specs/C1-project-mgmt.md §3.1 页面布局
+ * SoT: DATA_SCHEMA.md v5.2 (projects entity)
+ * SoT: STATE_MACHINE.md v2.6 Section 5 (项目状态机)
+ *
+ * 一句话定义: 让老板/项目负责人了解"有哪些项目？谁负责？"
+ *
+ * @module features/projects/components
  */
 
 'use client';
@@ -38,7 +43,7 @@ import {
   ProjectStatsCard,
   ProjectStatusLegend,
 } from './ProjectStatusBadge';
-import { useProjects, useProjectStatistics } from '../hooks';
+import { useProjects, useProjectStatistics, useRefreshProjects } from '../hooks';
 import type { Project, ProjectStatus, ProjectListParams } from '../types';
 import { PROJECT_STATUS_CONFIG } from '../types';
 
@@ -62,9 +67,12 @@ export function ProjectsPage() {
   // View mode
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
 
-  // Data fetching
-  const { data: projectsData, refetch } = useProjects(filters);
+  // Data fetching - SoT: C1-project-mgmt.md §4 API 接口
+  const { data: projectsData } = useProjects(filters);
   const { data: statsData } = useProjectStatistics();
+
+  // 刷新 hook - SoT: C1-project-mgmt.md §2.4 数据刷新策略
+  const { refreshAll } = useRefreshProjects();
 
   const stats = statsData?.data;
   const totalProjects = projectsData?.meta?.pagination?.total ?? 0;
@@ -145,7 +153,7 @@ export function ProjectsPage() {
           <p className="text-muted-foreground">管理广告投放项目及预算</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => refreshAll()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             刷新
           </Button>

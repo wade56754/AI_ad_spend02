@@ -1,12 +1,13 @@
 /**
  * PendingTasksCard Component
  *
- * Shows pending items that need attention
- * Based on UI_DESIGN_SYSTEM.md v2.0
+ * SoT: docs/10.module-specs/A1-dashboard.md §3.2 组件清单
  *
- * Card: shadcn Card, rounded-xl
- * Typography: H3 = text-xl font-semibold, Body = text-sm
- * Status colors: warning (orange) for pending, success (green) for done
+ * 显示待处理事项列表
+ * - 待审批充值 (红色 high)
+ * - 待结算项目 (橙色 medium)
+ * - 待对账记录 (橙色 medium)
+ * - 待处理导入 (黄色 low)
  */
 
 'use client';

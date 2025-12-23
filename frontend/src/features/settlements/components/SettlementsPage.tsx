@@ -1,8 +1,40 @@
 /**
- * SettlementsPage Component
+ * SettlementsPage Component - 通用结算管理
  *
- * Main page component for settlement management
- * SoT 对齐: DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1
+ * SoT: docs/10.module-specs/D1-monthly-settlement.md (月度结算规格)
+ * SoT: DATA_SCHEMA.md v5.2 (settlement entity)
+ * SoT: LEDGER_SOT.md v1.1 (ledger integration)
+ * SoT: STATE_MACHINE.md v2.6 Section 12 (结算状态机)
+ *
+ * 一句话定义: 管理供应商和客户的结算审批流程
+ *
+ * 本页面为通用结算 (Supplier/Client Settlement):
+ * - 状态机 (7 状态): DRAFT → PENDING → APPROVED → PROCESSING → COMPLETED
+ *                            ↘ REJECTED
+ *                    任意 → CANCELLED
+ *
+ * 月度项目结算请使用 MonthlySettlementsPage 组件:
+ * - 状态机 (4 状态): pending → draft → confirmed → locked
+ * - SoT: D1-monthly-settlement.md §2.4
+ *
+ * 页面布局:
+ * ┌─────────────────────────────────────────────────┐
+ * │ Header: 标题 + 新增结算按钮                       │
+ * ├─────────────────────────────────────────────────┤
+ * │ KPI Cards: 总数 | 总金额 | 待结算 | 已支付 | 逾期   │
+ * ├─────────────────────────────────────────────────┤
+ * │ Filters: 类型筛选 | 状态筛选 | 搜索/重置/刷新      │
+ * ├─────────────────────────────────────────────────┤
+ * │ Table: 结算明细列表 + 操作按钮                    │
+ * ├─────────────────────────────────────────────────┤
+ * │ Pagination: 分页控制                             │
+ * └─────────────────────────────────────────────────┘
+ *
+ * 权限 (MASTER.md v4.4 §2.4):
+ * - ceo, finance: 查看全部、审批、记录支付
+ * - admin: 全部权限
+ *
+ * Author: AI 代码工厂 v2.4
  */
 
 'use client';

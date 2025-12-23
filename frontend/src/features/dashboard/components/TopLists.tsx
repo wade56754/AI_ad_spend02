@@ -1,11 +1,13 @@
 /**
  * Top Lists Component
  *
- * 展示 Top N 计划列表：
- * 1. 今日消耗 Top N 计划
- * 2. 今日 ROAS 最差 Top N 计划
+ * SoT: docs/10.module-specs/A1-dashboard.md §3.2 组件清单
  *
- * 打通"数据 → 归因对象 → 行动"闭环
+ * 展示 Top N 计划列表：
+ * 1. 今日消耗 Top 5 计划
+ * 2. ROAS 最差 Top 5 计划
+ *
+ * 打通"趋势 → 归因对象 → 行动"闭环
  */
 
 'use client';
