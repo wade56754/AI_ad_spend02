@@ -5,7 +5,7 @@
 > **layer**: sot
 > **owner**: wade
 > **last_reviewed**: 2025-11-27
-> **基准**: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, BUSINESS_RULES.md v3.1, ERROR_CODES_SOT.md v2.1, AUTH_SPEC.md v2.0
+> **基准**: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, BUSINESS_RULES.md v4.0, ERROR_CODES_SOT.md v2.1, AUTH_SPEC.md v2.0
 
 ---
 
@@ -18,7 +18,7 @@
   - 状态机 → STATE_MACHINE.md v2.6 第 9 章
   - 数据结构 → DATA_SCHEMA.md v5.2 第 3.4.1 节
   - 账本规则 → LEDGER_SOT.md v1.1
-  - 业务规则 → BUSINESS_RULES.md v3.1
+  - 业务规则 → BUSINESS_RULES.md v4.0
   - 错误码 → ERROR_CODES_SOT.md v2.1
   - 权限控制 → AUTH_SPEC.md v2.0
 
@@ -887,7 +887,7 @@ interface PayTopupRequest {
 
 ### 12.1 风控规则
 
-**来源**: BUSINESS_RULES.md v3.1 (待补充)
+**来源**: BUSINESS_RULES.md v4.0 (待补充)
 
 | 规则编号 | 说明 | 触发条件 | 处理方式 |
 |---------|------|---------|---------|
@@ -959,7 +959,7 @@ topup_status_transition_failed_total = Counter(
 | **LEDGER_SOT.md v1.1** | 第 2 章 | 账本写入规则 |
 | | 双账本隔离规则 | PROJECT vs SUPPLIER 账本 |
 | | 余额计算公式 | SUM(ledger_entries.amount) |
-| **BUSINESS_RULES.md v3.1** | BR-FIN-* | 充值金额上限(1,000,000)、风控规则 |
+| **BUSINESS_RULES.md v4.0** | BR-FIN-* | 充值金额上限(1,000,000)、风控规则 |
 | **ERROR_CODES_SOT.md v2.1** | BIZ-100 ~ BIZ-107 | 业务错误码 |
 | | STATE-400 ~ STATE-405 | 状态流转错误码 |
 | | AUTH-001, AUTH-002 | 权限错误码 |

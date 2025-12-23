@@ -56,7 +56,7 @@ AI_AD_SYSTEM 文档体系
 ├─ DATA_SCHEMA.md v5.2         ← daily_reports 表结构的唯一来源
 ├─ STATE_MACHINE.md v2.6       ← 粉数确认状态机的唯一来源
 ├─ LEDGER_SOT.md v1.1          ← 双账本逻辑的唯一来源
-├─ BUSINESS_RULES.md v3.1      ← 业务规则的唯一来源
+├─ BUSINESS_RULES.md v4.0      ← 业务规则的唯一来源
 ├─ ERROR_CODES_SOT.md v2.1     ← 错误码定义的唯一来源
 ├─ AUTH_SPEC.md v2.0           ← 权限控制的唯一来源
 │
@@ -451,7 +451,7 @@ daily_report.version = 6
 
 ### 7.1 引用 BUSINESS_RULES.md
 
-**引用**: BUSINESS_RULES.md v3.1
+**引用**: BUSINESS_RULES.md v4.0
 
 | 规则编号 | 规则名称 | 说明 |
 |---------|---------|------|

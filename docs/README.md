@@ -4,7 +4,7 @@ status: ready_for_production
 layer: documentation-index
 owner: wade
 last_reviewed: 2025-12-01
-baseline: MASTER.md v3.6, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0, OpenSpec v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0, OpenSpec v1.0
 ---
 
 # AI广告代投系统 - Documentation Center
@@ -161,14 +161,14 @@ graph TD
 When technical conflicts arise, follow this priority order:
 
 ```
-MASTER.md v3.6 (System Constitution)
+MASTER.md v4.4 (System Constitution)
   ↓
 SoT Layer Freeze v2.6 (Technical Truth)
   ├── STATE_MACHINE.md v2.6 (State transitions)
   ├── DATA_SCHEMA.md v5.2 (Database schema)
   ├── API_SOT.md v9.0 (API contracts)
   ├── ERROR_CODES_SOT.md v2.1 (Error codes)
-  ├── BUSINESS_RULES.md v3.2 (Business logic)
+  ├── BUSINESS_RULES.md v4.0 (Business logic)
   ├── AUTH_SPEC.md v2.0 (Authentication)
   └── LEDGER_SOT.md v1.1 (Ledger system)
   ↓

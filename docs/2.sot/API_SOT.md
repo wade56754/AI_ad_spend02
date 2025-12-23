@@ -89,7 +89,7 @@
 | **real数据流** | `real_spend` | 运营 | T+1 12:00前 | 成本核算 |
 | **final数据流** | `conversions_final` | 运营 | T+1 14:00前 | 计费基准 |
 
-**引用**: MASTER.md v4.4 §4（三数据流）、BUSINESS_RULES.md v3.2
+**引用**: MASTER.md v4.4 §4（三数据流）、BUSINESS_RULES.md v4.0
 
 #### 双账本（PROJECT/SUPPLIER）
 
@@ -2115,7 +2115,7 @@ with db.begin():
 
 **错误码**: PROFIT_001 ~ PROFIT_008（详见 ERROR_CODES_SOT.md v2.1）
 
-**计费公式**（来自 BUSINESS_RULES.md v3.2）:
+**计费公式**（来自 BUSINESS_RULES.md v4.0）:
 - `revenue = conversions_final × unit_price`
 - `cost = real_spend + fee`
 - `profit = revenue - cost`
@@ -2123,7 +2123,7 @@ with db.begin():
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.3.1节 `daily_reports`, 3.2.1节 `projects`, 3.2.9节 `ad_accounts`
-- 业务规则: BUSINESS_RULES.md v3.2 利润计算公式
+- 业务规则: BUSINESS_RULES.md v4.0 利润计算公式
 - 权限矩阵: AUTH_SPEC.md v2.0
 
 ---
@@ -2538,7 +2538,7 @@ draft → submitted
 
 **引用**:
 - 数据表: DATA_SCHEMA.md (weekly_briefs 表)
-- 业务规则: BUSINESS_RULES.md v3.2
+- 业务规则: BUSINESS_RULES.md v4.0
 
 ---
 
@@ -2747,4 +2747,4 @@ try {
 - 所有字段严格对齐 DATA_SCHEMA.md v5.2
 - 所有状态流转严格对齐 STATE_MACHINE.md v2.6
 - 所有错误码严格对齐 ERROR_CODES_SOT.md v2.1
-- 所有业务规则严格对齐 BUSINESS_RULES.md v3.2
+- 所有业务规则严格对齐 BUSINESS_RULES.md v4.0

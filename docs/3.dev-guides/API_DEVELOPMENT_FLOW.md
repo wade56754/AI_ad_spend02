@@ -65,7 +65,7 @@ graph TD
 1. **定位相关 SoT 文档**（按裁判链优先级查阅）：
    ```
    MASTER.md v4.4 → STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2
-   → BUSINESS_RULES.md v3.2 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
+   → BUSINESS_RULES.md v4.0 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
    → AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.1
    → 专项 SoT（DAILY_REPORT/TRANSFER/RECONCILIATION）
    ```
@@ -534,7 +534,7 @@ raise PermissionError(
 **SoT 裁判链优先级**（来源: MASTER.md v4.4）：
 ```
 MASTER.md v4.4 → STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2
-→ BUSINESS_RULES.md v3.2 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
+→ BUSINESS_RULES.md v4.0 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
 → AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.1
 ```
 
