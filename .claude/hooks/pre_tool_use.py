@@ -1,182 +1,319 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-PreToolUse Hook - Write/Edit 工具使用前的代码检查
-"""
-import sys
-import os
-import json
-import re
-import io
+PreToolUse Hook - 工具使用前的合规检查
 
-# 在 Windows 上设置 UTF-8 输出编码
+从 stdin 读取 JSON 输入，调用 ComplianceChecker 检查内容，
+输出 approve/reject 决策到 stdout。
+
+输入格式 (stdin JSON):
+{
+    "tool_name": "Write",
+    "tool_input": {
+        "file_path": "/path/to/file.py",
+        "content": "code content..."
+    }
+}
+
+输出格式 (stdout JSON):
+{
+    "decision": "approve",  // approve | reject
+    "reason": null          // 拒绝原因
+}
+"""
+
+import io
+import json
+import logging
+import os
+import re
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+# Windows UTF-8 编码设置
 if sys.platform == "win32":
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
-# 合法角色列表（来自 MASTER.md v4.4 §2.4）
+# 设置日志
+LOG_DIR = Path(__file__).parent.parent / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / "pre_tool_use.log"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# 导入合规检查器（带回退）
+# =============================================================================
+
+try:
+    # 添加 lib 目录到路径
+    sys.path.insert(0, str(Path(__file__).parent))
+    from lib.compliance_checker import (
+        ComplianceChecker,
+        Severity,
+        check_code,
+        is_compliant,
+    )
+    CHECKER_AVAILABLE = True
+    logger.info("ComplianceChecker loaded successfully")
+except ImportError as e:
+    CHECKER_AVAILABLE = False
+    logger.warning(f"ComplianceChecker not available: {e}")
+
+    # 回退到内置检查
+    class Severity:
+        CRITICAL = "critical"
+        WARNING = "warning"
+
+
+# =============================================================================
+# 内置检查规则（ComplianceChecker 不可用时的回退）
+# =============================================================================
+
+# 合法角色列表
 VALID_ROLES = {
-    "ceo",
-    "project_owner",
-    "finance",
-    "supervisor",
-    "pitcher",
-    "account_manager",
-    "admin",
+    "ceo", "project_owner", "finance", "supervisor",
+    "pitcher", "account_manager", "admin"
 }
 
-# Phase 2 功能关键词（禁止在 Phase 1 使用）
-PHASE2_KEYWORDS = [
-    r"auto[_-]?reject",
-    r"auto[_-]?suspend",
-    r"auto[_-]?freeze",
-    r"auto[_-]?disable",
-    r"auto[_-]?block",
-    r"auto[_-]?penalty",
-    r"forced[_-]?approval",
-    r"mandatory[_-]?approval",
-    r"自动拒绝",
-    r"自动暂停",
-    r"自动冻结",
-    r"自动禁用",
-    r"自动封禁",
-    r"强制审批",
+# Phase 2 禁止关键词
+PHASE2_PATTERNS = [
+    (r"auto[_-]?reject", "Phase 1 禁止 auto_reject"),
+    (r"auto[_-]?suspend", "Phase 1 禁止 auto_suspend"),
+    (r"auto[_-]?block", "Phase 1 禁止 auto_block"),
+    (r"auto[_-]?freeze", "Phase 1 禁止 auto_freeze"),
+    (r"force[_-]?stop", "Phase 1 禁止 force_stop"),
+    (r"forced?[_-]?approval", "Phase 1 禁止 forced_approval"),
+]
+
+# 禁止模式
+FORBIDDEN_PATTERNS = [
+    (r"\.(balance|current_balance)\s*[+\-*/]?=", "禁止直接修改 balance"),
+    (r"status\s*[=!]=\s*['\"]?(draft|submitted|approved|rejected)['\"]?", "使用旧状态名"),
+]
+
+# Bash 危险命令
+BASH_DANGEROUS_PATTERNS = [
+    (r"UPDATE\s+.*balance", "禁止通过 SQL 直接修改 balance"),
+    (r"rm\s+-rf?\s+.*docs/2\.sot", "禁止删除 SoT 文档"),
+    (r"DELETE\s+FROM\s+.*sot", "禁止删除 SoT 相关数据"),
 ]
 
 
-def check_phase2_features(content: str, file_path: str) -> list:
-    """检测 Phase 2 功能"""
-    violations = []
+# =============================================================================
+# 检查函数
+# =============================================================================
 
-    for pattern in PHASE2_KEYWORDS:
-        matches = re.finditer(pattern, content, re.IGNORECASE)
-        for match in matches:
-            line_num = content[: match.start()].count("\n") + 1
-            violations.append(
-                f"  ⚠️  {file_path}:{line_num} - 检测到 Phase 2 功能关键词: '{match.group()}'"
-            )
+def builtin_check_content(content: str, filepath: str) -> list[dict]:
+    """内置检查（回退方案）"""
+    violations = []
+    lines = content.split("\n")
+
+    # Phase 2 检查
+    for pattern, message in PHASE2_PATTERNS:
+        for match in re.finditer(pattern, content, re.IGNORECASE):
+            line_num = content[:match.start()].count("\n") + 1
+            violations.append({
+                "severity": Severity.CRITICAL,
+                "message": message,
+                "line": line_num,
+                "snippet": lines[line_num - 1].strip() if line_num <= len(lines) else "",
+            })
+
+    # 禁止模式检查
+    for pattern, message in FORBIDDEN_PATTERNS:
+        for match in re.finditer(pattern, content, re.IGNORECASE):
+            line_num = content[:match.start()].count("\n") + 1
+            violations.append({
+                "severity": Severity.CRITICAL,
+                "message": message,
+                "line": line_num,
+                "snippet": lines[line_num - 1].strip() if line_num <= len(lines) else "",
+            })
 
     return violations
 
 
-def check_foreign_key_naming(content: str, file_path: str) -> list:
-    """检测外键命名是否使用 _id 后缀"""
-    violations = []
+def check_write_tool(tool_input: dict) -> tuple[str, str | None]:
+    """
+    检查 Write 工具
 
-    # 检测 SQLAlchemy ForeignKey 定义
-    fk_pattern = r"ForeignKey\(['\"]([^'\"]+)['\"]"
-    matches = re.finditer(fk_pattern, content)
+    Returns:
+        (decision, reason)
+    """
+    file_path = tool_input.get("file_path", "")
+    content = tool_input.get("content", "")
 
-    for match in matches:
-        fk_ref = match.group(1)
-        line_num = content[: match.start()].count("\n") + 1
+    if not content:
+        return "approve", None
 
-        # 检查当前行上下文，查找字段名
-        lines = content.split("\n")
-        if line_num <= len(lines):
-            current_line = lines[line_num - 1]
+    # 只检查代码文件
+    if not any(file_path.endswith(ext) for ext in [".py", ".ts", ".tsx", ".js", ".jsx"]):
+        return "approve", None
 
-            # 提取字段名（通常是 field_name = Column(...)）
-            field_match = re.search(r"(\w+)\s*=\s*Column", current_line)
-            if field_match:
-                field_name = field_match.group(1)
+    # 使用 ComplianceChecker 或内置检查
+    if CHECKER_AVAILABLE:
+        checker = ComplianceChecker()
+        result = checker.check_content(file_path, content)
+        critical_violations = checker.get_critical_violations()
 
-                # 检查字段名是否以 _id 结尾
-                if not field_name.endswith("_id"):
-                    violations.append(
-                        f"  ⚠️  {file_path}:{line_num} - 外键字段 '{field_name}' 缺少 _id 后缀 (引用: {fk_ref})"
-                    )
+        if critical_violations:
+            reasons = [f"{v.file}:{v.line} - {v.message}" for v in critical_violations[:3]]
+            reason = f"Critical violations ({len(critical_violations)}): " + "; ".join(reasons)
+            logger.warning(f"Write rejected: {file_path} - {len(critical_violations)} critical violations")
+            return "reject", reason
+    else:
+        violations = builtin_check_content(content, file_path)
+        critical = [v for v in violations if v["severity"] == Severity.CRITICAL]
 
-    return violations
+        if critical:
+            reasons = [f"Line {v['line']}: {v['message']}" for v in critical[:3]]
+            reason = f"Critical violations ({len(critical)}): " + "; ".join(reasons)
+            logger.warning(f"Write rejected: {file_path} - {len(critical)} critical violations")
+            return "reject", reason
 
-
-def check_invalid_roles(content: str, file_path: str) -> list:
-    """检测是否引入未定义角色"""
-    violations = []
-
-    # 检测角色定义（Enum、List 等）
-    role_patterns = [
-        r'role["\']?\s*[:=]\s*["\'](\w+)["\']',  # role = "something" 或 role: "something"
-        r'UserRole\.[A-Z_]+\s*=\s*["\'](\w+)["\']',  # UserRole.XXX = "something"
-        r'roles?\s*=\s*\[[^\]]*["\'](\w+)["\'][^\]]*\]',  # roles = ["something", ...]
-    ]
-
-    for pattern in role_patterns:
-        matches = re.finditer(pattern, content, re.IGNORECASE)
-        for match in matches:
-            role_value = match.group(1).lower()
-
-            if role_value not in VALID_ROLES and role_value not in [
-                "user",
-                "guest",
-                "public",
-            ]:  # 排除明显非业务角色
-                line_num = content[: match.start()].count("\n") + 1
-                violations.append(
-                    f"  ⚠️  {file_path}:{line_num} - 检测到未定义角色: '{role_value}' (合法角色: {', '.join(sorted(VALID_ROLES))})"
-                )
-
-    return violations
+    logger.info(f"Write approved: {file_path}")
+    return "approve", None
 
 
-def main():
-    """主检查逻辑"""
-    tool_name = os.environ.get("TOOL_NAME", "")
-    tool_params_json = os.environ.get("TOOL_PARAMETERS_JSON", "{}")
+def check_edit_tool(tool_input: dict) -> tuple[str, str | None]:
+    """
+    检查 Edit 工具
 
-    # 只检查 Write 和 Edit 工具
-    if tool_name not in ["Write", "Edit"]:
-        return 0
+    Returns:
+        (decision, reason)
+    """
+    file_path = tool_input.get("file_path", "")
+    new_string = tool_input.get("new_string", "")
 
+    if not new_string:
+        return "approve", None
+
+    # 只检查代码文件
+    if not any(file_path.endswith(ext) for ext in [".py", ".ts", ".tsx", ".js", ".jsx"]):
+        return "approve", None
+
+    # 使用 ComplianceChecker 或内置检查
+    if CHECKER_AVAILABLE:
+        checker = ComplianceChecker()
+        result = checker.check_content(file_path, new_string)
+        critical_violations = checker.get_critical_violations()
+
+        if critical_violations:
+            reasons = [f"{v.message}" for v in critical_violations[:3]]
+            reason = f"Critical violations in edit: " + "; ".join(reasons)
+            logger.warning(f"Edit rejected: {file_path} - {len(critical_violations)} critical violations")
+            return "reject", reason
+    else:
+        violations = builtin_check_content(new_string, file_path)
+        critical = [v for v in violations if v["severity"] == Severity.CRITICAL]
+
+        if critical:
+            reasons = [f"{v['message']}" for v in critical[:3]]
+            reason = f"Critical violations in edit: " + "; ".join(reasons)
+            logger.warning(f"Edit rejected: {file_path} - {len(critical)} critical violations")
+            return "reject", reason
+
+    logger.info(f"Edit approved: {file_path}")
+    return "approve", None
+
+
+def check_bash_tool(tool_input: dict) -> tuple[str, str | None]:
+    """
+    检查 Bash 工具
+
+    Returns:
+        (decision, reason)
+    """
+    command = tool_input.get("command", "")
+
+    if not command:
+        return "approve", None
+
+    # 检查危险命令
+    for pattern, message in BASH_DANGEROUS_PATTERNS:
+        if re.search(pattern, command, re.IGNORECASE):
+            logger.warning(f"Bash rejected: {message} - {command[:100]}")
+            return "reject", message
+
+    logger.info(f"Bash approved: {command[:50]}...")
+    return "approve", None
+
+
+# =============================================================================
+# 主函数
+# =============================================================================
+
+def output_decision(decision: str, reason: str | None = None) -> None:
+    """输出决策到 stdout"""
+    result = {
+        "decision": decision,
+        "reason": reason,
+    }
+    print(json.dumps(result, ensure_ascii=False))
+
+
+def main() -> int:
+    """主函数"""
     try:
-        params = json.loads(tool_params_json)
-        file_path = params.get("file_path", "")
-        content = params.get("content") or params.get("new_string", "")
+        # 从 stdin 读取输入
+        input_data = sys.stdin.read()
 
-        if not content:
-            return 0
+        if not input_data.strip():
+            # 空输入，尝试从环境变量读取（兼容旧模式）
+            tool_name = os.environ.get("TOOL_NAME", "")
+            tool_params_json = os.environ.get("TOOL_PARAMETERS_JSON", "{}")
 
-        # 只检查 Python 和 TypeScript 文件
-        if not (file_path.endswith(".py") or file_path.endswith(".ts") or file_path.endswith(".tsx")):
-            return 0
+            if tool_name:
+                try:
+                    tool_input = json.loads(tool_params_json)
+                except json.JSONDecodeError:
+                    tool_input = {}
+            else:
+                output_decision("approve")
+                return 0
+        else:
+            # 解析 stdin JSON
+            try:
+                data = json.loads(input_data)
+                tool_name = data.get("tool_name", "")
+                tool_input = data.get("tool_input", {})
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON input: {e}")
+                output_decision("approve")
+                return 0
 
-        all_violations = []
+        logger.info(f"Checking tool: {tool_name}")
 
-        # 执行各项检查
-        all_violations.extend(check_phase2_features(content, file_path))
-        all_violations.extend(check_foreign_key_naming(content, file_path))
-        all_violations.extend(check_invalid_roles(content, file_path))
+        # 根据工具类型分发检查
+        if tool_name in ["Write", "create_file"]:
+            decision, reason = check_write_tool(tool_input)
+        elif tool_name in ["Edit", "str_replace", "str_replace_editor"]:
+            decision, reason = check_edit_tool(tool_input)
+        elif tool_name in ["Bash", "bash_tool", "execute_command"]:
+            decision, reason = check_bash_tool(tool_input)
+        else:
+            # 其他工具默认允许
+            decision, reason = "approve", None
 
-        # 输出检查结果
-        if all_violations:
-            print("=" * 80)
-            print("❌ PreToolUse Hook - 检测到代码违规")
-            print("=" * 80)
-            print()
-
-            for violation in all_violations:
-                print(violation)
-
-            print()
-            print("📖 提醒：")
-            print("  • Phase 1 禁止自动阻断/惩罚功能")
-            print("  • 外键字段必须使用 _id 后缀（如：project_id, user_id）")
-            print(f"  • 仅允许 7 个角色：{', '.join(sorted(VALID_ROLES))}")
-            print()
-            print("=" * 80)
-            print("⚠️  请修复以上问题后重试")
-            print("=" * 80)
-            print()
-
-            # 返回非零值会阻止工具执行
-            return 1
-
-        # 无违规，允许执行
-        return 0
+        output_decision(decision, reason)
+        return 0 if decision == "approve" else 1
 
     except Exception as e:
-        print(f"⚠️  PreToolUse Hook 执行出错: {e}", file=sys.stderr)
+        logger.error(f"Hook error: {e}", exc_info=True)
         # 出错时不阻止工具执行
+        output_decision("approve")
         return 0
 
 
