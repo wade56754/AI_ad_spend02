@@ -1,9 +1,9 @@
 # 认证与授权规范（AUTH_SPEC - Single Source of Truth�?
 
-> **文档版本**: v2.0 (正式SoT)
+> **文档版本**: v2.1 (正式SoT)
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
+> **last_reviewed**: 2025-12-24
 > **发布日期**: 2025-01-22
 > **文档类型**: 认证授权领域唯一真相源（SoT-Auth）
 > **适用范围**: FastAPI后端 + Supabase Auth + Next.js前端
@@ -88,13 +88,15 @@ CREATE TABLE users (
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(255),  -- 冗余字段，从auth.users同步
 
-    -- ===== 角色与权限（五枚举固定定义） =====
+    -- ===== 角色与权限（七枚举固定定义, AUTH_SPEC.md v2.1 §2.2） =====
     role VARCHAR(20) NOT NULL CHECK (role IN (
-        'admin',
-        'finance',
-        'data_operator',
-        'account_manager',
-        'media_buyer'
+        'ceo',             -- 老板 (L7)
+        'admin',           -- 系统管理员 (L6)
+        'project_owner',   -- 项目负责人 (L5)
+        'finance',         -- 财务 (L4)
+        'data_operator',   -- 主管/supervisor (L3)
+        'account_manager', -- 户管 (L2)
+        'media_buyer'      -- 投手/pitcher (L1)
     )),
 
     -- ===== 组织信息 =====
@@ -135,44 +137,39 @@ CREATE INDEX idx_users_last_login ON users(last_login_at);
 CREATE INDEX idx_users_email ON users(email);
 ```
 
-### 2.2 role五枚举固定定�?
+### 2.2 role 七角色固定定义（MASTER.md v4.4 对齐）
 
-**引用**: BUSINESS_RULES.md v4.1 - BR-AUTH-001, BR-USER-001
+**引用**: MASTER.md v4.4 §2.4, BUSINESS_RULES.md v4.1 - BR-AUTH-001, BR-USER-001
 
-| 角色代码 | 角色名称 | 权限级别 | 主要职责 |
-|---------|---------|---------|---------|
-| `admin` | 系统管理�?| L5 (最�? | 系统配置、全局审计、紧急干预、用户管�?|
-| `finance` | 财务 | L4 | 充值终审、资金监控、财务对账、账本管�?|
-| `data_operator` | 数据操作�?户管 | L3 | 日报审核、数据校验、Excel导入导出 |
-| `account_manager` | 客户经理 | L2 | 项目维护、成员管理、充值初�?|
-| `media_buyer` | 投手/媒体采购 | L1 (最�? | 日报提交、充值申请、凭证上�?|
+> **v2.1 更新 (2025-12-24)**: 从 5 个技术角色扩展为 7 个业务角色，与 MASTER.md v4.4 完全对齐。
+
+| 角色代码 | 业务名称 | 权限级别 | 主要职责 | 可见范围 |
+|---------|---------|---------|---------|---------|
+| `ceo` | 老板 | L7 (最高) | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
+| `admin` | 系统管理员 | L6 | 系统配置、全局审计、紧急干预、用户管理 | 全部可见（不参与业务决策） |
+| `project_owner` | 项目负责人 | L5 | 项目盈亏、资金使用效率、团队协调 | 自己项目，申请充值，提交周报 |
+| `finance` | 财务 | L4 | 资金出入准确、数据真实、对账 | 充值/账本/对账，审核充值 |
+| `supervisor` | 主管 | L3 | 团队产出、投手管理、日常监督 | 全局日报/账户，审核日报，标记异常 |
+| `account_manager` | 户管 | L2 | 账户分配、账户状态监控 | 仅账户管理，分配账户给投手 |
+| `pitcher` | 投手 | L1 (最低) | CPL 达标、日报准确、执行投放 | 仅自己提交的日报和分配的账户 |
+
+**技术层角色映射**（兼容旧代码）:
+
+| 业务角色 | 技术层枚举 | 说明 |
+|---------|-----------|------|
+| ceo | `ceo` | 新增角色，不复用 admin |
+| admin | `admin` | 保持不变 |
+| project_owner | `project_owner` | 新增角色 |
+| finance | `finance` | 保持不变 |
+| supervisor | `data_operator` | 技术名保持兼容，业务文档使用 supervisor |
+| account_manager | `account_manager` | 保持不变 |
+| pitcher | `media_buyer` | 技术名保持兼容，业务文档使用 pitcher |
 
 **强制约束**:
-- �?**禁止**添加新角色（如`super_admin`、`manager`、`operator`等）
-- �?**禁止**一个用户拥有多个角色（不支持角色数组）
-- �?角色一旦创建，仅`admin`可修改（需记录审计日志�?
-- �?角色修改必须通过API，禁止直接UPDATE数据�?
-
-### 2.2A 业务层角色映射（MASTER v4.4 对齐）
-
-> **引用**: MASTER.md v4.4 §2.4
-
-技术层维持 5 角色 CHECK 约束不变，业务层（老板视角）通过以下映射对齐 MASTER 定义：
-
-| MASTER 业务角色 | 技术层角色 | 实现方式 |
-|----------------|-----------|---------|
-| ceo | admin | 直接使用 admin 角色 |
-| project_owner | - | 通过 `users.is_project_owner=true` 或 `project_members` 表标识 |
-| finance | finance | 直接使用 finance 角色 |
-| supervisor | data_operator | 直接使用 data_operator 角色 |
-| pitcher | media_buyer | 直接使用 media_buyer 角色 |
-| account_manager | account_manager | 直接使用 account_manager 角色 |
-| admin | admin | 直接使用 admin 角色 |
-
-**映射规则**:
-- `project_owner` 不新增角色枚举，通过业务属性（用户表字段或 project_members 关联）实现
-- 文档中出现的「运营」指代 `supervisor`（data_operator）或 `finance` 角色
-- 禁止新增角色枚举，必须复用上述 5 个技术层角色
+- ❌ **禁止**添加白名单外的新角色
+- ❌ **禁止**一个用户拥有多个角色（不支持角色数组）
+- ✅ 角色一旦创建，仅 `admin` 或 `ceo` 可修改（需记录审计日志）
+- ✅ 角色修改必须通过 API，禁止直接 UPDATE 数据库
 
 ### 2.3 JSONB字段结构
 

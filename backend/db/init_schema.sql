@@ -43,13 +43,13 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 
 -- 1.1 users (业务用户表) - DATA_SCHEMA.md §3.1.1
--- 角色枚举: AUTH_SPEC.md §2.2 定义 5 个合法角色
+-- 角色枚举: AUTH_SPEC.md v2.1 §2.2 定义 7 个合法角色
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     username VARCHAR(50) UNIQUE,
     full_name VARCHAR(100),
     email VARCHAR(255),
-    role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'finance', 'data_operator', 'account_manager', 'media_buyer')),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('ceo', 'admin', 'project_owner', 'finance', 'data_operator', 'account_manager', 'media_buyer')),
     department VARCHAR(100),
     position VARCHAR(100),
     account_manager_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -154,12 +154,12 @@ CREATE TRIGGER trg_projects_updated_at BEFORE UPDATE ON projects
     FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
 
 -- 2.2 project_members (项目成员) - DATA_SCHEMA.md §3.2.2
--- 角色枚举: 与全局角色一致 (AUTH_SPEC.md §2.2)
+-- 项目角色枚举: owner(负责人)/member(成员)/viewer(观察者)
 CREATE TABLE IF NOT EXISTS project_members (
     id BIGSERIAL PRIMARY KEY,
     project_id BIGINT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role VARCHAR(20) CHECK (role IN ('admin', 'finance', 'data_operator', 'account_manager', 'media_buyer')),
+    role VARCHAR(20) CHECK (role IN ('owner', 'member', 'viewer')),
     permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
     joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     notes TEXT,

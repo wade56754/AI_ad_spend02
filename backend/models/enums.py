@@ -11,23 +11,28 @@ class UserRole(str, Enum):
     """
     用户角色枚举
 
-    必须与 MASTER.md v4.4 §2.4 保持严格一致。
-    7 个业务角色映射到 6 个技术角色:
-    - admin: 系统管理员 (映射: ceo, admin)
-    - finance: 财务
-    - data_operator: 数据运营 (映射: supervisor)
-    - account_manager: 账户管理员
-    - media_buyer: 广告投手 (映射: pitcher)
-    - project_owner: 项目负责人 (新增)
+    必须与 MASTER.md v4.4 §2.4 和 AUTH_SPEC.md v2.1 §2.2 保持严格一致。
+    7 个业务角色对应 7 个技术角色:
 
-    SoT Reference: MASTER.md v4.4 §2.4, STATE_MACHINE.md v2.6 §2
+    | 业务角色 | 技术枚举 | 权限级别 |
+    |---------|----------|---------|
+    | ceo | CEO | L7 (最高) |
+    | admin | ADMIN | L6 |
+    | project_owner | PROJECT_OWNER | L5 |
+    | finance | FINANCE | L4 |
+    | supervisor | DATA_OPERATOR | L3 |
+    | account_manager | ACCOUNT_MANAGER | L2 |
+    | pitcher | MEDIA_BUYER | L1 (最低) |
+
+    SoT Reference: MASTER.md v4.4 §2.4, AUTH_SPEC.md v2.1 §2.2
     """
-    ADMIN = "admin"                      # 系统管理员
-    FINANCE = "finance"                  # 财务
-    DATA_OPERATOR = "data_operator"      # 数据运营
-    ACCOUNT_MANAGER = "account_manager"  # 账户管理员
-    MEDIA_BUYER = "media_buyer"          # 广告投手
-    PROJECT_OWNER = "project_owner"      # 项目负责人 (MASTER.md v4.4 新增)
+    CEO = "ceo"                          # 老板 - 资金安全、公司盈亏、最终决策
+    ADMIN = "admin"                      # 系统管理员 - 系统配置、全局审计
+    PROJECT_OWNER = "project_owner"      # 项目负责人 - 项目盈亏、资金使用效率
+    FINANCE = "finance"                  # 财务 - 资金出入准确、数据真实
+    DATA_OPERATOR = "data_operator"      # 主管(supervisor) - 团队产出、投手管理
+    ACCOUNT_MANAGER = "account_manager"  # 户管 - 账户分配、账户状态监控
+    MEDIA_BUYER = "media_buyer"          # 投手(pitcher) - CPL达标、日报准确
 
 
 class ChannelStatus(str, Enum):
@@ -240,3 +245,15 @@ class ImportJobType(str, Enum):
     SPEND = "spend"                    # 消耗数据导入
     RECONCILIATION = "reconciliation"  # 对账数据导入
     DAILY_REPORT = "daily_report"      # 日报数据导入
+
+
+class WeeklyBriefStatus(str, Enum):
+    """
+    周报状态枚举
+
+    必须与 B3-weekly-brief.md §2.5 保持严格一致。
+    状态流程: draft → submitted
+    终态: submitted
+    """
+    DRAFT = "draft"           # 草稿，可编辑
+    SUBMITTED = "submitted"   # 已提交，不可修改

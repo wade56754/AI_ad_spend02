@@ -1,11 +1,11 @@
 # TOPUP_SOT.md - 充值申请生命周期规范
 
-> **版本**: v1.0
-> **status**: draft
+> **版本**: v1.1
+> **status**: active
 > **layer**: sot
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
-> **基准**: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, BUSINESS_RULES.md v4.1, ERROR_CODES_SOT.md v2.1, AUTH_SPEC.md v2.0
+> **last_reviewed**: 2025-12-24
+> **基准**: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, BUSINESS_RULES.md v4.1, ERROR_CODES_SOT.md v2.1, AUTH_SPEC.md v2.1
 
 ---
 

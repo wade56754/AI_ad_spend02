@@ -3,7 +3,7 @@ version: v1.2
 status: ready_for_production
 layer: documentation-index
 owner: wade
-last_reviewed: 2025-12-01
+last_reviewed: 2025-12-24
 baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0, OpenSpec v1.0
 ---
 
@@ -67,7 +67,7 @@ graph TD
 | [API_SOT.md](./2.sot/API_SOT.md) | v9.0 | 🟢 Frozen | REST API contracts, 50+ endpoints |
 | [ERROR_CODES_SOT.md](./2.sot/ERROR_CODES_SOT.md) | v2.1 | 🟢 Frozen | Global error code registry (AUTH/BIZ/VAL/SYS/DB/STATE/TREND) |
 | [BUSINESS_RULES.md](./2.sot/BUSINESS_RULES.md) | v3.2 | 🟢 Frozen | Business logic rules, pricing formulas |
-| [AUTH_SPEC.md](./2.sot/AUTH_SPEC.md) | v2.0 | 🟢 Frozen | 5 user roles, RBAC permissions |
+| [AUTH_SPEC.md](./2.sot/AUTH_SPEC.md) | v2.1 | 🟢 Active | 7 user roles, RBAC permissions |
 | [LEDGER_SOT.md](./2.sot/LEDGER_SOT.md) | v1.1 | 🟢 Frozen | Dual-ledger system (PROJECT vs SUPPLIER) |
 | [DAILY_REPORT_SOT.md](./2.sot/DAILY_REPORT_SOT.md) | v1.0 | 🟢 Frozen | Daily report workflow and data flow |
 | [TRANSFER_SOT.md](./2.sot/TRANSFER_SOT.md) | v1.0 | 🟢 Frozen | Transfer workflow specification |
@@ -95,6 +95,7 @@ graph TD
 | [DEV_ONBOARDING_CHECKLIST.md](./3.dev-guides/DEV_ONBOARDING_CHECKLIST.md) | v1.0 | 🟢 Frozen | 新成员上手检查清单 |
 | [UI_DESIGN_SYSTEM.md](./3.dev-guides/UI_DESIGN_SYSTEM.md) | v1.0 | 🟢 Frozen | UI 设计系统规范 |
 | [DDD_API_ARCHITECTURE.md](./3.dev-guides/DDD_API_ARCHITECTURE.md) | v1.0 | 🟢 Frozen | DDD 架构最佳实践 |
+| [PATTERNS.md](./3.dev-guides/PATTERNS.md) | v1.0 | 🟢 Active | 代码模式与最佳实践 |
 | [DEV_GUIDES_FREEZE_MANIFEST_vFinal.md](./3.dev-guides/DEV_GUIDES_FREEZE_MANIFEST_v1.0.md) | vFinal | 🟢 Frozen | Dev-Guides Layer freeze record |
 
 **Freeze Date**: 2025-11-27 | **Health Score**: 100/100
@@ -169,7 +170,7 @@ SoT Layer Freeze v2.6 (Technical Truth)
   ├── API_SOT.md v9.3 (API contracts)
   ├── ERROR_CODES_SOT.md v2.1 (Error codes)
   ├── BUSINESS_RULES.md v4.0 (Business logic)
-  ├── AUTH_SPEC.md v2.0 (Authentication)
+  ├── AUTH_SPEC.md v2.1 (Authentication)
   └── LEDGER_SOT.md v1.1 (Ledger system)
   ↓
 Dev-Guides Layer Freeze vFinal (Workflows)
@@ -393,22 +394,21 @@ openspec archive <change-id> --yes
 
 ## 📋 Proposals & Research (提案与调研)
 
-**Purpose**: Architecture proposals, reference research, and improvement plans
+**Status**: Archived (2025-12-24)
 
-| Document | Purpose | Status |
-|----------|---------|--------|
-| [AI_CODE_FACTORY_REFACTOR_PROPOSAL](./proposals/AI_CODE_FACTORY_REFACTOR_PROPOSAL.md) | 代码工厂重构方案 - 5阶段工作流设计 | 🟡 Active |
-| [CODE_FACTORY_REFERENCE_PROJECTS](./proposals/CODE_FACTORY_REFERENCE_PROJECTS.md) | 参考项目调研 - MetaGPT, OpenHands, SWE-agent | 🟢 Complete |
-| [AI_DRIVEN_DEV_REFERENCES](./proposals/AI_DRIVEN_DEV_REFERENCES.md) | AI驱动开发参考 - Cursor Rules, Spec-Kit | 🟢 Complete |
-| [DOC_STRUCTURE_ANALYSIS_REPORT](./proposals/DOC_STRUCTURE_ANALYSIS_REPORT.md) | 文档结构问题分析报告 | 🟢 Complete |
+> 所有提案文档已归档至 `docs/archive/2025-12-doc-cleanup/proposals/`
+>
+> 归档原因：大部分提案已被采纳并实施，或已被新版本规范取代。
 
 ---
 
 ## 📚 Learning Resources (学习资源)
 
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| [LEARNING_PLAN_80_20](./LEARNING_PLAN_80_20.md) | 80/20 学习计划 - 快速上手指南 | New Members |
+**Status**: Archived (2025-12-24)
+
+> 学习资源已归档至 `docs/archive/2025-12-doc-cleanup/root-relocated/`
+>
+> 新成员请参考 [DEV_ONBOARDING_CHECKLIST.md](./3.dev-guides/DEV_ONBOARDING_CHECKLIST.md) 开始上手。
 
 ---
 
@@ -451,4 +451,4 @@ openspec archive <change-id> --yes
 
 ---
 
-**Last Updated**: 2025-12-01 | **ASDD Framework Version**: 6-Layer Complete ✅ | **OpenSpec Integrated**: v1.0
+**Last Updated**: 2025-12-24 | **ASDD Framework Version**: 6-Layer Complete ✅ | **OpenSpec Integrated**: v1.0

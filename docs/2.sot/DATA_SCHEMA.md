@@ -1,16 +1,16 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
-> **版本**: v5.2
+> **版本**: v5.3
 > **status**: frozen
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
+> **last_reviewed**: 2025-12-24
 > **更新日期**: 2025‑11‑22
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
 > - 实现规范 → `../1.overview/MASTER.md` v4.4
 > - 状态机 → `STATE_MACHINE.md` v2.6（任何状态字段必须引用对应状态机）
-> - 业务规则 → `BUSINESS_RULES.md` v3.2
+> - 业务规则 → `BUSINESS_RULES.md` v4.1
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
 > - 业务需求 → `BRD_chapter1_v3.1.md` (BRD v3.1基线)
 
@@ -78,6 +78,7 @@
 | `daily_reports` | 日报 | BIGSERIAL | implemented |
 | `daily_report_audit_logs` | 日报审计日志 | BIGSERIAL | implemented |
 | `ad_spend_daily` | 外部导入日消耗 | UUID | implemented |
+| `weekly_briefs` | 周度简报 | BIGSERIAL | implemented |
 | `topup_requests` | 充值申请 | BIGSERIAL | implemented |
 | `topup_transactions` | 充值到账流水 | BIGSERIAL | implemented |
 | `topup_approval_logs` | 充值审批操作记录 | BIGSERIAL | implemented |
@@ -272,7 +273,7 @@
 | `project_id` BIGINT FK → `projects.id` | |
 | `channel_id` UUID FK → `channels.id` | |
 | `supplier_id` UUID | 可空, 所属供应商ID(用于死号迁移规则判断:同供应商vs跨供应商),FK → `suppliers.id` |
-| `owner_id` UUID FK → `users.id` | 账户负责人，通常应为 `account_manager` 或 `media_buyer`，由 Service 层校验 |
+| `owner_id` UUID FK → `users.id` | 账户负责人，通常应为 `account_manager` 或 `pitcher`，由 Service 层校验 |
 | `name` VARCHAR(200) | 账户别名 |
 | `account_code` VARCHAR(100) | 平台编号，UNIQUE |
 | `status` VARCHAR(20) | 参考"账户生命周期状态机"，典型值如 new/testing/active/suspended/dead/archived，具体枚举以 STATE_MACHINE.md 为准 |
@@ -330,7 +331,7 @@
 | `status` VARCHAR(20) | 参考"粉数确认状态机"(STATE_MACHINE.md 第8章)，合法取值: `raw_submitted/trend_pending/trend_ok/trend_flagged/trend_resolved/final_pending/final_confirmed/final_locked`，终态为 `final_locked` |
 | `trend_flag` VARCHAR(20) | DEFAULT 'normal', 趋势异常标记, 固定枚举: `normal/flagged/resolved` |
 | `trend_flag_reason` TEXT | 可空, 风控规则触发原因(如"TF-001: 粉数骤降50%") |
-| `trend_resolution_note` TEXT | 可空, 运营复核说明(`data_operator`填写) |
+| `trend_resolution_note` TEXT | 可空, 运营复核说明(`supervisor`填写) |
 | `final_locked_at` TIMESTAMPTZ | 可空, 计费锁定时间戳(系统自动设置,`status=final_locked`时) |
 | `notes` TEXT | |
 | `attachments` JSONB | |
@@ -346,6 +347,34 @@
 #### 3.3.3 `ad_spend_daily`（implemented）
 
 字段：`id` (UUID PK), `source_platform`, `ad_account_code`, `spend_date`, `spend_amount DECIMAL(15,2)`, `currency`, `raw_payload JSONB`, `imported_by`, `imported_at`。
+
+#### 3.3.4 `weekly_briefs`（implemented）
+
+周度简报表，记录项目周度汇报。状态机：draft → submitted (终态)。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `id` BIGSERIAL PK | | 周报ID |
+| `project_id` BIGINT FK → `projects.id` | NOT NULL | 项目ID |
+| `week_start` DATE | NOT NULL | 周开始日期（周一） |
+| `week_end` DATE | NOT NULL | 周结束日期（周日） |
+| `submitter_id` UUID FK → `users.id` | | 提交人ID |
+| `status` VARCHAR(20) | NOT NULL DEFAULT 'draft' | 状态（draft/submitted） |
+| `weekly_spend` DECIMAL(15,2) | NOT NULL DEFAULT 0.00 | 周消耗 |
+| `weekly_conversions` INTEGER | NOT NULL DEFAULT 0 | 周进粉 |
+| `weekly_cpl` DECIMAL(10,2) | NOT NULL DEFAULT 0.00 | 周CPL |
+| `achievements` TEXT | | 本周成果 |
+| `issues` TEXT | | 遇到问题 |
+| `solutions` TEXT | | 解决方案 |
+| `next_week_plan` TEXT | | 下周计划 |
+| `submitted_at` TIMESTAMPTZ | | 提交时间 |
+| `created_at` / `updated_at` TIMESTAMPTZ | | 时间戳 |
+
+约束：`UNIQUE (project_id, week_start)`，`CHECK (status IN ('draft', 'submitted'))`，`CHECK (week_end >= week_start)`。
+
+索引：`idx_weekly_briefs_project`, `idx_weekly_briefs_week`, `idx_weekly_briefs_submitter`, `idx_weekly_briefs_status`, `idx_weekly_briefs_project_week`.
+
+SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状态机）
 
 ---
 
@@ -555,11 +584,51 @@
 
 ---
 
+### 3.7 月度结算模块
+
+#### 3.7.1 monthly_settlements (月度结算表)
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | BIGSERIAL | PK | 主键 |
+| `project_id` | BIGINT | FK → `projects.id`, NOT NULL | 项目ID |
+| `settlement_month` | DATE | NOT NULL, CHECK (DAY = 1) | 结算月份 (YYYY-MM-01) |
+| `total_spend` | DECIMAL(15,2) | NOT NULL, DEFAULT 0, CHECK >= 0 | 月消耗总额 |
+| `total_conversions` | INTEGER | NOT NULL, DEFAULT 0, CHECK >= 0 | 月进粉总数 |
+| `total_revenue` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 | 月收入（粉数 × 单价） |
+| `gross_profit` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 | 月毛利（收入 - 消耗） |
+| `average_cpl` | DECIMAL(10,2) | 可空 | 月均 CPL |
+| `status` | VARCHAR(20) | NOT NULL, CHECK IN ('pending', 'confirmed', 'locked', 'archived'), DEFAULT 'pending' | 状态 (STATE_MACHINE.md §13.1) |
+| `confirmed_at` | TIMESTAMPTZ | 可空 | 财务确认时间 |
+| `confirmed_by` | UUID | FK → `users.id`, 可空 | 确认人 |
+| `locked_at` | TIMESTAMPTZ | 可空 | 锁定时间 |
+| `locked_by` | UUID | FK → `users.id`, 可空 | 锁定人 |
+| `notes` | TEXT | 可空 | 结算备注 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**：
+- UNIQUE (`project_id`, `settlement_month`) - 每个项目每月仅一条结算记录
+- CHECK (`settlement_month` 的 DAY 部分必须为 1)
+
+**索引**：`idx_monthly_settlements_project`, `idx_monthly_settlements_month`, `idx_monthly_settlements_status`.
+
+**状态机引用**：STATE_MACHINE.md v2.7 §13.1 月度结算状态机
+
+**计算公式**（引用 BUSINESS_RULES.md）：
+- `total_spend`: SUM(daily_reports.raw_spend) WHERE status = 'final_locked' AND 月份匹配
+- `total_conversions`: SUM(daily_reports.conversions_raw) WHERE status = 'final_locked' AND 月份匹配
+- `total_revenue`: total_conversions × projects.unit_price
+- `gross_profit`: total_revenue - total_spend
+- `average_cpl`: total_spend / total_conversions (若 total_conversions > 0)
+
+---
+
 ## 4. 索引与约束策略
 
 1. **唯一性**：`request_no`, `account_code`, `(report_date, ad_account_id)` 等必须建唯一索引并在模型层校验。  
 2. **组合索引**：针对高频过滤场景建立，如 `daily_reports(report_date, status)`、`topup_requests(project_id, status)`、`ledger_entries(project_id, occurred_at)`。  
-3. **CHECK 约束**：角色字段仅允许 5 个合法值；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
+3. **CHECK 约束**：角色字段仅允许 7 个技术层角色值（ceo/admin/project_owner/finance/data_operator/account_manager/media_buyer）；业务层角色到技术层的映射见 AUTH_SPEC.md v2.1 §2.2；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
 4. **外键一致性**：外键字段类型必须与被引用主键一致，迁移旧字段时需同步更新 FK 定义与索引。  
 5. **触发器**：`users` 使用 `update_users_updated_at`；其他表如需类似逻辑必须在本文件登记。
 
@@ -594,7 +663,7 @@
 
 ---
 
-**文档版本**: v5.2
-**最后审阅**: 2025-01-22
+**文档版本**: v5.3
+**最后审阅**: 2025-12-24
 **维护责任**: 数据库规范守门人（与系统架构团队共管）  
 **附注**: 若实现规范、状态机或 API 流程更新，必须同步更新本文件；否则任何生成代码/Schema 迁移将被拒绝。
