@@ -555,6 +555,101 @@ draft → pending_approval → approved → completed
 
 ---
 
+### 13.1 月度结算状态机（monthly_settlements.status）
+
+**合法取值**：`pending`, `confirmed`, `locked`, `archived`（终态：locked/archived）
+
+**状态流转规则**：
+```
+pending → confirmed → locked → archived
+   ↑          ↓
+   └──────────┘ (退回修正)
+```
+
+**状态详解**：
+
+| 状态 | 说明 | 触发条件 | 角色权限 |
+|-----|------|---------|---------|
+| `pending` | 待确认 | 系统自动汇总生成 | system |
+| `confirmed` | 已确认 | 财务确认数据正确 | finance, admin |
+| `locked` | 已锁定 | 老板最终确认锁定 | ceo, admin |
+| `archived` | 已归档 | 年度归档（可选） | system, admin |
+
+**合法流转白名单**：
+```python
+"monthly_settlements.status": {
+    "pending": ["confirmed"],
+    "confirmed": ["locked", "pending"],  # 可退回修正
+    "locked": ["archived"],
+    "archived": []  # 终态
+}
+```
+
+**业务约束**：
+- 生成：system（每月 1 日自动汇总上月数据）
+- 确认：finance/admin（pending → confirmed），[AUDIT]
+- 退回：ceo/admin（confirmed → pending），需填写退回原因，[AUDIT]
+- 锁定：ceo/admin（confirmed → locked），[AUDIT]
+- 归档：system/admin（locked → archived），[AUDIT]
+- 终态回退：仅 admin，[AUDIT]
+
+**Phase 约束**：
+- Phase 1（照亮）：locked 状态可由 admin 解锁（软性锁定）
+- Phase 2（问责）：locked 后不可解锁，需走冲正流程
+
+**汇总规则**（引用 BUSINESS_RULES.md）：
+- 汇总范围：上月 1 日至月末的 `final_locked` 状态日报
+- 计算字段：total_spend, total_conversions, total_revenue, gross_profit, average_cpl
+
+---
+
+### 13.2 周报状态机（weekly_briefs.status）
+
+**合法取值**：`draft`, `submitted`（终态：submitted）
+
+**状态流转规则**：
+```
+draft → submitted
+  ↑        ↓
+  └────────┘ (主管退回，Phase 2 可选)
+```
+
+**状态详解**：
+
+| 状态 | 说明 | 触发条件 | 角色权限 |
+|-----|------|---------|---------|
+| `draft` | 草稿 | 投手创建或系统自动创建 | pitcher, system |
+| `submitted` | 已提交 | 投手提交周报 | pitcher |
+
+**合法流转白名单**：
+```python
+"weekly_briefs.status": {
+    "draft": ["submitted"],
+    "submitted": ["draft"]  # Phase 2 可选：主管退回
+}
+```
+
+**业务约束**：
+- 创建：pitcher/system（手动创建或周一自动创建）
+- 保存：pitcher（draft → draft），可多次编辑
+- 提交：pitcher（draft → submitted），[AUDIT]
+- 退回：supervisor/admin（submitted → draft），Phase 2 可选，[AUDIT]
+
+**时间约束**：
+- 周报周期：周一 00:00 至周日 23:59
+- 提交截止：下周一 12:00 前
+- 自动创建：每周一 08:00 为有日报数据的投手自动创建草稿
+
+**自动汇总字段**（周报创建/更新时自动计算）：
+
+| 周报字段 | 计算公式 | 数据源 |
+|----------|----------|--------|
+| weekly_spend | SUM(raw_spend) | daily_reports (本周) |
+| weekly_conversions | SUM(conversions_raw) | daily_reports (本周) |
+| weekly_cpl | weekly_spend / weekly_conversions | 计算 |
+
+---
+
 ## 14. 权限视角提示（非仲裁）
 
 - 本表仅为状态流转视角的快速参考；**真正的权限规则以 MASTER_SPEC 为准**。

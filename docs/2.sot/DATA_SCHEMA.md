@@ -1,16 +1,16 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
-> **版本**: v5.3
+> **版本**: v5.5
 > **status**: frozen
 > **owner**: wade
-> **last_reviewed**: 2025-12-24
-> **更新日期**: 2025‑11‑22
+> **last_reviewed**: 2025-12-26
+> **更新日期**: 2025-12-26
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
 > - 实现规范 → `../1.overview/MASTER.md` v4.4
 > - 状态机 → `STATE_MACHINE.md` v2.6（任何状态字段必须引用对应状态机）
-> - 业务规则 → `BUSINESS_RULES.md` v4.1
+> - 业务规则 → `BUSINESS_RULES.md` v4.6（履约状态字段来源）
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
 > - 业务需求 → `BRD_chapter1_v3.1.md` (BRD v3.1基线)
 
@@ -89,9 +89,13 @@
 | `reconciliation_details` | 对账明细 | BIGSERIAL | implemented |
 | `reconciliation_adjustments` | 对账调整 | BIGSERIAL | implemented |
 | `reconciliation_reports` | 对账报告 | BIGSERIAL | implemented |
+| `balance_snapshots` | 余额/押款快照 | BIGSERIAL | implemented |
+| `reconciliation_issues` | 对账差异单 | BIGSERIAL | implemented |
+| `settlement_rules` | 结算规则配置 | BIGSERIAL | implemented |
 | `profit_aggregates` | 利润聚合（L2汇总层） | BIGSERIAL | planned |
 | `profit_report_snapshots` | 利润报表快照 | BIGSERIAL | planned |
 | `receivable` | 回款记录表（SoT：已回款） | BIGSERIAL | planned |
+| `company_expenses` | 公司运营支出（不进账本） | BIGSERIAL | implemented |
 
 ---
 
@@ -177,11 +181,16 @@
 | `budget_total` DECIMAL(15,2) | DEFAULT 0.00 |
 | `budget_currency` VARCHAR(10) | DEFAULT 'CNY' |
 | `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 项目单粉价格(Per Lead),用于计算粉数收入,公式: `revenue = conversions_final × unit_price` |
+| `settlement_type` VARCHAR(20) | DEFAULT 'fixed', CHECK IN ('fixed', 'tiered', 'markup'), 结算类型：fixed使用unit_price，tiered/markup使用settlement_rules |
+| `settlement_rules_id` BIGINT | FK → `settlement_rules.id`, 可空, 非fixed结算时关联的结算规则 |
+| `fulfillment_status` VARCHAR(20) | NOT NULL DEFAULT 'running', CHECK IN ('running', 'fulfilled'), 履约状态 (SoT: BUSINESS_RULES.md v4.6 BR-PROJ-006) |
+| `fulfillment_reason` VARCHAR(30) | 可空, CHECK IN ('spend_exhausted', 'client_stopped'), 履约结束原因 (SoT: BI-06) |
+| `fulfilled_at` TIMESTAMPTZ | 可空, 履约完成时间 (UTC) |
 | `start_date` / `end_date` DATE | | |
 | `created_by` / `updated_by` UUID FK → `users.id` | |
 | `created_at` / `updated_at` TIMESTAMPTZ | DEFAULT NOW() | |
 
-索引：`idx_projects_name`, `idx_projects_status`, `idx_projects_account_manager`.
+索引：`idx_projects_name`, `idx_projects_status`, `idx_projects_account_manager`, `idx_projects_settlement_type`, `idx_projects_fulfillment_status`.
 
 #### 3.2.2 `project_members`（implemented）
 
@@ -281,10 +290,12 @@
 | `spend_limit` DECIMAL(15,2) | DEFAULT 0.00 |
 | `currency` VARCHAR(10) | DEFAULT 'CNY' |
 | `timezone` VARCHAR(50) | DEFAULT 'Asia/Shanghai' |
+| `deposit` DECIMAL(15,2) | DEFAULT 0.00, CHECK >= 0, 押款金额（代理商扣押的保证金） |
+| `deposit_updated_at` TIMESTAMPTZ | 可空, 押款最后更新时间 |
 | `created_by` / `updated_by` UUID | FK → `users.id` |
 | `created_at` / `updated_at` TIMESTAMPTZ | | |
 
-索引：`idx_ad_accounts_project`, `idx_ad_accounts_channel`, `idx_ad_accounts_status`.
+索引：`idx_ad_accounts_project`, `idx_ad_accounts_channel`, `idx_ad_accounts_status`, `idx_ad_accounts_deposit`.
 
 ##### `account_status_history`
 
@@ -510,6 +521,136 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 字段：`id`, `batch_id (FK)`, `generated_at`, `generated_by`, `report_url`, `metrics JSONB`.
 
+#### 3.5.5 `balance_snapshots`（implemented）
+
+> **OpenSpec Change**: `add-reconciliation-control-center`
+> **用途**: 广告账户每日余额/押款快照，用于对账守恒公式校验
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 主键 |
+| `ad_account_id` | BIGINT | FK → `ad_accounts.id`, NOT NULL | 关联账户 |
+| `snapshot_date` | DATE | NOT NULL | 快照日期 |
+| `balance` | DECIMAL(15,2) | NOT NULL | 当日余额 |
+| `deposit` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 | 当日押款 |
+| `remaining_balance` | DECIMAL(15,2) | NOT NULL | 当日剩余可用 = balance - deposit |
+| `source` | VARCHAR(20) | NOT NULL, DEFAULT 'manual', CHECK | 数据来源：manual/api/import |
+| `created_by` | UUID | FK → `users.id`, NOT NULL | 创建人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `notes` | TEXT | 可空 | 备注 |
+
+**约束**:
+- UNIQUE (`ad_account_id`, `snapshot_date`) - 每账户每日仅一条快照
+- CHECK (`source` IN ('manual', 'api', 'import'))
+
+**索引**: `idx_balance_snapshots_date`, `idx_balance_snapshots_account`, `idx_balance_snapshots_account_date`.
+
+**业务规则引用**: BR-REC-001 对账守恒公式, BR-REC-003 快照缺失处理
+
+#### 3.5.6 `reconciliation_issues`（implemented）
+
+> **OpenSpec Change**: `add-reconciliation-control-center`
+> **用途**: 对账差异单表，追踪对账发现的差异及其处理过程
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 主键 |
+| `reconciliation_batch_id` | BIGINT | FK → `reconciliation_batches.id`, 可空 | 关联批次 |
+| `ad_account_id` | BIGINT | FK → `ad_accounts.id`, 可空 | 关联账户 |
+| `issue_date` | DATE | NOT NULL | 差异日期 |
+| `issue_type` | VARCHAR(30) | NOT NULL, CHECK | 差异类型 |
+| `expected_amount` | DECIMAL(15,2) | 可空 | 预期金额 |
+| `actual_amount` | DECIMAL(15,2) | 可空 | 实际金额 |
+| `difference_amount` | DECIMAL(15,2) | GENERATED | 差异金额 = actual - expected |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'open' | 参考"对账差异单状态机"(STATE_MACHINE.md) |
+| `assigned_to` | UUID | FK → `users.id`, 可空 | 责任人 |
+| `assigned_at` | TIMESTAMPTZ | 可空 | 分配时间 |
+| `resolution_type` | VARCHAR(30) | CHECK, 可空 | 处理类型 |
+| `resolution_note` | TEXT | 可空 | 处理说明 |
+| `resolved_at` | TIMESTAMPTZ | 可空 | 处理时间 |
+| `resolved_by` | UUID | FK → `users.id`, 可空 | 处理人 |
+| `attachments` | JSONB | DEFAULT '[]'::jsonb | 附件 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `created_by` | UUID | FK → `users.id`, NOT NULL | 创建人 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+| `sla_deadline` | TIMESTAMPTZ | 可空 | SLA 截止时间 |
+| `sla_breached` | BOOLEAN | DEFAULT FALSE | SLA 超时标记 |
+
+**issue_type 枚举值**:
+- `topup_mismatch` - 充值差异
+- `spend_mismatch` - 消耗差异
+- `deposit_change` - 押款变化
+- `balance_anomaly` - 余额异常
+- `snapshot_missing` - 快照缺失
+- `conservation_failed` - 守恒校验失败
+- `other` - 其他
+
+**resolution_type 枚举值**:
+- `data_correction` - 数据修正
+- `ledger_adjustment` - 账本调整
+- `external_confirm` - 外部确认（代理商/甲方）
+- `write_off` - 核销
+- `false_positive` - 误报
+
+**约束**:
+- CHECK (`issue_type` IN ('topup_mismatch', 'spend_mismatch', 'deposit_change', 'balance_anomaly', 'snapshot_missing', 'conservation_failed', 'other'))
+- CHECK (`status` IN ('open', 'assigned', 'investigating', 'resolved', 'closed'))
+- CHECK (`resolution_type` IS NULL OR `resolution_type` IN ('data_correction', 'ledger_adjustment', 'external_confirm', 'write_off', 'false_positive'))
+
+**索引**: `idx_rec_issues_status`, `idx_rec_issues_date`, `idx_rec_issues_assigned`, `idx_rec_issues_batch`.
+
+**状态机引用**: STATE_MACHINE.md §11.4 对账差异单状态机
+
+#### 3.5.7 `settlement_rules`（implemented）
+
+> **OpenSpec Change**: `add-reconciliation-control-center`
+> **用途**: 结算规则配置表，支持阶梯计价(tiered)和加成计价(markup)
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 主键 |
+| `name` | VARCHAR(100) | NOT NULL | 规则名称 |
+| `rule_type` | VARCHAR(20) | NOT NULL, CHECK | 规则类型：tiered/markup |
+| `config` | JSONB | NOT NULL | 规则配置（JSON Schema 校验） |
+| `effective_from` | DATE | NOT NULL | 生效开始日 |
+| `effective_to` | DATE | 可空 | 生效结束日 |
+| `created_by` | UUID | FK → `users.id`, NOT NULL | 创建人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**rule_type 枚举值**:
+- `tiered` - 阶梯计价
+- `markup` - 加成计价
+
+**config JSON Schema (tiered)**:
+```json
+{
+  "tiers": [
+    {"min": 0, "max": 1000, "price": 50},
+    {"min": 1001, "max": 5000, "price": 45},
+    {"min": 5001, "max": null, "price": 40}
+  ],
+  "calculation_basis": "cumulative" | "incremental"
+}
+```
+
+**config JSON Schema (markup)**:
+```json
+{
+  "base_cost_field": "real_spend" | "raw_spend",
+  "markup_type": "percentage" | "fixed",
+  "markup_value": 15
+}
+```
+
+**约束**:
+- CHECK (`rule_type` IN ('tiered', 'markup'))
+- CHECK (`effective_to` IS NULL OR `effective_to` > `effective_from`)
+
+**索引**: `idx_settlement_rules_type`, `idx_settlement_rules_effective`.
+
+**业务规则引用**: BR-SET-001 Fixed 结算规则, BR-SET-002 Tiered 结算规则, BR-SET-003 Markup 结算规则
+
 ---
 
 ### 3.6 利润表模块
@@ -624,6 +765,39 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 ---
 
+### 3.8 公司运营支出
+
+#### 3.8.1 `company_expenses`（implemented）
+
+**说明**：公司级运营支出记录，不进入项目账本（LEDGER_SOT.md v1.1）。用于记录工资、服务费、汇率损益等非广告业务支出。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 支出ID |
+| `expense_type` | VARCHAR(50) | NOT NULL | 支出类型：salary/setup_fee/service_fee/exchange/reimbursement/other |
+| `category` | VARCHAR(50) | NOT NULL, CHECK | 分类：operation/hr/infrastructure/tools/other |
+| `amount` | DECIMAL(15,2) | NOT NULL | 金额 |
+| `currency` | VARCHAR(10) | DEFAULT 'USD' | 币种 |
+| `occurred_at` | DATE | NOT NULL | 发生日期 |
+| `description` | TEXT | 可空 | 描述 |
+| `receipt_url` | TEXT | 可空 | 收据URL |
+| `status` | VARCHAR(20) | DEFAULT 'pending', CHECK | 状态：pending/approved/rejected/paid |
+| `created_by` | UUID | FK → `users.id` | 创建人 |
+| `approved_by` | UUID | FK → `users.id`, 可空 | 审批人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**：
+- CHECK (category IN ('operation', 'hr', 'infrastructure', 'tools', 'other'))
+- CHECK (status IN ('pending', 'approved', 'rejected', 'paid'))
+
+**索引**：`idx_company_expenses_category`, `idx_company_expenses_occurred_at`, `idx_company_expenses_status`, `idx_company_expenses_created_by`.
+
+**SoT Reference**: LEDGER_SOT.md v1.1 (不进入账本)
+
+
+---
+
 ## 4. 索引与约束策略
 
 1. **唯一性**：`request_no`, `account_code`, `(report_date, ad_account_id)` 等必须建唯一索引并在模型层校验。  
@@ -663,7 +837,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 ---
 
-**文档版本**: v5.3
-**最后审阅**: 2025-12-24
+**文档版本**: v5.4
+**最后审阅**: 2025-12-26
 **维护责任**: 数据库规范守门人（与系统架构团队共管）  
 **附注**: 若实现规范、状态机或 API 流程更新，必须同步更新本文件；否则任何生成代码/Schema 迁移将被拒绝。
