@@ -1,7 +1,7 @@
 # 公司运营与对账中控系统（MVP）- 系统架构方案
 
-> **版本**: v2.0
-> **基于**: PRD v1.0 + RECONCILIATION_CONTROL_CENTER_SOT v2.0
+> **版本**: v2.1
+> **基于**: PRD v1.0 + RECONCILIATION_CONTROL_CENTER_SOT v2.0 + RECONCILIATION_SOT v1.0
 > **编制**: 架构设计文档
 > **状态**: Review
 > **对齐**: MASTER.md v4.4 | STATE_MACHINE.md v2.6 | LEDGER_SOT.md v1.1 | DATA_SCHEMA.md v5.2
@@ -324,7 +324,7 @@ erDiagram
         uuid channel_id FK
         date period_start
         date period_end
-        enum status "draft/pending/reviewing/closed"
+        enum status "draft/pending_review/approved/needs_adjustment/completed"
         decimal our_total_spend
         decimal supplier_total_spend
         decimal difference
@@ -439,27 +439,40 @@ erDiagram
 
 ## 4. 状态机（对齐 STATE_MACHINE.md v2.6）
 
-### 4.1 对账批次状态机
+### 4.1 对账批次状态机（对齐 RECONCILIATION_SOT.md v1.0 §5.1）
 
 ```mermaid
 stateDiagram-v2
     [*] --> draft: 创建对账批次
-    draft --> pending: 提交审核 [finance/account_manager]
-    pending --> reviewing: 开始审核 [finance/admin]
-    reviewing --> closed: 完成对账 [finance/admin]
-    closed --> [*]
+    draft --> pending_review: 提交审核 [finance/account_manager]
+    pending_review --> approved: 审核通过 [finance/admin]
+    pending_review --> needs_adjustment: 需要调整 [finance/admin]
+    approved --> completed: 确认完成 [finance/admin]
+    approved --> needs_adjustment: 发现问题需调整 [finance/admin]
+    needs_adjustment --> approved: 调整完成重新审批 [finance]
+    completed --> [*]
 
     note right of draft: 初始态
-    note right of closed: 终态，不可回退
+    note right of completed: 终态，不可回退
 ```
+
+**5 状态定义**：
+| 状态 | 英文 | 含义 | 可执行操作 |
+|-----|------|------|-----------|
+| 草稿 | `draft` | 批次创建但未提交 | 编辑、删除、提交审核 |
+| 待审核 | `pending_review` | 已提交等待审核 | 通过、打回 |
+| 已通过 | `approved` | 审核通过可完成 | 确认完成、发现问题打回 |
+| 需调整 | `needs_adjustment` | 需要修正后重审 | 调整后重新审批 |
+| 已完成 | `completed` | 终态，对账已闭环 | 仅查看 |
 
 **状态流转白名单**：
 ```python
 RECONCILIATION_BATCH_TRANSITIONS = {
-    "draft": ["pending"],
-    "pending": ["reviewing"],
-    "reviewing": ["closed"],
-    "closed": []  # 终态
+    "draft": ["pending_review"],
+    "pending_review": ["approved", "needs_adjustment"],
+    "approved": ["completed", "needs_adjustment"],
+    "needs_adjustment": ["approved"],
+    "completed": []  # 终态
 }
 ```
 
@@ -643,7 +656,7 @@ RECONCILIATION_ISSUE_TRANSITIONS = {
 | 余额快照批量导入 | 户管可批量导入每日快照 | SoT §3.1 |
 | 双账本引擎 | PROJECT/SUPPLIER 账本记录 | LEDGER_SOT v1.1 |
 | **对账引擎** | 守恒公式计算，红/黄/绿输出 | SoT §2.3 |
-| reconciliation_batches | 对账批次 4 状态流转 | SoT §4.1 |
+| reconciliation_batches | 对账批次 5 状态流转 | RECONCILIATION_SOT v1.0 §5.1 |
 | reconciliation_issues | 差异单 5 状态流转 | SoT §4.2 |
 | 差异单分类 | 6 种 issue_type 自动识别 | SoT §3.2 |
 | 对账看板 | 红灯/黄灯清单，按账户×日期定位 | PRD §5.5 |
@@ -696,6 +709,7 @@ RECONCILIATION_ISSUE_TRANSITIONS = {
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v2.1 | 2025-12-26 | **状态机修正**：对齐 RECONCILIATION_SOT.md v1.0 §5.1<br/>- 对账批次状态从 4 状态改为 5 状态<br/>- 状态名：`draft/pending_review/approved/needs_adjustment/completed`<br/>- 终态从 `closed` 改为 `completed`<br/>- 新增状态定义表<br/>- 更新 ER 图枚举值 |
 | v2.0 | 2025-12-26 | **重大更新**：对齐 RECONCILIATION_CONTROL_CENTER_SOT v2.0<br/>- 对齐 7 角色体系<br/>- 对齐双账本结构<br/>- 对齐状态机定义<br/>- 统一错误码格式<br/>- 完善守恒公式与阈值<br/>- 添加 SoT 引用索引 |
 | v1.0 | 2025-12-26 | 初始版本，基于 PRD v1.0 |
 

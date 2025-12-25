@@ -1,20 +1,22 @@
 # RECONCILIATION_SOT.md · 对账模块唯一真相源
 
-> **版本**: v1.0
+> **版本**: v2.0
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
-> **更新日期**: 2025-01-22
+> **last_reviewed**: 2025-12-26
+> **更新日期**: 2025-12-26
 > **维护团队**: 系统架构团队
 > **定位**: 对账模块（Channel Reconciliation）唯一真相源（Single Source of Truth），定义对账业务模型、核心流程、状态机、并发控制、账本影响等全部规则。
 > **互锁 SoT**:
+> - 角色定义 → `MASTER.md` v4.4 §2.4 (7 角色体系)
 > - 数据结构 → `DATA_SCHEMA.md` v5.2
 > - 状态机 → `STATE_MACHINE.md` v2.6
-> - 业务规则 → `BUSINESS_RULES.md` v3.1 (BR-RECON)
+> - 业务规则 → `BUSINESS_RULES.md` v3.2 (BR-RECON)
 > - 账本逻辑 → `LEDGER_SOT.md` v1.1
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
 > - 权限控制 → `AUTH_SPEC.md` v2.0
 > - RLS策略 → `RLS_POLICIES_SOT.md` v2.1 (规划中未启用)
+> - 架构方案 → `RECONCILIATION_CONTROL_CENTER_ARCHITECTURE.md` v2.1
 
 ---
 
@@ -32,7 +34,7 @@
 6. **并发控制**: 基于 `expected_version` 的乐观锁机制
 7. **幂等性保证**: `(supplier_id, channel_id, period_start, period_end)` 唯一性约束
 8. **错误码映射**: E-RECON-001/002/003/004/005
-9. **权限控制**: finance/data_operator/admin 角色权限与 RLS 策略引用
+9. **权限控制**: 7 角色权限矩阵与 RLS 策略引用（对齐 MASTER.md v4.4）
 10. **事务边界**: 对账批次创建、明细计算、审批操作的事务范围
 
 ### 1.2 不属于本文档职责
@@ -220,14 +222,27 @@ ledger_entries (账本, manual_entry红冲/补录)
     锁定批次，禁止修改
 ```
 
-### 4.2 流程角色权限
+### 4.2 流程角色权限（对齐 MASTER.md v4.4 §2.4 七角色）
 
 | 步骤 | 允许角色 | 操作 | 状态变化 |
 |-----|---------|------|---------|
-| 创建批次 | data_operator, finance | POST /api/v1/reconciliation/batches | `null → draft` |
-| 提交审核 | data_operator, finance | (状态流转API待定义) | `draft → pending` |
-| 开始审核 | finance, admin | (状态流转API待定义) | `pending → reviewing` |
-| 完成对账 | finance, admin | POST /api/v1/reconciliation/batches/{batch_id}/confirm | `reviewing → closed` |
+| 创建批次 | finance, account_manager, admin | POST /api/v1/reconciliation/batches | `null → draft` |
+| 提交审核 | finance, account_manager, admin | POST /api/v1/reconciliation/batches/{id}/submit | `draft → pending_review` |
+| 审批通过 | finance, admin | POST /api/v1/reconciliation/batches/{id}/approve | `pending_review → approved` |
+| 打回调整 | finance, admin | POST /api/v1/reconciliation/batches/{id}/reject | `pending_review → needs_adjustment` |
+| 重新审批 | finance, admin | POST /api/v1/reconciliation/batches/{id}/approve | `needs_adjustment → approved` |
+| 完成对账 | finance, admin | POST /api/v1/reconciliation/batches/{id}/complete | `approved → completed` |
+
+**角色说明**（7 角色体系）:
+| 角色ID | 中文名 | 对账模块职责 |
+|--------|-------|-------------|
+| ceo | 老板 | 查看对账概览（只读） |
+| project_owner | 项目负责人 | 查看自己项目的对账结果 |
+| finance | 财务 | 创建/审批/完成对账，处理差异 |
+| supervisor | 主管 | 查看团队对账状态 |
+| pitcher | 投手 | 无对账模块权限 |
+| account_manager | 户管 | 创建对账批次，录入快照 |
+| admin | 管理员 | 全部权限 |
 
 ### 4.3 API 端点映射
 
@@ -490,57 +505,83 @@ UNIQUE (supplier_id, channel_id, period_start, period_end);
 
 ## 12. 权限与 RLS (Permissions & RLS)
 
-### 12.1 角色权限矩阵
+### 12.1 角色权限矩阵（7 角色体系）
 
-**引用**: `AUTH_SPEC.md` v2.0 第 3 章 - 角色权限定义
+**引用**: `MASTER.md` v4.4 §2.4 + `AUTH_SPEC.md` v2.0 第 3 章
 
-| 操作 | admin | finance | data_operator | account_manager | media_buyer |
-|-----|-------|---------|--------------|----------------|-------------|
-| 创建对账批次 | ✅ | ✅ | ✅ | ❌ | ❌ |
-| 查看对账批次 | ✅ | ✅ | ✅ | ✅ (仅自己创建) | ❌ |
-| 编辑草稿 | ✅ | ✅ | ✅ (仅自己创建) | ❌ | ❌ |
-| 提交审核 | ✅ | ✅ | ✅ (仅自己创建) | ❌ | ❌ |
-| 审批/拒绝 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 创建调整 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 执行调整 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 完成对账 | ✅ | ✅ | ❌ | ❌ | ❌ |
-| 删除批次 | ✅ (仅draft) | ❌ | ❌ | ❌ | ❌ |
+| 操作 | ceo | project_owner | finance | supervisor | pitcher | account_manager | admin |
+|-----|-----|--------------|---------|------------|---------|-----------------|-------|
+| 查看对账批次 | ✅全局 | ✅自己项目 | ✅全局 | ✅团队 | ❌ | ✅全局 | ✅全局 |
+| 创建对账批次 | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| 编辑草稿 | ❌ | ❌ | ✅ | ❌ | ❌ | ✅自己创建 | ✅ |
+| 提交审核 | ❌ | ❌ | ✅ | ❌ | ❌ | ✅自己创建 | ✅ |
+| 审批/拒绝 | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| 创建调整 | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| 执行调整 | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| 完成对账 | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| 删除批次 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅仅draft |
 
-### 12.2 RLS 策略引用
+**废弃角色说明**:
+- `data_operator`: 职责已合并到 `finance` 和 `account_manager`
+- `media_buyer`: 已重命名为 `pitcher`，对账模块无权限
+
+### 12.2 RLS 策略引用（7 角色版本）
 
 **引用**: `RLS_POLICIES_SOT.md` v2.0 第 4 章 - 对账模块 RLS
 
 **策略示例** (仅供参考，具体 SQL 查阅 RLS_POLICIES_SOT.md):
 
 ```sql
--- reconciliation_batches 查询策略
+-- reconciliation_batches 查询策略 (7 角色版本)
 CREATE POLICY policy_reconciliation_batches_select_role
 ON reconciliation_batches FOR SELECT
 USING (
-    fn_current_user_role() IN ('admin', 'finance')  -- admin/finance 可查看所有
+    -- admin/finance/account_manager 可查看所有
+    fn_current_user_role() IN ('admin', 'finance', 'account_manager')
     OR (
-        fn_current_user_role() = 'data_operator'
-        AND created_by = fn_current_user_id()  -- data_operator 只能查看自己创建的
+        -- ceo 可查看所有
+        fn_current_user_role() = 'ceo'
+    )
+    OR (
+        -- project_owner 仅查看自己项目关联的批次
+        fn_current_user_role() = 'project_owner'
+        AND EXISTS (
+            SELECT 1 FROM projects p
+            WHERE p.pm_user_id = fn_current_user_id()
+            AND p.supplier_id = reconciliation_batches.supplier_id
+        )
+    )
+    OR (
+        -- supervisor 仅查看团队关联的批次
+        fn_current_user_role() = 'supervisor'
+        AND EXISTS (
+            SELECT 1 FROM users u
+            WHERE u.supervisor_id = fn_current_user_id()
+            AND u.id = reconciliation_batches.created_by
+        )
     )
 );
 
--- reconciliation_batches 更新策略
+-- reconciliation_batches 更新策略 (7 角色版本)
 CREATE POLICY policy_reconciliation_batches_update_role
 ON reconciliation_batches FOR UPDATE
 USING (
     fn_current_user_role() IN ('admin', 'finance')  -- admin/finance 可更新所有
     OR (
-        fn_current_user_role() = 'data_operator'
+        fn_current_user_role() = 'account_manager'
         AND created_by = fn_current_user_id()
-        AND status = 'draft'  -- data_operator 仅可更新自己的草稿
+        AND status = 'draft'  -- account_manager 仅可更新自己的草稿
     )
 );
 ```
 
-**关键原则**:
+**关键原则** (7 角色体系):
 - **admin/finance**: 全局可见、可操作
-- **data_operator**: 仅可见/操作自己创建的批次（draft 状态）
-- **account_manager/media_buyer**: 无对账模块权限（查询接口需额外 RLS 策略支持特定场景）
+- **ceo**: 全局可见（只读）
+- **project_owner**: 仅查看自己负责项目关联的批次
+- **supervisor**: 仅查看团队成员创建的批次
+- **account_manager**: 全局可见，仅可操作自己创建的草稿
+- **pitcher**: 无对账模块权限
 
 ---
 
@@ -724,10 +765,11 @@ A: 当前版本仅支持单一币种（CNY）。若需多币种支持，需扩�
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |-----|------|----------|------|
+| v2.0 | 2025-12-26 | **重大更新：7 角色体系对齐**<br>- 对齐 MASTER.md v4.4 §2.4 七角色定义<br>- 废弃 `data_operator`（合并到 finance/account_manager）<br>- 废弃 `media_buyer`（重命名为 pitcher）<br>- 新增角色：ceo、project_owner、supervisor、pitcher<br>- 重写 §4.2 流程角色权限表<br>- 重写 §12.1 角色权限矩阵（5→7 角色）<br>- 重写 §12.2 RLS 策略示例 | 系统架构团队 |
 | v1.0 | 2025-01-22 | 初始版本，定义对账模块完整 SoT，包含 13 章节:<br>1. 文档定位<br>2. 模块边界<br>3. 数据模型<br>4. 核心流程<br>5. 状态机<br>6. 并发控制<br>7. 业务规则<br>8. 差异计算<br>9. 双账本影响<br>10. 幂等性<br>11. 错误码<br>12. 权限与RLS<br>13. 事务边界<br>14. 测试范围<br>15. 版本控制 | 系统架构团队 |
 
 ---
 
 **文档维护者**: 系统架构团队
-**最后审核**: 2025-01-22
+**最后审核**: 2025-12-26
 **下次审核**: 对账模块重大变更时或季度性审核
