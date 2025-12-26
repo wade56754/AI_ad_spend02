@@ -1391,4 +1391,4 @@ class DailyReport:
 
 **文档结束**
 
-如有疑问，请联系系统架构团队或查阅 [MASTER.md](../1.overview/MASTER.md)
+如有疑问，请联系系统架构团队或查阅 [MASTER.md](../sot/MASTER.md)

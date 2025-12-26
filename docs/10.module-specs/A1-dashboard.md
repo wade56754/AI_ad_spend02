@@ -466,6 +466,6 @@ metrics: string[] (spend, revenue, profit, conversions)
 ---
 
 **关联文档**:
-- [MASTER.md §6.5](../1.overview/MASTER.md)
+- [MASTER.md §6.5](../sot/MASTER.md)
 - [代码块索引](../9.code-blocks/README.md)
 - [StatCard 代码块](../9.code-blocks/frontend/core/stat-card.md)

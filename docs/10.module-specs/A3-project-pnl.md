@@ -398,8 +398,8 @@ if user.role == 'supervisor':
 
 ## 10. 相关文档
 
-- [MASTER.md §4.5.4 盈亏计算公式](../1.overview/MASTER.md)
-- [MASTER.md §6.5 页面 3 字段集](../1.overview/MASTER.md)
-- [BUSINESS_RULES.md](../2.sot/BUSINESS_RULES.md)
+- [MASTER.md §4.5.4 盈亏计算公式](../sot/MASTER.md)
+- [MASTER.md §6.5 页面 3 字段集](../sot/MASTER.md)
+- [BUSINESS_RULES.md](../sot/BUSINESS_RULES.md)
 - [A1-dashboard 模块规格书](./A1-dashboard.md)
 - [A2-fund-overview 模块规格书](./A2-fund-overview.md)

@@ -567,8 +567,8 @@ MASTER.md v4.4 → STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2
 
 ## 7. References
 
-- [MASTER.md](../1.overview/MASTER.md) v4.4 - 系统宪法、角色定义、不可变量
-- [SoT 文档集](../2.sot/) - 完整 SoT Freeze v2.6 规范
+- [MASTER.md](../sot/MASTER.md) v4.4 - 系统宪法、角色定义、不可变量
+- [SoT 文档集](../sot/) - 完整 SoT Freeze v2.6 规范
 - [PROJECT_RULES.md](../../.claude/PROJECT_RULES.md) v3.5 - Claude Code 项目规则
 - [FastAPI 官方文档](https://fastapi.tiangolo.com/) - 路由和依赖注入
 - [Pydantic v2 官方文档](https://docs.pydantic.dev/latest/) - Schema 定义规范

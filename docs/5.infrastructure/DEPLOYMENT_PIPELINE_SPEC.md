@@ -316,8 +316,8 @@ alembic downgrade <revision-id>
 
 | SoT Document | Deployment Validation |
 |--------------|----------------------|
-| [DATA_SCHEMA.md](../2.sot/DATA_SCHEMA.md) v5.2 | Database migrations align with schema definitions |
-| [API_SOT.md](../2.sot/API_SOT.md) v9.0 | Health check endpoint defined in API_SOT |
+| [DATA_SCHEMA.md](../sot/DATA_SCHEMA.md) v5.2 | Database migrations align with schema definitions |
+| [API_SOT.md](../sot/API_SOT.md) v9.0 | Health check endpoint defined in API_SOT |
 
 ---
 

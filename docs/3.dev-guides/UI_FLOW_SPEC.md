@@ -1071,16 +1071,16 @@ If UI requirements cannot be satisfied by existing SoT specifications:
 
 ### 11.1 Internal Documents
 
-- [MASTER.md](../1.overview/MASTER.md) v3.4 - System invariants (INV-001, INV-002)
-- [API_SOT.md](../2.sot/API_SOT.md) v9.0 - API endpoint specifications
-- [STATE_MACHINE.md](../2.sot/STATE_MACHINE.md) v2.6 - 8-state workflow definitions
-- [AUTH_SPEC.md](../2.sot/AUTH_SPEC.md) v2.0 - Authentication & permission model
-- [BUSINESS_RULES.md](../2.sot/BUSINESS_RULES.md) v3.1 - Business constraint rules
-- [TRANSFER_SOT.md](../2.sot/TRANSFER_SOT.md) v1.0 - Transfer operation specifications
-- [RECONCILIATION_SOT.md](../2.sot/RECONCILIATION_SOT.md) v1.0 - Reconciliation logic
-- [LEDGER_SOT.md](../2.sot/LEDGER_SOT.md) v1.1 - Ledger system design
-- [ERROR_CODES_SOT.md](../2.sot/ERROR_CODES_SOT.md) v2.1 - Error code definitions
-- [DATA_SCHEMA.md](../2.sot/DATA_SCHEMA.md) v5.2 - Database schema reference
+- [MASTER.md](../sot/MASTER.md) v3.4 - System invariants (INV-001, INV-002)
+- [API_SOT.md](../sot/API_SOT.md) v9.0 - API endpoint specifications
+- [STATE_MACHINE.md](../sot/STATE_MACHINE.md) v2.6 - 8-state workflow definitions
+- [AUTH_SPEC.md](../sot/AUTH_SPEC.md) v2.0 - Authentication & permission model
+- [BUSINESS_RULES.md](../sot/BUSINESS_RULES.md) v3.1 - Business constraint rules
+- [TRANSFER_SOT.md](../sot/TRANSFER_SOT.md) v1.0 - Transfer operation specifications
+- [RECONCILIATION_SOT.md](../sot/RECONCILIATION_SOT.md) v1.0 - Reconciliation logic
+- [LEDGER_SOT.md](../sot/LEDGER_SOT.md) v1.1 - Ledger system design
+- [ERROR_CODES_SOT.md](../sot/ERROR_CODES_SOT.md) v2.1 - Error code definitions
+- [DATA_SCHEMA.md](../sot/DATA_SCHEMA.md) v5.2 - Database schema reference
 
 ### 11.2 External Standards
 

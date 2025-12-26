@@ -718,9 +718,9 @@ def test_external_api_integration():
 
 | SoT Document | CI Pipeline Validation |
 |--------------|------------------------|
-| [STATE_MACHINE.md](../2.sot/STATE_MACHINE.md) v2.6 | State transition tests run in integration tests |
-| [DATA_SCHEMA.md](../2.sot/DATA_SCHEMA.md) v5.2 | Database schema validation tests |
-| [ERROR_CODES_SOT.md](../2.sot/ERROR_CODES_SOT.md) v2.1 | Error code usage tests |
+| [STATE_MACHINE.md](../sot/STATE_MACHINE.md) v2.6 | State transition tests run in integration tests |
+| [DATA_SCHEMA.md](../sot/DATA_SCHEMA.md) v5.2 | Database schema validation tests |
+| [ERROR_CODES_SOT.md](../sot/ERROR_CODES_SOT.md) v2.1 | Error code usage tests |
 
 ---
 

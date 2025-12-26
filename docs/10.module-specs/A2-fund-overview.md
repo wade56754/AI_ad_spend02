@@ -487,7 +487,7 @@ order: string (asc|desc)
 ---
 
 **关联文档**:
-- [MASTER.md §4.5.5 资金口径定义](../1.overview/MASTER.md)
-- [MASTER.md §6.5 页面字段集](../1.overview/MASTER.md)
+- [MASTER.md §4.5.5 资金口径定义](../sot/MASTER.md)
+- [MASTER.md §6.5 页面字段集](../sot/MASTER.md)
 - [A1-dashboard 模块规格书](A1-dashboard.md)
 - [StatCard 代码块](../9.code-blocks/frontend/core/stat-card.md)

@@ -435,8 +435,8 @@ export const config = {
 
 | SoT Document | Environment Variable Impact |
 |--------------|---------------------------|
-| [AUTH_SPEC.md](../2.sot/AUTH_SPEC.md) v2.0 | JWT token configuration (`JWT_SECRET`, `JWT_ALGORITHM`) |
-| [DATA_SCHEMA.md](../2.sot/DATA_SCHEMA.md) v5.2 | Database connection (`DATABASE_URL`) |
+| [AUTH_SPEC.md](../sot/AUTH_SPEC.md) v2.0 | JWT token configuration (`JWT_SECRET`, `JWT_ALGORITHM`) |
+| [DATA_SCHEMA.md](../sot/DATA_SCHEMA.md) v5.2 | Database connection (`DATABASE_URL`) |
 
 ---
 

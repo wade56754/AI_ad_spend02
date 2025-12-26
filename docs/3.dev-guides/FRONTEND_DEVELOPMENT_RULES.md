@@ -1672,13 +1672,13 @@ function getAvailableActions(status: ReportStatus) {
 ## 10. References
 
 ### Internal SoT Documents
-- `../1.overview/MASTER.md` v3.4 - Global invariants and SoT governance
-- `../2.sot/API_SOT.md` v9.0 - API endpoint specifications
-- `../2.sot/AUTH_SPEC.md` v2.0 - Authentication and authorization
-- `../2.sot/STATE_MACHINE.md` v2.6 - 8-state report lifecycle
-- `../2.sot/ERROR_CODES_SOT.md` v2.1 - Standardized error codes
-- `../2.sot/BUSINESS_RULES.md` v3.1 - Business validation rules
-- `../2.sot/DATA_SCHEMA.md` v5.2 - Database schema and data models
+- `../sot/MASTER.md` v3.4 - Global invariants and SoT governance
+- `../sot/API_SOT.md` v9.0 - API endpoint specifications
+- `../sot/AUTH_SPEC.md` v2.0 - Authentication and authorization
+- `../sot/STATE_MACHINE.md` v2.6 - 8-state report lifecycle
+- `../sot/ERROR_CODES_SOT.md` v2.1 - Standardized error codes
+- `../sot/BUSINESS_RULES.md` v3.1 - Business validation rules
+- `../sot/DATA_SCHEMA.md` v5.2 - Database schema and data models
 - `./API_DEVELOPMENT_FLOW.md` - Backend API development guide
 
 ### External References

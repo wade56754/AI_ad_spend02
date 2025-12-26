@@ -50,7 +50,7 @@
 
 ### 1.1 唯一真相源（强制依赖）
 
-- **系统宪法**: [`../1.overview/MASTER.md`](../1.overview/MASTER.md) v4.4 - 系统全局规则、角色定义、Phase 边界
+- **系统宪法**: [`./MASTER.md`](./MASTER.md) v4.4 - 系统全局规则、角色定义、Phase 边界
 - **数据定义**: [`./DATA_SCHEMA.md`](./DATA_SCHEMA.md) v5.2 - 表结构、字段、类型的唯一来源
 - **状态机定义**: [`./STATE_MACHINE.md`](./STATE_MACHINE.md) v2.6 - 业务状态流转的唯一来源
 - **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v4.1 - 业务约束的唯一来源

@@ -286,6 +286,6 @@ def test_function_name_validation_error(db_session, test_user):
 
 ## 12. 相关文档
 
-- [API 定义](../../2.sot/API_SOT.md)
-- [数据模型](../../2.sot/DATA_SCHEMA.md)
-- [错误码](../../2.sot/ERROR_CODES_SOT.md)
+- [API 定义](../../sot/API_SOT.md)
+- [数据模型](../../sot/DATA_SCHEMA.md)
+- [错误码](../../sot/ERROR_CODES_SOT.md)

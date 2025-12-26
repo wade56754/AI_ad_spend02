@@ -15,16 +15,17 @@ cp RECONCILIATION_CONTROL_CENTER_SOT.md docs/sot/
 # 目录结构
 docs/
 ├── 1.overview/
-│   ├── MASTER.md           # 架构宪法
-│   └── CORE_MODULES.md     # 核心模块
-├── 2.sot/
+│   ├── PROJECT.md          # 项目概览
+│   └── DOMAIN.md           # 领域模型
+├── sot/
+│   ├── MASTER.md           # 架构宪法 (唯一真相源)
 │   ├── STATE_MACHINE.md    # 状态机
 │   ├── DATA_SCHEMA.md      # 数据模型
 │   ├── LEDGER_SOT.md       # 账本规则
 │   ├── BUSINESS_RULES.md   # 业务规则
 │   ├── API_SOT.md          # API 规范
 │   ├── ERROR_CODES_SOT.md  # 错误码
-│   └── RECONCILIATION_CONTROL_CENTER_SOT.md  # ⭐ 新增
+│   └── RECONCILIATION_CONTROL_CENTER_SOT_v2.0.md  # 对账中心
 └── 3.dev-guides/
     └── ...
 ```

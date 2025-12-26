@@ -1786,14 +1786,14 @@ async def approve_topup(
 ## 17. References
 
 ### Internal SoT Documents
-- `../1.overview/MASTER.md` v3.4 - System constitution, 3 core invariants
-- `../2.sot/STATE_MACHINE.md` v2.6 - State definitions and transitions
-- `../2.sot/DATA_SCHEMA.md` v5.2 - Database schema
-- `../2.sot/BUSINESS_RULES.md` v3.1 - Validation rules
-- `../2.sot/API_SOT.md` v9.0 - API specifications
-- `../2.sot/ERROR_CODES_SOT.md` v2.1 - Error codes
-- `../2.sot/AUTH_SPEC.md` v2.0 - Authentication/authorization
-- `../2.sot/LEDGER_SOT.md` v1.1 - Ledger system
+- `../sot/MASTER.md` v3.4 - System constitution, 3 core invariants
+- `../sot/STATE_MACHINE.md` v2.6 - State definitions and transitions
+- `../sot/DATA_SCHEMA.md` v5.2 - Database schema
+- `../sot/BUSINESS_RULES.md` v3.1 - Validation rules
+- `../sot/API_SOT.md` v9.0 - API specifications
+- `../sot/ERROR_CODES_SOT.md` v2.1 - Error codes
+- `../sot/AUTH_SPEC.md` v2.0 - Authentication/authorization
+- `../sot/LEDGER_SOT.md` v1.1 - Ledger system
 - `./API_DEVELOPMENT_FLOW.md` v0.1 - Backend development workflow
 - `./FRONTEND_DEVELOPMENT_RULES.md` v1.0 - Frontend development standards
 - `../../.claude/PROJECT_RULES.md` v3.1 - Claude Code project rules

@@ -10,11 +10,11 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6
 # 部署指南 (Deployment Guide)
 
 > **互锁文档**:
-> - 数据结构 → `../2.sot/DATA_SCHEMA.md` v5.2
-> - 状态机 → `../2.sot/STATE_MACHINE.md` v2.6
-> - 错误码 → `../2.sot/ERROR_CODES_SOT.md` v2.1
-> - 业务规则 → `../2.sot/BUSINESS_RULES.md` v3.1
-> - RLS策略 → `../2.sot/RLS_POLICIES_SOT.md` v2.1 (planned)
+> - 数据结构 → `../sot/DATA_SCHEMA.md` v5.2
+> - 状态机 → `../sot/STATE_MACHINE.md` v2.6
+> - 错误码 → `../sot/ERROR_CODES_SOT.md` v2.1
+> - 业务规则 → `../sot/BUSINESS_RULES.md` v3.1
+> - RLS策略 → `../sot/RLS_POLICIES_SOT.md` v2.1 (planned)
 > - 后端配置 → `BACKEND_SETUP.md`
 > - 前端配置 → `FRONTEND_SETUP.md`
 > - 测试策略 → `TESTING_GUIDE.md`

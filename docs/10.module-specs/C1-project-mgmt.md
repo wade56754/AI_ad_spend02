@@ -410,8 +410,8 @@ def get_accessible_projects(user):
 
 ## 10. 相关文档
 
-- [MASTER.md §6.2 页面职责](../1.overview/MASTER.md)
-- [DATA_SCHEMA.md projects 表](../2.sot/DATA_SCHEMA.md)
-- [STATE_MACHINE.md §5 项目状态机](../2.sot/STATE_MACHINE.md)
+- [MASTER.md §6.2 页面职责](../sot/MASTER.md)
+- [DATA_SCHEMA.md projects 表](../sot/DATA_SCHEMA.md)
+- [STATE_MACHINE.md §5 项目状态机](../sot/STATE_MACHINE.md)
 - [A3-project-pnl 项目盈亏看板](./A3-project-pnl.md)
 - [B1-topup-approval 充值审批](./B1-topup-approval.md)

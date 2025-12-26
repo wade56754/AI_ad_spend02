@@ -995,7 +995,7 @@ CREATE INDEX idx_projects_status ON projects(status);
 
 **关联文档**:
 - [A3-project-pnl.md](A3-project-pnl.md) - 前端模块规格书
-- [MASTER.md §4.5.1](../1.overview/MASTER.md) - CPL 计算公式
-- [MASTER.md §4.5.4](../1.overview/MASTER.md) - 盈亏计算公式
-- [MASTER.md §6.5](../1.overview/MASTER.md) - 页面 3 必须字段
-- [BUSINESS_RULES.md](../2.sot/BUSINESS_RULES.md) - 业务规则
+- [MASTER.md §4.5.1](../sot/MASTER.md) - CPL 计算公式
+- [MASTER.md §4.5.4](../sot/MASTER.md) - 盈亏计算公式
+- [MASTER.md §6.5](../sot/MASTER.md) - 页面 3 必须字段
+- [BUSINESS_RULES.md](../sot/BUSINESS_RULES.md) - 业务规则

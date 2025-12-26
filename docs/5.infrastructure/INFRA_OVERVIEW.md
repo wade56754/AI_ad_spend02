@@ -245,10 +245,10 @@ Infrastructure configurations must respect SoT definitions:
 
 | SoT Document | Infrastructure Impact | Example |
 |--------------|----------------------|---------|
-| [DATA_SCHEMA.md](../2.sot/DATA_SCHEMA.md) v5.2 | Database migrations (Alembic) must align with schema definitions | Migration scripts for `daily_reports`, `ledger_entries` tables |
-| [STATE_MACHINE.md](../2.sot/STATE_MACHINE.md) v2.6 | Health checks must verify valid state transitions | Alert if daily report stuck in `trend_pending` for > 24h |
-| [API_SOT.md](../2.sot/API_SOT.md) v9.0 | API endpoint monitoring and health checks | Monitor `/api/v1/daily-reports` response times |
-| [ERROR_CODES_SOT.md](../2.sot/ERROR_CODES_SOT.md) v2.1 | Error log aggregation and alerting | Alert on `AUTH-003` (Invalid Token) spike |
+| [DATA_SCHEMA.md](../sot/DATA_SCHEMA.md) v5.2 | Database migrations (Alembic) must align with schema definitions | Migration scripts for `daily_reports`, `ledger_entries` tables |
+| [STATE_MACHINE.md](../sot/STATE_MACHINE.md) v2.6 | Health checks must verify valid state transitions | Alert if daily report stuck in `trend_pending` for > 24h |
+| [API_SOT.md](../sot/API_SOT.md) v9.0 | API endpoint monitoring and health checks | Monitor `/api/v1/daily-reports` response times |
+| [ERROR_CODES_SOT.md](../sot/ERROR_CODES_SOT.md) v2.1 | Error log aggregation and alerting | Alert on `AUTH-003` (Invalid Token) spike |
 
 ### 7.2 References to Dev-Guides Layer (Layer 3)
 

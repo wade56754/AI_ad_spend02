@@ -938,6 +938,6 @@ CREATE INDEX idx_receivable_received_at ON receivable(received_at);
 
 **关联文档**:
 - [A2-fund-overview.md](A2-fund-overview.md) - 前端模块规格书
-- [MASTER.md §4.5.5](../1.overview/MASTER.md) - 资金口径定义
-- [LEDGER_SOT.md](../2.sot/LEDGER_SOT.md) - 账本规范
-- [DATA_SCHEMA.md §3.4](../2.sot/DATA_SCHEMA.md) - 表结构定义
+- [MASTER.md §4.5.5](../sot/MASTER.md) - 资金口径定义
+- [LEDGER_SOT.md](../sot/LEDGER_SOT.md) - 账本规范
+- [DATA_SCHEMA.md §3.4](../sot/DATA_SCHEMA.md) - 表结构定义

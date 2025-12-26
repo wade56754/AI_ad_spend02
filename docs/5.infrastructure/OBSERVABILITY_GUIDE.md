@@ -411,9 +411,9 @@ export async function GET() {
 
 | SoT Document | Observability Metrics |
 |--------------|----------------------|
-| [STATE_MACHINE.md](../2.sot/STATE_MACHINE.md) v2.6 | Track daily report state transitions (metrics: reports in each state) |
-| [API_SOT.md](../2.sot/API_SOT.md) v9.0 | Monitor API endpoint latency and error rates |
-| [ERROR_CODES_SOT.md](../2.sot/ERROR_CODES_SOT.md) v2.1 | Aggregate error logs by error code (e.g., AUTH-003, VAL-001) |
+| [STATE_MACHINE.md](../sot/STATE_MACHINE.md) v2.6 | Track daily report state transitions (metrics: reports in each state) |
+| [API_SOT.md](../sot/API_SOT.md) v9.0 | Monitor API endpoint latency and error rates |
+| [ERROR_CODES_SOT.md](../sot/ERROR_CODES_SOT.md) v2.1 | Aggregate error logs by error code (e.g., AUTH-003, VAL-001) |
 
 ---
 
