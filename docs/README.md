@@ -1,17 +1,17 @@
 ---
-version: v1.2
+version: v1.3
 status: ready_for_production
 layer: documentation-index
 owner: wade
-last_reviewed: 2025-12-24
+last_reviewed: 2025-12-27
 baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0, OpenSpec v1.0
 ---
 
 # AI广告代投系统 - Documentation Center
 
 > **Documentation Framework**: ASDD (AI-Spec-Driven Development) 6-Layer Architecture
-> **Last Updated**: 2025-11-27
-> **Baseline**: MASTER v3.6, SoT v2.6, Dev-Guides vFinal, Architecture v1.0, Infrastructure v1.0, Agent v1.0
+> **Last Updated**: 2025-12-27
+> **Baseline**: MASTER v4.4, SoT v2.6, Dev-Guides vFinal, Architecture v1.0, Infrastructure v1.0, Agent v1.0
 
 ---
 
@@ -19,11 +19,11 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 ```mermaid
 graph TD
-  A[Layer 1: Overview<br/>MASTER.md + PROJECT.md<br/>Freeze v1.0] --> B[Layer 2: SoT<br/>10 SoT Documents<br/>Freeze v2.6]
-  B --> C[Layer 3: Dev-Guides<br/>10 Dev-Guide Documents<br/>Freeze vFinal]
+  A[Layer 1: Overview<br/>PROJECT.md + DOMAIN.md<br/>项目概览] --> B[Layer 2: SoT<br/>MASTER.md + 19 SoT Documents<br/>Freeze v2.6]
+  B --> C[Layer 3: Dev-Guides<br/>26 Dev-Guide Documents<br/>开发指南]
   C --> D[Layer 4: Architecture<br/>7 Architecture Views<br/>Freeze v1.0]
   D --> E[Layer 5: Infrastructure<br/>5 Infrastructure Specs<br/>Freeze v1.0]
-  E --> F[Layer 6: Agent<br/>7 Agent Specs<br/>Freeze v1.0]
+  E --> F[Layer 6: Agent<br/>14 Agent Specs<br/>Freeze v1.0]
 
   style A fill:#e1f5e1
   style B fill:#e1f5e1
@@ -48,9 +48,10 @@ graph TD
 
 | Document | Version | Status | Purpose |
 |----------|---------|--------|---------|
-| [MASTER.md](./1.overview/MASTER.md) | v3.6 | 🟢 Frozen | System architecture constitution, 三大不可变量 |
+| [MASTER.md](./sot/MASTER.md) | v4.4 | 🟢 Frozen | System architecture constitution, 三大不可变量 |
 | [PROJECT.md](./1.overview/PROJECT.md) | v1.2 | 🟢 Frozen | Project scope, capability boundaries |
-| [FREEZE_MANIFEST_v1.0.md](./1.overview/FREEZE_MANIFEST_v1.0.md) | v1.0 | 🟢 Frozen | Overview Layer freeze record |
+| [DOMAIN.md](./1.overview/DOMAIN.md) | v1.0 | 🟢 Frozen | Domain model and business context |
+| [ARCHITECTURE.md](./1.overview/ARCHITECTURE.md) | v1.0 | 🟢 Frozen | High-level architecture overview |
 
 **Freeze Date**: 2025-11-23 | **Health Score**: 100/100
 
@@ -62,18 +63,18 @@ graph TD
 
 | Document | Version | Status | Purpose |
 |----------|---------|--------|---------|
-| [STATE_MACHINE.md](./2.sot/STATE_MACHINE.md) | v2.6 | 🟢 Frozen | 8-state machine flow (raw_submitted → final_locked) |
-| [DATA_SCHEMA.md](./2.sot/DATA_SCHEMA.md) | v5.2 | 🟢 Frozen | Database schema, 23 tables, indexes, constraints |
-| [API_SOT.md](./2.sot/API_SOT.md) | v9.0 | 🟢 Frozen | REST API contracts, 50+ endpoints |
-| [ERROR_CODES_SOT.md](./2.sot/ERROR_CODES_SOT.md) | v2.1 | 🟢 Frozen | Global error code registry (AUTH/BIZ/VAL/SYS/DB/STATE/TREND) |
-| [BUSINESS_RULES.md](./2.sot/BUSINESS_RULES.md) | v3.2 | 🟢 Frozen | Business logic rules, pricing formulas |
-| [AUTH_SPEC.md](./2.sot/AUTH_SPEC.md) | v2.1 | 🟢 Active | 7 user roles, RBAC permissions |
-| [LEDGER_SOT.md](./2.sot/LEDGER_SOT.md) | v1.1 | 🟢 Frozen | Dual-ledger system (PROJECT vs SUPPLIER) |
-| [DAILY_REPORT_SOT.md](./2.sot/DAILY_REPORT_SOT.md) | v1.0 | 🟢 Frozen | Daily report workflow and data flow |
-| [TRANSFER_SOT.md](./2.sot/TRANSFER_SOT.md) | v1.0 | 🟢 Frozen | Transfer workflow specification |
-| [TOPUP_SOT.md](./2.sot/TOPUP_SOT.md) | v1.0 | 🟢 Frozen | Topup lifecycle (draft → completed) |
-| [RECONCILIATION_SOT.md](./2.sot/RECONCILIATION_SOT.md) | v1.0 | 🟢 Frozen | Batch reconciliation workflow |
-| [SOT_FREEZE_MANIFEST_v2.6.md](./2.sot/SOT_FREEZE_MANIFEST_v2.6.md) | v2.6 | 🟢 Frozen | SoT Layer freeze record |
+| [STATE_MACHINE.md](./sot/STATE_MACHINE.md) | v2.6 | 🟢 Frozen | 8-state machine flow (raw_submitted → final_locked) |
+| [DATA_SCHEMA.md](./sot/DATA_SCHEMA.md) | v5.2 | 🟢 Frozen | Database schema, 23 tables, indexes, constraints |
+| [API_SOT.md](./sot/API_SOT.md) | v9.0 | 🟢 Frozen | REST API contracts, 50+ endpoints |
+| [ERROR_CODES_SOT.md](./sot/ERROR_CODES_SOT.md) | v2.1 | 🟢 Frozen | Global error code registry (AUTH/BIZ/VAL/SYS/DB/STATE/TREND) |
+| [BUSINESS_RULES.md](./sot/BUSINESS_RULES.md) | v3.2 | 🟢 Frozen | Business logic rules, pricing formulas |
+| [AUTH_SPEC.md](./sot/AUTH_SPEC.md) | v2.1 | 🟢 Active | 7 user roles, RBAC permissions |
+| [LEDGER_SOT.md](./sot/LEDGER_SOT.md) | v1.1 | 🟢 Frozen | Dual-ledger system (PROJECT vs SUPPLIER) |
+| [DAILY_REPORT_SOT.md](./sot/DAILY_REPORT_SOT.md) | v1.0 | 🟢 Frozen | Daily report workflow and data flow |
+| [TRANSFER_SOT.md](./sot/TRANSFER_SOT.md) | v1.0 | 🟢 Frozen | Transfer workflow specification |
+| [TOPUP_SOT.md](./sot/TOPUP_SOT.md) | v1.0 | 🟢 Frozen | Topup lifecycle (draft → completed) |
+| [RECONCILIATION_SOT.md](./sot/RECONCILIATION_SOT.md) | v1.0 | 🟢 Frozen | Batch reconciliation workflow |
+| [SOT_FREEZE_MANIFEST_v2.6.md](./sot/SOT_FREEZE_MANIFEST_v2.6.md) | v2.6 | 🟢 Frozen | SoT Layer freeze record |
 
 **Freeze Date**: 2025-11-26 | **Health Score**: 100/100
 
@@ -203,11 +204,11 @@ Agent Layer Freeze v1.0 (AI Agent System)
 ### For New Team Members
 
 **Start here** (in order):
-1. Read [MASTER.md](./1.overview/MASTER.md) - Understand system philosophy and invariants
+1. Read [MASTER.md](./sot/MASTER.md) - Understand system philosophy and invariants
 2. Read [PROJECT.md](./1.overview/PROJECT.md) - Understand project scope
 3. Read [DEV_ONBOARDING_CHECKLIST.md](./3.dev-guides/DEV_ONBOARDING_CHECKLIST.md) - Follow onboarding steps
 4. Read [API_DEVELOPMENT_FLOW.md](./3.dev-guides/API_DEVELOPMENT_FLOW.md) - Learn development workflow
-5. Browse [SoT Layer](./2.sot/) - Reference technical specifications as needed
+5. Browse [SoT Layer](./sot/) - Reference technical specifications as needed
 
 ### For AI Agents (Claude, Cursor, etc.)
 
@@ -375,17 +376,17 @@ openspec archive <change-id> --yes
 ### By Role
 
 - **投手 (Media Buyer)**: [UI_FLOW_SPEC.md](./3.dev-guides/UI_FLOW_SPEC.md) → daily report submission
-- **数据运营 (Data Operator)**: [STATE_MACHINE.md](./2.sot/STATE_MACHINE.md) → 8-state machine flow
-- **财务 (Finance)**: [LEDGER_SOT.md](./2.sot/LEDGER_SOT.md) → dual-ledger system
-- **项目经理 (Account Manager)**: [BUSINESS_RULES.md](./2.sot/BUSINESS_RULES.md) → pricing rules
-- **系统管理员 (Admin)**: [AUTH_SPEC.md](./2.sot/AUTH_SPEC.md) → user roles & permissions
+- **数据运营 (Data Operator)**: [STATE_MACHINE.md](./sot/STATE_MACHINE.md) → 8-state machine flow
+- **财务 (Finance)**: [LEDGER_SOT.md](./sot/LEDGER_SOT.md) → dual-ledger system
+- **项目经理 (Account Manager)**: [BUSINESS_RULES.md](./sot/BUSINESS_RULES.md) → pricing rules
+- **系统管理员 (Admin)**: [AUTH_SPEC.md](./sot/AUTH_SPEC.md) → user roles & permissions
 
 ### By Technical Topic
 
-- **Database**: [DATA_SCHEMA.md](./2.sot/DATA_SCHEMA.md) v5.2
-- **API**: [API_SOT.md](./2.sot/API_SOT.md) v9.0
-- **State Machine**: [STATE_MACHINE.md](./2.sot/STATE_MACHINE.md) v2.6
-- **Error Handling**: [ERROR_CODES_SOT.md](./2.sot/ERROR_CODES_SOT.md) v2.1
+- **Database**: [DATA_SCHEMA.md](./sot/DATA_SCHEMA.md) v5.2
+- **API**: [API_SOT.md](./sot/API_SOT.md) v9.0
+- **State Machine**: [STATE_MACHINE.md](./sot/STATE_MACHINE.md) v2.6
+- **Error Handling**: [ERROR_CODES_SOT.md](./sot/ERROR_CODES_SOT.md) v2.1
 - **Testing**: [TESTING_STRATEGY.md](./3.dev-guides/TESTING_STRATEGY.md) v1.1
 - **Deployment**: [DEPLOYMENT_PIPELINE_SPEC.md](./5.infrastructure/DEPLOYMENT_PIPELINE_SPEC.md) v1.0
 - **Monitoring**: [OBSERVABILITY_GUIDE.md](./5.infrastructure/OBSERVABILITY_GUIDE.md) v1.0
