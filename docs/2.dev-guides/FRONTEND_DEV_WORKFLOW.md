@@ -93,7 +93,7 @@
 ### 2.1 规格书位置
 
 ```
-docs/10.module-specs/
+docs/5.module-specs/
 ├── README.md                  # 索引 + 模块架构图
 │
 ├── A1-dashboard.md            # 老板驾驶舱 (P0)
@@ -155,7 +155,7 @@ docs/10.module-specs/
 - 特殊权限: [操作权限]
 
 ### 6. SoT 追溯
-- 规格书: docs/10.module-specs/[文件名]
+- 规格书: docs/5.module-specs/[文件名]
 - MASTER.md: §[章节号]
 - STATE_MACHINE.md: §[章节号] (如适用)
 ```
@@ -560,7 +560,7 @@ app/(dashboard)/{module}/
 
 /**
  * [模块名] 类型定义
- * SoT: docs/10.module-specs/[规格书].md §2
+ * SoT: docs/5.module-specs/[规格书].md §2
  */
 
 // 主实体类型
@@ -594,7 +594,7 @@ import type { {Entity}, {Entity}ListParams, {Entity}FormData } from '../types';
 
 /**
  * [模块名] API 服务
- * SoT: docs/10.module-specs/[规格书].md §5
+ * SoT: docs/5.module-specs/[规格书].md §5
  */
 
 // 列表查询
@@ -630,7 +630,7 @@ import type { {Entity}ListParams, {Entity}FormData } from '../types';
 
 /**
  * [模块名] 数据 Hook
- * SoT: docs/10.module-specs/[规格书].md
+ * SoT: docs/5.module-specs/[规格书].md
  */
 
 // 列表查询
@@ -739,7 +739,7 @@ function CreateForm() {
 
 /**
  * [模块名] 列表页
- * SoT: docs/10.module-specs/[规格书].md §3
+ * SoT: docs/5.module-specs/[规格书].md §3
  * 权限: [角色列表]
  */
 
@@ -775,7 +775,7 @@ export default function {Entity}ListPage() {
 
 /**
  * [模块名] 表格列定义
- * SoT: docs/10.module-specs/[规格书].md §3.UI规范
+ * SoT: docs/5.module-specs/[规格书].md §3.UI规范
  */
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -845,7 +845,7 @@ function MyPage() {
 /**
  * [文件描述]
  * 
- * @sot docs/10.module-specs/[规格书].md
+ * @sot docs/5.module-specs/[规格书].md
  * @master MASTER.md §[章节]
  * @permission [角色列表]
  * @phase Phase 1
@@ -1005,7 +1005,7 @@ describe('use{Entities}', () => {
 - (如有)
 
 ### SoT 追溯
-- 规格书: docs/10.module-specs/[文件名]
+- 规格书: docs/5.module-specs/[文件名]
 - MASTER.md: §[章节]
 - FRONTEND_AI_RULES: v1.1
 ```
@@ -1023,7 +1023,7 @@ describe('use{Entities}', () => {
 │                                                                 │
 │  Step 1: 读规格书                                               │
 │  ─────────────────                                              │
-│  位置: docs/10.module-specs/[模块].md                           │
+│  位置: docs/5.module-specs/[模块].md                           │
 │  必读: §1概述 §2数据 §3UI §5API §6权限                          │
 │                                                                 │
 │  Step 2: 查复用                                                 │
@@ -1125,7 +1125,7 @@ pnpm build
 - 角色映射: supervisor → data_operator (参见 §5.2.6)
 
 ### 6. SoT 追溯
-- 规格书: docs/10.module-specs/B2-daily-report-review.md
+- 规格书: docs/5.module-specs/B2-daily-report-review.md
 - MASTER.md: §3.1 Phase 1, §6.5 日报审核
 - STATE_MACHINE.md: §8 日报状态机
 ```
@@ -1214,7 +1214,7 @@ features/daily-reports/
 
 /**
  * 日报审核页
- * @sot docs/10.module-specs/B2-daily-report-review.md
+ * @sot docs/5.module-specs/B2-daily-report-review.md
  * @master MASTER.md §6.5
  * @permission data_operator, admin (业务角色: supervisor)
  * @phase Phase 1
@@ -1262,7 +1262,7 @@ export default function DailyReportReviewPage() {
 | 功能测试 | ✅ PASS |
 
 ### SoT 追溯
-- 规格书: docs/10.module-specs/B2-daily-report-review.md
+- 规格书: docs/5.module-specs/B2-daily-report-review.md
 - MASTER.md: §3.1, §6.5
 - STATE_MACHINE.md: §8
 ```

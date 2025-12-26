@@ -82,7 +82,7 @@ ARCHITECTURE.md 定义系统技术架构约束：
 | Domain | 业务规则、状态机、领域事件 | HTTP、数据库、框架依赖 |
 | Infrastructure | 数据持久化、外部 API、缓存 | 业务规则、状态判断 |
 
-> 引用: docs/3.dev-guides/DDD_API_ARCHITECTURE.md
+> 引用: docs/2.dev-guides/DDD_API_ARCHITECTURE.md
 
 ---
 

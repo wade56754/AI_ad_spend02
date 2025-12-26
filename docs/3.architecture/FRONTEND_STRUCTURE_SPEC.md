@@ -727,10 +727,10 @@ type TopupRequestStatus = 'draft' | 'pending_review' | ...;
 ## 12. References
 
 ### Internal Documents
-- [FRONTEND_DEVELOPMENT_RULES.md](../../3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md) v1.0
-- [UI_FLOW_SPEC.md](../../3.dev-guides/UI_FLOW_SPEC.md) v1.0
-- [UI_DESIGN_SYSTEM.md](../../3.dev-guides/UI_DESIGN_SYSTEM.md) v0.1
-- [API_DEVELOPMENT_FLOW.md](../../3.dev-guides/API_DEVELOPMENT_FLOW.md) v0.1
+- [FRONTEND_DEVELOPMENT_RULES.md](../../2.dev-guides/FRONTEND_DEVELOPMENT_RULES.md) v1.0
+- [UI_FLOW_SPEC.md](../../2.dev-guides/UI_FLOW_SPEC.md) v1.0
+- [UI_DESIGN_SYSTEM.md](../../2.dev-guides/UI_DESIGN_SYSTEM.md) v0.1
+- [API_DEVELOPMENT_FLOW.md](../../2.dev-guides/API_DEVELOPMENT_FLOW.md) v0.1
 
 ### External References
 - [React Documentation](https://react.dev/)

@@ -557,6 +557,6 @@ frontend/src/features/dashboard/
 ---
 
 **关联文档**:
-- [A1-dashboard.md](../10.module-specs/A1-dashboard.md) - 模块规格书
+- [A1-dashboard.md](../5.module-specs/A1-dashboard.md) - 模块规格书
 - [MASTER.md §6.5](../sot/MASTER.md) - 最小字段集
 - [PROJECT.md](../1.overview/PROJECT.md) - 项目定义

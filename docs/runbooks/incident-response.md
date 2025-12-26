@@ -261,4 +261,4 @@ kubectl patch deployment backend -p '{"spec":{"template":{"spec":{"containers":[
 
 - [部署手册](./deploy.md)
 - [回滚手册](./rollback.md)
-- [监控告警配置](../5.infrastructure/OBSERVABILITY_GUIDE.md)
+- [监控告警配置](../archive/2025-12-structure-cleanup/5.infrastructure/OBSERVABILITY_GUIDE.md)

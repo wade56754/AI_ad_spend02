@@ -3,7 +3,7 @@
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
 > **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, LEDGER_SOT.md v1.2
-> **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
+> **参考指南**: docs/2.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
 

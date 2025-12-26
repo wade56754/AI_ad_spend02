@@ -3,7 +3,7 @@
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
 > **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, API_SOT.md v9.3
-> **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
+> **参考指南**: docs/2.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
 
@@ -906,7 +906,7 @@ async def test_role_permissions(client, role, action, expected):
 
 **维护者**: AI 广告代投系统开发团队
 **参考文档**:
-- `docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md`
-- `docs/10.module-specs/B1-topup-approval.md` (前端规格书)
+- `docs/2.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md`
+- `docs/5.module-specs/B1-topup-approval.md` (前端规格书)
 - `docs/sot/STATE_MACHINE.md` v2.6 §9
 - `docs/sot/DATA_SCHEMA.md` v5.2 §4.1

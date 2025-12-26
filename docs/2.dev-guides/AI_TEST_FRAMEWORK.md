@@ -98,7 +98,7 @@
 # checkpoints/B2-daily-report-review.yaml
 
 module: B2-daily-report-review
-spec_file: docs/10.module-specs/B2-daily-report-review.md
+spec_file: docs/5.module-specs/B2-daily-report-review.md
 version: "1.0"
 
 checkpoints:
@@ -505,7 +505,7 @@ uncovered:
 
 ### 1. 执行摘要
 - 模块: 日报审核
-- 规格书: docs/10.module-specs/B2-daily-report-review.md
+- 规格书: docs/5.module-specs/B2-daily-report-review.md
 - 执行时间: 2024-12-23 10:00:00
 - 执行者: Claude
 
@@ -991,7 +991,7 @@ jobs:
 
       - name: Check checkpoint files exist
         run: |
-          for spec in docs/10.module-specs/*.md; do
+          for spec in docs/5.module-specs/*.md; do
             module=$(basename "$spec" .md)
             if [ ! -f "checkpoints/${module}.yaml" ]; then
               echo "❌ Missing checkpoint file for: $module"
@@ -1035,7 +1035,7 @@ jobs:
 
 1. **读取规格书**
    ```
-   读取: docs/10.module-specs/{module}.md
+   读取: docs/5.module-specs/{module}.md
    提取: 业务目标、用户角色、数据需求、UI 规范、API 接口
    ```
 
@@ -1107,7 +1107,7 @@ jobs:
 ## 测试执行: {module}
 
 ### 1. 准备检查
-□ 规格书已读取: docs/10.module-specs/{module}.md
+□ 规格书已读取: docs/5.module-specs/{module}.md
 □ 检查点已加载: checkpoints/{module}.yaml
 □ 检查点数量: X 个
 □ 测试用例数量: Y 个
@@ -1139,7 +1139,7 @@ jobs:
 # checkpoints/TEMPLATE.yaml
 
 module: "{MODULE_NAME}"
-spec_file: "docs/10.module-specs/{MODULE}.md"
+spec_file: "docs/5.module-specs/{MODULE}.md"
 version: "1.0"
 
 checkpoints:

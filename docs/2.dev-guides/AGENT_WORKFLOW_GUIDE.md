@@ -679,9 +679,9 @@ sequenceDiagram
 | Type | Layer | Template | Example |
 |------|-------|----------|---------|
 | SoT Documents | `docs/sot/` | STATE_MACHINE.md | DATA_SCHEMA.md v5.3 |
-| Dev Guides | `docs/3.dev-guides/` | API_DEVELOPMENT_FLOW.md | This document |
+| Dev Guides | `docs/2.dev-guides/` | API_DEVELOPMENT_FLOW.md | This document |
 | API Specs | `docs/sot/` | API_SOT.md | API_SOT.md v9.3 |
-| Testing Guides | `docs/3.dev-guides/` | TESTING_GUIDE.md | Test strategy |
+| Testing Guides | `docs/2.dev-guides/` | TESTING_GUIDE.md | Test strategy |
 
 **Document Frontmatter** (required):
 ```yaml
@@ -700,7 +700,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0
 **Agent Command**:
 ```bash
 /sc:document "Agent Workflow Guide" --template=dev-guide
-  - Layer: docs/3.dev-guides/
+  - Layer: docs/2.dev-guides/
   - Baseline: MASTER.md v4.4, SoT Freeze v1.0
   - References: API_DEVELOPMENT_FLOW.md, FRONTEND_DEVELOPMENT_RULES.md
   - Include: Workflow diagrams (Mermaid)

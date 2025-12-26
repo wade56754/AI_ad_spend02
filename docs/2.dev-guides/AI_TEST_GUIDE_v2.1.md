@@ -83,7 +83,7 @@ test('supervisor 可以访问日报审核页', async ({ page }) => {
 # checkpoints/{module-name}.yaml
 
 module: "{模块名}"
-spec_file: "docs/10.module-specs/{规格书}.md"
+spec_file: "docs/5.module-specs/{规格书}.md"
 page_path: "/{页面路径}"
 
 checkpoints:
@@ -272,7 +272,7 @@ import { TEST_ACCOUNTS, TestRole } from '../../fixtures/test-accounts';
 /**
  * {模块名} - {功能名} 测试
  * 
- * @spec docs/10.module-specs/{规格书}.md
+ * @spec docs/5.module-specs/{规格书}.md
  * @checkpoint checkpoints/{module}.yaml
  */
 
@@ -801,7 +801,7 @@ test.describe('Phase 1 异常高亮', () => {
 
 ### 4. 追溯
 
-- 规格书: docs/10.module-specs/{规格书}.md
+- 规格书: docs/5.module-specs/{规格书}.md
 - 检查点: checkpoints/{module}.yaml
 ```
 
@@ -815,7 +815,7 @@ test.describe('Phase 1 异常高亮', () => {
 # checkpoints/B2-daily-report-review.yaml
 
 module: "B2-daily-report-review"
-spec_file: "docs/10.module-specs/B2-daily-report-review.md"
+spec_file: "docs/5.module-specs/B2-daily-report-review.md"
 page_path: "/daily-reports/review"
 
 checkpoints:
@@ -885,7 +885,7 @@ import { TestRole } from '../../fixtures/test-accounts';
 /**
  * 日报审核页测试
  * 
- * @spec docs/10.module-specs/B2-daily-report-review.md
+ * @spec docs/5.module-specs/B2-daily-report-review.md
  * @checkpoint checkpoints/B2-daily-report-review.yaml
  */
 
@@ -1150,7 +1150,7 @@ test.describe('CP-B2-005: Phase 1 不阻断规则', () => {
 
 ### 4. 追溯
 
-- 规格书: docs/10.module-specs/B2-daily-report-review.md
+- 规格书: docs/5.module-specs/B2-daily-report-review.md
 - 检查点: checkpoints/B2-daily-report-review.yaml
 ```
 

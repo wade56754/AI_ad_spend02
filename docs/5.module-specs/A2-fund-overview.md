@@ -203,7 +203,7 @@ UC-A2-04: 资金预警提示
 
 | 组件 | 位置 | 职责 | 代码块文档 |
 |------|------|------|-----------|
-| `PageHeader` | 顶部 | 页面标题 | [page-header.md](../9.code-blocks/frontend/core/page-header.md) |
+| `PageHeader` | 顶部 | 页面标题 | [page-header.md](../archive/2025-12-structure-cleanup/9.code-blocks/frontend/core/page-header.md) |
 | `AlertBanner` | 顶部下 | 资金预警 | - |
 | `FundStatCard` | 指标区 | 单个资金指标 | 复用 StatCard |
 | `FundFlowChart` | 流向区 | 资金流向桑基图 | (待开发) |
@@ -490,4 +490,4 @@ order: string (asc|desc)
 - [MASTER.md §4.5.5 资金口径定义](../sot/MASTER.md)
 - [MASTER.md §6.5 页面字段集](../sot/MASTER.md)
 - [A1-dashboard 模块规格书](A1-dashboard.md)
-- [StatCard 代码块](../9.code-blocks/frontend/core/stat-card.md)
+- [StatCard 代码块](../archive/2025-12-structure-cleanup/9.code-blocks/frontend/core/stat-card.md)

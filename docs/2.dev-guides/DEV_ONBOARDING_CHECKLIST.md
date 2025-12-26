@@ -87,7 +87,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Install SuperClaude (optional, for AI-assisted development)
 
 - [ ] **Backend Setup**
-  - [ ] Follow `docs/3.dev-guides/BACKEND_SETUP.md` §2-5
+  - [ ] Follow `docs/2.dev-guides/BACKEND_SETUP.md` §2-5
   - [ ] Create virtual environment: `python -m venv venv`
   - [ ] Install dependencies: `pip install -r backend/requirements.txt`
   - [ ] Copy `.env.example` to `.env` and configure
@@ -96,7 +96,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Verify backend health: `curl http://localhost:54321/health`
 
 - [ ] **Frontend Setup**
-  - [ ] Follow `docs/3.dev-guides/FRONTEND_SETUP.md` §2-4
+  - [ ] Follow `docs/2.dev-guides/FRONTEND_SETUP.md` §2-4
   - [ ] Install dependencies: `cd frontend && npm install`
   - [ ] Copy `.env.local.example` to `.env.local` and configure
   - [ ] Start dev server: `npm run dev`
@@ -256,7 +256,7 @@ Week 3: Advanced Topics + Independent Work
 #### Checklist
 
 - [ ] **API_DEVELOPMENT_FLOW.md** (90 minutes)
-  - [ ] Read `docs/3.dev-guides/API_DEVELOPMENT_FLOW.md` §1-10
+  - [ ] Read `docs/2.dev-guides/API_DEVELOPMENT_FLOW.md` §1-10
   - [ ] Understand 7-step API development process:
     1. Query SoT documents
     2. Design endpoint contract
@@ -270,7 +270,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Understand transaction patterns for state machine transitions
 
 - [ ] **FRONTEND_DEVELOPMENT_RULES.md v1.0** (60 minutes)
-  - [ ] Read `docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md` §1-8
+  - [ ] Read `docs/2.dev-guides/FRONTEND_DEVELOPMENT_RULES.md` §1-8
   - [ ] Understand React component architecture
   - [ ] Review state management with Zustand
   - [ ] Study React Query data fetching patterns
@@ -278,7 +278,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Review role-based rendering rules
 
 - [ ] **TESTING_STRATEGY.md v1.0** (60 minutes)
-  - [ ] Read `docs/3.dev-guides/TESTING_STRATEGY.md` §1-10
+  - [ ] Read `docs/2.dev-guides/TESTING_STRATEGY.md` §1-10
   - [ ] Understand test pyramid:
     - [ ] 60% Unit tests (service layer logic)
     - [ ] 30% Integration tests (API + DB)
@@ -288,7 +288,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Learn invariant testing approach
 
 - [ ] **AGENT_WORKFLOW_GUIDE.md v1.0** (60 minutes)
-  - [ ] Read `docs/3.dev-guides/AGENT_WORKFLOW_GUIDE.md` §1-7
+  - [ ] Read `docs/2.dev-guides/AGENT_WORKFLOW_GUIDE.md` §1-7
   - [ ] Understand SoT-first mindset (query SoT before coding)
   - [ ] Learn agent role: executor, not inventor
   - [ ] Study common agent commands:
@@ -1477,13 +1477,13 @@ A: _______________________
 | **SoT** | BUSINESS_RULES.md | `docs/sot/BUSINESS_RULES.md` | v3.1 |
 | **SoT** | API_SOT.md | `docs/sot/API_SOT.md` | v9.0 |
 | **SoT** | ERROR_CODES_SOT.md | `docs/sot/ERROR_CODES_SOT.md` | v2.1 |
-| **Dev Guide** | API_DEVELOPMENT_FLOW.md | `docs/3.dev-guides/API_DEVELOPMENT_FLOW.md` | v1.0 |
-| **Dev Guide** | FRONTEND_DEVELOPMENT_RULES.md | `docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md` | v1.0 |
-| **Dev Guide** | TESTING_STRATEGY.md | `docs/3.dev-guides/TESTING_STRATEGY.md` | v1.0 |
-| **Dev Guide** | AGENT_WORKFLOW_GUIDE.md | `docs/3.dev-guides/AGENT_WORKFLOW_GUIDE.md` | v1.0 |
-| **Dev Guide** | DEPLOYMENT_GUIDE.md | `docs/3.dev-guides/DEPLOYMENT_GUIDE.md` | v1.0 |
-| **Setup** | BACKEND_SETUP.md | `docs/3.dev-guides/BACKEND_SETUP.md` | v1.0 |
-| **Setup** | FRONTEND_SETUP.md | `docs/3.dev-guides/FRONTEND_SETUP.md` | v1.0 |
+| **Dev Guide** | API_DEVELOPMENT_FLOW.md | `docs/2.dev-guides/API_DEVELOPMENT_FLOW.md` | v1.0 |
+| **Dev Guide** | FRONTEND_DEVELOPMENT_RULES.md | `docs/2.dev-guides/FRONTEND_DEVELOPMENT_RULES.md` | v1.0 |
+| **Dev Guide** | TESTING_STRATEGY.md | `docs/2.dev-guides/TESTING_STRATEGY.md` | v1.0 |
+| **Dev Guide** | AGENT_WORKFLOW_GUIDE.md | `docs/2.dev-guides/AGENT_WORKFLOW_GUIDE.md` | v1.0 |
+| **Dev Guide** | DEPLOYMENT_GUIDE.md | `docs/2.dev-guides/DEPLOYMENT_GUIDE.md` | v1.0 |
+| **Setup** | BACKEND_SETUP.md | `docs/2.dev-guides/BACKEND_SETUP.md` | v1.0 |
+| **Setup** | FRONTEND_SETUP.md | `docs/2.dev-guides/FRONTEND_SETUP.md` | v1.0 |
 
 ### 7.2 Reading Time Estimates
 

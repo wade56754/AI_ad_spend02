@@ -20,7 +20,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 
 ## Executive Summary
 
-The ASDD Architecture Layer (`docs/4.architecture/`) has successfully completed the governance pipeline and is hereby declared **FROZEN** for production use. All documents have passed rigorous auditing with:
+The ASDD Architecture Layer (`docs/3.architecture/`) has successfully completed the governance pipeline and is hereby declared **FROZEN** for production use. All documents have passed rigorous auditing with:
 
 - **P0 Issues**: **0** (Zero blocking defects)
 - **P1 Issues**: **0** (Zero high-priority issues)
@@ -55,20 +55,20 @@ The layer is fully compliant with ASDD Freeze v1.0 requirements and ready for op
 
 | Document | Version | Status | Owner | Last Reviewed | Health | Path |
 |----------|---------|--------|-------|---------------|--------|------|
-| **ARCH_LAYER_OVERVIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/4.architecture/](ARCH_LAYER_OVERVIEW.md) |
-| **SYSTEM_CONTEXT_VIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/4.architecture/](SYSTEM_CONTEXT_VIEW.md) |
-| **BOUNDED_CONTEXT_MAP.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/4.architecture/](BOUNDED_CONTEXT_MAP.md) |
-| **SERVICE_COMPONENT_VIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/4.architecture/](SERVICE_COMPONENT_VIEW.md) |
-| **DATA_FLOW_VIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/4.architecture/](DATA_FLOW_VIEW.md) |
-| **ERROR_HANDLING_STRATEGY.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/4.architecture/](ERROR_HANDLING_STRATEGY.md) |
-| **PERFORMANCE_AND_CAPACITY_GUIDE.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/4.architecture/](PERFORMANCE_AND_CAPACITY_GUIDE.md) |
+| **ARCH_LAYER_OVERVIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/3.architecture/](ARCH_LAYER_OVERVIEW.md) |
+| **SYSTEM_CONTEXT_VIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/3.architecture/](SYSTEM_CONTEXT_VIEW.md) |
+| **BOUNDED_CONTEXT_MAP.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/3.architecture/](BOUNDED_CONTEXT_MAP.md) |
+| **SERVICE_COMPONENT_VIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/3.architecture/](SERVICE_COMPONENT_VIEW.md) |
+| **DATA_FLOW_VIEW.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/3.architecture/](DATA_FLOW_VIEW.md) |
+| **ERROR_HANDLING_STRATEGY.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/3.architecture/](ERROR_HANDLING_STRATEGY.md) |
+| **PERFORMANCE_AND_CAPACITY_GUIDE.md** | v1.0 | ready_for_production | wade | 2025-11-27 | 100/100 | [docs/3.architecture/](PERFORMANCE_AND_CAPACITY_GUIDE.md) |
 
 ### Governance Documents (2)
 
 | Document | Version | Status | Owner | Last Reviewed | Path |
 |----------|---------|--------|-------|---------------|------|
-| **ARCH_LAYER_AUDIT_REPORT_v1.0.md** | v1.0 | active | wade | 2025-11-27 | [docs/4.architecture/](ARCH_LAYER_AUDIT_REPORT_v1.0.md) |
-| **ARCHITECTURE_FREEZE_MANIFEST_v1.0.md** | v1.0 | frozen | wade | 2025-11-27 | [docs/4.architecture/](ARCHITECTURE_FREEZE_MANIFEST_v1.0.md) |
+| **ARCH_LAYER_AUDIT_REPORT_v1.0.md** | v1.0 | active | wade | 2025-11-27 | [docs/3.architecture/](ARCH_LAYER_AUDIT_REPORT_v1.0.md) |
+| **ARCHITECTURE_FREEZE_MANIFEST_v1.0.md** | v1.0 | frozen | wade | 2025-11-27 | [docs/3.architecture/](ARCHITECTURE_FREEZE_MANIFEST_v1.0.md) |
 
 **Total Documents**: 9 (7 architecture + 2 governance)
 **Active Documents**: 7 architecture documents

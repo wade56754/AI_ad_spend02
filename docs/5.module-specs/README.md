@@ -105,7 +105,7 @@
 | B3 | 周度简报 | [B3-weekly-brief-backend.md](B3-weekly-brief-backend.md) | :white_check_mark: 已完成 | 约束周报 CRUD + 2状态机 + 周数据汇总 |
 
 > **后端规格书用途**: 为 AI 代码工厂提供严格约束，防止 AI 幻觉，确保生成代码符合 SoT 规范。
-> **参考指南**: [BACKEND_MODULE_SPEC_GUIDE.md](../3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md)
+> **参考指南**: [BACKEND_MODULE_SPEC_GUIDE.md](../2.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md)
 
 ---
 

@@ -891,7 +891,7 @@ def get_conversions_for_billing(report: DailyReport, phase: str) -> int:
 - **ERROR_CODES_SOT.md** - 错误码定义
 - **AUTH_SPEC.md** - 认证授权规范
 
-**Tier 3: 实施指南 (docs/3.dev-guides/)**
+**Tier 3: 实施指南 (docs/2.dev-guides/)**
 - **BACKEND_DEV_GUIDE.md** - 后端开发指南
 - **FRONTEND_RULES.md** - 前端开发规则
 - **TESTING_GUIDE.md** - 测试指南

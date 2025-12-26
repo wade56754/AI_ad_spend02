@@ -3,7 +3,7 @@
 > **版本**: v3.1
 > **创建日期**: 2025-12-23
 > **更新日期**: 2025-12-25
-> **基准**: AI_TEST_GUIDE_v2.1.md + docs/10.module-specs/
+> **基准**: AI_TEST_GUIDE_v2.1.md + docs/5.module-specs/
 > **技术栈**: Playwright + TypeScript
 > **覆盖模块**: A1-A3, B1-B3, C1-C3, D1
 
@@ -212,7 +212,7 @@ export async function logout(page: Page): Promise<void> {
 # checkpoints/A1-dashboard.yaml
 
 module: "A1-dashboard"
-spec_file: "docs/10.module-specs/A1-dashboard.md"
+spec_file: "docs/5.module-specs/A1-dashboard.md"
 page_path: "/"
 
 checkpoints:
@@ -299,7 +299,7 @@ import { TestRole } from '../../fixtures/test-accounts';
 /**
  * A1 老板驾驶舱测试
  *
- * @spec docs/10.module-specs/A1-dashboard.md
+ * @spec docs/5.module-specs/A1-dashboard.md
  * @checkpoint checkpoints/A1-dashboard.yaml
  */
 
@@ -585,7 +585,7 @@ test.describe('CP-A1-005: Phase 1 不阻断规则', () => {
 
 ### 4. 追溯
 
-- 规格书: docs/10.module-specs/A1-dashboard.md
+- 规格书: docs/5.module-specs/A1-dashboard.md
 - 检查点: checkpoints/A1-dashboard.yaml
 ```
 
@@ -603,7 +603,7 @@ test.describe('CP-A1-005: Phase 1 不阻断规则', () => {
 # checkpoints/A2-fund-overview.yaml
 
 module: "A2-fund-overview"
-spec_file: "docs/10.module-specs/A2-fund-overview.md"
+spec_file: "docs/5.module-specs/A2-fund-overview.md"
 page_path: "/fund"
 
 checkpoints:
@@ -687,7 +687,7 @@ import { TestRole } from '../../fixtures/test-accounts';
 /**
  * A2 资金总览测试
  *
- * @spec docs/10.module-specs/A2-fund-overview.md
+ * @spec docs/5.module-specs/A2-fund-overview.md
  * @checkpoint checkpoints/A2-fund-overview.yaml
  */
 
@@ -946,7 +946,7 @@ test.describe('CP-A2-005: Phase 1 不阻断规则', () => {
 # checkpoints/A3-project-pnl.yaml
 
 module: "A3-project-pnl"
-spec_file: "docs/10.module-specs/A3-project-pnl.md"
+spec_file: "docs/5.module-specs/A3-project-pnl.md"
 page_path: "/projects/pnl"
 
 checkpoints:
@@ -1082,7 +1082,7 @@ test.describe('CP-A3-005: Phase 1 不阻断规则', () => {
 # checkpoints/B1-topup-approval.yaml
 
 module: "B1-topup-approval"
-spec_file: "docs/10.module-specs/B1-topup-approval.md"
+spec_file: "docs/5.module-specs/B1-topup-approval.md"
 page_path: "/topups"
 
 checkpoints:
@@ -1237,7 +1237,7 @@ test.describe('CP-B1-004: 状态机操作', () => {
 # checkpoints/B2-daily-report-review.yaml
 
 module: "B2-daily-report-review"
-spec_file: "docs/10.module-specs/B2-daily-report-review.md"
+spec_file: "docs/5.module-specs/B2-daily-report-review.md"
 page_path: "/daily-reports"
 
 checkpoints:
@@ -1417,7 +1417,7 @@ test.describe('CP-B2-005: Phase 1 不阻断规则', () => {
 # checkpoints/B3-weekly-brief.yaml
 
 module: "B3-weekly-brief"
-spec_file: "docs/10.module-specs/B3-weekly-brief.md"
+spec_file: "docs/5.module-specs/B3-weekly-brief.md"
 page_path: "/weekly-briefs"
 
 checkpoints:
@@ -1478,7 +1478,7 @@ summary:
 # checkpoints/C1-project-mgmt.yaml
 
 module: "C1-project-mgmt"
-spec_file: "docs/10.module-specs/C1-project-mgmt.md"
+spec_file: "docs/5.module-specs/C1-project-mgmt.md"
 page_path: "/projects"
 
 checkpoints:
@@ -1544,7 +1544,7 @@ summary:
 # checkpoints/C2-pitcher-mgmt.yaml
 
 module: "C2-pitcher-mgmt"
-spec_file: "docs/10.module-specs/C2-pitcher-mgmt.md"
+spec_file: "docs/5.module-specs/C2-pitcher-mgmt.md"
 page_path: "/users?role=pitcher"
 
 checkpoints:
@@ -1605,7 +1605,7 @@ summary:
 # checkpoints/C3-spend-detail.yaml
 
 module: "C3-spend-detail"
-spec_file: "docs/10.module-specs/C3-spend-detail.md"
+spec_file: "docs/5.module-specs/C3-spend-detail.md"
 page_path: "/spend"
 
 checkpoints:
@@ -1667,7 +1667,7 @@ summary:
 # checkpoints/D1-monthly-settlement.yaml
 
 module: "D1-monthly-settlement"
-spec_file: "docs/10.module-specs/D1-monthly-settlement.md"
+spec_file: "docs/5.module-specs/D1-monthly-settlement.md"
 page_path: "/settlements"
 
 checkpoints:
@@ -1879,4 +1879,4 @@ data-testid="pagination-prev"
 **维护者**: AI 广告代投系统开发团队
 **关联文档**:
 - AI_TEST_GUIDE_v2.1.md (测试编写指南)
-- docs/10.module-specs/ (模块规格书)
+- docs/5.module-specs/ (模块规格书)

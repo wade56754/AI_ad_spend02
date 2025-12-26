@@ -1638,9 +1638,9 @@ A:
   - `docs/sot/ERROR_CODES_SOT.md` v2.1 - 错误码
   - `docs/sot/BUSINESS_RULES.md` v3.1 - 业务规则
 - **开发指南**:
-  - `docs/3.dev-guides/BACKEND_SETUP.md` - 后端配置
-  - `docs/3.dev-guides/FRONTEND_SETUP.md` - 前端配置
-  - `docs/3.dev-guides/TESTING_GUIDE.md` - 测试策略
+  - `docs/2.dev-guides/BACKEND_SETUP.md` - 后端配置
+  - `docs/2.dev-guides/FRONTEND_SETUP.md` - 前端配置
+  - `docs/2.dev-guides/TESTING_GUIDE.md` - 测试策略
 
 ### 14.2 外部资源
 

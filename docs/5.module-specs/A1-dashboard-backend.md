@@ -3,8 +3,8 @@
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
 > **SoT 基准**: DATA_SCHEMA.md v5.3, MASTER.md v4.4 §6.5
-> **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
-> **前端规格书**: docs/10.module-specs/A1-dashboard.md
+> **参考指南**: docs/2.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
+> **前端规格书**: docs/5.module-specs/A1-dashboard.md
 
 ---
 

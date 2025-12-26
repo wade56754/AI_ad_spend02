@@ -204,11 +204,11 @@ def calculate_cpl(spend: Decimal, conversions: int) -> str | Decimal:
 | 组件 | 位置 | 职责 | 代码块文档 |
 |------|------|------|-----------|
 | `DashboardHeader` | 顶部 | 页面标题、刷新按钮 | - |
-| `GlobalDateFilter` | 右上 | 全局时间范围筛选 | [global-date-filter.md](../9.code-blocks/frontend/workflow/global-date-filter.md) |
+| `GlobalDateFilter` | 右上 | 全局时间范围筛选 | [global-date-filter.md](../archive/2025-12-structure-cleanup/9.code-blocks/frontend/workflow/global-date-filter.md) |
 | `AlertBanner` | 顶部下 | 风险告警横幅 | - |
-| `StatCard` | KPI 区 | 单个 KPI 展示 | [stat-card.md](../9.code-blocks/frontend/core/stat-card.md) |
-| `MainTrendChart` | 趋势区 | 多指标趋势图 | [trend-chart.md](../9.code-blocks/frontend/chart/trend-chart.md) |
-| `TopLists` | 归因区 | Top N 列表 | [top-list.md](../9.code-blocks/frontend/chart/top-list.md) |
+| `StatCard` | KPI 区 | 单个 KPI 展示 | [stat-card.md](../archive/2025-12-structure-cleanup/9.code-blocks/frontend/core/stat-card.md) |
+| `MainTrendChart` | 趋势区 | 多指标趋势图 | [trend-chart.md](../archive/2025-12-structure-cleanup/9.code-blocks/frontend/chart/trend-chart.md) |
+| `TopLists` | 归因区 | Top N 列表 | [top-list.md](../archive/2025-12-structure-cleanup/9.code-blocks/frontend/chart/top-list.md) |
 | `PendingTasksCard` | 待处理区 | 待处理事项入口 | - |
 | `AccountOverviewCard` | 底部 | 账户/项目概览 | - |
 | `SystemStatusCard` | 底部 | 系统状态 | - |
@@ -467,5 +467,5 @@ metrics: string[] (spend, revenue, profit, conversions)
 
 **关联文档**:
 - [MASTER.md §6.5](../sot/MASTER.md)
-- [代码块索引](../9.code-blocks/README.md)
-- [StatCard 代码块](../9.code-blocks/frontend/core/stat-card.md)
+- [代码块索引](../archive/2025-12-structure-cleanup/9.code-blocks/README.md)
+- [StatCard 代码块](../archive/2025-12-structure-cleanup/9.code-blocks/frontend/core/stat-card.md)
