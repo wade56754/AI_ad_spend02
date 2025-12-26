@@ -29,7 +29,7 @@ This document defines the observability standards for the Agent Platform, includ
 
 | Upstream Document | Version | Reference |
 |-------------------|---------|-----------|
-| MASTER.md | v3.5 | SoT Referee Chain |
+| MASTER.md | v4.4 | SoT Referee Chain |
 | SUBAGENT_PROTOCOL.md | v1.0 | AgentProtocol definition |
 | AGENT_ORCHESTRATION_PIPELINE.md | v1.0 | Flow coordination |
 | ERROR_CODES_SOT.md | v2.1 | Error code taxonomy |

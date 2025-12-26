@@ -119,11 +119,11 @@ graph LR
 
 | SoT 文档 | 版本 | 对齐项 |
 |----------|------|--------|
-| STATE_MACHINE.md | v2.6 | 状态枚举、流转规则 |
+| STATE_MACHINE.md | v2.7 | 状态枚举、流转规则 |
 | ERROR_CODES_SOT.md | v2.1 | 错误码格式、Toast 显示 |
 | AUTH_SPEC.md | v2.0 | 权限矩阵、角色定义 |
-| DATA_SCHEMA.md | v5.2 | 字段类型、表结构 |
-| API_SOT.md | v9.0 | 端点路径、请求响应格式 |
+| DATA_SCHEMA.md | v5.3 | 字段类型、表结构 |
+| API_SOT.md | v9.3 | 端点路径、请求响应格式 |
 | FRONTEND_DEVELOPMENT_RULES.md | v1.0 | 组件规范、Hook 模式 |
 
 ### 5.2 对齐验证方法

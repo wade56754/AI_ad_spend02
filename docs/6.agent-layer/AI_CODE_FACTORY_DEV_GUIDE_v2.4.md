@@ -2149,13 +2149,13 @@ git push origin feature/topup-approval
 
 | 文档 | 版本 | 用途 |
 |------|------|------|
-| STATE_MACHINE.md | v2.6 | 状态机定义 |
-| DATA_SCHEMA.md | v5.2 | 数据模型 |
-| API_SOT.md | v9.0 | API 规范 |
+| STATE_MACHINE.md | v2.7 | 状态机定义 |
+| DATA_SCHEMA.md | v5.3 | 数据模型 |
+| API_SOT.md | v9.3 | API 规范 |
 | ERROR_CODES_SOT.md | v2.1 | 错误码 |
-| LEDGER_SOT.md | v1.1 | 账本规则 |
+| LEDGER_SOT.md | v1.2 | 账本规则 |
 | AUTH_SPEC.md | v2.0 | 认证授权 |
-| BUSINESS_RULES.md | v3.1 | 业务规则 |
+| BUSINESS_RULES.md | v4.1 | 业务规则 |
 
 ### C. 版本历史
 

@@ -694,13 +694,13 @@ RECONCILIATION_ISSUE_TRANSITIONS = {
 | SoT 文档 | 版本 | 引用章节 |
 |---------|------|---------|
 | MASTER.md | v4.4 | §2.4 7角色, §3 Phase边界 |
-| STATE_MACHINE.md | v2.6 | §5 对账批次状态机 |
-| DATA_SCHEMA.md | v5.2 | 表结构定义 |
-| LEDGER_SOT.md | v1.1 | §2 双账本模型 |
-| BUSINESS_RULES.md | v3.2 | BR-REC-*, BR-SET-* |
+| STATE_MACHINE.md | v2.7 | §5 对账批次状态机 |
+| DATA_SCHEMA.md | v5.3 | 表结构定义 |
+| LEDGER_SOT.md | v1.2 | §2 双账本模型 |
+| BUSINESS_RULES.md | v4.1 | BR-REC-*, BR-SET-* |
 | ERROR_CODES_SOT.md | v2.1 | E-RECON-*, E-SET-* |
 | AUTH_SPEC.md | v2.0 | §3 角色权限 |
-| API_SOT.md | v9.0 | §12 对账管理API |
+| API_SOT.md | v9.3 | §12 对账管理API |
 | RECONCILIATION_CONTROL_CENTER_SOT.md | v2.0 | 对账管控完整规范 |
 
 ---

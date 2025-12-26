@@ -505,8 +505,8 @@ pytest backend/tests/ -k "state" -v
 ## 文档清单
 | 文档 | 版本 | 状态 |
 |------|------|------|
-| STATE_MACHINE.md | v2.6 | frozen |
-| DATA_SCHEMA.md | v5.2 | frozen |
+| STATE_MACHINE.md | v2.7 | frozen |
+| DATA_SCHEMA.md | v5.3 | frozen |
 
 ## 审计结果
 - P0: 0

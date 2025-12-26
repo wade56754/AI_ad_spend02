@@ -80,9 +80,9 @@ backend/tests/
 
 | SoT 文档 | 版本 | 测试覆盖 |
 |--------------------|------|-----------------------------|
-| LEDGER_SOT.md | v1.1 | ✅ test_ledger_invariants.py |
-| STATE_MACHINE.md | v2.6 | ✅ 各模块状态流转测试 |
-| DATA_SCHEMA.md | v5.2 | ✅ Model CRUD 测试 |
+| LEDGER_SOT.md | v1.2 | ✅ test_ledger_invariants.py |
+| STATE_MACHINE.md | v2.7 | ✅ 各模块状态流转测试 |
+| DATA_SCHEMA.md | v5.3 | ✅ Model CRUD 测试 |
 | TOPUP_SOT.md | v1.0 | ✅ test_topup_*.py |
 | ERROR_CODES_SOT.md | v2.1 | ✅ 错误码验证测试 |
 

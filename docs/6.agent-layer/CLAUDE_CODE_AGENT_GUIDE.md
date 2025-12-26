@@ -226,13 +226,13 @@ claude
 
 | 文档 | 版本 |
 |------|------|
-| STATE_MACHINE.md | v2.6 |
-| DATA_SCHEMA.md | v5.2 |
-| BUSINESS_RULES.md | v3.2 |
-| API_SOT.md | v9.0 |
+| STATE_MACHINE.md | v2.7 |
+| DATA_SCHEMA.md | v5.3 |
+| BUSINESS_RULES.md | v4.1 |
+| API_SOT.md | v9.3 |
 | ERROR_CODES_SOT.md | v2.1 |
 | AUTH_SPEC.md | v2.0 |
-| LEDGER_SOT.md | v1.1 |
+| LEDGER_SOT.md | v1.2 |
 
 ### 使用示例
 

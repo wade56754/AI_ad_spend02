@@ -47,13 +47,13 @@ The layer is fully compliant with ASDD Freeze v1.0 and ready for operational dep
 
 | Document | Version | Status | Owner | Last Reviewed | Path |
 |----------|---------|--------|-------|---------------|------|
-| API_SOT.md | v9.0 | frozen* | wade | 2025-11-27 | [docs/sot/API_SOT.md](API_SOT.md) |
-| DATA_SCHEMA.md | v5.2 | active→frozen | wade | 2025-11-27 | [docs/sot/DATA_SCHEMA.md](DATA_SCHEMA.md) |
-| STATE_MACHINE.md | v2.6 | active→frozen | wade | 2025-11-27 | [docs/sot/STATE_MACHINE.md](STATE_MACHINE.md) |
-| BUSINESS_RULES.md | v3.2 | active→frozen | wade | 2025-11-27 | [docs/sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
+| API_SOT.md | v9.3 | frozen* | wade | 2025-11-27 | [docs/sot/API_SOT.md](API_SOT.md) |
+| DATA_SCHEMA.md | v5.3 | active→frozen | wade | 2025-11-27 | [docs/sot/DATA_SCHEMA.md](DATA_SCHEMA.md) |
+| STATE_MACHINE.md | v2.7 | active→frozen | wade | 2025-11-27 | [docs/sot/STATE_MACHINE.md](STATE_MACHINE.md) |
+| BUSINESS_RULES.md | v4.1 | active→frozen | wade | 2025-11-27 | [docs/sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
 | ERROR_CODES_SOT.md | v2.1 | active→frozen | wade | 2025-11-27 | [docs/sot/ERROR_CODES_SOT.md](ERROR_CODES_SOT.md) |
 | AUTH_SPEC.md | v2.0 | active→frozen | wade | 2025-11-27 | [docs/sot/AUTH_SPEC.md](AUTH_SPEC.md) |
-| LEDGER_SOT.md | v1.1 | active→frozen | wade | 2025-11-27 | [docs/sot/LEDGER_SOT.md](LEDGER_SOT.md) |
+| LEDGER_SOT.md | v1.2 | active→frozen | wade | 2025-11-27 | [docs/sot/LEDGER_SOT.md](LEDGER_SOT.md) |
 | DAILY_REPORT_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/sot/DAILY_REPORT_SOT.md](DAILY_REPORT_SOT.md) |
 | TRANSFER_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/sot/TRANSFER_SOT.md](TRANSFER_SOT.md) |
 | RECONCILIATION_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/sot/RECONCILIATION_SOT.md](RECONCILIATION_SOT.md) |
@@ -173,19 +173,19 @@ The SoT Layer maintains strict internal version consistency:
 
 | SoT Document | Official Version | Referenced By | Reference Count |
 |--------------|------------------|---------------|-----------------|
-| STATE_MACHINE.md | v2.6 | DATA_SCHEMA, RECONCILIATION_SOT, DAILY_REPORT_SOT, TRANSFER_SOT | 4+ |
-| DATA_SCHEMA.md | v5.2 | RECONCILIATION_SOT, DAILY_REPORT_SOT, TRANSFER_SOT, RLS_POLICIES_SOT | 4+ |
-| BUSINESS_RULES.md | v3.2 | RECONCILIATION_SOT, multiple cross-references | 2+ |
-| LEDGER_SOT.md | v1.1 | RECONCILIATION_SOT (**CORRECTED**), TRANSFER_SOT, DAILY_REPORT_SOT, RLS_POLICIES_SOT | 4+ |
+| STATE_MACHINE.md | v2.7 | DATA_SCHEMA, RECONCILIATION_SOT, DAILY_REPORT_SOT, TRANSFER_SOT | 4+ |
+| DATA_SCHEMA.md | v5.3 | RECONCILIATION_SOT, DAILY_REPORT_SOT, TRANSFER_SOT, RLS_POLICIES_SOT | 4+ |
+| BUSINESS_RULES.md | v4.1 | RECONCILIATION_SOT, multiple cross-references | 2+ |
+| LEDGER_SOT.md | v1.2 | RECONCILIATION_SOT (**CORRECTED**), TRANSFER_SOT, DAILY_REPORT_SOT, RLS_POLICIES_SOT | 4+ |
 | ERROR_CODES_SOT.md | v2.1 | RECONCILIATION_SOT, AUTH_SPEC | 2+ |
 | AUTH_SPEC.md | v2.0 | RECONCILIATION_SOT, system-wide auth references | 2+ |
-| API_SOT.md | v9.0 | System-wide API contract references | Multiple |
+| API_SOT.md | v9.3 | System-wide API contract references | Multiple |
 
 ### Cross-Layer Version Alignment
 
 | Overview Document | Version | SoT Baseline |
 |-------------------|---------|--------------|
-| MASTER.md | v3.4 | References SoT Freeze v1.0 |
+| MASTER.md | v4.4 | References SoT Freeze v1.0 |
 | PROJECT.md | v1.2 | References SoT Freeze v1.0 |
 | DOMAIN.md | v1.0 | References DATA_SCHEMA v5.2 |
 

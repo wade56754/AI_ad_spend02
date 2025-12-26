@@ -276,10 +276,10 @@ Warnings: 0
 
 | SoT 文档 | 版本 | 对齐项 | 结果 |
 |----------|------|--------|------|
-| STATE_MACHINE.md | v2.6 | DailyReport 8 状态映射 | PASS |
+| STATE_MACHINE.md | v2.7 | DailyReport 8 状态映射 | PASS |
 | ERROR_CODES_SOT.md | v2.1 | 错误码 Toast 显示 | PASS |
 | AUTH_SPEC.md | v2.0 | 权限矩阵渲染 | PASS |
-| DATA_SCHEMA.md | v5.2 | 字段类型对齐 | PASS |
+| DATA_SCHEMA.md | v5.3 | 字段类型对齐 | PASS |
 
 ---
 
@@ -435,10 +435,10 @@ Dashboard 前端联调满足以下 Golden Pipeline 条件:
 | SoT 文档 | 版本 | 校验通过 |
 |----------|------|---------|
 | FRONTEND_DEVELOPMENT_RULES.md | v1.0 | ✅ |
-| STATE_MACHINE.md | v2.6 | ✅ |
+| STATE_MACHINE.md | v2.7 | ✅ |
 | ERROR_CODES_SOT.md | v2.1 | ✅ |
 | AUTH_SPEC.md | v2.0 | ✅ |
-| API_SOT.md | v9.0 | ✅ |
+| API_SOT.md | v9.3 | ✅ |
 
 ### C. 版本历史
 

@@ -23,13 +23,13 @@
 
 | 文档 | 版本 | 状态 |
 |------|------|------|
-| STATE_MACHINE.md | v2.6 | ✅ 已冻结 |
+| STATE_MACHINE.md | v2.7 | ✅ 已冻结 |
 | DATA_SCHEMA.md | v5.3 | ✅ 已冻结 |
-| BUSINESS_RULES.md | v3.2 | ✅ 已冻结 |
-| API_SOT.md | v9.0 | ✅ 已冻结 |
+| BUSINESS_RULES.md | v4.1 | ✅ 已冻结 |
+| API_SOT.md | v9.3 | ✅ 已冻结 |
 | ERROR_CODES_SOT.md | v2.1 | ✅ 已冻结 |
 | AUTH_SPEC.md | v2.0 | ✅ 已冻结 |
-| LEDGER_SOT.md | v1.1 | ✅ 已冻结 |
+| LEDGER_SOT.md | v1.2 | ✅ 已冻结 |
 | FINANCIAL_SOT_DESIGN.md | v1.0 | ✅ 已冻结 |
 
 ---
