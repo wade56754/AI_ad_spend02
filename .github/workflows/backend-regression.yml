@@ -25,6 +25,9 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-test.txt
 
+      - name: Create required directories
+        run: mkdir -p logs
+
       - name: Run backend regression tests
         run: |
           python scripts/run_tests.py --type regression
