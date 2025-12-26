@@ -11,8 +11,8 @@ import argparse
 import subprocess
 from pathlib import Path
 
-# 设置项目根目录
-ROOT_DIR = Path(__file__).parent
+# 设置项目根目录 (scripts/ 的父目录)
+ROOT_DIR = Path(__file__).parent.parent
 os.chdir(ROOT_DIR)
 sys.path.insert(0, str(ROOT_DIR))
 
