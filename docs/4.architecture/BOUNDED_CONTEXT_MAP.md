@@ -61,7 +61,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 **业务规则引用**:
 - **BR-FIN-003**: 金额字段合规性约束 (DECIMAL(15,2), 禁止Float)
 - **BR-FIN-005**: Ledger双写一致性 (balance字段 + ledger_entries记录)
-- **LEDGER_SOT.md v1.1**: 双账本逻辑、金额方向规则
+- **LEDGER_SOT.md v1.2**: 双账本逻辑、金额方向规则
 
 **Ubiquitous Language (通用语言)**:
 | 术语 | 英文 | 定义 |
@@ -86,7 +86,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 - `DailyReport`: 日报 (status字段为8状态机核心)
 - `DailyReportAuditLog`: 日报审计日志
 
-**状态机流转** (引用 STATE_MACHINE.md v2.6 §8):
+**状态机流转** (引用 STATE_MACHINE.md v2.7 §8):
 ```
 raw_submitted → trend_pending → trend_ok → final_pending
                              ↘ trend_flagged → trend_resolved ↗
@@ -449,11 +449,11 @@ class LedgerEntryRepository(Protocol):
 - **INV-RPT-01**: conversions_raw 不得用于计费 (引用 BR-RPT-005)
 - **INV-RPT-02**: conversions_final 仅在 final_confirmed 后允许触发计费
 - **INV-RPT-03**: final_locked 后仅可通过红冲修正
-- **INV-RPT-04**: 状态流转必须遵循白名单 (引用 STATE_MACHINE.md v2.6 §8.2)
+- **INV-RPT-04**: 状态流转必须遵循白名单 (引用 STATE_MACHINE.md v2.7 §8.2)
 
 #### 4.2.3 State Machine Definition
 
-**引用**: STATE_MACHINE.md v2.6 §8
+**引用**: STATE_MACHINE.md v2.7 §8
 
 **状态转换规则**:
 ```python
@@ -539,7 +539,7 @@ ALLOWED_TRANSITIONS = {
 - **BR-RPT-005**: 粉数确认流程规则 → Daily Report State Machine Context
 - **BR-RECON-001**: 对账批次创建约束 → Reconciliation Context
 
-### 7.3 References to STATE_MACHINE.md v2.6
+### 7.3 References to STATE_MACHINE.md v2.7
 
 - **§8**: 粉数确认状态机 → Daily Report State Machine Context
 - **§9**: 充值申请状态机 → Topup Request Context

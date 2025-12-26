@@ -4,7 +4,7 @@ status: active
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-11-27
-baseline: SoT Freeze v1.0, MASTER.md v3.4
+baseline: SoT Freeze v1.0, MASTER.md v4.4
 ---
 
 # Backend Development Guide · 后端开发指南

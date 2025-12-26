@@ -145,7 +145,7 @@ Week 3: Advanced Topics + Independent Work
 
 #### Day 2 Checklist
 
-- [ ] **STATE_MACHINE.md v2.6** (90 minutes)
+- [ ] **STATE_MACHINE.md v2.7** (90 minutes)
   - [ ] Read `docs/sot/STATE_MACHINE.md` §1-10
   - [ ] Understand all 8 states for `daily_reports`:
     - [ ] `raw_submitted` → `trend_pending` → `trend_ok/trend_flagged`
@@ -161,7 +161,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Label all transitions with trigger roles
   - [ ] Show self-review to mentor
 
-- [ ] **DATA_SCHEMA.md v5.2** (120 minutes)
+- [ ] **DATA_SCHEMA.md v5.3** (120 minutes)
   - [ ] Read `docs/sot/DATA_SCHEMA.md` §1-6 (Table definitions)
   - [ ] Focus on core tables:
     - [ ] `projects` (revenue attribution)
@@ -185,7 +185,7 @@ Week 3: Advanced Topics + Independent Work
 
 #### Day 3 Checklist
 
-- [ ] **LEDGER_SOT.md v1.1** (90 minutes)
+- [ ] **LEDGER_SOT.md v1.2** (90 minutes)
   - [ ] Read `docs/sot/LEDGER_SOT.md` §1-7
   - [ ] Understand dual-ledger philosophy:
     - [ ] PROJECT ledger = `ledger_entries WHERE category = 'PROJECT'`
@@ -235,9 +235,9 @@ Week 3: Advanced Topics + Independent Work
 - [ ] **Exercise 3: SoT Cross-Reference**
   - [ ] Pick `daily_reports` table
   - [ ] List all SoT documents that define its behavior:
-    - [ ] STATE_MACHINE.md v2.6 (states and transitions)
-    - [ ] DATA_SCHEMA.md v5.2 (schema definition)
-    - [ ] LEDGER_SOT.md v1.1 (billing/cost triggers)
+    - [ ] STATE_MACHINE.md v2.7 (states and transitions)
+    - [ ] DATA_SCHEMA.md v5.3 (schema definition)
+    - [ ] LEDGER_SOT.md v1.2 (billing/cost triggers)
     - [ ] BUSINESS_RULES.md v4.1 (validation rules)
     - [ ] API_SOT.md v9.3 (endpoints: `/daily-reports`)
     - [ ] ERROR_CODES_SOT.md v2.1 (error responses)
@@ -1164,7 +1164,7 @@ A: _______________________
   - [ ] Type: `/sc:explain @docs/sot/STATE_MACHINE.md daily_reports state machine`
   - [ ] Review agent's explanation
   - [ ] Ask follow-up: "What are the prohibited transitions?"
-  - [ ] Verify agent references STATE_MACHINE.md v2.6
+  - [ ] Verify agent references STATE_MACHINE.md v2.7
 
 - [ ] **Practice: Code Generation**
   - [ ] Type: `/sc:implement`
@@ -1174,9 +1174,9 @@ A: _______________________
     from 'final_confirmed' to 'final_locked'.
 
     Requirements:
-    - Follow STATE_MACHINE.md v2.6 §8
-    - Create REVENUE entry per LEDGER_SOT.md v1.1
-    - Create COST entry per LEDGER_SOT.md v1.1
+    - Follow STATE_MACHINE.md v2.7 §8
+    - Create REVENUE entry per LEDGER_SOT.md v1.2
+    - Create COST entry per LEDGER_SOT.md v1.2
     - Validate pre-conditions per MASTER.md INV-003
     - Use error codes from ERROR_CODES_SOT.md v2.1
     - Return Result<DailyReport, Error>
@@ -1199,8 +1199,8 @@ A: _______________________
     4. Verify ledger entries created with correct amounts
 
     Reference:
-    - STATE_MACHINE.md v2.6 §8
-    - LEDGER_SOT.md v1.1 §3-4
+    - STATE_MACHINE.md v2.7 §8
+    - LEDGER_SOT.md v1.2 §3-4
     - TESTING_STRATEGY.md v1.0 §5
     ```
   - [ ] Review generated tests
@@ -1278,9 +1278,9 @@ A: _______________________
     # Feature: Filter Daily Reports by Status
 
     ## SoT References
-    - STATE_MACHINE.md v2.6 §8 (valid status values)
+    - STATE_MACHINE.md v2.7 §8 (valid status values)
     - API_SOT.md v9.3 §3 (query parameter conventions)
-    - DATA_SCHEMA.md v5.2 §4.7 (daily_reports schema)
+    - DATA_SCHEMA.md v5.3 §4.7 (daily_reports schema)
 
     ## Backend Changes
     - Modify `GET /api/v1/daily-reports` to accept `?status=` query param
@@ -1490,9 +1490,9 @@ A: _______________________
 | Document | Estimated Time | Priority |
 |----------|----------------|----------|
 | MASTER.md v4.4 | 45 min | P0 (Day 1) |
-| STATE_MACHINE.md v2.6 | 90 min | P0 (Day 2) |
-| DATA_SCHEMA.md v5.2 | 120 min | P0 (Day 2) |
-| LEDGER_SOT.md v1.1 | 90 min | P0 (Day 3) |
+| STATE_MACHINE.md v2.7 | 90 min | P0 (Day 2) |
+| DATA_SCHEMA.md v5.3 | 120 min | P0 (Day 2) |
+| LEDGER_SOT.md v1.2 | 90 min | P0 (Day 3) |
 | BUSINESS_RULES.md v4.1 | 60 min | P0 (Day 3) |
 | API_SOT.md v9.3 | 60 min | P1 (Day 3) |
 | ERROR_CODES_SOT.md v2.1 | 30 min | P1 (Day 3) |
@@ -1573,13 +1573,13 @@ A: _______________________
 Q1: STATE_MACHINE.md (裁判链 position 1, higher than API_SOT at position 5)
 Q2: raw (conversions_raw, raw_spend), real (real_spend), final (conversions_final)
 Q3: No (AUTH_SPEC.md - only 'data_operator' role can modify conversions_final)
-Q4: conversions_final × projects.unit_price (LEDGER_SOT.md v1.1)
-Q5: trend_ok or trend_flagged (STATE_MACHINE.md v2.6 §8)
+Q4: conversions_final × projects.unit_price (LEDGER_SOT.md v1.2)
+Q5: trend_ok or trend_flagged (STATE_MACHINE.md v2.7 §8)
 Q6: REVERSAL with approval_ref (MASTER.md v4.4 INV-003)
 Q7: DECIMAL(12,2) (BR-FIN-003 in BUSINESS_RULES.md v4.1)
 Q8: Prohibited, should fail (INV-001 Immutable Audit Trail)
 Q9: ERROR_CODES_SOT.md v2.1 (docs/sot/ERROR_CODES_SOT.md)
-Q10: completed, rejected, or cancelled (STATE_MACHINE.md v2.6 §11)
+Q10: completed, rejected, or cancelled (STATE_MACHINE.md v2.7 §11)
 ```
 
 ### 9.2 Week 2 Quiz Answers
@@ -1607,8 +1607,8 @@ Q10: 80% (MASTER.md v4.4 §7.2)
 3. final_locked
 4. completed, rejected, cancelled (any terminal state acceptable)
 5. ERROR_CODES_SOT.md v2.1
-6. STATE_MACHINE.md v2.6
-7. DATA_SCHEMA.md v5.2
+6. STATE_MACHINE.md v2.7
+7. DATA_SCHEMA.md v5.3
 8. Governance mechanism to prevent modifications during frozen periods
 9. raw (raw data), real (real data), final (final data)
 10. PROJECT (revenue), SUPPLIER (cost)
@@ -1639,7 +1639,7 @@ Q10: 80% (MASTER.md v4.4 §7.2)
 22. UNIQUE (ad_account_id, report_date)
 23. No, only data_operator role can modify conversions_final (AUTH_SPEC.md)
 24. finance role (AUTH_SPEC.md, MASTER.md INV-004)
-25. conversions_final × projects.unit_price (LEDGER_SOT.md v1.1 INV-001)
+25. conversions_final × projects.unit_price (LEDGER_SOT.md v1.2 INV-001)
 ```
 
 #### Section E: Development Practices

@@ -541,8 +541,8 @@ import { getStatusClasses } from '@/modules/shared/utils/statusColors'
  * 日报状态枚举
  *
  * ⚠️ 完整状态列表和流转规则请参阅：
- *    - STATE_MACHINE.md v2.6 第 8 章
- *    - DATA_SCHEMA.md v5.2 daily_reports.status 字段
+ *    - STATE_MACHINE.md v2.7 第 8 章
+ *    - DATA_SCHEMA.md v5.3 daily_reports.status 字段
  *
  * 此处仅为类型定义示例，实际枚举值以 SoT 文档为准。
  */
@@ -583,7 +583,7 @@ interface StatusConfig {
  * 日报状态显示配置
  *
  * ⚠️ 状态流转规则（allowTransitions）不在此定义。
- *    流转白名单以 STATE_MACHINE.md v2.6 第 8.2 节为准。
+ *    流转白名单以 STATE_MACHINE.md v2.7 第 8.2 节为准。
  *    前端只负责 UI 展示，状态变更由后端 API 校验。
  */
 export const REPORT_STATUS_CONFIG: Record<DailyReportStatus, StatusConfig> = {
@@ -845,7 +845,7 @@ import { z } from 'zod'
 
 /**
  * 充值请求表单 Schema
- * @sot DATA_SCHEMA.md v5.2 topup_requests 表
+ * @sot DATA_SCHEMA.md v5.3 topup_requests 表
  */
 export const topupRequestSchema = z.object({
   ad_account_id: z.string().uuid('请选择广告账户'),
@@ -1122,8 +1122,8 @@ const config = REPORT_STATUS_CONFIG[report.status]
 
 ### 10.6 SoT 对齐检查
 
-- [ ] 状态枚举与 STATE_MACHINE.md v2.6 一致
-- [ ] 字段定义与 DATA_SCHEMA.md v5.2 一致
+- [ ] 状态枚举与 STATE_MACHINE.md v2.7 一致
+- [ ] 字段定义与 DATA_SCHEMA.md v5.3 一致
 - [ ] API 路径与 API_SOT.md v9.3 一致
 - [ ] 错误码与 ERROR_CODES_SOT.md v2.1 一致
 - [ ] 权限字符串与 AUTH_SPEC.md v2.0 一致

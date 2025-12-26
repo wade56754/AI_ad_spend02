@@ -292,5 +292,5 @@ SoT Guard 审查以下内容：
 ---
 
 **最后更新**：2025-12-02  
-**对齐版本**：Agent Layer Freeze v1.0, MASTER.md v3.6  
+**对齐版本**：Agent Layer Freeze v1.0, MASTER.md v4.4  
 **调用前缀**：`SOT:`

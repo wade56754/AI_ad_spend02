@@ -3,7 +3,7 @@
 > **版本**: v1.0
 > **更新日期**: 2025-12-22
 > **优先级**: P2
-> **基准**: MASTER.md v4.4 §6.2 页面 8, DATA_SCHEMA.md v5.2
+> **基准**: MASTER.md v4.4 §6.2 页面 8, DATA_SCHEMA.md v5.3
 
 ---
 
@@ -97,7 +97,7 @@
 | `avg_cpl` | 计算字段 | 平均 CPL |
 | `cpl_达标率` | 计算字段 | CPL 达标率 |
 
-### 2.3 users 表结构 (DATA_SCHEMA.md v5.2)
+### 2.3 users 表结构 (DATA_SCHEMA.md v5.3)
 
 ```sql
 CREATE TABLE users (
@@ -479,4 +479,4 @@ UsersRouter (已实现，需扩展)
 ---
 
 **维护者**: AI 广告代投系统开发团队
-**关联文档**: MASTER.md v4.4, DATA_SCHEMA.md v5.2, user.types.ts
+**关联文档**: MASTER.md v4.4, DATA_SCHEMA.md v5.3, user.types.ts

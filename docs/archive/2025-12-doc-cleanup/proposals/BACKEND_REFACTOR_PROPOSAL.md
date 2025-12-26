@@ -63,7 +63,7 @@ class TopupStatus:
     PENDING_REVIEW = "pending_review"  # ❌ 非标准
     FINANCE_APPROVE = "finance_approve"  # ❌ 非标准
 
-# SoT 定义 (STATE_MACHINE.md v2.6 §9)
+# SoT 定义 (STATE_MACHINE.md v2.7 §9)
 TOPUP_STATES = {
     "draft", "pending_review", "data_reviewed",
     "finance_approved", "paid", "completed",
@@ -315,7 +315,7 @@ class OrderStatus:
 统一状态机
 
 借鉴: Saleor OrderStatus 设计
-参考: STATE_MACHINE.md v2.6
+参考: STATE_MACHINE.md v2.7
 """
 
 from enum import Enum
@@ -324,7 +324,7 @@ from dataclasses import dataclass
 
 
 class DailyReportStatus(str, Enum):
-    """日报 8 状态机 (STATE_MACHINE.md v2.6 §6)"""
+    """日报 8 状态机 (STATE_MACHINE.md v2.7 §6)"""
     RAW_SUBMITTED = "raw_submitted"
     TREND_PENDING = "trend_pending"
     TREND_OK = "trend_ok"
@@ -336,7 +336,7 @@ class DailyReportStatus(str, Enum):
 
 
 class TopupStatus(str, Enum):
-    """充值状态机 (STATE_MACHINE.md v2.6 §9)"""
+    """充值状态机 (STATE_MACHINE.md v2.7 §9)"""
     DRAFT = "draft"
     PENDING_REVIEW = "pending_review"
     DATA_REVIEWED = "data_reviewed"
@@ -348,7 +348,7 @@ class TopupStatus(str, Enum):
 
 
 class TransferStatus(str, Enum):
-    """转账状态机 (STATE_MACHINE.md v2.6 §12)"""
+    """转账状态机 (STATE_MACHINE.md v2.7 §12)"""
     DRAFT = "draft"
     PENDING_APPROVAL = "pending_approval"
     APPROVED = "approved"

@@ -4,7 +4,7 @@ status: final
 type: governance-report
 owner: wade
 date: 2025-11-27
-baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0
 ---
 
 # Global Documentation Governance Report
@@ -42,7 +42,7 @@ baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 |----|------------|----------|-------------|------------|
 | P1-001 | Broken Reference | docs/README.md | IMPORT_JOB_SOT.md referenced but does not exist | Replaced with DAILY_REPORT_SOT.md + TRANSFER_SOT.md |
 | P1-002 | Broken Reference | docs/PROJECT_DOCS_INDEX_v1.0.md | IMPORT_JOB_SOT.md referenced in two locations | Fixed both occurrences |
-| P1-003 | Version Mismatch | docs/README.md, docs/PROJECT_DOCS_INDEX | MASTER.md v3.4 referenced but v3.5 is current | Updated to v3.5 |
+| P1-003 | Version Mismatch | docs/README.md, docs/PROJECT_DOCS_INDEX | MASTER.md v4.4 referenced but v3.5 is current | Updated to v3.5 |
 
 ### 1.2 P2 Issues (Medium Priority) - All Resolved
 
@@ -62,7 +62,7 @@ baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 
 | File | Original Path | Archive Path | Reason |
 |------|---------------|--------------|--------|
-| MASTER_SPEC.md | docs/1.overview/ | archive/2025-11-asdd-global-cleanup/overview-deprecated/ | Superseded by MASTER.md v3.5 |
+| MASTER_SPEC.md | docs/1.overview/ | archive/2025-11-asdd-global-cleanup/overview-deprecated/ | Superseded by MASTER.md v4.4 |
 | SYSTEM_OVERVIEW.md | docs/1.overview/ | archive/2025-11-asdd-global-cleanup/overview-deprecated/ | Superseded by DOMAIN.md v1.0 |
 | PROJECT_RULES.md | docs/1.overview/ | archive/2025-11-asdd-global-cleanup/overview-deprecated/ | Superseded by .claude/PROJECT_RULES.md v3.2 |
 | SOT_FREEZE.md | docs/1.overview/ | archive/2025-11-asdd-global-cleanup/overview-deprecated/ | Superseded by ASDD_FREEZE_v1.0.md |
@@ -214,7 +214,7 @@ docs/
 |-------------|--------|----------|
 | All layers have freeze manifests | ✅ Pass | 6 manifests present |
 | All documents have YAML frontmatter | ✅ Pass | Verified in all 48 artifacts |
-| All baselines reference correct versions | ✅ Pass | MASTER.md v3.5 used consistently |
+| All baselines reference correct versions | ✅ Pass | MASTER.md v4.4 used consistently |
 | No duplicate definitions | ✅ Pass | Deprecated duplicates archived |
 | No broken references | ✅ Pass | IMPORT_JOB_SOT reference fixed |
 | No orphan documents | ✅ Pass | Appendix docs archived |
@@ -224,8 +224,8 @@ docs/
 | Check | Status |
 |-------|--------|
 | MASTER.md is highest authority | ✅ Pass |
-| STATE_MACHINE.md v2.6 for all state logic | ✅ Pass |
-| DATA_SCHEMA.md v5.2 for all data structures | ✅ Pass |
+| STATE_MACHINE.md v2.7 for all state logic | ✅ Pass |
+| DATA_SCHEMA.md v5.3 for all data structures | ✅ Pass |
 | ERROR_CODES_SOT.md v2.1 for all error codes | ✅ Pass |
 | No conflicting definitions across layers | ✅ Pass |
 

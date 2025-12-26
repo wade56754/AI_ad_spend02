@@ -64,9 +64,9 @@ graph TD
 
 1. **定位相关 SoT 文档**（按裁判链优先级查阅）：
    ```
-   MASTER.md v4.4 → STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2
-   → BUSINESS_RULES.md v4.0 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
-   → AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.1
+   MASTER.md v4.4 → STATE_MACHINE.md v2.7 → DATA_SCHEMA.md v5.3
+   → BUSINESS_RULES.md v4.1 → API_SOT.md v9.3 → ERROR_CODES_SOT.md v2.1
+   → AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.2
    → 专项 SoT（DAILY_REPORT/TRANSFER/RECONCILIATION）
    ```
 
@@ -375,7 +375,7 @@ class DailyReportService:
 
 **更新清单**：
 
-1. **API_SOT.md v9.1 更新**（如果新增端点）：
+1. **API_SOT.md v9.3 更新**（如果新增端点）：
    ```markdown
    ### POST /api/v1/daily-reports/{report_id}/submit
 
@@ -533,9 +533,9 @@ raise PermissionError(
 
 **SoT 裁判链优先级**（来源: MASTER.md v4.4）：
 ```
-MASTER.md v4.4 → STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2
-→ BUSINESS_RULES.md v4.0 → API_SOT.md v9.1 → ERROR_CODES_SOT.md v2.1
-→ AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.1
+MASTER.md v4.4 → STATE_MACHINE.md v2.7 → DATA_SCHEMA.md v5.3
+→ BUSINESS_RULES.md v4.1 → API_SOT.md v9.3 → ERROR_CODES_SOT.md v2.1
+→ AUTH_SPEC.md v2.0 → LEDGER_SOT.md v1.2
 ```
 
 **7 角色定义**（来源: MASTER.md v4.4 §2.4）：

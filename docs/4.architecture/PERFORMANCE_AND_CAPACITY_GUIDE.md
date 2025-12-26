@@ -23,7 +23,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 ### 1.2 Baseline References
 
 **引用**:
-- **DATA_SCHEMA.md v5.2**: 数据库表结构与索引
+- **DATA_SCHEMA.md v5.3**: 数据库表结构与索引
 - **SERVICE_COMPONENT_VIEW.md**: 技术栈与部署架构
 - **BOUNDED_CONTEXT_MAP.md**: 核心域识别 (性能关键路径)
 
@@ -65,7 +65,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 
 ### 3.1 Indexing Strategy (索引策略)
 
-**引用**: DATA_SCHEMA.md v5.2
+**引用**: DATA_SCHEMA.md v5.3
 
 #### 3.1.1 High-Frequency Query Indexes (高频查询索引)
 
@@ -790,7 +790,7 @@ locust -f tests/performance/locustfile.py --users 100 --spawn-rate 10 --run-time
 
 ## 9. Traceability (可追溯性)
 
-### 9.1 References to DATA_SCHEMA.md v5.2
+### 9.1 References to DATA_SCHEMA.md v5.3
 
 - **§3.3.1 daily_reports表**: 索引设计
 - **§3.4.4 ledger_entries表**: 索引设计

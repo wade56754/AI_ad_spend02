@@ -28,7 +28,7 @@
 
 1. **对账业务模型**: 对账批次（Batch）→ 明细（Detail）→ 调整（Adjustment）的层次结构
 2. **对账核心流程**: 创建批次 → 差异计算 → 审核确认 → 生成报告的完整流程
-3. **状态机规则**: draft/pending_review/approved/needs_adjustment/completed 状态流转（引用 STATE_MACHINE.md v2.6）
+3. **状态机规则**: draft/pending_review/approved/needs_adjustment/completed 状态流转（引用 STATE_MACHINE.md v2.7）
 4. **差异计算逻辑**: `difference = our_total_spend - supplier_total_spend`
 5. **双账本影响**: 对账不直接修改 PROJECT/SUPPLIER 账本余额，但可生成 `manual_entry` 调整记录
 6. **并发控制**: 基于 `expected_version` 的乐观锁机制
@@ -102,7 +102,7 @@ ledger_entries (账本, manual_entry红冲/补录)
 | `batch_no` | VARCHAR(50) | UNIQUE, NOT NULL | 批次编号，格式如 `RECON-202501-001` |
 | `supplier_id` | UUID | FK → suppliers.id, NOT NULL | 所属供应商ID |
 | `channel_id` | UUID | FK → channels.id, 可空 | 所属渠道ID（可为空表示全渠道对账） |
-| `status` | VARCHAR(20) | NOT NULL | 对账状态，参考STATE_MACHINE.md v2.6，合法值: `draft/pending_review/approved/needs_adjustment/completed` |
+| `status` | VARCHAR(20) | NOT NULL | 对账状态，参考STATE_MACHINE.md v2.7，合法值: `draft/pending_review/approved/needs_adjustment/completed` |
 | `period_start` | DATE | NOT NULL | 对账周期开始日期 |
 | `period_end` | DATE | NOT NULL | 对账周期结束日期 |
 | `our_total_spend` | DECIMAL(15,2) | DEFAULT 0.00 | 我方记录的总消耗（real_spend汇总） |
@@ -119,7 +119,7 @@ ledger_entries (账本, manual_entry红冲/补录)
 **约束**:
 - `UNIQUE (supplier_id, channel_id, period_start, period_end)` - 防止重复创建同周期对账
 - `CHECK (period_end >= period_start)` - 周期合法性
-- `CHECK (status IN ('draft', 'pending_review', 'approved', 'needs_adjustment', 'completed'))` - 状态枚举（引用STATE_MACHINE.md v2.6）
+- `CHECK (status IN ('draft', 'pending_review', 'approved', 'needs_adjustment', 'completed'))` - 状态枚举（引用STATE_MACHINE.md v2.7）
 
 #### 3.1.2 reconciliation_details (对账明细表)
 
@@ -132,7 +132,7 @@ ledger_entries (账本, manual_entry红冲/补录)
 | `system_spend` | DECIMAL(15,2) | DEFAULT 0.00 | 系统记录的消耗（daily_reports.real_spend） |
 | `external_spend` | DECIMAL(15,2) | DEFAULT 0.00 | 供应商提供的消耗 |
 | `difference_amount` | DECIMAL(15,2) | DEFAULT 0.00 | 差异金额 = system_spend - external_spend |
-| `status` | VARCHAR(20) | NOT NULL | 明细状态，参考STATE_MACHINE.md v2.6，合法值: `pending/confirmed/adjusted` |
+| `status` | VARCHAR(20) | NOT NULL | 明细状态，参考STATE_MACHINE.md v2.7，合法值: `pending/confirmed/adjusted` |
 | `notes` | TEXT | 可空 | 备注说明 |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
 
@@ -278,7 +278,7 @@ draft → pending_review → approved → completed
                    needs_adjustment → approved → completed
 ```
 
-- 按STATE_MACHINE.md v2.6定义执行
+- 按STATE_MACHINE.md v2.7定义执行
 - 终态 `completed` 禁止回退（仅 admin 可红冲后重建）
 
 ### 5.2 对账明细状态机

@@ -58,7 +58,7 @@
 | MASTER.md | v4.4 | §4.5.7 消耗SoT | 消耗数据来源规则 |
 | STATE_MACHINE.md | v2.7 | §6 事件状态机 | 5 状态流转规则 |
 | DATA_SCHEMA.md | v5.3 | §4.1 financial_events | 表结构定义 |
-| LEDGER_SOT.md | v1.1 | §3 分录规则 | 账本规则 |
+| LEDGER_SOT.md | v1.2 | §3 分录规则 | 账本规则 |
 | BUSINESS_RULES.md | v4.1 | BR-FIN-* | 财务业务规则 |
 | ERROR_CODES_SOT.md | v2.1 | BIZ_500-599, STATE_* | 错误码定义 |
 | API_SOT.md | v9.3 | §7 Spend | API 端点规范 |
@@ -504,7 +504,7 @@ gross_amount = amount + fee_amount
 
 ### 5.4 账本分录规则
 
-**来源**: LEDGER_SOT.md v1.1 §3
+**来源**: LEDGER_SOT.md v1.2 §3
 
 ```yaml
 入账 (post):
@@ -901,4 +901,4 @@ def test_permissions(role, action, expected):
 ---
 
 **维护者**: AI 广告代投系统开发团队
-**关联文档**: C3-spend-detail.md (前端规格), LEDGER_SOT.md v1.1
+**关联文档**: C3-spend-detail.md (前端规格), LEDGER_SOT.md v1.2

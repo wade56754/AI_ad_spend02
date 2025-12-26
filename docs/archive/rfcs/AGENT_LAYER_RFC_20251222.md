@@ -4,7 +4,7 @@ status: draft
 layer: overview
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
 ---
 
 # RFC: ASDD 第六层 - Agent Layer 提案
@@ -391,7 +391,7 @@ _SKILL_REGISTRY = {
 
 | 层级 | 影响类型 | 具体影响 | 需要更新的文档 |
 |------|---------|---------|---------------|
-| **Layer 1: Overview** | ✅ 轻微 | 需在 MASTER.md 中增加 Layer 6 描述 | MASTER.md v3.4 → v3.5 |
+| **Layer 1: Overview** | ✅ 轻微 | 需在 MASTER.md 中增加 Layer 6 描述 | MASTER.md v4.4 → v3.5 |
 | **Layer 2: SoT** | ❌ 无 | Agent Layer 不修改 SoT | 无 |
 | **Layer 3: Dev-Guides** | ✅ 轻微 | 增加"Agent 开发指南"章节引用 | AGENT_WORKFLOW_GUIDE.md |
 | **Layer 4: Architecture** | ✅ 中等 | 增加 Agent 架构视图 | 新增 AGENT_ARCHITECTURE_VIEW.md（可选）|
@@ -402,7 +402,7 @@ _SKILL_REGISTRY = {
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 1: Overview (Freeze v1.0)                             │
-│ MASTER.md v3.5 + PROJECT.md                                 │
+│ MASTER.md v4.4 + PROJECT.md                                 │
 └─────────────────────────────────────────────────────────────┘
                              ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -435,11 +435,11 @@ _SKILL_REGISTRY = {
 
 **Agent Layer Baseline**:
 ```
-MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal,
+MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal,
 Architecture Freeze v1.0, Infrastructure Freeze v1.0
 ```
 
-**注意**: Agent Layer 依赖 MASTER.md v3.5（需先更新 MASTER.md 增加 Layer 6 描述）
+**注意**: Agent Layer 依赖 MASTER.md v4.4（需先更新 MASTER.md 增加 Layer 6 描述）
 
 ---
 
@@ -639,7 +639,7 @@ Layer 1-6: Frozen ✅
 
 **下一步行动**:
 1. **架构委员会审批**: 提交给 Wade + 架构团队审核
-2. **MASTER.md 更新**: 在 MASTER.md v3.4 基础上增加 Layer 6 描述 → v3.5
+2. **MASTER.md 更新**: 在 MASTER.md v4.4 基础上增加 Layer 6 描述 → v3.5
 3. **执行创建**: 批准后，分 3 个会话执行 ASDD 6 步流程
 4. **冻结决策**: Agent Layer v1.0 完成后，决定是否立即冻结或标记为 `active`
 
@@ -651,7 +651,7 @@ Layer 1-6: Frozen ✅
 - ✅ DevOps 团队（Agent 部署相关）
 
 **批准后**:
-- 更新 MASTER.md v3.4 → v3.5（增加 Layer 6 描述）
+- 更新 MASTER.md v4.4 → v3.5（增加 Layer 6 描述）
 - 创建 `docs/6.agent-layer/` 目录
 - 开始执行 ASDD 6 步流程
 
@@ -667,7 +667,7 @@ Layer 1-6: Frozen ✅
 ## 11. 参考文献
 
 **引用文档**:
-- MASTER.md v3.4 - ASDD 框架定义
+- MASTER.md v4.4 - ASDD 框架定义
 - ARCHITECTURE_FREEZE_MANIFEST_v1.0.md - Freeze 流程参考
 - INFRASTRUCTURE_FREEZE_MANIFEST_v1.0.md - Freeze Manifest 模板
 - agents/agents_config.py - Agent 注册中心实现

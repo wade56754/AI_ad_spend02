@@ -110,9 +110,9 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 - ENVIRONMENT_VARIABLES_GUIDE.md → DEPLOYMENT_GUIDE.md (环境配置)
 
 #### References to SoT Layer (Freeze v2.6)
-- CI_PIPELINE_SPEC.md → DATA_SCHEMA.md v5.2 (数据库迁移验证)
-- DEPLOYMENT_PIPELINE_SPEC.md → DATA_SCHEMA.md v5.2 (Alembic migrations)
-- OBSERVABILITY_GUIDE.md → STATE_MACHINE.md v2.6 (状态转换监控)
+- CI_PIPELINE_SPEC.md → DATA_SCHEMA.md v5.3 (数据库迁移验证)
+- DEPLOYMENT_PIPELINE_SPEC.md → DATA_SCHEMA.md v5.3 (Alembic migrations)
+- OBSERVABILITY_GUIDE.md → STATE_MACHINE.md v2.7 (状态转换监控)
 
 **All upstream references verified**: ✅ **100% alignment**
 
@@ -266,8 +266,8 @@ No optimization suggestions identified. All documents:
 
 | SoT Document | Referenced By | Purpose |
 |--------------|---------------|---------|
-| DATA_SCHEMA.md v5.2 | CI_PIPELINE_SPEC, DEPLOYMENT_PIPELINE_SPEC | Database migration validation |
-| STATE_MACHINE.md v2.6 | OBSERVABILITY_GUIDE | State transition monitoring |
+| DATA_SCHEMA.md v5.3 | CI_PIPELINE_SPEC, DEPLOYMENT_PIPELINE_SPEC | Database migration validation |
+| STATE_MACHINE.md v2.7 | OBSERVABILITY_GUIDE | State transition monitoring |
 | API_SOT.md v9.3 | OBSERVABILITY_GUIDE | Health check endpoint specification |
 | ERROR_CODES_SOT.md v2.1 | CI_PIPELINE_SPEC | Error code testing |
 

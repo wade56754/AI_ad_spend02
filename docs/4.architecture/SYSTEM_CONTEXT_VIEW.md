@@ -191,7 +191,7 @@ daily_reports.real_spend (成本核算)
 - **EXT-002**: Invalid access token → 通知管理员更新token
 - **EXT-003**: Ad account not found → 标记账户为dead状态
 
-### 5.2 Email Notification Triggers (STATE_MACHINE.md v2.6 transitions)
+### 5.2 Email Notification Triggers (STATE_MACHINE.md v2.7 transitions)
 
 **触发条件与模板**:
 

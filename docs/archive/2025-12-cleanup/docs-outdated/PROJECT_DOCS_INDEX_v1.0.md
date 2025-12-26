@@ -4,7 +4,7 @@ status: frozen
 layer: documentation-governance
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0, Agent Freeze v1.0
 ---
 
 # Project Documentation Index v1.1
@@ -166,17 +166,17 @@ baseline: MASTER.md v3.5, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 **Conflict Resolution Priority Order**:
 
 ```
-Level 0: MASTER.md v3.4 (System Constitution)
+Level 0: MASTER.md v4.4 (System Constitution)
   ↓ (defines system invariants)
 Level 1: SoT Layer Freeze v2.6 (Technical Truth)
   ↓
-  ├── STATE_MACHINE.md v2.6 (highest priority for state logic)
-  ├── DATA_SCHEMA.md v5.2 (database schema authority)
-  ├── API_SOT.md v9.0 (API contract authority)
+  ├── STATE_MACHINE.md v2.7 (highest priority for state logic)
+  ├── DATA_SCHEMA.md v5.3 (database schema authority)
+  ├── API_SOT.md v9.3 (API contract authority)
   ├── ERROR_CODES_SOT.md v2.1 (error handling authority)
-  ├── BUSINESS_RULES.md v3.1 (business logic authority)
+  ├── BUSINESS_RULES.md v4.1 (business logic authority)
   ├── AUTH_SPEC.md v2.0 (authentication authority)
-  └── LEDGER_SOT.md v1.1 (ledger system authority)
+  └── LEDGER_SOT.md v1.2 (ledger system authority)
   ↓ (SoT defines WHAT, Dev-Guides defines HOW)
 Level 2: Dev-Guides Layer Freeze vFinal (Workflows & Practices)
   ↓
@@ -200,9 +200,9 @@ Level 4: Infrastructure Layer Freeze v1.0 (Implementation Environment)
 ```
 
 **Decision Rules**:
-1. **State Machine Conflicts**: STATE_MACHINE.md v2.6 is final authority
-2. **Database Schema Conflicts**: DATA_SCHEMA.md v5.2 is final authority
-3. **API Contract Conflicts**: API_SOT.md v9.0 is final authority
+1. **State Machine Conflicts**: STATE_MACHINE.md v2.7 is final authority
+2. **Database Schema Conflicts**: DATA_SCHEMA.md v5.3 is final authority
+3. **API Contract Conflicts**: API_SOT.md v9.3 is final authority
 4. **Error Code Conflicts**: ERROR_CODES_SOT.md v2.1 is final authority
 5. **Development Workflow Conflicts**: Corresponding Dev-Guides document is authority
 6. **Design Rationale Conflicts**: Corresponding Architecture document is authority
@@ -218,10 +218,10 @@ Level 4: Infrastructure Layer Freeze v1.0 (Implementation Environment)
 
 | Consuming Layer | Required Baseline | Status |
 |----------------|-------------------|--------|
-| **SoT Layer** | MASTER.md v3.4 | ✅ Aligned |
-| **Dev-Guides Layer** | MASTER.md v3.4, SoT Freeze v2.6 | ✅ Aligned |
-| **Architecture Layer** | MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1 | ✅ Aligned |
-| **Infrastructure Layer** | MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0 | ✅ Aligned |
+| **SoT Layer** | MASTER.md v4.4 | ✅ Aligned |
+| **Dev-Guides Layer** | MASTER.md v4.4, SoT Freeze v2.6 | ✅ Aligned |
+| **Architecture Layer** | MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1 | ✅ Aligned |
+| **Infrastructure Layer** | MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0 | ✅ Aligned |
 
 ### 3.2 SoT Document Versioning
 
@@ -363,7 +363,7 @@ Health Score = 100 - (P0_count × 30) - (P1_count × 10) - (P2_count × 5)
 ### 7.1 Standard Unfreeze Workflow
 
 **Trigger Conditions**:
-1. Upstream layer major version release (e.g., MASTER.md v4.0)
+1. Upstream layer major version release (e.g., MASTER.md v4.4)
 2. P0/P1 issues discovered in frozen documents
 3. Major technology stack changes
 4. Significant production learnings requiring documentation updates
@@ -417,7 +417,7 @@ ai-ad-spec-governor 对 docs/4.architecture/ 执行完整 ASDD pipeline (DISCOVE
 
 **Generate new document from outline**:
 ```bash
-ai-ad-doc-architect 设计 docs/5.infrastructure/NEW_INFRA_SPEC.md 大纲，基准 MASTER.md v3.4 + SoT Freeze v2.6
+ai-ad-doc-architect 设计 docs/5.infrastructure/NEW_INFRA_SPEC.md 大纲，基准 MASTER.md v4.4 + SoT Freeze v2.6
 ```
 
 **Fix specific P1 issues**:
@@ -467,8 +467,8 @@ ai-ad-doc-fixer 修复 docs/3.dev-guides/API_DEVELOPMENT_FLOW.md 中的 P1-001 (
 
 | Function | Primary SoT Document | Dev-Guide | Architecture View |
 |----------|---------------------|-----------|-------------------|
-| **日报提交** | STATE_MACHINE.md v2.6 | UI_FLOW_SPEC.md | DATA_FLOW_VIEW.md |
-| **账本记账** | LEDGER_SOT.md v1.1 | API_DEVELOPMENT_FLOW.md | DATA_FLOW_VIEW.md |
+| **日报提交** | STATE_MACHINE.md v2.7 | UI_FLOW_SPEC.md | DATA_FLOW_VIEW.md |
+| **账本记账** | LEDGER_SOT.md v1.2 | API_DEVELOPMENT_FLOW.md | DATA_FLOW_VIEW.md |
 | **充值管理** | TOPUP_SOT.md v1.0 | UI_FLOW_SPEC.md | BOUNDED_CONTEXT_MAP.md |
 | **对账流程** | RECONCILIATION_SOT.md v1.0 | API_DEVELOPMENT_FLOW.md | BOUNDED_CONTEXT_MAP.md |
 | **用户权限** | AUTH_SPEC.md v2.0 | API_DEVELOPMENT_FLOW.md | SYSTEM_CONTEXT_VIEW.md |
@@ -478,9 +478,9 @@ ai-ad-doc-fixer 修复 docs/3.dev-guides/API_DEVELOPMENT_FLOW.md 中的 P1-001 (
 
 | Topic | SoT Document | Dev-Guide | Infrastructure |
 |-------|--------------|-----------|----------------|
-| **Database** | DATA_SCHEMA.md v5.2 | API_DEVELOPMENT_FLOW.md | DEPLOYMENT_PIPELINE_SPEC.md |
-| **API** | API_SOT.md v9.0 | API_DEVELOPMENT_FLOW.md | CI_PIPELINE_SPEC.md |
-| **State Machine** | STATE_MACHINE.md v2.6 | API_DEVELOPMENT_FLOW.md | OBSERVABILITY_GUIDE.md |
+| **Database** | DATA_SCHEMA.md v5.3 | API_DEVELOPMENT_FLOW.md | DEPLOYMENT_PIPELINE_SPEC.md |
+| **API** | API_SOT.md v9.3 | API_DEVELOPMENT_FLOW.md | CI_PIPELINE_SPEC.md |
+| **State Machine** | STATE_MACHINE.md v2.7 | API_DEVELOPMENT_FLOW.md | OBSERVABILITY_GUIDE.md |
 | **Testing** | N/A | TESTING_STRATEGY.md | CI_PIPELINE_SPEC.md |
 | **Deployment** | N/A | DEPLOYMENT_GUIDE.md | DEPLOYMENT_PIPELINE_SPEC.md |
 | **Monitoring** | N/A | TROUBLESHOOTING.md | OBSERVABILITY_GUIDE.md |
@@ -566,7 +566,7 @@ status: frozen  # frozen | ready_for_production | active | draft
 layer: infrastructure  # overview | sot | dev-guides | architecture | infrastructure
 owner: wade  # Primary maintainer
 last_reviewed: 2025-11-27  # YYYY-MM-DD format
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0  # Upstream dependencies
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0  # Upstream dependencies
 ---
 ```
 
@@ -575,10 +575,10 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 **Format**: `MASTER.md v{version}, SoT Freeze v{version}, Dev-Guides Freeze v{version}, Architecture Freeze v{version}, Infrastructure Freeze v{version}`
 
 **Examples**:
-- SoT Layer: `MASTER.md v3.4`
-- Dev-Guides Layer: `MASTER.md v3.4, SoT Freeze v2.6`
-- Architecture Layer: `MASTER.md v3.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1`
-- Infrastructure Layer: `MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0`
+- SoT Layer: `MASTER.md v4.4`
+- Dev-Guides Layer: `MASTER.md v4.4, SoT Freeze v2.6`
+- Architecture Layer: `MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1`
+- Infrastructure Layer: `MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0`
 
 **Rule**: Always include all upstream layers in baseline.
 

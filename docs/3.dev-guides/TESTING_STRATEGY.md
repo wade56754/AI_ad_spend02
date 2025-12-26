@@ -46,7 +46,7 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6, OpenSpec v1.0
 | 原则 | 描述 | 示例 |
 |------|------|------|
 | **SoT驱动测试** | 所有测试必须明确引用对应的SoT规则 | `# Test: INV-001 - PROJECT账本独立核算` |
-| **状态机覆盖** | 覆盖STATE_MACHINE.md v2.6中所有合法流转 | 测试`final_pending → final_confirmed` |
+| **状态机覆盖** | 覆盖STATE_MACHINE.md v2.7中所有合法流转 | 测试`final_pending → final_confirmed` |
 | **边界值测试** | 测试临界状态（如余额=0, 终态锁定后） | 账户余额为0.00时禁止扣款 |
 | **错误码验证** | 所有异常场景必须验证ERROR_CODES_SOT v2.1中的错误码 | 断言`code == "BIZ_101"` |
 | **幂等性验证** | 可重复操作必须测试幂等性 | 重复提交充值请求不应创建多笔记录 |
@@ -377,7 +377,7 @@ class TestDailyReportBilling:
 class TestDailyReportStateMachine:
     """
     测试目标: 验证日报状态机合法流转
-    引用: STATE_MACHINE.md v2.6 §8
+    引用: STATE_MACHINE.md v2.7 §8
     合法流转: raw_submitted → trend_pending → trend_ok →
              trend_resolved → final_pending → final_confirmed → final_locked
     """
@@ -459,7 +459,7 @@ class TestDailyReportStateMachine:
         Given: 日报已流转至final_locked
         When: 尝试修改conversions_final
         Then: 抛出 BusinessLogicError, code=STATE_002
-        引用: STATE_MACHINE.md v2.6 §8 - 终态保护
+        引用: STATE_MACHINE.md v2.7 §8 - 终态保护
         """
         service = DailyReportService(db_session)
 
@@ -629,7 +629,7 @@ describe('DailyReportCard', () => {
   it('should show locked badge for final_locked status', () => {
     /**
      * 测试目标: 验证终态UI展示
-     * 引用: STATE_MACHINE.md v2.6 §8 - final_locked为终态
+     * 引用: STATE_MACHINE.md v2.7 §8 - final_locked为终态
      */
     const mockReport = {
       id: 1,
@@ -920,7 +920,7 @@ class TestDailyReportAPIContract:
     def test_field_types_match_schema(self, client, auth_headers, test_ad_account):
         """
         场景: 验证字段类型与DATA_SCHEMA.md一致
-        引用: DATA_SCHEMA.md v5.2 §3.3.3
+        引用: DATA_SCHEMA.md v5.3 §3.3.3
         """
         payload = {
             "report_date": "2024-01-15",
@@ -956,7 +956,7 @@ class TestDailyReportAPIContract:
 
 ### 6.1 状态机测试策略
 
-**测试目标**: 验证STATE_MACHINE.md v2.6中定义的所有状态流转规则
+**测试目标**: 验证STATE_MACHINE.md v2.7中定义的所有状态流转规则
 
 **覆盖要求**:
 1. 所有合法流转路径
@@ -979,7 +979,7 @@ class TestDailyReportStateMachine:
     测试目标: 完整覆盖日报8状态机
     状态流转: raw_submitted → trend_pending → trend_ok/trend_flagged
              → trend_resolved → final_pending → final_confirmed → final_locked
-    引用: STATE_MACHINE.md v2.6 §8
+    引用: STATE_MACHINE.md v2.7 §8
     """
 
     # 合法流转矩阵
@@ -1051,7 +1051,7 @@ class TestTopupStateMachine:
     """
     测试目标: 充值状态机完整覆盖
     状态流转: draft → pending_review → finance_approve → paid → completed
-    引用: STATE_MACHINE.md v2.6 §10.2
+    引用: STATE_MACHINE.md v2.7 §10.2
     """
 
     VALID_TRANSITIONS = [
@@ -1187,7 +1187,7 @@ class TestInvariantDualLedger:
         Given: 多笔账本记录
         When: 计算余额
         Then: balance = SUM(ledger_entries.amount)
-        引用: LEDGER_SOT.md v1.1 §2.1
+        引用: LEDGER_SOT.md v1.2 §2.1
         """
         service = LedgerService(db_session)
 
@@ -1368,7 +1368,7 @@ class TestInvariantImmutableAudit:
         Given: 原账本记录 amount=+100.00
         When: 执行红冲
         Then: 生成新记录 entry_type=REVERSAL, amount=-100.00
-        引用: LEDGER_SOT.md v1.1 §12
+        引用: LEDGER_SOT.md v1.2 §12
         """
         from backend.services.ledger_service import LedgerService
 
@@ -1429,7 +1429,7 @@ class UserFactory:
         """
         创建测试用户
         角色必须为: admin/finance/data_operator/account_manager/media_buyer
-        引用: STATE_MACHINE.md v2.6 §2
+        引用: STATE_MACHINE.md v2.7 §2
         """
         defaults = {
             "id": uuid4(),
@@ -1461,7 +1461,7 @@ class ProjectFactory:
     def create_project(db_session, created_by, **kwargs):
         """
         创建测试项目
-        引用: DATA_SCHEMA.md v5.2 §3.2.1
+        引用: DATA_SCHEMA.md v5.3 §3.2.1
         """
         defaults = {
             "name": f"测试项目{uuid4().hex[:8]}",
@@ -1487,7 +1487,7 @@ class DailyReportFactory:
     def create_report(db_session, ad_account, created_by, **kwargs):
         """
         创建测试日报
-        引用: DATA_SCHEMA.md v5.2 §3.3.3
+        引用: DATA_SCHEMA.md v5.3 §3.3.3
         """
         defaults = {
             "report_date": date(2024, 1, 15),
@@ -1522,7 +1522,7 @@ class LedgerFactory:
     def create_entry(db_session, ledger_type, entry_type, **kwargs):
         """
         创建账本记录
-        引用: LEDGER_SOT.md v1.1 §3
+        引用: LEDGER_SOT.md v1.2 §3
         """
         defaults = {
             "ledger_type": ledger_type,  # PROJECT/SUPPLIER
@@ -1934,13 +1934,13 @@ def test_ledger_modify_permission(db_session, role, expected_permission):
 
 | SoT文档 | 版本 | 测试关注点 |
 |--------|------|-----------|
-| MASTER.md | v3.4 | 系统不变量（INV-001/002/003） |
-| STATE_MACHINE.md | v2.6 | 状态流转、权限边界 |
-| DATA_SCHEMA.md | v5.2 | 字段类型、约束 |
-| API_SOT.md | v9.0 | 端点定义、Envelope格式 |
+| MASTER.md | v4.4 | 系统不变量（INV-001/002/003） |
+| STATE_MACHINE.md | v2.7 | 状态流转、权限边界 |
+| DATA_SCHEMA.md | v5.3 | 字段类型、约束 |
+| API_SOT.md | v9.3 | 端点定义、Envelope格式 |
 | ERROR_CODES_SOT.md | v2.1 | 错误码、HTTP状态码 |
-| BUSINESS_RULES.md | v3.1 | 业务规则（BR-*-*） |
-| LEDGER_SOT.md | v1.1 | 双账本逻辑、金额方向 |
+| BUSINESS_RULES.md | v4.1 | 业务规则（BR-*-*） |
+| LEDGER_SOT.md | v1.2 | 双账本逻辑、金额方向 |
 | AUTH_SPEC.md | v2.0 | 角色权限矩阵 |
 
 ### 12.2 常用业务规则索引

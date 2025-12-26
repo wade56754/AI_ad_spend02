@@ -31,7 +31,7 @@
 
 ### 成功标准
 - ✅ 5个核心功能100%可用
-- ✅ 遵循SoT裁判链 (STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → API_SOT.md v9.3)
+- ✅ 遵循SoT裁判链 (STATE_MACHINE.md v2.7 → DATA_SCHEMA.md v5.3 → API_SOT.md v9.3)
 - ✅ Token自动刷新机制完成
 - ✅ 日报8状态流转完整实现
 - ✅ 充值双重审核流程可用
@@ -98,7 +98,7 @@ T+1 14:00前 - 运营确认final
 ├─ final_confirmed → final_locked (系统计费锁定，终态)
 ```
 
-**SoT引用**: STATE_MACHINE.md v2.6 § 8.2
+**SoT引用**: STATE_MACHINE.md v2.7 § 8.2
 
 ### 3. 状态管理方案
 
@@ -209,7 +209,7 @@ const ERROR_MESSAGES = {
 
 **需要增强的API**: ⚠️ 无 (后端已完整)
 
-**数据模型检查** (SoT: DATA_SCHEMA.md v5.2 § 3.1):
+**数据模型检查** (SoT: DATA_SCHEMA.md v5.3 § 3.1):
 ```sql
 -- users表
 CREATE TABLE users (
@@ -515,7 +515,7 @@ export function useAuth() {
 - ✅ `GET /api/v1/projects/{id}/members` - 项目成员
 - ✅ `POST /api/v1/projects/{id}/members` - 添加成员
 
-**数据模型检查** (SoT: DATA_SCHEMA.md v5.2 § 3.2.1):
+**数据模型检查** (SoT: DATA_SCHEMA.md v5.3 § 3.2.1):
 ```sql
 CREATE TABLE projects (
   id BIGSERIAL PRIMARY KEY,
@@ -538,7 +538,7 @@ CREATE TABLE projects (
 ```typescript
 /**
  * Project types
- * SoT: DATA_SCHEMA.md v5.2 § 3.2.1
+ * SoT: DATA_SCHEMA.md v5.3 § 3.2.1
  */
 
 export type ProjectStatus = 'draft' | 'active' | 'suspended' | 'archived';
@@ -651,7 +651,7 @@ export function useProjects(params?: ProjectListParams) {
 - ✅ `POST /api/v1/daily-reports/{id}/final-lock` - 计费锁定
 - ✅ `GET /api/v1/daily-reports/{id}/audit-logs` - 审计日志
 
-**8状态流转API映射** (SoT: STATE_MACHINE.md v2.6 § 8.7):
+**8状态流转API映射** (SoT: STATE_MACHINE.md v2.7 § 8.7):
 ```typescript
 // 状态流转API映射
 const DAILY_REPORT_ACTIONS = {
@@ -717,7 +717,7 @@ const DAILY_REPORT_ACTIONS = {
 ```typescript
 /**
  * Daily Report status transition actions
- * SoT: STATE_MACHINE.md v2.6 § 8
+ * SoT: STATE_MACHINE.md v2.7 § 8
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -818,7 +818,7 @@ export function useConfirmFinal(reportId: number) {
 - ✅ `GET /api/v1/topups/dashboard` - 充值仪表盘
 - ✅ `GET /api/v1/topups/{id}/approval-logs` - 审批日志
 
-**充值状态流转** (SoT: STATE_MACHINE.md v2.6 § 9):
+**充值状态流转** (SoT: STATE_MACHINE.md v2.7 § 9):
 ```
 draft → pending_review → finance_approve → paid → completed (终态)
                       ↓
@@ -835,7 +835,7 @@ draft → pending_review → finance_approve → paid → completed (终态)
 ```typescript
 /**
  * Topup approval actions
- * SoT: STATE_MACHINE.md v2.6 § 9
+ * SoT: STATE_MACHINE.md v2.7 § 9
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -1039,7 +1039,7 @@ export function useDashboard() {
 **影响**: 状态流转错误，数据不一致
 **概率**: 40%
 **缓解措施**:
-- 严格按照STATE_MACHINE.md v2.6实现
+- 严格按照STATE_MACHINE.md v2.7实现
 - 添加状态流转白名单验证
 - 编写完整的状态机测试
 
@@ -1148,12 +1148,12 @@ export function useDashboard() {
 | 功能 | 核心SoT文档 | 章节 |
 |------|------------|------|
 | 认证优化 | AUTH_SPEC.md v2.0 | § 3 Token管理 |
-| 项目管理 | DATA_SCHEMA.md v5.2 | § 3.2.1 projects表 |
-| 项目管理 | STATE_MACHINE.md v2.6 | § 5 项目状态机 |
-| 日报管理 | STATE_MACHINE.md v2.6 | § 8 粉数确认8状态机 |
-| 日报管理 | DATA_SCHEMA.md v5.2 | § 3.3.1 daily_reports表 |
-| 充值管理 | STATE_MACHINE.md v2.6 | § 9 充值状态机 |
-| 充值管理 | LEDGER_SOT.md v1.1 | § 2 双账本体系 |
+| 项目管理 | DATA_SCHEMA.md v5.3 | § 3.2.1 projects表 |
+| 项目管理 | STATE_MACHINE.md v2.7 | § 5 项目状态机 |
+| 日报管理 | STATE_MACHINE.md v2.7 | § 8 粉数确认8状态机 |
+| 日报管理 | DATA_SCHEMA.md v5.3 | § 3.3.1 daily_reports表 |
+| 充值管理 | STATE_MACHINE.md v2.7 | § 9 充值状态机 |
+| 充值管理 | LEDGER_SOT.md v1.2 | § 2 双账本体系 |
 | 仪表盘 | API_SOT.md v9.3 | § 13 报表中心API |
 
 ### B. 错误码快速参考

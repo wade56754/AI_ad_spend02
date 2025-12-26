@@ -27,7 +27,7 @@
 
 ### 1.1 三数据流 (Three Data Flows)
 
-**引用**: MASTER.md v4.4 §4, DATA_SCHEMA.md v5.2 §3.3.1
+**引用**: MASTER.md v4.4 §4, DATA_SCHEMA.md v5.3 §3.3.1
 
 | 术语 | 中文名称 | 字段名 | 提交者 | 时效性 | 用途 |
 |------|---------|--------|--------|--------|------|
@@ -44,7 +44,7 @@
 
 ### 1.2 双账本 (Dual-Ledger System)
 
-**引用**: MASTER.md v4.4 §5, DATA_SCHEMA.md v5.2 §3.4.4, LEDGER_SOT.md v1.1
+**引用**: MASTER.md v4.4 §5, DATA_SCHEMA.md v5.3 §3.4.4, LEDGER_SOT.md v1.2
 
 | 账本类型 | 英文术语 | 字段标识 | 核心实体 | 业务用途 | 允许 entry_type |
 |---------|---------|---------|---------|---------|----------------|
@@ -61,7 +61,7 @@
 
 ### 1.3 粉数确认 (Lead Confirmation)
 
-**引用**: STATE_MACHINE.md v2.6 §8, BUSINESS_RULES.md v4.1 - BR-RPT-005
+**引用**: STATE_MACHINE.md v2.7 §8, BUSINESS_RULES.md v4.1 - BR-RPT-005
 
 | 术语 | 中文 | 英文 | 说明 |
 |------|------|------|------|
@@ -71,7 +71,7 @@
 | **趋势风控** | 趋势异常检测 | Trend Risk Control | 粉数/消耗异常波动检测 (TF-001/002/003) |
 | **计费锁定** | 计费终态 | `final_locked` | 日报状态终态，触发账本记录创建 |
 
-**8 状态机流程** (STATE_MACHINE.md v2.6 §8):
+**8 状态机流程** (STATE_MACHINE.md v2.7 §8):
 ```
 raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 → final_pending → final_confirmed → final_locked
@@ -81,7 +81,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ## 2. 状态机术语 (State Machine Terms)
 
-**引用**: STATE_MACHINE.md v2.6
+**引用**: STATE_MACHINE.md v2.7
 
 ### 2.1 日报状态 (Daily Report Status - 8 State Machine)
 
@@ -102,7 +102,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ### 2.2 充值状态 (Topup Request Status)
 
-**引用**: STATE_MACHINE.md v2.6 §充值申请状态机
+**引用**: STATE_MACHINE.md v2.7 §充值申请状态机
 
 | 状态值 | 中文名称 | 角色操作 | 业务含义 | 是否终态 |
 |-------|---------|---------|---------|---------|
@@ -142,7 +142,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ## 3. 角色与权限术语 (Role & Permission Terms)
 
-**引用**: DATA_SCHEMA.md v5.2 §3.1.1, BUSINESS_RULES.md v4.1 - BR-AUTH-001
+**引用**: DATA_SCHEMA.md v5.3 §3.1.1, BUSINESS_RULES.md v4.1 - BR-AUTH-001
 
 ### 3.1 五大固定角色
 
@@ -175,7 +175,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 
 ## 4. 数据库术语 (Database Terms)
 
-**引用**: DATA_SCHEMA.md v5.2
+**引用**: DATA_SCHEMA.md v5.3
 
 ### 4.1 主键与外键类型
 
@@ -356,9 +356,9 @@ raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved
 ```
 MASTER.md v4.4 (系统宪法)
     ↓
-STATE_MACHINE.md v2.6 (状态定义)
+STATE_MACHINE.md v2.7 (状态定义)
     ↓
-DATA_SCHEMA.md v5.2 (数据结构)
+DATA_SCHEMA.md v5.3 (数据结构)
     ↓
 BUSINESS_RULES.md v4.1 (业务规则)
     ↓
@@ -368,7 +368,7 @@ ERROR_CODES_SOT.md v2.1 (错误码)
     ↓
 AUTH_SPEC.md v2.0 (认证授权)
     ↓
-LEDGER_SOT.md v1.1 (账本规则)
+LEDGER_SOT.md v1.2 (账本规则)
 ```
 
 **冲突处理**: 优先级高的文档裁决优先级低的文档。

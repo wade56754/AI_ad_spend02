@@ -32,8 +32,8 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 
 **引用**:
 - **MASTER.md v4.4 §1.3**: 双账本架构、三数据流分离、8状态机流转
-- **STATE_MACHINE.md v2.6 §8**: 粉数确认状态机
-- **LEDGER_SOT.md v1.1**: 双账本流转规则
+- **STATE_MACHINE.md v2.7 §8**: 粉数确认状态机
+- **LEDGER_SOT.md v1.2**: 双账本流转规则
 - **BUSINESS_RULES.md v4.1**: 业务规则编号
 
 ## 2. Core Data Flows (核心数据流)
@@ -107,7 +107,7 @@ graph LR
 
 ### 2.2 8-State State Machine Flow (8状态机流转)
 
-**引用**: STATE_MACHINE.md v2.6 §8
+**引用**: STATE_MACHINE.md v2.7 §8
 
 ```mermaid
 stateDiagram-v2
@@ -158,7 +158,7 @@ stateDiagram-v2
 
 ### 2.3 Dual-Ledger Flow (双账本流转)
 
-**引用**: LEDGER_SOT.md v1.1, MASTER.md v4.4 §INV-001
+**引用**: LEDGER_SOT.md v1.2, MASTER.md v4.4 §INV-001
 
 ```mermaid
 graph TD
@@ -329,7 +329,7 @@ sequenceDiagram
     Service-->>Scheduler: 检查完成
 ```
 
-**TF规则详解** (引用 STATE_MACHINE.md v2.6 §8.3):
+**TF规则详解** (引用 STATE_MACHINE.md v2.7 §8.3):
 
 | 规则编号 | 规则名称 | 判断逻辑 | 触发后果 |
 |---------|---------|---------|---------|
@@ -447,7 +447,7 @@ Final Status:
 
 ### 3.4 Reversal Flow (红冲流程)
 
-**引用**: STATE_MACHINE.md v2.6 §8.8
+**引用**: STATE_MACHINE.md v2.7 §8.8
 
 ```mermaid
 sequenceDiagram
@@ -705,13 +705,13 @@ UPDATE daily_reports SET status=final_locked
 - **§1.3 解决方案**: 双账本架构 → §2.3 Dual-Ledger Flow
 - **§1.3 解决方案**: 审计不可逆 → §3.4 Reversal Flow
 
-### 7.2 References to STATE_MACHINE.md v2.6
+### 7.2 References to STATE_MACHINE.md v2.7
 
 - **§8**: 粉数确认状态机 → §2.2 8-State State Machine Flow
 - **§8.3**: 趋势风控规则 → §3.2 Trend Risk Control Flow
 - **§8.8**: 红冲修正机制 → §3.4 Reversal Flow
 
-### 7.3 References to LEDGER_SOT.md v1.1
+### 7.3 References to LEDGER_SOT.md v1.2
 
 - **§2**: 双账本模型总览 → §2.3 Dual-Ledger Flow
 - **§7**: DailyReport→Ledger映射 → §3.3 Final Confirmation Flow

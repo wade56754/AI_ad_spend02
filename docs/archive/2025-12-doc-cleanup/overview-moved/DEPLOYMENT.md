@@ -314,5 +314,5 @@ DEPLOYMENT.md 定义系统部署与运维约束：
 
 **文档版本**: v1.0
 **最后更新**: 2025-11-25
-**对齐文档**: MASTER.md v3.4, ARCHITECTURE.md v1.0, PROJECT.md v1.2
+**对齐文档**: MASTER.md v4.4, ARCHITECTURE.md v1.0, PROJECT.md v1.2
 **维护者**: DevOps Lead

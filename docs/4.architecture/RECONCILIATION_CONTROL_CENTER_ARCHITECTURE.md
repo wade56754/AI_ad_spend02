@@ -4,7 +4,7 @@
 > **基于**: PRD v1.0 + RECONCILIATION_CONTROL_CENTER_SOT v2.0 + RECONCILIATION_SOT v1.0
 > **编制**: 架构设计文档
 > **状态**: Review
-> **对齐**: MASTER.md v4.4 | STATE_MACHINE.md v2.6 | LEDGER_SOT.md v1.1 | DATA_SCHEMA.md v5.2
+> **对齐**: MASTER.md v4.4 | STATE_MACHINE.md v2.7 | LEDGER_SOT.md v1.2 | DATA_SCHEMA.md v5.3
 
 ---
 
@@ -31,7 +31,7 @@
 
 | 模块 | 职责 | 主要读写数据 | SoT 引用 |
 |------|------|-------------|----------|
-| **A. 主数据** | 代理商/客户/项目/账户/人员/地区 + 别名映射 | `agents`, `clients`, `projects`, `ad_accounts`, `users`, `regions` | DATA_SCHEMA.md v5.2 |
+| **A. 主数据** | 代理商/客户/项目/账户/人员/地区 + 别名映射 | `agents`, `clients`, `projects`, `ad_accounts`, `users`, `regions` | DATA_SCHEMA.md v5.3 |
 | **B. 项目中心** | 项目规则、结算配置、甲方确认进粉、结账锁数 | `projects`, `settlement_rules`, `daily_reports.conversions_final`, `locking_periods` | §6 结算规则 |
 | **C. 账户中心** | 账户台账、分配、状态、余额/押款快照 | `ad_accounts`, `balance_snapshots` | §3.1, §3.5 |
 | **D. 充值流程** | 申请→审批→打款→到账 全链路 | `topup_requests` | STATE_MACHINE.md §10 |
@@ -258,7 +258,7 @@ flowchart TB
 
 ---
 
-### 3.4 D. ER Diagram（实体关系图 - 对齐 DATA_SCHEMA.md v5.2）
+### 3.4 D. ER Diagram（实体关系图 - 对齐 DATA_SCHEMA.md v5.3）
 
 ```mermaid
 erDiagram
@@ -437,7 +437,7 @@ erDiagram
 
 ---
 
-## 4. 状态机（对齐 STATE_MACHINE.md v2.6）
+## 4. 状态机（对齐 STATE_MACHINE.md v2.7）
 
 ### 4.1 对账批次状态机（对齐 RECONCILIATION_SOT.md v1.0 §5.1）
 
@@ -534,7 +534,7 @@ RECONCILIATION_ISSUE_TRANSITIONS = {
 
 ---
 
-## 6. 业务规则引用（BUSINESS_RULES.md v3.2）
+## 6. 业务规则引用（BUSINESS_RULES.md v4.1）
 
 ### 6.1 对账规则（BR-REC-*）
 
@@ -583,7 +583,7 @@ RECONCILIATION_ISSUE_TRANSITIONS = {
 
 ---
 
-## 8. API 规范（API_SOT.md v9.0）
+## 8. API 规范（API_SOT.md v9.3）
 
 ### 8.1 对账批次 API
 

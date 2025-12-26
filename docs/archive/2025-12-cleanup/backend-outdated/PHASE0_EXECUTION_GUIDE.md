@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **生成日期**: 2025-11-18
-> **目标**: 清理废弃单表设计，创建符合 DATA_SCHEMA.md v5.0 的新表结构
+> **目标**: 清理废弃单表设计，创建符合 DATA_SCHEMA.md v5.3 的新表结构
 > **风险等级**: **低**（废弃表为空表，无数据丢失风险）
 > **预计时间**: 15 分钟
 
@@ -594,7 +594,7 @@ conn.close()
 
 ### Changed
 - 清理废弃单表设计（topups, ledgers）
-- 创建符合 DATA_SCHEMA.md v5.0 的新表结构：
+- 创建符合 DATA_SCHEMA.md v5.3 的新表结构：
   * topup_requests - 充值申请单
   * topup_transactions - 充值到账流水
   * topup_approval_logs - 充值审批日志
@@ -626,8 +626,8 @@ git commit -m "feat(db): Phase 0 - 架构重构：清理废弃表并创建符合
   * topup_transactions (充值到账流水)
   * topup_approval_logs (充值审批日志)
   * ledger_entries (资金总账)
-- 所有时间字段使用 TIMESTAMPTZ（符合 DATA_SCHEMA.md v5.0 § 1.1）
-- 主键使用 BIGSERIAL（符合 DATA_SCHEMA.md v5.0 § 1.1）
+- 所有时间字段使用 TIMESTAMPTZ（符合 DATA_SCHEMA.md v5.3 § 1.1）
+- 主键使用 BIGSERIAL（符合 DATA_SCHEMA.md v5.3 § 1.1）
 - 创建 11 个业务索引
 - 初始化 Alembic 版本控制
 

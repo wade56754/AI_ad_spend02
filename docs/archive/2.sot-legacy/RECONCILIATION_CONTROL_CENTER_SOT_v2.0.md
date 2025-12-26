@@ -78,11 +78,11 @@ AI_AD_SYSTEM 文档体系 (SoT 裁判链 v4.4)
 ├─ MASTER.md v4.4                        → 架构宪法，最高优先级
 ├─ BUSINESS_FLOW_MANAGEMENT.md           → 业务流程与责任模型
 ├─ MVP_PHASE_DESIGN.md                   → Phase 边界与页面定义
-├─ STATE_MACHINE.md v2.6                 → 业务状态流转的唯一来源
-├─ DATA_SCHEMA.md v5.2                   → 数据库结构的唯一来源
-├─ LEDGER_SOT.md v1.1                    → 双账本规则的唯一来源
-├─ BUSINESS_RULES.md v3.2                → 业务规则的唯一来源
-├─ API_SOT.md v9.0                       → API规范的唯一来源
+├─ STATE_MACHINE.md v2.7                 → 业务状态流转的唯一来源
+├─ DATA_SCHEMA.md v5.3                   → 数据库结构的唯一来源
+├─ LEDGER_SOT.md v1.2                    → 双账本规则的唯一来源
+├─ BUSINESS_RULES.md v4.1                → 业务规则的唯一来源
+├─ API_SOT.md v9.3                       → API规范的唯一来源
 ├─ ERROR_CODES_SOT.md v2.1               → 错误码的唯一来源
 ├─ AUTH_SPEC.md v2.0                     → 权限控制的唯一来源
 │
@@ -100,9 +100,9 @@ AI_AD_SYSTEM 文档体系 (SoT 裁判链 v4.4)
 
 | 领域 | 唯一真相源 | 仲裁规则 |
 |-----|-----------|---------|
-| **数据库字段** | DATA_SCHEMA.md v5.2 | 字段名/类型/约束以DATA_SCHEMA为准 |
-| **业务状态** | STATE_MACHINE.md v2.6 | 状态以STATE_MACHINE为准 |
-| **账本规则** | LEDGER_SOT.md v1.1 | 账本记录规则以LEDGER_SOT为准 |
+| **数据库字段** | DATA_SCHEMA.md v5.3 | 字段名/类型/约束以DATA_SCHEMA为准 |
+| **业务状态** | STATE_MACHINE.md v2.7 | 状态以STATE_MACHINE为准 |
+| **账本规则** | LEDGER_SOT.md v1.2 | 账本记录规则以LEDGER_SOT为准 |
 | **守恒公式** | 本文档 §2.3 | 对账守恒公式以本文档为准 |
 | **结算规则** | 本文档 §6 | 收入计算规则以本文档为准 |
 | **错误码** | ERROR_CODES_SOT.md v2.1 | 错误码格式以ERROR_CODES为准 |
@@ -132,11 +132,11 @@ AI_AD_SYSTEM 文档体系 (SoT 裁判链 v4.4)
 | **确认进粉** | `daily_reports.conversions_final` | conversions_raw | 甲方确认的计费基准 |
 | **项目收入** | `ledger_entries WHERE ledger_type='PROJECT' AND entry_type='REVENUE'` | 临时计算 | final_locked后生成 |
 
-> **引用**: LEDGER_SOT.md v1.1 §2.4 "余额唯一真相源原则"
+> **引用**: LEDGER_SOT.md v1.2 §2.4 "余额唯一真相源原则"
 
 ### 2.2 三本账与双账本映射
 
-PRD 定义的「三本账」与 LEDGER_SOT.md v1.1 双账本的映射关系：
+PRD 定义的「三本账」与 LEDGER_SOT.md v1.2 双账本的映射关系：
 
 | PRD 三本账 | SoT 双账本 | ledger_type | entry_type | 数据来源 |
 |-----------|-----------|-------------|------------|---------|
@@ -170,7 +170,7 @@ PRD 定义的「三本账」与 LEDGER_SOT.md v1.1 双账本的映射关系：
 └─────────────────────────────────────────────────────────────┘
 ```
 
-> **引用**: LEDGER_SOT.md v1.1 §2.2 "两套独立账本定义"
+> **引用**: LEDGER_SOT.md v1.2 §2.2 "两套独立账本定义"
 
 ### 2.3 守恒公式（对账核心）
 
@@ -228,7 +228,7 @@ PRD 定义的「三本账」与 LEDGER_SOT.md v1.1 双账本的映射关系：
 
 ## 3. 数据模型 SoT
 
-> **引用**: DATA_SCHEMA.md v5.2 - 本节定义的表结构需同步更新到 DATA_SCHEMA.md
+> **引用**: DATA_SCHEMA.md v5.3 - 本节定义的表结构需同步更新到 DATA_SCHEMA.md
 
 ### 3.1 balance_snapshots 表（新增）
 
@@ -366,7 +366,7 @@ CHECK (effective_to IS NULL OR effective_to > effective_from)
 
 ### 3.4 projects 表扩展
 
-**新增字段**（需同步更新 DATA_SCHEMA.md v5.2）：
+**新增字段**（需同步更新 DATA_SCHEMA.md v5.3）：
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -379,7 +379,7 @@ CHECK (settlement_type IN ('fixed', 'tiered', 'markup'))
 
 ### 3.5 ad_accounts 表扩展
 
-**新增字段**（需同步更新 DATA_SCHEMA.md v5.2）：
+**新增字段**（需同步更新 DATA_SCHEMA.md v5.3）：
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -390,7 +390,7 @@ CHECK (settlement_type IN ('fixed', 'tiered', 'markup'))
 
 ## 4. 状态机 SoT
 
-> **引用**: STATE_MACHINE.md v2.6 - 本节定义的状态机需同步更新到 STATE_MACHINE.md
+> **引用**: STATE_MACHINE.md v2.7 - 本节定义的状态机需同步更新到 STATE_MACHINE.md
 
 ### 4.1 对账批次状态机（ReconciliationBatch）
 
@@ -477,7 +477,7 @@ RECONCILIATION_ISSUE_TRANSITIONS = {
 
 ## 5. 业务规则 SoT
 
-> **引用**: BUSINESS_RULES.md v3.2 - 本节定义的规则需同步更新到 BUSINESS_RULES.md
+> **引用**: BUSINESS_RULES.md v4.1 - 本节定义的规则需同步更新到 BUSINESS_RULES.md
 
 ### 5.1 对账规则（BR-REC-*）
 
@@ -841,7 +841,7 @@ flowchart TD
 
 ## 10. API 规范
 
-> **引用**: API_SOT.md v9.0 §12 - 对账管理 API
+> **引用**: API_SOT.md v9.3 §12 - 对账管理 API
 
 ### 10.1 对账批次 API
 
@@ -1108,7 +1108,7 @@ stateDiagram-v2
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|----------|------|
-| v2.0 | 2025-12-26 | **v2.0 重大更新**<br>- 🔄 对齐 MASTER.md v4.4 7角色定义（ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）<br>- 🔄 对齐 STATE_MACHINE.md v2.6 对账批次状态机（draft/pending/reviewing/closed）<br>- 🔄 统一错误码格式为 E-RECON-* / E-SET-*<br>- 🔄 更新所有 SoT 版本引用至最新<br>- ✅ 合并 RECONCILIATION_SOT.md v1.0 内容<br>- ✅ 增加 remaining_balance 计算列<br>- ✅ 增加 issue_no 差异单编号<br>- ✅ 增加 version 乐观锁字段<br>- ✅ 完善 API 请求/响应格式<br>- ✅ 扩展测试矩阵（权限测试）| 系统架构团队 |
+| v2.0 | 2025-12-26 | **v2.0 重大更新**<br>- 🔄 对齐 MASTER.md v4.4 7角色定义（ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）<br>- 🔄 对齐 STATE_MACHINE.md v2.7 对账批次状态机（draft/pending/reviewing/closed）<br>- 🔄 统一错误码格式为 E-RECON-* / E-SET-*<br>- 🔄 更新所有 SoT 版本引用至最新<br>- ✅ 合并 RECONCILIATION_SOT.md v1.0 内容<br>- ✅ 增加 remaining_balance 计算列<br>- ✅ 增加 issue_no 差异单编号<br>- ✅ 增加 version 乐观锁字段<br>- ✅ 完善 API 请求/响应格式<br>- ✅ 扩展测试矩阵（权限测试）| 系统架构团队 |
 | v1.1 | 2025-12-26 | 添加第15章 角色输入/输出矩阵 | 系统架构团队 |
 | v1.0 | 2025-12-26 | 初始版本，基于 PRD 生成完整 SoT | 系统架构团队 |
 
@@ -1416,7 +1416,7 @@ stateDiagram-v2
 | 账户余额/押款 | balance_snapshots 表 | ✅ 本文档新增 | §3.1 |
 | 充值申请提交 | topup_requests 表 | ✅ 已覆盖 | STATE_MACHINE.md §10 |
 | 7角色体系 | AUTH_SPEC.md v2.0 + 本文档 §8 | ✅ v2.0更新 | 对齐MASTER.md v4.4 |
-| 对账批次状态机 | STATE_MACHINE.md v2.6 | ✅ v2.0更新 | 对齐现有SoT |
+| 对账批次状态机 | STATE_MACHINE.md v2.7 | ✅ v2.0更新 | 对齐现有SoT |
 
 **结论**：所有 PRD 描述的输入项在 SoT 体系中都有对应覆盖。v2.0 已修复所有对齐问题。
 
@@ -1463,7 +1463,7 @@ stateDiagram-v2
 | 变更项 | v1.1 内容 | v2.0 内容 | 变更原因 |
 |--------|---------|---------|---------|
 | 角色定义 | 5角色 | 7角色 | 对齐 MASTER.md v4.4 §2.4 |
-| 对账批次状态 | draft→pending_review→approved→needs_adjustment→completed | draft→pending→reviewing→closed | 对齐 STATE_MACHINE.md v2.6 |
+| 对账批次状态 | draft→pending_review→approved→needs_adjustment→completed | draft→pending→reviewing→closed | 对齐 STATE_MACHINE.md v2.7 |
 | 错误码格式 | REC-001 | E-RECON-001 | 对齐 ERROR_CODES_SOT.md v2.1 |
 | 权限矩阵 | 5列 | 7列 | 增加 ceo/project_owner/supervisor |
 | remaining_balance | 手动计算 | GENERATED ALWAYS AS (balance - deposit) | 改为计算列 |

@@ -12,7 +12,7 @@
 
 1. 三套状态机（DailyReport/Topup/Reconciliation）白名单覆盖率 100%，包括合法流转、非法流转、终态保护
 2. 错误码测试覆盖 ERROR_CODES_SOT.md v2.1 全部 USED 状态定义
-3. 账本不变量测试覆盖 LEDGER_SOT.md v1.1 金额方向规则
+3. 账本不变量测试覆盖 LEDGER_SOT.md v1.2 金额方向规则
 4. 所有 P0/P1 问题已关闭，测试稳定通过
 
 ---
@@ -242,10 +242,10 @@ db_session
 
 | ID | 问题 | 修复 |
 |----|------|------|
-| P1-DR-001 | 旧状态名断言 | 对齐 STATE_MACHINE.md v2.6 |
-| P1-TP-001 | pending → pending_review | 对齐 STATE_MACHINE.md v2.6 |
+| P1-DR-001 | 旧状态名断言 | 对齐 STATE_MACHINE.md v2.7 |
+| P1-TP-001 | pending → pending_review | 对齐 STATE_MACHINE.md v2.7 |
 | P1-TP-002 | SYS_004 误用 | 修正为 BIZ_002 |
-| P1-RA-001 | pending → draft | 对齐 STATE_MACHINE.md v2.6 |
+| P1-RA-001 | pending → draft | 对齐 STATE_MACHINE.md v2.7 |
 | P1-RA-002 | timedelta 未导入 | 添加导入 |
 
 ### E.3 P2 修复

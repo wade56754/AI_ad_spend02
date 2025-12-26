@@ -304,7 +304,7 @@ version: x.y-suffix # 后缀
 | 类型 | SoT 文档 | 内联位置 |
 |------|---------|---------|
 | 错误码 | ERROR_CODES_SOT.md v2.1 | 部分 Skills 内联 |
-| 状态机 | STATE_MACHINE.md v2.6 | ai-ad-agents-test-orchestrator |
+| 状态机 | STATE_MACHINE.md v2.7 | ai-ad-agents-test-orchestrator |
 | 角色定义 | AUTH_SPEC.md v2.0 | 部分 Skills 内联 |
 
 **修复建议**:

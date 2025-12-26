@@ -2,7 +2,7 @@
 
 > **DEPRECATED**: 本文档已废弃，请使用 [PATTERNS.md](PATTERNS.md) v1.0
 > **废弃日期**: 2025-11-25
-> **取代文档**: PATTERNS.md v1.0 + MASTER.md v3.4 (ASDD Freeze v1.0)
+> **取代文档**: PATTERNS.md v1.0 + MASTER.md v4.4 (ASDD Freeze v1.0)
 
 ---
 
@@ -12,4 +12,4 @@
 
 ---
 
-**NOTE**: This file has been archived. See PATTERNS.md and MASTER.md v3.5 for current documentation.
+**NOTE**: This file has been archived. See PATTERNS.md and MASTER.md v4.4 for current documentation.

@@ -1,7 +1,7 @@
 # SoT Alignment Fix Report v2.0
 
 > **Report Date**: 2025-11-28
-> **Baseline**: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, AUTH_SPEC.md v2.0, LEDGER_SOT.md v1.1
+> **Baseline**: STATE_MACHINE.md v2.7, DATA_SCHEMA.md v5.3, AUTH_SPEC.md v2.0, LEDGER_SOT.md v1.2
 > **Executor**: Claude Code (ai-ad-spec-governor + CodeReviewAgent)
 > **Status**: ALL P0/P1/P2 FIXED
 
@@ -35,7 +35,7 @@ class DailyReportStatus(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
 
-# NEW (8 states - STATE_MACHINE.md v2.6 Section 8)
+# NEW (8 states - STATE_MACHINE.md v2.7 Section 8)
 class DailyReportStatus(str, PyEnum):
     RAW_SUBMITTED = "raw_submitted"       # 投手提交原始粉数
     TREND_PENDING = "trend_pending"       # 等待趋势风控检查
@@ -55,7 +55,7 @@ class LedgerEntryType(str, Enum):
     SPEND = "spend"
     ADJUSTMENT = "adjustment"
 
-# NEW (6 types - LEDGER_SOT.md v1.1 Section 2.2)
+# NEW (6 types - LEDGER_SOT.md v1.2 Section 2.2)
 class LedgerEntryType(str, PyEnum):
     REVENUE = "REVENUE"              # 项目收入（PROJECT账本）
     COST = "COST"                    # 供应商成本（SUPPLIER账本）
@@ -74,7 +74,7 @@ class ReconciliationBatchStatus(str, Enum):
     REVIEWING = "reviewing"
     CLOSED = "closed"
 
-# NEW (5 states - STATE_MACHINE.md v2.6 Section 4)
+# NEW (5 states - STATE_MACHINE.md v2.7 Section 4)
 class ReconciliationBatchStatus(str, PyEnum):
     DRAFT = "draft"                         # 草稿
     PENDING_REVIEW = "pending_review"       # 待审核
@@ -239,13 +239,13 @@ python -m py_compile backend/tests/conftest.py        # PASS
 
 | Component | SoT Document | Section | Status |
 |-----------|--------------|---------|--------|
-| `DailyReportStatus` (8 states) | STATE_MACHINE.md v2.6 | 8.1 | ALIGNED |
-| `DailyReport.STATE_TRANSITIONS` | STATE_MACHINE.md v2.6 | 14.5 | ALIGNED |
-| `LedgerEntryType` (6 types) | LEDGER_SOT.md v1.1 | 2.2 | ALIGNED |
-| `LedgerEntry.validate_amount_direction()` | LEDGER_SOT.md v1.1 | 4 | ALIGNED |
-| `ReconciliationBatchStatus` (5 states) | STATE_MACHINE.md v2.6 | 4 | ALIGNED |
+| `DailyReportStatus` (8 states) | STATE_MACHINE.md v2.7 | 8.1 | ALIGNED |
+| `DailyReport.STATE_TRANSITIONS` | STATE_MACHINE.md v2.7 | 14.5 | ALIGNED |
+| `LedgerEntryType` (6 types) | LEDGER_SOT.md v1.2 | 2.2 | ALIGNED |
+| `LedgerEntry.validate_amount_direction()` | LEDGER_SOT.md v1.2 | 4 | ALIGNED |
+| `ReconciliationBatchStatus` (5 states) | STATE_MACHINE.md v2.7 | 4 | ALIGNED |
 | `UserRole` (5 roles) | AUTH_SPEC.md v2.0 | 2.2 | ALIGNED |
-| `TopupStatus` (7 states) | STATE_MACHINE.md v2.6 | 4 | ALIGNED |
+| `TopupStatus` (7 states) | STATE_MACHINE.md v2.7 | 4 | ALIGNED |
 
 ---
 
@@ -262,10 +262,10 @@ python -m py_compile backend/tests/conftest.py        # PASS
 
 All P0, P1, and P2 issues have been resolved. The codebase is now fully aligned with:
 
-- **STATE_MACHINE.md v2.6**: 8-state daily report machine, 5-state reconciliation machine
-- **DATA_SCHEMA.md v5.2**: Field definitions and constraints
+- **STATE_MACHINE.md v2.7**: 8-state daily report machine, 5-state reconciliation machine
+- **DATA_SCHEMA.md v5.3**: Field definitions and constraints
 - **AUTH_SPEC.md v2.0**: 5 user roles with proper enum usage
-- **LEDGER_SOT.md v1.1**: 6 ledger entry types with dual-ledger support
+- **LEDGER_SOT.md v1.2**: 6 ledger entry types with dual-ledger support
 
 The test fixtures now include:
 - Role-specific user fixtures for all 5 AUTH_SPEC roles

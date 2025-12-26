@@ -202,8 +202,8 @@ class TestDailyReportStateHelper:
     验证 DailyReportStateHelper 与数据库状态联动
 
     SoT 引用：
-    - docs/sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
-    - docs/sot/LEDGER_SOT.md v1.1 (账本分录规则)
+    - docs/sot/STATE_MACHINE.md v2.7 第8章 (DailyReport 8状态机)
+    - docs/sot/LEDGER_SOT.md v1.2 (账本分录规则)
     """
 
     def test_submit_raw__transitions_to_trend_pending(self, db_session):
@@ -242,7 +242,7 @@ class TestDailyReportFlow:
     日报完整 API 流程测试
 
     SoT 引用：
-    - docs/sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
+    - docs/sot/STATE_MACHINE.md v2.7 第8章 (DailyReport 8状态机)
     - docs/sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* 错误码)
     - docs/sot/API_SOT.md v9.3 (API 端点定义)
     """
@@ -424,7 +424,7 @@ class TestTopupApprovalFlow:
     充值审批流程 API 测试
 
     SoT 引用：
-    - docs/sot/STATE_MACHINE.md v2.6 第10章 (TopupRequest 状态机)
+    - docs/sot/STATE_MACHINE.md v2.7 第10章 (TopupRequest 状态机)
     - docs/sot/ERROR_CODES_SOT.md v2.1 (BIZ_* 错误码)
     """
 
@@ -704,8 +704,8 @@ def auth_header(token: str) -> dict:
 测试数据工厂
 
 SoT 引用：
-- docs/sot/DATA_SCHEMA.md v5.2 (字段定义)
-- docs/sot/STATE_MACHINE.md v2.6 (初始状态)
+- docs/sot/DATA_SCHEMA.md v5.3 (字段定义)
+- docs/sot/STATE_MACHINE.md v2.7 (初始状态)
 """
 
 from uuid import uuid4
@@ -772,8 +772,8 @@ def create_daily_report(
         DailyReport: 创建的日报实例
 
     SoT 引用：
-    - STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
-    - DATA_SCHEMA.md v5.2 (daily_reports 表结构)
+    - STATE_MACHINE.md v2.7 第8章 (DailyReport 8状态机)
+    - DATA_SCHEMA.md v5.3 (daily_reports 表结构)
     """
     defaults = {
         "id": uuid4(),
@@ -814,7 +814,7 @@ def create_topup_request(
         TopupRequest: 创建的充值申请实例
 
     SoT 引用：
-    - STATE_MACHINE.md v2.6 第10章 (TopupRequest 状态机)
+    - STATE_MACHINE.md v2.7 第10章 (TopupRequest 状态机)
     - BUSINESS_RULES.md v4.1 (金额限制)
     """
     defaults = {
@@ -840,13 +840,13 @@ def create_topup_request(
 状态机断言工具
 
 SoT 引用：
-- docs/sot/STATE_MACHINE.md v2.6 (状态流转规则)
+- docs/sot/STATE_MACHINE.md v2.7 (状态流转规则)
 """
 
 from typing import Optional
 
 
-# 合法流转白名单（同步自 STATE_MACHINE.md v2.6 第14.5章）
+# 合法流转白名单（同步自 STATE_MACHINE.md v2.7 第14.5章）
 DAILY_REPORT_TRANSITIONS = {
     "raw_submitted": ["trend_pending"],
     "trend_pending": ["trend_ok", "trend_flagged"],
@@ -1053,7 +1053,7 @@ def assert_success_response(response, expected_http_status: int = 200):
 日报（DailyReport）完整 API 流程测试
 
 SoT 引用：
-- docs/sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
+- docs/sot/STATE_MACHINE.md v2.7 第8章 (DailyReport 8状态机)
 - docs/sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* / TREND_* 错误码)
 - docs/sot/DAILY_REPORT_SOT.md v1.0 (粉数确认业务规则)
 - docs/sot/AUTH_SPEC.md v2.0 (角色权限矩阵)
@@ -1263,7 +1263,7 @@ class TestDailyReportStateMachineViolations:
     """
     状态机非法流转测试
 
-    SoT 引用：STATE_MACHINE.md v2.6 第8.2章 (合法流转白名单)
+    SoT 引用：STATE_MACHINE.md v2.7 第8.2章 (合法流转白名单)
     """
 
     def test_raw_submitted_to_final_pending__returns_STATE_001(
@@ -1337,7 +1337,7 @@ class TestDailyReportTrendRiskControl:
     趋势风控测试
 
     SoT 引用：
-    - STATE_MACHINE.md v2.6 第8.3章 (趋势风控规则 TF-001/002/003)
+    - STATE_MACHINE.md v2.7 第8.3章 (趋势风控规则 TF-001/002/003)
     - ERROR_CODES_SOT.md v2.1 (TREND_* 错误码)
     """
 
@@ -2086,10 +2086,10 @@ python -m pytest backend/tests/test_finance_profit_api.py -q  # v1.5.1 新增
 | **Finance Profit** | `test_finance_profit_api.py` | **13** | **Happy Path, Permissions (admin/finance/data_operator), Date Filters, Error Codes (BIZ_001/BIZ_002), Response Format** [v1.5.1 新增] |
 
 **SoT 引用**：
-- STATE_MACHINE.md v2.6
+- STATE_MACHINE.md v2.7
 - API_SOT.md v9.3
 - ERROR_CODES_SOT.md v2.1
-- LEDGER_SOT.md v1.1
+- LEDGER_SOT.md v1.2
 
 ---
 
@@ -2131,13 +2131,13 @@ L3 E2E        → backend/tests/e2e/         → @pytest.mark.e2e
 ### SoT 路径速查
 
 ```
-docs/sot/STATE_MACHINE.md      v2.6  状态枚举、流转白名单
-docs/sot/DATA_SCHEMA.md        v5.2  数据结构、字段约束
-docs/sot/API_SOT.md            v9.0  API 端点定义、请求/响应契约
+docs/sot/STATE_MACHINE.md      v2.7  状态枚举、流转白名单
+docs/sot/DATA_SCHEMA.md        v5.3  数据结构、字段约束
+docs/sot/API_SOT.md            v9.3  API 端点定义、请求/响应契约
 docs/sot/ERROR_CODES_SOT.md    v2.1  错误码定义
-docs/sot/LEDGER_SOT.md         v1.1  账本分录规则
+docs/sot/LEDGER_SOT.md         v1.2  账本分录规则
 docs/sot/AUTH_SPEC.md          v2.0  角色权限矩阵
-docs/sot/BUSINESS_RULES.md     v3.1  业务约束规则
+docs/sot/BUSINESS_RULES.md     v4.1  业务约束规则
 ```
 
 ### 运行速查

@@ -7,7 +7,7 @@ owner: wade
 last_reviewed: 2025-12-19
 baseline:
   - MASTER.md v4.4
-  - STATE_MACHINE.md v2.6
+  - STATE_MACHINE.md v2.7
   - DEPLOYMENT.md v1.0
   - AUTH_SPEC.md v2.0
   - ERROR_CODES_SOT.md v2.1
@@ -19,7 +19,7 @@ baseline:
 > **约束级别**: 强制执行，所有验收项必须通过才能上线
 > **版本**: v1.1
 > **status**: active
-> **基准**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DEPLOYMENT.md v1.0
+> **基准**: MASTER.md v4.4, STATE_MACHINE.md v2.7, DEPLOYMENT.md v1.0
 > **owner**: wade
 > **last_reviewed**: 2025-12-19
 
@@ -220,7 +220,7 @@ baseline:
 
 ## 第三章 SoT 合规验收
 
-### 3.1 状态机验收 (STATE_MACHINE.md v2.6)
+### 3.1 状态机验收 (STATE_MACHINE.md v2.7)
 
 #### 3.1.1 日报 8 状态机
 
@@ -246,7 +246,7 @@ baseline:
 | SM-F03 | final_locked → 任何状态 禁止 | 返回错误码 `STATE_402` (终态非法回退) | ☐ |
 | SM-F04 | 任何状态 → null 禁止 | 返回错误码 `STATE_400` (非法状态流转) | ☐ |
 
-### 3.2 双账本验收 (LEDGER_SOT.md v1.1)
+### 3.2 双账本验收 (LEDGER_SOT.md v1.2)
 
 | 验收项 | 验收标准 | 验证方法 | 状态 |
 |-------|---------|---------|------|
@@ -532,6 +532,6 @@ npm run test:e2e
 
 **文档版本**: v1.1
 **创建日期**: 2025-12-19
-**对齐文档**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DEPLOYMENT.md v1.0, AUTH_SPEC.md v2.0, ERROR_CODES_SOT.md v2.1
+**对齐文档**: MASTER.md v4.4, STATE_MACHINE.md v2.7, DEPLOYMENT.md v1.0, AUTH_SPEC.md v2.0, ERROR_CODES_SOT.md v2.1
 **维护者**: wade
 **下次审核**: 上线前 3 天

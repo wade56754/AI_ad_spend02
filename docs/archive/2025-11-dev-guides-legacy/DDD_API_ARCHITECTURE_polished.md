@@ -171,7 +171,7 @@
 class DailyReport:
     """日报聚合根 - 管理完整的粉数确认流程
 
-    ⚠️ 字段定义严格遵循 DATA_SCHEMA.md v5.2 第3.3.1节
+    ⚠️ 字段定义严格遵循 DATA_SCHEMA.md v5.3 第3.3.1节
     所有字段与数据库表 daily_reports 完全对齐
     """
 
@@ -210,7 +210,7 @@ class DailyReport:
     ctr: Optional[float]  # Click-Through Rate (DECIMAL 12,4)
     roi: Optional[float]  # Return on Investment (DECIMAL 12,4)
 
-    # State Machine (状态机 - 严格遵循 STATE_MACHINE.md v2.6 第8章)
+    # State Machine (状态机 - 严格遵循 STATE_MACHINE.md v2.7 第8章)
     status: DailyReportStatus (Value Object)
         ├─ current_state: Literal[
             "raw_submitted",
@@ -299,7 +299,7 @@ class DailyReport:
 class DailyReportLockedEvent(DomainEvent):
     """日报锁定事件 - 触发账本记录创建
 
-    ⚠️ 状态流转严格遵循 STATE_MACHINE.md v2.6 第8章
+    ⚠️ 状态流转严格遵循 STATE_MACHINE.md v2.7 第8章
     触发条件: status = 'final_confirmed' → 'final_locked'
     参考: STATE_MACHINE.md 第8.2节 - 状态流转规则
     """
@@ -313,7 +313,7 @@ class DailyReportLockedEvent(DomainEvent):
     unit_price: Money
     revenue_amount: Money  # = conversions_final × unit_price
 
-    # Cost Calculation (遵循 LEDGER_SOT.md v1.1 成本公式)
+    # Cost Calculation (遵循 LEDGER_SOT.md v1.2 成本公式)
     real_spend: Money
     fee: Money
     cost_amount: Money  # = real_spend + fee
@@ -594,9 +594,9 @@ class ReconciliationBatch:
 
 #### 4.1.3 端点命名规范
 
-**领域方法端点（遵循 API_SOT.md v9.0 平面化路由）**：
+**领域方法端点（遵循 API_SOT.md v9.3 平面化路由）**：
 
-| 领域方法 | HTTP Method | API_SOT.md v9.0 实际路径 | 请求体 |
+| 领域方法 | HTTP Method | API_SOT.md v9.3 实际路径 | 请求体 |
 |---------|------------|-------------------------|--------|
 | 提交原始粉数 | POST | `/api/v1/daily-reports` | `{ad_account_id, report_date, conversions_raw, raw_spend}` |
 | 趋势风控检查 | POST | `/api/v1/daily-reports/{report_id}/trend-check` | `{}` |
@@ -621,8 +621,8 @@ class ReconciliationBatch:
 > 本节展示的 API 路径 **严格遵循 `API_SOT.md` v9.0**（平面化路由）。
 > 所有端点覆盖完整的 8 状态机流转（raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved → final_pending → final_confirmed → final_locked）。
 >
-> **完整端点对照表（API_SOT.md v9.0）**:
-> | 领域方法 | HTTP Method | API_SOT.md v9.0 路径 | 状态流转 |
+> **完整端点对照表（API_SOT.md v9.3）**:
+> | 领域方法 | HTTP Method | API_SOT.md v9.3 路径 | 状态流转 |
 > |---------|------------|---------------------|---------|
 > | 提交日报（raw粉数） | POST | `/api/v1/daily-reports` | → `raw_submitted` |
 > | 趋势风控检查 | POST | `/api/v1/daily-reports/{report_id}/trend-check` | `trend_pending` → `trend_ok`/`trend_flagged` |
@@ -638,7 +638,7 @@ class ReconciliationBatch:
 
 ```yaml
 # 提交原始粉数（投手操作）
-# 路径遵循 API_SOT.md v9.0
+# 路径遵循 API_SOT.md v9.3
 POST /api/v1/daily-reports
 Authorization: Bearer {token}
 X-Require-Role: media_buyer
@@ -677,7 +677,7 @@ Domain Event Emitted:
 
 ```yaml
 # 趋势风控检查（系统自动）
-# 路径遵循 API_SOT.md v9.0
+# 路径遵循 API_SOT.md v9.3
 POST /api/v1/daily-reports/{report_id}/trend-check
 Authorization: Bearer {token}
 X-Require-Role: system
@@ -702,7 +702,7 @@ Domain Event Emitted:
 
 ```yaml
 # 趋势风控复核（运营操作）
-# 路径遵循 API_SOT.md v9.0
+# 路径遵循 API_SOT.md v9.3
 POST /api/v1/daily-reports/{report_id}/trend-resolve
 Authorization: Bearer {token}
 X-Require-Role: data_operator, admin
@@ -729,7 +729,7 @@ Domain Event Emitted:
 
 ```yaml
 # 录入真实消耗（运营操作）
-# 路径遵循 API_SOT.md v9.0
+# 路径遵循 API_SOT.md v9.3
 PUT /api/v1/daily-reports/{report_id}/real-spend
 Authorization: Bearer {token}
 X-Require-Role: data_operator, admin
@@ -758,7 +758,7 @@ Domain Event Emitted:
 
 ```yaml
 # 确认最终粉数（运营操作）
-# 路径遵循 API_SOT.md v9.0
+# 路径遵循 API_SOT.md v9.3
 POST /api/v1/daily-reports/{report_id}/final-confirm
 Authorization: Bearer {token}
 X-Require-Role: data_operator, admin
@@ -785,7 +785,7 @@ Domain Event Emitted:
 
 ```yaml
 # 锁定计费（系统自动或运营手动）
-# 路径遵循 API_SOT.md v9.0
+# 路径遵循 API_SOT.md v9.3
 POST /api/v1/daily-reports/{report_id}/final-lock
 Authorization: Bearer {token}
 X-Require-Role: data_operator, admin
@@ -812,7 +812,7 @@ Domain Event Emitted:
 
 ```yaml
 # 红冲修正（管理员操作）
-# 路径遵循 API_SOT.md v9.0
+# 路径遵循 API_SOT.md v9.3
 POST /api/v1/daily-reports/{report_id}/reversal
 Authorization: Bearer {token}
 X-Require-Role: admin

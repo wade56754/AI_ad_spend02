@@ -153,13 +153,13 @@ sequenceDiagram
 
 ### Step 2: Query裁判链 (Arbitration Chain)
 Priority Order (from CLAUDE.md and PROJECT_RULES.md v3.1):
-1. STATE_MACHINE.md v2.6 → Status definitions, valid transitions
-2. DATA_SCHEMA.md v5.2 → Table schemas, field types
+1. STATE_MACHINE.md v2.7 → Status definitions, valid transitions
+2. DATA_SCHEMA.md v5.3 → Table schemas, field types
 3. BUSINESS_RULES.md v4.1 → Validation rules (BR-XXX-001)
 4. API_SOT.md v9.3 → Endpoint paths, request/response formats
 5. ERROR_CODES_SOT.md v2.1 → Error codes (VAL-001, STATE-001)
 6. AUTH_SPEC.md v2.0 → Permission requirements
-7. LEDGER_SOT.md v1.1 → Accounting rules (if finance-related)
+7. LEDGER_SOT.md v1.2 → Accounting rules (if finance-related)
 
 ### Step 3: Extract Business Rules
 - [ ] Rule IDs: __________
@@ -178,8 +178,8 @@ Priority Order (from CLAUDE.md and PROJECT_RULES.md v3.1):
 ```
 Query SoT for implementing "Submit Daily Report" feature:
 
-1. Check STATE_MACHINE.md v2.6 §8 for daily_reports.status transitions
-2. Verify DATA_SCHEMA.md v5.2 §3.3.1 for DailyReport table fields
+1. Check STATE_MACHINE.md v2.7 §8 for daily_reports.status transitions
+2. Verify DATA_SCHEMA.md v5.3 §3.3.1 for DailyReport table fields
 3. Extract BR-RPT-001 from BUSINESS_RULES.md v4.1 (submission validation)
 4. Confirm API path from API_SOT.md v9.3 (POST /api/v1/daily-reports/{id}/submit)
 5. Map error codes from ERROR_CODES_SOT.md v2.1 (VAL-001, STATE-001)
@@ -212,15 +212,15 @@ graph LR
 ```bash
 # Backend API Development
 /sc:implement API endpoint for "Submit Daily Report"
-  - SoT Reference: STATE_MACHINE.md v2.6 §8.2
-  - Schema: DailyReport (DATA_SCHEMA.md v5.2 §3.3.1)
+  - SoT Reference: STATE_MACHINE.md v2.7 §8.2
+  - Schema: DailyReport (DATA_SCHEMA.md v5.3 §3.3.1)
   - Rules: BR-RPT-001 (submission validation)
   - Include: INV-002 check (terminal state immutability)
   - Tests: Unit (Service) + Integration (API)
 
 # Frontend Component Development
 /sc:implement React component "DailyReportSubmitButton"
-  - SoT Reference: STATE_MACHINE.md v2.6 (8-state lifecycle)
+  - SoT Reference: STATE_MACHINE.md v2.7 (8-state lifecycle)
   - UI Rules: FRONTEND_DEVELOPMENT_RULES.md §4 (component structure)
   - State Management: Zustand (global) + React Query (server state)
   - Tests: Unit (component) + E2E (submit flow)
@@ -231,13 +231,13 @@ graph LR
 ## Code Review Checklist (Agent-Generated Code)
 
 ### SoT Compliance
-- [ ] All status values from STATE_MACHINE.md v2.6
+- [ ] All status values from STATE_MACHINE.md v2.7
 - [ ] All error codes from ERROR_CODES_SOT.md v2.1
-- [ ] All field names from DATA_SCHEMA.md v5.2
+- [ ] All field names from DATA_SCHEMA.md v5.3
 - [ ] No custom states/errors/fields invented
 
 ### Invariant Enforcement
-- [ ] INV-001: Ledger-only for balance changes (LEDGER_SOT.md v1.1)
+- [ ] INV-001: Ledger-only for balance changes (LEDGER_SOT.md v1.2)
 - [ ] INV-002: Terminal state check in Service layer
 - [ ] INV-003: State transition validation against STATE_MACHINE.md
 
@@ -256,11 +256,11 @@ graph LR
 
 | Command | Purpose | Key Flags | Example |
 |---------|---------|-----------|---------|
-| `/sc:implement` | Feature implementation | `--sot-ref`, `--include-tests` | `/sc:implement topup approval workflow --sot-ref=STATE_MACHINE.md v2.6 --include-tests` |
+| `/sc:implement` | Feature implementation | `--sot-ref`, `--include-tests` | `/sc:implement topup approval workflow --sot-ref=STATE_MACHINE.md v2.7 --include-tests` |
 | `/sc:document` | Generate documentation | `--template`, `--baseline` | `/sc:document API endpoint --template=API_SOT --baseline=v9.0` |
 | `/sc:test` | Test generation/execution | `--coverage`, `--type` | `/sc:test Service layer --coverage=90 --type=unit` |
 | `/sc:analyze` | Code analysis | `--focus`, `--depth` | `/sc:analyze SoT compliance --focus=state-machine --depth=deep` |
-| `/sc:refactor` | Code refactoring | `--preserve-behavior`, `--sot-align` | `/sc:refactor DailyReportService --sot-align=STATE_MACHINE.md v2.6` |
+| `/sc:refactor` | Code refactoring | `--preserve-behavior`, `--sot-align` | `/sc:refactor DailyReportService --sot-align=STATE_MACHINE.md v2.7` |
 
 **Workflow Commands**:
 
@@ -326,7 +326,7 @@ Context:
 Create React component [COMPONENT_NAME] for [FEATURE_DESCRIPTION].
 
 SoT Alignment:
-1. State Mapping (STATE_MACHINE.md v2.6):
+1. State Mapping (STATE_MACHINE.md v2.7):
    - UI States: [list state names]
    - Status Badge Colors: [mapping per FRONTEND_DEVELOPMENT_RULES.md §9.2]
    - Allowed Actions: [per current state]
@@ -360,8 +360,8 @@ Generate [DOCUMENT_TYPE] for [MODULE/FEATURE].
 
 Baseline SoT Documents:
 - MASTER.md v4.4 (system constitution)
-- STATE_MACHINE.md v2.6 (if state-related)
-- DATA_SCHEMA.md v5.2 (if data-related)
+- STATE_MACHINE.md v2.7 (if state-related)
+- DATA_SCHEMA.md v5.3 (if data-related)
 - API_SOT.md v9.3 (if API-related)
 - [other relevant SoT documents]
 
@@ -445,9 +445,9 @@ Current Issues:
 - [ ] Field names not matching DATA_SCHEMA.md
 
 Target SoT:
-- STATE_MACHINE.md v2.6: [state_names]
+- STATE_MACHINE.md v2.7: [state_names]
 - ERROR_CODES_SOT.md v2.1: [error_codes]
-- DATA_SCHEMA.md v5.2: [table/fields]
+- DATA_SCHEMA.md v5.3: [table/fields]
 
 Refactor Strategy:
 1. Replace custom states with SoT states
@@ -505,7 +505,7 @@ graph TD
 /sc:test DailyReportService --type=unit --coverage=90
   - Test BR-RPT-001 (submission validation)
   - Test INV-002 (terminal state check)
-  - Test state transitions (STATE_MACHINE.md v2.6 §8.2)
+  - Test state transitions (STATE_MACHINE.md v2.7 §8.2)
   - Test error codes (VAL-001, STATE-001 from ERROR_CODES_SOT.md)
 
 # Integration Tests (API Endpoints)
@@ -609,9 +609,9 @@ sequenceDiagram
 **Agent Command**:
 ```bash
 /sc:review PR #123 --focus=sot-compliance
-  - Check STATE_MACHINE.md v2.6 alignment
+  - Check STATE_MACHINE.md v2.7 alignment
   - Check ERROR_CODES_SOT.md v2.1 usage
-  - Check DATA_SCHEMA.md v5.2 field names
+  - Check DATA_SCHEMA.md v5.3 field names
   - Check MASTER.md v4.4 invariants (INV-001/002/003)
   - Check API_SOT.md v9.3 endpoint paths
   - Generate review report with violations
@@ -623,7 +623,7 @@ sequenceDiagram
 ```markdown
 ## Automated SoT Compliance Review
 
-### 1. State Machine Compliance (STATE_MACHINE.md v2.6)
+### 1. State Machine Compliance (STATE_MACHINE.md v2.7)
 - [ ] All status values defined in STATE_MACHINE.md
 - [ ] State transitions follow allowed paths
 - [ ] Terminal states not modified (INV-002)
@@ -635,14 +635,14 @@ sequenceDiagram
 - [ ] Error response uses Envelope format
 - [ ] Error codes match HTTP status codes
 
-### 3. Schema Compliance (DATA_SCHEMA.md v5.2)
+### 3. Schema Compliance (DATA_SCHEMA.md v5.3)
 - [ ] Table names match DATA_SCHEMA.md §2
 - [ ] Field names match table definitions §3.x
 - [ ] Data types correct (Decimal for money, TIMESTAMPTZ for dates)
 - [ ] Foreign key types match referenced primary keys
 
 ### 4. Invariant Compliance (MASTER.md v4.4)
-- [ ] INV-001: Ledger-only for balance (LEDGER_SOT.md v1.1)
+- [ ] INV-001: Ledger-only for balance (LEDGER_SOT.md v1.2)
 - [ ] INV-002: Terminal state check in Service layer
 - [ ] INV-003: State transition validation
 
@@ -678,7 +678,7 @@ sequenceDiagram
 
 | Type | Layer | Template | Example |
 |------|-------|----------|---------|
-| SoT Documents | `docs/sot/` | STATE_MACHINE.md | DATA_SCHEMA.md v5.2 |
+| SoT Documents | `docs/sot/` | STATE_MACHINE.md | DATA_SCHEMA.md v5.3 |
 | Dev Guides | `docs/3.dev-guides/` | API_DEVELOPMENT_FLOW.md | This document |
 | API Specs | `docs/sot/` | API_SOT.md | API_SOT.md v9.3 |
 | Testing Guides | `docs/3.dev-guides/` | TESTING_GUIDE.md | Test strategy |
@@ -742,9 +742,9 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0
 - [ ] Do's and Don'ts sections
 
 ### SoT Alignment
-- [ ] All state names from STATE_MACHINE.md v2.6
+- [ ] All state names from STATE_MACHINE.md v2.7
 - [ ] All error codes from ERROR_CODES_SOT.md v2.1
-- [ ] All field names from DATA_SCHEMA.md v5.2
+- [ ] All field names from DATA_SCHEMA.md v5.3
 - [ ] All business rules referenced (BR-XXX-001)
 - [ ] No contradictions with SoT裁判链
 ```
@@ -755,7 +755,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0
 
 **Do's**:
 ✅ Provide SoT context upfront (裁判链 documents)
-✅ Specify exact versions (STATE_MACHINE.md v2.6, not "latest")
+✅ Specify exact versions (STATE_MACHINE.md v2.7, not "latest")
 ✅ Include business rule IDs (BR-RPT-001, BR-LED-002)
 ✅ Request inline SoT comments in code
 ✅ Ask for test coverage targets (≥90% for Service)
@@ -773,8 +773,8 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0
 Implement DailyReportService.submit_report() method:
 
 SoT Context:
-- STATE_MACHINE.md v2.6 §8.2: raw_submitted → trend_pending
-- DATA_SCHEMA.md v5.2 §3.3.1: DailyReport table fields
+- STATE_MACHINE.md v2.7 §8.2: raw_submitted → trend_pending
+- DATA_SCHEMA.md v5.3 §3.3.1: DailyReport table fields
 - BUSINESS_RULES.md v4.1 BR-RPT-001: Submission validation
 - MASTER.md v4.4 INV-002: Terminal state check
 
@@ -834,8 +834,8 @@ Make a function to submit reports.
 - [ ] Outstanding Issues: __________
 
 ### 2. Re-load SoT Context
-- [ ] STATE_MACHINE.md v2.6 (relevant sections)
-- [ ] DATA_SCHEMA.md v5.2 (relevant tables)
+- [ ] STATE_MACHINE.md v2.7 (relevant sections)
+- [ ] DATA_SCHEMA.md v5.3 (relevant tables)
 - [ ] BUSINESS_RULES.md v4.1 (relevant rules)
 - [ ] ERROR_CODES_SOT.md v2.1 (relevant codes)
 
@@ -971,15 +971,15 @@ graph LR
 SoT Compliance Checker for CI/CD
 
 Validates:
-- State values from STATE_MACHINE.md v2.6
+- State values from STATE_MACHINE.md v2.7
 - Error codes from ERROR_CODES_SOT.md v2.1
-- Field names from DATA_SCHEMA.md v5.2
+- Field names from DATA_SCHEMA.md v5.3
 - Invariant checks (INV-001/002/003)
 """
 
 def check_state_machine_compliance(changed_files):
     """
-    Check if code uses states defined in STATE_MACHINE.md v2.6
+    Check if code uses states defined in STATE_MACHINE.md v2.7
     """
     violations = []
     allowed_states = load_sot_states('docs/sot/STATE_MACHINE.md')
@@ -993,7 +993,7 @@ def check_state_machine_compliance(changed_files):
                 'file': file,
                 'type': 'STATE_MACHINE',
                 'invalid_states': list(invalid_states),
-                'message': f'States not in STATE_MACHINE.md v2.6: {invalid_states}'
+                'message': f'States not in STATE_MACHINE.md v2.7: {invalid_states}'
             })
 
     return violations
@@ -1095,7 +1095,7 @@ class DailyReportService:
         Submit daily report for trend check.
 
         SoT References:
-        - STATE_MACHINE.md v2.6 §8.2: draft → raw_submitted
+        - STATE_MACHINE.md v2.7 §8.2: draft → raw_submitted
         - BUSINESS_RULES.md v4.1 BR-RPT-001: Submission validation
         - MASTER.md v4.4 INV-002: Terminal state immutability
         - ERROR_CODES_SOT.md v2.1: VAL-001, STATE-001
@@ -1117,10 +1117,10 @@ class DailyReportService:
                 message=f"Cannot modify report in terminal state {report.status}"
             )
 
-        # INV-003: State transition validation (STATE_MACHINE.md v2.6 §8.2)
+        # INV-003: State transition validation (STATE_MACHINE.md v2.7 §8.2)
         self._validate_transition(report.status, 'raw_submitted')
 
-        # Update report (DATA_SCHEMA.md v5.2 §3.3.1)
+        # Update report (DATA_SCHEMA.md v5.3 §3.3.1)
         report.status = 'raw_submitted'
         report.raw_spend = request.raw_spend
         report.raw_conversions = request.raw_conversions
@@ -1131,7 +1131,7 @@ class DailyReportService:
 
     def _validate_transition(self, current: str, target: str):
         """
-        Validate state transition per STATE_MACHINE.md v2.6 §8.2.
+        Validate state transition per STATE_MACHINE.md v2.7 §8.2.
 
         Allowed transitions:
         draft → raw_submitted
@@ -1169,11 +1169,11 @@ import { FC } from 'react';
  * Report status badge component
  *
  * SoT References:
- * - STATE_MACHINE.md v2.6 §8: 8-state lifecycle
+ * - STATE_MACHINE.md v2.7 §8: 8-state lifecycle
  * - FRONTEND_DEVELOPMENT_RULES.md §9.2: Status badge colors
  */
 
-// STATE_MACHINE.md v2.6 §8: Daily report status types
+// STATE_MACHINE.md v2.7 §8: Daily report status types
 type ReportStatus =
   | 'raw_submitted'
   | 'trend_pending'
@@ -1228,7 +1228,7 @@ class TestDailyReportService:
     Test DailyReportService
 
     SoT References:
-    - STATE_MACHINE.md v2.6 §8.2: 8-state lifecycle
+    - STATE_MACHINE.md v2.7 §8.2: 8-state lifecycle
     - BUSINESS_RULES.md v4.1 BR-RPT-001: Submission validation
     - MASTER.md v4.4 INV-002: Terminal state immutability
     """
@@ -1237,7 +1237,7 @@ class TestDailyReportService:
         """
         Test successful report submission.
 
-        SoT: STATE_MACHINE.md v2.6 §8.2
+        SoT: STATE_MACHINE.md v2.7 §8.2
         Transition: draft → raw_submitted
         """
         service = DailyReportService(db_session)
@@ -1249,10 +1249,10 @@ class TestDailyReportService:
             )
         )
 
-        # STATE_MACHINE.md v2.6: Expected state after submission
+        # STATE_MACHINE.md v2.7: Expected state after submission
         assert result.status == 'raw_submitted'
 
-        # DATA_SCHEMA.md v5.2 §3.3.1: Fields updated
+        # DATA_SCHEMA.md v5.3 §3.3.1: Fields updated
         assert result.raw_spend == 1000.0
         assert result.raw_conversions == 50
         assert result.submitted_at is not None
@@ -1278,7 +1278,7 @@ class TestDailyReportService:
         """
         Test INV-003: State transition validation.
 
-        SoT: STATE_MACHINE.md v2.6 §8.2
+        SoT: STATE_MACHINE.md v2.7 §8.2
         Invalid transition: final_confirmed → draft
         Expected error: STATE-001 (ERROR_CODES_SOT.md v2.1)
         """
@@ -1297,7 +1297,7 @@ class TestDailyReportService:
 
 **Do's**:
 ✅ Query SoT documents before coding
-✅ Use exact SoT versions (STATE_MACHINE.md v2.6, not "latest")
+✅ Use exact SoT versions (STATE_MACHINE.md v2.7, not "latest")
 ✅ Reference business rule IDs in code (BR-RPT-001)
 ✅ Include invariant checks in Service layer (INV-001/002/003)
 ✅ Use standardized error codes (ERROR_CODES_SOT.md v2.1)
@@ -1403,9 +1403,9 @@ class TestDailyReportService:
 - [ ] Inline SoT comments for critical logic
 
 ### SoT Compliance
-- [ ] States from STATE_MACHINE.md v2.6
+- [ ] States from STATE_MACHINE.md v2.7
 - [ ] Error codes from ERROR_CODES_SOT.md v2.1
-- [ ] Field names from DATA_SCHEMA.md v5.2
+- [ ] Field names from DATA_SCHEMA.md v5.3
 - [ ] Business rules followed (BR-XXX-001)
 - [ ] Invariants enforced (INV-001/002/003)
 - [ ] Permissions from AUTH_SPEC.md v2.0
@@ -1457,7 +1457,7 @@ class TestDailyReportService:
 ```bash
 # Agent command
 /sc:brainstorm "Approve Topup Request" feature
-  - Query STATE_MACHINE.md v2.6 for topup_requests.status
+  - Query STATE_MACHINE.md v2.7 for topup_requests.status
   - Extract business rules from BUSINESS_RULES.md v4.1
   - Check permissions from AUTH_SPEC.md v2.0
   - Identify error codes from ERROR_CODES_SOT.md v2.1
@@ -1469,7 +1469,7 @@ class TestDailyReportService:
 
 ### SoT Research
 
-**STATE_MACHINE.md v2.6 §5**:
+**STATE_MACHINE.md v2.7 §5**:
 - Current state: pending_review
 - Target state: finance_approve
 - Valid transition: pending_review → finance_approve
@@ -1478,7 +1478,7 @@ class TestDailyReportService:
 - BR-TOP-002: Only finance role can approve topups
 - BR-TOP-003: Approver cannot be the requester
 
-**DATA_SCHEMA.md v5.2 §3.4.1**:
+**DATA_SCHEMA.md v5.3 §3.4.1**:
 - Table: topup_requests
 - Fields: id, status, requested_by, approved_by, approved_at
 
@@ -1504,9 +1504,9 @@ class TestDailyReportService:
 ```bash
 # Agent command
 /sc:implement TopupService.approve_topup()
-  - SoT: STATE_MACHINE.md v2.6 §5 (pending_review → finance_approve)
+  - SoT: STATE_MACHINE.md v2.7 §5 (pending_review → finance_approve)
   - Rules: BR-TOP-002 (finance only), BR-TOP-003 (no self-approval)
-  - Schema: DATA_SCHEMA.md v5.2 §3.4.1
+  - Schema: DATA_SCHEMA.md v5.3 §3.4.1
   - Errors: ERROR_CODES_SOT.md v2.1 (VAL-001, STATE-001, BIZ-001)
   - Include: Unit tests (≥90% coverage)
 ```
@@ -1529,7 +1529,7 @@ class TopupService:
         Approve topup request.
 
         SoT References:
-        - STATE_MACHINE.md v2.6 §5: pending_review → finance_approve
+        - STATE_MACHINE.md v2.7 §5: pending_review → finance_approve
         - BUSINESS_RULES.md v4.1 BR-TOP-002: Finance role required
         - BUSINESS_RULES.md v4.1 BR-TOP-003: No self-approval
         - ERROR_CODES_SOT.md v2.1: VAL-001, STATE-001, BIZ-001
@@ -1556,10 +1556,10 @@ class TopupService:
                 message="Cannot approve own topup request"
             )
 
-        # STATE_MACHINE.md v2.6 §5: Validate transition
+        # STATE_MACHINE.md v2.7 §5: Validate transition
         self._validate_transition(topup.status, 'finance_approve')
 
-        # Update topup (DATA_SCHEMA.md v5.2 §3.4.1)
+        # Update topup (DATA_SCHEMA.md v5.3 §3.4.1)
         topup.status = 'finance_approve'
         topup.approved_by = approver_id
         topup.approved_at = datetime.utcnow()
@@ -1568,7 +1568,7 @@ class TopupService:
         return topup
 
     def _validate_transition(self, current: str, target: str):
-        """Validate topup state transition (STATE_MACHINE.md v2.6 §5)"""
+        """Validate topup state transition (STATE_MACHINE.md v2.7 §5)"""
         allowed = {
             'draft': ['pending_review'],
             'pending_review': ['finance_approve', 'rejected'],
@@ -1605,7 +1605,7 @@ class TestTopupServiceApprove:
     """
     Test TopupService.approve_topup()
 
-    SoT: STATE_MACHINE.md v2.6 §5, BUSINESS_RULES.md v4.1 BR-TOP-002/003
+    SoT: STATE_MACHINE.md v2.7 §5, BUSINESS_RULES.md v4.1 BR-TOP-002/003
     """
 
     def test_approve_topup_success(self, db_session, pending_topup, finance_user):
@@ -1617,7 +1617,7 @@ class TestTopupServiceApprove:
             approver_role='finance'
         )
 
-        # STATE_MACHINE.md v2.6 §5
+        # STATE_MACHINE.md v2.7 §5
         assert result.status == 'finance_approve'
         assert result.approved_by == finance_user.id
         assert result.approved_at is not None
@@ -1692,7 +1692,7 @@ router = APIRouter(prefix="/api/v1/topups", tags=["topups"])
     response_model=TopupResponse,
     status_code=200,
     summary="Approve topup request",
-    description="Approve topup request (finance role only). STATE_MACHINE.md v2.6 §5: pending_review → finance_approve"
+    description="Approve topup request (finance role only). STATE_MACHINE.md v2.7 §5: pending_review → finance_approve"
 )
 async def approve_topup(
     topup_id: int,
@@ -1705,7 +1705,7 @@ async def approve_topup(
     SoT References:
     - API_SOT.md v9.3: POST /api/v1/topups/{id}/approve
     - AUTH_SPEC.md v2.0: topup:approve permission (finance role)
-    - STATE_MACHINE.md v2.6 §5: pending_review → finance_approve
+    - STATE_MACHINE.md v2.7 §5: pending_review → finance_approve
     """
     return service.approve_topup(
         topup_id=topup_id,
@@ -1738,7 +1738,7 @@ async def approve_topup(
 
 # Refactor command
 /sc:refactor backend/services/legacy_daily_report.py --sot-align
-  - Replace custom states with STATE_MACHINE.md v2.6 states
+  - Replace custom states with STATE_MACHINE.md v2.7 states
   - Replace custom errors with ERROR_CODES_SOT.md v2.1 codes
   - Add INV-002 check (terminal state immutability)
   - Update tests to match refactored code
@@ -1766,9 +1766,9 @@ async def approve_topup(
 
 **Agent Query Pattern**:
 ```
-1. STATE_MACHINE.md v2.6 → Status definitions (raw_submitted, trend_pending, etc.)
+1. STATE_MACHINE.md v2.7 → Status definitions (raw_submitted, trend_pending, etc.)
    ↓
-2. DATA_SCHEMA.md v5.2 → Table schemas (DailyReport fields)
+2. DATA_SCHEMA.md v5.3 → Table schemas (DailyReport fields)
    ↓
 3. BUSINESS_RULES.md v4.1 → Validation rules (BR-RPT-001)
    ↓
@@ -1778,7 +1778,7 @@ async def approve_topup(
    ↓
 6. AUTH_SPEC.md v2.0 → Permissions (daily_report:submit)
    ↓
-7. LEDGER_SOT.md v1.1 → Accounting rules (if finance-related)
+7. LEDGER_SOT.md v1.2 → Accounting rules (if finance-related)
 ```
 
 **Agent validates in reverse priority**: If conflict, higher-priority SoT wins.

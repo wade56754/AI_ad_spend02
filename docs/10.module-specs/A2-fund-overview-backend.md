@@ -39,7 +39,7 @@
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
 | DATA_SCHEMA.md | v5.3 | §3.4.1, §3.4.5 | topup_requests, receivable 表结构 |
-| LEDGER_SOT.md | v1.1 | §2.4 | 余额唯一真相源原则 |
+| LEDGER_SOT.md | v1.2 | §2.4 | 余额唯一真相源原则 |
 | BUSINESS_RULES.md | v4.1 | BR-FIN-* | 资金计算规则 |
 | ERROR_CODES_SOT.md | v2.1 | FUND_*, AUTH_* | 错误码 |
 | API_SOT.md | v9.3 | §5 | API 规范 |

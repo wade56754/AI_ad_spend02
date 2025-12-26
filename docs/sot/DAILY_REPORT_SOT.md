@@ -53,9 +53,9 @@
 AI_AD_SYSTEM 文档体系
 │
 ├─ MASTER_SPEC.md v1.1         ← 系统架构总纲、全局规则
-├─ DATA_SCHEMA.md v5.2         ← daily_reports 表结构的唯一来源
-├─ STATE_MACHINE.md v2.6       ← 粉数确认状态机的唯一来源
-├─ LEDGER_SOT.md v1.1          ← 双账本逻辑的唯一来源
+├─ DATA_SCHEMA.md v5.3         ← daily_reports 表结构的唯一来源
+├─ STATE_MACHINE.md v2.7       ← 粉数确认状态机的唯一来源
+├─ LEDGER_SOT.md v1.2          ← 双账本逻辑的唯一来源
 ├─ BUSINESS_RULES.md v4.1      ← 业务规则的唯一来源
 ├─ ERROR_CODES_SOT.md v2.1     ← 错误码定义的唯一来源
 ├─ AUTH_SPEC.md v2.0           ← 权限控制的唯一来源
@@ -73,8 +73,8 @@ AI_AD_SYSTEM 文档体系
 
 | 领域 | 唯一真相源 | 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
-| **数据库字段** | DATA_SCHEMA.md v5.2 | 字段名/类型/约束以 DATA_SCHEMA 为准 | `conversions_raw` 字段类型 |
-| **业务状态** | STATE_MACHINE.md v2.6 | 状态枚举/流转以 STATE_MACHINE 为准 | 8 状态粉数确认状态机 |
+| **数据库字段** | DATA_SCHEMA.md v5.3 | 字段名/类型/约束以 DATA_SCHEMA 为准 | `conversions_raw` 字段类型 |
+| **业务状态** | STATE_MACHINE.md v2.7 | 状态枚举/流转以 STATE_MACHINE 为准 | 8 状态粉数确认状态机 |
 | **错误码** | ERROR_CODES_SOT.md v2.1 | 错误码/HTTP 状态以 ERROR_CODES 为准 | `TREND_001` 趋势异常 |
 | **三数据流逻辑** | DAILY_REPORT_SOT.md (本文档) | raw/real/final 分离规则以本文档为准 | conversions_final 计费 |
 | **风控规则** | DAILY_REPORT_SOT.md (本文档) | TF-001/002/003 规则以本文档为准 | 粉数骤降 50% |
@@ -143,7 +143,7 @@ graph TD
 
 ### 3.1 daily_reports 表字段职责
 
-**引用**: DATA_SCHEMA.md v5.2 - 第 3.3.1 节
+**引用**: DATA_SCHEMA.md v5.3 - 第 3.3.1 节
 
 | 字段分类 | 字段列表 | 职责说明 |
 |---------|---------|---------|
@@ -210,7 +210,7 @@ graph LR
 
 ### 4.2 raw_conversions / raw_spend 定义
 
-**引用**: STATE_MACHINE.md v2.6 - 第 8.4 节
+**引用**: STATE_MACHINE.md v2.7 - 第 8.4 节
 
 | 属性 | 定义 |
 |-----|------|
@@ -248,7 +248,7 @@ graph LR
 
 ### 4.4 conversions_final 定义
 
-**引用**: LEDGER_SOT.md v1.1 - 第 7 章
+**引用**: LEDGER_SOT.md v1.2 - 第 7 章
 
 | 属性 | 定义 |
 |-----|------|
@@ -316,7 +316,7 @@ graph LR
 
 ### 5.1 状态清单
 
-**引用**: STATE_MACHINE.md v2.6 - 第 8.1 节
+**引用**: STATE_MACHINE.md v2.7 - 第 8.1 节
 
 | 状态 | 说明 | 触发条件 | 角色权限 | 可修改字段 |
 |-----|------|---------|---------|-----------|
@@ -347,7 +347,7 @@ graph LR
 
 ### 5.3 状态间允许的流转（白名单）
 
-**引用**: STATE_MACHINE.md v2.6 - 第 8.2 节
+**引用**: STATE_MACHINE.md v2.7 - 第 8.2 节
 
 ```python
 "daily_reports.status": {
@@ -370,7 +370,7 @@ graph LR
 
 ### 5.4 终态说明（final_locked）
 
-**引用**: STATE_MACHINE.md v2.6 - 第 8.8 节
+**引用**: STATE_MACHINE.md v2.7 - 第 8.8 节
 
 | 属性 | 说明 |
 |-----|------|
@@ -527,7 +527,7 @@ daily_report.version = 6
 
 ### 8.1 趋势判断触发条件
 
-**引用**: STATE_MACHINE.md v2.6 - 第 8.3 节
+**引用**: STATE_MACHINE.md v2.7 - 第 8.3 节
 
 | 规则编号 | 规则名称 | 判断逻辑 | 触发后果 |
 |---------|---------|---------|---------|
@@ -571,7 +571,7 @@ daily_report.version = 6
 
 ### 9.1 final_locked 后的修正路径
 
-**引用**: STATE_MACHINE.md v2.6 - 第 8.8 节
+**引用**: STATE_MACHINE.md v2.7 - 第 8.8 节
 
 ```mermaid
 flowchart TD
@@ -632,7 +632,7 @@ flowchart TD
 
 ### 10.1 哪个阶段触发 PROJECT ledger 记账
 
-**引用**: LEDGER_SOT.md v1.1 - 第 7 章
+**引用**: LEDGER_SOT.md v1.2 - 第 7 章
 
 | 状态 | 触发 Ledger | entry_type | 金额计算 |
 |-----|------------|-----------|---------|
@@ -676,7 +676,7 @@ def transition_to_final_locked(daily_report_id: int):
 
 ### 10.2 哪个阶段触发 SUPPLIER ledger 记账
 
-**引用**: LEDGER_SOT.md v1.1 - 第 7 章
+**引用**: LEDGER_SOT.md v1.2 - 第 7 章
 
 | 状态 | 触发 Ledger | entry_type | 金额计算 |
 |-----|------------|-----------|---------|

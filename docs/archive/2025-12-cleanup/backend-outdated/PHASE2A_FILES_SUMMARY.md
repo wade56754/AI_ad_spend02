@@ -232,7 +232,7 @@ EOF
   git commit -m "feat(db): Phase 2A - 升级时间字段为 TIMESTAMPTZ
 
   - 修复 7 个表共 14 个时间字段
-  - 符合 DATA_SCHEMA.md v5.0 § 1.1 规范
+  - 符合 DATA_SCHEMA.md v5.3 § 1.1 规范
   - 所有字段从 TIMESTAMP 升级为 TIMESTAMPTZ
   - 完全可逆，数据无丢失
 
@@ -281,7 +281,7 @@ Phase 2A 成功后：
      - account_alerts.severity: 枚举值修复
 
 3. **最终目标**
-   - 实现与 DATA_SCHEMA.md v5.0 的 **100% 符合**
+   - 实现与 DATA_SCHEMA.md v5.3 的 **100% 符合**
    - 完成 Phase 2 全部迁移
 
 ---

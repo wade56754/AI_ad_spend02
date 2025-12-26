@@ -98,7 +98,7 @@
 | **PROJECT** | 项目收入账本 | `project_id` | `REVENUE`, `REVERSAL` | `revenue = conversions_final × unit_price` |
 | **SUPPLIER** | 供应商成本账本 | `supplier_id` | `COST`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL` | `cost = real_spend + fee` |
 
-**引用**: LEDGER_SOT.md v1.1、DATA_SCHEMA.md v5.2 §3.4.4
+**引用**: LEDGER_SOT.md v1.2、DATA_SCHEMA.md v5.3 §3.4.4
 
 ### 1.4 Phase 边界说明（MASTER v4.4 对齐）
 
@@ -1707,7 +1707,7 @@ def check_trend_risk(report: DailyReport):
 **引用**:
 - 业务规则: BR-RPT-004（终态保护）, BR-RPT-005（计费锁定）
 - 数据表: DATA_SCHEMA.md 3.3.1, 3.4.4节
-- 双账本: LEDGER_SOT.md v1.1
+- 双账本: LEDGER_SOT.md v1.2
 
 #### 权限
 
@@ -2095,7 +2095,7 @@ with db.begin():
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.4.4节
-- 双账本: LEDGER_SOT.md v1.1
+- 双账本: LEDGER_SOT.md v1.2
 - 业务规则: BR-FIN-005（双写一致性）
 
 ---
@@ -2301,7 +2301,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | GET | `/api/v1/reconciliations/adjustments/{adjustment_id}` | 获取调整详情 | `admin`, `finance` | - | implemented |
 | POST | `/api/v1/reconciliations/adjustments/{adjustment_id}/execute` | 执行调整 | `admin` | - | implemented |
 
-**对账状态机**: `draft` → `pending_review` → `approved` → `completed` (或 `needs_adjustment` → `approved` → `completed`)（来自 STATE_MACHINE.md v2.6 第11.1节）
+**对账状态机**: `draft` → `pending_review` → `approved` → `completed` (或 `needs_adjustment` → `approved` → `completed`)（来自 STATE_MACHINE.md v2.7 第11.1节）
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.5节
@@ -2324,12 +2324,12 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | POST | `/api/v1/transfers/{transfer_id}/reject` | 拒绝申请 | `finance`, `admin` | → `rejected` | implemented |
 | POST | `/api/v1/transfers/{transfer_id}/complete` | 完成迁移 | `admin` | `approved` → `completed` | implemented |
 
-**迁移状态机**: `draft` → `pending_approval` → `approved` → `completed` (或 `rejected`)（来自 STATE_MACHINE.md v2.6 第12章）
+**迁移状态机**: `draft` → `pending_approval` → `approved` → `completed` (或 `rejected`)（来自 STATE_MACHINE.md v2.7 第12章）
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.4.6节 `transfer_requests`
 - 状态机: STATE_MACHINE.md 第12章
-- 账本规则: LEDGER_SOT.md v1.1 (TRANSFER_OUT/TRANSFER_IN)
+- 账本规则: LEDGER_SOT.md v1.2 (TRANSFER_OUT/TRANSFER_IN)
 
 ---
 
@@ -2350,7 +2350,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 **引用**:
 - 数据表: DATA_SCHEMA.md `suppliers` 表
-- 账本规则: LEDGER_SOT.md v1.1 (SUPPLIER 账本)
+- 账本规则: LEDGER_SOT.md v1.2 (SUPPLIER 账本)
 
 ---
 
@@ -2372,7 +2372,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | POST | `/api/v1/settlements/{settlement_id}/cancel` | 取消结算 | `admin` | → `cancelled` | implemented |
 
 **引用**:
-- 账本规则: LEDGER_SOT.md v1.1 (支付记录生成账本分录)
+- 账本规则: LEDGER_SOT.md v1.2 (支付记录生成账本分录)
 
 ---
 
@@ -2577,16 +2577,16 @@ ROLE_ALIASES = {
 }
 ```
 
-#### 13.1.2 状态枚举（严格对齐 STATE_MACHINE.md v2.6）
+#### 13.1.2 状态枚举（严格对齐 STATE_MACHINE.md v2.7）
 
-⚠️ **强制约束**: 所有状态枚举必须严格对齐 [STATE_MACHINE.md v2.6](./STATE_MACHINE.md) 定义，禁止使用未在下方列出的旧状态值。任何状态流转必须遵循 STATE_MACHINE.md 中的合法流转白名单。
+⚠️ **强制约束**: 所有状态枚举必须严格对齐 [STATE_MACHINE.md v2.7](./STATE_MACHINE.md) 定义，禁止使用未在下方列出的旧状态值。任何状态流转必须遵循 STATE_MACHINE.md 中的合法流转白名单。
 
-**项目状态** (STATE_MACHINE.md v2.6 第5章):
+**项目状态** (STATE_MACHINE.md v2.7 第5章):
 ```python
 PROJECT_STATUS = Literal["draft", "active", "suspended", "archived"]
 ```
 
-**日报状态** (STATE_MACHINE.md v2.6 第8章):
+**日报状态** (STATE_MACHINE.md v2.7 第8章):
 ```python
 DAILY_REPORT_STATUS = Literal[
     "raw_submitted",
@@ -2600,7 +2600,7 @@ DAILY_REPORT_STATUS = Literal[
 ]
 ```
 
-**充值状态** (STATE_MACHINE.md v2.6 第9章):
+**充值状态** (STATE_MACHINE.md v2.7 第9章):
 ```python
 TOPUP_STATUS = Literal[
     "draft",
@@ -2613,7 +2613,7 @@ TOPUP_STATUS = Literal[
 ]
 ```
 
-**对账状态** (STATE_MACHINE.md v2.6 第11章):
+**对账状态** (STATE_MACHINE.md v2.7 第11章):
 ```python
 RECONCILIATION_STATUS = Literal[
     "draft",
@@ -2624,7 +2624,7 @@ RECONCILIATION_STATUS = Literal[
 ]
 ```
 
-**迁移状态** (STATE_MACHINE.md v2.6 第12章):
+**迁移状态** (STATE_MACHINE.md v2.7 第12章):
 ```python
 TRANSFER_STATUS = Literal[
     "draft",
@@ -2750,7 +2750,7 @@ try {
 - 集成三数据流（raw/real/final）和双账本（PROJECT/SUPPLIER）概念
 - 新增8状态粉数确认状态机完整流程
 - 新增红冲修正机制详细说明
-- 所有字段严格对齐 DATA_SCHEMA.md v5.2
-- 所有状态流转严格对齐 STATE_MACHINE.md v2.6
+- 所有字段严格对齐 DATA_SCHEMA.md v5.3
+- 所有状态流转严格对齐 STATE_MACHINE.md v2.7
 - 所有错误码严格对齐 ERROR_CODES_SOT.md v2.1
 - 所有业务规则严格对齐 BUSINESS_RULES.md v4.1

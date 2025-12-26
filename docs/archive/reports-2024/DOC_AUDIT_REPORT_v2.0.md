@@ -32,14 +32,14 @@
 |----|---------|---------|------|
 | P0-1 | MASTER.md 自身版本引用矛盾 (v3.5 vs v3.6) | 第 608 行 v3.5 → v3.6 | ✅ 已修复 |
 | P0-2 | BUSINESS_RULES.md 版本不一致 (v3.1 vs v3.2) | 确认 v3.2 正确，更新所有引用 | ✅ 已修复 |
-| P0-3 | DATA_SCHEMA.md 引用错误文档名 (MASTER_SPEC.md) | 改为 MASTER.md v3.6 | ✅ 已修复 |
+| P0-3 | DATA_SCHEMA.md 引用错误文档名 (MASTER_SPEC.md) | 改为 MASTER.md v4.4 | ✅ 已修复 |
 
 ### P1 级问题（全部已修复）
 
 | ID | 问题描述 | 修复操作 | 状态 |
 |----|---------|---------|------|
 | P1-1 | SOT_FREEZE_MANIFEST 中 BUSINESS_RULES.md 版本过时 | v3.1 → v3.2 | ✅ 已修复 |
-| P1-2 | STATE_MACHINE.md 引用 MASTER_SPEC.md | 改为 MASTER.md v3.6 | ✅ 已修复 |
+| P1-2 | STATE_MACHINE.md 引用 MASTER_SPEC.md | 改为 MASTER.md v4.4 | ✅ 已修复 |
 | P1-3 | BUSINESS_RULES.md 中 MASTER.md 版本引用 | 确认 v3.6 正确 | ✅ 正确无需修复 |
 | P1-4 | DATA_SCHEMA.md 中 BUSINESS_RULES.md 版本引用 | v3.1 → v3.2 | ✅ 已修复 |
 | P1-5 | SoT 文档 status 字段不一致 | 全部改为 frozen | ✅ 已修复 |
@@ -51,11 +51,11 @@
 | 文件 | 修改内容 |
 |------|---------|
 | `docs/1.overview/MASTER.md` | 第 608 行版本引用 v3.5 → v3.6 |
-| `docs/2.sot/DATA_SCHEMA.md` | 1. 第 11 行 MASTER_SPEC.md → MASTER.md v3.6<br>2. 第 13 行 BUSINESS_RULES.md v3.1 → v3.2<br>3. status: active → frozen |
-| `docs/2.sot/STATE_MACHINE.md` | 1. 第 10 行 MASTER_SPEC.md → MASTER.md v3.6<br>2. status: active → frozen |
+| `docs/2.sot/DATA_SCHEMA.md` | 1. 第 11 行 MASTER_SPEC.md → MASTER.md v4.4<br>2. 第 13 行 BUSINESS_RULES.md v4.1 → v3.2<br>3. status: active → frozen |
+| `docs/2.sot/STATE_MACHINE.md` | 1. 第 10 行 MASTER_SPEC.md → MASTER.md v4.4<br>2. status: active → frozen |
 | `docs/2.sot/BUSINESS_RULES.md` | status: active → frozen |
-| `docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md` | BUSINESS_RULES.md v3.1 → v3.2 |
-| `CLAUDE.md` | SoT 裁判链中 BUSINESS_RULES.md v3.1 → v3.2 |
+| `docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md` | BUSINESS_RULES.md v4.1 → v3.2 |
+| `CLAUDE.md` | SoT 裁判链中 BUSINESS_RULES.md v4.1 → v3.2 |
 
 ---
 

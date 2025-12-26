@@ -15,7 +15,7 @@
 | 维度 | 评分 | 说明 |
 |------|------|------|
 | **核心文档对齐度** | 🟢 85% | MASTER.md v4.4 + BUSINESS_FLOW_MANAGEMENT + MVP_PHASE_DESIGN 三核心文档已对齐 |
-| **SoT 文档对齐度** | 🟡 60% | STATE_MACHINE.md v2.6 存在 Phase 2 完整状态机，与 Phase 1 简化版本不一致 |
+| **SoT 文档对齐度** | 🟡 60% | STATE_MACHINE.md v2.7 存在 Phase 2 完整状态机，与 Phase 1 简化版本不一致 |
 | **AI 防幻觉合规** | 🔴 30% | AI_ANTI_HALLUCINATION_GUARD.md 与 MASTER.md 定义完全冲突 |
 | **Phase 1 边界清晰度** | 🟢 90% | MASTER.md 明确定义 Phase 1/Phase 2 边界，但代码中未完全实现 Feature Flag |
 
@@ -36,7 +36,7 @@
 | 风险编号 | 风险描述 | 后果 | 优先级 |
 |---------|---------|------|--------|
 | **P0-1** | AI_ANTI_HALLUCINATION_GUARD.md 定义 6 角色（pitcher/supervisor/ceo），MASTER.md 定义 7 角色（project_owner/finance） | AI 生成代码使用错误的角色，导致权限混乱 | P0 |
-| **P0-2** | STATE_MACHINE.md v2.6 定义 8 状态日报流程（Phase 2），MASTER.md §9 INV-003 也定义 8 状态（Phase 2），但 Phase 1 应使用 3 状态简化版 | 开发团队实现 Phase 2 功能（阻断/强制），违反 Phase 1 "照亮不问责" 原则 | P0 |
+| **P0-2** | STATE_MACHINE.md v2.7 定义 8 状态日报流程（Phase 2），MASTER.md §9 INV-003 也定义 8 状态（Phase 2），但 Phase 1 应使用 3 状态简化版 | 开发团队实现 Phase 2 功能（阻断/强制），违反 Phase 1 "照亮不问责" 原则 | P0 |
 | **P0-3** | DATA_SCHEMA.md 定义 5 角色（media_buyer/data_operator），MASTER.md 定义 7 角色 | 数据库角色枚举与文档不一致，角色映射混乱 | P0 |
 | **P1-1** | CLAUDE.md v3.3 引用 AI_ANTI_HALLUCINATION_GUARD.md 作为"防幻觉护栏"，但该文档与 MASTER.md 冲突 | Claude Code 生成代码时使用错误规范 | P1 |
 | **P1-2** | 缺少 receivable 表定义（MASTER.md §4.5.5 新增） | "累计回款"指标无法实现 | P1 |
@@ -73,11 +73,11 @@ Tier 1: 架构宪法（MASTER.md 裁判链 §8.1 Priority 0-2）
 └── MVP_PHASE_DESIGN.md                     [对齐 ✅]
 
 Tier 2: 单源真相 SoT（Priority 3-9）
-├── STATE_MACHINE.md v2.6                   [部分冲突 ⚠️ Phase 边界]
-├── DATA_SCHEMA.md v5.2                     [部分冲突 ⚠️ 角色+字段]
-├── LEDGER_SOT.md v1.1                      [对齐 ✅ Phase 2]
-├── BUSINESS_RULES.md v3.2                  [对齐 ✅]
-├── API_SOT.md v9.0                         [未审查]
+├── STATE_MACHINE.md v2.7                   [部分冲突 ⚠️ Phase 边界]
+├── DATA_SCHEMA.md v5.3                     [部分冲突 ⚠️ 角色+字段]
+├── LEDGER_SOT.md v1.2                      [对齐 ✅ Phase 2]
+├── BUSINESS_RULES.md v4.1                  [对齐 ✅]
+├── API_SOT.md v9.3                         [未审查]
 ├── ERROR_CODES_SOT.md v2.1                 [未审查]
 └── AUTH_SPEC.md v2.0                       [未审查]
 
@@ -138,7 +138,7 @@ Tier 3: 开发指南
 | 规则 | MASTER.md 定义 | 违反文档 | 违反内容 |
 |------|---------------|---------|----------|
 | AH-01 禁止假设数据一致 | §7 AH-01: 遇到数据缺失，标记"待确认" | - | ✅ 无违反 |
-| AH-02 禁止自动做管理裁决 | §7 AH-02: 禁止生成自动拒绝/暂停/终止代码 | STATE_MACHINE.md v2.6 | ⚠️ 8状态机包含自动流转 |
+| AH-02 禁止自动做管理裁决 | §7 AH-02: 禁止生成自动拒绝/暂停/终止代码 | STATE_MACHINE.md v2.7 | ⚠️ 8状态机包含自动流转 |
 | AH-03 禁止引入 SoT 未定义的概念 | §7 AH-03: 发现缺失→停止→询问 | AI_GUARD | ❌ 自定义 pitchers/ledger 表 |
 | AH-04 必须遵循 Phase 1 软性原则 | §7 AH-04: Phase 1 = 提示+高亮+记录 | - | ⚠️ 代码未验证 |
 | AH-05 遇到歧义必须停止并询问 | §7 AH-05: 停止→列出歧义→询问 | - | ✅ 原则明确 |
@@ -152,7 +152,7 @@ Tier 3: 开发指南
 | 冲突点 | 冲突文档/位置 | MASTER 裁决依据 | 结论 | 补丁/归档策略 |
 |--------|--------------|-----------------|------|--------------|
 | **P0-1: 角色定义冲突** | AI_ANTI_HALLUCINATION_GUARD.md 定义 6 角色（pitcher, supervisor, ceo, finance, account_manager, admin） | MASTER.md §2.4 定义 7 角色（ceo, project_owner, finance, supervisor, pitcher, account_manager, admin） | 以 MASTER.md 为准 | **删除 AI_GUARD 或完全重写第 5 节** |
-| **P0-2: Phase 边界缺失** | STATE_MACHINE.md v2.6 第 8 章定义完整 8 状态机（Phase 2），但未标注 Phase 1 使用简化版 | MASTER.md §9 INV-003: Phase 1 简化为 3 状态（待审核→已审核→已锁定），Phase 2 完整 8 状态 | Phase 1 禁止实现 8 状态机 | **STATE_MACHINE.md 新增 Phase 1 简化版章节** |
+| **P0-2: Phase 边界缺失** | STATE_MACHINE.md v2.7 第 8 章定义完整 8 状态机（Phase 2），但未标注 Phase 1 使用简化版 | MASTER.md §9 INV-003: Phase 1 简化为 3 状态（待审核→已审核→已锁定），Phase 2 完整 8 状态 | Phase 1 禁止实现 8 状态机 | **STATE_MACHINE.md 新增 Phase 1 简化版章节** |
 | **P0-3: 角色映射混乱** | DATA_SCHEMA.md §1.1 定义 5 角色（admin, finance, data_operator, account_manager, media_buyer），与 MASTER.md 不一致 | MASTER.md §2.4 定义 7 角色 | 角色枚举必须统一 | **DATA_SCHEMA.md 角色枚举更新为 7 角色** + 建立映射表 |
 | **P0-4: SoT 表定义缺失** | DATA_SCHEMA.md 无 receivable 表定义 | MASTER.md §4.5.5 定义 receivable 表（回款 SoT） | 必须补充 | **DATA_SCHEMA.md 补充 receivable 表定义** |
 | **P0-5: AI 配置文档冲突** | CLAUDE.md v3.3 引用 AI_ANTI_HALLUCINATION_GUARD.md 作为护栏 | MASTER.md §7 定义 AH-01~AH-05 防幻觉原则 | AI_GUARD 与 MASTER 冲突，不可并存 | **CLAUDE.md 移除 AI_GUARD 引用** |
@@ -480,7 +480,7 @@ class UserRole(str, Enum):
 | 2 | 实现 8 状态日报流程 | PHASE2_DAILY_REPORT_REQUIRED = true |
 | 3 | 实现充值强制审批 | PHASE2_TOPUP_ENFORCEMENT = true |
 | 4 | 实现结算锁定 | PHASE2_SETTLEMENT_LOCK = true |
-| 5 | 启用双账本架构 | LEDGER_SOT.md v1.1 完整实现 |
+| 5 | 启用双账本架构 | LEDGER_SOT.md v1.2 完整实现 |
 
 ---
 
@@ -576,7 +576,7 @@ class UserRole(str, Enum):
 
 ### 决策 3: Phase 1 状态机 3 状态 vs 8 状态
 
-**问题**: STATE_MACHINE.md v2.6 定义 8 状态，但 MASTER.md §9 INV-003 说 Phase 1 简化为 3 状态
+**问题**: STATE_MACHINE.md v2.7 定义 8 状态，但 MASTER.md §9 INV-003 说 Phase 1 简化为 3 状态
 
 **决策**: **STATE_MACHINE.md 同时包含两个版本**
 

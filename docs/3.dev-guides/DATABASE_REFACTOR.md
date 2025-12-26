@@ -3,7 +3,7 @@
 > **文档性质**: 数据库重构规划与实施指南
 > **版本**: v1.0
 > **status**: draft
-> **基准**: CORE_MODULES.md v1.0, DATA_SCHEMA.md v5.2, PROJECT.md v1.3
+> **基准**: CORE_MODULES.md v1.0, DATA_SCHEMA.md v5.3, PROJECT.md v1.3
 > **owner**: wade
 > **created**: 2025-12-22
 
@@ -689,5 +689,5 @@ class PitcherService:
 
 **文档版本**: v1.0
 **创建日期**: 2025-12-22
-**基准文档**: CORE_MODULES.md v1.0, DATA_SCHEMA.md v5.2
+**基准文档**: CORE_MODULES.md v1.0, DATA_SCHEMA.md v5.3
 **维护者**: 系统架构师

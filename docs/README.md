@@ -166,13 +166,13 @@ When technical conflicts arise, follow this priority order:
 MASTER.md v4.4 (System Constitution)
   ↓
 SoT Layer Freeze v2.6 (Technical Truth)
-  ├── STATE_MACHINE.md v2.6 (State transitions)
-  ├── DATA_SCHEMA.md v5.2 (Database schema)
+  ├── STATE_MACHINE.md v2.7 (State transitions)
+  ├── DATA_SCHEMA.md v5.3 (Database schema)
   ├── API_SOT.md v9.3 (API contracts)
   ├── ERROR_CODES_SOT.md v2.1 (Error codes)
-  ├── BUSINESS_RULES.md v4.0 (Business logic)
-  ├── AUTH_SPEC.md v2.1 (Authentication)
-  └── LEDGER_SOT.md v1.1 (Ledger system)
+  ├── BUSINESS_RULES.md v4.1 (Business logic)
+  ├── AUTH_SPEC.md v2.0 (Authentication)
+  └── LEDGER_SOT.md v1.2 (Ledger system)
   ↓
 Dev-Guides Layer Freeze vFinal (Workflows)
   ├── API_DEVELOPMENT_FLOW.md (API dev process)
@@ -302,7 +302,7 @@ ai-ad-doc-fixer 修复 docs/3.dev-guides/API_DEVELOPMENT_FLOW.md 中的 P1-001 �
 ### Unfreeze Procedures
 
 **Conditions for unfreeze**:
-1. Major upstream layer changes (e.g., MASTER.md v4.0 released)
+1. Major upstream layer changes (e.g., MASTER.md v4.4 released)
 2. Critical P0 defects discovered in production
 3. Major technology stack changes (e.g., migration to AWS)
 4. Security vulnerabilities requiring immediate fixes

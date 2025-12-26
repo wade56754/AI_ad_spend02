@@ -197,7 +197,7 @@ d:\git\1108\scripts\run-login-verification.bat
 ### 符合的规范
 - ✅ AUTH_SPEC.md v2.0 (认证流程)
 - ✅ ERROR_CODES_SOT.md v2.1 (错误码)
-- ✅ API_SOT.md v9.0 (API路径和响应格式)
+- ✅ API_SOT.md v9.3 (API路径和响应格式)
 
 ### 不符合的部分
 - ❌ **LoginRequest模型与前端不一致** (本次发现的问题)

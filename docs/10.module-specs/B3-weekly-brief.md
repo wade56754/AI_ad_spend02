@@ -732,5 +732,5 @@ def check_weekly_brief_deadline():
 ---
 
 **维护者**: AI 广告代投系统开发团队
-**关联文档**: MASTER.md v4.4, DATA_SCHEMA.md v5.2
+**关联文档**: MASTER.md v4.4, DATA_SCHEMA.md v5.3
 **实现状态**: 待开发 - 功能尚未实现，本规格书为开发指导文档

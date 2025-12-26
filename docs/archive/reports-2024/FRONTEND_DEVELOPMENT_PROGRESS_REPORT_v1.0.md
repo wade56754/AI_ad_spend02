@@ -2,7 +2,7 @@
 
 > **报告日期**: 2025-12-07  
 > **基准文档**: FRONTEND_FREEZE_MANIFEST_v1.0.md  
-> **API 规范**: API_SOT.md v9.0  
+> **API 规范**: API_SOT.md v9.3  
 > **状态**: 开发中
 
 ---
@@ -62,8 +62,8 @@ frontend/
 
 | 文件 | 状态 | 功能 | SoT 对齐 |
 |------|------|------|----------|
-| `src/lib/api/apiFetch.ts` | ✅ Frozen | 统一 fetch 封装 | API_SOT.md v9.0 §4 |
-| `src/lib/api/apiTypes.ts` | ✅ Frozen | 响应类型定义 | API_SOT.md v9.0 §4 |
+| `src/lib/api/apiFetch.ts` | ✅ Frozen | 统一 fetch 封装 | API_SOT.md v9.3 §4 |
+| `src/lib/api/apiTypes.ts` | ✅ Frozen | 响应类型定义 | API_SOT.md v9.3 §4 |
 | `src/lib/api/apiErrors.ts` | ✅ Frozen | 错误处理 | ERROR_CODES_SOT.md v2.1 |
 | `src/lib/api/queryKeys.ts` | ✅ Frozen | TanStack Query Keys | - |
 
@@ -83,7 +83,7 @@ frontend/
 | **Reconciliation** | `reconciliationApi.ts` | 12+ 端点 | ✅ 100% |
 
 **API 端点对齐状态**:
-- ✅ 所有端点路径与 `API_SOT.md v9.0` 对齐
+- ✅ 所有端点路径与 `API_SOT.md v9.3` 对齐
 - ✅ 请求/响应类型与 SoT 定义一致
 - ✅ 状态机转换端点完整实现
 
@@ -112,7 +112,7 @@ frontend/
 - ✅ 批量操作支持
 - ✅ 统计查询
 
-**SoT 对齐**: STATE_MACHINE.md v2.6 §8, API_SOT.md v9.0 §9
+**SoT 对齐**: STATE_MACHINE.md v2.7 §8, API_SOT.md v9.3 §9
 
 #### Topups 模块 ✅
 
@@ -122,7 +122,7 @@ frontend/
 - ✅ 审批流程支持
 - ✅ 权限控制（AUTH_SPEC.md v2.0）
 
-**SoT 对齐**: TOPUP_SOT.md v1.0, API_SOT.md v9.0 §10
+**SoT 对齐**: TOPUP_SOT.md v1.0, API_SOT.md v9.3 §10
 
 #### Ledger 模块 ✅ (只读)
 
@@ -132,7 +132,7 @@ frontend/
 - ✅ 交易记录查询
 - ⚠️ **只读设计**（前端不创建账本记录）
 
-**SoT 对齐**: LEDGER_SOT.md v1.1, API_SOT.md v9.0 §11
+**SoT 对齐**: LEDGER_SOT.md v1.2, API_SOT.md v9.3 §11
 
 #### Reconciliation 模块 ✅
 
@@ -142,7 +142,7 @@ frontend/
 - ✅ 状态机流转（draft → closed）
 - ✅ 批量对账支持
 
-**SoT 对齐**: RECONCILIATION_SOT.md v1.0, API_SOT.md v9.0 §12
+**SoT 对齐**: RECONCILIATION_SOT.md v1.0, API_SOT.md v9.3 §12
 
 ---
 

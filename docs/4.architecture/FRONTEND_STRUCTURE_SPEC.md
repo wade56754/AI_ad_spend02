@@ -14,7 +14,7 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal
 Define the authoritative frontend project structure for the AI Ad Spend Management System, ensuring:
 
 - **Domain-Driven Design**: Feature-based modular architecture aligned with backend domains
-- **SoT Compliance**: UI components strictly follow STATE_MACHINE.md v2.6 and ERROR_CODES_SOT.md v2.1
+- **SoT Compliance**: UI components strictly follow STATE_MACHINE.md v2.7 and ERROR_CODES_SOT.md v2.1
 - **Type Safety**: Full TypeScript coverage with Zod runtime validation
 - **Maintainability**: Clear separation of concerns with colocated feature code
 - **Testability**: Built-in testing infrastructure at all levels
@@ -27,7 +27,7 @@ Define the authoritative frontend project structure for the AI Ad Spend Manageme
 - API client architecture (apiFetch pattern)
 - Error handling flow mapped to ERROR_CODES_SOT.md v2.1
 - Data fetching strategy with TanStack Query
-- UI state mapping to 8-state daily report machine (STATE_MACHINE.md v2.6)
+- UI state mapping to 8-state daily report machine (STATE_MACHINE.md v2.7)
 - Module organization for core domains (topups, daily_reports, ledger, reconciliation)
 - Shared components and hooks library
 
@@ -270,7 +270,7 @@ export const dailyReportsApi = {
   create: (data: DailyReportCreateRequest) =>
     apiFetch<DailyReport>('/api/v1/daily-reports', { method: 'POST', body: data }),
 
-  // POST /api/v1/daily-reports/:id/submit (STATE_MACHINE.md v2.6 Section 8.2)
+  // POST /api/v1/daily-reports/:id/submit (STATE_MACHINE.md v2.7 Section 8.2)
   submit: (id: number) =>
     apiFetch<DailyReport>(`/api/v1/daily-reports/${id}/submit`, { method: 'POST' }),
 };
@@ -308,7 +308,7 @@ export const ERROR_CODES = {
   BIZ_301: '状态转换非法',
   BIZ_302: '操作冲突',
 
-  // STATE errors (STATE_MACHINE.md v2.6)
+  // STATE errors (STATE_MACHINE.md v2.7)
   STATE_001: '非法状态转换',
   STATE_002: '终态不可修改',
   STATE_409: '并发冲突',
@@ -437,16 +437,16 @@ export function useDailyReportSubmit() {
 }
 ```
 
-## 8. UI State Mapping (STATE_MACHINE.md v2.6)
+## 8. UI State Mapping (STATE_MACHINE.md v2.7)
 
 ### 8.1 Daily Report 8-State Machine
 
-**Reference**: STATE_MACHINE.md v2.6 Section 8
+**Reference**: STATE_MACHINE.md v2.7 Section 8
 
 ```typescript
 // Location: modules/daily-reports/types/dailyReport.types.ts
 
-// 8-state machine (STATE_MACHINE.md v2.6 Section 8.1)
+// 8-state machine (STATE_MACHINE.md v2.7 Section 8.1)
 export type DailyReportStatus =
   | 'raw_submitted'      // 投手提交原始粉数
   | 'trend_pending'      // 等待趋势风控检查
@@ -543,7 +543,7 @@ export function DailyReportStatusBadge({ status }: DailyReportStatusBadgeProps) 
 ```typescript
 // Location: modules/daily-reports/utils/stateTransitions.ts
 
-// Valid transitions per STATE_MACHINE.md v2.6 Section 8.2
+// Valid transitions per STATE_MACHINE.md v2.7 Section 8.2
 const VALID_TRANSITIONS: Record<DailyReportStatus, DailyReportStatus[]> = {
   raw_submitted: ['trend_pending'],
   trend_pending: ['trend_ok', 'trend_flagged'],

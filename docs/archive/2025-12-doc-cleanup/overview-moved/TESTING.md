@@ -90,7 +90,7 @@ TESTING.md 定义系统测试策略与质量约束：
 | 前置条件校验 | MUST | 每个状态转换的必要条件 |
 | 终态保护 | MUST | final_locked 后拒绝任何修改 |
 
-> 引用: STATE_MACHINE.md v2.6 §8
+> 引用: STATE_MACHINE.md v2.7 §8
 
 ### 3.2 必测状态转换路径
 
@@ -162,7 +162,7 @@ class TestStateMachine:
 | 账本只追加 | MUST | 验证 UPDATE/DELETE 被拒绝 |
 | 红冲机制 | MUST | REVERSAL 正确抵消原记录 |
 
-> 引用: MASTER.md INV-001, LEDGER_SOT.md v1.1
+> 引用: MASTER.md INV-001, LEDGER_SOT.md v1.2
 
 ### 4.2 账本隔离测试
 

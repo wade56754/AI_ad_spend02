@@ -459,7 +459,7 @@ elif user_role == "account_manager":
 
 ## 4. 状态机问题（STATE-*）
 
-> **引用**: STATE_MACHINE.md v2.6, ERROR_CODES_SOT.md v2.1 4.6节
+> **引用**: STATE_MACHINE.md v2.7, ERROR_CODES_SOT.md v2.1 4.6节
 
 ### 4.1 STATE_400: 非法状态流转
 
@@ -1376,7 +1376,7 @@ const handleSubmit = async (data: DailyReportCreateData) => {
 
 ## 9. 趋势风控问题（TREND-*）
 
-> **引用**: STATE_MACHINE.md v2.6 8.3节, ERROR_CODES_SOT.md v2.1 4.7节
+> **引用**: STATE_MACHINE.md v2.7 8.3节, ERROR_CODES_SOT.md v2.1 4.7节
 
 ### 9.1 TREND_001: 趋势风控触发
 

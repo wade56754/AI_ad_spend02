@@ -29,7 +29,7 @@
 ### 1. 后端: 项目状态机定义与 SoT 不一致
 - **文件**: `backend/models/enums.py:31-46`
 - **问题**: 代码定义 `planning, active, paused, completed, cancelled`
-- **SoT 规范**: STATE_MACHINE.md v2.6 定义 `draft, active, suspended, archived`
+- **SoT 规范**: STATE_MACHINE.md v2.7 定义 `draft, active, suspended, archived`
 - **修复**: 按 SoT 修改枚举定义
 
 ### 2. 后端: 趋势风控服务使用非标准异常
@@ -50,7 +50,7 @@
 - **修复**: 移除 MOCK 逻辑或使用环境变量控制
 
 ### 5. 文档: 项目状态机代码与文档严重冲突
-- **问题**: 代码与 STATE_MACHINE.md v2.6 定义完全不同
+- **问题**: 代码与 STATE_MACHINE.md v2.7 定义完全不同
 - **修复**: 代码对齐 SoT 或提交 RFC 修改文档
 
 ### 6. 文档: 核心 SoT 文档路径问题
@@ -149,7 +149,7 @@ export async function apiUpload<T = any>(
 class ProjectStatus(str, Enum):
     """
     项目状态枚举
-    必须与 STATE_MACHINE.md v2.6 §5 保持一致
+    必须与 STATE_MACHINE.md v2.7 §5 保持一致
     """
     DRAFT = "draft"          # 草稿
     ACTIVE = "active"        # 进行中
@@ -232,11 +232,11 @@ export const CACHE_CONFIG = {
 ## 合规性检查清单
 
 ### SoT 合规性
-- [x] 日报 8 状态机符合 STATE_MACHINE.md v2.6
+- [x] 日报 8 状态机符合 STATE_MACHINE.md v2.7
 - [ ] ⚠️ 项目状态机需修复
 - [x] 错误码体系完整 (67 个)
 - [ ] ⚠️ 缺少 STATE_/TREND_ 类定义
-- [x] 账本操作符合 LEDGER_SOT.md v1.1
+- [x] 账本操作符合 LEDGER_SOT.md v1.2
 - [x] 未发现直接修改 balance 违规
 
 ### 架构合规性

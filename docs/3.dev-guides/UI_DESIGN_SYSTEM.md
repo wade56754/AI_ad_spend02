@@ -556,7 +556,7 @@ Caption: text-xs (12px)
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|----------|------|
 | v0.1 | 2025-11-27 | 初始框架（TODO 占位） | wade |
-| v2.0 | 2025-12-09 | **全面重写**：<br>- 完善颜色系统（品牌色、语义色、状态色）<br>- 对齐 STATE_MACHINE.md v2.6 状态颜色<br>- 添加排版系统详细规范<br>- 添加间距系统（4px 网格）<br>- 添加组件库规范（shadcn/ui）<br>- 添加图标系统（lucide-react）<br>- 添加响应式断点<br>- 添加主题系统<br>- 添加交互模式规范<br>- 添加 SoT 对齐规则 | Claude |
+| v2.0 | 2025-12-09 | **全面重写**：<br>- 完善颜色系统（品牌色、语义色、状态色）<br>- 对齐 STATE_MACHINE.md v2.7 状态颜色<br>- 添加排版系统详细规范<br>- 添加间距系统（4px 网格）<br>- 添加组件库规范（shadcn/ui）<br>- 添加图标系统（lucide-react）<br>- 添加响应式断点<br>- 添加主题系统<br>- 添加交互模式规范<br>- 添加 SoT 对齐规则 | Claude |
 | v2.1 | 2025-12-21 | **增强数据可视化系统**：<br>- Section 2.4 重写为语义化图表颜色 Token<br>- 添加 CSS 变量支持 Light/Dark 模式<br>- 添加 Tailwind chart 颜色配置<br>- 添加扩展色板（secondary/tertiary/quaternary）<br>- 添加向后兼容迁移指南 | Claude |
 
 ---

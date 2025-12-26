@@ -2,7 +2,7 @@
 
 > **面向对象**: Claude Code / Cursor 等 AI 编程助手
 > **核心原则**: 能抄不写，能复用不开发，最小代码量
-> **SoT 对齐**: MASTER.md v4.4, PROJECT.md v1.3, AUTH_SPEC.md v2.0, STATE_MACHINE.md v2.6
+> **SoT 对齐**: MASTER.md v4.4, PROJECT.md v1.3, AUTH_SPEC.md v2.0, STATE_MACHINE.md v2.7
 > **文档状态**: 已审查校验，包含待实现功能标注 ⚠️
 
 ---
@@ -633,7 +633,7 @@ export function PageGuard({ children }: { children: React.ReactNode }) {
 
 ## 第四章 状态常量 ⚠️ 待实现
 
-> **SoT 来源**: STATE_MACHINE.md v2.6
+> **SoT 来源**: STATE_MACHINE.md v2.7
 >
 > **注意**: 以下配置文件尚未创建，需要按此规范实现
 
@@ -644,7 +644,7 @@ export function PageGuard({ children }: { children: React.ReactNode }) {
 
 /**
  * 日报状态枚举
- * SoT: STATE_MACHINE.md v2.6 §8
+ * SoT: STATE_MACHINE.md v2.7 §8
  */
 export const DAILY_REPORT_STATUS = {
   RAW_SUBMITTED: 'raw_submitted',

@@ -175,7 +175,7 @@ baseline: MASTER.md v4.4, SoT Freeze v2.6
 class DailyReport:
     """日报聚合根 - 管理完整的粉数确认流程
 
-    ⚠️ 字段定义严格遵循 DATA_SCHEMA.md v5.2 第3.3.1节
+    ⚠️ 字段定义严格遵循 DATA_SCHEMA.md v5.3 第3.3.1节
     所有字段与数据库表 daily_reports 完全对齐
     """
 
@@ -213,7 +213,7 @@ class DailyReport:
     ctr: Optional[float]  # Click-Through Rate (DECIMAL 12,4)
     roi: Optional[float]  # Return on Investment (DECIMAL 12,4)
 
-    # State Machine (状态机 - 严格遵循 STATE_MACHINE.md v2.6 第8章)
+    # State Machine (状态机 - 严格遵循 STATE_MACHINE.md v2.7 第8章)
     status: DailyReportStatus (Value Object)
         ├─ current_state: Literal[
             "raw_submitted",
@@ -289,7 +289,7 @@ class DailyReport:
 class DailyReportLockedEvent(DomainEvent):
     """日报锁定事件 - 触发账本记录创建
 
-    ⚠️ 状态流转严格遵循 STATE_MACHINE.md v2.6 第8章
+    ⚠️ 状态流转严格遵循 STATE_MACHINE.md v2.7 第8章
     触发条件: status = 'final_confirmed' → 'final_locked'
     参考: STATE_MACHINE.md 第8.2节 - 状态流转规则
     """

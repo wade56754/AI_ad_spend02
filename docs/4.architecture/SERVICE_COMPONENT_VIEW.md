@@ -35,7 +35,7 @@ Level 4: Code (代码实现) - 不在架构文档范围
 **引用**:
 - **MASTER.md v4.4**: 系统架构宪法，定义三大不可变量
 - **API_DEVELOPMENT_FLOW.md**: 6步开发流程
-- **DATA_SCHEMA.md v5.2**: 数据库表结构
+- **DATA_SCHEMA.md v5.3**: 数据库表结构
 - **DDD_API_ARCHITECTURE.md**: 三层架构设计
 
 ## 2. Container Diagram (C4 Level 2 - 容器视图)
@@ -203,7 +203,7 @@ backend/
 **技术栈**:
 - **数据库**: PostgreSQL 15
 - **托管服务**: Supabase (包含 Auth + Storage + Realtime)
-- **Schema**: 详见 DATA_SCHEMA.md v5.2
+- **Schema**: 详见 DATA_SCHEMA.md v5.3
 
 **核心表分类**:
 
@@ -243,7 +243,7 @@ SessionLocal = sessionmaker(
 )
 ```
 
-**引用**: DATA_SCHEMA.md v5.2
+**引用**: DATA_SCHEMA.md v5.3
 
 #### 2.2.4 Task Queue (任务队列 - 规划中)
 
@@ -736,7 +736,7 @@ class DailyReportResponse(BaseModel):
         from_attributes = True
 ```
 
-**引用**: DATA_SCHEMA.md v5.2
+**引用**: DATA_SCHEMA.md v5.3
 
 ### 4.3 Frontend Component Architecture (前端组件架构)
 
@@ -939,7 +939,7 @@ graph TD
 - **§5 Service层**: Service职责定义
 - **§6 三层架构原则**: Router → Service → Repository
 
-### 7.3 References to DATA_SCHEMA.md v5.2
+### 7.3 References to DATA_SCHEMA.md v5.3
 
 - **§3.3.1 daily_reports表**: DailyReport模型定义
 - **§3.4.4 ledger_entries表**: LedgerEntry模型定义

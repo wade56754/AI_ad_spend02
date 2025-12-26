@@ -956,5 +956,5 @@ draft/approved → cancelled
 **关联文档**:
 - D1-monthly-settlement.md (前端规格书)
 - MASTER.md v4.4 §4.5.4 (盈亏计算公式)
-- LEDGER_SOT.md v1.1 (账本规则)
+- LEDGER_SOT.md v1.2 (账本规则)
 - settlement.types.ts (前端类型定义)

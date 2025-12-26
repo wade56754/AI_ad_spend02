@@ -97,7 +97,7 @@
 
 ## 🔧 详细变更记录
 
-### 1. DATA_SCHEMA.md v5.2
+### 1. DATA_SCHEMA.md v5.3
 
 **变更类型**: P0 字段名统一
 
@@ -111,7 +111,7 @@
 **影响范围**: 日报模块、SYSTEM_OVERVIEW、API_SOT
 **迁移要求**: 数据库迁移脚本需同步更新
 
-### 2. STATE_MACHINE.md v2.6
+### 2. STATE_MACHINE.md v2.7
 
 **变更类型**: P0 版本引用统一
 
@@ -122,7 +122,7 @@
 **影响范围**: 8个SoT文档引用 STATE_MACHINE 的位置
 **迁移要求**: 无（仅文档层变更）
 
-### 3. API_SOT.md v3.0
+### 3. API_SOT.md v9.3
 
 **变更类型**: P1 补充状态机枚举定义
 
@@ -171,7 +171,7 @@ DailyReportStatus = Literal[
 **影响范围**: 文档示例理解
 **迁移要求**: 无
 
-### 5. BUSINESS_RULES.md v3.1
+### 5. BUSINESS_RULES.md v4.1
 
 **变更类型**: P1 归档路径标注
 
@@ -196,11 +196,11 @@ DailyReportStatus = Literal[
 
 **变更内容**:
 ```diff
-- DATA_SCHEMA.md v5.1
-+ DATA_SCHEMA.md v5.2
+- DATA_SCHEMA.md v5.3
++ DATA_SCHEMA.md v5.3
 
-- STATE_MACHINE.md v2.5
-+ STATE_MACHINE.md v2.6
+- STATE_MACHINE.md v2.7
++ STATE_MACHINE.md v2.7
 ```
 
 **影响范围**: 11个SoT文档的引用声明
@@ -322,12 +322,12 @@ DailyReportStatus = Literal[
 
 ### 代码对齐（待执行）
 
-- [ ] 🔲 `backend/models/*.py` 字段名对齐 DATA_SCHEMA.md v5.2
-- [ ] 🔲 `backend/enums.py` 状态枚举对齐 STATE_MACHINE.md v2.6
+- [ ] 🔲 `backend/models/*.py` 字段名对齐 DATA_SCHEMA.md v5.3
+- [ ] 🔲 `backend/enums.py` 状态枚举对齐 STATE_MACHINE.md v2.7
 - [ ] 🔲 `backend/core/error_codes.py` 错误码对齐 ERROR_CODES_SOT.md v2.1
-- [ ] 🔲 `backend/routers/*.py` 路由对齐 API_SOT.md v3.0
-- [ ] 🔲 `frontend/types/*.ts` Schema 对齐 API_SOT.md v3.0
-- [ ] 🔲 数据库迁移脚本对齐 DATA_SCHEMA.md v5.2
+- [ ] 🔲 `backend/routers/*.py` 路由对齐 API_SOT.md v9.3
+- [ ] 🔲 `frontend/types/*.ts` Schema 对齐 API_SOT.md v9.3
+- [ ] 🔲 数据库迁移脚本对齐 DATA_SCHEMA.md v5.3
 
 ### 测试覆盖（待执行）
 

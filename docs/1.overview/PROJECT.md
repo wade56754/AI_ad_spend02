@@ -473,11 +473,11 @@ Freeze 是治理机制，不是建议。
 
 | 文档 | 版本 | 用途 |
 |------|------|------|
-| MASTER.md | v3.3 | 系统不可变量 |
-| STATE_MACHINE.md | v2.6 | 状态定义与转换 |
-| DATA_SCHEMA.md | v5.2 | 表结构与字段 |
-| BUSINESS_RULES.md | v3.1 | 业务规则 |
-| LEDGER_SOT.md | v1.1 | 账本规则 |
+| MASTER.md | v4.4 | 系统不可变量 |
+| STATE_MACHINE.md | v2.7 | 状态定义与转换 |
+| DATA_SCHEMA.md | v5.3 | 表结构与字段 |
+| BUSINESS_RULES.md | v4.1 | 业务规则 |
+| LEDGER_SOT.md | v1.2 | 账本规则 |
 | AUTH_SPEC.md | v2.0 | 认证授权 |
 | DAILY_REPORT_SOT.md | v1.0 | 日报规则 |
 | TRANSFER_SOT.md | v1.0 | 转账规则 |

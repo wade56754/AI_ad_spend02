@@ -29,7 +29,7 @@
 - `topups` - 单表充值设计（已确认为空表，0 条记录）
 - `ledgers` - 单表账本设计（已确认为空表，0 条记录）
 
-**目标架构**（来自 DATA_SCHEMA.md v5.0）：
+**目标架构**（来自 DATA_SCHEMA.md v5.3）：
 - **充值模块**：3 表设计
   - `topup_requests` - 充值申请单
   - `topup_transactions` - 充值到账流水
@@ -52,7 +52,7 @@ ledgers: 0 条记录
 
 ### 关键发现 2：主键类型不一致
 
-**DATA_SCHEMA.md v5.0 定义**：
+**DATA_SCHEMA.md v5.3 定义**：
 - 核心业务表应使用 **BIGSERIAL** 主键
 
 **实际数据库现状**：
@@ -265,7 +265,7 @@ CREATE TABLE ledger_entries (
 
 ### 与 SoT 的差异
 
-**DATA_SCHEMA.md v5.0 定义**：
+**DATA_SCHEMA.md v5.3 定义**：
 - 核心业务表应使用 **BIGSERIAL** 主键
 
 **本次执行实际**：

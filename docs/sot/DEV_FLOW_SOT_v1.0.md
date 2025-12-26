@@ -253,8 +253,8 @@ black --check backend/services/{module}_service.py
 - 开发者: xxx
 
 ## 2. SoT 对齐
-- STATE_MACHINE.md v2.6: 状态 {states}
-- DATA_SCHEMA.md v5.2: 字段 {fields}
+- STATE_MACHINE.md v2.7: 状态 {states}
+- DATA_SCHEMA.md v5.3: 字段 {fields}
 - BUSINESS_RULES.md v4.1: 规则 {rules}
 
 ## 3. 变更清单

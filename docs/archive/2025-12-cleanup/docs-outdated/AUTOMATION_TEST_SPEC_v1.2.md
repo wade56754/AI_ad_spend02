@@ -569,7 +569,7 @@ class TestDailyReportSubmit:
     - submitted -> rejected (主管驳回)
 
     SOT 引用：
-    - STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
+    - STATE_MACHINE.md v2.7 第8章 (DailyReport 8状态机)
     - ERROR_CODES_SOT.md#DR_* (日报相关错误码)
     - DAILY_REPORT_SOT.md (粉数确认规则)
     """

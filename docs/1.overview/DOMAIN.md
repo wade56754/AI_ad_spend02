@@ -226,7 +226,7 @@ DOMAIN.md 是 SoT 体系的导航入口，职责如下：
 └─ permissions          (权限)
 ```
 
-> 引用: DATA_SCHEMA.md v5.2
+> 引用: DATA_SCHEMA.md v5.3
 
 ---
 

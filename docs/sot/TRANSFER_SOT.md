@@ -51,9 +51,9 @@
 AI_AD_SYSTEM 文档体系
 │
 ├─ MASTER_SPEC.md v1.1         ← 系统架构总纲、全局规则
-├─ DATA_SCHEMA.md v5.2         ← transfer_requests 表结构的唯一来源
-├─ STATE_MACHINE.md v2.6       ← Transfer 状态机的唯一来源
-├─ LEDGER_SOT.md v1.1          ← 双账本逻辑的唯一来源
+├─ DATA_SCHEMA.md v5.3         ← transfer_requests 表结构的唯一来源
+├─ STATE_MACHINE.md v2.7       ← Transfer 状态机的唯一来源
+├─ LEDGER_SOT.md v1.2          ← 双账本逻辑的唯一来源
 ├─ BUSINESS_RULES.md v4.1      ← 业务规则的唯一来源
 ├─ ERROR_CODES_SOT.md v2.1     ← 错误码定义的唯一来源
 ├─ AUTH_SPEC.md v2.0           ← 权限控制的唯一来源
@@ -71,11 +71,11 @@ AI_AD_SYSTEM 文档体系
 
 | 领域 | 唯一真相源 | 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
-| **数据库字段** | DATA_SCHEMA.md v5.2 | 字段名/类型/约束以 DATA_SCHEMA 为准 | `transfer_requests.request_no` 字段类型 |
-| **业务状态** | STATE_MACHINE.md v2.6 | 状态枚举/流转以 STATE_MACHINE 为准 | draft/approved/completed 状态机 |
+| **数据库字段** | DATA_SCHEMA.md v5.3 | 字段名/类型/约束以 DATA_SCHEMA 为准 | `transfer_requests.request_no` 字段类型 |
+| **业务状态** | STATE_MACHINE.md v2.7 | 状态枚举/流转以 STATE_MACHINE 为准 | draft/approved/completed 状态机 |
 | **错误码** | ERROR_CODES_SOT.md v2.1 | 错误码/HTTP 状态以 ERROR_CODES 为准 | `E-TRANS-004` 跨供应商迁移 |
 | **同/跨供应商规则** | TRANSFER_SOT.md (本文档) | 迁移规则以本文档为准 | 同 supplier 允许，跨 supplier 禁止 |
-| **双账本规则** | LEDGER_SOT.md v1.1 | TRANSFER_OUT/IN 规则以 LEDGER_SOT 为准 | entry_type 定义 |
+| **双账本规则** | LEDGER_SOT.md v1.2 | TRANSFER_OUT/IN 规则以 LEDGER_SOT 为准 | entry_type 定义 |
 | **权限控制** | AUTH_SPEC.md v2.0 | 角色权限以 AUTH_SPEC 为准 | account_manager 发起权限 |
 
 **冲突处理规则**:
@@ -137,7 +137,7 @@ flowchart LR
 
 ### 2.3 跨 supplier 迁移（禁止）
 
-**引用**: LEDGER_SOT.md v1.1 - 死号迁移章节
+**引用**: LEDGER_SOT.md v1.2 - 死号迁移章节
 
 **禁止条件**:
 ```python
@@ -181,7 +181,7 @@ graph TD
 
 ## 3. 数据模型 SoT（Mapping to DATA_SCHEMA）
 
-**引用**: DATA_SCHEMA.md v5.2
+**引用**: DATA_SCHEMA.md v5.3
 
 **说明**: 死号迁移功能需要 `transfer_requests` 表支持,但该表尚未在 DATA_SCHEMA.md 中定义。本章节定义了Transfer模块所需的数据模型概念,待DATA_SCHEMA.md补充表结构后需同步更新。
 
@@ -281,7 +281,7 @@ graph LR
 
 ### 4.5 迁移不可逆，如需修正必须通过调账
 
-**引用**: LEDGER_SOT.md v1.1 - 手工调账章节
+**引用**: LEDGER_SOT.md v1.2 - 手工调账章节
 
 | 规则 | 说明 |
 |-----|------|
@@ -302,7 +302,7 @@ graph LR
 
 ## 5. 状态机（State Machine）
 
-**引用**: STATE_MACHINE.md v2.6
+**引用**: STATE_MACHINE.md v2.7
 
 **说明**: Transfer状态机尚未在STATE_MACHINE.md中正式定义,本章节描述了预期的状态流转规则,待STATE_MACHINE.md补充后需同步对齐。
 
@@ -422,7 +422,7 @@ transfer_request.status = "approved"
 
 ### 6.3 源账户与目标账户余额调整必须在同一事务内完成
 
-**引用**: LEDGER_SOT.md v1.1 - 事务边界章节
+**引用**: LEDGER_SOT.md v1.2 - 事务边界章节
 
 | 规则 | 说明 |
 |-----|------|
@@ -496,7 +496,7 @@ transfer_request.status = "approved"
 
 ## 8. 双账本映射规则（Ledger Mapping）
 
-**引用**: LEDGER_SOT.md v1.1 - 第 10 章
+**引用**: LEDGER_SOT.md v1.2 - 第 10 章
 
 ### 8.1 死号迁移会产生两条 SUPPLIER 账本记录
 

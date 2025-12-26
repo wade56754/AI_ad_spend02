@@ -4,7 +4,7 @@ status: deprecated
 layer: dev-guide
 owner: wade
 last_reviewed: 2025-11-27
-baseline: SoT Freeze v1.0, MASTER.md v3.4
+baseline: SoT Freeze v1.0, MASTER.md v4.4
 replacement: BACKEND_DEV_GUIDE.md v1.0
 deprecated_date: 2025-11-27
 ---

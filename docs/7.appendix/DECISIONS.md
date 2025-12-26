@@ -953,8 +953,8 @@ MASTER.md → STATE_MACHINE.md → DATA_SCHEMA.md → BUSINESS_RULES.md
 
 **当前 Freeze 版本**:
 - MASTER.md v4.4 (ASDD Freeze v1.0)
-- STATE_MACHINE.md v2.6 (SoT Freeze v1.0)
-- DATA_SCHEMA.md v5.2
+- STATE_MACHINE.md v2.7 (SoT Freeze v1.0)
+- DATA_SCHEMA.md v5.3
 - API_SOT.md v9.3
 
 #### 理由

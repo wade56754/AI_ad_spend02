@@ -61,7 +61,7 @@
 ```typescript
 // 功能清单
 ✅ mockFetchResponse()             // Mock fetch 响应
-✅ mockApiSuccess()                // 成功响应（API_SOT.md v9.0 格式）
+✅ mockApiSuccess()                // 成功响应（API_SOT.md v9.3 格式）
 ✅ mockApiError()                  // 错误响应（ERROR_CODES_SOT.md v2.1 格式）
 ✅ mockPaginatedResponse()         // 分页响应
 ✅ setupFetchMock()                // 设置全局 fetch mock

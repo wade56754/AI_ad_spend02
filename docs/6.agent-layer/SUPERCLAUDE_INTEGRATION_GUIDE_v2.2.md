@@ -1559,7 +1559,7 @@ Phase 3: 验证
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  /sot-check 结果                                                         │
 ├─────────────────────────────────────────────────────────────────────────┤
-│  ❌ 违反 STATE_MACHINE.md v2.6 §8：                                      │
+│  ❌ 违反 STATE_MACHINE.md v2.7 §8：                                      │
 │     DailyReport 状态机明确定义了 8 状态：                                 │
 │     raw_submitted → trend_pending → trend_ok/trend_flagged              │
 │     → trend_resolved → final_pending → final_confirmed → final_locked  │
@@ -1573,7 +1573,7 @@ Phase 3: 验证
 ├─────────────────────────────────────────────────────────────────────────┤
 │  Resolution: SoT Override                                                │
 │  - 拒绝 SuperClaude 的合并建议                                           │
-│  - 在审查报告中记录：「该建议被 STATE_MACHINE.md v2.6 Override」         │
+│  - 在审查报告中记录：「该建议被 STATE_MACHINE.md v2.7 Override」         │
 │  - 保持现有 8 状态机不变                                                  │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1585,7 +1585,7 @@ Phase 3: 验证
   "conflict_id": "CONFLICT-DR-001",
   "source": "/sc:analyze",
   "suggestion": "合并 trend_pending 和 final_pending 为单一 pending 状态",
-  "sot_ref": "STATE_MACHINE.md v2.6 §8 DailyReport 状态机",
+  "sot_ref": "STATE_MACHINE.md v2.7 §8 DailyReport 状态机",
   "resolution": "SoT Override - 保持 8 状态机定义",
   "recorded_at": "2025-12-07T10:30:00Z"
 }
@@ -1876,8 +1876,8 @@ else:
 6. 使用 /sc:git 生成规范的提交消息
 
 当前 SoT 版本基线：
-- STATE_MACHINE.md v2.6
-- DATA_SCHEMA.md v5.2
+- STATE_MACHINE.md v2.7
+- DATA_SCHEMA.md v5.3
 - BUSINESS_RULES.md v4.1
 - API_SOT.md v9.3
 ```

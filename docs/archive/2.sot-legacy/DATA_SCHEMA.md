@@ -183,7 +183,7 @@
 | `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 项目单粉价格(Per Lead),用于计算粉数收入,公式: `revenue = conversions_final × unit_price` |
 | `settlement_type` VARCHAR(20) | DEFAULT 'fixed', CHECK IN ('fixed', 'tiered', 'markup'), 结算类型：fixed使用unit_price，tiered/markup使用settlement_rules |
 | `settlement_rules_id` BIGINT | FK → `settlement_rules.id`, 可空, 非fixed结算时关联的结算规则 |
-| `fulfillment_status` VARCHAR(20) | NOT NULL DEFAULT 'running', CHECK IN ('running', 'fulfilled'), 履约状态 (SoT: BUSINESS_RULES.md v4.6 BR-PROJ-006) |
+| `fulfillment_status` VARCHAR(20) | NOT NULL DEFAULT 'running', CHECK IN ('running', 'fulfilled'), 履约状态 (SoT: BUSINESS_RULES.md v4.1 BR-PROJ-006) |
 | `fulfillment_reason` VARCHAR(30) | 可空, CHECK IN ('spend_exhausted', 'client_stopped'), 履约结束原因 (SoT: BI-06) |
 | `fulfilled_at` TIMESTAMPTZ | 可空, 履约完成时间 (UTC) |
 | `start_date` / `end_date` DATE | | |
@@ -385,7 +385,7 @@
 
 索引：`idx_weekly_briefs_project`, `idx_weekly_briefs_week`, `idx_weekly_briefs_submitter`, `idx_weekly_briefs_status`, `idx_weekly_briefs_project_week`.
 
-SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状态机）
+SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.7 §4（周报状态机）
 
 ---
 
@@ -507,7 +507,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 #### 3.5.1 `reconciliation_batches`（implemented）
 
-字段：`id`, `batch_no` (UNIQUE), `project_id`, `status`（参考"对账批次状态机"，合法值: `draft/pending_review/approved/needs_adjustment/completed`，具体枚举以 STATE_MACHINE.md v2.6 为准）, `source`, `period_start`, `period_end`, `created_by`, `approved_by`, `created_at`, `updated_at`.
+字段：`id`, `batch_no` (UNIQUE), `project_id`, `status`（参考"对账批次状态机"，合法值: `draft/pending_review/approved/needs_adjustment/completed`，具体枚举以 STATE_MACHINE.md v2.7 为准）, `source`, `period_start`, `period_end`, `created_by`, `approved_by`, `created_at`, `updated_at`.
 
 #### 3.5.2 `reconciliation_details`（implemented）
 
@@ -657,7 +657,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 > **设计来源**: `PROFIT_SOT.md` v1.1
 > **OpenSpec Change**: `finance-profit-v1`
-> **依赖 SoT**: LEDGER_SOT.md v1.1（双账本模型）, STATE_MACHINE.md v2.6（粉数确认状态机）
+> **依赖 SoT**: LEDGER_SOT.md v1.2（双账本模型）, STATE_MACHINE.md v2.7（粉数确认状态机）
 
 #### 3.6.1 `profit_aggregates`（planned）
 
@@ -769,7 +769,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 #### 3.8.1 `company_expenses`（implemented）
 
-**说明**：公司级运营支出记录，不进入项目账本（LEDGER_SOT.md v1.1）。用于记录工资、服务费、汇率损益等非广告业务支出。
+**说明**：公司级运营支出记录，不进入项目账本（LEDGER_SOT.md v1.2）。用于记录工资、服务费、汇率损益等非广告业务支出。
 
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
@@ -793,7 +793,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 **索引**：`idx_company_expenses_category`, `idx_company_expenses_occurred_at`, `idx_company_expenses_status`, `idx_company_expenses_created_by`.
 
-**SoT Reference**: LEDGER_SOT.md v1.1 (不进入账本)
+**SoT Reference**: LEDGER_SOT.md v1.2 (不进入账本)
 
 
 ---
@@ -802,7 +802,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.6 §4（周报状�
 
 1. **唯一性**：`request_no`, `account_code`, `(report_date, ad_account_id)` 等必须建唯一索引并在模型层校验。  
 2. **组合索引**：针对高频过滤场景建立，如 `daily_reports(report_date, status)`、`topup_requests(project_id, status)`、`ledger_entries(project_id, occurred_at)`。  
-3. **CHECK 约束**：角色字段仅允许 7 个技术层角色值（ceo/admin/project_owner/finance/data_operator/account_manager/media_buyer）；业务层角色到技术层的映射见 AUTH_SPEC.md v2.1 §2.2；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
+3. **CHECK 约束**：角色字段仅允许 7 个技术层角色值（ceo/admin/project_owner/finance/data_operator/account_manager/media_buyer）；业务层角色到技术层的映射见 AUTH_SPEC.md v2.0 §2.2；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
 4. **外键一致性**：外键字段类型必须与被引用主键一致，迁移旧字段时需同步更新 FK 定义与索引。  
 5. **触发器**：`users` 使用 `update_users_updated_at`；其他表如需类似逻辑必须在本文件登记。
 

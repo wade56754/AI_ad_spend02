@@ -2,7 +2,7 @@
 
 > **DEPRECATED**: 本文档已废弃，请使用 [MASTER.md](MASTER.md) v3.4
 > **废弃日期**: 2025-11-25
-> **取代文档**: MASTER.md v3.4 (ASDD Freeze v1.0)
+> **取代文档**: MASTER.md v4.4 (ASDD Freeze v1.0)
 
 ---
 
@@ -35,4 +35,4 @@
 
 ---
 
-**NOTE**: This file has been archived. See MASTER.md v3.5 for current documentation.
+**NOTE**: This file has been archived. See MASTER.md v4.4 for current documentation.

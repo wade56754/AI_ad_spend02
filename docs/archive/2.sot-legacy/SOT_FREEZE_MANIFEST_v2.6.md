@@ -120,8 +120,8 @@ The layer is fully compliant with ASDD Freeze v1.0 and ready for operational dep
 
 **P1-12**: RECONCILIATION_SOT.md version reference mismatch
 - **File**: RECONCILIATION_SOT.md line 11
-- **Issue**: Referenced `LEDGER_SOT.md v2.0` but actual version is v1.1
-- **Fix Applied**: Corrected reference to `LEDGER_SOT.md v1.1`
+- **Issue**: Referenced `LEDGER_SOT.md v1.2` but actual version is v1.1
+- **Fix Applied**: Corrected reference to `LEDGER_SOT.md v1.2`
 - **Verification**: ✅ Confirmed cross-reference consistency
 
 **Final State**: 0 P1 issues
@@ -229,7 +229,7 @@ Health Score = 100 - (P0_count × 30) - (P1_count × 10) - (P2_count × 5)
 | Active SoT docs have `status: frozen` | ⚠️ PARTIAL | 1/10 completed (9 remaining to freeze) |
 | SoT version alignment | ✅ PASS | All cross-references verified |
 | No content modification | ✅ PASS | Only metadata/format changes applied |
-| Cross-reference consistency | ✅ PASS | LEDGER_SOT.md v1.1 reference corrected |
+| Cross-reference consistency | ✅ PASS | LEDGER_SOT.md v1.2 reference corrected |
 
 **Freeze Readiness**: ✅ **APPROVED** - All mandatory conditions satisfied (freeze status update in-progress)
 
@@ -297,13 +297,13 @@ The SoT Layer may be unfrozen only under the following conditions:
 
 ```
 docs/1.overview/ (Frozen v1.0 on 2025-11-27)
-    ├─ MASTER.md v3.4 → References "SoT Freeze v1.0"
+    ├─ MASTER.md v4.4 → References "SoT Freeze v1.0"
     ├─ PROJECT.md v1.2 → References "SoT Freeze v1.0"
-    └─ DOMAIN.md v1.0 → References "DATA_SCHEMA.md v5.2"
+    └─ DOMAIN.md v1.0 → References "DATA_SCHEMA.md v5.3"
          ▼
 docs/2.sot/ (Frozen v2.6 on 2025-11-27) ← THIS LAYER
-    ├─ STATE_MACHINE.md v2.6 (Frozen)
-    ├─ DATA_SCHEMA.md v5.2 (Frozen)
+    ├─ STATE_MACHINE.md v2.7 (Frozen)
+    ├─ DATA_SCHEMA.md v5.3 (Frozen)
     ├─ BUSINESS_RULES.md v4.1 (Frozen)
     ├─ API_SOT.md v9.3 (Frozen)
     └─ [8 more SoT documents] (Frozen)
@@ -315,11 +315,11 @@ docs/3.dev-guides/ (Not yet frozen)
 
 | Overview Doc | References SoT Doc | Version Locked |
 |--------------|-------------------|----------------|
-| MASTER.md v3.4 | SoT Freeze v1.0 | ✅ Yes |
+| MASTER.md v4.4 | SoT Freeze v1.0 | ✅ Yes |
 | PROJECT.md v1.2 | SoT Freeze v1.0 | ✅ Yes |
-| DOMAIN.md v1.0 | DATA_SCHEMA.md v5.2 | ✅ Yes |
+| DOMAIN.md v1.0 | DATA_SCHEMA.md v5.3 | ✅ Yes |
 | PATTERNS.md v1.0 | API_SOT.md v9.3 | ✅ Yes |
-| TESTING.md v1.0 | STATE_MACHINE.md v2.6 | ✅ Yes |
+| TESTING.md v1.0 | STATE_MACHINE.md v2.7 | ✅ Yes |
 
 **Layer Coupling**: ✅ Fully aligned
 
@@ -367,7 +367,7 @@ Issues Found:
 [P1-9] TRANSFER_SOT.md missing owner, last_reviewed, status metadata
 [P1-10] RECONCILIATION_SOT.md missing owner, last_reviewed, status metadata
 [P1-11] RLS_POLICIES_SOT.md missing owner, last_reviewed, status metadata
-[P1-12] RECONCILIATION_SOT.md line 11 references LEDGER_SOT.md v2.0 (actual: v1.1)
+[P1-12] RECONCILIATION_SOT.md line 11 references LEDGER_SOT.md v1.2 (actual: v1.1)
 [P2-1] RLS_POLICIES.md has last_reviewed: TODO
 
 Health Score: 0/100 (P1×12=120 exceeds maximum penalty)
@@ -390,7 +390,7 @@ Fix 1-11: Metadata Addition (11 files)
   - RLS_POLICIES_SOT.md: Added status: planned, owner: wade, last_reviewed: 2025-11-27
 
 Fix 12: Version Reference Correction
-  - RECONCILIATION_SOT.md line 11: Changed "LEDGER_SOT.md v2.0" to "LEDGER_SOT.md v1.1"
+  - RECONCILIATION_SOT.md line 11: Changed "LEDGER_SOT.md v1.2" to "LEDGER_SOT.md v1.2"
 
 Fix 13: Planned Status Update
   - RLS_POLICIES.md: Changed "last_reviewed: TODO" to "last_reviewed: 2025-11-27"
@@ -409,7 +409,7 @@ Metadata Verification:
 - status fields: 12/12 present (100%)
 
 Version Reference Verification:
-- LEDGER_SOT.md v1.1 cross-references: All consistent ✅
+- LEDGER_SOT.md v1.2 cross-references: All consistent ✅
 
 Issues Found: 0
 Health Score: 100/100

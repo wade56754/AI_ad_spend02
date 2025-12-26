@@ -6,9 +6,9 @@ owner: wade
 last_reviewed: 2025-12-26
 baseline:
   - MASTER.md v4.4
-  - STATE_MACHINE.md v2.6
-  - DATA_SCHEMA.md v5.2
-  - LEDGER_SOT.md v1.1
+  - STATE_MACHINE.md v2.7
+  - DATA_SCHEMA.md v5.3
+  - LEDGER_SOT.md v1.2
   - ERROR_CODES_SOT.md v2.1
 patch_type: constitutional
 ---
@@ -16,7 +16,7 @@ patch_type: constitutional
 # 业务规则大全 (Business Rules)
 
 > **版本**: v4.6 (宪法级增量补丁)
-> **基准**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
+> **基准**: MASTER.md v4.4, STATE_MACHINE.md v2.7, DATA_SCHEMA.md v5.3
 > **最后更新**: 2025-12-26
 > **补丁性质**: 预收款·履约·结算模型统一补丁
 
@@ -38,8 +38,8 @@ patch_type: constitutional
 当文档间存在冲突时，按以下优先级裁决：
 
 ```
-MASTER.md v4.4 > STATE_MACHINE.md v2.6 > DATA_SCHEMA.md v5.2
-> BUSINESS_RULES.md v4.6 > API_SOT.md v9.1 > ERROR_CODES_SOT.md v2.1
+MASTER.md v4.4 > STATE_MACHINE.md v2.7 > DATA_SCHEMA.md v5.3
+> BUSINESS_RULES.md v4.1 > API_SOT.md v9.3 > ERROR_CODES_SOT.md v2.1
 ```
 
 ### 1.3 角色定义 (7 角色)
@@ -76,7 +76,7 @@ MASTER.md v4.4 > STATE_MACHINE.md v2.6 > DATA_SCHEMA.md v5.2
 
 ### 1.5 系统不变量 (Business Invariants)
 
-来源：BUSINESS_RULES.md v4.6（宪法级补丁）
+来源：BUSINESS_RULES.md v4.1（宪法级补丁）
 
 系统不变量是跨模块的核心约束，任何代码实现都必须遵守。
 
@@ -622,7 +622,7 @@ def update_user(
 
 **规则描述**：状态机的终态不可回退到任何前置状态，修正只能通过红冲机制。
 
-**终态定义**（来源：STATE_MACHINE.md v2.6）：
+**终态定义**（来源：STATE_MACHINE.md v2.7）：
 
 | 实体 | 终态 | 说明 |
 |------|------|------|
@@ -672,7 +672,7 @@ def test_terminal_state_protection():
 
 **规则描述**：账本记录 (ledger_entries) 只能追加，禁止修改或删除已有记录。
 
-**来源**：MASTER.md v4.4 INV-001, LEDGER_SOT.md v1.1
+**来源**：MASTER.md v4.4 INV-001, LEDGER_SOT.md v1.2
 
 **设计原因**：
 - 保证财务数据完整性和可追溯性
@@ -761,12 +761,12 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 | BR-PROJ | 项目管理 | 6 | P0 | DATA_SCHEMA.md §2.2 |
 | BR-CHAN | 渠道管理 | 3 | P1 | DATA_SCHEMA.md §2.3 |
 | BR-ACCT | 账户管理 | 6 | P0 | DATA_SCHEMA.md §2.4 |
-| BR-FIN | 财务管理 | 7 | P0 | LEDGER_SOT.md v1.1 |
+| BR-FIN | 财务管理 | 7 | P0 | LEDGER_SOT.md v1.2 |
 | BR-RECON | 对账管理 | 4 | P1 | STATE_MACHINE.md §4 |
 | BR-RPT | 日报管理 | 8 | P0 | STATE_MACHINE.md §2 |
-| BR-DATA | 数据规则 | 6 | P0 | DATA_SCHEMA.md v5.2 |
-| BR-STL | 结算与履约（宪法级） | 8 | P0 | BUSINESS_RULES.md v4.6 |
-| BR-AR | 预收款与回款（宪法级） | 5 | P0 | BUSINESS_RULES.md v4.6 |
+| BR-DATA | 数据规则 | 6 | P0 | DATA_SCHEMA.md v5.3 |
+| BR-STL | 结算与履约（宪法级） | 8 | P0 | BUSINESS_RULES.md v4.1 |
+| BR-AR | 预收款与回款（宪法级） | 5 | P0 | BUSINESS_RULES.md v4.1 |
 
 ---
 
@@ -786,7 +786,7 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 
 ### 4.2 BR-USER 用户管理模块
 
-来源：DATA_SCHEMA.md v5.2 §2.1
+来源：DATA_SCHEMA.md v5.3 §2.1
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -799,7 +799,7 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 
 ### 4.3 BR-PROJ 项目管理模块
 
-来源：DATA_SCHEMA.md v5.2 §2.2
+来源：DATA_SCHEMA.md v5.3 §2.2
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -812,7 +812,7 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 
 #### 4.3.1 BR-PROJ-006 履约状态字段（v4.6 宪法级）
 
-来源：BUSINESS_RULES.md v4.6（宪法级补丁），关联 BI-06
+来源：BUSINESS_RULES.md v4.1（宪法级补丁），关联 BI-06
 
 **字段定义**：
 
@@ -854,7 +854,7 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 
 ### 4.4 BR-CHAN 渠道管理模块
 
-来源：DATA_SCHEMA.md v5.2 §2.3
+来源：DATA_SCHEMA.md v5.3 §2.3
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -866,7 +866,7 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 
 ### 4.5 BR-ACCT 账户管理模块
 
-来源：DATA_SCHEMA.md v5.2 §2.4
+来源：DATA_SCHEMA.md v5.3 §2.4
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -879,7 +879,7 @@ grep -rn "db\.delete" backend/services/ | grep -i ledger
 
 #### 4.5.1 BR-ACCT-003 账户状态机（6 状态）
 
-来源：STATE_MACHINE.md v2.6 §7.1
+来源：STATE_MACHINE.md v2.7 §7.1
 
 **状态定义**：
 
@@ -905,7 +905,7 @@ new → testing → active → suspended → dead → archived
 
 ### 4.6 BR-FIN 财务管理模块
 
-来源：LEDGER_SOT.md v1.1, STATE_MACHINE.md v2.6 §3
+来源：LEDGER_SOT.md v1.2, STATE_MACHINE.md v2.7 §3
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -919,7 +919,7 @@ new → testing → active → suspended → dead → archived
 
 #### 4.6.1 BR-FIN-004 充值状态机 (7 状态)
 
-来源：STATE_MACHINE.md v2.6 §3
+来源：STATE_MACHINE.md v2.7 §3
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -1000,7 +1000,7 @@ def validate_sod(applicant_id: UUID, operator_id: UUID, action: str):
 
 ### 4.7 BR-RECON 对账管理模块
 
-来源：STATE_MACHINE.md v2.6 §4
+来源：STATE_MACHINE.md v2.7 §4
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -1011,7 +1011,7 @@ def validate_sod(applicant_id: UUID, operator_id: UUID, action: str):
 
 #### 4.7.1 BR-RECON-002 对账批次状态机（5 状态）
 
-来源：STATE_MACHINE.md v2.6 §11.1
+来源：STATE_MACHINE.md v2.7 §11.1
 
 **状态定义**：
 
@@ -1034,7 +1034,7 @@ draft → pending_review → approved → completed
 
 ### 4.8 BR-RPT 日报管理模块
 
-来源：STATE_MACHINE.md v2.6 §2
+来源：STATE_MACHINE.md v2.7 §2
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -1070,7 +1070,7 @@ def calculate_cpl(spend: Decimal, conversions: int) -> Decimal | None:
 
 #### 4.8.2 BR-RPT-006 三数据流定义
 
-来源：MASTER.md v4.4 §4, DATA_SCHEMA.md v5.2 §3.3.1
+来源：MASTER.md v4.4 §4, DATA_SCHEMA.md v5.3 §3.3.1
 
 **数据流定义**：
 
@@ -1094,7 +1094,7 @@ def calculate_cpl(spend: Decimal, conversions: int) -> Decimal | None:
 
 #### 4.8.3 BR-RPT-009 Phase 1 简化模式
 
-来源：STATE_MACHINE.md v2.6 §7.5
+来源：STATE_MACHINE.md v2.7 §7.5
 
 **Phase 1 简化版（3 状态快速流转）**：
 ```
@@ -1123,7 +1123,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ### 4.9 BR-DATA 数据规则模块
 
-来源：DATA_SCHEMA.md v5.2
+来源：DATA_SCHEMA.md v5.3
 
 | 编号 | 规则名称 | 级别 | 说明 |
 |------|----------|------|------|
@@ -1136,7 +1136,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 #### 4.9.1 BR-DATA-006 明细字段可计算性规则
 
-来源：BUSINESS_RULES.md v4.2（模块补丁）
+来源：BUSINESS_RULES.md v4.1（模块补丁）
 
 **核心原则**：不在数据库中存储可由明细计算的汇总字段。
 
@@ -1164,7 +1164,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ### 4.10 BR-STL 结算与履约规则模块（宪法级）
 
-来源：BUSINESS_RULES.md v4.6（宪法级补丁）
+来源：BUSINESS_RULES.md v4.1（宪法级补丁）
 
 > **重要**: 本模块定义系统唯一结算口径，所有收入计算必须基于 `price_rules.type`。
 
@@ -1304,7 +1304,7 @@ revenue = real_spend × (1 + markup_rate)
 
 ### 4.11 BR-AR 预收款与回款规则模块（宪法级）
 
-来源：BUSINESS_RULES.md v4.6（宪法级补丁），关联 BI-05
+来源：BUSINESS_RULES.md v4.1（宪法级补丁），关联 BI-05
 
 > **重要**: 预收款 ≠ 收入。客户打款在履约完成前一律记为预收款。
 
@@ -1504,7 +1504,7 @@ GROUP BY project_id;
 
 ## 附录 A：页面字段集补丁 (v4.6)
 
-来源：BUSINESS_RULES.md v4.6（宪法级补丁）
+来源：BUSINESS_RULES.md v4.1（宪法级补丁）
 
 > Phase 1 展示层必看字段定义
 
@@ -1544,7 +1544,7 @@ GROUP BY project_id;
 | v4.2 | 2025-12-26 | 新增结算与财务规则：(1) 新增 BR-STL 结算与履约模块（7 条规则）；(2) 新增 BR-AR 预收款与回款模块（4 条规则）；(3) 新增 BR-PROJ-006 履约终态字段规则；(4) 新增 BR-DATA-006 明细字段可计算性规则；(5) 扩展术语表（预收款/预收款余额/履约完成/已确认收入/未履约负债）；(6) 模块总数从 9 扩展到 11 |
 | v4.1 | 2025-12-24 | 终审对齐修复：(1) 充值状态机角色描述对齐 STATE_MACHINE.md；(2) 账户状态枚举修正为 6 状态；(3) 项目状态添加 draft，修正 paused→suspended；(4) 对账状态流转对齐 5 状态；(5) 裁判链版本号修正；(6) 新增 SOD 职责分离原则；(7) 新增三数据流详细定义；(8) 新增 Phase 1 简化模式说明 |
 | v4.0 | 2025-12-24 | 重构：从索引文档升级为完整业务规则大全；升级 7 角色；添加完整铁律定义 |
-| v3.2 | 2025-12-20 | 对齐 MASTER.md v3.6，更新裁判链 |
+| v3.2 | 2025-12-20 | 对齐 MASTER.md v4.4，更新裁判链 |
 | v3.1 | 2025-12-15 | 添加 BR-STL 结算模块规则 |
 | v3.0 | 2025-12-10 | 初始版本，作为规则索引 |
 

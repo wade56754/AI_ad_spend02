@@ -68,8 +68,8 @@ upstream_sot:
 
 ```
 Tier-1 SoT (docs/sot/)
-    ├── STATE_MACHINE.md v2.6
-    ├── DATA_SCHEMA.md v5.2
+    ├── STATE_MACHINE.md v2.7
+    ├── DATA_SCHEMA.md v5.3
     ├── BUSINESS_RULES.md v4.1
     └── ...
          ↓

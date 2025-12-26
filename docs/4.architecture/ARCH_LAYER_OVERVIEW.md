@@ -24,13 +24,13 @@ Layer 1: Overview (概览层)
   └── ARCHITECTURE.md, PATTERNS.md, TESTING.md, DEPLOYMENT.md
 
 Layer 2: SoT (Single Source of Truth - 真相源层)
-  ├── STATE_MACHINE.md v2.6 (8状态机定义)
-  ├── DATA_SCHEMA.md v5.2 (数据结构)
+  ├── STATE_MACHINE.md v2.7 (8状态机定义)
+  ├── DATA_SCHEMA.md v5.3 (数据结构)
   ├── API_SOT.md v9.3 (API端点规范)
   ├── ERROR_CODES_SOT.md v2.1 (错误码)
   ├── BUSINESS_RULES.md v4.1 (业务规则)
   ├── AUTH_SPEC.md v2.0 (认证授权)
-  └── LEDGER_SOT.md v1.1 (账本系统)
+  └── LEDGER_SOT.md v1.2 (账本系统)
 
 Layer 3: Dev-Guides (开发指南层)
   ├── API_DEVELOPMENT_FLOW.md (API开发流程)
@@ -78,13 +78,13 @@ Layer 4: Architecture (架构视图层) ← 当前层
 **SoT版本对齐表**:
 | SoT文档 | 版本 | 架构层引用位置 |
 |---------|------|---------------|
-| STATE_MACHINE.md | v2.6 | DATA_FLOW_VIEW.md (8状态流转图) |
-| DATA_SCHEMA.md | v5.2 | SERVICE_COMPONENT_VIEW.md (Repository层设计) |
-| API_SOT.md | v9.0 | SERVICE_COMPONENT_VIEW.md (API Router层) |
+| STATE_MACHINE.md | v2.7 | DATA_FLOW_VIEW.md (8状态流转图) |
+| DATA_SCHEMA.md | v5.3 | SERVICE_COMPONENT_VIEW.md (Repository层设计) |
+| API_SOT.md | v9.3 | SERVICE_COMPONENT_VIEW.md (API Router层) |
 | ERROR_CODES_SOT.md | v2.1 | ERROR_HANDLING_STRATEGY.md (错误码映射) |
-| BUSINESS_RULES.md | v3.1 | BOUNDED_CONTEXT_MAP.md (业务规则引用) |
+| BUSINESS_RULES.md | v4.1 | BOUNDED_CONTEXT_MAP.md (业务规则引用) |
 | AUTH_SPEC.md | v2.0 | SYSTEM_CONTEXT_VIEW.md (用户角色) |
-| LEDGER_SOT.md | v1.1 | DATA_FLOW_VIEW.md (账本流转) |
+| LEDGER_SOT.md | v1.2 | DATA_FLOW_VIEW.md (账本流转) |
 
 **职责边界**:
 - SoT层定义"WHAT" (业务规则是什么)
@@ -198,7 +198,7 @@ graph TD
 
 **追溯格式**:
 ```markdown
-**引用**: STATE_MACHINE.md v2.6 §8.2 (8状态流转规则)
+**引用**: STATE_MACHINE.md v2.7 §8.2 (8状态流转规则)
 **引用**: API_SOT.md v9.3 §9 (Daily Reports API端点定义)
 **引用**: API_DEVELOPMENT_FLOW.md (6步开发流程)
 ```
@@ -295,13 +295,13 @@ graph TD
 
 | SoT文档 | 版本 | 冻结日期 | 架构层引用 |
 |---------|------|---------|-----------|
-| STATE_MACHINE.md | v2.6 | 2025-11-24 | DATA_FLOW_VIEW.md, BOUNDED_CONTEXT_MAP.md |
-| DATA_SCHEMA.md | v5.2 | 2025-11-24 | SERVICE_COMPONENT_VIEW.md, PERFORMANCE_AND_CAPACITY_GUIDE.md |
-| API_SOT.md | v9.0 | 2025-11-24 | SYSTEM_CONTEXT_VIEW.md, SERVICE_COMPONENT_VIEW.md |
+| STATE_MACHINE.md | v2.7 | 2025-11-24 | DATA_FLOW_VIEW.md, BOUNDED_CONTEXT_MAP.md |
+| DATA_SCHEMA.md | v5.3 | 2025-11-24 | SERVICE_COMPONENT_VIEW.md, PERFORMANCE_AND_CAPACITY_GUIDE.md |
+| API_SOT.md | v9.3 | 2025-11-24 | SYSTEM_CONTEXT_VIEW.md, SERVICE_COMPONENT_VIEW.md |
 | ERROR_CODES_SOT.md | v2.1 | 2025-11-24 | ERROR_HANDLING_STRATEGY.md |
-| BUSINESS_RULES.md | v3.1 | 2025-11-24 | BOUNDED_CONTEXT_MAP.md, DATA_FLOW_VIEW.md |
+| BUSINESS_RULES.md | v4.1 | 2025-11-24 | BOUNDED_CONTEXT_MAP.md, DATA_FLOW_VIEW.md |
 | AUTH_SPEC.md | v2.0 | 2025-11-24 | SYSTEM_CONTEXT_VIEW.md |
-| LEDGER_SOT.md | v1.1 | 2025-11-24 | DATA_FLOW_VIEW.md, BOUNDED_CONTEXT_MAP.md |
+| LEDGER_SOT.md | v1.2 | 2025-11-24 | DATA_FLOW_VIEW.md, BOUNDED_CONTEXT_MAP.md |
 
 ### 5.2 Dev-Guides Document References
 

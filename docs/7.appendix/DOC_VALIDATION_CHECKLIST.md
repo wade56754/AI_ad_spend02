@@ -103,8 +103,8 @@
 
 **示例**:
 ```markdown
-**引用**: DATA_SCHEMA.md v5.2 §3.3.1 - daily_reports 表
-**引用**: STATE_MACHINE.md v2.6 §8 - 粉数确认状态机
+**引用**: DATA_SCHEMA.md v5.3 §3.3.1 - daily_reports 表
+**引用**: STATE_MACHINE.md v2.7 §8 - 粉数确认状态机
 **引用**: BUSINESS_RULES.md v4.1 - BR-RPT-005
 **引用**: ERROR_CODES_SOT.md v2.1 - STATE_400
 ```
@@ -125,7 +125,7 @@
 日报状态包括：draft, pending, approved, rejected
 
 ✅ 正确：引用 SoT
-日报状态遵循 STATE_MACHINE.md v2.6 §8 定义的 8 状态机：
+日报状态遵循 STATE_MACHINE.md v2.7 §8 定义的 8 状态机：
 raw_submitted → trend_pending → ... → final_locked
 ```
 
@@ -316,7 +316,7 @@ data_operator 复核 → 检查金额合规性
 ```markdown
 ## ❌ 已废弃：4 状态机 (Deprecated since v2.0)
 
-**替代方案**: 使用 STATE_MACHINE.md v2.6 §8 定义的 8 状态机
+**替代方案**: 使用 STATE_MACHINE.md v2.7 §8 定义的 8 状态机
 
 **迁移时间**: 2025-11-30 前完成迁移
 ```

@@ -3,7 +3,7 @@
 > **版本**: v1.0
 > **更新日期**: 2025-12-22
 > **优先级**: P2
-> **基准**: MASTER.md v4.4 §6.2 页面 10, LEDGER_SOT.md v1.1
+> **基准**: MASTER.md v4.4 §6.2 页面 10, LEDGER_SOT.md v1.2
 
 ---
 
@@ -589,4 +589,4 @@ def update_settlement(id, data):
 ---
 
 **维护者**: AI 广告代投系统开发团队
-**关联文档**: MASTER.md v4.4, LEDGER_SOT.md v1.1, settlement.types.ts
+**关联文档**: MASTER.md v4.4, LEDGER_SOT.md v1.2, settlement.types.ts

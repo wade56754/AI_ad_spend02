@@ -26,7 +26,7 @@ baseline: MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1
 - **ERROR_CODES_SOT.md v2.1**: 错误码定义
 - **API_SOT.md v9.3**: API响应规范
 - **BUSINESS_RULES.md v4.1**: 业务规则校验
-- **STATE_MACHINE.md v2.6**: 状态机错误
+- **STATE_MACHINE.md v2.7**: 状态机错误
 
 ## 2. Error Classification (错误分类)
 
@@ -864,7 +864,7 @@ except BusinessRuleException as e:
 - **BR-FIN-003**: 金额字段合规性约束 → VALIDATION_002
 - **BR-AUTH-001**: 用户角色唯一性 → AUTH_500
 
-### 8.3 References to STATE_MACHINE.md v2.6
+### 8.3 References to STATE_MACHINE.md v2.7
 
 - **§8 粉数确认状态机**: 状态流转规则 → STATE_400, STATE_402
 - **§8.3 趋势风控规则**: TF-001/002/003 → TREND_001

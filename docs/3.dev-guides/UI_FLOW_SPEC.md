@@ -714,7 +714,7 @@ sequenceDiagram
 
 ### 8.1 Context & 8-State Overview
 
-Daily report approval follows the 8-state workflow defined in STATE_MACHINE.md v2.6 § 8:
+Daily report approval follows the 8-state workflow defined in STATE_MACHINE.md v2.7 § 8:
 
 ```
 raw_submitted → trend_pending → trend_ok / trend_flagged

@@ -10,7 +10,7 @@
 > **适用范围**: 后端开发、前端开发、财务团队、测试工程师
 > **规范级别**: 🟡 待落地（迁移完成后升级为 🔴 强制执行）
 > **文档定位**: 利润表自动化模块的数据模型、API、业务规则、测试的唯一定义
-> **baseline**: DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, STATE_MACHINE.md v2.6, ERROR_CODES_SOT.md v2.1, API_SOT.md v9.3
+> **baseline**: DATA_SCHEMA.md v5.3, LEDGER_SOT.md v1.2, STATE_MACHINE.md v2.7, ERROR_CODES_SOT.md v2.1, API_SOT.md v9.3
 
 ---
 
@@ -31,9 +31,9 @@
 ```
 AI_AD_SYSTEM 文档体系
 │
-├─ DATA_SCHEMA.md v5.2        ← ledger_entries / daily_reports 表结构
-├─ LEDGER_SOT.md v1.1         ← 双账本逻辑、REVENUE/COST 定义
-├─ STATE_MACHINE.md v2.6 §8   ← 粉数确认状态机（8状态：raw_submitted→final_locked）
+├─ DATA_SCHEMA.md v5.3        ← ledger_entries / daily_reports 表结构
+├─ LEDGER_SOT.md v1.2         ← 双账本逻辑、REVENUE/COST 定义
+├─ STATE_MACHINE.md v2.7 §8   ← 粉数确认状态机（8状态：raw_submitted→final_locked）
 ├─ ERROR_CODES_SOT.md v2.1    ← 错误码定义
 ├─ API_SOT.md v9.3            ← API 规范
 │
@@ -48,9 +48,9 @@ AI_AD_SYSTEM 文档体系
 
 | 领域 | 唯一真相源 | 仲裁规则 |
 |-----|-----------|---------|
-| **ledger_entries 字段** | DATA_SCHEMA.md v5.2 | 本文档不重复定义 |
-| **双账本逻辑** | LEDGER_SOT.md v1.1 | 本文档只引用 |
-| **粉数确认状态机** | STATE_MACHINE.md v2.6 | 本文档只引用 |
+| **ledger_entries 字段** | DATA_SCHEMA.md v5.3 | 本文档不重复定义 |
+| **双账本逻辑** | LEDGER_SOT.md v1.2 | 本文档只引用 |
+| **粉数确认状态机** | STATE_MACHINE.md v2.7 | 本文档只引用 |
 | **利润聚合逻辑** | PROFIT_SOT.md v1.0 (本文档) | 其他文档以本文档为准 |
 | **Profit API 定义** | PROFIT_SOT.md v1.0 (本文档) | 其他文档以本文档为准 |
 
@@ -616,7 +616,7 @@ UNIQUE (report_type, period_month, project_id)
 - ❌ **禁止**聚合非 `final_locked` 状态的日报数据
 - ❌ **禁止**聚合 `entry_type` 为 `REVERSAL` 时不考虑方向
 
-**引用**: LEDGER_SOT.md v1.1 §2.2, STATE_MACHINE.md v2.6 §8
+**引用**: LEDGER_SOT.md v1.2 §2.2, STATE_MACHINE.md v2.7 §8
 
 **错误码映射**: 无直接错误码（内部逻辑）
 
@@ -637,7 +637,7 @@ gross_margin_pct = (gross_profit / total_revenue) × 100   (当 total_revenue > 
 gross_margin_pct = 0                                       (当 total_revenue = 0)
 ```
 
-**引用**: LEDGER_SOT.md v1.1 §2.1
+**引用**: LEDGER_SOT.md v1.2 §2.1
 
 **错误码映射**: 无直接错误码
 
@@ -716,7 +716,7 @@ gross_margin_pct = 0                                       (当 total_revenue = 
 - ✅ REVENUE 金额在 ledger_entries 中必须为正数（引用 LEDGER_SOT.md §4）
 - ❌ **禁止**将 TOPUP 计入收入
 
-**引用**: LEDGER_SOT.md v1.1 §4, §7
+**引用**: LEDGER_SOT.md v1.2 §4, §7
 
 **错误码映射**: 无直接错误码
 
@@ -731,7 +731,7 @@ gross_margin_pct = 0                                       (当 total_revenue = 
 - ✅ COST 金额在 ledger_entries 中为负数，聚合时取绝对值
 - ❌ **禁止**将 TRANSFER_OUT/TRANSFER_IN 计入成本
 
-**引用**: LEDGER_SOT.md v1.1 §4, §7
+**引用**: LEDGER_SOT.md v1.2 §4, §7
 
 **错误码映射**: 无直接错误码
 
@@ -873,7 +873,7 @@ backend/tests/
     "GET /api/v1/finance/profit/accounts/{account_id}",
     "GET /api/v1/finance/profit/summary"
   ]' \
-  sot_refs='["PROFIT_SOT.md v1.0", "LEDGER_SOT.md v1.1"]' \
+  sot_refs='["PROFIT_SOT.md v1.0", "LEDGER_SOT.md v1.2"]' \
   output_path=backend/tests/api/test_finance_profit_generated.py
 ```
 

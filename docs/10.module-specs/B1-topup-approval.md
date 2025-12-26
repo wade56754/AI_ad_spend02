@@ -3,7 +3,7 @@
 > **版本**: v1.0
 > **更新日期**: 2025-12-22
 > **优先级**: P1
-> **基准**: MASTER.md v4.4 §6.2 页面 4, STATE_MACHINE.md v2.6 §9
+> **基准**: MASTER.md v4.4 §6.2 页面 4, STATE_MACHINE.md v2.7 §9
 
 ---
 
@@ -99,7 +99,7 @@
 
 ---
 
-## 3. 状态机 (STATE_MACHINE.md v2.6 §9)
+## 3. 状态机 (STATE_MACHINE.md v2.7 §9)
 
 ### 3.1 状态定义 (7 状态)
 
@@ -527,4 +527,4 @@ TopupRouter
 ---
 
 **维护者**: AI 广告代投系统开发团队
-**关联文档**: MASTER.md v4.4, STATE_MACHINE.md v2.6, topup.types.ts
+**关联文档**: MASTER.md v4.4, STATE_MACHINE.md v2.7, topup.types.ts

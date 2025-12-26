@@ -45,9 +45,9 @@ sotChain:
   - "DATA_SCHEMA.md v5.3"                # 版本升级
   - "LEDGER_SOT.md v1.2"                 # 版本升级
   - "RECONCILIATION_CONTROL_CENTER_SOT.md v1.1"  # ⭐ 新增
-  - "BUSINESS_RULES.md v4.0"             # 版本升级
-  - "API_SOT.md v9.1"                    # 版本升级
-  - "ERROR_CODES_SOT.md v2.2"            # 版本升级
+  - "BUSINESS_RULES.md v4.1"             # 版本升级
+  - "API_SOT.md v9.3"                    # 版本升级
+  - "ERROR_CODES_SOT.md v2.1"            # 版本升级
   - "AUTH_SPEC.md v2.0"
 ```
 

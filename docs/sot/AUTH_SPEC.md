@@ -47,10 +47,10 @@
 
 | 领域 | 唯一真相�?| 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
-| **数据库字�?* | DATA_SCHEMA.md v5.2 | 字段�?类型/约束以DATA_SCHEMA为准 | `users.role`的CHECK约束 |
+| **数据库字�?* | DATA_SCHEMA.md v5.3 | 字段�?类型/约束以DATA_SCHEMA为准 | `users.role`的CHECK约束 |
 | **业务规则** | BUSINESS_RULES.md v4.1 | 权限/SOD规则以BUSINESS_RULES为准 | BR-USER-002（职责分离） |
 | **错误�?* | ERROR_CODES_SOT.md v2.1 | 错误�?HTTP状态以ERROR_CODES为准 | `AUTH_500`权限不足 |
-| **状态流�?* | STATE_MACHINE.md v2.6 | 业务状态以STATE_MACHINE为准 | 项目/日报状态机 |
+| **状态流�?* | STATE_MACHINE.md v2.7 | 业务状态以STATE_MACHINE为准 | 项目/日报状态机 |
 | **Token生命周期** | AUTH_SPEC.md v2.0 (本文�? | Token TTL/刷新策略以本文档为准 | Access Token 1小时 |
 | **认证流程** | AUTH_SPEC.md v2.0 (本文�? | Token验证/权限校验链路以本文档为准 | JWT验证逻辑 |
 
@@ -76,7 +76,7 @@
 
 ### 2.1 users表完整定�?
 
-**引用**: DATA_SCHEMA.md v5.2 �?.1.1�?
+**引用**: DATA_SCHEMA.md v5.3 �?.1.1�?
 
 ```sql
 CREATE TABLE users (
@@ -88,7 +88,7 @@ CREATE TABLE users (
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(255),  -- 冗余字段，从auth.users同步
 
-    -- ===== 角色与权限（七枚举固定定义, AUTH_SPEC.md v2.1 §2.2） =====
+    -- ===== 角色与权限（七枚举固定定义, AUTH_SPEC.md v2.0 §2.2） =====
     role VARCHAR(20) NOT NULL CHECK (role IN (
         'ceo',             -- 老板 (L7)
         'admin',           -- 系统管理员 (L6)
@@ -622,7 +622,7 @@ async def force_logout(
 | `expired` | Token自然过期（exp < NOW()�?| �?| �?不可�?|
 | `invalidated` | 主动失效（登出、强制下线） | �?| �?不可�?|
 
-**引用**: STATE_MACHINE.md v2.6（本状态机为Auth专用，不在STATE_MACHINE.md中）
+**引用**: STATE_MACHINE.md v2.7（本状态机为Auth专用，不在STATE_MACHINE.md中）
 
 ### 4.2 状态流转白名单�?
 
@@ -1596,7 +1596,7 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
 
 ### 8.1 必须记录审计日志的操�?
 
-**引用**: DATA_SCHEMA.md v5.2 - �?.1.4�?(audit_logs�?
+**引用**: DATA_SCHEMA.md v5.3 - �?.1.4�?(audit_logs�?
 
 | 操作类型 | 触发场景 | 必填字段 |
 |---------|---------|---------|

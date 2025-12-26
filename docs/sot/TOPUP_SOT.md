@@ -5,7 +5,7 @@
 > **layer**: sot
 > **owner**: wade
 > **last_reviewed**: 2025-12-24
-> **基准**: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, BUSINESS_RULES.md v4.1, ERROR_CODES_SOT.md v2.1, AUTH_SPEC.md v2.1
+> **基准**: STATE_MACHINE.md v2.7, DATA_SCHEMA.md v5.3, LEDGER_SOT.md v1.2, BUSINESS_RULES.md v4.1, ERROR_CODES_SOT.md v2.1, AUTH_SPEC.md v2.0
 
 ---
 
@@ -15,9 +15,9 @@
 
 - **适用范围**: 项目充值(PROJECT 账本)与供应商充值(SUPPLIER 账本)
 - **互锁文档**:
-  - 状态机 → STATE_MACHINE.md v2.6 第 9 章
-  - 数据结构 → DATA_SCHEMA.md v5.2 第 3.4.1 节
-  - 账本规则 → LEDGER_SOT.md v1.1
+  - 状态机 → STATE_MACHINE.md v2.7 第 9 章
+  - 数据结构 → DATA_SCHEMA.md v5.3 第 3.4.1 节
+  - 账本规则 → LEDGER_SOT.md v1.2
   - 业务规则 → BUSINESS_RULES.md v4.1
   - 错误码 → ERROR_CODES_SOT.md v2.1
   - 权限控制 → AUTH_SPEC.md v2.0
@@ -28,7 +28,7 @@
 
 ### 1.1 状态枚举定义
 
-**来源**: STATE_MACHINE.md v2.6 第 9 章(Line 326-335)
+**来源**: STATE_MACHINE.md v2.7 第 9 章(Line 326-335)
 
 **合法状态值**(7个):
 - `draft` - 草稿(初始态)
@@ -77,7 +77,7 @@ finance_approve → rejected (财务终审拒绝)
 
 ### 1.3 状态流转白名单
 
-**来源**: STATE_MACHINE.md v2.6 Line 1052-1060
+**来源**: STATE_MACHINE.md v2.7 Line 1052-1060
 
 | 当前状态 | 允许流转至 | 触发角色 | 前置条件 | 审计要求 |
 |---------|-----------|---------|---------|---------|
@@ -147,7 +147,7 @@ def validate_status_transition(current: str, target: str) -> bool:
 
 ### 2.1 核心表定义
 
-**来源**: DATA_SCHEMA.md v5.2 Line 340-360
+**来源**: DATA_SCHEMA.md v5.3 Line 340-360
 
 **表名**: `topup_requests`
 **主键**: `id` (BIGSERIAL)
@@ -196,7 +196,7 @@ def validate_status_transition(current: str, target: str) -> bool:
 
 ### 3.1 金额锁定时机
 
-**来源**: STATE_MACHINE.md v2.6 Line 690-801 "充值申请金额锁定规则"
+**来源**: STATE_MACHINE.md v2.7 Line 690-801 "充值申请金额锁定规则"
 
 **核心原则**: `amount` 字段在进入审批流程后锁定,禁止修改。
 
@@ -310,7 +310,7 @@ def admin_force_update_topup_amount(
 
 ### 4.1 Ledger Entry 创建触发条件
 
-**来源**: LEDGER_SOT.md v1.1, MASTER.md INV-001
+**来源**: LEDGER_SOT.md v1.2, MASTER.md INV-001
 
 **唯一触发时机**: 状态流转 `paid` → `completed`
 
@@ -421,7 +421,7 @@ def complete_topup_request(topup_id: int, operator: User) -> Result:
 
 ### 5.1 允许的 System 自动流转
 
-**来源**: STATE_MACHINE.md v2.6 Line 486-493
+**来源**: STATE_MACHINE.md v2.7 Line 486-493
 
 **唯一允许的 System 流转**: `paid` → `completed` (支付回调确认到账)
 
@@ -948,15 +948,15 @@ topup_status_transition_failed_total = Counter(
 
 | SoT 文档 | 引用章节 | 用途 |
 |---------|---------|------|
-| **STATE_MACHINE.md v2.6** | 第 9 章(Line 326-335) | 状态枚举定义 |
+| **STATE_MACHINE.md v2.7** | 第 9 章(Line 326-335) | 状态枚举定义 |
 | | Line 1052-1060 | 状态流转白名单 |
 | | Line 690-801 | 金额锁定规则 |
 | | Line 486-493 | System 自动流转规则 |
 | | Line 616 | 终态回退禁止 |
-| **DATA_SCHEMA.md v5.2** | Line 340-360 | topup_requests 表结构 |
+| **DATA_SCHEMA.md v5.3** | Line 340-360 | topup_requests 表结构 |
 | | Line 362-368 | 关联表(topup_transactions, topup_approval_logs) |
 | | Line 453 | 索引定义 |
-| **LEDGER_SOT.md v1.1** | 第 2 章 | 账本写入规则 |
+| **LEDGER_SOT.md v1.2** | 第 2 章 | 账本写入规则 |
 | | 双账本隔离规则 | PROJECT vs SUPPLIER 账本 |
 | | 余额计算公式 | SUM(ledger_entries.amount) |
 | **BUSINESS_RULES.md v4.1** | BR-FIN-* | 充值金额上限(1,000,000)、风控规则 |

@@ -3,7 +3,7 @@
 > **版本**: v1.0
 > **更新日期**: 2025-12-22
 > **优先级**: P1
-> **基准**: MASTER.md v4.4 §6.2 页面 9, DATA_SCHEMA.md v5.2
+> **基准**: MASTER.md v4.4 §6.2 页面 9, DATA_SCHEMA.md v5.3
 
 ---
 
@@ -100,7 +100,7 @@
 | 日均消耗 | `SUM(spend) / 天数` | 平均每日消耗 |
 | 环比变化 | `(本期 - 上期) / 上期 × 100%` | 消耗变化率 |
 
-### 2.4 ad_spend_daily 表结构 (DATA_SCHEMA.md v5.2)
+### 2.4 ad_spend_daily 表结构 (DATA_SCHEMA.md v5.3)
 
 ```sql
 CREATE TABLE ad_spend_daily (
@@ -547,4 +547,4 @@ AdSpendRouter
 ---
 
 **维护者**: AI 广告代投系统开发团队
-**关联文档**: MASTER.md v4.4, DATA_SCHEMA.md v5.2, adSpend.types.ts
+**关联文档**: MASTER.md v4.4, DATA_SCHEMA.md v5.3, adSpend.types.ts

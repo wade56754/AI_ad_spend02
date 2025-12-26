@@ -12,7 +12,7 @@
 
 - **原版本**: v1.0
 - **原状态**: Active
-- **原基准**: MASTER.md v3.5, Agent Layer Freeze v1.0, SoT Freeze v2.6
+- **原基准**: MASTER.md v4.4, Agent Layer Freeze v1.0, SoT Freeze v2.6
 
 ---
 

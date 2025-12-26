@@ -131,7 +131,7 @@ graph LR
 ```typescript
 // 状态机枚举对齐检查
 type DailyReportStatus =
-  | 'raw_submitted'   // STATE_MACHINE.md v2.6 §8.2
+  | 'raw_submitted'   // STATE_MACHINE.md v2.7 §8.2
   | 'trend_pending'
   | 'trend_ok'
   | 'trend_flagged'

@@ -65,13 +65,13 @@ No high-priority issues found. All documents:
 - ✅ Complete metadata (version, status, layer, owner, last_reviewed, baseline)
 - ✅ Correct baseline format: "MASTER.md v4.4, SoT Freeze v1.0, Dev-Guides Freeze v2.1"
 - ✅ All SoT references use correct versions:
-  - STATE_MACHINE.md v2.6 ✅
-  - DATA_SCHEMA.md v5.2 ✅
+  - STATE_MACHINE.md v2.7 ✅
+  - DATA_SCHEMA.md v5.3 ✅
   - API_SOT.md v9.3 ✅
   - ERROR_CODES_SOT.md v2.1 ✅
   - BUSINESS_RULES.md v4.1 ✅
   - AUTH_SPEC.md v2.0 ✅
-  - LEDGER_SOT.md v1.1 ✅
+  - LEDGER_SOT.md v1.2 ✅
 - ✅ All Dev-Guides references exist and align with Freeze v2.1
 - ✅ No INV-001/002/003 violations
 
@@ -171,13 +171,13 @@ Verification:
 
 | SoT Document | Expected Version | Documents Using | Verification |
 |--------------|------------------|-----------------|--------------|
-| STATE_MACHINE.md | v2.6 | DATA_FLOW_VIEW, BOUNDED_CONTEXT_MAP | ✅ Correct |
-| DATA_SCHEMA.md | v5.2 | SERVICE_COMPONENT_VIEW, PERFORMANCE_GUIDE, BOUNDED_CONTEXT_MAP | ✅ Correct |
-| API_SOT.md | v9.0 | SYSTEM_CONTEXT_VIEW, SERVICE_COMPONENT_VIEW | ✅ Correct |
+| STATE_MACHINE.md | v2.7 | DATA_FLOW_VIEW, BOUNDED_CONTEXT_MAP | ✅ Correct |
+| DATA_SCHEMA.md | v5.3 | SERVICE_COMPONENT_VIEW, PERFORMANCE_GUIDE, BOUNDED_CONTEXT_MAP | ✅ Correct |
+| API_SOT.md | v9.3 | SYSTEM_CONTEXT_VIEW, SERVICE_COMPONENT_VIEW | ✅ Correct |
 | ERROR_CODES_SOT.md | v2.1 | ERROR_HANDLING_STRATEGY | ✅ Correct |
-| BUSINESS_RULES.md | v3.1 | BOUNDED_CONTEXT_MAP, DATA_FLOW_VIEW | ✅ Correct |
+| BUSINESS_RULES.md | v4.1 | BOUNDED_CONTEXT_MAP, DATA_FLOW_VIEW | ✅ Correct |
 | AUTH_SPEC.md | v2.0 | SYSTEM_CONTEXT_VIEW | ✅ Correct |
-| LEDGER_SOT.md | v1.1 | DATA_FLOW_VIEW, BOUNDED_CONTEXT_MAP | ✅ Correct |
+| LEDGER_SOT.md | v1.2 | DATA_FLOW_VIEW, BOUNDED_CONTEXT_MAP | ✅ Correct |
 
 ### 6.2 Invariants Compliance (INV-001/002/003)
 

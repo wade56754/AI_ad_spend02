@@ -62,12 +62,12 @@
 
 ```
 AI_AD_SYSTEM 文档体系
-�?├─ DATA_SCHEMA.md v5.2        �?ledger_entries表结构的唯一来源
-├─ STATE_MACHINE.md v2.6      �?业务状态流转的唯一来源
+�?├─ DATA_SCHEMA.md v5.3        �?ledger_entries表结构的唯一来源
+├─ STATE_MACHINE.md v2.7      �?业务状态流转的唯一来源
 ├─ BUSINESS_RULES.md v4.1     �?财务业务规则的唯一来源
 ├─ ERROR_CODES_SOT.md v2.1    �?错误码定义的唯一来源
 ├─ AUTH_SPEC.md v2.0          �?权限控制的唯一来源
-�?└─ LEDGER_SOT.md v1.1 (本文�? �?Ledger业务逻辑的唯一来源
+�?└─ LEDGER_SOT.md v1.2 (本文�? �?Ledger业务逻辑的唯一来源
     ├─ 引用 DATA_SCHEMA (ledger_entries�?
     ├─ 引用 STATE_MACHINE (日报/充值状态机)
     ├─ 引用 BUSINESS_RULES (BR-FIN-*)
@@ -77,11 +77,11 @@ AI_AD_SYSTEM 文档体系
 ### 1.3 仲裁规则（冲突优先级�?
 | 领域 | 唯一真相�?| 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
-| **数据库字�?* | DATA_SCHEMA.md v5.2 | 字段�?类型/约束以DATA_SCHEMA为准 | `ledger_entries.ledger_type` CHECK约束 |
-| **业务状�?* | STATE_MACHINE.md v2.6 | 日报/充值状态以STATE_MACHINE为准 | `final_locked`后才计费 |
+| **数据库字�?* | DATA_SCHEMA.md v5.3 | 字段�?类型/约束以DATA_SCHEMA为准 | `ledger_entries.ledger_type` CHECK约束 |
+| **业务状�?* | STATE_MACHINE.md v2.7 | 日报/充值状态以STATE_MACHINE为准 | `final_locked`后才计费 |
 | **错误�?* | ERROR_CODES_SOT.md v2.1 | 错误�?HTTP状态以ERROR_CODES为准 | `BIZ_101`余额不足 |
-| **金额方向** | LEDGER_SOT.md v1.1 (本文�? | 正负方向规则以本文档为准 | REVENUE正数、COST负数 |
-| **事务边界** | LEDGER_SOT.md v1.1 (本文�? | 锁策略以本文档为�?| SELECT FOR UPDATE锁项�?|
+| **金额方向** | LEDGER_SOT.md v1.2 (本文�? | 正负方向规则以本文档为准 | REVENUE正数、COST负数 |
+| **事务边界** | LEDGER_SOT.md v1.2 (本文�? | 锁策略以本文档为�?| SELECT FOR UPDATE锁项�?|
 | **权限控制** | AUTH_SPEC.md v2.0 | 角色权限以AUTH_SPEC为准 | finance可写Ledger |
 
 **冲突处理规则**:
@@ -176,7 +176,7 @@ INSERT INTO ledger_entries (
     'SUPPLIER', NULL, 456, 'REVENUE', 4750.00  -- 禁止�?);
 ```
 
-**数据库约�?* (引用: DATA_SCHEMA.md v5.2 3.4.4�?:
+**数据库约�?* (引用: DATA_SCHEMA.md v5.3 3.4.4�?:
 
 ```sql
 ALTER TABLE ledger_entries ADD CONSTRAINT chk_ledger_type_entity CHECK (
@@ -355,7 +355,7 @@ report_data = {
 
 ## 3. ledger_entries表SoT
 
-**引用**: DATA_SCHEMA.md v5.2 �?.4.4�?
+**引用**: DATA_SCHEMA.md v5.3 �?.4.4�?
 ### 3.1 完整表结�?
 ```sql
 CREATE TABLE ledger_entries (
@@ -469,7 +469,7 @@ if entry_type == "COST":
 
 #### 3.2.4 balance_before / balance_after（余额快照）
 
-**注意**: 当前DATA_SCHEMA.md v5.2�?*未定�?*这两个字�?
+**注意**: 当前DATA_SCHEMA.md v5.3�?*未定�?*这两个字�?
 **建议**: 如果需要余额快照，建议在projects/suppliers表维护balance字段，而不是在ledger_entries中冗�?
 **原因**:
 - �?ledger_entries中存储余额会导致数据冗余
@@ -1506,7 +1506,7 @@ groups:
 
 ### 16.1 日报状态机与Ledger生成时机
 
-**引用**: STATE_MACHINE.md v2.6 �?�?
+**引用**: STATE_MACHINE.md v2.7 �?�?
 ```
 raw_submitted �?trend_pending �?trend_ok �?trend_resolved �?final_pending �?final_confirmed �?final_locked
                                                                                �?               �?                                                                      不生成Ledger      生成Ledger
@@ -1782,7 +1782,7 @@ def reversal_final_report(
 
 ### 8.1 充值状态机与Ledger生成时机
 
-**引用**: STATE_MACHINE.md v2.6 �?�?
+**引用**: STATE_MACHINE.md v2.7 �?�?
 ```
 draft �?pending_review �?finance_approve �?paid �?completed
                                             �?      �?                                      不生成Ledger  生成Ledger
@@ -2114,7 +2114,7 @@ def apply_reconciliation_adjustment(
 ```
 
 ### 16.2 审批�?
-**对账批次状态机** (引用: STATE_MACHINE.md v2.6 �?1.1�?:
+**对账批次状态机** (引用: STATE_MACHINE.md v2.7 �?1.1�?:
 
 ```
 draft �?pending �?reviewing �?closed
@@ -2843,7 +2843,7 @@ stateDiagram-v2
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
-| v1.2 | 2025-12-24 | **合规性更新**<br>- §13 权限控制对齐 MASTER.md v4.4 (7角色定义)<br>- §13.2 新增业务层→技术层角色映射表<br>- §13.3 更新 Ledger 操作权限矩阵<br>- §15/§16 修正章节编号 (16.1→15.1, 8.3→15.3/16.3)<br>- §17 更新 DATA_SCHEMA.md v5.1→v5.2<br>- §17 更新 STATE_MACHINE.md v2.5→v2.6 | AI 辅助更新 |
+| v1.2 | 2025-12-24 | **合规性更新**<br>- §13 权限控制对齐 MASTER.md v4.4 (7角色定义)<br>- §13.2 新增业务层→技术层角色映射表<br>- §13.3 更新 Ledger 操作权限矩阵<br>- §15/§16 修正章节编号 (16.1→15.1, 8.3→15.3/16.3)<br>- §17 更新 DATA_SCHEMA.md v5.3→v5.2<br>- §17 更新 STATE_MACHINE.md v2.7→v2.6 | AI 辅助更新 |
 | v1.1 | 2025-01-22 | **v1.1增强�?*<br>- �?新增"双账本×entry_type白名单矩�?�?.2节）<br>- �?分离TOPUP为独立entry_type（不再混用REVENUE语义�?br>- �?新增"余额唯一真相源原�?�?.4节：禁止用ledger聚合计算实时余额�?br>- �?新增"Ledger Entries的四大禁�?�?2.2节：禁止UPDATE/DELETE�?br>- �?新增"失败与回滚策�?章节（第6章：DailyReport/Topup/Transfer失败处理�?br>- 🔄 更新所有Topup相关代码示例使用TOPUP类型<br>- 🔄 更新快速导航表（新增v1.1内容�?| 系统架构团队 |
 | v1.0 | 2025-01-22 | **正式SoT�?*<br>- 完整双账本模型定�?br>- ledger_entries表字段逐项解释<br>- 金额方向绝对规则�?br>- 事务边界与锁策略（SELECT FOR UPDATE�?br>- DailyReport→Ledger完整映射<br>- Topup→Ledger映射<br>- Transfer→Ledger映射<br>- 对账调整流程<br>- 手工调账双人审核<br>- 权限控制矩阵<br>- 错误码定�?br>- 测试矩阵�?8个测试用例）<br>- 3张Mermaid�?| 系统架构团队 |
 

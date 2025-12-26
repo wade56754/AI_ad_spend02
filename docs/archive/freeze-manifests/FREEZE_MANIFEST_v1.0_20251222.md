@@ -3,7 +3,7 @@
 > **Freeze Date**: 2025-11-27
 > **Freeze Decision**: Production Ready
 > **Governing Framework**: ASDD (AI-Spec-Driven Development)
-> **Baseline**: SoT Freeze v1.0, MASTER.md v3.4
+> **Baseline**: SoT Freeze v1.0, MASTER.md v4.4
 > **Orchestrator**: ai-ad-spec-governor
 > **Health Score**: 100/100
 
@@ -70,9 +70,9 @@ The layer is fully compliant with ASDD Freeze v1.0 requirements and ready for op
 
 | Document | Status | Replacement | Deprecation Date |
 |----------|--------|-------------|------------------|
-| MASTER_SPEC.md | DEPRECATED | MASTER.md v3.4 | 2025-11-25 |
+| MASTER_SPEC.md | DEPRECATED | MASTER.md v4.4 | 2025-11-25 |
 | SYSTEM_OVERVIEW.md | DEPRECATED | DOMAIN.md v1.0 | 2025-11-25 |
-| PROJECT_RULES.md | DEPRECATED | PATTERNS.md v1.0 + MASTER.md v3.4 | 2025-11-25 |
+| PROJECT_RULES.md | DEPRECATED | PATTERNS.md v1.0 + MASTER.md v4.4 | 2025-11-25 |
 | SOT_FREEZE.md | DEPRECATED | ASDD_FREEZE_v1.0.md | 2025-11-25 |
 
 **Total Documents**: 13
@@ -223,7 +223,7 @@ The Overview Layer may be unfrozen only under the following conditions:
 1. **RFC Submission**: Submit Request For Change with detailed justification
 2. **Architecture Review**: Master Architect approval required
 3. **Impact Analysis**: Document downstream impact on SoT/dev-guides/code
-4. **Version Bump**: Increment affected document versions (e.g., MASTER.md v3.4 → v4.0)
+4. **Version Bump**: Increment affected document versions (e.g., MASTER.md v4.4 → v4.0)
 5. **Re-Freeze**: Execute ai-ad-spec-governor pipeline after changes
 6. **Update Manifest**: Generate new FREEZE_MANIFEST with updated baseline
 

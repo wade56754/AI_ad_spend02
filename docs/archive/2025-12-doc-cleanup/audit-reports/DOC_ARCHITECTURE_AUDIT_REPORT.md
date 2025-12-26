@@ -261,7 +261,7 @@
 
 #### P0-3: 表名/Schema 根本性差异
 
-GUARD 假设的数据库结构与实际 DATA_SCHEMA.md v5.2 定义的结构不匹配：
+GUARD 假设的数据库结构与实际 DATA_SCHEMA.md v5.3 定义的结构不匹配：
 - `pitchers` vs `users`
 - `ledger` vs `ledger_entries`
 - `period_locks` 不存在
@@ -302,13 +302,13 @@ Level 0: 宪法级 (MANDATORY)
 ├── [待定: GUARD vs SoT 二选一]
 
 Level 1: SoT 核心 (frozen)
-├── STATE_MACHINE.md v2.6
-├── DATA_SCHEMA.md v5.2
+├── STATE_MACHINE.md v2.7
+├── DATA_SCHEMA.md v5.3
 ├── BUSINESS_RULES.md v4.1
 ├── API_SOT.md v9.3
 ├── ERROR_CODES_SOT.md v2.1
 ├── AUTH_SPEC.md v2.0
-└── LEDGER_SOT.md v1.1
+└── LEDGER_SOT.md v1.2
 
 Level 2: 模块 SoT (frozen)
 ├── DAILY_REPORT_SOT.md v1.0
