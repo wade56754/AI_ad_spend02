@@ -44,7 +44,7 @@ sot_documents:
   # === 第一层：系统宪法 ===
   MASTER.md:
     version: "v4.4"
-    path: "docs/1.overview/MASTER.md"
+    path: "docs/sot/MASTER.md"
     description: "系统全局规则、角色定义、AI 防幻觉原则"
     priority: 1
     last_updated: "2025-12-24"

@@ -26,6 +26,6 @@ jobs:
 
       - name: Run backend regression tests
         run: |
-          python run_tests.py --type regression
+          python scripts/run_tests.py --type regression
 
 

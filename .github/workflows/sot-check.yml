@@ -221,7 +221,8 @@ jobs:
               config = yaml.safe_load(f)
 
           gaps = config.get('sot_gaps', {})
-          open_gaps = [g for g, info in gaps.items() if info.get('status') == 'open']
+          # 过滤掉非 dict 的条目（如 description 字段）
+          open_gaps = [g for g, info in gaps.items() if isinstance(info, dict) and info.get('status') == 'open']
 
           if open_gaps:
               print('## :information_source: Open SoT Gaps')
