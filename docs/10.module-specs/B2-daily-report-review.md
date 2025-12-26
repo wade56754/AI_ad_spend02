@@ -23,8 +23,8 @@
 | 角色 | 职责 | 典型操作 |
 |------|------|----------|
 | `pitcher` | 投手 | 提交日报、查看自己数据 |
-| `supervisor` | 主管 | 审核日报、标记异常、查看团队 |
-| `data_operator` | 数据员 | 趋势复核、确认最终数据 |
+| `supervisor` | 主管 | 审核日报、标记异常、趋势复核、查看团队 |
+| `project_owner` | 项目负责人 | 查看项目日报、确认最终数据 |
 | `finance` | 财务 | 终审确认、锁定计费 |
 | `ceo` | 老板 | 查看整体概况、关注异常 |
 | `admin` | 管理员 | 全权限（系统维护） |
@@ -35,9 +35,9 @@
 |------|------|----------|
 | UC-B2-01 | 投手提交日报 | pitcher |
 | UC-B2-02 | 趋势待审（自动触发） | system |
-| UC-B2-03 | 趋势通过/标记异常 | supervisor, data_operator |
+| UC-B2-03 | 趋势通过/标记异常 | supervisor |
 | UC-B2-04 | 处理异常 | supervisor |
-| UC-B2-05 | 终审待审 | data_operator |
+| UC-B2-05 | 终审待审 | project_owner |
 | UC-B2-06 | 终审确认 | finance, admin |
 | UC-B2-07 | 锁定入账 | system, admin |
 
@@ -174,12 +174,12 @@
 | 当前状态 | 目标状态 | 操作 | 允许角色 | 触发条件 |
 |----------|----------|------|----------|----------|
 | `raw_submitted` | `trend_pending` | submit_for_trend | system | 自动触发 |
-| `trend_pending` | `trend_ok` | approve_trend | supervisor, manager, admin | 趋势正常 |
-| `trend_pending` | `trend_flagged` | flag_trend | supervisor, manager, admin | 趋势异常 |
-| `trend_flagged` | `trend_resolved` | resolve_flag | supervisor, manager, admin | 处理完成 |
-| `trend_ok` | `final_pending` | submit_for_final | manager, admin | 提交终审 |
-| `trend_resolved` | `final_pending` | submit_for_final | manager, admin | 提交终审 |
-| `final_pending` | `final_confirmed` | confirm_final | data_operator, admin | 财务确认 |
+| `trend_pending` | `trend_ok` | approve_trend | supervisor, project_owner, admin | 趋势正常 |
+| `trend_pending` | `trend_flagged` | flag_trend | supervisor, project_owner, admin | 趋势异常 |
+| `trend_flagged` | `trend_resolved` | resolve_flag | supervisor, project_owner, admin | 处理完成 |
+| `trend_ok` | `final_pending` | submit_for_final | project_owner, admin | 提交终审 |
+| `trend_resolved` | `final_pending` | submit_for_final | project_owner, admin | 提交终审 |
+| `final_pending` | `final_confirmed` | confirm_final | finance, admin | 财务确认 |
 | `final_confirmed` | `final_locked` | lock | system, admin | 锁定入账 |
 
 ### 3.3 趋势风控规则 (TF-xxx)
@@ -290,10 +290,10 @@ PHASE1_ALLOWED_SHORTCUTS = {
 | GET | `/api/v1/daily-reports/{id}` | 获取日报详情 | 登录用户 |
 | POST | `/api/v1/daily-reports` | 创建日报 | pitcher |
 | PUT | `/api/v1/daily-reports/{id}` | 更新日报 | pitcher (raw_submitted) |
-| POST | `/api/v1/daily-reports/{id}/submit-for-trend` | 提交趋势审核 | operator, manager |
-| POST | `/api/v1/daily-reports/{id}/approve-trend` | 趋势通过 | supervisor, manager |
-| POST | `/api/v1/daily-reports/{id}/flag-trend` | 标记异常 | supervisor, manager |
-| POST | `/api/v1/daily-reports/{id}/resolve-flag` | 处理异常 | supervisor, manager |
+| POST | `/api/v1/daily-reports/{id}/submit-for-trend` | 提交趋势审核 | supervisor, project_owner |
+| POST | `/api/v1/daily-reports/{id}/approve-trend` | 趋势通过 | supervisor, project_owner |
+| POST | `/api/v1/daily-reports/{id}/flag-trend` | 标记异常 | supervisor, project_owner |
+| POST | `/api/v1/daily-reports/{id}/resolve-flag` | 处理异常 | supervisor, project_owner |
 | POST | `/api/v1/daily-reports/{id}/confirm-final` | 终审确认 | finance, admin |
 | POST | `/api/v1/daily-reports/{id}/lock` | 锁定入账 | admin, system |
 | GET | `/api/v1/daily-reports/stats` | 获取统计数据 | 登录用户 |
@@ -377,17 +377,17 @@ Content-Type: application/json
 
 ### 6.1 功能权限
 
-| 功能 | ceo | finance | data_operator | supervisor | pitcher | admin |
-|------|-----|---------|---------------|------------|---------|-------|
-| 查看列表 | ✓ | ✓ | ✓ | ✓ | ○ | ✓ |
-| 创建日报 | - | - | - | - | ✓ | ✓ |
-| 修改日报 | - | - | - | - | ○ | ✓ |
-| 趋势审核 | - | - | ✓ | ✓ | - | ✓ |
-| 标记异常 | - | - | ✓ | ✓ | - | ✓ |
-| 处理异常 | - | - | ✓ | ✓ | - | ✓ |
-| 终审确认 | - | ✓ | ✓ | - | - | ✓ |
-| 锁定入账 | - | - | - | - | - | ✓ |
-| 导出数据 | ✓ | ✓ | ✓ | ✓ | - | ✓ |
+| 功能 | ceo | project_owner | finance | supervisor | pitcher | account_manager | admin |
+|------|-----|---------------|---------|------------|---------|-----------------|-------|
+| 查看列表 | ✓ | ✓ | ✓ | ✓ | ○ | ✓ | ✓ |
+| 创建日报 | - | - | - | - | ✓ | - | ✓ |
+| 修改日报 | - | - | - | - | ○ | - | ✓ |
+| 趋势审核 | - | ✓ | - | ✓ | - | - | ✓ |
+| 标记异常 | - | ✓ | - | ✓ | - | - | ✓ |
+| 处理异常 | - | ✓ | - | ✓ | - | - | ✓ |
+| 终审确认 | - | - | ✓ | - | - | - | ✓ |
+| 锁定入账 | - | - | - | - | - | - | ✓ |
+| 导出数据 | ✓ | ✓ | ✓ | ✓ | - | - | ✓ |
 
 **说明**: ✓ = 全部可见, ○ = 仅自己相关, - = 无权限
 
@@ -396,10 +396,11 @@ Content-Type: application/json
 | 角色 | 数据范围 |
 |------|----------|
 | `ceo` | 全部日报 |
+| `project_owner` | 所负责项目的日报 |
 | `finance` | 全部日报 |
-| `data_operator` | 全部日报 |
 | `supervisor` | 所管辖团队的日报 |
 | `pitcher` | 仅自己的日报 |
+| `account_manager` | 所管理账户的日报 |
 | `admin` | 全部日报 |
 
 ---

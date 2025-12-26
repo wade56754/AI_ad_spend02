@@ -75,6 +75,49 @@ class ProjectStatus(str, Enum):
         return target in transitions.get(self, [])
 
 
+class FulfillmentStatus(str, Enum):
+    """
+    项目履约状态枚举
+
+    必须与 BUSINESS_RULES.md v4.6 BR-PROJ-006 保持严格一致。
+    履约状态: running → fulfilled
+    终态: fulfilled (不可回退)
+
+    SoT Reference: BUSINESS_RULES.md v4.6 §4.3.1, BI-06
+    """
+    RUNNING = "running"        # 履约中 - 项目正在投放
+    FULFILLED = "fulfilled"    # 已履约 - 终态，可确认收入
+
+    def can_transition_to(self, target: 'FulfillmentStatus') -> bool:
+        """
+        检查是否可以转换到目标状态
+
+        状态流转规则（基于 BUSINESS_RULES.md v4.6 BR-PROJ-006）：
+        - running -> fulfilled
+        - fulfilled -> (终态，不可回退)
+        """
+        transitions = {
+            self.RUNNING: [self.FULFILLED],
+            self.FULFILLED: [],  # 终态
+        }
+        return target in transitions.get(self, [])
+
+
+class FulfillmentReason(str, Enum):
+    """
+    履约结束原因枚举
+
+    必须与 BUSINESS_RULES.md v4.6 BI-06 保持严格一致。
+    履约完成当且仅当满足以下任一条件:
+    - spend_exhausted: 广告费消耗完
+    - client_stopped: 甲方明确喊停
+
+    SoT Reference: BUSINESS_RULES.md v4.6 §1.5.2, BI-06
+    """
+    SPEND_EXHAUSTED = "spend_exhausted"  # 消耗完毕 - 预算全部投放完毕
+    CLIENT_STOPPED = "client_stopped"    # 客户喊停 - 客户主动终止投放
+
+
 class AdAccountStatus(str, Enum):
     """广告账户状态枚举"""
     NEW = "new"

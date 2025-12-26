@@ -6,7 +6,7 @@
 > **Owner**: wade
 > **创建日期**: 2025-12-06
 > **更新日期**: 2025-12-07
-> **Baseline**: MASTER.md v3.5, Agent Layer Freeze v1.0, SoT Freeze v2.6
+> **Baseline**: MASTER.md v4.4, Agent Layer Freeze v1.0, SoT Freeze v2.6
 
 ---
 
@@ -2169,4 +2169,4 @@ git push origin feature/topup-approval
 
 ---
 
-**文档控制**: Owner: wade | Baseline: MASTER.md v3.5, Agent Layer Freeze v1.0, SoT Freeze v2.6
+**文档控制**: Owner: wade | Baseline: MASTER.md v4.4, Agent Layer Freeze v1.0, SoT Freeze v2.6

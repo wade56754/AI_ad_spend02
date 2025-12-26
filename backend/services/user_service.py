@@ -1,13 +1,24 @@
 """
-用户管理服务层
+用户管理服务层 (重构版)
 
 SoT References:
-- API_SOT.md v9.0 §5 Users API
-- DATA_SCHEMA.md v5.2 §3.1.1 users 表
+- API_SOT.md v9.3 §5 Users API
+- DATA_SCHEMA.md v5.3 §3.1.1 users 表
+- MASTER.md v4.4 §2.4 (7角色模型)
 - BUSINESS_RULES.md BR-USER-001 (用户名唯一), BR-USER-002 (邮箱唯一)
-- ERROR_CODES_SOT.md v2.1: AUTH_500, VALIDATION_002, BIZ_002, DB_004
+- ERROR_CODES_SOT.md v2.1: PERM-001, VAL-001, RES-001, BIZ-002
 
-Author: AI 代码工厂 v2.4
+依赖代码块:
+- pagination: 分页查询
+- permission-filter: 权限过滤
+
+权限矩阵 (MASTER.md v4.4 §2.4):
+- admin: 用户 CRUD
+- ceo, finance, supervisor: 查看用户列表和统计
+- 其他角色: 仅查看自己
+
+Version: 2.0
+Author: Claude Code
 """
 from typing import List, Optional, Tuple
 from uuid import UUID
@@ -398,12 +409,12 @@ class UserService:
         """
         获取用户统计信息
 
-        权限: admin, finance, data_operator
+        权限 (MASTER.md v4.4 §2.4): admin, ceo, finance, supervisor
 
         Returns:
             统计数据字典
         """
-        allowed_roles = ["admin", "finance", "data_operator"]
+        allowed_roles = ["admin", "ceo", "finance", "supervisor"]
         if current_user.role not in allowed_roles:
             raise PermissionDeniedError(
                 message="权限不足：无法查看用户统计",

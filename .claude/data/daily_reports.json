@@ -1,0 +1,1823 @@
+{
+  "reports": {
+    "2025-12-24": {
+      "date": "2025-12-24",
+      "generated_at": "2025-12-24T20:27:37.442084",
+      "sessions": [
+        {
+          "session_id": "test-session",
+          "start_time": "2025-12-24T19:00:00",
+          "end_time": "2025-12-24T19:45:58.941115",
+          "duration": "45m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "frontend/src/features/dashboard/test.ts"
+          ],
+          "file_types": {
+            ".ts": 1
+          },
+          "tools_used": {
+            "Write": 1
+          },
+          "total_tool_calls": 1,
+          "modules_touched": [
+            "A1"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "test-session",
+          "start_time": "2025-12-24T20:00:00",
+          "end_time": "2025-12-24T20:14:01.017585",
+          "duration": "14m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "backend/services/test.py",
+            "frontend/src/features/dashboard/test.tsx"
+          ],
+          "file_types": {
+            ".py": 1,
+            ".tsx": 1
+          },
+          "tools_used": {
+            "Write": 1,
+            "Edit": 1
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [
+            "A1"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "48980157-f2a1-46b4-bf4d-722d95fd7d05",
+          "start_time": "2025-12-24T20:22:11.335351",
+          "end_time": "2025-12-24T20:22:37.579784",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "48980157-f2a1-46b4-bf4d-722d95fd7d05",
+          "start_time": "2025-12-24T20:26:25.419340",
+          "end_time": "2025-12-24T20:26:40.252158",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "48980157-f2a1-46b4-bf4d-722d95fd7d05",
+          "start_time": "2025-12-24T20:27:24.141403",
+          "end_time": "2025-12-24T20:27:37.436154",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        }
+      ],
+      "total_files_modified": 3,
+      "total_tool_calls": 15,
+      "modules_touched": [
+        "A1"
+      ],
+      "progress_snapshot": {
+        "overall": 48,
+        "modules": {
+          "A1": 100,
+          "A2": 26,
+          "A3": 0,
+          "B1": 80,
+          "B2": 40,
+          "B3": 0,
+          "C1": 93,
+          "C2": 43,
+          "C3": 0,
+          "D1": 100,
+          "E1": 0
+        }
+      }
+    },
+    "2025-12-25": {
+      "date": "2025-12-25",
+      "generated_at": "2025-12-25T23:25:07.782235",
+      "sessions": [
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:15:32.005059",
+          "end_time": "2025-12-25T00:16:06.434981",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:17:35.254586",
+          "end_time": "2025-12-25T00:19:40.679078",
+          "duration": "2m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 8
+          },
+          "total_tool_calls": 8,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:23:16.565300",
+          "end_time": "2025-12-25T00:24:44.437694",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 6
+          },
+          "total_tool_calls": 6,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:25:33.058401",
+          "end_time": "2025-12-25T00:27:38.184843",
+          "duration": "2m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 20
+          },
+          "total_tool_calls": 20,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:38:30.764869",
+          "end_time": "2025-12-25T00:39:06.543375",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:44:02.931376",
+          "end_time": "2025-12-25T00:46:32.133665",
+          "duration": "2m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 6
+          },
+          "total_tool_calls": 6,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:48:29.562166",
+          "end_time": "2025-12-25T00:49:05.997517",
+          "duration": "0m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\test_pagination.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Write": 1,
+            "Bash": 4
+          },
+          "total_tool_calls": 5,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:51:22.533872",
+          "end_time": "2025-12-25T00:52:27.485782",
+          "duration": "1m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\test_permissions.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Write": 1,
+            "Edit": 2,
+            "Bash": 4
+          },
+          "total_tool_calls": 7,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T00:57:20.790882",
+          "end_time": "2025-12-25T00:58:02.209500",
+          "duration": "0m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\test_state_machine.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Write": 1,
+            "Bash": 4
+          },
+          "total_tool_calls": 5,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:04:39.451590",
+          "end_time": "2025-12-25T01:06:38.137202",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 6
+          },
+          "total_tool_calls": 6,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:14:58.354678",
+          "end_time": "2025-12-25T01:19:12.667671",
+          "duration": "4m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 8
+          },
+          "total_tool_calls": 8,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:25:26.173223",
+          "end_time": "2025-12-25T01:28:38.820771",
+          "duration": "3m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 6
+          },
+          "total_tool_calls": 6,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:38:39.420701",
+          "end_time": "2025-12-25T01:39:17.354521",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:40:15.464124",
+          "end_time": "2025-12-25T01:42:04.756277",
+          "duration": "1m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\tests\\api\\test_finance_profit_flow_generated.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Bash": 10,
+            "Edit": 2
+          },
+          "total_tool_calls": 12,
+          "modules_touched": [
+            "A3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:43:43.904953",
+          "end_time": "2025-12-25T01:45:20.139523",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:52:15.183826",
+          "end_time": "2025-12-25T01:52:57.470648",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T01:56:10.714097",
+          "end_time": "2025-12-25T01:57:33.228282",
+          "duration": "1m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\services\\ad_spend_service.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Edit": 2,
+            "Bash": 6
+          },
+          "total_tool_calls": 8,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T02:04:03.805933",
+          "end_time": "2025-12-25T02:04:48.711836",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 8
+          },
+          "total_tool_calls": 8,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T02:08:53.459035",
+          "end_time": "2025-12-25T02:09:21.895560",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T02:15:39.257462",
+          "end_time": "2025-12-25T02:17:02.103953",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 12
+          },
+          "total_tool_calls": 12,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T02:17:59.699436",
+          "end_time": "2025-12-25T02:18:22.660316",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "1a2ef681-0a3d-441e-84fd-04e16b86fb02",
+          "start_time": "2025-12-25T04:12:49.867361",
+          "end_time": "2025-12-25T04:14:33.217839",
+          "duration": "1m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\.lsp.json"
+          ],
+          "file_types": {
+            ".json": 1
+          },
+          "tools_used": {
+            "Bash": 6,
+            "Write": 1
+          },
+          "total_tool_calls": 7,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "6a68bf84-2390-4868-ab05-3ce4828e8991",
+          "start_time": "2025-12-25T04:15:33.677311",
+          "end_time": "2025-12-25T04:16:26.406353",
+          "duration": "0m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\.lsp.json"
+          ],
+          "file_types": {
+            ".json": 1
+          },
+          "tools_used": {
+            "Bash": 6,
+            "Write": 2
+          },
+          "total_tool_calls": 8,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-25T19:26:59.201372",
+          "end_time": "2025-12-25T19:27:22.751067",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-25T19:43:12.691571",
+          "end_time": "2025-12-25T19:43:21.394305",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-25T19:54:48.705169",
+          "end_time": "2025-12-25T19:58:57.955786",
+          "duration": "4m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 24
+          },
+          "total_tool_calls": 24,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "41a9e834-e671-4cc9-9dfd-617e5e380082",
+          "start_time": "2025-12-25T20:46:19.766732",
+          "end_time": "2025-12-25T20:46:49.642339",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "41a9e834-e671-4cc9-9dfd-617e5e380082",
+          "start_time": "2025-12-25T20:58:50.060642",
+          "end_time": "2025-12-25T21:01:46.375384",
+          "duration": "2m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\test_user_schema.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Bash": 12,
+            "Write": 1
+          },
+          "total_tool_calls": 13,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "41a9e834-e671-4cc9-9dfd-617e5e380082",
+          "start_time": "2025-12-25T21:30:12.538997",
+          "end_time": "2025-12-25T21:35:50.246577",
+          "duration": "5m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\test_api.py",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\daily-reports\\services\\dailyReportsApi.ts"
+          ],
+          "file_types": {
+            ".py": 1,
+            ".ts": 1
+          },
+          "tools_used": {
+            "Bash": 14,
+            "Write": 1,
+            "Edit": 7
+          },
+          "total_tool_calls": 22,
+          "modules_touched": [
+            "B1",
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "41a9e834-e671-4cc9-9dfd-617e5e380082",
+          "start_time": "2025-12-25T21:42:51.290829",
+          "end_time": "2025-12-25T21:46:29.287794",
+          "duration": "3m",
+          "files_modified_count": 4,
+          "files_modified": [
+            "d:/project/AI_ad_spend02/backend/alembic/versions/20251225_add_pricing_and_expenses.py",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance-profit\\services\\profitApi.ts",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance-profit\\types\\profit.types.ts",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance-profit\\hooks\\useProfit.ts"
+          ],
+          "file_types": {
+            ".py": 1,
+            ".ts": 3
+          },
+          "tools_used": {
+            "Write": 1,
+            "Edit": 5,
+            "Bash": 28
+          },
+          "total_tool_calls": 34,
+          "modules_touched": [
+            "A3",
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-25T21:50:17.167447",
+          "end_time": "2025-12-25T21:51:46.544082",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-25T22:02:36.559570",
+          "end_time": "2025-12-25T22:08:07.021286",
+          "duration": "5m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "d:/project/AI_ad_spend02/update_schema.py",
+            "d:/project/AI_ad_spend02/scripts/update_data_schema.py"
+          ],
+          "file_types": {
+            ".py": 2
+          },
+          "tools_used": {
+            "Bash": 28,
+            "Write": 2
+          },
+          "total_tool_calls": 30,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 48,
+          "completed_tasks": 11,
+          "in_progress_tasks": 6
+        },
+        {
+          "session_id": "41a9e834-e671-4cc9-9dfd-617e5e380082",
+          "start_time": "2025-12-25T22:32:37.751101",
+          "end_time": "2025-12-25T22:45:44.133711",
+          "duration": "13m",
+          "files_modified_count": 22,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\routers\\finance_v2.py",
+            "D:\\project\\AI_ad_spend02\\backend\\main.py",
+            "D:\\project\\AI_ad_spend02\\backend\\routers\\__init__.py",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\types\\finance.types.ts",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\services\\financeApi.ts",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\hooks\\useFinance.ts",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\FundOverview\\FundSummaryCards.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\FundOverview\\ReceivablesTable.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\FundOverview\\FundDistribution.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\FundOverview\\index.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\ProfitAnalysis\\ProfitSummaryCards.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\ProfitAnalysis\\ProjectProfitTable.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\ProfitAnalysis\\SupplierCostTable.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\ProfitAnalysis\\ProfitTrendChart.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\ProfitAnalysis\\index.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\FundOverviewPage.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\ProfitAnalysisPage.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\index.ts",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\(dashboard)\\finance\\fund\\page.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\(dashboard)\\finance\\profit\\page.tsx"
+          ],
+          "file_types": {
+            ".py": 3,
+            ".ts": 5,
+            ".tsx": 14
+          },
+          "tools_used": {
+            "Write": 14,
+            "Edit": 12,
+            "Bash": 4
+          },
+          "total_tool_calls": 30,
+          "modules_touched": [
+            "A3",
+            "A1",
+            "C3",
+            "A2"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-25T23:06:35.052652",
+          "end_time": "2025-12-25T23:25:07.775549",
+          "duration": "18m",
+          "files_modified_count": 8,
+          "files_modified": [
+            "d:/project/AI_ad_spend02/backend/services/dashboard/__init__.py",
+            "d:/project/AI_ad_spend02/backend/schemas/dashboard/__init__.py",
+            "d:\\project\\AI_ad_spend02\\test_imports.py",
+            "d:\\project\\AI_ad_spend02\\backend\\schemas\\dashboard\\__init__.py",
+            "d:\\project\\AI_ad_spend02\\frontend\\src\\features\\dashboard\\services\\dashboardApi.ts",
+            "d:\\project\\AI_ad_spend02\\frontend\\src\\features\\dashboard\\hooks\\useDashboardData.ts",
+            "d:\\project\\AI_ad_spend02\\frontend\\src\\features\\dashboard\\components\\CEODashboardV3.tsx",
+            "d:\\project\\AI_ad_spend02\\frontend\\src\\features\\dashboard\\components\\index.ts"
+          ],
+          "file_types": {
+            ".py": 4,
+            ".ts": 3,
+            ".tsx": 1
+          },
+          "tools_used": {
+            "Bash": 24,
+            "Write": 4,
+            "Edit": 7
+          },
+          "total_tool_calls": 35,
+          "modules_touched": [
+            "A1",
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        }
+      ],
+      "total_files_modified": 46,
+      "total_tool_calls": 352,
+      "modules_touched": [
+        "C3",
+        "A1",
+        "B1",
+        "A3",
+        "A2"
+      ],
+      "progress_snapshot": {
+        "overall": 49,
+        "modules": {
+          "A1": 100,
+          "A2": 33,
+          "A3": 0,
+          "B1": 83,
+          "B2": 40,
+          "B3": 0,
+          "C1": 93,
+          "C2": 43,
+          "C3": 0,
+          "D1": 100,
+          "E1": 0
+        }
+      }
+    },
+    "2025-12-26": {
+      "date": "2025-12-26",
+      "generated_at": "2025-12-26T17:54:58.384234",
+      "sessions": [
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-25T23:29:49.226823",
+          "end_time": "2025-12-26T00:00:30.411542",
+          "duration": "30m",
+          "files_modified_count": 6,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\test_cash_status.py",
+            "D:\\project\\AI_ad_spend02\\test_ceo_v3_services.py",
+            "D:\\project\\AI_ad_spend02\\test_ceo_v3_historical.py",
+            "D:\\project\\AI_ad_spend02\\test_check_data.py",
+            "D:\\project\\AI_ad_spend02\\test_check_schema.py",
+            "D:\\project\\AI_ad_spend02\\test_check_values.py"
+          ],
+          "file_types": {
+            ".py": 6
+          },
+          "tools_used": {
+            "Bash": 158,
+            "Write": 6,
+            "Edit": 2
+          },
+          "total_tool_calls": 166,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T00:08:50.568312",
+          "end_time": "2025-12-26T00:11:30.952637",
+          "duration": "2m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 18
+          },
+          "total_tool_calls": 18,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T00:12:10.787888",
+          "end_time": "2025-12-26T00:13:16.664638",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 12
+          },
+          "total_tool_calls": 12,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T00:14:08.051141",
+          "end_time": "2025-12-26T00:15:09.451662",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 8
+          },
+          "total_tool_calls": 8,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T00:15:58.308572",
+          "end_time": "2025-12-26T00:17:35.362933",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 6
+          },
+          "total_tool_calls": 6,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T00:19:07.647770",
+          "end_time": "2025-12-26T00:42:02.976812",
+          "duration": "22m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\(dashboard)\\page.tsx"
+          ],
+          "file_types": {
+            ".tsx": 1
+          },
+          "tools_used": {
+            "Edit": 1,
+            "Bash": 132
+          },
+          "total_tool_calls": 133,
+          "modules_touched": [
+            "A1"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T00:49:57.777939",
+          "end_time": "2025-12-26T00:53:05.045222",
+          "duration": "3m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\dashboard\\components\\CEODashboardV3.tsx"
+          ],
+          "file_types": {
+            ".tsx": 1
+          },
+          "tools_used": {
+            "Edit": 3
+          },
+          "total_tool_calls": 3,
+          "modules_touched": [
+            "A1"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T01:06:49.286573",
+          "end_time": "2025-12-26T01:17:56.519865",
+          "duration": "11m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\scripts\\diagnose_project_data.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Bash": 6,
+            "Write": 1
+          },
+          "total_tool_calls": 7,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T01:21:30.731252",
+          "end_time": "2025-12-26T01:24:29.368254",
+          "duration": "2m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 6
+          },
+          "total_tool_calls": 6,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T01:26:03.142585",
+          "end_time": "2025-12-26T01:26:30.056082",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T01:56:36.373559",
+          "end_time": "2025-12-26T02:02:49.035210",
+          "duration": "6m",
+          "files_modified_count": 4,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\error.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\global-error.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\(dashboard)\\error.tsx",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\(dashboard)\\projects\\page.tsx"
+          ],
+          "file_types": {
+            ".tsx": 4
+          },
+          "tools_used": {
+            "Bash": 12,
+            "Write": 3,
+            "Edit": 1
+          },
+          "total_tool_calls": 16,
+          "modules_touched": [
+            "C3",
+            "A1"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T02:04:03.297860",
+          "end_time": "2025-12-26T02:12:16.304912",
+          "duration": "8m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\.claude\\commands\\restart.md"
+          ],
+          "file_types": {
+            ".md": 1
+          },
+          "tools_used": {
+            "Write": 1,
+            "Bash": 72
+          },
+          "total_tool_calls": 73,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T02:13:52.526447",
+          "end_time": "2025-12-26T02:22:27.733334",
+          "duration": "8m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\test-ceo-dashboard.js"
+          ],
+          "file_types": {
+            ".js": 1
+          },
+          "tools_used": {
+            "Bash": 8,
+            "Write": 1,
+            "Edit": 7
+          },
+          "total_tool_calls": 16,
+          "modules_touched": [
+            "A1"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T02:30:50.168115",
+          "end_time": "2025-12-26T02:34:28.165689",
+          "duration": "3m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\app\\icon.svg",
+            "D:\\project\\AI_ad_spend02\\frontend\\public\\favicon.svg"
+          ],
+          "file_types": {
+            ".svg": 2
+          },
+          "tools_used": {
+            "Bash": 20,
+            "Write": 2
+          },
+          "total_tool_calls": 22,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T02:40:33.787497",
+          "end_time": "2025-12-26T02:50:54.145569",
+          "duration": "10m",
+          "files_modified_count": 4,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\services\\financeApi.ts",
+            "D:\\project\\AI_ad_spend02\\test-api.js",
+            "D:\\project\\AI_ad_spend02\\frontend\\src\\features\\finance\\components\\FinancePage.tsx",
+            "D:\\project\\AI_ad_spend02\\test-finance.js"
+          ],
+          "file_types": {
+            ".ts": 1,
+            ".js": 2,
+            ".tsx": 1
+          },
+          "tools_used": {
+            "Edit": 7,
+            "Bash": 18,
+            "Write": 2
+          },
+          "total_tool_calls": 27,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "55abfa74-9fcf-487f-88aa-9d28a3234ae4",
+          "start_time": "2025-12-26T03:54:26.752979",
+          "end_time": "2025-12-26T03:54:45.536448",
+          "duration": "0m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\.mcp.json"
+          ],
+          "file_types": {
+            ".json": 1
+          },
+          "tools_used": {
+            "Edit": 1
+          },
+          "total_tool_calls": 1,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "b9f1ae96-21ca-49b6-9ca4-d997e57d8d2a",
+          "start_time": "2025-12-26T03:59:08.623448",
+          "end_time": "2025-12-26T03:59:15.494199",
+          "duration": "0m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\.mcp.json"
+          ],
+          "file_types": {
+            ".json": 1
+          },
+          "tools_used": {
+            "Edit": 1
+          },
+          "total_tool_calls": 1,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T06:24:38.696587",
+          "end_time": "2025-12-26T06:28:00.332198",
+          "duration": "3m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T06:30:16.899648",
+          "end_time": "2025-12-26T06:30:29.394612",
+          "duration": "0m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\files (1)\\mnt\\user-data\\outputs\\openspec-proposal\\add-reconciliation-control-center\\specs\\data_schema\\spec.md"
+          ],
+          "file_types": {
+            ".md": 1
+          },
+          "tools_used": {
+            "Edit": 1
+          },
+          "total_tool_calls": 1,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T06:35:33.896933",
+          "end_time": "2025-12-26T06:36:40.652285",
+          "duration": "1m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\alembic\\versions\\20251226_add_reconciliation_control_center.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Write": 1
+          },
+          "total_tool_calls": 1,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T06:37:21.992291",
+          "end_time": "2025-12-26T06:42:59.076908",
+          "duration": "5m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\models\\reconciliation\\__init__.py",
+            "D:\\project\\AI_ad_spend02\\backend\\models\\__init__.py"
+          ],
+          "file_types": {
+            ".py": 2
+          },
+          "tools_used": {
+            "Write": 1,
+            "Edit": 2,
+            "Bash": 2
+          },
+          "total_tool_calls": 5,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T06:46:03.760106",
+          "end_time": "2025-12-26T06:51:01.897599",
+          "duration": "4m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\routers\\__init__.py",
+            "D:\\project\\AI_ad_spend02\\backend\\main.py"
+          ],
+          "file_types": {
+            ".py": 2
+          },
+          "tools_used": {
+            "Edit": 3
+          },
+          "total_tool_calls": 3,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "7d968762-f227-4380-ba44-97f428da379d",
+          "start_time": "2025-12-26T07:01:33.890350",
+          "end_time": "2025-12-26T07:11:40.844760",
+          "duration": "10m",
+          "files_modified_count": 5,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\models\\reconciliation\\__init__.py",
+            "D:\\project\\AI_ad_spend02\\backend\\models\\__init__.py",
+            "D:/project/AI_ad_spend02/backend/alembic/versions/20251226_add_reconciliation_control_center.py",
+            "D:\\project\\AI_ad_spend02\\backend\\alembic\\versions\\20251226_add_reconciliation_control_center.py",
+            "D:\\project\\AI_ad_spend02\\check_columns.py"
+          ],
+          "file_types": {
+            ".py": 5
+          },
+          "tools_used": {
+            "Bash": 36,
+            "Edit": 4,
+            "Write": 2
+          },
+          "total_tool_calls": 42,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T07:11:46.816096",
+          "end_time": "2025-12-26T07:12:00.708626",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T07:12:03.666328",
+          "end_time": "2025-12-26T07:13:12.988765",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 10
+          },
+          "total_tool_calls": 10,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "7d968762-f227-4380-ba44-97f428da379d",
+          "start_time": "2025-12-26T07:18:09.420151",
+          "end_time": "2025-12-26T07:21:50.952145",
+          "duration": "3m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "D:/project/AI_ad_spend02/test_reconciliation_api.py",
+            "D:\\project\\AI_ad_spend02\\test_reconciliation_api.py"
+          ],
+          "file_types": {
+            ".py": 2
+          },
+          "tools_used": {
+            "Write": 1,
+            "Bash": 2,
+            "Edit": 4
+          },
+          "total_tool_calls": 7,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T07:22:04.792500",
+          "end_time": "2025-12-26T07:22:52.185550",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T07:23:13.839597",
+          "end_time": "2025-12-26T07:24:25.552238",
+          "duration": "1m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 14
+          },
+          "total_tool_calls": 14,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T07:24:43.858050",
+          "end_time": "2025-12-26T07:24:49.315192",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "18384160-ef09-42c1-bbaa-a54d52c77a10",
+          "start_time": "2025-12-26T07:25:13.063089",
+          "end_time": "2025-12-26T07:26:12.714639",
+          "duration": "0m",
+          "files_modified_count": 1,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\backend\\main.py"
+          ],
+          "file_types": {
+            ".py": 1
+          },
+          "tools_used": {
+            "Bash": 4,
+            "Edit": 1
+          },
+          "total_tool_calls": 5,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "7d968762-f227-4380-ba44-97f428da379d",
+          "start_time": "2025-12-26T07:30:34.531482",
+          "end_time": "2025-12-26T07:32:40.966924",
+          "duration": "2m",
+          "files_modified_count": 3,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\openspec\\changes\\update-reconciliation-sot-7-role\\proposal.md",
+            "D:\\project\\AI_ad_spend02\\openspec\\changes\\update-reconciliation-sot-7-role\\tasks.md",
+            "D:\\project\\AI_ad_spend02\\openspec\\changes\\update-reconciliation-sot-7-role\\specs\\reconciliation\\spec.md"
+          ],
+          "file_types": {
+            ".md": 3
+          },
+          "tools_used": {
+            "Bash": 4,
+            "Write": 3
+          },
+          "total_tool_calls": 7,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "cbca8974-b8d7-446f-9f20-9668c13556ad",
+          "start_time": "2025-12-26T07:33:20.854476",
+          "end_time": "2025-12-26T07:35:59.221534",
+          "duration": "2m",
+          "files_modified_count": 3,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\docs\\2.sot\\RECONCILIATION_SOT.md",
+            "D:\\project\\AI_ad_spend02\\openspec\\changes\\archive\\2025-12-26-add-reconciliation-control-center\\proposal.md",
+            "D:\\project\\AI_ad_spend02\\openspec\\changes\\archive\\2025-12-26-add-reconciliation-control-center\\tasks.md"
+          ],
+          "file_types": {
+            ".md": 3
+          },
+          "tools_used": {
+            "Bash": 20,
+            "Edit": 5,
+            "Write": 2
+          },
+          "total_tool_calls": 27,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "7d968762-f227-4380-ba44-97f428da379d",
+          "start_time": "2025-12-26T07:36:24.699363",
+          "end_time": "2025-12-26T07:37:07.856757",
+          "duration": "0m",
+          "files_modified_count": 2,
+          "files_modified": [
+            "D:\\project\\AI_ad_spend02\\docs\\2.sot\\RECONCILIATION_SOT.md",
+            "D:\\project\\AI_ad_spend02\\openspec\\changes\\update-reconciliation-sot-7-role\\tasks.md"
+          ],
+          "file_types": {
+            ".md": 2
+          },
+          "tools_used": {
+            "Edit": 1,
+            "Write": 1
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [
+            "C3"
+          ],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "7d968762-f227-4380-ba44-97f428da379d",
+          "start_time": "2025-12-26T07:37:30.308628",
+          "end_time": "2025-12-26T07:38:22.827128",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 12
+          },
+          "total_tool_calls": 12,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "7d968762-f227-4380-ba44-97f428da379d",
+          "start_time": "2025-12-26T15:52:38.708605",
+          "end_time": "2025-12-26T15:53:09.753475",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 6
+          },
+          "total_tool_calls": 6,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "02348a1f-0810-45a7-b57e-8f9f167ef913",
+          "start_time": "2025-12-26T17:44:30.790031",
+          "end_time": "2025-12-26T17:44:50.052088",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "02348a1f-0810-45a7-b57e-8f9f167ef913",
+          "start_time": "2025-12-26T17:49:08.658745",
+          "end_time": "2025-12-26T17:49:22.847278",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "02348a1f-0810-45a7-b57e-8f9f167ef913",
+          "start_time": "2025-12-26T17:54:42.500303",
+          "end_time": "2025-12-26T17:54:58.377371",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        }
+      ],
+      "total_files_modified": 45,
+      "total_tool_calls": 681,
+      "modules_touched": [
+        "A1",
+        "C3"
+      ],
+      "progress_snapshot": {
+        "overall": 49,
+        "modules": {
+          "A1": 100,
+          "A2": 33,
+          "A3": 0,
+          "B1": 83,
+          "B2": 40,
+          "B3": 0,
+          "C1": 93,
+          "C2": 43,
+          "C3": 0,
+          "D1": 100,
+          "E1": 0
+        }
+      }
+    },
+    "2025-12-27": {
+      "date": "2025-12-27",
+      "generated_at": "2025-12-27T01:02:28.669836",
+      "sessions": [
+        {
+          "session_id": "24b6b094-62ba-4929-aa63-b354bd190a41",
+          "start_time": "2025-12-27T01:00:44.007861",
+          "end_time": "2025-12-27T01:00:48.804605",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "24b6b094-62ba-4929-aa63-b354bd190a41",
+          "start_time": "2025-12-27T01:01:16.087219",
+          "end_time": "2025-12-27T01:01:24.057865",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 2
+          },
+          "total_tool_calls": 2,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "24b6b094-62ba-4929-aa63-b354bd190a41",
+          "start_time": "2025-12-27T01:01:42.031617",
+          "end_time": "2025-12-27T01:01:57.613843",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        },
+        {
+          "session_id": "24b6b094-62ba-4929-aa63-b354bd190a41",
+          "start_time": "2025-12-27T01:02:15.394675",
+          "end_time": "2025-12-27T01:02:28.663021",
+          "duration": "0m",
+          "files_modified_count": 0,
+          "files_modified": [],
+          "file_types": {},
+          "tools_used": {
+            "Bash": 4
+          },
+          "total_tool_calls": 4,
+          "modules_touched": [],
+          "overall_progress": 49,
+          "completed_tasks": 12,
+          "in_progress_tasks": 5
+        }
+      ],
+      "total_files_modified": 0,
+      "total_tool_calls": 12,
+      "modules_touched": [],
+      "progress_snapshot": {
+        "overall": 49,
+        "modules": {
+          "A1": 100,
+          "A2": 33,
+          "A3": 0,
+          "B1": 83,
+          "B2": 40,
+          "B3": 0,
+          "C1": 93,
+          "C2": 43,
+          "C3": 0,
+          "D1": 100,
+          "E1": 0
+        }
+      }
+    }
+  },
+  "last_updated": "2025-12-27T01:02:28.670245"
+}

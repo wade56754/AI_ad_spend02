@@ -72,7 +72,7 @@ function formatPercent(value: number | null): string {
  */
 function StatCardSkeleton() {
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl" data-testid="loading-skeleton">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <Skeleton className="h-12 w-12 rounded-lg" />
@@ -236,7 +236,7 @@ export function FundOverviewPage() {
       <FundAlertBanner occupyRate={overviewData.occupy_rate} />
 
       {/* 核心资金指标 - 5 个卡片 */}
-      <section>
+      <section data-testid="fund-summary">
         <h2 className="text-lg font-semibold text-foreground mb-4">核心指标</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {overviewLoading ? (
@@ -248,24 +248,34 @@ export function FundOverviewPage() {
               <StatCardSkeleton />
             </>
           ) : (
-            FUND_STAT_CARDS_CONFIG.map((config) => (
-              <StatCard
-                key={config.key}
-                title={config.title}
-                value={formatCurrency(getStatValue(config.key))}
-                change={getChangeValue(config.key)}
-                target={getSubInfo(config.key)}
-                icon={iconMap[config.icon]}
-                color={config.color}
-                testId={`fund-stat-${config.key}`}
-              />
-            ))
+            FUND_STAT_CARDS_CONFIG.map((config) => {
+              // 映射测试 ID
+              const testIdMap: Record<string, string> = {
+                total_topup: 'summary-topup',
+                total_spend: 'summary-spend',
+                current_balance: 'summary-balance',
+                total_receivable: 'summary-receivable',
+                fund_occupied: 'summary-occupied',
+              };
+              return (
+                <StatCard
+                  key={config.key}
+                  title={config.title}
+                  value={formatCurrency(getStatValue(config.key))}
+                  change={getChangeValue(config.key)}
+                  target={getSubInfo(config.key)}
+                  icon={iconMap[config.icon]}
+                  color={config.color}
+                  testId={testIdMap[config.key] || `fund-stat-${config.key}`}
+                />
+              );
+            })
           )}
         </div>
       </section>
 
       {/* 资金分布 - 按项目/按渠道 */}
-      <section>
+      <section data-testid="fund-transactions">
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">

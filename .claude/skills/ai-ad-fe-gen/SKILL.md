@@ -1,15 +1,16 @@
 ---
 name: ai-ad-fe-gen
-version: "2.4"
+version: "2.5"
 status: production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-22
+last_reviewed: 2025-12-24
 
 sot_dependencies:
   required:
     - docs/2.sot/API_SOT.md
     - docs/2.sot/STATE_MACHINE.md
+    - docs/3.dev-guides/COMPONENT_REGISTRY.md  # 组件注册表 (71 个组件)
   optional:
     - docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md
     - docs/3.dev-guides/UI_DESIGN_SYSTEM.md
@@ -130,7 +131,34 @@ module_api_boundaries:
 - **表单**: React Hook Form + Zod
 - **类型**: TypeScript strict mode
 
-### 4.4 前端开发规范
+### 4.4 组件使用规范 (COMPONENT_REGISTRY.md)
+
+**组件注册表**: `docs/3.dev-guides/COMPONENT_REGISTRY.md` (71 个组件)
+
+**必须使用的组件**:
+
+| 场景 | 推荐组件 | 导入路径 |
+|------|---------|---------|
+| 数据表格 | DataTable | `@/components/ui/data-table/DataTable` |
+| 加载/错误状态 | DataStateManager | `@/components/ui/data-state-manager` |
+| KPI 卡片 | MetricCard | `@/components/ui/MetricCard` |
+| 状态标签 | StatusBadge | `@/components/ui/StatusBadge` |
+| 表单 | Form + FormField | `@/components/ui/form` |
+| 对话框 | Dialog | `@/components/ui/dialog` |
+| 确认框 | AlertDialog | `@/components/ui/alert-dialog` |
+
+**禁止使用的组件**:
+
+| 组件 | 原因 | 替代方案 |
+|------|------|---------|
+| AppShell | 已弃用 | AppLayout |
+
+**组件引用规则**:
+1. 优先从 COMPONENT_REGISTRY.md 查找现有组件
+2. 禁止自创重复功能的组件
+3. 复杂组件必须使用注册表中定义的 Props 接口
+
+### 4.5 前端开发规范
 
 1. **模块结构**:
    ```
@@ -228,6 +256,10 @@ PRE_ANALYSIS_CONTEXT:
 
 <DOC name="UI_FLOW_SPEC" optional="true">
 {{UI_FLOW_SPEC}}
+</DOC>
+
+<DOC name="COMPONENT_REGISTRY">
+{{COMPONENT_REGISTRY}}
 </DOC>
 
 <API_CONTRACT optional="true">
@@ -798,13 +830,15 @@ export function TopupsPageShell() {
 | 状态值来源 | 每个状态值可追溯到 STATE_MACHINE.md | BLOCKING |
 | 角色值来源 | 每个角色可追溯到 frozenset 白名单 | BLOCKING |
 | 类型定义来源 | 每个类型可追溯到 API_SOT.md 响应结构 | BLOCKING |
-| 组件引用 | 所有 import 的组件在项目中存在 | BLOCKING |
+| 组件引用 | 所有 import 的组件在 COMPONENT_REGISTRY.md 中存在 | BLOCKING |
+| 组件 Props | 使用的 Props 与注册表定义一致 | BLOCKING |
 | API 端点 | 调用的 API 端点在 API_SOT.md 中定义 | BLOCKING |
 
 ## 8. Version History
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.5 | 2025-12-24 | 新增：集成 COMPONENT_REGISTRY.md (71 个组件)，添加组件使用规范 |
 | v2.4 | 2025-12-22 | P1 修复：添加模块 API 边界、幻觉抑制最终确认 |
 | v2.3 | 2025-12-22 | P0 修复：添加模块归属判定步骤、跨模块交互检查 |
 | v2.1 | 2025-12-07 | 增强：集成 SuperClaude pre_analysis 和 post_review |

@@ -1,4 +1,9 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "python .claude/statusline.py",
+    "padding": 0
+  },
   "permissions": {
     "allow": [
       "Bash(python3:*)",
@@ -144,7 +149,8 @@
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "supabase"
+    "supabase",
+    "lark"
   ],
   "hooks": {
     "SessionStart": [

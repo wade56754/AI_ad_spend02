@@ -4,7 +4,7 @@ status: draft
 layer: agent-layer
 owner: wade
 last_reviewed: 2025-12-07
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4, SoT Freeze v2.6
 upstream_sot: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §9.3
 ---
 
@@ -14,7 +14,7 @@ upstream_sot: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §9.3
 > **状态**: Draft
 > **最后审查**: 2025-12-07
 > **上游规范**: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §9.3
-> **基准**: MASTER.md v3.5, SoT Freeze v2.6
+> **基准**: MASTER.md v4.4, SoT Freeze v2.6
 
 ---
 
@@ -829,7 +829,7 @@ def _run_full_pipeline(self, request: Dict[str, Any]) -> OrchestratorResult:
 ## 9. 引用文献
 
 **本文档引用的规范**:
-- MASTER.md v3.4 §6 - Agent 协议规范
+- MASTER.md v4.4 §6 - Agent 协议规范
 - ERROR_CODES_SOT v2.1 §2 - 错误码定义
 - API_SOT v9.0 §3 - API 接口规范
 - agents/tools/types.py - AgentResponse / SkillResult 定义

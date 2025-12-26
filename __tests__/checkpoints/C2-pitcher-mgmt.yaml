@@ -1,0 +1,71 @@
+# C2 投手管理 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "C2-pitcher-mgmt"
+spec_file: "docs/10.module-specs/C2-pitcher-mgmt.md"
+page_path: "/users?role=pitcher"
+priority: P2
+
+checkpoints:
+  # ===== CP-C2-001: 权限测试 =====
+  - id: CP-C2-001
+    category: permission
+    description: 投手管理页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, scope: "全公司" }
+      - { role: finance, expected: denied }
+      - { role: supervisor, expected: allowed, scope: "团队" }
+      - { role: pitcher, expected: allowed, scope: "只看自己" }
+      - { role: project_owner, expected: denied }
+      - { role: account_manager, expected: denied }
+      - { role: admin, expected: allowed, action: "创建+编辑" }
+
+  # ===== CP-C2-002: 页面渲染测试 =====
+  - id: CP-C2-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 投手列表, selector: "[data-testid='pitchers-table']", expected: visible }
+      - { element: 表格列, columns: [姓名, 用户名, 团队, 主管, 负责账户, 状态] }
+
+  # ===== CP-C2-003: 数据状态测试 =====
+  - id: CP-C2-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏 }
+      - { scenario: empty, expected: "暂无投手" }
+      - { scenario: error, expected: 错误提示 }
+      - { scenario: success, expected: 投手列表 }
+
+  # ===== CP-C2-004: 功能操作测试 =====
+  - id: CP-C2-004
+    category: function
+    description: 核心功能操作
+    spec_ref: "§5 API 接口"
+    cases:
+      - { action: 创建投手, role: admin, trigger: "[data-testid='create-pitcher-btn']" }
+      - { action: 编辑投手, role: admin, trigger: "[data-testid='edit-btn-{id}']" }
+      - { action: 停用投手, expected: "is_active=false" }
+      - { action: 启用投手, expected: "is_active=true" }
+      - { action: 分配账户, role: supervisor, trigger: "[data-testid='assign-account-btn']" }
+
+  # ===== CP-C2-005: Phase 1 规则测试 =====
+  - id: CP-C2-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: 账户为空, expected: 警告+可保存 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 2
+  data_cases: 4
+  function_cases: 5
+  phase1_cases: 1
+  total_cases: 19

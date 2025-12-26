@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, API_SOT.md v9.3
+> **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, API_SOT.md v9.3
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
@@ -58,12 +58,12 @@
 
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §6.1 daily_reports | 表结构、字段定义 |
-| STATE_MACHINE.md | v2.6 | §8 日报 8 状态机 | 状态流转规则 |
-| STATE_MACHINE.md | v2.6 | §8.3 趋势风控规则 | TF-001/002/003 定义 |
-| BUSINESS_RULES.md | v3.2 | BR-RPT-001~005 | 日报业务规则 |
-| ERROR_CODES_SOT.md | v2.1 | BIZ_*, STATE_* | 业务错误码 |
-| API_SOT.md | v9.0 | §9.2-9.5 Daily Reports | API 端点规范 |
+| DATA_SCHEMA.md | v5.3 | §6.1 daily_reports | 表结构、字段定义 |
+| STATE_MACHINE.md | v2.7 | §8 日报 8 状态机 | 状态流转规则 |
+| STATE_MACHINE.md | v2.7 | §8.3 趋势风控规则 | TF-001/002/003 定义 |
+| BUSINESS_RULES.md | v4.1 | BR-RPT-001~005 | 日报业务规则 |
+| ERROR_CODES_SOT.md | v2.1 | BIZ_*, STATE_*, VALIDATION_* | 业务错误码 |
+| API_SOT.md | v9.3 | §9.2-9.5 Daily Reports | API 端点规范 |
 | AUTH_SPEC.md | v2.0 | §3 权限矩阵 | 角色权限 |
 | MASTER.md | v4.4 | §2.4 七角色, §5 Phase 1 | Phase 边界 |
 
@@ -73,24 +73,24 @@
 
 ### 2.1 表结构定义
 
-**来源**: DATA_SCHEMA.md v5.2 §6.1, `backend/models/workflow/daily_report.py`
+**来源**: DATA_SCHEMA.md v5.3 §6.1, `backend/models/workflow/daily_report.py`
 
 本模块复用 B1 模块的 `daily_reports` 表，重点关注审核相关字段：
 
 ```sql
 -- 审核相关字段 (daily_reports 表的子集)
 ALTER TABLE daily_reports ADD COLUMN IF NOT EXISTS (
-  -- 三数据流字段 (STATE_MACHINE.md v2.6 §8)
+  -- 三数据流字段 (STATE_MACHINE.md v2.7 §8)
   conversions_raw   INTEGER NOT NULL DEFAULT 0,   -- raw 数据流 - 原始粉数
   conversions_final INTEGER NOT NULL DEFAULT 0,   -- final 数据流 - 最终粉数
   raw_spend         DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- 原始消耗
   real_spend        DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- 真实消耗
   unit_price        DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- 单粉价格
 
-  -- 8 状态机 (STATE_MACHINE.md v2.6 §8)
+  -- 8 状态机 (STATE_MACHINE.md v2.7 §8)
   status            VARCHAR(20) NOT NULL DEFAULT 'raw_submitted',
 
-  -- 趋势风控字段 (STATE_MACHINE.md v2.6 §8.3)
+  -- 趋势风控字段 (STATE_MACHINE.md v2.7 §8.3)
   trend_flag        VARCHAR(20) NOT NULL DEFAULT 'normal',
   trend_flag_reason TEXT,             -- 风控触发原因 (如 TF-001; TF-002)
   trend_resolution_note TEXT,         -- 运营复核说明
@@ -120,7 +120,7 @@ ALTER TABLE daily_reports ADD COLUMN IF NOT EXISTS (
 
 ### 2.3 风控规则表
 
-**来源**: STATE_MACHINE.md v2.6 §8.3
+**来源**: STATE_MACHINE.md v2.7 §8.3
 
 | 规则ID | 规则名称 | 触发条件 | 阈值 |
 |--------|----------|----------|------|
@@ -306,13 +306,14 @@ interface TrendFlaggedListResponse {
 
 | 错误码 | HTTP 状态 | 场景 |
 |--------|-----------|------|
-| VALIDATION_ERROR | 400 | 请求参数验证失败 |
-| UNAUTHORIZED | 401 | 未登录 |
-| AUTH_500 (FORBIDDEN) | 403 | 无权限执行审核操作 |
-| BIZ-002 | 404 | 日报不存在 |
-| STATE-400 | 400 | 无效的状态转换 |
-| STATE-401 | 400 | 当前状态不允许该操作 |
-| SYS-500 | 500 | 系统内部错误 |
+| VALIDATION_001 | 400 | 必填字段缺失 |
+| VALIDATION_002 | 400 | 格式无效 |
+| AUTH_400 | 401 | 未提供认证令牌 |
+| AUTH_500 | 403 | 无权限执行审核操作 |
+| BIZ_002 | 404 | 日报不存在 |
+| STATE_400 | 400 | 无效的状态转换 |
+| STATE_401 | 400 | 跳过必要步骤 |
+| SYS_001 | 500 | 系统内部错误 |
 
 ---
 
@@ -373,7 +374,7 @@ def can_be_reviewed_by(self, user_id: UUID, user_role: UserRole) -> bool:
 
 ### 5.1 审核流程状态机
 
-**来源**: STATE_MACHINE.md v2.6 §8 日报 8 状态机
+**来源**: STATE_MACHINE.md v2.7 §8 日报 8 状态机
 
 本模块负责的状态流转（从 B1 提交后开始）：
 
@@ -842,8 +843,8 @@ async def test_role_permissions(client, role, action, expected):
 ### A.2 SoT 追溯验证 Checklist
 
 生成代码后必须验证：
-- [ ] 所有状态值来自 STATE_MACHINE.md v2.6 §8 (8 状态)
-- [ ] 风控规则来自 STATE_MACHINE.md v2.6 §8.3 (TF-001/002/003)
+- [ ] 所有状态值来自 STATE_MACHINE.md v2.7 §8 (8 状态)
+- [ ] 风控规则来自 STATE_MACHINE.md v2.7 §8.3 (TF-001/002/003)
 - [ ] 所有错误码来自 ERROR_CODES_SOT.md v2.1
 - [ ] 所有角色来自 MASTER.md v4.4 §2.4 (7 个)
 - [ ] 金额字段使用 Decimal(15,2) 类型

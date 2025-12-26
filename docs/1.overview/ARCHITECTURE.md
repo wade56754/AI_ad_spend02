@@ -343,5 +343,5 @@ ARCHITECTURE.md 定义系统技术架构约束：
 
 **文档版本**: v1.0
 **最后更新**: 2025-11-25
-**对齐文档**: MASTER.md v3.4, PROJECT.md v1.2, DOMAIN.md v1.0
+**对齐文档**: MASTER.md v4.4, PROJECT.md v1.2, DOMAIN.md v1.0
 **维护者**: 系统架构师

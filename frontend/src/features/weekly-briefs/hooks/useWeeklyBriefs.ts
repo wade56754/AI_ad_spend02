@@ -200,7 +200,7 @@ export function useRefreshWeeklyBriefs() {
     },
     /** 刷新周报列表 */
     refreshList: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.weeklyBriefs.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.weeklyBriefs.list() });
     },
     /** 刷新周报统计 */
     refreshStats: () => {

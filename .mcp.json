@@ -1,5 +1,21 @@
 {
     "mcpServers": {
+        "lark": {
+            "command": "cmd",
+            "args": [
+                "/c",
+                "npx",
+                "-y",
+                "@larksuiteoapi/lark-mcp",
+                "mcp",
+                "-a",
+                "cli_a98f34e454ba100c",
+                "-s",
+                "C0mABqwJAOAfhGudb8qfCbwool64Q0Tn",
+                "-u",
+                "u-ek2ZcNG5tf4oNgRGnQOIgZk51uWQk4gjXoGaEN402xp5"
+            ]
+        },
         "supabase": {
             "command": "cmd",
             "args": [

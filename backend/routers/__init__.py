@@ -19,9 +19,14 @@ from . import (
     finance_profit,
     import_jobs,
     reconciliation,  # 对账管理
+    reconciliation_control,  # 对账中控 (OpenSpec: add-reconciliation-control-center)
     reports,  # 报表管理
     agents,  # Agent 管理
     spend,  # 消耗导入 (Financial SoT Phase 2)
+    dashboard,  # CEO驾驶舱 (MASTER.md v4.4 §6.5)
+    weekly_briefs,  # 周度简报 (B3-weekly-brief.md)
+    fund,  # 资金总览 (A2-fund-overview.md)
+    finance_v2,  # 财务管理V2 (资金总览+项目盈亏重构)
 )
 
 __all__ = [
@@ -42,10 +47,12 @@ __all__ = [
     "finance_profit",
     "import_jobs",
     "reconciliation",
+    "reconciliation_control",
     "reports",
     "agents",
     "spend",
+    "dashboard",
+    "weekly_briefs",
+    "fund",
+    "finance_v2",
 ]
-
-
-

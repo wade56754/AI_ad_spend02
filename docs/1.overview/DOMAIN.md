@@ -297,5 +297,5 @@ DOMAIN.md 是 SoT 体系的导航入口，职责如下：
 
 **文档版本**: v1.1
 **最后更新**: 2025-12-22
-**对齐文档**: MASTER.md v3.7, PROJECT.md v1.3, CORE_MODULES.md v1.0
+**对齐文档**: MASTER.md v4.4, PROJECT.md v1.3, CORE_MODULES.md v1.0
 **维护者**: 系统架构师

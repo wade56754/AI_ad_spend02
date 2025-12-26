@@ -1,0 +1,72 @@
+# C3 消耗明细 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "C3-spend-detail"
+spec_file: "docs/10.module-specs/C3-spend-detail.md"
+page_path: "/spend"
+priority: P1
+
+checkpoints:
+  # ===== CP-C3-001: 权限测试 =====
+  - id: CP-C3-001
+    category: permission
+    description: 消耗明细页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, scope: "全公司" }
+      - { role: finance, expected: allowed, action: "导出" }
+      - { role: supervisor, expected: allowed, scope: "团队" }
+      - { role: pitcher, expected: allowed, scope: "个人账户" }
+      - { role: project_owner, expected: allowed, scope: "项目" }
+      - { role: account_manager, expected: allowed, scope: "管理账户" }
+      - { role: admin, expected: allowed, action: "导入" }
+
+  # ===== CP-C3-002: 页面渲染测试 =====
+  - id: CP-C3-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "消耗明细" }
+      - { element: 消耗表格, selector: "[data-testid='spend-table']", expected: visible }
+      - { element: 表格列, columns: [账户, 项目, 渠道, 日期, 消耗, 曝光, 点击, 粉数, CPA] }
+
+  # ===== CP-C3-003: 数据状态测试 =====
+  - id: CP-C3-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏 }
+      - { scenario: empty, expected: "暂无消耗数据" }
+      - { scenario: error, expected: 错误提示 }
+      - { scenario: success, expected: 消耗列表 }
+
+  # ===== CP-C3-004: 功能操作测试 =====
+  - id: CP-C3-004
+    category: function
+    description: 核心功能操作
+    spec_ref: "§5 API 接口"
+    cases:
+      - { action: 日期筛选, trigger: "[data-testid='date-filter']", expected: 数据更新 }
+      - { action: 项目筛选, trigger: "[data-testid='project-filter']", expected: 数据过滤 }
+      - { action: 渠道筛选, trigger: "[data-testid='channel-filter']", expected: 数据过滤 }
+      - { action: 导出, role: finance, trigger: "[data-testid='export-btn']", expected: Excel下载 }
+      - { action: 导入, role: admin, trigger: "[data-testid='import-btn']", expected: 数据写入 }
+
+  # ===== CP-C3-005: Phase 1 规则测试 =====
+  - id: CP-C3-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: CPA异常高, expected: 红色高亮+可查看 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 3
+  data_cases: 4
+  function_cases: 5
+  phase1_cases: 1
+  total_cases: 20

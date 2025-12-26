@@ -1,0 +1,242 @@
+# AI 广告代投系统 - 模块任务定义
+# Version: 1.0
+# Last Updated: 2025-12-24
+#
+# 模块编号规则:
+#   A: 数据看板类 (Dashboard, Fund Overview, Project PnL)
+#   B: 日常操作类 (Daily Report, Weekly Brief)
+#   C: 管理类 (Topup, Pitcher, Spend Detail)
+#   D: 项目管理类 (Project Management)
+#   E: 结算类 (Monthly Settlement)
+
+modules:
+  # =========================================================================
+  # A 组: 数据看板
+  # =========================================================================
+  A1:
+    name: "运营驾驶舱"
+    description: "CEO/项目负责人的核心数据看板"
+    priority: 1
+    tasks:
+      A1-001:
+        name: "KPI 卡片组件"
+        description: "消耗、充值、ROAS、CPL 等核心指标"
+        status: completed
+        progress: 100
+      A1-002:
+        name: "趋势图表组件"
+        description: "7日/30日消耗趋势对比"
+        status: completed
+        progress: 100
+      A1-003:
+        name: "待办任务卡片"
+        description: "按优先级显示待处理事项"
+        status: completed
+        progress: 100
+
+  A2:
+    name: "资金总览"
+    description: "财务视角的资金池状态"
+    priority: 2
+    tasks:
+      A2-001:
+        name: "资金池余额展示"
+        description: "总充值、总消耗、可用余额"
+        status: in_progress
+        progress: 60
+      A2-002:
+        name: "充值流水列表"
+        description: "充值记录查询与筛选"
+        status: not_started
+        progress: 0
+      A2-003:
+        name: "账户余额明细"
+        description: "各账户余额汇总"
+        status: not_started
+        progress: 0
+
+  A3:
+    name: "项目盈亏"
+    description: "项目级别的盈亏分析"
+    priority: 3
+    tasks:
+      A3-001:
+        name: "项目盈亏表格"
+        description: "各项目消耗、回款、盈亏"
+        status: not_started
+        progress: 0
+      A3-002:
+        name: "盈亏趋势图"
+        description: "项目盈亏月度趋势"
+        status: not_started
+        progress: 0
+
+  # =========================================================================
+  # B 组: 日常操作
+  # =========================================================================
+  B1:
+    name: "日报提交"
+    description: "投手每日消耗数据提交"
+    priority: 1
+    tasks:
+      B1-001:
+        name: "日报表单组件"
+        description: "消耗、转化数、CPL 输入"
+        status: completed
+        progress: 100
+      B1-002:
+        name: "日报列表页"
+        description: "历史日报查询"
+        status: completed
+        progress: 100
+      B1-003:
+        name: "批量导入功能"
+        description: "Excel/CSV 批量导入"
+        status: in_progress
+        progress: 40
+
+  B2:
+    name: "日报审核"
+    description: "主管审核投手日报"
+    priority: 1
+    tasks:
+      B2-001:
+        name: "待审核列表"
+        description: "趋势异常日报筛选"
+        status: in_progress
+        progress: 70
+      B2-002:
+        name: "审核操作面板"
+        description: "通过/标记异常/备注"
+        status: in_progress
+        progress: 50
+      B2-003:
+        name: "批量审核功能"
+        description: "多条日报批量操作"
+        status: not_started
+        progress: 0
+
+  B3:
+    name: "周报简报"
+    description: "项目周度汇总报告"
+    priority: 2
+    tasks:
+      B3-001:
+        name: "周报生成逻辑"
+        description: "自动汇总周数据"
+        status: not_started
+        progress: 0
+      B3-002:
+        name: "周报展示页面"
+        description: "周报详情与对比"
+        status: not_started
+        progress: 0
+
+  # =========================================================================
+  # C 组: 管理功能
+  # =========================================================================
+  C1:
+    name: "充值审批"
+    description: "充值申请与审批流程"
+    priority: 1
+    tasks:
+      C1-001:
+        name: "充值申请表单"
+        description: "项目负责人发起充值申请"
+        status: completed
+        progress: 100
+      C1-002:
+        name: "审批流程引擎"
+        description: "财务审核 -> 老板批准"
+        status: in_progress
+        progress: 80
+      C1-003:
+        name: "充值记录查询"
+        description: "历史充值记录"
+        status: completed
+        progress: 100
+
+  C2:
+    name: "投手管理"
+    description: "投手账号与绩效管理"
+    priority: 2
+    tasks:
+      C2-001:
+        name: "投手列表页"
+        description: "投手信息与状态"
+        status: completed
+        progress: 100
+      C2-002:
+        name: "投手绩效看板"
+        description: "CPL 达标率、日报准确率"
+        status: not_started
+        progress: 0
+      C2-003:
+        name: "账户分配管理"
+        description: "投手-账户关联"
+        status: in_progress
+        progress: 30
+
+  C3:
+    name: "消耗明细"
+    description: "账户消耗明细查询"
+    priority: 3
+    tasks:
+      C3-001:
+        name: "消耗明细表格"
+        description: "按日期/账户/项目筛选"
+        status: not_started
+        progress: 0
+      C3-002:
+        name: "消耗导出功能"
+        description: "Excel 导出"
+        status: not_started
+        progress: 0
+
+  # =========================================================================
+  # D 组: 项目管理
+  # =========================================================================
+  D1:
+    name: "项目管理"
+    description: "项目 CRUD 与配置"
+    priority: 1
+    tasks:
+      D1-001:
+        name: "项目列表页"
+        description: "项目信息展示"
+        status: completed
+        progress: 100
+      D1-002:
+        name: "项目创建/编辑"
+        description: "项目基本信息维护"
+        status: completed
+        progress: 100
+      D1-003:
+        name: "项目成员管理"
+        description: "项目-用户关联"
+        status: completed
+        progress: 100
+
+  # =========================================================================
+  # E 组: 结算
+  # =========================================================================
+  E1:
+    name: "月度结算"
+    description: "月度财务结算与报告"
+    priority: 3
+    tasks:
+      E1-001:
+        name: "月度结算单生成"
+        description: "自动生成月度结算"
+        status: not_started
+        progress: 0
+      E1-002:
+        name: "结算审核流程"
+        description: "财务确认结算"
+        status: not_started
+        progress: 0
+      E1-003:
+        name: "结算报表导出"
+        description: "Excel/PDF 导出"
+        status: not_started
+        progress: 0

@@ -153,45 +153,84 @@ export function AlertBanner({ alerts, onDismiss, className }: AlertBannerProps) 
 }
 
 /**
- * 生成模拟告警数据的辅助函数
- * TODO: 替换为实际 API 数据
+ * 告警生成参数
  */
-export function generateMockAlerts(): Alert[] {
-  const alerts: Alert[] = [];
+export interface AlertGeneratorParams {
+  abnormal_projects?: number;
+  pending_topups?: number;
+  today_spend?: number;
+  average_spend?: number;
+  total_pending?: number;
+}
 
-  // 示例：余额不足告警
-  const hasBalanceAlert = Math.random() > 0.7;
-  if (hasBalanceAlert) {
+/**
+ * 根据实际数据生成告警
+ */
+export function generateAlertsFromData(params: AlertGeneratorParams): Alert[] {
+  const alerts: Alert[] = [];
+  const {
+    abnormal_projects = 0,
+    pending_topups = 0,
+    today_spend = 0,
+    average_spend = 0,
+    total_pending = 0,
+  } = params;
+
+  // 异常项目告警 (CPL 超标)
+  if (abnormal_projects > 0) {
     alerts.push({
-      id: 'balance-warning',
+      id: 'abnormal-projects',
       severity: 'critical',
-      message: '账户 X 预计 2 天后余额不足',
-      href: '/suppliers',
+      message: `${abnormal_projects} 个项目 CPL 超标，需立即处理`,
+      href: '/projects?filter=abnormal',
     });
   }
 
-  // 示例：消耗异常告警
-  const hasSpendAlert = Math.random() > 0.5;
-  if (hasSpendAlert) {
+  // 消耗异常告警 (今日消耗 > 7日均值 30%)
+  if (average_spend > 0 && today_spend > average_spend * 1.3) {
+    const changePercent = Math.round((today_spend / average_spend - 1) * 100);
     alerts.push({
       id: 'spend-spike',
       severity: 'warning',
-      message: '今日消耗较 7 日均值 +65%',
+      message: `今日消耗较 7 日均值 +${changePercent}%`,
       scrollTo: 'main-trend-chart',
     });
   }
 
-  // 示例：待办事项提醒
-  const pendingCount = Math.floor(Math.random() * 10) + 1;
-  alerts.push({
-    id: 'pending-tasks',
-    severity: 'info',
-    message: `条待处理事项`,
-    count: pendingCount,
-    scrollTo: 'pending-tasks-section',
-  });
+  // 待审批充值告警
+  if (pending_topups > 5) {
+    alerts.push({
+      id: 'pending-topups',
+      severity: 'warning',
+      message: `${pending_topups} 个充值申请待审批`,
+      href: '/topups?status=pending',
+    });
+  }
+
+  // 待办事项提醒
+  if (total_pending > 0) {
+    alerts.push({
+      id: 'pending-tasks',
+      severity: 'info',
+      message: `条待处理事项`,
+      count: total_pending,
+      scrollTo: 'pending-tasks-section',
+    });
+  }
 
   return alerts;
+}
+
+/**
+ * 生成模拟告警数据的辅助函数
+ * @deprecated 使用 generateAlertsFromData 替代
+ */
+export function generateMockAlerts(): Alert[] {
+  return generateAlertsFromData({
+    today_spend: 125680,
+    average_spend: 76170,
+    total_pending: 10,
+  });
 }
 
 export default AlertBanner;

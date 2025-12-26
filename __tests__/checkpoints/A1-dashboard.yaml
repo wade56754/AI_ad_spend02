@@ -1,0 +1,79 @@
+# A1 老板驾驶舱 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "A1-dashboard"
+spec_file: "docs/10.module-specs/A1-dashboard.md"
+page_path: "/"
+priority: P0
+
+checkpoints:
+  # ===== CP-A1-001: 权限测试 =====
+  - id: CP-A1-001
+    category: permission
+    description: 驾驶舱页面访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, scope: "全公司数据" }
+      - { role: finance, expected: allowed, scope: "财务指标" }
+      - { role: supervisor, expected: allowed, scope: "团队数据" }
+      - { role: pitcher, expected: allowed, scope: "个人数据" }
+      - { role: project_owner, expected: allowed, scope: "项目数据" }
+      - { role: account_manager, expected: allowed, scope: "账户数据" }
+      - { role: admin, expected: allowed, scope: "系统概览" }
+
+  # ===== CP-A1-002: 页面渲染测试 =====
+  - id: CP-A1-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "仪表盘" }
+      - { element: KPI卡片区, selector: "[data-testid='kpi-cards']", expected: visible }
+      - { element: 本月消耗卡片, selector: "[data-testid='kpi-spend']", expected: visible }
+      - { element: 本月进粉卡片, selector: "[data-testid='kpi-conversions']", expected: visible }
+      - { element: 整体CPL卡片, selector: "[data-testid='kpi-cpl']", expected: visible }
+      - { element: 预计毛利卡片, selector: "[data-testid='kpi-profit']", expected: visible }
+      - { element: 运营状态区, selector: "[data-testid='ops-status']", expected: visible }
+      - { element: Top列表区, selector: "[data-testid='top-lists']", expected: visible }
+
+  # ===== CP-A1-003: 数据状态测试 =====
+  - id: CP-A1-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏, selector: "[data-testid='loading-skeleton']" }
+      - { scenario: empty, expected: "暂无数据", selector: "[data-testid='empty-state']" }
+      - { scenario: error, expected: 错误提示+重试, selector: "[data-testid='error-state']" }
+      - { scenario: success, expected: KPI数据显示 }
+
+  # ===== CP-A1-004: 功能操作测试 =====
+  - id: CP-A1-004
+    category: function
+    description: 核心功能操作
+    spec_ref: "§5 API 接口"
+    cases:
+      - { action: 时间范围切换, trigger: "[data-testid='time-filter']", expected: 数据刷新 }
+      - { action: KPI卡片点击, trigger: "[data-testid='kpi-spend']", expected: 趋势图联动 }
+      - { action: Top项目点击, trigger: "[data-testid='top-item-0']", expected: 跳转项目详情 }
+      - { action: 待处理事项点击, trigger: "[data-testid='pending-topups']", expected: 跳转对应页面 }
+      - { action: 手动刷新, trigger: "[data-testid='refresh-button']", expected: 重新加载数据 }
+
+  # ===== CP-A1-005: Phase 1 规则测试 =====
+  - id: CP-A1-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: CPL超标项目, expected: 红色高亮+仍可点击, verify: button.toBeEnabled() }
+      - { scenario: 异常项目数>0, expected: 黄色高亮+不阻断导航 }
+
+# ===== 覆盖统计 =====
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 8
+  data_cases: 4
+  function_cases: 5
+  phase1_cases: 2
+  total_cases: 26

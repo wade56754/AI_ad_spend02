@@ -4,7 +4,7 @@ status: ready_for_production
 layer: infrastructure
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
 ---
 
 # CI Pipeline Specification
@@ -743,4 +743,4 @@ def test_external_api_integration():
 
 **Document Version**: v1.0
 **Last Updated**: 2025-11-27
-**Baseline**: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0
+**Baseline**: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0

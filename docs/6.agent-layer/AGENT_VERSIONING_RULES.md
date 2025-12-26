@@ -4,7 +4,7 @@ status: draft
 layer: agent-layer
 owner: wade
 last_reviewed: 2025-12-07
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # Agent 版本管理
@@ -12,7 +12,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
 > **文档版本**: v1.0
 > **状态**: Draft
 > **最后审查**: 2025-12-07
-> **基准**: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+> **基准**: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4, SoT Freeze v2.6
 
 ---
 
@@ -584,7 +584,7 @@ git push origin be-agent-v1.1.0
 ## 9. 引用文献
 
 **本文档引用的规范**:
-- MASTER.md v3.4 §10 - Agent 版本管理
+- MASTER.md v4.4 §10 - Agent 版本管理
 - SoT Freeze v2.6 - SoT 版本对齐
 - Semantic Versioning 2.0.0: https://semver.org/
 - Python PEP 387 - Backwards Compatibility Policy

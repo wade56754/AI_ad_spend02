@@ -11,13 +11,33 @@
  *   raw_submitted → trend_pending → trend_ok/trend_flagged
  *   → trend_resolved → final_pending → final_confirmed → final_locked
  *
- * 注意: 当前使用 mock 数据回退，后端 API 实现后需要对接
+ * 使用真实后端 API 获取数据
  *
  * @module features/daily-reports/services
  */
 
 import { apiFetch, apiFetchPaginated } from '@/lib/api';
 import type { PaginatedResponse } from '@/lib/api';
+
+// 定义下载函数类型 (如果未导出)
+async function apiDownload(url: string, filename: string): Promise<void> {
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('auth-token') || localStorage.getItem('access_token')
+    : null;
+
+  const response = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) throw new Error('Download failed');
+
+  const blob = await response.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 import type {
   DailyReport,
   DailyReportListParams,
@@ -30,223 +50,6 @@ import type {
 
 const BASE_PATH = '/api/v1/daily-reports';
 
-// ========== Mock 数据生成器 ==========
-
-/**
- * 生成 mock 日报列表数据
- * SoT: B2-daily-report-review.md §5.2 响应示例
- * SoT: STATE_MACHINE.md v2.6 Section 8 (8 状态)
- */
-function generateMockDailyReports(): DailyReport[] {
-  return [
-    {
-      id: 1,
-      ad_account_id: 101,
-      ad_account_name: '巨量-001',
-      project_id: 1,
-      project_name: '618大促项目',
-      report_date: '2025-12-22',
-      status: 'trend_flagged' as DailyReportStatus,
-      raw_spend: 5000,
-      follows_count: 120,
-      result_count: 150,
-      cost_per_follow: 41.67,
-      cost_per_result: 33.33,
-      region: 'Turkey',
-      platform: 'FB',
-      currency: 'USD',
-      trend_flag: 'flagged',
-      trend_flag_reason: 'CPL 超标 30%',
-      submitter_name: '张三',
-      team_name: 'A组',
-      created_at: '2025-12-22T10:00:00Z',
-      updated_at: '2025-12-22T10:00:00Z',
-    },
-    {
-      id: 2,
-      ad_account_id: 102,
-      ad_account_name: '广点通-002',
-      project_id: 1,
-      project_name: '618大促项目',
-      report_date: '2025-12-22',
-      status: 'trend_ok' as DailyReportStatus,
-      raw_spend: 3000,
-      follows_count: 100,
-      result_count: 120,
-      cost_per_follow: 30.00,
-      cost_per_result: 25.00,
-      region: 'India',
-      platform: 'Google',
-      currency: 'USD',
-      trend_flag: 'normal',
-      submitter_name: '李四',
-      team_name: 'A组',
-      created_at: '2025-12-22T09:00:00Z',
-      updated_at: '2025-12-22T14:00:00Z',
-    },
-    {
-      id: 3,
-      ad_account_id: 103,
-      ad_account_name: '巨量-003',
-      project_id: 2,
-      project_name: '品牌推广项目',
-      report_date: '2025-12-21',
-      status: 'final_locked' as DailyReportStatus,
-      raw_spend: 4500,
-      follows_count: 150,
-      result_count: 180,
-      cost_per_follow: 30.00,
-      cost_per_result: 25.00,
-      final_spend: 4500,
-      final_conversions: 150,
-      region: 'Germany',
-      platform: 'FB',
-      currency: 'USD',
-      submitter_name: '张三',
-      team_name: 'A组',
-      locked_at: '2025-12-22T10:00:00Z',
-      created_at: '2025-12-21T10:00:00Z',
-      updated_at: '2025-12-22T10:00:00Z',
-    },
-    {
-      id: 4,
-      ad_account_id: 101,
-      ad_account_name: '巨量-001',
-      project_id: 1,
-      project_name: '618大促项目',
-      report_date: '2025-12-22',
-      status: 'trend_pending' as DailyReportStatus,
-      raw_spend: 2800,
-      follows_count: 85,
-      result_count: 100,
-      cost_per_follow: 32.94,
-      cost_per_result: 28.00,
-      region: 'Brazil',
-      platform: 'TikTok',
-      currency: 'USD',
-      submitter_name: '王五',
-      team_name: 'B组',
-      created_at: '2025-12-22T11:00:00Z',
-      updated_at: '2025-12-22T11:00:00Z',
-    },
-    {
-      id: 5,
-      ad_account_id: 104,
-      ad_account_name: '广点通-004',
-      project_id: 2,
-      project_name: '品牌推广项目',
-      report_date: '2025-12-22',
-      status: 'final_pending' as DailyReportStatus,
-      raw_spend: 6200,
-      follows_count: 200,
-      result_count: 240,
-      cost_per_follow: 31.00,
-      cost_per_result: 25.83,
-      region: 'UK',
-      platform: 'FB',
-      currency: 'USD',
-      trend_flag: 'resolved',
-      trend_resolution_note: '已调整出价策略',
-      submitter_name: '李四',
-      team_name: 'A组',
-      created_at: '2025-12-22T08:00:00Z',
-      updated_at: '2025-12-22T16:00:00Z',
-    },
-    {
-      id: 6,
-      ad_account_id: 105,
-      ad_account_name: '巨量-005',
-      project_id: 1,
-      project_name: '618大促项目',
-      report_date: '2025-12-22',
-      status: 'raw_submitted' as DailyReportStatus,
-      raw_spend: 1500,
-      follows_count: 50,
-      result_count: 60,
-      cost_per_follow: 30.00,
-      cost_per_result: 25.00,
-      region: 'Korea',
-      platform: 'Google',
-      currency: 'USD',
-      submitter_name: '赵六',
-      team_name: 'B组',
-      created_at: '2025-12-22T12:00:00Z',
-      updated_at: '2025-12-22T12:00:00Z',
-    },
-    {
-      id: 7,
-      ad_account_id: 102,
-      ad_account_name: '广点通-002',
-      project_id: 2,
-      project_name: '品牌推广项目',
-      report_date: '2025-12-22',
-      status: 'final_confirmed' as DailyReportStatus,
-      raw_spend: 8000,
-      follows_count: 280,
-      result_count: 320,
-      cost_per_follow: 28.57,
-      cost_per_result: 25.00,
-      final_spend: 8000,
-      final_conversions: 280,
-      region: 'France',
-      platform: 'FB',
-      currency: 'USD',
-      submitter_name: '张三',
-      team_name: 'A组',
-      created_at: '2025-12-22T07:00:00Z',
-      updated_at: '2025-12-22T17:00:00Z',
-    },
-    {
-      id: 8,
-      ad_account_id: 103,
-      ad_account_name: '巨量-003',
-      project_id: 1,
-      project_name: '618大促项目',
-      report_date: '2025-12-22',
-      status: 'trend_resolved' as DailyReportStatus,
-      raw_spend: 3500,
-      follows_count: 90,
-      result_count: 110,
-      cost_per_follow: 38.89,
-      cost_per_result: 31.82,
-      region: 'Japan',
-      platform: 'TikTok',
-      currency: 'USD',
-      trend_flag: 'resolved',
-      trend_flag_reason: 'CPL 超标',
-      trend_resolution_note: '已与投手沟通，调整投放策略',
-      submitter_name: '王五',
-      team_name: 'B组',
-      created_at: '2025-12-22T09:30:00Z',
-      updated_at: '2025-12-22T15:00:00Z',
-    },
-  ];
-}
-
-/**
- * 生成 mock 日报统计数据
- * SoT: B2-daily-report-review.md §5.1
- */
-function generateMockDailyReportStats(): Record<DailyReportStatus, number> {
-  const reports = generateMockDailyReports();
-  const stats: Record<DailyReportStatus, number> = {
-    raw_submitted: 0,
-    trend_pending: 0,
-    trend_ok: 0,
-    trend_flagged: 0,
-    trend_resolved: 0,
-    final_pending: 0,
-    final_confirmed: 0,
-    final_locked: 0,
-  };
-
-  reports.forEach((r) => {
-    stats[r.status]++;
-  });
-
-  return stats;
-}
-
 // ========== Query Functions ==========
 
 /**
@@ -257,91 +60,30 @@ function generateMockDailyReportStats(): Record<DailyReportStatus, number> {
 export async function getDailyReports(
   params: DailyReportListParams = {}
 ): Promise<PaginatedResponse<DailyReport>> {
-  // TODO: 后端 API 实现后取消注释
-  // const searchParams = new URLSearchParams();
-  // if (params.project_id) searchParams.set('project_id', String(params.project_id));
-  // if (params.ad_account_id) searchParams.set('ad_account_id', String(params.ad_account_id));
-  // if (params.status) {
-  //   const statuses = Array.isArray(params.status) ? params.status : [params.status];
-  //   statuses.forEach((s) => searchParams.append('status', s));
-  // }
-  // if (params.start_date) searchParams.set('start_date', params.start_date);
-  // if (params.end_date) searchParams.set('end_date', params.end_date);
-  // if (params.search) searchParams.set('search', params.search);
-  // if (params.page) searchParams.set('page', String(params.page));
-  // if (params.page_size) searchParams.set('page_size', String(params.page_size));
-  // if (params.sort_by) searchParams.set('sort_by', params.sort_by);
-  // if (params.sort_order) searchParams.set('sort_order', params.sort_order);
-  // if (params.region) searchParams.set('region', params.region);
-  // if (params.platform) searchParams.set('platform', params.platform);
-  // if (params.team_id) searchParams.set('team_id', params.team_id);
-  // if (params.submitter_name) searchParams.set('submitter_name', params.submitter_name);
-  // const query = searchParams.toString();
-  // const url = query ? `${BASE_PATH}?${query}` : BASE_PATH;
-  // return apiFetchPaginated<DailyReport>(url);
-
-  // Mock 响应
-  let items = generateMockDailyReports();
-
-  // 筛选 - 项目
-  if (params.project_id) {
-    items = items.filter((r) => r.project_id === params.project_id);
-  }
-
-  // 筛选 - 账户
-  if (params.ad_account_id) {
-    items = items.filter((r) => r.ad_account_id === params.ad_account_id);
-  }
-
-  // 筛选 - 状态
+  const searchParams = new URLSearchParams();
+  if (params.project_id) searchParams.set('project_id', String(params.project_id));
+  if (params.ad_account_id) searchParams.set('ad_account_id', String(params.ad_account_id));
   if (params.status) {
     const statuses = Array.isArray(params.status) ? params.status : [params.status];
-    items = items.filter((r) => statuses.includes(r.status));
+    statuses.forEach((s) => searchParams.append('status', s));
   }
+  if (params.start_date) searchParams.set('start_date', params.start_date);
+  if (params.end_date) searchParams.set('end_date', params.end_date);
+  if (params.search) searchParams.set('search', params.search);
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.page_size) searchParams.set('page_size', String(params.page_size));
+  if (params.sort_by) searchParams.set('sort_by', params.sort_by);
+  if (params.sort_order) searchParams.set('sort_order', params.sort_order);
+  if (params.region) searchParams.set('region', params.region);
+  if (params.platform) searchParams.set('platform', params.platform);
+  if (params.team_id) searchParams.set('team_id', params.team_id);
+  if (params.submitter_name) searchParams.set('submitter_name', params.submitter_name);
+  const query = searchParams.toString();
+  const url = query ? `${BASE_PATH}?${query}` : BASE_PATH;
 
-  // 筛选 - 日期范围
-  if (params.start_date) {
-    items = items.filter((r) => r.report_date >= params.start_date!);
-  }
-  if (params.end_date) {
-    items = items.filter((r) => r.report_date <= params.end_date!);
-  }
-
-  // 筛选 - 地区
-  if (params.region) {
-    items = items.filter((r) => r.region === params.region);
-  }
-
-  // 筛选 - 平台
-  if (params.platform) {
-    items = items.filter((r) => r.platform === params.platform);
-  }
-
-  // 筛选 - 投手
-  if (params.submitter_name) {
-    items = items.filter((r) =>
-      r.submitter_name?.toLowerCase().includes(params.submitter_name!.toLowerCase())
-    );
-  }
-
-  // 分页
-  const page = params.page || 1;
-  const pageSize = params.page_size || 20;
-  const total = items.length;
-  const startIndex = (page - 1) * pageSize;
-  const paginatedItems = items.slice(startIndex, startIndex + pageSize);
-
-  return {
-    items: paginatedItems,
-    meta: {
-      pagination: {
-        page,
-        page_size: pageSize,
-        total,
-        total_pages: Math.ceil(total / pageSize),
-      },
-    },
-  };
+  // 使用 apiFetchPaginated 正确处理分页响应格式
+  // 后端返回: { success, data: [...items], meta: { pagination: {...} } }
+  return apiFetchPaginated<DailyReport>(url);
 }
 
 /**
@@ -350,16 +92,8 @@ export async function getDailyReports(
  * SoT: B2-daily-report-review.md §5.1
  */
 export async function getDailyReport(id: string): Promise<DailyReport> {
-  // TODO: 后端 API 实现后取消注释
-  // return apiFetch<DailyReport>(`${BASE_PATH}/${id}`);
-
-  // Mock 响应
-  const reports = generateMockDailyReports();
-  const report = reports.find((r) => r.id === Number(id));
-  if (!report) {
-    throw new Error(`Daily report ${id} not found`);
-  }
-  return report;
+  // apiFetch 自动解包 envelope，返回 data 部分
+  return apiFetch<DailyReport>(`${BASE_PATH}/${id}`);
 }
 
 /**
@@ -538,15 +272,13 @@ export async function getDailyReportStats(params: {
   start_date?: string;
   end_date?: string;
 } = {}): Promise<Record<DailyReportStatus, number>> {
-  // TODO: 后端 API 实现后取消注释
-  // const searchParams = new URLSearchParams();
-  // if (params.project_id) searchParams.set('project_id', params.project_id);
-  // if (params.start_date) searchParams.set('start_date', params.start_date);
-  // if (params.end_date) searchParams.set('end_date', params.end_date);
-  // const query = searchParams.toString();
-  // const url = query ? `${BASE_PATH}/stats?${query}` : `${BASE_PATH}/stats`;
-  // return apiFetch(url);
+  const searchParams = new URLSearchParams();
+  if (params.project_id) searchParams.set('project_id', params.project_id);
+  if (params.start_date) searchParams.set('start_date', params.start_date);
+  if (params.end_date) searchParams.set('end_date', params.end_date);
+  const query = searchParams.toString();
+  const url = query ? `${BASE_PATH}/stats?${query}` : `${BASE_PATH}/stats`;
 
-  // Mock 响应
-  return generateMockDailyReportStats();
+  // apiFetch 自动解包 envelope，返回 data 部分
+  return apiFetch<Record<DailyReportStatus, number>>(url);
 }

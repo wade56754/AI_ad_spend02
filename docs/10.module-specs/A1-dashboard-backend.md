@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, MASTER.md v4.4 §6.5
+> **SoT 基准**: DATA_SCHEMA.md v5.3, MASTER.md v4.4 §6.5
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 > **前端规格书**: docs/10.module-specs/A1-dashboard.md
 
@@ -65,10 +65,12 @@
 |---------|------|---------|------|
 | MASTER.md | v4.4 | §6.5 核心页面最小字段集 | 必须字段定义 |
 | MASTER.md | v4.4 | §4.5.1-4.5.4 | 计算公式 |
-| DATA_SCHEMA.md | v5.2 | §3 daily_reports | 进粉数据源 |
-| DATA_SCHEMA.md | v5.2 | §4.1 ad_spend_daily | 消耗数据源 |
-| STATE_MACHINE.md | v2.6 | §1 日报状态机 | 待处理状态判定 |
-| API_SOT.md | v9.0 | §1 Dashboard | API 端点规范 |
+| DATA_SCHEMA.md | v5.3 | §3 daily_reports | 进粉数据源 |
+| DATA_SCHEMA.md | v5.3 | §4.1 ad_spend_daily | 消耗数据源 |
+| STATE_MACHINE.md | v2.7 | §1 日报状态机 | 待处理状态判定 |
+| BUSINESS_RULES.md | v4.1 | §3 计算规则 | CPL/毛利计算、异常判定 |
+| API_SOT.md | v9.3 | §1 Dashboard | API 端点规范 |
+| ERROR_CODES_SOT.md | v2.1 | §4 错误码清单 | 错误码定义 |
 | AUTH_SPEC.md | v2.0 | §3 权限矩阵 | 角色权限 |
 
 ### 1.5 MASTER.md §6.5 必须字段
@@ -315,8 +317,9 @@ interface DashboardPendingCountsResponse {
 | 错误码 | HTTP 状态 | 说明 |
 |--------|-----------|------|
 | AUTH_500 | 403 | CEO 驾驶舱仅限老板和管理员访问 |
-| VAL_001 | 400 | 日期格式无效 |
-| VAL_002 | 400 | 日期范围无效 (end < start) |
+| VALIDATION_001 | 400 | 日期格式无效 (必填字段缺失) |
+| VALIDATION_002 | 400 | 日期范围无效 (格式无效: end < start) |
+| BIZ_200 | 400 | 日期范围无效 (业务规则) |
 | SYS_001 | 500 | 内部服务错误 |
 
 ### 3.4 分页/筛选规范

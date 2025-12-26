@@ -1,0 +1,194 @@
+# GitHub Actions CI 配置
+# 文件位置: .github/workflows/ci.yml
+# 
+# 此文件是CI配置的更新部分，需要与现有配置合并
+# 主要新增：migration检查、changelog检查
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "18"
+
+jobs:
+  # ============================================
+  # 后端检查
+  # ============================================
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          pip install ruff mypy
+          pip install -r requirements.txt
+      
+      - name: Ruff check
+        run: ruff check .
+      
+      - name: Ruff format check
+        run: ruff format --check .
+      
+      - name: Type check
+        run: mypy backend/ --ignore-missing-imports
+
+  backend-test:
+    name: Backend Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+      
+      - name: Run tests
+        run: pytest -q --cov=backend --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+
+  # ============================================
+  # 前端检查
+  # ============================================
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: ESLint
+        run: npm run lint
+      
+      - name: Type check
+        run: npm run type-check
+
+  # ============================================
+  # 门禁检查（新增）
+  # ============================================
+  migration-check:
+    name: Migration Rollback Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Check migration rollback
+        run: python scripts/check_migration.py
+
+  changelog-check:
+    name: Changelog Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 需要完整历史来对比
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Check changelog updated
+        run: python scripts/check_changelog.py --base origin/${{ github.base_ref }}
+
+  # ============================================
+  # 文档检查（新增）
+  # ============================================
+  docs-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for broken references
+        run: |
+          echo "检查旧路径引用..."
+          if grep -r "docs/2\.sot" . --include="*.md" --include="*.py" | grep -v "archive" | grep -v "2.sot-legacy"; then
+            echo "发现旧路径引用，请更新"
+            exit 1
+          fi
+          echo "✓ 无旧路径引用"
+      
+      - name: Check key files exist
+        run: |
+          files=(
+            "docs/sot/MASTER.md"
+            "docs/sot/INDEX.md"
+            "docs/sot/CHANGELOG.md"
+            ".ai-rules/quality-gates.md"
+            "justfile"
+          )
+          for f in "${files[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "缺失关键文件: $f"
+              exit 1
+            fi
+          done
+          echo "✓ 所有关键文件存在"
+
+  # ============================================
+  # 汇总门禁
+  # ============================================
+  all-checks:
+    name: All Checks
+    needs: [backend-lint, backend-test, frontend-lint, migration-check, changelog-check, docs-check]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs
+        run: |
+          if [ "${{ needs.backend-lint.result }}" != "success" ] || \
+             [ "${{ needs.backend-test.result }}" != "success" ] || \
+             [ "${{ needs.frontend-lint.result }}" != "success" ] || \
+             [ "${{ needs.migration-check.result }}" != "success" ] || \
+             [ "${{ needs.docs-check.result }}" != "success" ]; then
+            echo "Some checks failed"
+            exit 1
+          fi
+          # changelog-check 在非PR时会skip，不算失败
+          if [ "${{ github.event_name }}" == "pull_request" ] && \
+             [ "${{ needs.changelog-check.result }}" != "success" ]; then
+            echo "Changelog check failed"
+            exit 1
+          fi
+          echo "All checks passed!"

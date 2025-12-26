@@ -362,8 +362,10 @@ class TestFinanceProfitValidation:
         data = response.json()
         if response.status_code == 400:
             assert data["success"] is False
-            # 检查错误码
-            assert "PROFIT_008" in data.get("code", "") or "range" in data.get("message", "").lower()
+            # 检查错误码 (兼容新旧响应格式)
+            error_code = data.get("code", "") or data.get("error", {}).get("code", "")
+            error_msg = data.get("message", "") or data.get("error", {}).get("message", "")
+            assert "PROFIT_008" in error_code or "range" in error_msg.lower()
 
 
 # ============================================================================
@@ -495,7 +497,9 @@ class TestFinanceProfitErrorCodes:
         assert response.status_code == 404
         data = response.json()
         assert data["success"] is False
-        assert "PROFIT_003" in data.get("code", "")
+        # 兼容新旧响应格式
+        error_code = data.get("code", "") or data.get("error", {}).get("code", "")
+        assert "PROFIT_003" in error_code
 
     def test_get_account_profit__account_not_found__returns_404_profit_007(
         self, client, finance_headers
@@ -519,7 +523,9 @@ class TestFinanceProfitErrorCodes:
         assert response.status_code == 404
         data = response.json()
         assert data["success"] is False
-        assert "PROFIT_007" in data.get("code", "")
+        # 兼容新旧响应格式
+        error_code = data.get("code", "") or data.get("error", {}).get("code", "")
+        assert "PROFIT_007" in error_code
 
 
 # ============================================================================

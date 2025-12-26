@@ -1,8 +1,8 @@
 # B3 周度简报 - 后端模块规格书
 
-> **版本**: v1.0
-> **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, API_SOT.md v9.3
+> **版本**: v1.1
+> **更新日期**: 2025-12-24
+> **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, API_SOT.md v9.3
 > **对应前端规格书**: B3-weekly-brief.md
 
 ---
@@ -39,11 +39,11 @@
 ### 1.4 SoT 引用清单 (AI 防幻觉)
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §weekly_briefs | 表结构、字段定义 |
-| STATE_MACHINE.md | v2.6 | §12 | 2 状态机定义 |
-| BUSINESS_RULES.md | v3.2 | BR-WB-* | 周报业务规则 |
-| ERROR_CODES_SOT.md | v2.1 | WB_* | 错误码 |
-| API_SOT.md | v9.0 | §weekly-briefs | API 规范 |
+| DATA_SCHEMA.md | v5.3 | §3.4 weekly_briefs | 表结构、字段定义 |
+| STATE_MACHINE.md | v2.7 | §13.2 周报状态机 | 2 状态机定义 (draft → submitted) |
+| BUSINESS_RULES.md | v4.1 | BR-WB-* | 周报业务规则 |
+| ERROR_CODES_SOT.md | v2.1 | VALIDATION_*, BIZ_*, AUTH_* | 错误码 |
+| API_SOT.md | v9.3 | §weekly-briefs | API 规范 |
 | AUTH_SPEC.md | v2.0 | §4.7 | 权限矩阵 |
 | MASTER.md | v4.4 | §4.5.1 | CPL 计算公式 |
 
@@ -52,7 +52,7 @@
 ## §2 数据模型
 
 ### 2.1 表结构定义
-**来源**: DATA_SCHEMA.md v5.2, B3-weekly-brief.md §2.1
+**来源**: DATA_SCHEMA.md v5.3, B3-weekly-brief.md §2.1
 
 ```sql
 CREATE TABLE weekly_briefs (
@@ -272,14 +272,14 @@ interface WeeklySummaryResponse {
 
 | 错误码 | HTTP 状态 | 说明 |
 |--------|-----------|------|
-| VALIDATION_ERROR | 400 | 请求参数验证失败 |
-| WB_INVALID_WEEK_START | 400 | week_start 必须是周一 |
-| WB_DUPLICATE_ENTRY | 409 | 同一项目同一周已存在周报 |
-| WB_NOT_FOUND | 404 | 周报不存在 |
-| WB_ALREADY_SUBMITTED | 400 | 周报已提交，不可修改 |
-| WB_NOT_OWNER | 403 | 非周报所有者，无权操作 |
-| UNAUTHORIZED | 401 | 未登录 |
-| FORBIDDEN | 403 | 无权限 |
+| VALIDATION_001 | 400 | 必填字段缺失 |
+| VALIDATION_002 | 400 | 格式无效 (week_start 必须是周一) |
+| BIZ_003 | 409 | 资源已存在 (同一项目同一周已存在周报) |
+| BIZ_002 | 404 | 资源不存在 (周报不存在) |
+| BIZ_301 | 400 | 状态转换不允许 (周报已提交，不可修改) |
+| AUTH_400 | 401 | 未提供认证令牌 |
+| AUTH_500 | 403 | 权限不足 (非周报所有者，无权操作) |
+| SYS_001 | 500 | 系统内部错误 |
 
 ### 3.4 分页/筛选规范
 ```yaml
@@ -376,7 +376,7 @@ def can_edit_weekly_brief(user: User, brief: WeeklyBrief) -> bool:
 ## §5 业务逻辑
 
 ### 5.1 状态机定义
-**来源**: STATE_MACHINE.md v2.6 §12, B3-weekly-brief.md §2.5
+**来源**: STATE_MACHINE.md v2.7 §12, B3-weekly-brief.md §2.5
 
 ```
                     ┌─────────┐

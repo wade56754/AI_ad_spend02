@@ -1,0 +1,100 @@
+# B1 充值审批 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "B1-topup-approval"
+spec_file: "docs/10.module-specs/B1-topup-approval.md"
+page_path: "/topups"
+priority: P1
+
+# 状态机定义 (7 状态)
+state_machine:
+  states:
+    - draft
+    - pending_review
+    - finance_approve
+    - paid
+    - completed
+    - rejected
+    - voided
+  transitions:
+    - { from: draft, to: pending_review, actor: project_owner }
+    - { from: pending_review, to: finance_approve, actor: supervisor }
+    - { from: pending_review, to: rejected, actor: supervisor }
+    - { from: pending_review, to: voided, actor: project_owner }
+    - { from: finance_approve, to: paid, actor: finance }
+    - { from: paid, to: completed, actor: finance }
+  terminal_states:
+    - completed
+    - rejected
+    - voided
+
+checkpoints:
+  # ===== CP-B1-001: 权限测试 =====
+  - id: CP-B1-001
+    category: permission
+    description: 充值审批页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, action: "审批" }
+      - { role: finance, expected: allowed, action: "审批" }
+      - { role: supervisor, expected: allowed, action: "确认数据" }
+      - { role: pitcher, expected: denied }
+      - { role: project_owner, expected: allowed, action: "创建+查看" }
+      - { role: account_manager, expected: denied }
+      - { role: admin, expected: denied }
+
+  # ===== CP-B1-002: 页面渲染测试 =====
+  - id: CP-B1-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "充值审批" }
+      - { element: 充值列表, selector: "[data-testid='topup-table']", expected: visible }
+      - { element: 新建按钮, selector: "[data-testid='create-topup-btn']", expected: visible }
+      - { element: 状态筛选, selector: "[data-testid='status-filter']", expected: visible }
+
+  # ===== CP-B1-003: 数据状态测试 =====
+  - id: CP-B1-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏 }
+      - { scenario: empty, expected: "暂无充值记录" }
+      - { scenario: error, expected: 错误提示 }
+      - { scenario: success, expected: 充值列表 }
+
+  # ===== CP-B1-004: 功能操作测试 (状态机) =====
+  - id: CP-B1-004
+    category: function
+    description: 状态机操作 (7 状态)
+    spec_ref: "§6.1 状态机"
+    cases:
+      # 合法转换
+      - { transition: "draft→pending_review", actor: project_owner, expected: success }
+      - { transition: "pending_review→finance_approve", actor: supervisor, expected: success }
+      - { transition: "finance_approve→paid", actor: finance, expected: success }
+      - { transition: "paid→completed", actor: finance, expected: success }
+      - { transition: "pending_review→rejected", actor: supervisor, expected: success }
+      - { transition: "pending_review→voided", actor: project_owner, expected: success }
+      # 非法转换
+      - { transition: "draft→paid", expected: "400 ST-001", illegal: true }
+      - { transition: "completed→paid", expected: "400 ST-002", illegal: true }
+
+  # ===== CP-B1-005: Phase 1 规则测试 =====
+  - id: CP-B1-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: 大额充值, expected: 警告高亮+可审批 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 4
+  data_cases: 4
+  function_cases: 8
+  phase1_cases: 1
+  total_cases: 24

@@ -6,7 +6,7 @@ layer: 6.agent-layer
 owner: wade
 last_reviewed: 2025-12-07
 profile: backend-code-fix
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4
 
 description: >
   本文档定义 AI_ad_spend02 项目中 backend 代码修复（code-fix）、

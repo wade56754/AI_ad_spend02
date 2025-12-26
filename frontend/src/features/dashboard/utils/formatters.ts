@@ -1,8 +1,11 @@
 /**
  * Dashboard Formatting Utilities
  *
+ * SoT: docs/3.dev-guides/DASHBOARD_LAYOUT_SPEC.md §5.2, §5.3
+ *
  * 统一的数值格式化工具
  * - 金额格式化（千分位、万单位）
+ * - CPL 格式化（边界场景处理）
  * - 百分比格式化
  * - 数字缩写
  */
@@ -10,9 +13,48 @@
 /**
  * 安全地转换为数字
  */
-function safeNumber(value: number | undefined | null): number {
+export function safeNumber(value: number | undefined | null): number {
   const num = Number(value);
   return isNaN(num) ? 0 : num;
+}
+
+/**
+ * 格式化 CPL - 处理边界场景
+ * SoT: DASHBOARD_LAYOUT_SPEC.md §5.2
+ *
+ * @param spend 消耗金额
+ * @param conversions 转化数
+ * @returns 格式化后的 CPL，如 "¥39.36" 或 "--"
+ */
+export function formatCPL(spend: number | undefined | null, conversions: number | undefined | null): string {
+  const s = safeNumber(spend);
+  const c = safeNumber(conversions);
+
+  if (c === 0) {
+    return '--';  // 零转化
+  }
+  if (c < 5) {
+    return `¥${(s / c).toFixed(2)} (低量)`;  // 低量标记
+  }
+  return `¥${(s / c).toFixed(2)}`;
+}
+
+/**
+ * 格式化金额 - 自动选择单位
+ * SoT: DASHBOARD_LAYOUT_SPEC.md §5.3
+ *
+ * @param amount 金额
+ * @returns 格式化后的金额，如 "¥12.5万" 或 "¥1.2k" 或 "¥123.45"
+ */
+export function formatAmount(amount: number | undefined | null): string {
+  const num = safeNumber(amount);
+  if (num >= 10000) {
+    return `¥${(num / 10000).toFixed(1)}万`;
+  }
+  if (num >= 1000) {
+    return `¥${(num / 1000).toFixed(1)}k`;
+  }
+  return `¥${num.toFixed(2)}`;
 }
 
 /**

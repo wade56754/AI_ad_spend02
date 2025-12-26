@@ -14,6 +14,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -29,7 +30,9 @@ export interface StatCardProps {
   icon: React.ReactNode;
   color: StatCardColor;
   onClick?: () => void; // 点击回调
+  href?: string; // 点击导航链接
   isActive?: boolean; // 是否为选中状态 (用于主图联动)
+  isWarning?: boolean; // Phase 1: 是否显示警告样式 (不阻断操作)
   testId?: string;
 }
 
@@ -84,19 +87,27 @@ export function StatCard({
   icon,
   color,
   onClick,
+  href,
   isActive = false,
+  isWarning = false,
   testId,
 }: StatCardProps) {
   const colorStyle = colorClasses[color];
 
-  return (
+  // Phase 1: 警告样式类 (高亮但不阻断)
+  const warningClasses = isWarning
+    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800'
+    : '';
+
+  const cardContent = (
     <Card
       className={cn(
         'rounded-xl border shadow-sm transition-all duration-200',
-        onClick && 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5',
-        isActive && [colorStyle.activeBorder, colorStyle.activeRing, 'shadow-md']
+        (onClick || href) && 'cursor-pointer hover:shadow-lg hover:-translate-y-0.5',
+        isActive && [colorStyle.activeBorder, colorStyle.activeRing, 'shadow-md'],
+        warningClasses
       )}
-      onClick={onClick}
+      onClick={href ? undefined : onClick}
       data-testid={testId}
     >
       <CardContent className="p-6">
@@ -179,6 +190,13 @@ export function StatCard({
       </CardContent>
     </Card>
   );
+
+  // 如果有 href，包装在 Link 中
+  if (href) {
+    return <Link href={href}>{cardContent}</Link>;
+  }
+
+  return cardContent;
 }
 
 export default StatCard;

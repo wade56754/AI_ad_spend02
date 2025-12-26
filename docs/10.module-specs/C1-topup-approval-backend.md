@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, API_SOT.md v9.3
+> **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, API_SOT.md v9.3
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
@@ -59,13 +59,13 @@
 
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §4.1 topup_requests | 表结构、字段定义 |
-| STATE_MACHINE.md | v2.6 | §9 充值 7 状态机 | 状态流转规则 |
-| BUSINESS_RULES.md | v3.2 | BR-TOP-001~005 | 充值业务规则 |
+| DATA_SCHEMA.md | v5.3 | §4.1 topup_requests | 表结构、字段定义 |
+| STATE_MACHINE.md | v2.7 | §9 充值 7 状态机 | 状态流转规则 |
+| BUSINESS_RULES.md | v4.1 | BR-TOP-001~005 | 充值业务规则 |
 | ERROR_CODES_SOT.md | v2.1 | BIZ_*, STATE_* | 业务错误码 |
-| API_SOT.md | v9.0 | §7 Topups | API 端点规范 |
+| API_SOT.md | v9.3 | §7 Topups | API 端点规范 |
 | AUTH_SPEC.md | v2.0 | §3 权限矩阵 | 角色权限 |
-| LEDGER_SOT.md | v1.1 | §2 充值记账 | 账本规则 |
+| LEDGER_SOT.md | v1.2 | §2 充值记账 | 账本规则 |
 | MASTER.md | v4.4 | §2.4 七角色, §3.1 责任追溯 | Phase 边界、责任模型 |
 
 ---
@@ -74,7 +74,7 @@
 
 ### 2.1 表结构定义
 
-**来源**: DATA_SCHEMA.md v5.2 §4.1, `backend/models/workflow/topup_request.py`
+**来源**: DATA_SCHEMA.md v5.3 §4.1, `backend/models/workflow/topup_request.py`
 
 ```sql
 CREATE TABLE topup_requests (
@@ -330,15 +330,16 @@ interface MarkPaidResponse {
 
 | 错误码 | HTTP 状态 | 场景 |
 |--------|-----------|------|
-| VALIDATION_ERROR | 400 | 请求参数验证失败 |
-| UNAUTHORIZED | 401 | 未登录 |
-| AUTH_500 (FORBIDDEN) | 403 | 无权限 |
-| BIZ-002 | 404 | 充值申请不存在 |
-| BIZ-201 | 400 | 单笔充值金额超限 (> 100,000) |
-| BIZ-202 | 400 | 账户余额超限 (> 500,000) |
-| BIZ-203 | 400 | 每日申请次数超限 (> 3次) |
-| STATE-400 | 400 | 无效的状态转换 |
-| STATE-401 | 400 | 当前状态不允许该操作 |
+| VALIDATION_001 | 400 | 必填字段缺失 |
+| VALIDATION_002 | 400 | 字段格式无效 |
+| AUTH_401 | 401 | 未登录 |
+| AUTH_500 | 403 | 无权限 |
+| BIZ_002 | 404 | 充值申请不存在 |
+| BIZ_201 | 400 | 单笔充值金额超限 (> 100,000) |
+| BIZ_202 | 400 | 账户余额超限 (> 500,000) |
+| BIZ_203 | 400 | 每日申请次数超限 (> 3次) |
+| STATE_400 | 400 | 无效的状态转换 |
+| STATE_401 | 400 | 当前状态不允许该操作 |
 
 ### 3.4 分页/筛选规范
 
@@ -447,7 +448,7 @@ def can_be_approved_by(self, user_id: UUID, user_role: UserRole) -> bool:
 
 ### 5.1 状态机定义
 
-**来源**: STATE_MACHINE.md v2.6 §9 充值 7 状态机
+**来源**: STATE_MACHINE.md v2.7 §9 充值 7 状态机
 
 ```
 ┌─────────┐     submit      ┌───────────────┐
@@ -509,17 +510,17 @@ class TopupService:
             request_data.ad_account_id, current_user
         )
 
-        # 2. 验证申请金额 (BIZ-201)
+        # 2. 验证申请金额 (BIZ_201)
         if request_data.requested_amount > self.MAX_SINGLE_AMOUNT:
-            raise BusinessLogicError("单笔充值金额不能超过10万", error_code="BIZ-201")
+            raise BusinessLogicError("单笔充值金额不能超过10万", error_code="BIZ_201")
 
-        # 3. 检查账户余额上限 (BIZ-202)
+        # 3. 检查账户余额上限 (BIZ_202)
         self._check_account_balance_limit(
             request_data.ad_account_id,
             request_data.requested_amount
         )
 
-        # 4. 检查申请频次限制 (BIZ-203)
+        # 4. 检查申请频次限制 (BIZ_203)
         self._check_daily_request_limit(
             request_data.ad_account_id,
             current_user.id
@@ -675,7 +676,7 @@ class TestCreateTopupRequest:
         )
         with pytest.raises(BusinessLogicError) as exc:
             service.create_request(request, pitcher_user)
-        assert "BIZ-201" in str(exc.value)
+        assert "BIZ_201" in str(exc.value)
 
     def test_reject_daily_limit(self, db, pitcher_user, ad_account):
         """每日申请次数超限应拒绝"""
@@ -686,7 +687,7 @@ class TestCreateTopupRequest:
         # 第 4 个应该失败
         with pytest.raises(BusinessLogicError) as exc:
             service.create_request(...)
-        assert "BIZ-203" in str(exc.value)
+        assert "BIZ_203" in str(exc.value)
 
 
 class TestStateTransitions:
@@ -871,7 +872,7 @@ async def test_role_permissions(client, role, action, expected):
 ### A.2 SoT 追溯验证 Checklist
 
 生成代码后必须验证：
-- [ ] 所有状态值来自 STATE_MACHINE.md v2.6 §9 (7 状态)
+- [ ] 所有状态值来自 STATE_MACHINE.md v2.7 §9 (7 状态)
 - [ ] 所有错误码来自 ERROR_CODES_SOT.md v2.1
 - [ ] 所有角色来自 MASTER.md v4.4 §2.4 (7 个)
 - [ ] 金额字段使用 Decimal(15,2) 类型

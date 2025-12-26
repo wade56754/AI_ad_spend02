@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, LEDGER_SOT.md v1.1, MASTER.md v4.4 §4.5.5
+> **SoT 基准**: DATA_SCHEMA.md v5.3, LEDGER_SOT.md v1.2, MASTER.md v4.4 §4.5.5
 > **对应前端**: A2-fund-overview.md
 
 ---
@@ -38,7 +38,7 @@
 ### 1.4 SoT 引用清单 (AI 防幻觉)
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §3.4.1, §3.4.5 | topup_requests, receivable 表结构 |
+| DATA_SCHEMA.md | v5.3 | §3.4.1, §3.4.5 | topup_requests, receivable 表结构 |
 | LEDGER_SOT.md | v1.1 | §2.4 | 余额唯一真相源原则 |
 | BUSINESS_RULES.md | v4.1 | BR-FIN-* | 资金计算规则 |
 | ERROR_CODES_SOT.md | v2.1 | FUND_*, AUTH_* | 错误码 |
@@ -51,7 +51,7 @@
 ## §2 数据模型
 
 ### 2.1 数据源定义
-**来源**: DATA_SCHEMA.md v5.2, MASTER.md v4.4 §4.5.5
+**来源**: DATA_SCHEMA.md v5.3, MASTER.md v4.4 §4.5.5
 
 | 数据 | SoT 表 | SoT 字段 | 计算口径 |
 |------|--------|---------|----------|
@@ -67,7 +67,7 @@
 
 #### topup_requests (充值申请表)
 ```sql
--- 来源: DATA_SCHEMA.md v5.2 §3.4.1
+-- 来源: DATA_SCHEMA.md v5.3 §3.4.1
 CREATE TABLE topup_requests (
   id              BIGSERIAL PRIMARY KEY,
   ad_account_id   BIGINT NOT NULL REFERENCES ad_accounts(id),
@@ -85,7 +85,7 @@ CREATE INDEX idx_topup_requests_ad_account_id ON topup_requests(ad_account_id);
 
 #### ad_spend_daily (日消耗表)
 ```sql
--- 来源: DATA_SCHEMA.md v5.2 §3.3.3
+-- 来源: DATA_SCHEMA.md v5.3 §3.3.3
 CREATE TABLE ad_spend_daily (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ad_account_code VARCHAR(100) NOT NULL,
@@ -100,7 +100,7 @@ CREATE INDEX idx_ad_spend_daily_date ON ad_spend_daily(spend_date);
 
 #### receivable (回款记录表 - planned)
 ```sql
--- 来源: DATA_SCHEMA.md v5.2 §3.4.5
+-- 来源: DATA_SCHEMA.md v5.3 §3.4.5
 CREATE TABLE receivable (
   id              BIGSERIAL PRIMARY KEY,
   project_id      BIGINT NOT NULL REFERENCES projects(id),
@@ -348,10 +348,10 @@ interface PaymentsResponse {
 | 错误码 | HTTP 状态 | 说明 |
 |--------|-----------|------|
 | AUTH_401 | 401 | 未登录 |
-| AUTH_403 | 403 | 无权限访问资金数据 |
-| FUND_001 | 400 | 日期范围无效 |
-| FUND_002 | 500 | 资金聚合计算失败 |
-| VAL_001 | 400 | 请求参数验证失败 |
+| AUTH_500 | 403 | 无权限访问资金数据 |
+| BIZ_001 | 400 | 日期范围无效 |
+| SYS_001 | 500 | 资金聚合计算失败 |
+| VALIDATION_001 | 400 | 请求参数验证失败 |
 
 ### 3.4 分页/筛选规范
 ```yaml
@@ -770,7 +770,7 @@ class TestFundAPI:
         response = pitcher_client.get('/api/v1/fund/overview')
 
         assert response.status_code == 403
-        assert response.json()['error']['code'] == 'AUTH_403'
+        assert response.json()['error']['code'] == 'AUTH_500'
 
     def test_get_distribution_project_owner_filter(self, project_owner_client):
         """项目负责人只能看自己项目"""

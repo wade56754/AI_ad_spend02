@@ -1,0 +1,108 @@
+# =============================================================================
+# Pre-commit Configuration
+# =============================================================================
+#
+# 安装: pip install pre-commit && pre-commit install
+# 手动运行: pre-commit run --all-files
+#
+# =============================================================================
+
+repos:
+  # -------------------------------------------------------------------------
+  # 标准 hooks
+  # -------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^(frontend/node_modules/|\.git/)
+      - id: end-of-file-fixer
+        exclude: ^(frontend/node_modules/|\.git/)
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # -------------------------------------------------------------------------
+  # Python 代码质量
+  # -------------------------------------------------------------------------
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        language_version: python3.10
+        args: ['--line-length=100']
+        files: ^backend/
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ['--profile=black', '--line-length=100']
+        files: ^backend/
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: ['--max-line-length=100', '--ignore=E501,W503']
+        files: ^backend/
+        additional_dependencies:
+          - flake8-bugbear
+
+  # -------------------------------------------------------------------------
+  # SoT 版本一致性检查
+  # -------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: check-sot-versions
+        name: Check SoT Version Consistency
+        description: 检查 SoT 版本引用是否与 SOT_VERSIONS.yaml 一致
+        entry: python scripts/check_sot_versions.py --ci --quiet
+        language: python
+        files: ^docs/.*\.md$
+        pass_filenames: false
+        always_run: true
+        additional_dependencies:
+          - pyyaml
+
+  # -------------------------------------------------------------------------
+  # Markdown lint
+  # -------------------------------------------------------------------------
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix', '--disable', 'MD013', 'MD033', 'MD041', '--']
+        files: ^docs/
+        exclude: ^docs/archive/
+
+  # -------------------------------------------------------------------------
+  # TypeScript/JavaScript
+  # -------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: bash -c 'cd frontend && npx eslint --fix'
+        language: system
+        files: ^frontend/src/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+# =============================================================================
+# 配置说明
+# =============================================================================
+#
+# check-sot-versions hook:
+#   - 在每次 commit 前自动运行
+#   - 检查 docs/ 目录下的 Markdown 文件
+#   - 如果 SoT 版本引用不一致，阻止提交
+#   - 运行 scripts/batch_update_sot_refs.py 可自动修复
+#
+# 跳过 hook (不推荐):
+#   git commit --no-verify -m "message"
+#
+# =============================================================================

@@ -23,6 +23,7 @@ from .financial_event import (
     generate_payment_idempotency_key,
 )
 from .balance_snapshot import BalanceSnapshot, EntityType
+from .company_expense import CompanyExpense, ExpenseType, ExpenseCategory, ExpenseStatus
 
 __all__ = [
     "LedgerEntry",
@@ -57,4 +58,9 @@ __all__ = [
     "generate_payment_idempotency_key",
     "BalanceSnapshot",
     "EntityType",
+    # Company Expenses
+    "CompanyExpense",
+    "ExpenseType",
+    "ExpenseCategory",
+    "ExpenseStatus",
 ]

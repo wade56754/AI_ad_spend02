@@ -1,8 +1,8 @@
 # E1 月度结算 - 后端模块规格书
 
-> **版本**: v1.0
-> **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, LEDGER_SOT.md v1.1
+> **版本**: v1.1
+> **更新日期**: 2025-12-24
+> **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, LEDGER_SOT.md v1.2
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 > **前端规格书**: docs/10.module-specs/D1-monthly-settlement.md
 
@@ -64,9 +64,9 @@
 
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §4.6 monthly_settlements | 表结构定义 |
-| STATE_MACHINE.md | v2.6 | §10 月度结算状态机 | 4 状态流转规则 |
-| LEDGER_SOT.md | v1.1 | §4 结算分录 | 锁定时账本规则 |
+| DATA_SCHEMA.md | v5.3 | §3.7.1 monthly_settlements | 表结构定义 |
+| STATE_MACHINE.md | v2.7 | §13.1 月度结算状态机 | 4 状态流转规则 |
+| LEDGER_SOT.md | v1.2 | §4 结算分录 | 锁定时账本规则 |
 | BUSINESS_RULES.md | v4.1 | BR-SET-* | 结算业务规则 |
 | ERROR_CODES_SOT.md | v2.1 | BIZ_600-699 | 结算相关错误码 |
 | API_SOT.md | v9.3 | §8 Settlements | API 端点规范 |
@@ -93,7 +93,7 @@ PHASE2_SETTLEMENT_LOCK = False  # 锁定机制软性
 
 ### 2.1 表结构定义
 
-**来源**: DATA_SCHEMA.md v5.2 §4.6 (待新增)
+**来源**: DATA_SCHEMA.md v5.3 §4.6 (待新增)
 
 ```sql
 CREATE TABLE monthly_settlements (
@@ -387,7 +387,7 @@ def can_unlock_settlement(user: User) -> bool:
 
 ### 5.1 状态机定义
 
-**来源**: D1-monthly-settlement.md §2.4, STATE_MACHINE.md v2.6 §10
+**来源**: D1-monthly-settlement.md §2.4, STATE_MACHINE.md v2.7 §10
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐

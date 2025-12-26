@@ -5,3 +5,4 @@
 
 export * from './FundOverviewPage';
 export * from './FundDistributionTable';
+export * from './FundSummaryCards';

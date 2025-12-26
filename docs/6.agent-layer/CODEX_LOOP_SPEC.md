@@ -4,7 +4,7 @@ status: draft
 layer: agent-layer
 owner: wade
 last_reviewed: 2025-12-07
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4, SoT Freeze v2.6
 ---
 
 # Codex Loop 专项规范
@@ -12,7 +12,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
 > **文档版本**: v1.0
 > **状态**: Draft
 > **最后审查**: 2025-12-07
-> **基准**: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+> **基准**: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4, SoT Freeze v2.6
 
 ---
 
@@ -636,7 +636,7 @@ git commit -m "refactor(topups): Rename state SUBMITTED → RAW_SUBMITTED
 ## 9. 引用文献
 
 **本文档引用的规范**:
-- MASTER.md v3.4 §9 - Codex Loop 定义
+- MASTER.md v4.4 §9 - Codex Loop 定义
 - TESTING_STRATEGY v1.0 §4 - 测试驱动开发
 - STATE_MACHINE v2.6 - 状态机规范
 - DATA_SCHEMA v5.2 - 数据模型规范

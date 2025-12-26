@@ -1,0 +1,164 @@
+# AI 广告代投系统 - 监工配置
+# Version: 1.0
+# Last Updated: 2025-12-24
+
+# =============================================================================
+# SoT 文档版本映射
+# =============================================================================
+sot_versions:
+  MASTER.md: "v4.4"
+  API_SOT.md: "v9.3"
+  BUSINESS_RULES.md: "v4.1"
+  ERROR_CODES_SOT.md: "v2.1"
+  DATA_SCHEMA.md: "v5.2"
+  STATE_MACHINE.md: "v2.6"
+  LEDGER_SOT.md: "v1.1"
+  AUTH_SPEC.md: "v2.0"
+
+# =============================================================================
+# 有效角色列表 (来源: MASTER.md v4.4 §2.4)
+# =============================================================================
+valid_roles:
+  - ceo              # 老板 - 资金安全、公司盈亏、最终决策
+  - project_owner    # 项目负责人 - 项目盈亏、资金使用效率
+  - finance          # 财务 - 资金出入准确、数据真实、对账
+  - supervisor       # 主管 - 团队产出、投手管理、日常监督
+  - pitcher          # 投手 - CPL 达标、日报准确、执行投放
+  - account_manager  # 户管 - 账户分配、账户状态监控
+  - admin            # 管理员 - 系统配置（不参与业务）
+
+# =============================================================================
+# 禁止的代码模式 (正则表达式)
+# =============================================================================
+forbidden_patterns:
+  # F-001: 禁止直接修改余额
+  direct_balance_modify:
+    pattern: >-
+      \.(balance|current_balance)\s*[+\-*/]?=
+    message: "禁止直接修改 balance，必须通过 ledger_entries 记录"
+    severity: error
+    rule_ref: "LEDGER_SOT.md §2"
+
+  # F-002: 禁止旧状态名
+  old_status_names:
+    pattern: >-
+      status\s*[=!]=\s*['"]?(draft|submitted|approved|rejected)['"]?
+    message: "使用旧状态名，应使用 STATE_MACHINE.md v2.6 定义的 8 状态"
+    severity: error
+    rule_ref: "STATE_MACHINE.md v2.6"
+
+  # F-003: 禁止自定义错误码
+  custom_error_code:
+    pattern: >-
+      HTTPException\s*\(\s*\d+\s*,\s*['"][^'"]+['"]\s*\)
+    message: "禁止自定义错误码，使用 ERROR_CODES_SOT.md 标准错误码"
+    severity: warning
+    rule_ref: "ERROR_CODES_SOT.md v2.1"
+
+  # F-004: 禁止直接数据库连接
+  direct_db_connect:
+    pattern: >-
+      supabase\.(from_|table|rpc)\s*\(
+    message: "禁止直接连接 Supabase 数据库，使用 BFF API"
+    severity: error
+    rule_ref: "MASTER.md §4.2"
+
+  # F-005: 禁止自动阻断 (Phase 1)
+  auto_block:
+    pattern: >-
+      (auto_?reject|auto_?block|auto_?suspend|auto_?freeze|force_?stop)
+    message: "Phase 1 禁止自动阻断，仅允许记录和提示"
+    severity: error
+    rule_ref: "MASTER.md §6 Phase 1"
+
+  # F-006: 禁止旧角色名
+  old_role_names:
+    pattern: >-
+      role\s*[=!]=\s*['"]?(operator|manager|owner|viewer|editor)['"]?
+    message: "使用旧角色名，仅允许 7 个标准角色"
+    severity: error
+    rule_ref: "MASTER.md v4.4 §2.4"
+
+  # F-007: 禁止 Pydantic v1 语法
+  pydantic_v1_syntax:
+    pattern: >-
+      \bclass Config\b|\borm_mode\s*=
+    message: "使用 Pydantic v1 语法，应使用 model_config = ConfigDict(...)"
+    severity: warning
+    rule_ref: "依赖规范"
+
+# =============================================================================
+# 风险阈值配置
+# =============================================================================
+risk_thresholds:
+  # 代码质量
+  max_function_lines: 50
+  max_file_lines: 500
+  max_cyclomatic_complexity: 10
+
+  # API 响应
+  api_timeout_seconds: 30
+  max_page_size: 100
+
+  # 业务规则
+  max_daily_topup_amount: 100000
+  min_report_amount: 0
+  max_cpl_deviation_percent: 50
+
+  # 监控
+  error_rate_threshold_percent: 5
+  slow_query_threshold_ms: 1000
+
+# =============================================================================
+# 日报 8 状态机 (来源: STATE_MACHINE.md v2.6)
+# =============================================================================
+daily_report_states:
+  - raw_submitted     # 原始提交
+  - trend_pending     # 趋势待审
+  - trend_ok          # 趋势正常
+  - trend_flagged     # 趋势异常
+  - trend_resolved    # 趋势已处理
+  - final_pending     # 终审待审
+  - final_confirmed   # 终审确认
+  - final_locked      # 终审锁定
+
+# =============================================================================
+# 状态转换规则
+# =============================================================================
+state_transitions:
+  raw_submitted:
+    - trend_pending
+  trend_pending:
+    - trend_ok
+    - trend_flagged
+  trend_ok:
+    - final_pending
+  trend_flagged:
+    - trend_resolved
+  trend_resolved:
+    - final_pending
+  final_pending:
+    - final_confirmed
+  final_confirmed:
+    - final_locked
+  final_locked: []  # 终态，不可转换
+
+# =============================================================================
+# AI 防幻觉规则 (来源: MASTER.md v4.4 §7)
+# =============================================================================
+anti_hallucination_rules:
+  AH-01:
+    name: "禁止假设数据一致"
+    action: "遇到数据缺失，标记'待确认'"
+  AH-02:
+    name: "禁止自动做管理裁决"
+    action: "禁止生成自动拒绝/暂停/终止代码"
+  AH-03:
+    name: "禁止引入 SoT 未定义概念"
+    action: "发现缺失→停止→询问"
+  AH-04:
+    name: "必须遵循 Phase 1 软性原则"
+    action: "Phase 1 = 提示+高亮+记录"
+  AH-05:
+    name: "遇到歧义必须停止并询问"
+    action: "停止→列出歧义→询问"

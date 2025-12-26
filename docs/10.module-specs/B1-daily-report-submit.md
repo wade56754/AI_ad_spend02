@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, API_SOT.md v9.3
+> **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, API_SOT.md v9.3
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
@@ -19,9 +19,9 @@
 |------|------------|------------|
 | 老板 | ceo | 查看所有日报（只读） |
 | 项目负责人 | project_owner | 查看项目内日报（只读） |
-| 主管 | supervisor | 查看下属日报、触发审核 |
-| 投手 | pitcher (media_buyer) | 创建、编辑、删除、提交自己的日报 |
-| 运营 | data_operator | 审核、批量导入、状态流转 |
+| 主管 | supervisor | 查看下属日报、触发审核、批量导入 |
+| 投手 | pitcher | 创建、编辑、删除、提交自己的日报 |
+| 户管 | account_manager | 查看管理账户的日报 |
 | 管理员 | admin | 所有操作 |
 
 ### 1.3 模块边界
@@ -41,11 +41,11 @@
 
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §6.1 daily_reports | 表结构、字段定义 |
-| STATE_MACHINE.md | v2.6 | §8 日报 8 状态机 | 状态流转规则 |
+| DATA_SCHEMA.md | v5.3 | §6.1 daily_reports | 表结构、字段定义 |
+| STATE_MACHINE.md | v2.7 | §8 日报 8 状态机 | 状态流转规则 |
 | BUSINESS_RULES.md | v4.1 | BR-RPT-001~008 | 日报业务规则 |
 | ERROR_CODES_SOT.md | v2.1 | BIZ_* | 业务错误码 |
-| API_SOT.md | v9.0 | §9.2 Daily Reports | API 端点规范 |
+| API_SOT.md | v9.3 | §9.2 Daily Reports | API 端点规范 |
 | AUTH_SPEC.md | v2.0 | §3 权限矩阵 | 角色权限 |
 | MASTER.md | v4.4 | §2.4 七角色 | Phase 边界 |
 
@@ -55,7 +55,7 @@
 
 ### 2.1 表结构定义
 
-**来源**: DATA_SCHEMA.md v5.2 §6.1, `backend/models/workflow/daily_report.py`
+**来源**: DATA_SCHEMA.md v5.3 §6.1, `backend/models/workflow/daily_report.py`
 
 ```sql
 CREATE TABLE daily_reports (
@@ -80,14 +80,14 @@ CREATE TABLE daily_reports (
   clicks          INTEGER NOT NULL DEFAULT 0,   -- 点击次数
   conversions     INTEGER NOT NULL DEFAULT 0,   -- 转化数
 
-  -- 三数据流字段 (STATE_MACHINE.md v2.6 §8)
+  -- 三数据流字段 (STATE_MACHINE.md v2.7 §8)
   conversions_raw INTEGER NOT NULL DEFAULT 0,   -- raw 数据流 - 原始粉数
   conversions_final INTEGER NOT NULL DEFAULT 0, -- final 数据流 - 最终粉数
   raw_spend       DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- 原始消耗
   real_spend      DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- 真实消耗
   unit_price      DECIMAL(15,2) NOT NULL DEFAULT 0.00, -- 单粉价格
 
-  -- 8 状态机 (STATE_MACHINE.md v2.6 §8)
+  -- 8 状态机 (STATE_MACHINE.md v2.7 §8)
   status          VARCHAR(20) NOT NULL DEFAULT 'raw_submitted',
 
   -- 趋势风控字段
@@ -184,13 +184,13 @@ daily_reports
 |------|------|------|------|
 | GET | /api/v1/daily-reports | 列表查询 | 登录用户 |
 | GET | /api/v1/daily-reports/:id | 详情查询 | 数据所有者/上级 |
-| POST | /api/v1/daily-reports | 创建日报 | media_buyer, admin |
-| PUT | /api/v1/daily-reports/:id | 更新日报 | media_buyer, admin |
+| POST | /api/v1/daily-reports | 创建日报 | pitcher, admin |
+| PUT | /api/v1/daily-reports/:id | 更新日报 | pitcher, admin |
 | DELETE | /api/v1/daily-reports/:id | 删除日报 | admin |
-| POST | /api/v1/daily-reports/:id/trigger-trend-check | 触发风控 | media_buyer, data_operator, admin |
-| POST | /api/v1/daily-reports/batch-import | 批量导入 | data_operator, admin |
-| POST | /api/v1/daily-reports/import-file | Excel导入 | data_operator, admin |
-| GET | /api/v1/daily-reports/export | 导出Excel | finance, admin, data_operator |
+| POST | /api/v1/daily-reports/:id/trigger-trend-check | 触发风控 | pitcher, supervisor, admin |
+| POST | /api/v1/daily-reports/batch-import | 批量导入 | supervisor, admin |
+| POST | /api/v1/daily-reports/import-file | Excel导入 | supervisor, admin |
+| GET | /api/v1/daily-reports/export | 导出Excel | finance, supervisor, admin |
 | GET | /api/v1/daily-reports/stats | 状态统计 | 登录用户 |
 
 ### 3.2 请求/响应格式
@@ -244,9 +244,10 @@ interface SuccessResponse<DailyReportResponse> {
 
 | 错误码 | HTTP 状态 | 场景 |
 |--------|-----------|------|
-| VALIDATION_ERROR | 400 | 请求参数验证失败 |
-| UNAUTHORIZED | 401 | 未登录 |
-| FORBIDDEN | 403 | 无权限 (AUTH_500) |
+| VALIDATION_001 | 400 | 必填字段缺失 |
+| VALIDATION_002 | 400 | 字段格式无效 |
+| AUTH_401 | 401 | 未登录 |
+| AUTH_500 | 403 | 无权限 |
 | BIZ_002 | 404 | 广告账户不存在 |
 | BIZ_003 | 409 | 日报已存在（重复） |
 | BIZ_201 | 400 | 报表日期为未来日期 |
@@ -301,7 +302,7 @@ interface DailyReportQueryParams {
 **说明**:
 - ✅ = 允许操作
 - ❌ = 禁止操作
-- data_operator 映射为 supervisor 的操作权限
+- supervisor 承担原 data_operator 的审核和导入权限
 
 ### 4.2 数据权限规则
 
@@ -310,12 +311,12 @@ interface DailyReportQueryParams {
 
 def can_be_edited_by(self, user_id: UUID, user_role: UserRole) -> bool:
     """检查用户是否可以编辑此日报"""
-    # 管理员和运营可以编辑所有未锁定的日报
-    if user_role in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
+    # 管理员和主管可以编辑所有未锁定的日报
+    if user_role in [UserRole.ADMIN, UserRole.SUPERVISOR]:
         return not self.is_final_locked
 
     # 投手只能编辑自己的原始提交状态日报
-    if user_role == UserRole.MEDIA_BUYER:
+    if user_role == UserRole.PITCHER:
         if self.submitted_by != user_id:
             return False
         return self.status == DailyReportStatus.RAW_SUBMITTED.value
@@ -341,7 +342,7 @@ def can_be_edited_by(self, user_id: UUID, user_role: UserRole) -> bool:
 
 ### 5.1 状态机定义
 
-**来源**: STATE_MACHINE.md v2.6 §8 日报 8 状态机
+**来源**: STATE_MACHINE.md v2.7 §8 日报 8 状态机
 
 ```
 ┌──────────────┐     auto       ┌──────────────┐
@@ -387,11 +388,11 @@ def can_be_edited_by(self, user_id: UUID, user_role: UserRole) -> bool:
 | raw_submitted | trend_pending | 系统自动/手动触发 | system/pitcher |
 | trend_pending | trend_ok | TF-* 规则全部通过 | system |
 | trend_pending | trend_flagged | TF-* 规则触发 | system |
-| trend_flagged | trend_resolved | 运营确认 | data_operator |
-| trend_flagged | raw_submitted | 运营退回 | data_operator |
-| trend_ok | final_pending | 录入 real_spend | data_operator |
-| trend_resolved | final_pending | 录入 real_spend | data_operator |
-| final_pending | final_confirmed | 运营确认 final | data_operator |
+| trend_flagged | trend_resolved | 主管确认 | supervisor |
+| trend_flagged | raw_submitted | 主管退回 | supervisor |
+| trend_ok | final_pending | 录入 real_spend | supervisor |
+| trend_resolved | final_pending | 录入 real_spend | supervisor |
+| final_pending | final_confirmed | 主管确认 final | supervisor |
 | final_confirmed | final_locked | 月底自动锁定 | system |
 
 ### 5.2 验证规则 (Zod/Pydantic)
@@ -507,7 +508,7 @@ Phase 1 规则 (照亮阶段):
 ### 6.2 枚举值对照
 
 ```typescript
-// 8 状态机 (STATE_MACHINE.md v2.6 §8)
+// 8 状态机 (STATE_MACHINE.md v2.7 §8)
 type DailyReportStatus =
   | 'raw_submitted'    // 已提交
   | 'trend_pending'    // 待趋势审核
@@ -670,7 +671,7 @@ class TestDailyReportAPI:
     ("pitcher", "edit_own_trend_pending", 403),
     ("finance", "create", 403),
     ("finance", "export", 200),
-    ("data_operator", "batch_import", 200),
+    ("supervisor", "batch_import", 200),
     ("admin", "delete", 204),
 ])
 async def test_role_permissions(client, role, action, expected):
@@ -760,8 +761,8 @@ async def test_role_permissions(client, role, action, expected):
 ### A.2 SoT 追溯验证 Checklist
 
 生成代码后必须验证：
-- [ ] 所有状态值来自 STATE_MACHINE.md v2.6 §8 (8 状态)
-- [ ] 所有字段来自 DATA_SCHEMA.md v5.2 §6.1
+- [ ] 所有状态值来自 STATE_MACHINE.md v2.7 §8 (8 状态)
+- [ ] 所有字段来自 DATA_SCHEMA.md v5.3 §6.1
 - [ ] 所有错误码来自 ERROR_CODES_SOT.md v2.1
 - [ ] 所有角色来自 MASTER.md v4.4 §2.4 (7 个)
 - [ ] 金额字段使用 Decimal(15,2) 类型

@@ -1,7 +1,20 @@
 """
-日报管理API路由
-Version: 1.1
-Author: Claude协作开发
+日报管理API路由 (重构版)
+
+SoT Reference: STATE_MACHINE.md v2.6 §8 (日报 8 状态机)
+SoT Reference: API_SOT.md v9.0 §9 (Daily Reports API)
+
+状态机 (8状态):
+raw_submitted → trend_pending → trend_ok → final_pending → final_confirmed → final_locked
+                      ↓
+               trend_flagged → trend_resolved ↗
+
+依赖代码块:
+- response-envelope: success_response, error_response, paginated_response
+- pagination: Query params
+- error-codes: StandardResponse, SystemErrorCodes, BusinessErrorCodes
+
+Version: 2.0
 """
 
 import logging
@@ -1850,5 +1863,292 @@ async def get_trend_pending_count(
             message="获取待检查数量失败",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
         )
+
+
+# ============ 用户请求的新端点 (STATE_MACHINE.md v2.6) ============
+
+
+class FinalCheckResponse(BaseModel):
+    """终审检查响应"""
+    report_id: int
+    passed: bool
+    old_status: str
+    new_status: str
+    message: str
+    details: Dict[str, Any] = {}
+
+
+class BatchApproveRequest(BaseModel):
+    """批量审批请求"""
+    report_ids: List[int] = Field(..., min_items=1, max_items=100, description="日报ID列表")
+    action: str = Field("approve", description="审批动作: approve/confirm/lock")
+    notes: Optional[str] = Field(None, max_length=500, description="审批备注")
+
+
+class BatchApproveResult(BaseModel):
+    """单个审批结果"""
+    report_id: int
+    success: bool
+    old_status: Optional[str] = None
+    new_status: Optional[str] = None
+    error: Optional[str] = None
+
+
+class BatchApproveResponse(BaseModel):
+    """批量审批响应"""
+    total: int
+    success_count: int
+    failed_count: int
+    results: List[BatchApproveResult]
+
+
+@router.post(
+    "/{report_id}/final-check",
+    response_model=StandardResponse[FinalCheckResponse],
+    summary="执行终审检查",
+    description="""
+    执行终审检查，自动完成 final_pending → final_confirmed 流转。
+
+    检查规则:
+    - 验证 real_spend 已录入
+    - 验证 conversions_final 有效
+    - Phase 1: 仅记录警告，不阻断
+    - Phase 2: 强制验证通过
+
+    状态流转 (STATE_MACHINE.md v2.6 §8):
+    - final_pending → final_confirmed (检查通过)
+    """
+)
+async def execute_final_check(
+    report_id: int,
+    notes: Optional[str] = Query(None, description="审核备注"),
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["data_operator", "supervisor", "admin", "finance"]))
+):
+    """
+    执行终审检查 API (STATE_MACHINE.md v2.6 §8)
+
+    类似 trend-check，但用于 final 阶段的自动验证和流转。
+    """
+    try:
+        # 获取日报
+        report = service.get_daily_report(report_id, current_user)
+        old_status = report.status
+
+        # 验证当前状态
+        if report.status != "final_pending":
+            return error_response(
+                code="STATE-400",
+                message=f"当前状态 '{report.status}' 不支持终审检查，需要 'final_pending' 状态",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 执行检查
+        check_details = {}
+        warnings = []
+
+        # 检查 real_spend
+        if report.real_spend is None or report.real_spend <= 0:
+            warnings.append("real_spend 未录入或为零")
+            check_details["real_spend_valid"] = False
+        else:
+            check_details["real_spend_valid"] = True
+            check_details["real_spend"] = float(report.real_spend)
+
+        # 检查 conversions_final
+        conversions_final = report.conversions_final or report.conversions_raw or 0
+        if conversions_final <= 0:
+            warnings.append("conversions_final 为零")
+            check_details["conversions_valid"] = False
+        else:
+            check_details["conversions_valid"] = True
+            check_details["conversions_final"] = conversions_final
+
+        # Phase 1: 仅警告，不阻断
+        from backend.core.phase_config import get_phase_config
+        phase_config = get_phase_config()
+
+        check_details["warnings"] = warnings
+        check_details["phase"] = "phase1" if phase_config.is_phase1_enabled() else "phase2"
+
+        # 执行状态转换
+        audit_request = DailyReportAuditRequest(audit_notes=notes or "终审检查自动通过")
+        report = service.confirm_final_report(report_id, audit_request, current_user)
+
+        response = FinalCheckResponse(
+            report_id=report.id,
+            passed=True,
+            old_status=old_status,
+            new_status=report.status,
+            message="终审检查通过" + (f"，警告: {', '.join(warnings)}" if warnings else ""),
+            details=check_details
+        )
+
+        return success_response(data=response, message=response.message)
+
+    except ResourceNotFoundError as e:
+        return error_response(
+            code="RES-001",
+            message=str(e),
+            status_code=status.HTTP_404_NOT_FOUND
+        )
+    except (BusinessLogicError, PermissionDeniedError) as e:
+        return error_response(
+            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ-001",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.exception(f"Error in final check for report {report_id}: {e}")
+        return error_response(
+            code="SYS-500",
+            message="终审检查失败",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@router.post(
+    "/batch-approve",
+    response_model=StandardResponse[BatchApproveResponse],
+    summary="批量审批日报",
+    description="""
+    批量审批日报，支持多种动作。
+
+    动作说明:
+    - approve: 通用审批（根据当前状态自动流转到下一状态）
+    - confirm: 确认终审 (final_pending → final_confirmed)
+    - lock: 锁定日报 (final_confirmed → final_locked)
+
+    状态机流转规则 (STATE_MACHINE.md v2.6 §8):
+    - trend_pending → trend_ok
+    - trend_ok/trend_resolved → final_pending
+    - final_pending → final_confirmed
+    - final_confirmed → final_locked
+
+    权限: supervisor/data_operator/finance/admin
+    """
+)
+async def batch_approve_reports(
+    request: BatchApproveRequest,
+    service: DailyReportService = Depends(get_daily_report_service),
+    current_user: User = Depends(require_role(["data_operator", "supervisor", "finance", "admin"]))
+):
+    """
+    批量审批日报 API (STATE_MACHINE.md v2.6 §8)
+
+    支持一次性审批多个日报，提高运营效率。
+    """
+    results: List[BatchApproveResult] = []
+    success_count = 0
+    failed_count = 0
+
+    # 定义动作到目标状态的映射
+    action_transitions = {
+        "approve": {
+            "trend_pending": "trend_ok",
+            "trend_ok": "final_pending",
+            "trend_resolved": "final_pending",
+            "final_pending": "final_confirmed",
+        },
+        "confirm": {
+            "final_pending": "final_confirmed",
+        },
+        "lock": {
+            "final_confirmed": "final_locked",
+        }
+    }
+
+    action = request.action.lower()
+    if action not in action_transitions:
+        return error_response(
+            code="VAL-001",
+            message=f"无效的审批动作: {action}，允许值: approve/confirm/lock",
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    transition_map = action_transitions[action]
+    audit_request = DailyReportAuditRequest(audit_notes=request.notes or f"批量{action}")
+
+    for report_id in request.report_ids:
+        try:
+            # 获取日报
+            report = service.get_daily_report(report_id, current_user)
+            old_status = report.status
+
+            # 检查是否支持当前状态的转换
+            if old_status not in transition_map:
+                results.append(BatchApproveResult(
+                    report_id=report_id,
+                    success=False,
+                    old_status=old_status,
+                    error=f"当前状态 '{old_status}' 不支持 '{action}' 操作"
+                ))
+                failed_count += 1
+                continue
+
+            target_status = transition_map[old_status]
+
+            # 执行状态转换
+            if target_status == "trend_ok":
+                report = service._transition_daily_report(
+                    report_id=report_id,
+                    target_status=DailyReportStatus.TREND_OK,
+                    audit_request=audit_request,
+                    current_user=current_user
+                )
+            elif target_status == "final_pending":
+                report = service._transition_daily_report(
+                    report_id=report_id,
+                    target_status=DailyReportStatus.FINAL_PENDING,
+                    audit_request=audit_request,
+                    current_user=current_user
+                )
+            elif target_status == "final_confirmed":
+                report = service.confirm_final_report(report_id, audit_request, current_user)
+            elif target_status == "final_locked":
+                report = service.lock_final_report(report_id, audit_request, current_user)
+
+            results.append(BatchApproveResult(
+                report_id=report_id,
+                success=True,
+                old_status=old_status,
+                new_status=report.status
+            ))
+            success_count += 1
+
+        except ResourceNotFoundError as e:
+            results.append(BatchApproveResult(
+                report_id=report_id,
+                success=False,
+                error=f"日报不存在: {str(e)}"
+            ))
+            failed_count += 1
+        except (BusinessLogicError, PermissionDeniedError) as e:
+            results.append(BatchApproveResult(
+                report_id=report_id,
+                success=False,
+                error=str(e)
+            ))
+            failed_count += 1
+        except Exception as e:
+            logger.exception(f"Error approving report {report_id}: {e}")
+            results.append(BatchApproveResult(
+                report_id=report_id,
+                success=False,
+                error=f"处理失败: {str(e)}"
+            ))
+            failed_count += 1
+
+    response = BatchApproveResponse(
+        total=len(request.report_ids),
+        success_count=success_count,
+        failed_count=failed_count,
+        results=results
+    )
+
+    message = f"批量审批完成: 成功 {success_count}, 失败 {failed_count}"
+    logger.info(f"Batch approve completed: {message}, user={current_user.id}")
+
+    return success_response(data=response, message=message)
 
 

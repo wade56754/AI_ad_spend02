@@ -1,13 +1,28 @@
 """
-统一状态机模块
+统一状态机模块 (Core Layer)
 
-参考: STATE_MACHINE.md v2.6
-参考: Saleor OrderStatus 设计
+SoT Reference: STATE_MACHINE.md v2.6
+
+本模块是 state-machine 代码块，提供:
+1. StateMachine - 通用状态机基类
+2. can_transition() - 检查状态转换是否允许
+3. transition() - 执行状态转换
+4. 预定义状态机: 日报(8状态), 充值(7状态), 结算(4状态), 转账(5状态)等
 
 角色兼容性说明 (MASTER.md v4.4 §2.4):
 - 状态机中使用技术角色名 (data_operator, media_buyer)
 - 通过 role_mapping.role_in_list() 支持业务角色名 (supervisor, pitcher)
 - 等价角色组: supervisor ↔ data_operator, pitcher ↔ media_buyer, ceo ↔ admin
+
+使用示例:
+    from backend.core.state_machine import (
+        DAILY_REPORT_STATE_MACHINE,
+        DailyReportStatus
+    )
+
+    # 检查是否可以转换
+    if DAILY_REPORT_STATE_MACHINE.can_transition("raw_submitted", "trend_pending"):
+        DAILY_REPORT_STATE_MACHINE.transition(report, "raw_submitted", "trend_pending")
 """
 
 from enum import Enum
@@ -253,3 +268,140 @@ AD_ACCOUNT_STATE_MACHINE = StateMachine([
     Transition(AdAccountStatus.DEAD, AdAccountStatus.ARCHIVED, required_roles=["admin"]),
     # archived 是终态，无法转换
 ])
+
+
+class SettlementStatus(str, Enum):
+    """月度结算状态机 (STATE_MACHINE.md v2.6 §13.1)
+
+    状态流转: pending → confirmed → locked → archived
+                ↑          ↓
+                └──────────┘ (退回修正)
+    """
+    PENDING = "pending"          # 待确认 - 系统自动汇总生成
+    CONFIRMED = "confirmed"      # 已确认 - 财务确认数据正确
+    LOCKED = "locked"            # 已锁定 - 老板最终确认锁定 (终态)
+    ARCHIVED = "archived"        # 已归档 - 年度归档 (终态)
+
+
+# 预定义状态机: 月度结算 (STATE_MACHINE.md v2.6 §13.1)
+SETTLEMENT_STATE_MACHINE = StateMachine([
+    # pending → confirmed (财务确认)
+    Transition(SettlementStatus.PENDING, SettlementStatus.CONFIRMED, required_roles=["finance", "admin"]),
+    # confirmed → locked (老板锁定)
+    Transition(SettlementStatus.CONFIRMED, SettlementStatus.LOCKED, required_roles=["ceo", "admin"]),
+    # confirmed → pending (退回修正)
+    Transition(SettlementStatus.CONFIRMED, SettlementStatus.PENDING, required_roles=["finance", "admin"]),
+    # locked → archived (年度归档)
+    Transition(SettlementStatus.LOCKED, SettlementStatus.ARCHIVED, required_roles=["admin"]),
+])
+
+
+class WeeklyBriefStatus(str, Enum):
+    """周报状态机 (STATE_MACHINE.md v2.6 §13.2)"""
+    DRAFT = "draft"              # 草稿
+    SUBMITTED = "submitted"      # 已提交
+    REVIEWED = "reviewed"        # 已审阅
+    ARCHIVED = "archived"        # 已归档
+
+
+# 预定义状态机: 周报
+WEEKLY_BRIEF_STATE_MACHINE = StateMachine([
+    Transition(WeeklyBriefStatus.DRAFT, WeeklyBriefStatus.SUBMITTED, required_roles=["data_operator", "media_buyer"]),
+    Transition(WeeklyBriefStatus.SUBMITTED, WeeklyBriefStatus.REVIEWED, required_roles=["account_manager", "admin"]),
+    Transition(WeeklyBriefStatus.REVIEWED, WeeklyBriefStatus.ARCHIVED, required_roles=["admin"]),
+    # 可以退回修改
+    Transition(WeeklyBriefStatus.SUBMITTED, WeeklyBriefStatus.DRAFT, required_roles=["data_operator", "account_manager"]),
+])
+
+
+# ============================================================================
+# 便捷函数
+# ============================================================================
+
+def get_state_machine(entity_type: str) -> Optional[StateMachine]:
+    """
+    根据实体类型获取对应的状态机
+
+    Args:
+        entity_type: 实体类型名称 (daily_report, topup, settlement, etc.)
+
+    Returns:
+        对应的 StateMachine 实例，未找到返回 None
+    """
+    machines = {
+        "daily_report": DAILY_REPORT_STATE_MACHINE,
+        "topup": TOPUP_STATE_MACHINE,
+        "transfer": TRANSFER_STATE_MACHINE,
+        "reconciliation_batch": RECONCILIATION_BATCH_STATE_MACHINE,
+        "reconciliation_detail": RECONCILIATION_DETAIL_STATE_MACHINE,
+        "ad_account": AD_ACCOUNT_STATE_MACHINE,
+        "settlement": SETTLEMENT_STATE_MACHINE,
+        "weekly_brief": WEEKLY_BRIEF_STATE_MACHINE,
+    }
+    return machines.get(entity_type)
+
+
+def validate_transition(
+    entity_type: str,
+    from_state: str,
+    to_state: str,
+    user_role: str = None
+) -> tuple[bool, Optional[str]]:
+    """
+    验证状态转换是否合法
+
+    Args:
+        entity_type: 实体类型
+        from_state: 当前状态
+        to_state: 目标状态
+        user_role: 用户角色 (可选)
+
+    Returns:
+        (is_valid, error_message) 元组
+    """
+    machine = get_state_machine(entity_type)
+    if not machine:
+        return False, f"未知的实体类型: {entity_type}"
+
+    if not machine.can_transition(from_state, to_state):
+        allowed = machine.get_allowed_transitions(from_state)
+        return False, f"不允许从 {from_state} 转换到 {to_state}，允许的目标状态: {allowed}"
+
+    return True, None
+
+
+# ============================================================================
+# 导出列表
+# ============================================================================
+
+__all__ = [
+    # 状态机基类
+    "StateMachine",
+    "Transition",
+    "StateTransitionError",
+
+    # 状态枚举
+    "DailyReportStatus",
+    "TopupStatus",
+    "TransferStatus",
+    "ReconciliationBatchStatus",
+    "ReconciliationDetailStatus",
+    "AdAccountStatus",
+    "ProjectStatus",
+    "SettlementStatus",
+    "WeeklyBriefStatus",
+
+    # 预定义状态机实例
+    "DAILY_REPORT_STATE_MACHINE",
+    "TOPUP_STATE_MACHINE",
+    "TRANSFER_STATE_MACHINE",
+    "RECONCILIATION_BATCH_STATE_MACHINE",
+    "RECONCILIATION_DETAIL_STATE_MACHINE",
+    "AD_ACCOUNT_STATE_MACHINE",
+    "SETTLEMENT_STATE_MACHINE",
+    "WEEKLY_BRIEF_STATE_MACHINE",
+
+    # 便捷函数
+    "get_state_machine",
+    "validate_transition",
+]

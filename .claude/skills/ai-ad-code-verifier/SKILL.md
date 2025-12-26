@@ -1,14 +1,19 @@
 ---
 name: ai-ad-code-verifier
-version: "2.4"
+version: "2.5"
 status: ready_for_production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-22
+last_reviewed: 2025-12-24
 baseline:
   - MASTER.md v4.4
   - STATE_MACHINE.md v2.6
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
+new_features_v2_5:
+  - 歧义处理流程 (AH-05) - ambiguity_handling 章节
+  - Phase 1 行为约束验证 (AH-04) - phase1_constraints 章节
+  - 7 角色白名单更新 (MASTER.md v4.4 §2.4)
+  - 禁止模式正则检测
 new_features_v2_4:
   - Phase 1/2 边界检查（PhaseConfig）
   - AH-01~05 防幻觉检查（AntiHallucinationChecker）
@@ -490,15 +495,16 @@ code_sources:
     ])
     ```
 
-    合法角色 (仅 6 个, 来源: CORE_MODULES.md v1.0):
+    合法角色 (7 角色, 来源: MASTER.md v4.4 §2.4):
     ```python
     USER_ROLE = frozenset([
-        'pitcher',          # 投手 - 操作广告账户，每日填报
-        'account_manager',  # 户管 - 管理广告账户分配
-        'finance',          # 财务 - 管理资金流水、对账
-        'supervisor',       # 主管 - 确认日报、审核数据
-        'ceo',              # CEO - 查看报表、关账审批
-        'admin'             # 管理员 - 系统配置
+        'ceo',              # 老板 - 资金安全、公司盈亏、最终决策
+        'project_owner',    # 项目负责人 - 项目盈亏、资金使用效率
+        'finance',          # 财务 - 资金出入准确、数据真实、对账
+        'supervisor',       # 主管 - 团队产出、投手管理、日常监督
+        'pitcher',          # 投手 - CPL 达标、日报准确、执行投放
+        'account_manager',  # 户管 - 账户分配、账户状态监控
+        'admin'             # 管理员 - 系统配置（不参与业务）
     ])
 
     # 已废弃角色 (会触发 SOT-004):
@@ -540,7 +546,116 @@ code_sources:
 
 
   <!-- ======================================================
-       6.1 P0 功能测试覆盖要求 (P0 Test Coverage Requirements) [v2.3 新增]
+       6.1 歧义处理流程 (Ambiguity Handling) [v2.5 新增]
+       来源: MASTER.md v4.4 §7 AH-05
+  ====================================================== -->
+  <ambiguity_handling>
+    **歧义处理流程 (AH-05)** - 遇到歧义必须停止并询问
+
+    **Step 1: 检测到歧义** → 立即 BLOCKING
+    歧义类型包括:
+    - 状态值不在 8 状态机白名单中
+    - 角色值不在 7 角色白名单中
+    - 字段值不在 DATA_SCHEMA.md 中
+    - 规则编号不在 BUSINESS_RULES.md 中
+    - API 端点不在 API_SOT.md 中
+    - 错误码前缀不在 16 前缀白名单中
+
+    **Step 2: 停止当前操作**
+    - 不继续生成代码
+    - 不尝试自动猜测
+    - 不假设默认值
+
+    **Step 3: 生成歧义报告**
+    ```json
+    {
+      "type": "STATE_AMBIGUITY | ROLE_AMBIGUITY | FIELD_AMBIGUITY | RULE_AMBIGUITY | API_AMBIGUITY | ERROR_AMBIGUITY",
+      "content": "发现状态 'pending_review' 不在 8 状态机中",
+      "options": [
+        "使用 'trend_pending' (趋势待检查)",
+        "使用 'final_pending' (最终待确认)",
+        "新增状态到 STATE_MACHINE.md (需 RFC)"
+      ],
+      "sot_ref": "STATE_MACHINE.md v2.6 §2"
+    }
+    ```
+
+    **Step 4: 等待用户确认**
+    - 输出歧义报告给用户
+    - 等待用户选择选项或提供新指示
+    - 不自行做决定
+
+    **Step 5: 继续执行**
+    - 按用户确认的方案继续
+    - 记录歧义解决过程
+
+    **错误码**: AH-05-AMBIGUITY (BLOCKING)
+  </ambiguity_handling>
+
+
+  <!-- ======================================================
+       6.2 Phase 1 行为约束验证 (Phase 1 Constraints) [v2.5 新增]
+       来源: MASTER.md v4.4 §7 AH-04
+  ====================================================== -->
+  <phase1_constraints>
+    **Phase 1 行为约束验证 (AH-04)** - 必须遵循 Phase 1 软性原则
+
+    **允许的行为** ✅:
+    | 行为 | 说明 | 代码模式示例 |
+    |------|------|-------------|
+    | 记录 | 记录事件到日志 | `logger.info("CPL 超标")` |
+    | 提示 | 返回警告信息 | `warnings: ["CPL 超标 30%"]` |
+    | 高亮 | 前端显示标记 | `trend_flag: true` |
+    | 统计 | 数据汇总分析 | `abnormal_count: 5` |
+
+    **禁止的行为** ❌ (会触发 AH-02 违规):
+    | 行为 | 说明 | 检测模式 |
+    |------|------|---------|
+    | 阻断 | 拒绝请求 | `raise HTTPException(4xx, ...)` |
+    | 拒绝 | 返回错误 | `auto_reject`, `deny_request` |
+    | 暂停 | 暂停项目 | `.suspend()`, `status = 'suspended'` |
+    | 冻结 | 冻结账户 | `.freeze()`, `.disable()` |
+    | 自动拒绝 | 自动驳回 | `auto_reject = True` |
+    | 自动批准 | 自动通过 | `auto_approve = True` |
+
+    **检测正则模式**:
+    ```python
+    FORBIDDEN_PATTERNS = [
+        r'raise\s+HTTPException\s*\(\s*4\d\d',  # HTTP 4xx 错误
+        r'raise\s+.*Error.*reject',              # 拒绝错误
+        r'\.suspend\s*\(\s*\)',                  # 暂停方法
+        r'\.freeze\s*\(\s*\)',                   # 冻结方法
+        r'\.disable\s*\(\s*\)',                  # 禁用方法
+        r'auto_approve\s*=\s*True',              # 自动批准
+        r'auto_reject\s*=\s*True',               # 自动拒绝
+        r'status\s*=\s*[\'"]suspended[\'"]',     # 设置暂停状态
+        r'status\s*=\s*[\'"]frozen[\'"]',        # 设置冻结状态
+    ]
+    ```
+
+    **验证规则**:
+    1. 扫描生成的代码，检测是否包含禁止模式
+    2. 如检测到 → 触发 AH-02 违规 (BLOCKING)
+    3. 建议修改为仅记录和提示的方式
+
+    **错误码**: AH-02-PHASE1-VIOLATION (BLOCKING)
+
+    **修复建议**:
+    ```python
+    # 错误做法 (会触发 AH-02)
+    if over_budget:
+        raise HTTPException(400, "超预算，拒绝操作")
+
+    # 正确做法 (Phase 1 合规)
+    if over_budget:
+        logger.warning(f"超预算警告: {amount}")
+        return {"status": "ok", "warnings": ["超预算警告，请确认"]}
+    ```
+  </phase1_constraints>
+
+
+  <!-- ======================================================
+       6.3 P0 功能测试覆盖要求 (P0 Test Coverage Requirements) [v2.3 新增]
   ====================================================== -->
   <p0_test_coverage>
     **核心原则**: P0 级别的功能必须有测试覆盖，否则代码不可合并。
@@ -645,6 +760,13 @@ code_sources:
        8. 版本记录 (Version Notes)
   ====================================================== -->
   <VERSION_NOTES>
+    ### v2.5 (2025-12-24) - 防幻觉规则集成版
+    - 新增歧义处理流程 (ambiguity_handling) - AH-05
+    - 新增 Phase 1 行为约束验证 (phase1_constraints) - AH-04
+    - 更新角色白名单为 7 角色 (MASTER.md v4.4 §2.4)
+    - 新增禁止模式正则检测 (FORBIDDEN_PATTERNS)
+    - 新增错误码: AH-05-AMBIGUITY, AH-02-PHASE1-VIOLATION
+
     ### v2.3 (2025-12-22) - P2 优化版
     - 新增 P0 功能测试覆盖要求 (p0_test_coverage)
     - 新增 TST-007~009 错误码 (P0 测试覆盖)

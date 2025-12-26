@@ -4,7 +4,7 @@ status: draft
 layer: agent-layer
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
 ---
 
 # Skill 注册与调度
@@ -12,7 +12,7 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 > **文档版本**: v1.0
 > **状态**: Draft
 > **最后审查**: 2025-11-27
-> **基准**: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+> **基准**: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
 
 ---
 
@@ -541,7 +541,7 @@ def test_be_dev_skill_empty_task():
 ## 8. 引用文献
 
 **本文档引用的规范**:
-- MASTER.md v3.4 §11 - Skill 注册与调度
+- MASTER.md v4.4 §11 - Skill 注册与调度
 - agents/agents_config.py - Agent Registry 实现
 - agents/skills/*.py - Python Skills 实现
 - .claude/skills/*/SKILL.md - Claude Skills 定义

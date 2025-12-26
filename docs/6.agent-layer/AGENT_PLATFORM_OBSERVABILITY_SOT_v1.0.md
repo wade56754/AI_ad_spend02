@@ -5,7 +5,7 @@ layer: agent
 owner: wade
 last_reviewed: 2025-12-03
 baseline: >
-  Agent Layer Freeze v1.0, MASTER.md v3.5
+  Agent Layer Freeze v1.0, MASTER.md v4.4
 ---
 
 # Agent Platform Observability SoT
@@ -413,4 +413,4 @@ def create_error_response(
 
 **Document Status**: Production
 **Phase**: 3.1
-**Baseline**: Agent Layer Freeze v1.0, MASTER.md v3.5
+**Baseline**: Agent Layer Freeze v1.0, MASTER.md v4.4

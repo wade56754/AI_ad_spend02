@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, API_SOT.md v9.3, MASTER.md v4.4
+> **SoT 基准**: DATA_SCHEMA.md v5.3, API_SOT.md v9.3, MASTER.md v4.4
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
@@ -58,7 +58,7 @@
 
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §3.1.1 users | 表结构、字段定义 |
+| DATA_SCHEMA.md | v5.3 | §3.1.1 users | 表结构、字段定义 |
 | BUSINESS_RULES.md | v4.1 | BR-USER-001~003 | 用户业务规则 |
 | ERROR_CODES_SOT.md | v2.1 | AUTH_*, BIZ_*, DB_* | 业务错误码 |
 | API_SOT.md | v9.3 | §5 Users | API 端点规范 |
@@ -81,7 +81,7 @@
 
 ### 2.1 表结构定义
 
-**来源**: DATA_SCHEMA.md v5.2 §3.1.1, `backend/models/core/user.py`
+**来源**: DATA_SCHEMA.md v5.3 §3.1.1, `backend/models/core/user.py`
 
 ```sql
 CREATE TABLE users (

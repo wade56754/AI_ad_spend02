@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-12-19T06:35:38.908Z",
+  "timestamp": "2025-12-25T09:24:48.556Z",
   "success": [],
   "failures": [
-    "测试执行错误: The browser is already running for C:\\Users\\user\\AppData\\Local\\Temp\\puppeteer_dev_chrome_profile-xIHDaz. Use a different `userDataDir` or stop the running browser first."
+    "测试执行错误: The browser is already running for C:\\Users\\user\\AppData\\Local\\Temp\\puppeteer_dev_chrome_profile-yVkAh7. Use a different `userDataDir` or stop the running browser first."
   ],
   "networkRequests": [],
   "consoleErrors": [],

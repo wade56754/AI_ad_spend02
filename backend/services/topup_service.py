@@ -1,12 +1,21 @@
 """
-充值管理服务层
-Version: 2.0 (SoT Aligned - STATE_MACHINE.md v2.6)
-Author: Claude协作开发
+充值管理服务层 (重构版)
 
-充值申请状态机（7状态）：
+SoT Reference: STATE_MACHINE.md v2.6 §9 (充值状态机)
+SoT Reference: LEDGER_SOT.md v1.1 (账本规则 BR-FIN-005)
+
+充值状态机 (7状态):
 draft → pending_review → finance_approve → paid → completed
-                       → rejected
-                       → cancelled
+        ↓                ↓
+     cancelled        rejected
+
+依赖代码块:
+- state-machine: TOPUP_STATE_MACHINE
+- ledger-entry: LedgerEntry 记录
+- permission-filter: 角色数据过滤
+- phase-config: Phase 1/2 行为控制
+
+Version: 2.1
 """
 
 from datetime import datetime, date, timedelta
@@ -1189,10 +1198,10 @@ class TopupService:
             .join(AdAccount)
             .with_entities(
                 AdAccount.id,
-                AdAccount.account_name,
+                AdAccount.name,  # 使用实际列名 name (account_name 是 property)
                 func.count(TopupRequest.id).label('count')
             )
-            .group_by(AdAccount.id, AdAccount.account_name)
+            .group_by(AdAccount.id, AdAccount.name)
             .order_by(func.count(TopupRequest.id).desc())
             .limit(5)
             .all()

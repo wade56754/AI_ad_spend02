@@ -34,7 +34,7 @@ export const DataStateManager: React.FC<DataStateManagerProps> = ({
     }
 
     return (
-      <div className="flex flex-col items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12" data-testid="loading-skeleton">
         <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-4" />
         <p className="text-sm text-slate-500">加载中...</p>
       </div>
@@ -48,7 +48,7 @@ export const DataStateManager: React.FC<DataStateManagerProps> = ({
     }
 
     return (
-      <div className="flex flex-col items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12" data-testid="error-state">
         <AlertCircle className="w-8 h-8 text-red-500 mb-4" />
         <p className="text-sm text-red-600 mb-4">{error}</p>
         {onRetry && (
@@ -68,7 +68,7 @@ export const DataStateManager: React.FC<DataStateManagerProps> = ({
     }
 
     return (
-      <div className="flex flex-col items-center justify-center py-12">
+      <div className="flex flex-col items-center justify-center py-12" data-testid="empty-state">
         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
           <AlertCircle className="w-8 h-8 text-slate-400" />
         </div>

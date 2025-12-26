@@ -1,12 +1,23 @@
 """
-用户管理 Schema 定义
+用户管理 Schema 定义 (重构版)
 
 SoT References:
-- API_SOT.md v9.0 §5 Users API
-- DATA_SCHEMA.md v5.2 §3.1.1 users 表
+- API_SOT.md v9.3 §5 Users API
+- DATA_SCHEMA.md v5.4 §3.1.1 users 表
+- MASTER.md v4.4 §2.4 (7角色模型)
 - BUSINESS_RULES.md BR-USER-001, BR-USER-002
+- ERROR_CODES_SOT.md v2.1 (错误码)
 
-Author: AI 代码工厂 v2.4
+依赖代码块:
+- pagination: PaginationMeta
+- response-envelope: 标准响应格式
+
+Version: 2.1
+Author: Claude Code
+
+v2.1 更新 (2025-12):
+- 新增 team_id 字段：投手直接归属团队
+- 新增 team_name 响应字段：便于前端展示
 """
 from datetime import datetime
 from typing import Optional, List, Literal
@@ -14,11 +25,19 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 
-# 角色枚举 - 严格对应 STATE_MACHINE.md v2.6 §2
-RoleType = Literal["admin", "finance", "data_operator", "account_manager", "media_buyer"]
+# 角色枚举 - 严格对应 MASTER.md v4.4 §2.4 (7角色模型)
+RoleType = Literal[
+    "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
+    "project_owner",   # 项目负责人 - 项目盈亏、资金使用效率
+    "finance",         # 财务 - 资金出入准确、数据真实、对账
+    "supervisor",      # 主管 - 团队产出、投手管理、日常监督
+    "pitcher",         # 投手 - CPL 达标、日报准确、执行投放
+    "account_manager", # 户管 - 账户分配、账户状态监控
+    "admin"            # 管理员 - 系统配置（不参与业务）
+]
 
-# 合法角色列表
-VALID_ROLES = ["admin", "finance", "data_operator", "account_manager", "media_buyer"]
+# 合法角色列表 (MASTER.md v4.4 §2.4)
+VALID_ROLES = ["ceo", "project_owner", "finance", "supervisor", "pitcher", "account_manager", "admin"]
 
 
 class UserBase(BaseModel):
@@ -28,6 +47,7 @@ class UserBase(BaseModel):
     full_name: Optional[str] = Field(None, max_length=100, description="真实姓名")
     role: RoleType = Field(..., description="用户角色")
     department: Optional[str] = Field(None, max_length=100, description="部门")
+    team_id: Optional[UUID] = Field(None, description="所属团队ID (v2.1)")
     is_active: bool = Field(default=True, description="账号是否激活")
 
     @field_validator('role')
@@ -73,6 +93,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, max_length=100, description="真实姓名")
     role: Optional[RoleType] = Field(None, description="用户角色")
     department: Optional[str] = Field(None, max_length=100, description="部门")
+    team_id: Optional[UUID] = Field(None, description="所属团队ID (v2.1)")
     is_active: Optional[bool] = Field(None, description="账号是否激活")
     password: Optional[str] = Field(None, min_length=8, max_length=128, description="新密码")
 
@@ -99,6 +120,8 @@ class UserResponse(BaseModel):
     full_name: Optional[str] = Field(None, description="真实姓名")
     role: str = Field(..., description="角色")
     department: Optional[str] = Field(None, description="部门")
+    team_id: Optional[UUID] = Field(None, description="所属团队ID (v2.1)")
+    team_name: Optional[str] = Field(None, description="所属团队名称 (v2.1)")
     is_active: bool = Field(..., description="账号是否激活")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: Optional[datetime] = Field(None, description="更新时间")
@@ -114,6 +137,8 @@ class UserListResponse(BaseModel):
     email: str
     role: str
     department: Optional[str] = None
+    team_id: Optional[UUID] = None  # v2.1
+    team_name: Optional[str] = None  # v2.1
     is_active: bool
     created_at: datetime
 
@@ -122,11 +147,12 @@ class UserListQueryParams(BaseModel):
     """
     用户列表查询参数
 
-    GET /api/v1/users?page=1&page_size=20&role=media_buyer&is_active=true
+    GET /api/v1/users?page=1&page_size=20&role=media_buyer&is_active=true&team_id=xxx
     """
     page: int = Field(default=1, ge=1, description="页码")
     page_size: int = Field(default=20, ge=1, le=100, description="每页数量")
     role: Optional[RoleType] = Field(None, description="角色过滤")
+    team_id: Optional[UUID] = Field(None, description="团队过滤 (v2.1)")
     is_active: Optional[bool] = Field(None, description="账号状态过滤")
     search: Optional[str] = Field(None, max_length=100, description="搜索用户名或姓名")
 

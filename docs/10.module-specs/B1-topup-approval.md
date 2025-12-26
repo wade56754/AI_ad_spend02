@@ -23,7 +23,7 @@
 | 角色 | 职责 | 典型操作 |
 |------|------|----------|
 | `pitcher` / `account_manager` | 申请人 | 创建充值申请、提交、取消 |
-| `data_operator` | 数据复核 | 核对申请信息、通过/拒绝 |
+| `supervisor` | 数据复核 | 核对申请信息、通过/拒绝 |
 | `finance` | 财务终审 | 终审批准/拒绝、标记已支付、确认入账 |
 | `ceo` | 老板 | 查看审批状态、了解资金流向 |
 | `admin` | 管理员 | 全权限（系统维护） |
@@ -34,7 +34,7 @@
 |------|------|----------|
 | UC-B1-01 | 创建充值申请 | pitcher, account_manager |
 | UC-B1-02 | 提交申请进入审批流程 | pitcher, account_manager |
-| UC-B1-03 | 数据复核（通过/拒绝） | data_operator |
+| UC-B1-03 | 数据复核（通过/拒绝） | supervisor |
 | UC-B1-04 | 财务终审（批准/拒绝） | finance |
 | UC-B1-05 | 标记已支付 | finance |
 | UC-B1-06 | 确认入账完成 | finance, system |
@@ -140,14 +140,14 @@
 
 | 当前状态 | 目标状态 | 操作 | 允许角色 |
 |----------|----------|------|----------|
-| `draft` | `pending_review` | 提交申请 | media_buyer, account_manager, admin |
-| `draft` | `cancelled` | 取消申请 | media_buyer, account_manager, admin |
-| `pending_review` | `finance_approve` | 数据复核通过 | data_operator, admin |
-| `pending_review` | `rejected` | 数据复核拒绝 | data_operator, admin |
-| `pending_review` | `cancelled` | 取消申请 | media_buyer, account_manager, admin |
+| `draft` | `pending_review` | 提交申请 | pitcher, account_manager, admin |
+| `draft` | `cancelled` | 取消申请 | pitcher, account_manager, admin |
+| `pending_review` | `finance_approve` | 数据复核通过 | supervisor, admin |
+| `pending_review` | `rejected` | 数据复核拒绝 | supervisor, admin |
+| `pending_review` | `cancelled` | 取消申请 | pitcher, account_manager, admin |
 | `finance_approve` | `paid` | 财务终审批准 | finance, admin |
 | `finance_approve` | `rejected` | 财务终审拒绝 | finance, admin |
-| `finance_approve` | `cancelled` | 取消申请 | media_buyer, account_manager, admin |
+| `finance_approve` | `cancelled` | 取消申请 | pitcher, account_manager, admin |
 | `paid` | `completed` | 入账确认 | finance, system, admin |
 
 ### 3.3 终态
@@ -238,10 +238,10 @@
 |------|------|------|------|
 | GET | `/api/v1/topups` | 获取充值申请列表 | 登录用户 |
 | GET | `/api/v1/topups/{id}` | 获取申请详情 | 登录用户 |
-| POST | `/api/v1/topups` | 创建充值申请 | media_buyer, account_manager |
+| POST | `/api/v1/topups` | 创建充值申请 | pitcher, account_manager |
 | PUT | `/api/v1/topups/{id}` | 更新申请信息 | 申请人（draft 状态） |
 | POST | `/api/v1/topups/{id}/submit` | 提交申请 | 申请人 |
-| POST | `/api/v1/topups/{id}/review` | 数据复核 | data_operator |
+| POST | `/api/v1/topups/{id}/review` | 数据复核 | supervisor |
 | POST | `/api/v1/topups/{id}/approve` | 财务终审 | finance |
 | POST | `/api/v1/topups/{id}/mark-paid` | 标记已支付 | finance |
 | POST | `/api/v1/topups/{id}/complete` | 确认入账 | finance |
@@ -331,14 +331,14 @@ Content-Type: application/json
 
 ### 6.1 功能权限
 
-| 功能 | ceo | finance | data_operator | supervisor | pitcher | account_manager | admin |
-|------|-----|---------|---------------|------------|---------|-----------------|-------|
+| 功能 | ceo | project_owner | finance | supervisor | pitcher | account_manager | admin |
+|------|-----|---------------|---------|------------|---------|-----------------|-------|
 | 查看列表 | ✓ | ✓ | ✓ | ✓ | ○ | ○ | ✓ |
 | 创建申请 | - | - | - | - | ✓ | ✓ | ✓ |
-| 数据复核 | - | - | ✓ | - | - | - | ✓ |
-| 财务终审 | - | ✓ | - | - | - | - | ✓ |
-| 标记支付 | - | ✓ | - | - | - | - | ✓ |
-| 确认入账 | - | ✓ | - | - | - | - | ✓ |
+| 数据复核 | - | - | - | ✓ | - | - | ✓ |
+| 财务终审 | - | - | ✓ | - | - | - | ✓ |
+| 标记支付 | - | - | ✓ | - | - | - | ✓ |
+| 确认入账 | - | - | ✓ | - | - | - | ✓ |
 | 取消申请 | - | - | - | - | ✓ | ✓ | ✓ |
 | 导出数据 | ✓ | ✓ | ✓ | ✓ | - | - | ✓ |
 
@@ -349,9 +349,9 @@ Content-Type: application/json
 | 角色 | 数据范围 |
 |------|----------|
 | `ceo` | 全部申请 |
+| `project_owner` | 所负责项目的申请 |
 | `finance` | 全部申请 |
-| `data_operator` | 全部申请 |
-| `supervisor` | 所管辖投手的申请 |
+| `supervisor` | 全部申请（含数据复核） |
 | `pitcher` | 仅自己的申请 |
 | `account_manager` | 所管理账户的申请 |
 | `admin` | 全部申请 |
@@ -492,7 +492,7 @@ TopupRouter
 | 功能点 | 状态 | 说明 |
 |--------|------|------|
 | 7 状态机 | ✅ 已实现 | 完整的状态定义和转换 |
-| 双重审批流程 | ✅ 已实现 | data_operator + finance |
+| 双重审批流程 | ✅ 已实现 | supervisor + finance |
 | 角色权限 | ✅ 已实现 | TOPUP_ACTION_ROLES 定义完整 |
 | 统计卡片 | ✅ 已实现 | TopupsStatsOverview |
 | 表格筛选 | ✅ 已实现 | 标签页 + 筛选器 |

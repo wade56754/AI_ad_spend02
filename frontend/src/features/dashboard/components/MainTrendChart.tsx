@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { ExternalLink, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   LineChart,
   Line,
@@ -160,7 +161,7 @@ export function MainTrendChart({
   }, [data, config.dataKey]);
 
   return (
-    <Card className={cn('rounded-xl border shadow-sm', className)} id="main-trend-chart">
+    <Card className={cn('rounded-xl border shadow-sm', className)} id="main-trend-chart" data-testid="trend-chart">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xl font-semibold text-foreground">
@@ -192,27 +193,31 @@ export function MainTrendChart({
       </CardHeader>
 
       <CardContent>
-        {/* 指标切换标签 */}
-        <div className="flex gap-2 mb-6">
+        {/* 指标切换标签 - 使用 ToggleGroup 实现更好的选择状态反馈 */}
+        <ToggleGroup
+          type="single"
+          value={activeMetric}
+          onValueChange={(newValue) => {
+            if (newValue && onMetricChange) {
+              onMetricChange(newValue as MetricType);
+            }
+          }}
+          className="flex gap-2 mb-6"
+        >
           {(Object.keys(METRIC_CONFIG) as MetricType[]).map((metric) => {
             const metricConfig = METRIC_CONFIG[metric];
-            const isActive = metric === activeMetric;
             return (
-              <button
+              <ToggleGroupItem
                 key={metric}
-                onClick={() => onMetricChange?.(metric)}
-                className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                )}
+                value={metric}
+                aria-label={metricConfig.label}
+                className="px-4 py-2 rounded-lg text-sm font-medium data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm"
               >
                 {metricConfig.label}
-              </button>
+              </ToggleGroupItem>
             );
           })}
-        </div>
+        </ToggleGroup>
 
         {/* 图表区域 */}
         <ResponsiveContainer width="100%" height={320}>

@@ -5,7 +5,7 @@
 > **层级**: agent-layer
 > **Owner**: wade
 > **Last Reviewed**: 2025-12-06
-> **Baseline**: MASTER.md v3.5, Agent Layer Freeze v1.0, SoT Freeze v2.6
+> **Baseline**: MASTER.md v4.4, Agent Layer Freeze v1.0, SoT Freeze v2.6
 
 ---
 
@@ -285,6 +285,6 @@ sequenceDiagram
 ---
 
 **文档控制**:
-- **Baseline**: MASTER.md v3.5, Agent Layer Freeze v1.0
+- **Baseline**: MASTER.md v4.4, Agent Layer Freeze v1.0
 - **Owner**: wade
 - **Next Review**: 2025-12-20

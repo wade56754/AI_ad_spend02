@@ -4,7 +4,7 @@ status: draft
 layer: agent-layer
 owner: wade
 last_reviewed: 2025-11-27
-baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+baseline: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
 ---
 
 # Agent Layer 总览
@@ -12,7 +12,7 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 > **文档版本**: v1.0
 > **状态**: Draft
 > **最后审查**: 2025-11-27
-> **基准**: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
+> **基准**: MASTER.md v4.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architecture Freeze v1.0, Infrastructure Freeze v1.0
 
 ---
 
@@ -27,7 +27,7 @@ baseline: MASTER.md v3.4, SoT Freeze v2.6, Dev-Guides Freeze vFinal, Architectur
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Layer 1: Overview (Freeze v1.0)                             │
-│ MASTER.md v3.4 + PROJECT.md - 系统宪法与业务边界             │
+│ MASTER.md v4.4 + PROJECT.md - 系统宪法与业务边界             │
 └─────────────────────────────────────────────────────────────┘
                              ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -543,14 +543,14 @@ graph TB
 | **AgentResponse** | Agent 返回格式，包含 success、data、error 字段 | `{"success": True, "data": {...}, "error": None}` |
 | **Agent Registry** | Agent 注册中心，管理所有 Agent 的元信息与工厂函数 | `agents_config.py` |
 | **SoT** | Single Source of Truth，真相源文档，Agent 只读不写 | STATE_MACHINE v2.6, DATA_SCHEMA v5.2 |
-| **Baseline** | 文档依赖的上游层版本，用于追溯性管理 | `baseline: MASTER.md v3.4, SoT Freeze v2.6` |
+| **Baseline** | 文档依赖的上游层版本，用于追溯性管理 | `baseline: MASTER.md v4.4, SoT Freeze v2.6` |
 
 ---
 
 ## 8. 引用文献
 
 **本文档引用的规范**:
-- MASTER.md v3.4 §5 - ASDD 框架定义
+- MASTER.md v4.4 §5 - ASDD 框架定义
 - RFC-2025-001 - Agent Layer 提案
 - agents/agents_config.py - Agent Registry 实现
 - agents/agent_core/orchestrator_agent.py - Orchestrator 实现

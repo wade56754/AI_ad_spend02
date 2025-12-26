@@ -1,17 +1,60 @@
 """
-项目管理相关的Pydantic模型
-Version: 1.0
-Author: Claude协作开发
+项目管理相关的Pydantic模型 (重构版)
+
+SoT Reference: API_SOT.md v9.3 §6 (Projects API)
+SoT Reference: STATE_MACHINE.md v2.6 §5 (项目状态机: draft/active/suspended/archived)
+SoT Reference: CORE_MODULES.md §4.5 (阶梯价格规则)
+
+依赖代码块:
+- response-envelope: 统一响应格式
+- pagination: 分页参数
+
+Version: 2.2 (添加阶梯定价)
 """
 
 from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional, Dict, Any, Union
 from uuid import UUID
-from pydantic import computed_field
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, computed_field
 
+
+# ========== 阶梯定价相关 Schema ==========
+
+class PriceTier(BaseModel):
+    """价格阶梯"""
+    model_config = ConfigDict(from_attributes=True)
+
+    min: int = Field(..., ge=0, description="最小数量（含）")
+    max: Optional[int] = Field(None, description="最大数量（含），null 表示无上限")
+    price: Decimal = Field(..., ge=0, description="该阶梯单价")
+
+
+class PriceRules(BaseModel):
+    """
+    价格规则 (BUSINESS_RULES.md v4.6 BR-STL-004)
+
+    type = 'fixed': 固定价格，使用 price 字段
+    type = 'tiered': 阶梯价格，使用 tiers 字段
+    type = 'markup': 加价模式，使用 markup_rate 字段
+
+    calculation_mode:
+    - 'daily': 按日计算阶梯
+    - 'cumulative': 按累计计算阶梯
+
+    SoT Reference: BUSINESS_RULES.md v4.6 §4.10.2
+    """
+    model_config = ConfigDict(from_attributes=True)
+
+    type: str = Field(..., pattern="^(fixed|tiered|markup)$", description="定价类型: fixed/tiered/markup (SoT: BR-STL-004)")
+    calculation_mode: Optional[str] = Field("daily", pattern="^(daily|cumulative)$", description="阶梯计算模式")
+    price: Optional[Decimal] = Field(None, ge=0, description="固定价格（type=fixed时）")
+    tiers: Optional[List[PriceTier]] = Field(None, description="阶梯价格（type=tiered时）")
+    markup_rate: Optional[Decimal] = Field(None, ge=0, le=1, description="加价比例 0-1（type=markup时，如 0.20 = 20%）")
+
+
+# ========== 项目请求/响应 Schema ==========
 
 class ProjectCreateRequest(BaseModel):
     """项目创建请求"""
@@ -26,10 +69,15 @@ class ProjectCreateRequest(BaseModel):
     start_date: Optional[date] = Field(None, description="项目开始日期")
     end_date: Optional[date] = Field(None, description="项目结束日期")
     account_manager_id: Optional[int] = Field(None, gt=0, description="项目经理ID")
+    region: Optional[str] = Field(None, max_length=50, description="主要投放地区")
+    unit_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="单粉价格")
+    # 阶梯定价 (v2.2)
+    price_rules: Optional[PriceRules] = Field(None, description="阶梯价格规则")
+    default_currency: str = Field("USD", max_length=10, description="项目默认币种")
 
 
 class ProjectUpdateRequest(BaseModel):
-    """项目更新请求"""
+    """项目更新请求 (BUSINESS_RULES.md v4.6)"""
     model_config = ConfigDict(from_attributes=True)
 
     name: Optional[str] = Field(None, min_length=1, max_length=200)
@@ -41,6 +89,38 @@ class ProjectUpdateRequest(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     account_manager_id: Optional[int] = Field(None, gt=0)
+    region: Optional[str] = Field(None, max_length=50, description="主要投放地区")
+    unit_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="单粉价格")
+    # 阶梯定价 (v2.2)
+    price_rules: Optional[PriceRules] = Field(None, description="阶梯价格规则")
+    default_currency: Optional[str] = Field(None, max_length=10, description="项目默认币种")
+    # 履约状态 (BUSINESS_RULES.md v4.6 BR-PROJ-006)
+    # 注意: fulfillment_status 只能从 running -> fulfilled，不可回退
+    fulfillment_status: Optional[str] = Field(None, pattern="^(running|fulfilled)$", description="履约状态")
+    fulfillment_reason: Optional[str] = Field(None, pattern="^(spend_exhausted|client_stopped)$", description="履约结束原因")
+
+
+class ProjectMarkFulfilledRequest(BaseModel):
+    """
+    标记项目履约完成请求
+
+    SoT Reference: BUSINESS_RULES.md v4.6 BR-PROJ-006
+    SoT Reference: BI-06 履约完成唯一判定条件
+
+    履约状态转换: running -> fulfilled (不可逆)
+    """
+    model_config = ConfigDict(from_attributes=True)
+
+    reason: str = Field(
+        ...,
+        pattern="^(spend_exhausted|client_stopped)$",
+        description="履约结束原因: spend_exhausted(消耗完毕) / client_stopped(客户喊停)"
+    )
+    note: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="备注说明"
+    )
 
 
 class ProjectMemberAssignRequest(BaseModel):
@@ -63,7 +143,7 @@ class ProjectExpenseRequest(BaseModel):
 
 # 响应模型
 class ProjectResponse(BaseModel):
-    """项目响应"""
+    """项目响应 (BUSINESS_RULES.md v4.6)"""
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -78,6 +158,18 @@ class ProjectResponse(BaseModel):
     end_date: Optional[date]
     account_manager_id: Optional[int]
     account_manager_name: Optional[str]
+    # 新增字段 v2.1
+    region: Optional[str] = None
+    unit_price: Optional[Decimal] = None
+    total_follows: int = 0  # 聚合的总进粉数 (来自日报)
+    # 阶梯定价 v2.2
+    price_rules: Optional[dict] = None  # JSON 原样返回
+    default_currency: Optional[str] = "USD"
+    # 履约状态字段 (BUSINESS_RULES.md v4.6 BR-PROJ-006)
+    fulfillment_status: str = "running"  # running/fulfilled
+    fulfillment_reason: Optional[str] = None  # spend_exhausted/client_stopped
+    fulfilled_at: Optional[datetime] = None  # 履约完成时间 (UTC)
+    # 原有字段
     total_spent: Decimal
     total_accounts: int
     active_accounts: int
@@ -134,25 +226,33 @@ class ProjectListResponse(BaseModel):
 
 
 class ProjectStatisticsResponse(BaseModel):
-    """项目统计响应"""
+    """
+    项目统计响应 (BUSINESS_RULES.md v4.6)
+
+    状态对齐 STATE_MACHINE.md v2.6 §5:
+    - draft: 草稿
+    - active: 活跃
+    - suspended: 暂停
+    - archived: 归档
+
+    履约状态对齐 BUSINESS_RULES.md v4.6 BR-PROJ-006:
+    - running: 履约中
+    - fulfilled: 已履约
+    """
     model_config = ConfigDict(from_attributes=True)
 
     total_projects: int
     active_projects: int
-    paused_projects: int
-    completed_projects: int
-    cancelled_projects: int
+    suspended_projects: int  # SoT: suspended (原 paused)
+    archived_projects: int   # SoT: archived (原 completed)
+    draft_projects: int      # SoT: draft (新增)
+    # 履约统计 (BUSINESS_RULES.md v4.6 BR-PROJ-006)
+    fulfilled_projects: int = 0  # 已履约项目数
+    running_projects: int = 0    # 履约中项目数
     total_budget: Decimal
-    total_spent: Decimal
-    total_clients: int
-    avg_project_value: Decimal
-    top_performers: List[Dict[str, Any]]
 
     @computed_field
     @property
-    def overall_roi(self) -> Optional[Decimal]:
-        """整体ROI"""
-        if self.total_spent == 0:
-            return None
-        # 这里需要根据实际业务逻辑计算
-        return Decimal('0')  # 占位符
+    def budget_utilization(self) -> Decimal:
+        """预算利用率 (简化版，不依赖 total_spent)"""
+        return Decimal('0')  # Phase 1: 仅占位，实际计算待 Phase 2

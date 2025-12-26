@@ -232,12 +232,12 @@ async def create_spend_event(
     except ResourceNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT-001", "message": str(e)}
+            detail={"code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code, "message": str(e)}
         )
     except ResourceConflictError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"code": "BIZ-503", "message": str(e)}
+            detail={"code": BusinessErrorCodes.RESOURCE_ALREADY_EXISTS.code, "message": str(e)}
         )
 
 
@@ -318,7 +318,7 @@ async def get_spend_event(
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT-001", "message": f"消耗事件不存在: {event_id}"}
+            detail={"code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code, "message": f"消耗事件不存在: {event_id}"}
         )
 
     return success_response(
@@ -471,7 +471,7 @@ async def reverse_spend_event(
     except ResourceNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": "NOT-001", "message": str(e)}
+            detail={"code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code, "message": str(e)}
         )
     except BusinessLogicError as e:
         raise HTTPException(

@@ -1,13 +1,32 @@
 """
-结算业务逻辑层
-Version: 1.0
-Author: Claude Code (full_pipeline)
+结算业务逻辑层 (重构版)
 
-Aligned with SoT:
-- DATA_SCHEMA.md v5.2 (settlement entity)
-- BUSINESS_RULES.md v3.1 (settlement constraints)
-- LEDGER_SOT.md v1.1 (settlement ledger entries)
-- STATE_MACHINE.md v2.6 (settlement status transitions)
+SoT References:
+- DATA_SCHEMA.md v5.3 (settlements 表)
+- API_SOT.md v9.3 §6 Settlements API
+- STATE_MACHINE.md v2.6 §4 结算状态机
+- LEDGER_SOT.md v1.1 (结算账本分录)
+- MASTER.md v4.4 §2.4 (7角色模型)
+- BUSINESS_RULES.md v3.2 (结算约束)
+
+状态机 (5状态):
+- draft → pending → approved → paid
+- draft/pending/approved → cancelled
+
+依赖代码块:
+- state-machine: 状态流转验证
+- ledger-entry: 账本分录 (付款时)
+- audit-log: 审计日志
+- permission-filter: 权限过滤
+
+权限矩阵 (MASTER.md v4.4 §2.4):
+- admin: 全部操作 (包括审批、取消)
+- finance: 创建、查看、提交、记录付款
+- ceo, project_owner: 查看自己项目的结算
+- 其他角色: 无权访问
+
+Version: 2.0
+Author: Claude Code
 """
 
 from datetime import datetime, date

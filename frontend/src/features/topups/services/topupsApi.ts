@@ -28,12 +28,44 @@ const BASE_PATH = '/api/v1/topups';
 // ========== Mock 数据生成器 ==========
 
 /**
+ * Mock 充值申请数据类型 (临时，等待后端 API 实现后移除)
+ * 注意: 字段结构与 TopupRequest 接口有差异，使用类型断言
+ */
+interface MockTopupRequest {
+  id: string;
+  project_id: string;
+  project_name: string;
+  ad_account_id: string;
+  ad_account_name: string;
+  channel: string;
+  amount: number;
+  currency: string;
+  status: TopupStatus;
+  requester_id: string;
+  requester_name: string;
+  reviewer_id: string | null;
+  reviewer_name: string | null;
+  approver_id: string | null;
+  approver_name: string | null;
+  reason: string;
+  reject_reason: string | null;
+  created_at: string;
+  updated_at: string;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  paid_at: string | null;
+  completed_at: string | null;
+}
+
+/**
  * 生成 mock 充值申请列表数据
  * SoT: B1-topup-approval.md §5.2 响应示例
  * SoT: STATE_MACHINE.md v2.6 Section 3 (7 状态)
+ *
+ * TODO: 后端 API 实现后删除此 mock 数据
  */
 function generateMockTopups(): TopupRequest[] {
-  return [
+  const mockData: MockTopupRequest[] = [
     {
       id: '1',
       project_id: '1',
@@ -185,6 +217,10 @@ function generateMockTopups(): TopupRequest[] {
       completed_at: null,
     },
   ];
+
+  // 类型断言: mock 数据结构与正式 TopupRequest 有差异
+  // TODO: 后端 API 实现后删除整个 mock 数据生成器
+  return mockData as unknown as TopupRequest[];
 }
 
 /**
@@ -213,7 +249,12 @@ function generateMockTopupStats(): {
 
   return {
     by_status: byStatus,
-    total_amount: topups.reduce((sum, t) => sum + t.amount, 0),
+    // Mock 数据中 amount 实际是 number，但类型断言后变成 Money
+    // TODO: 后端 API 实现后修复此计算
+    total_amount: topups.reduce((sum, t) => {
+      const amt = typeof t.amount === 'number' ? t.amount : (t.amount as { amount: number }).amount;
+      return sum + amt;
+    }, 0),
     pending_count: byStatus.pending_review + byStatus.finance_approve,
   };
 }
@@ -263,11 +304,15 @@ export async function getTopups(
   }
 
   // 筛选 - 金额范围
+  // Mock 数据中 amount 实际是 number，需要兼容处理
+  const getAmount = (t: TopupRequest): number => {
+    return typeof t.amount === 'number' ? t.amount : (t.amount as { amount: number }).amount;
+  };
   if (params.min_amount) {
-    items = items.filter((t) => t.amount >= params.min_amount!);
+    items = items.filter((t) => getAmount(t) >= params.min_amount!);
   }
   if (params.max_amount) {
-    items = items.filter((t) => t.amount <= params.max_amount!);
+    items = items.filter((t) => getAmount(t) <= params.max_amount!);
   }
 
   // 分页
@@ -276,16 +321,22 @@ export async function getTopups(
   const total = items.length;
   const startIndex = (page - 1) * pageSize;
   const paginatedItems = items.slice(startIndex, startIndex + pageSize);
+  const totalPages = Math.ceil(total / pageSize);
 
   return {
+    // New format
     items: paginatedItems,
+    total,
+    page,
+    page_size: pageSize,
+    total_pages: totalPages,
+    // Legacy format
+    data: paginatedItems,
     meta: {
-      pagination: {
-        page,
-        page_size: pageSize,
-        total,
-        total_pages: Math.ceil(total / pageSize),
-      },
+      total,
+      page,
+      page_size: pageSize,
+      total_pages: totalPages,
     },
   };
 }

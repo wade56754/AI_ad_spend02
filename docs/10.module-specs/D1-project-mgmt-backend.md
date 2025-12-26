@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, API_SOT.md v9.3
+> **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, API_SOT.md v9.3
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
@@ -58,11 +58,11 @@
 
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §3.1 projects, §3.2 project_members | 表结构、字段定义 |
-| STATE_MACHINE.md | v2.6 | §5 项目状态机 | 状态流转规则 |
-| BUSINESS_RULES.md | v3.2 | BR-PRJ-001~005 | 项目业务规则 |
-| ERROR_CODES_SOT.md | v2.1 | BIZ_*, SYS_* | 业务错误码 |
-| API_SOT.md | v9.0 | §6 Projects | API 端点规范 |
+| DATA_SCHEMA.md | v5.3 | §3.1 projects, §3.2 project_members | 表结构、字段定义 |
+| STATE_MACHINE.md | v2.7 | §5 项目状态机 | 状态流转规则 |
+| BUSINESS_RULES.md | v4.1 | BR-PRJ-001~005 | 项目业务规则 |
+| ERROR_CODES_SOT.md | v2.1 | BIZ_*, SYS_*, STATE_* | 业务错误码 |
+| API_SOT.md | v9.3 | §6 Projects | API 端点规范 |
 | AUTH_SPEC.md | v2.0 | §3 权限矩阵 | 角色权限 |
 | MASTER.md | v4.4 | §2.4 七角色, §3.2 责任模型 | Phase 边界 |
 
@@ -72,7 +72,7 @@
 
 ### 2.1 表结构定义
 
-**来源**: DATA_SCHEMA.md v5.2 §3.1, `backend/models/core/project.py`
+**来源**: DATA_SCHEMA.md v5.3 §3.1, `backend/models/core/project.py`
 
 ```sql
 -- 项目主表
@@ -321,11 +321,11 @@ interface ProjectMemberResponse {
 
 | 错误码 | HTTP 状态 | 说明 |
 |--------|-----------|------|
-| SYS-004 | 404 | 项目不存在 |
+| BIZ_002 | 404 | 项目不存在 |
 | BIZ_001 | 400 | 业务逻辑错误（如日期范围无效） |
-| PERMISSION_DENIED | 403 | 无权限操作 |
-| RESOURCE_CONFLICT | 409 | 项目名称重复 |
-| STATE_INVALID | 400 | 无效的状态转换 |
+| AUTH_500 | 403 | 无权限操作 |
+| BIZ_003 | 409 | 项目名称重复 |
+| STATE_400 | 400 | 无效的状态转换 |
 
 ### 3.4 分页/筛选规范
 
@@ -411,7 +411,7 @@ function canUpdateProject(user: User, project: Project): boolean {
 
 ### 5.1 状态机定义
 
-**来源**: STATE_MACHINE.md v2.6 §5, `backend/models/core/project.py`
+**来源**: STATE_MACHINE.md v2.7 §5, `backend/models/core/project.py`
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐

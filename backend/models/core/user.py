@@ -2,8 +2,12 @@
 用户核心模型
 
 RLS 策略：用户只能访问自己的记录（id = auth.uid()）
+
+v2.1 更新 (2025-12):
+- 新增 team_id 字段：投手直接归属团队
+- 新增 full_name 字段：用户真实姓名
 """
-from sqlalchemy import Column, String, Boolean, Index
+from sqlalchemy import Column, String, Boolean, Index, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -21,7 +25,10 @@ class User(Base, TimestampMixin, SerializableMixin):
     - id: UUID 主键（Supabase auth.uid）
     - username: 用户名（唯一）
     - email: 邮箱（唯一）
-    - role: 角色（admin/finance/data_manager/media_buyer/client）
+    - full_name: 真实姓名 (v2.1)
+    - department: 部门 (v2.1)
+    - team_id: 所属团队ID (v2.1) - 投手直接归属团队
+    - role: 角色（7角色：ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）
     - is_active: 是否激活
     - created_at/updated_at: 时间戳（自动管理）
 
@@ -47,14 +54,28 @@ class User(Base, TimestampMixin, SerializableMixin):
     # 密码哈希 - 使用本地 JWT 认证
     password_hash = Column(String(255), nullable=True, comment="密码哈希(bcrypt)")
 
+    # 扩展信息 (v2.1)
+    full_name = Column(String(100), nullable=True, comment="真实姓名")
+    department = Column(String(100), nullable=True, comment="部门")
+
+    # 团队归属 (v2.1) - 投手直接归属团队
+    team_id = Column(
+        PGUUID(as_uuid=True),
+        ForeignKey('teams.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True,
+        comment="所属团队ID"
+    )
+
     # 角色与状态
     role = Column(String(20), nullable=False, comment="角色")
     is_active = Column(Boolean, nullable=False, default=True, comment="是否激活")
-    
+
     # 索引
     __table_args__ = (
         Index('idx_users_role', 'role'),
         Index('idx_users_is_active', 'is_active'),
+        Index('idx_users_team', 'team_id'),  # v2.1: 团队索引
     )
     
     def __repr__(self):
@@ -113,6 +134,14 @@ class User(Base, TimestampMixin, SerializableMixin):
         return self.has_role(UserRole.ADMIN, UserRole.DATA_OPERATOR)
 
     # ========== 关系定义 ==========
+
+    # 多对一：用户 -> 团队 (v2.1)
+    team = relationship(
+        "Team",
+        foreign_keys=[team_id],
+        lazy="joined",
+        doc="用户所属团队"
+    )
 
     # 一对多：用户 -> 项目成员关系
     project_memberships = relationship(

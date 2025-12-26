@@ -1,7 +1,8 @@
 # MVP 模块 E2E 测试用例文档
 
-> **版本**: v3.0
+> **版本**: v3.1
 > **创建日期**: 2025-12-23
+> **更新日期**: 2025-12-25
 > **基准**: AI_TEST_GUIDE_v2.1.md + docs/10.module-specs/
 > **技术栈**: Playwright + TypeScript
 > **覆盖模块**: A1-A3, B1-B3, C1-C3, D1
@@ -1092,10 +1093,10 @@ checkpoints:
       - { role: ceo, expected: allowed, action: "审批" }
       - { role: finance, expected: allowed, action: "审批" }
       - { role: supervisor, expected: allowed, action: "确认数据" }
-      - { role: pitcher, expected: denied }
+      - { role: pitcher, expected: allowed, action: "创建+查看自己+取消" }  # [FIXED]
       - { role: project_owner, expected: allowed, action: "创建+查看" }
-      - { role: account_manager, expected: denied }
-      - { role: admin, expected: denied }
+      - { role: account_manager, expected: allowed, action: "创建+管理账户申请" }  # [FIXED]
+      - { role: admin, expected: allowed, action: "全权限" }  # [FIXED]
 
   - id: CP-B1-002
     category: ui
@@ -1125,6 +1126,8 @@ checkpoints:
       - { transition: "paid→completed", actor: finance }
       - { transition: "pending_review→rejected", actor: supervisor }
       - { transition: "pending_review→voided", actor: project_owner }
+      - { transition: "draft→cancelled", actor: project_owner }  # [ADDED] P2 建议
+      - { transition: "pending_review→cancelled", actor: project_owner }  # [ADDED] P2 建议
       - { illegal: "draft→paid", expected: "400 ST-001" }
       - { illegal: "completed→paid", expected: "400 ST-002" }
 
@@ -1136,7 +1139,7 @@ checkpoints:
 
 summary:
   total_checkpoints: 5
-  total_cases: 24
+  total_cases: 26
 ```
 
 ### 6.2 测试代码 (状态机重点)
@@ -1248,7 +1251,7 @@ checkpoints:
       - { role: pitcher, expected: allowed, scope: "个人日报" }
       - { role: project_owner, expected: allowed, scope: "项目日报" }
       - { role: account_manager, expected: denied }
-      - { role: admin, expected: denied }
+      - { role: admin, expected: allowed, scope: "系统配置" }  # [FIXED]
 
   - id: CP-B2-002
     category: ui
@@ -1277,6 +1280,7 @@ checkpoints:
       - { transition: "trend_pending→trend_flagged", actor: supervisor }
       - { transition: "trend_flagged→trend_resolved", actor: supervisor }
       - { transition: "trend_ok→final_pending", actor: supervisor }
+      - { transition: "trend_resolved→final_pending", actor: supervisor }  # [ADDED] P2 建议
       - { transition: "final_pending→final_confirmed", actor: finance }
       - { transition: "final_confirmed→final_locked", auto: true }
       - { illegal: "raw_submitted→final_confirmed", expected: "400 ST-001" }
@@ -1291,7 +1295,7 @@ checkpoints:
 
 summary:
   total_checkpoints: 5
-  total_cases: 28
+  total_cases: 29
 ```
 
 ### 7.2 测试代码 (摘要)
@@ -1699,6 +1703,7 @@ checkpoints:
     cases:
       - { transition: "pending→draft", action: "生成结算" }
       - { transition: "draft→confirmed", action: "确认" }
+      - { transition: "confirmed→draft", action: "撤销确认", role: finance }  # [ADDED] P2 建议
       - { transition: "confirmed→locked", action: "锁定" }
       - { transition: "locked→confirmed", action: "解锁", role: admin }
       - { illegal: "pending→locked", expected: "400 ST-001" }
@@ -1709,7 +1714,7 @@ checkpoints:
       - { scenario: 负毛利, expected: 红色高亮+可锁定 }
 
 summary:
-  total_cases: 20
+  total_cases: 21
 ```
 
 ---
@@ -1772,15 +1777,15 @@ checkpoints:
 | A1 驾驶舱 | 9 | 5 | 4 | 5 | 2 | 25 |
 | A2 资金总览 | 9 | 3 | 4 | 3 | 1 | 20 |
 | A3 项目盈亏 | 7 | 4 | 4 | 4 | 2 | 21 |
-| B1 充值审批 | 7 | 4 | 4 | 8 | 1 | 24 |
-| B2 日报审核 | 7 | 4 | 4 | 11 | 2 | 28 |
+| B1 充值审批 | 7 | 4 | 4 | 10 | 1 | 26 |
+| B2 日报审核 | 7 | 4 | 4 | 12 | 2 | 29 |
 | B3 周度简报 | 7 | 3 | 4 | 4 | 1 | 19 |
 | C1 项目管理 | 7 | 4 | 4 | 7 | 1 | 23 |
 | C2 投手管理 | 7 | 2 | 4 | 5 | 1 | 19 |
 | C3 消耗明细 | 7 | 3 | 4 | 5 | 1 | 20 |
-| D1 月度结算 | 7 | 3 | 4 | 5 | 1 | 20 |
+| D1 月度结算 | 7 | 3 | 4 | 6 | 1 | 21 |
 | 跨模块集成 | 2 | - | 2 | 4 | - | 8 |
-| **合计** | **76** | **35** | **42** | **61** | **13** | **227** |
+| **合计** | **76** | **35** | **42** | **65** | **13** | **231** |
 
 ### 14.2 角色权限覆盖矩阵
 
@@ -1789,8 +1794,8 @@ checkpoints:
 | A1 | ✅全 | ✅财务 | ✅团队 | ✅个人 | ✅项目 | ✅账户 | ✅系统 |
 | A2 | ✅全 | ✅导出 | ❌ | ❌ | ✅项目 | ✅账户 | ❌ |
 | A3 | ✅全 | ✅财务 | ❌ | ❌ | ✅项目 | ❌ | ❌ |
-| B1 | ✅审批 | ✅审批 | ✅确认 | ❌ | ✅创建 | ❌ | ❌ |
-| B2 | ✅全 | ✅终审 | ✅趋势 | ✅个人 | ✅项目 | ❌ | ❌ |
+| B1 | ✅审批 | ✅审批 | ✅确认 | ✅创建 | ✅创建 | ✅账户 | ✅全权限 |
+| B2 | ✅全 | ✅终审 | ✅趋势 | ✅个人 | ✅项目 | ❌ | ✅系统 |
 | B3 | ✅全 | ✅只读 | ✅团队 | ❌ | ✅创建 | ❌ | ❌ |
 | C1 | ✅CRUD | ✅只读 | ✅团队 | ✅只读 | ✅编辑 | ✅只读 | ✅CRUD |
 | C2 | ✅全 | ❌ | ✅团队 | ✅自己 | ❌ | ❌ | ✅创建 |
@@ -1804,16 +1809,16 @@ __tests__/e2e/
 ├── a1-dashboard/dashboard.spec.ts          (25 tests)
 ├── a2-fund-overview/fund-overview.spec.ts  (20 tests)
 ├── a3-project-pnl/project-pnl.spec.ts      (21 tests)
-├── b1-topup-approval/topup-approval.spec.ts (24 tests)
-├── b2-daily-report-review/daily-report-review.spec.ts (28 tests)
+├── b1-topup-approval/topup-approval.spec.ts (26 tests)
+├── b2-daily-report-review/daily-report-review.spec.ts (29 tests)
 ├── b3-weekly-brief/weekly-brief.spec.ts    (19 tests)
 ├── c1-project-mgmt/project-mgmt.spec.ts    (23 tests)
 ├── c2-pitcher-mgmt/pitcher-mgmt.spec.ts    (19 tests)
 ├── c3-spend-detail/spend-detail.spec.ts    (20 tests)
-├── d1-monthly-settlement/monthly-settlement.spec.ts (20 tests)
+├── d1-monthly-settlement/monthly-settlement.spec.ts (21 tests)
 └── integration/cross-module.spec.ts        (8 tests)
 
-Total: 227 tests
+Total: 231 tests
 ```
 
 ---
@@ -1864,6 +1869,7 @@ data-testid="pagination-prev"
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v3.1 | 2025-12-25 | 修复权限矩阵: CP-B1-001 (pitcher/account_manager/admin=allowed)，CP-B2-001 (admin=allowed)；补充状态机路径: CP-B1-004 (cancelled)，CP-B2-004 (trend_resolved→final_pending)，CP-D1-004 (confirmed→draft) |
 | v3.0 | 2025-12-23 | 基于 AI_TEST_GUIDE_v2.1.md 全面重构：检查点清单格式、5类测试覆盖、7角色全覆盖、Playwright代码规范 |
 | v2.0 | 2025-12-23 | 添加集成测试、状态机测试、Phase 1 规则 |
 | v1.0 | 2025-12-23 | 初始版本 |

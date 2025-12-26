@@ -158,13 +158,14 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;
       const isAuthPage = path.includes('/login') || path.includes('/register');
-      // Check if this is a /auth/me request (checking login status)
-      const isAuthMeRequest = requestUrl?.includes('/auth/me');
+      // Check if this is a login/register POST request
+      const isLoginRequest = requestUrl?.includes('/auth/login') || requestUrl?.includes('/auth/register');
 
-      // Only clear tokens and suppress error for /auth/me requests on auth pages
-      // This allows login/register 401 errors (wrong password) to show normally
-      if (isAuthMeRequest) {
-        // Clear ALL auth tokens (aligned with useAuth.ts token keys)
+      // For login/register failures (wrong password), let the error pass through
+      if (isLoginRequest) {
+        // Don't clear tokens or redirect for login failures
+      } else {
+        // For all other 401 errors (expired token, invalid token), clear tokens
         localStorage.removeItem('auth-token');
         localStorage.removeItem('auth-user');
         localStorage.removeItem('refresh-token');
@@ -173,7 +174,7 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
         // Clear cookie
         document.cookie = 'access_token=; path=/; max-age=0';
 
-        // On login/register pages, silently fail for /auth/me requests
+        // On auth pages, silently fail
         if (isAuthPage) {
           const silentError = new ApiRequestError(
             'Session expired',
@@ -184,10 +185,9 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
           throw silentError;
         }
 
-        // Redirect to login for other pages
+        // Redirect to login for protected pages
         window.location.href = '/login';
       }
-      // For non-auth/me 401 errors (like login failure), let them pass through normally
     }
   }
 
@@ -746,5 +746,46 @@ export const queryKeys = {
     stats: () => [...queryKeys.dashboard.all, 'stats'] as const,
     trends: (params?: Record<string, any>) =>
       [...queryKeys.dashboard.all, 'trends', params] as const,
+  },
+
+  // Fund Overview (资金总览)
+  fund: {
+    all: ['fund'] as const,
+    overview: (params?: Record<string, any>) =>
+      [...queryKeys.fund.all, 'overview', params] as const,
+    byProject: (params?: Record<string, any>) =>
+      [...queryKeys.fund.all, 'byProject', params] as const,
+    byChannel: (params?: Record<string, any>) =>
+      [...queryKeys.fund.all, 'byChannel', params] as const,
+    receivables: () => [...queryKeys.fund.all, 'receivables'] as const,
+    payments: () => [...queryKeys.fund.all, 'payments'] as const,
+  },
+
+  // Ad Spend (消耗明细) - C3-spend-detail.md
+  adSpend: {
+    all: ['adSpend'] as const,
+    list: (params?: Record<string, any>) =>
+      [...queryKeys.adSpend.all, 'list', params] as const,
+    summary: (params?: Record<string, any>) =>
+      [...queryKeys.adSpend.all, 'summary', params] as const,
+    trend: (params?: Record<string, any>) =>
+      [...queryKeys.adSpend.all, 'trend', params] as const,
+    byProject: (params?: Record<string, any>) =>
+      [...queryKeys.adSpend.all, 'byProject', params] as const,
+    byAccount: (params?: Record<string, any>) =>
+      [...queryKeys.adSpend.all, 'byAccount', params] as const,
+  },
+
+  // Weekly Briefs (周度简报) - B3-weekly-brief.md
+  weeklyBriefs: {
+    all: ['weeklyBriefs'] as const,
+    list: (params?: Record<string, any>) =>
+      [...queryKeys.weeklyBriefs.all, 'list', params] as const,
+    detail: (id: number) =>
+      [...queryKeys.weeklyBriefs.all, 'detail', id] as const,
+    stats: (params?: Record<string, any>) =>
+      [...queryKeys.weeklyBriefs.all, 'stats', params] as const,
+    projectSummary: (projectId: number, weekStart: string) =>
+      [...queryKeys.weeklyBriefs.all, 'projectSummary', projectId, weekStart] as const,
   },
 };

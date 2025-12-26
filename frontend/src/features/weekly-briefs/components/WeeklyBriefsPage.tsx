@@ -68,7 +68,8 @@ import {
 import type { WeeklyBrief, WeeklyBriefStatus } from '../types';
 
 // Format currency
-function formatCurrency(amount: number): string {
+function formatCurrency(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return '¥0';
   if (amount >= 10000) {
     return `¥${(amount / 10000).toFixed(1)}万`;
   }
@@ -168,7 +169,7 @@ export function WeeklyBriefsPage() {
   // Render loading state
   if (isLoadingBriefs && !briefsData) {
     return (
-      <PageTemplate title="周度简报" subtitle="项目周度进展复盘">
+      <PageTemplate title="周简报" subtitle="项目周度进展复盘">
         <LoadingState />
       </PageTemplate>
     );
@@ -177,7 +178,7 @@ export function WeeklyBriefsPage() {
   // Render error state
   if (briefsError) {
     return (
-      <PageTemplate title="周度简报" subtitle="项目周度进展复盘">
+      <PageTemplate title="周简报" subtitle="项目周度进展复盘">
         <ErrorState error={briefsError} onRetry={refreshAll} />
       </PageTemplate>
     );
@@ -185,27 +186,27 @@ export function WeeklyBriefsPage() {
 
   return (
     <PageTemplate
-      title="周度简报"
+      title="周简报"
       subtitle="项目周度进展复盘"
       actions={
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} disabled={exportMutation.isPending}>
+          <Button variant="outline" onClick={handleExport} disabled={exportMutation.isPending} data-testid="export-btn">
             <Download className="h-4 w-4 mr-2" />
             导出
           </Button>
-          <Button onClick={handleCreateBrief}>
+          <Button onClick={handleCreateBrief} data-testid="create-btn">
             <Plus className="h-4 w-4 mr-2" />
             创建周报
           </Button>
         </div>
       }
     >
-      <div className="space-y-6">
+      <div className="space-y-6" data-testid="weekly-brief-page">
         {/* Filters */}
         <Card>
           <CardContent className="py-4">
             <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-testid="week-filter">
                 <span className="text-sm text-muted-foreground">周次:</span>
                 <WeekPicker
                   value={selectedWeek}
@@ -213,7 +214,7 @@ export function WeeklyBriefsPage() {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-testid="project-filter">
                 <span className="text-sm text-muted-foreground">项目:</span>
                 <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                   <SelectTrigger className="w-[180px]">
@@ -230,7 +231,7 @@ export function WeeklyBriefsPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-testid="status-filter">
                 <span className="text-sm text-muted-foreground">状态:</span>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="w-[120px]">
@@ -270,7 +271,7 @@ export function WeeklyBriefsPage() {
             />
             <StatCard
               title="提交率"
-              value={`${stats.submission_rate.toFixed(1)}%`}
+              value={`${(stats.submission_rate ?? 0).toFixed(1)}%`}
               icon={<Percent className="h-5 w-5" />}
               color="purple"
             />
@@ -284,7 +285,7 @@ export function WeeklyBriefsPage() {
         )}
 
         {/* Table */}
-        <Card>
+        <Card data-testid="weekly-brief-table">
           <CardContent className="p-0">
             {!briefsData?.items?.length ? (
               <EmptyState

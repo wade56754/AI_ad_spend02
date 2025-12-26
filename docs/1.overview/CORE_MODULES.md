@@ -579,5 +579,5 @@ def generate_reversal_txn_id(original_id):
 
 **文档版本**: v1.0
 **创建日期**: 2025-12-22
-**基准文档**: AI编程指导文档 V5.2, MASTER.md v3.6
+**基准文档**: AI编程指导文档 V5.2, MASTER.md v4.4
 **维护者**: 系统架构师

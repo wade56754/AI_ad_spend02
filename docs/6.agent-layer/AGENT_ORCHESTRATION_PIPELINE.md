@@ -4,7 +4,7 @@ status: draft
 layer: agent-layer
 owner: wade
 last_reviewed: 2025-12-07
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v3.5, SoT Freeze v2.6
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, MASTER.md v4.4, SoT Freeze v2.6
 upstream_sot: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §9.6
 ---
 
@@ -14,7 +14,7 @@ upstream_sot: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §9.6
 > **状态**: Draft
 > **最后审查**: 2025-12-07
 > **上游规范**: AI_CODE_FACTORY_DEV_GUIDE_v2.3 §9.6
-> **基准**: MASTER.md v3.5, SoT Freeze v2.6
+> **基准**: MASTER.md v4.4, SoT Freeze v2.6
 
 ---
 
@@ -885,7 +885,7 @@ SELECT * FROM logs WHERE trace_id = '550e8400-e29b-41d4-a716-446655440000';
 ## 9. 引用文献
 
 **本文档引用的规范**:
-- MASTER.md v3.4 §8 - Agent 编排规范
+- MASTER.md v4.4 §8 - Agent 编排规范
 - STATE_MACHINE v2.6 §3 - 状态机流程
 - CI_PIPELINE_SPEC v1.0 §4 - CI/CD 流程
 - agents/agent_core/orchestrator_agent.py - Orchestrator 实现

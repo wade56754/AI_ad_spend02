@@ -43,7 +43,7 @@ export function DashboardHeader({
         size="default"
         onClick={onRefresh}
         disabled={isRefreshing}
-        data-testid="dashboard-refresh-button"
+        data-testid="refresh-button"
       >
         <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
         刷新

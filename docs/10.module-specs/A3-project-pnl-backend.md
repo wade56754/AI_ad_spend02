@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, BUSINESS_RULES.md v4.1, MASTER.md v4.4 §4.5.4
+> **SoT 基准**: DATA_SCHEMA.md v5.3, BUSINESS_RULES.md v4.1, MASTER.md v4.4 §4.5.4
 > **对应前端**: A3-project-pnl.md
 
 ---
@@ -39,7 +39,7 @@
 ### 1.4 SoT 引用清单 (AI 防幻觉)
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| DATA_SCHEMA.md | v5.2 | §3.2, §3.3 | projects, daily_reports, ad_spend_daily 表结构 |
+| DATA_SCHEMA.md | v5.3 | §3.2, §3.3 | projects, daily_reports, ad_spend_daily 表结构 |
 | BUSINESS_RULES.md | v4.1 | BR-FIN-* | 盈亏计算规则 |
 | ERROR_CODES_SOT.md | v2.1 | PROFIT_*, BIZ_* | 错误码 |
 | API_SOT.md | v9.3 | §6 | API 规范 |
@@ -51,7 +51,7 @@
 ## §2 数据模型
 
 ### 2.1 数据源定义
-**来源**: DATA_SCHEMA.md v5.2, MASTER.md v4.4 §4.5.4
+**来源**: DATA_SCHEMA.md v5.3, MASTER.md v4.4 §4.5.4
 
 | 数据 | SoT 表 | SoT 字段 | 计算口径 |
 |------|--------|---------|----------|
@@ -67,7 +67,7 @@
 
 #### projects (项目表)
 ```sql
--- 来源: DATA_SCHEMA.md v5.2 §3.2.1
+-- 来源: DATA_SCHEMA.md v5.3 §3.2.1
 CREATE TABLE projects (
   id              BIGSERIAL PRIMARY KEY,
   name            VARCHAR(100) NOT NULL,
@@ -85,7 +85,7 @@ CREATE INDEX idx_projects_status ON projects(status);
 
 #### daily_reports (日报表)
 ```sql
--- 来源: DATA_SCHEMA.md v5.2 §3.3.1
+-- 来源: DATA_SCHEMA.md v5.3 §3.3.1
 CREATE TABLE daily_reports (
   id              BIGSERIAL PRIMARY KEY,
   project_id      BIGINT NOT NULL REFERENCES projects(id),
@@ -103,7 +103,7 @@ CREATE INDEX idx_daily_reports_date ON daily_reports(report_date);
 
 #### ad_spend_daily (日消耗表)
 ```sql
--- 来源: DATA_SCHEMA.md v5.2 §3.3.3
+-- 来源: DATA_SCHEMA.md v5.3 §3.3.3
 CREATE TABLE ad_spend_daily (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ad_account_code VARCHAR(100) NOT NULL,

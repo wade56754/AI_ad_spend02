@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2025-12-23
-> **SoT 基准**: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6, FINANCIAL_SOT_DESIGN.md v1.0
+> **SoT 基准**: DATA_SCHEMA.md v5.3, STATE_MACHINE.md v2.7, LEDGER_SOT.md v1.2
 > **参考指南**: docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md
 
 ---
@@ -55,11 +55,12 @@
 
 | SoT 文档 | 版本 | 引用章节 | 用途 |
 |---------|------|---------|------|
-| FINANCIAL_SOT_DESIGN.md | v1.0 | §3 消耗事件 | 事件模型、导入流程 |
-| STATE_MACHINE.md | v2.6 | §6 事件状态机 | 5 状态流转规则 |
-| DATA_SCHEMA.md | v5.2 | §4.1 financial_events | 表结构定义 |
+| MASTER.md | v4.4 | §4.5.7 消耗SoT | 消耗数据来源规则 |
+| STATE_MACHINE.md | v2.7 | §6 事件状态机 | 5 状态流转规则 |
+| DATA_SCHEMA.md | v5.3 | §4.1 financial_events | 表结构定义 |
 | LEDGER_SOT.md | v1.1 | §3 分录规则 | 账本规则 |
-| ERROR_CODES_SOT.md | v2.1 | BIZ_500-599 | 导入相关错误码 |
+| BUSINESS_RULES.md | v4.1 | BR-FIN-* | 财务业务规则 |
+| ERROR_CODES_SOT.md | v2.1 | BIZ_500-599, STATE_* | 错误码定义 |
 | API_SOT.md | v9.3 | §7 Spend | API 端点规范 |
 | AUTH_SPEC.md | v2.0 | §3 权限矩阵 | 角色权限 |
 
@@ -80,7 +81,7 @@
 
 ### 2.1 表结构定义
 
-**来源**: FINANCIAL_SOT_DESIGN.md v1.0, `backend/models/finance/financial_event.py`
+**来源**: DATA_SCHEMA.md v5.3 §4.1, `backend/models/finance/financial_event.py`
 
 ```sql
 CREATE TABLE financial_events (
@@ -340,24 +341,24 @@ interface SpendEventResponse {
 
 | 错误码 | HTTP 状态 | 说明 |
 |--------|-----------|------|
-| BIZ-500 | 400 | 文件格式错误（非 Excel） |
-| BIZ-501 | 400 | Excel 解析失败 |
-| BIZ-502 | 400 | Excel 文件为空 |
-| BIZ-503 | 409 | 重复记录（幂等键冲突） |
-| BIZ-504 | 404 | 广告账户不存在 |
-| BIZ-505 | 400 | 行数据格式错误 |
-| BIZ-506 | 500 | 数据库插入失败 |
-| BIZ-507 | 400 | 入账失败 |
-| BIZ-508 | 400 | 冲正失败 |
-| STATE-401 | 400 | 事件状态不是 raw |
-| STATE-402 | 400 | 事件状态不是 pending |
-| STATE-403 | 400 | 状态转换失败 |
-| STATE-404 | 400 | 事件状态不是 confirmed |
-| STATE-405 | 400 | 只能冲正已入账事件 |
-| NOT-001 | 404 | 事件不存在 |
-| VAL-001 | 400 | 金额必须大于 0 |
-| WARN-501 | - | 重复记录已跳过（警告） |
-| WARN-502 | - | 事件日期是未来日期（警告） |
+| BIZ_500 | 400 | 文件格式错误（非 Excel） |
+| BIZ_501 | 400 | Excel 解析失败 |
+| BIZ_502 | 400 | Excel 文件为空 |
+| BIZ_503 | 409 | 重复记录（幂等键冲突） |
+| BIZ_504 | 404 | 广告账户不存在 |
+| BIZ_505 | 400 | 行数据格式错误 |
+| BIZ_506 | 500 | 数据库插入失败 |
+| BIZ_507 | 400 | 入账失败 |
+| BIZ_508 | 400 | 冲正失败 |
+| STATE_401 | 400 | 事件状态不是 raw |
+| STATE_402 | 400 | 事件状态不是 pending |
+| STATE_403 | 400 | 状态转换失败 |
+| STATE_404 | 400 | 事件状态不是 confirmed |
+| STATE_405 | 400 | 只能冲正已入账事件 |
+| BIZ_002 | 404 | 事件不存在 |
+| VALIDATION_001 | 400 | 金额必须大于 0 |
+| WARN_501 | - | 重复记录已跳过（警告） |
+| WARN_502 | - | 事件日期是未来日期（警告） |
 
 ### 3.4 分页/筛选规范
 
@@ -438,7 +439,7 @@ function canAccessSpendEvent(user: User, event: SpendEvent): boolean {
 
 ### 5.1 状态机定义
 
-**来源**: STATE_MACHINE.md v2.6 §6, FINANCIAL_SOT_DESIGN.md v1.0
+**来源**: STATE_MACHINE.md v2.7 §6
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
@@ -659,10 +660,10 @@ describe('SpendImportService', () => {
             assert result.total_amount > 0
         });
 
-        it('应拒绝非 Excel 文件 (BIZ-500)', async () => {
+        it('应拒绝非 Excel 文件 (BIZ_500)', async () => {
             with pytest.raises(BusinessLogicError) as e:
                 service.import_from_excel(pdf_content, 'test.pdf', ...)
-            assert e.error_code == 'BIZ-500'
+            assert e.error_code == 'BIZ_500'
         });
 
         it('应跳过重复记录', async () => {
@@ -674,10 +675,10 @@ describe('SpendImportService', () => {
             assert result.imported_rows == 0
         });
 
-        it('应处理账户不存在 (BIZ-504)', async () => {
+        it('应处理账户不存在 (BIZ_504)', async () => {
             result = service.import_from_excel(invalid_account_excel, ...)
             assert len(result.errors) > 0
-            assert result.errors[0].error_code == 'BIZ-504'
+            assert result.errors[0].error_code == 'BIZ_504'
         });
     });
 
@@ -693,10 +694,10 @@ describe('SpendImportService', () => {
             assert result.success == True
         });
 
-        it('posted 才能冲正 (STATE-405)', async () => {
+        it('posted 才能冲正 (STATE_405)', async () => {
             with pytest.raises(BusinessLogicError) as e:
                 service.reverse_event(confirmed_event.id, 'reason', user_id)
-            assert e.error_code == 'STATE-405'
+            assert e.error_code == 'STATE_405'
         });
     });
 
@@ -900,4 +901,4 @@ def test_permissions(role, action, expected):
 ---
 
 **维护者**: AI 广告代投系统开发团队
-**关联文档**: C3-spend-detail.md (前端规格), FINANCIAL_SOT_DESIGN.md
+**关联文档**: C3-spend-detail.md (前端规格), LEDGER_SOT.md v1.1
