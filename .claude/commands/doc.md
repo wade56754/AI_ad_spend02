@@ -12,7 +12,7 @@ argument-hint: "[目录] [--auto-fix]"
 用户输入: `$ARGUMENTS`
 
 - 无参数: 扫描整个 `docs/` 目录
-- 指定目录: 扫描该目录 (如 `docs/2.sot/`)
+- 指定目录: 扫描该目录 (如 `docs/sot/`)
 - `--auto-fix`: 自动修复发现的问题
 
 ## 工作流程
@@ -94,13 +94,13 @@ argument-hint: "[目录] [--auto-fix]"
 详见 [API文档](docs/api/README.md)  <- 文件不存在
 
 # ✅ 有效引用
-详见 [API文档](docs/2.sot/API_SOT.md)
+详见 [API文档](docs/sot/API_SOT.md)
 ```
 
 ### 层级结构检查
 确保文档在正确的层级目录:
 - Layer 1: docs/1.overview/
-- Layer 2: docs/2.sot/
+- Layer 2: docs/sot/
 - Layer 3: docs/3.dev-guides/
 - Layer 4: docs/4.architecture/
 - Layer 5: docs/5.infrastructure/ 和 docs/5.testing/
@@ -113,7 +113,7 @@ argument-hint: "[目录] [--auto-fix]"
 /doc
 
 # 扫描指定目录
-/doc docs/2.sot/
+/doc docs/sot/
 
 # 扫描并自动修复
 /doc --auto-fix

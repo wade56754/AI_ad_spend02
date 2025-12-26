@@ -253,7 +253,7 @@ Agent Layer Freeze v1.0 (AI Agent System)
 
 **Audit a document**:
 ```bash
-/doc-agent 请对 docs/2.sot/DATA_SCHEMA.md 执行完整审计
+/doc-agent 请对 docs/sot/DATA_SCHEMA.md 执行完整审计
 ```
 
 **Generate new document**:

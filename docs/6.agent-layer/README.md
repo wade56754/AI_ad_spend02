@@ -24,7 +24,7 @@
 
 | 层级 | 文档 | 位置 | 说明 |
 |------|------|------|------|
-| **Tier-1** | docs/2.sot/*.md | `docs/2.sot/` | 业务 SoT（STATE_MACHINE, DATA_SCHEMA 等） |
+| **Tier-1** | docs/sot/*.md | `docs/sot/` | 业务 SoT（STATE_MACHINE, DATA_SCHEMA 等） |
 
 ### 本层文档定位
 

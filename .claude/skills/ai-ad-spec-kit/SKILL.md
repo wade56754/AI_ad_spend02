@@ -65,7 +65,7 @@ source_reference:
     </description>
 
     <actions>
-      - 读取 docs/1.overview/MASTER.md
+      - 读取 docs/sot/MASTER.md
       - 读取 .claude/PROJECT_RULES.md
       - 确认业务边界和不变量
       - 确认永久禁止行为

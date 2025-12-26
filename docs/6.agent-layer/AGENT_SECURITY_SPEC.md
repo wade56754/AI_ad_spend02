@@ -82,7 +82,7 @@ Agent 绕过权限检查，直接修改 SoT 文档或数据库 Schema
 **攻击场景**:
 ```python
 # Agent 尝试修改 SoT 文档（应被禁止）
-sot_path = "docs/2.sot/STATE_MACHINE.md"
+sot_path = "docs/sot/STATE_MACHINE.md"
 with open(sot_path, "w") as f:  # ❌ 不应有写权限
     f.write("恶意修改的状态机...")
 ```
@@ -122,13 +122,13 @@ Agent 修改 SoT 文档，导致下游 Agent 使用错误的规范
 **攻击场景**:
 ```python
 # Agent 错误地修改 STATE_MACHINE.md
-state_machine_path = "docs/2.sot/STATE_MACHINE.md"
+state_machine_path = "docs/sot/STATE_MACHINE.md"
 with open(state_machine_path, "a") as f:
     f.write("\n## 新增非法状态: HACKED\n")  # ❌ 不应允许
 ```
 
 **缓解措施**:
-1. **只读挂载**: SoT 目录挂载为只读（Docker `-v docs/2.sot:/sot:ro`）
+1. **只读挂载**: SoT 目录挂载为只读（Docker `-v docs/sot:/sot:ro`）
 2. **Git 追踪**: 所有 SoT 修改必须通过 Git Commit
 3. **审批流程**: SoT 修改需要 RFC + 架构委员会审批
 4. **版本锁定**: Agent 引用特定版本 SoT（如 v2.6），不使用 latest
@@ -151,7 +151,7 @@ with open(state_machine_path, "a") as f:
 
 | 目录 | BEAgent | FEAgent | TestAgent | OrchestratorAgent |
 |------|---------|---------|----------|------------------|
-| `docs/2.sot/` | 只读 | 只读 | 只读 | 只读 |
+| `docs/sot/` | 只读 | 只读 | 只读 | 只读 |
 | `docs/3.dev-guides/` | 只读 | 只读 | 只读 | 只读 |
 | `backend/` | 读写 | 只读 | 只读 | 只读 |
 | `frontend/` | 只读 | 读写 | 只读 | 只读 |
@@ -165,7 +165,7 @@ with open(state_machine_path, "a") as f:
 services:
   be-agent:
     volumes:
-      - ./docs/2.sot:/app/docs/2.sot:ro  # 只读
+      - ./docs/sot:/app/docs/sot:ro  # 只读
       - ./backend:/app/backend:rw        # 读写
       - ./frontend:/app/frontend:ro      # 只读
 ```
@@ -224,7 +224,7 @@ RUN useradd -m -u 1000 agent
 USER agent
 
 # 限制文件系统访问
-VOLUME /app/docs/2.sot:ro
+VOLUME /app/docs/sot:ro
 VOLUME /app/backend:rw
 
 # 限制网络访问（仅允许 HTTPS）
@@ -253,7 +253,7 @@ docker run \
 # docker-compose.yml
 volumes:
   # SoT 只读挂载
-  - ./docs/2.sot:/app/docs/2.sot:ro
+  - ./docs/sot:/app/docs/sot:ro
   - ./docs/3.dev-guides:/app/docs/3.dev-guides:ro
 
   # 代码读写挂载

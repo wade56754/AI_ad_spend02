@@ -333,7 +333,7 @@ export function PageTemplate({ ... })  // ✅ named export
 grep -r "/{module}" backend/routers/
 
 # 方式 2: 查看 API_SOT.md 是否已定义
-grep -n "{module}" docs/2.sot/API_SOT.md
+grep -n "{module}" docs/sot/API_SOT.md
 
 # 方式 3: 直接请求测试
 curl -X GET http://localhost:8000/api/v1/{entities} -H "Authorization: Bearer $TOKEN"

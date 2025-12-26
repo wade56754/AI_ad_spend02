@@ -448,11 +448,11 @@ jobs:
 
 | 文档 | 路径 |
 |------|------|
-| STATE_MACHINE.md | docs/2.sot/STATE_MACHINE.md |
-| ERROR_CODES_SOT.md | docs/2.sot/ERROR_CODES_SOT.md |
-| LEDGER_SOT.md | docs/2.sot/LEDGER_SOT.md |
-| AUTH_SPEC.md | docs/2.sot/AUTH_SPEC.md |
-| DATA_SCHEMA.md | docs/2.sot/DATA_SCHEMA.md |
+| STATE_MACHINE.md | docs/sot/STATE_MACHINE.md |
+| ERROR_CODES_SOT.md | docs/sot/ERROR_CODES_SOT.md |
+| LEDGER_SOT.md | docs/sot/LEDGER_SOT.md |
+| AUTH_SPEC.md | docs/sot/AUTH_SPEC.md |
+| DATA_SCHEMA.md | docs/sot/DATA_SCHEMA.md |
 
 ---
 

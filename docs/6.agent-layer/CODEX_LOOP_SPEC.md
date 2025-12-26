@@ -507,7 +507,7 @@ class CodeReviewAgent:
 
 **限制**:
 - ✅ 可以修改 backend/ 和 frontend/ 目录
-- ❌ 禁止修改 docs/2.sot/ (SoT 只读)
+- ❌ 禁止修改 docs/sot/ (SoT 只读)
 - ❌ 禁止修改 .env (敏感文件)
 
 **实施方式** (Docker 挂载):
@@ -516,7 +516,7 @@ class CodeReviewAgent:
 volumes:
   - ./backend:/app/backend:rw    # 读写
   - ./frontend:/app/frontend:rw  # 读写
-  - ./docs/2.sot:/app/docs/2.sot:ro  # 只读
+  - ./docs/sot:/app/docs/sot:ro  # 只读
 ```
 
 ### 6.3 审查模式（Code Generation）

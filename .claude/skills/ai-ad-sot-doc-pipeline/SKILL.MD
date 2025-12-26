@@ -27,7 +27,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 只有在满足以下任一条件时，才允许开始执行流程：
 
 1. 用户在对话中明确下达任务，例如：  
-   - “请运行一次 analyze + cleanup 流水线，目标是 docs/2.sot/*.md”
+   - “请运行一次 analyze + cleanup 流水线，目标是 docs/sot/*.md”
 2. 上层 orchestrator（`ai-ad-doc-orchestrator`）在 SC-EXEC-1 / SC-EXEC-2 中显式说明本次要调用 pipeline，并给出参数。
 
 如果用户只输入：
@@ -113,7 +113,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 ### 4.1 Phase 1：/sc:analyze（分析 SoT 文档）
 
 **功能**：  
-- 按调用方指定的路径扫描 SoT 文档（如 `docs/2.sot/*.md`）  
+- 按调用方指定的路径扫描 SoT 文档（如 `docs/sot/*.md`）  
 - 提取结构信息（章节、索引、引用等）  
 - 输出分析结果（例如存在/不存在、基本结构、引用关系）
 
@@ -219,8 +219,8 @@ markdown
 任务类型：analyze_cleanup
 阶段：["analyze", "cleanup"]
 目标：
-- analyze: docs/2.sot/*.md
-- cleanup: ["docs/2.sot/DAILY_REPORT_SOT.md", "docs/2.sot/LEDGER_SOT.md"]
+- analyze: docs/sot/*.md
+- cleanup: ["docs/sot/DAILY_REPORT_SOT.md", "docs/sot/LEDGER_SOT.md"]
 约束：
 - cleanup 仅限格式修复，不改业务字段/状态/错误码
 - 不执行 design / implement
@@ -296,14 +296,14 @@ markdown
 ## 1. 基本信息
 - 任务类型：analyze_cleanup
 - 阶段序列：["analyze", "cleanup"]
-- 目标范围：docs/2.sot/*.md
+- 目标范围：docs/sot/*.md
 
 ## 2. 各阶段执行概览
 - analyze：
   - 处理文件数：N
   - 主要发现：缺失 SOT、标题层级不一致…
 - cleanup：
-  - 修改文件：["docs/2.sot/DAILY_REPORT_SOT.md", ...]
+  - 修改文件：["docs/sot/DAILY_REPORT_SOT.md", ...]
   - 修改类型：仅格式修复（列表缩进、标题统一）
 
 ## 3. 风险与注意事项（自查结果）
@@ -326,7 +326,7 @@ json
     "notes": ["missing: TRANSFER_SOT.md"]
   },
   "cleanup": {
-    "touched_files": ["docs/2.sot/DAILY_REPORT_SOT.md"],
+    "touched_files": ["docs/sot/DAILY_REPORT_SOT.md"],
     "safe_mode": true
   },
   "warnings": [],

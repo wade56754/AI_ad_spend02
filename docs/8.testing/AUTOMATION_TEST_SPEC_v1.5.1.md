@@ -51,14 +51,14 @@
 
 | 优先级 | SoT 文档 | 路径 | 版本 | 用途 |
 |--------|----------|------|------|------|
-| P0 | STATE_MACHINE | `docs/2.sot/STATE_MACHINE.md` | v2.6 | 状态枚举、流转白名单、终态规则 |
-| P0 | DATA_SCHEMA | `docs/2.sot/DATA_SCHEMA.md` | v5.2 | 数据结构、字段约束、CHECK 约束 |
-| P1 | API_SOT | `docs/2.sot/API_SOT.md` | v9.0 | API 端点定义、请求/响应契约 |
-| P1 | ERROR_CODES_SOT | `docs/2.sot/ERROR_CODES_SOT.md` | v2.1 | 错误码定义、响应格式校验 |
-| P1 | LEDGER_SOT | `docs/2.sot/LEDGER_SOT.md` | v1.1 | 账本分录类型、余额计算规则 |
-| P2 | DAILY_REPORT_SOT | `docs/2.sot/DAILY_REPORT_SOT.md` | v1.0 | 日报 8 状态机、粉数确认流程 |
-| P2 | BUSINESS_RULES | `docs/2.sot/BUSINESS_RULES.md` | v3.1 | 业务约束、金额限制、风控规则 |
-| P3 | AUTH_SPEC | `docs/2.sot/AUTH_SPEC.md` | v2.0 | 角色权限矩阵、访问控制规则 |
+| P0 | STATE_MACHINE | `docs/sot/STATE_MACHINE.md` | v2.6 | 状态枚举、流转白名单、终态规则 |
+| P0 | DATA_SCHEMA | `docs/sot/DATA_SCHEMA.md` | v5.2 | 数据结构、字段约束、CHECK 约束 |
+| P1 | API_SOT | `docs/sot/API_SOT.md` | v9.0 | API 端点定义、请求/响应契约 |
+| P1 | ERROR_CODES_SOT | `docs/sot/ERROR_CODES_SOT.md` | v2.1 | 错误码定义、响应格式校验 |
+| P1 | LEDGER_SOT | `docs/sot/LEDGER_SOT.md` | v1.1 | 账本分录类型、余额计算规则 |
+| P2 | DAILY_REPORT_SOT | `docs/sot/DAILY_REPORT_SOT.md` | v1.0 | 日报 8 状态机、粉数确认流程 |
+| P2 | BUSINESS_RULES | `docs/sot/BUSINESS_RULES.md` | v3.1 | 业务约束、金额限制、风控规则 |
+| P3 | AUTH_SPEC | `docs/sot/AUTH_SPEC.md` | v2.0 | 角色权限矩阵、访问控制规则 |
 
 ### 下游产物
 
@@ -202,8 +202,8 @@ class TestDailyReportStateHelper:
     验证 DailyReportStateHelper 与数据库状态联动
 
     SoT 引用：
-    - docs/2.sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
-    - docs/2.sot/LEDGER_SOT.md v1.1 (账本分录规则)
+    - docs/sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
+    - docs/sot/LEDGER_SOT.md v1.1 (账本分录规则)
     """
 
     def test_submit_raw__transitions_to_trend_pending(self, db_session):
@@ -242,9 +242,9 @@ class TestDailyReportFlow:
     日报完整 API 流程测试
 
     SoT 引用：
-    - docs/2.sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
-    - docs/2.sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* 错误码)
-    - docs/2.sot/API_SOT.md v9.3 (API 端点定义)
+    - docs/sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
+    - docs/sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* 错误码)
+    - docs/sot/API_SOT.md v9.3 (API 端点定义)
     """
 
     def test_daily_report_happy_path__raw_to_final_locked(
@@ -424,8 +424,8 @@ class TestTopupApprovalFlow:
     充值审批流程 API 测试
 
     SoT 引用：
-    - docs/2.sot/STATE_MACHINE.md v2.6 第10章 (TopupRequest 状态机)
-    - docs/2.sot/ERROR_CODES_SOT.md v2.1 (BIZ_* 错误码)
+    - docs/sot/STATE_MACHINE.md v2.6 第10章 (TopupRequest 状态机)
+    - docs/sot/ERROR_CODES_SOT.md v2.1 (BIZ_* 错误码)
     """
 
     # Happy path
@@ -616,7 +616,7 @@ log_cli_level = WARNING
 L2 API 测试专用 fixture
 
 SoT 引用：
-- docs/2.sot/AUTH_SPEC.md v2.0 (角色定义)
+- docs/sot/AUTH_SPEC.md v2.0 (角色定义)
 """
 
 import pytest
@@ -704,8 +704,8 @@ def auth_header(token: str) -> dict:
 测试数据工厂
 
 SoT 引用：
-- docs/2.sot/DATA_SCHEMA.md v5.2 (字段定义)
-- docs/2.sot/STATE_MACHINE.md v2.6 (初始状态)
+- docs/sot/DATA_SCHEMA.md v5.2 (字段定义)
+- docs/sot/STATE_MACHINE.md v2.6 (初始状态)
 """
 
 from uuid import uuid4
@@ -840,7 +840,7 @@ def create_topup_request(
 状态机断言工具
 
 SoT 引用：
-- docs/2.sot/STATE_MACHINE.md v2.6 (状态流转规则)
+- docs/sot/STATE_MACHINE.md v2.6 (状态流转规则)
 """
 
 from typing import Optional
@@ -960,7 +960,7 @@ def assert_terminal_state(entity, entity_type: str):
 错误码校验工具
 
 SoT 引用：
-- docs/2.sot/ERROR_CODES_SOT.md v2.1 (错误码定义)
+- docs/sot/ERROR_CODES_SOT.md v2.1 (错误码定义)
 """
 
 from typing import Optional
@@ -1053,11 +1053,11 @@ def assert_success_response(response, expected_http_status: int = 200):
 日报（DailyReport）完整 API 流程测试
 
 SoT 引用：
-- docs/2.sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
-- docs/2.sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* / TREND_* 错误码)
-- docs/2.sot/DAILY_REPORT_SOT.md v1.0 (粉数确认业务规则)
-- docs/2.sot/AUTH_SPEC.md v2.0 (角色权限矩阵)
-- docs/2.sot/API_SOT.md v9.3 (API 端点定义)
+- docs/sot/STATE_MACHINE.md v2.6 第8章 (DailyReport 8状态机)
+- docs/sot/ERROR_CODES_SOT.md v2.1 (STATE_* / BIZ_* / TREND_* 错误码)
+- docs/sot/DAILY_REPORT_SOT.md v1.0 (粉数确认业务规则)
+- docs/sot/AUTH_SPEC.md v2.0 (角色权限矩阵)
+- docs/sot/API_SOT.md v9.3 (API 端点定义)
 
 测试覆盖：
 - Happy Path: raw_submitted → ... → final_locked
@@ -1867,9 +1867,9 @@ jobs:
 
 ### 输入
 - 目标模块: [模块名，如 topup_request]
-- 状态机定义: docs/2.sot/STATE_MACHINE.md 第[X]章
-- 错误码定义: docs/2.sot/ERROR_CODES_SOT.md
-- API 端点定义: docs/2.sot/API_SOT.md
+- 状态机定义: docs/sot/STATE_MACHINE.md 第[X]章
+- 错误码定义: docs/sot/ERROR_CODES_SOT.md
+- API 端点定义: docs/sot/API_SOT.md
 
 ### 输出要求
 1. 文件位置: backend/tests/api/test_[模块名]_flow.py
@@ -2018,7 +2018,7 @@ pytest --strict-markers -m "unknown_marker" 2>&1 | grep -q "Unknown pytest.mark"
 | `backend/routers/*` | 修改任何 router 文件 | `python run_tests.py --type regression` |
 | `backend/services/finance_service.py` | 修改财务利润服务 | `pytest backend/tests/test_finance_profit_api.py -v` |
 | `backend/routers/finance_profit.py` | 修改财务利润路由 | `pytest backend/tests/test_finance_profit_api.py -v` |
-| `docs/2.sot/*` | 修改任何 SoT 文档 | `python run_tests.py --type regression` |
+| `docs/sot/*` | 修改任何 SoT 文档 | `python run_tests.py --type regression` |
 | `.claude/skills/ai-ad-api-automation-test/*` | 修改测试自动化 skill | `python run_tests.py --type regression` |
 
 ### 11.2 回归测试套件定义
@@ -2131,13 +2131,13 @@ L3 E2E        → backend/tests/e2e/         → @pytest.mark.e2e
 ### SoT 路径速查
 
 ```
-docs/2.sot/STATE_MACHINE.md      v2.6  状态枚举、流转白名单
-docs/2.sot/DATA_SCHEMA.md        v5.2  数据结构、字段约束
-docs/2.sot/API_SOT.md            v9.0  API 端点定义、请求/响应契约
-docs/2.sot/ERROR_CODES_SOT.md    v2.1  错误码定义
-docs/2.sot/LEDGER_SOT.md         v1.1  账本分录规则
-docs/2.sot/AUTH_SPEC.md          v2.0  角色权限矩阵
-docs/2.sot/BUSINESS_RULES.md     v3.1  业务约束规则
+docs/sot/STATE_MACHINE.md      v2.6  状态枚举、流转白名单
+docs/sot/DATA_SCHEMA.md        v5.2  数据结构、字段约束
+docs/sot/API_SOT.md            v9.0  API 端点定义、请求/响应契约
+docs/sot/ERROR_CODES_SOT.md    v2.1  错误码定义
+docs/sot/LEDGER_SOT.md         v1.1  账本分录规则
+docs/sot/AUTH_SPEC.md          v2.0  角色权限矩阵
+docs/sot/BUSINESS_RULES.md     v3.1  业务约束规则
 ```
 
 ### 运行速查

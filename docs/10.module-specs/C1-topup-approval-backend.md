@@ -908,5 +908,5 @@ async def test_role_permissions(client, role, action, expected):
 **参考文档**:
 - `docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md`
 - `docs/10.module-specs/B1-topup-approval.md` (前端规格书)
-- `docs/2.sot/STATE_MACHINE.md` v2.6 §9
-- `docs/2.sot/DATA_SCHEMA.md` v5.2 §4.1
+- `docs/sot/STATE_MACHINE.md` v2.6 §9
+- `docs/sot/DATA_SCHEMA.md` v5.2 §4.1

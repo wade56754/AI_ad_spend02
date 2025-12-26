@@ -44,9 +44,9 @@ owner: wade
 ## 4. Relation to SoT
 
 本文档引用以下 SoT 文档：
-- TODO: `docs/2.sot/LEDGER_SOT.md` - 账本规则
-- TODO: `docs/2.sot/DATA_SCHEMA.md` - ledger_entries 表定义
-- TODO: `docs/2.sot/BUSINESS_RULES.md` - BR-LED-* 规则
+- TODO: `docs/sot/LEDGER_SOT.md` - 账本规则
+- TODO: `docs/sot/DATA_SCHEMA.md` - ledger_entries 表定义
+- TODO: `docs/sot/BUSINESS_RULES.md` - BR-LED-* 规则
 
 ## 5. Examples
 

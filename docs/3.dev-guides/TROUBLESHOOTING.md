@@ -482,7 +482,7 @@ elif user_role == "account_manager":
 #### 诊断步骤
 ```bash
 # 1. 查看STATE_MACHINE.md白名单
-grep -A 10 "daily_reports.status" docs/2.sot/STATE_MACHINE.md
+grep -A 10 "daily_reports.status" docs/sot/STATE_MACHINE.md
 
 # 输出：
 # "daily_reports.status": {
@@ -2132,7 +2132,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 grep -A 20 "class DailyReportCreate" backend/schemas/daily_reports.py
 
 # 检查DATA_SCHEMA.md
-grep "conversions_raw" docs/2.sot/DATA_SCHEMA.md
+grep "conversions_raw" docs/sot/DATA_SCHEMA.md
 ```
 
 #### 解决方案

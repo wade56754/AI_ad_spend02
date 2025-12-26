@@ -32,7 +32,7 @@ Welcome to the AI Ad Spend Management System (AI_ad_spend02). This checklist pro
 
 | Resource | Location | Purpose |
 |----------|----------|---------|
-| **MASTER.md** | `docs/1.overview/MASTER.md` v3.4 | System constitution, highest authority |
+| **MASTER.md** | `docs/sot/MASTER.md` v3.4 | System constitution, highest authority |
 | **CLAUDE.md** | `CLAUDE.md` v3.1 | AI agent instructions, auto-loaded in all sessions |
 | **PROJECT_RULES.md** | `.claude/PROJECT_RULES.md` v3.1 | Complete rule compendium |
 | **SoT裁判链** | `MASTER.md` §6 | Conflict resolution priority chain |
@@ -103,7 +103,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Open `http://localhost:3000` and verify login page renders
 
 - [ ] **First Reading: MASTER.md**
-  - [ ] Read `docs/1.overview/MASTER.md` v3.4 **in full** (45 minutes)
+  - [ ] Read `docs/sot/MASTER.md` v3.4 **in full** (45 minutes)
   - [ ] Understand the 5 core mechanisms (§1.3):
     - [ ] Dual-Ledger Architecture (PROJECT vs SUPPLIER)
     - [ ] Triple-Stream Separation (raw → real → final)
@@ -146,7 +146,7 @@ Week 3: Advanced Topics + Independent Work
 #### Day 2 Checklist
 
 - [ ] **STATE_MACHINE.md v2.6** (90 minutes)
-  - [ ] Read `docs/2.sot/STATE_MACHINE.md` §1-10
+  - [ ] Read `docs/sot/STATE_MACHINE.md` §1-10
   - [ ] Understand all 8 states for `daily_reports`:
     - [ ] `raw_submitted` → `trend_pending` → `trend_ok/trend_flagged`
     - [ ] `trend_resolved` → `final_pending` → `final_confirmed` → `final_locked`
@@ -162,7 +162,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Show self-review to mentor
 
 - [ ] **DATA_SCHEMA.md v5.2** (120 minutes)
-  - [ ] Read `docs/2.sot/DATA_SCHEMA.md` §1-6 (Table definitions)
+  - [ ] Read `docs/sot/DATA_SCHEMA.md` §1-6 (Table definitions)
   - [ ] Focus on core tables:
     - [ ] `projects` (revenue attribution)
     - [ ] `suppliers` (cost attribution)
@@ -186,7 +186,7 @@ Week 3: Advanced Topics + Independent Work
 #### Day 3 Checklist
 
 - [ ] **LEDGER_SOT.md v1.1** (90 minutes)
-  - [ ] Read `docs/2.sot/LEDGER_SOT.md` §1-7
+  - [ ] Read `docs/sot/LEDGER_SOT.md` §1-7
   - [ ] Understand dual-ledger philosophy:
     - [ ] PROJECT ledger = `ledger_entries WHERE category = 'PROJECT'`
     - [ ] SUPPLIER ledger = `ledger_entries WHERE category = 'SUPPLIER'`
@@ -205,7 +205,7 @@ Week 3: Advanced Topics + Independent Work
     - [ ] Cost: `real_spend × (1 + fee_rate)` when `state = final_locked`
 
 - [ ] **BUSINESS_RULES.md v4.1** (60 minutes)
-  - [ ] Read `docs/2.sot/BUSINESS_RULES.md` §1-8
+  - [ ] Read `docs/sot/BUSINESS_RULES.md` §1-8
   - [ ] Review key rules:
     - [ ] BR-FIN-003: All financial amounts use `DECIMAL(12,2)`
     - [ ] BR-RPT-001: Daily reports must have unique (ad_account_id, report_date)
@@ -215,7 +215,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Note business constraints not enforced by DB (require application logic)
 
 - [ ] **API_SOT.md v9.3** (60 minutes)
-  - [ ] Read `docs/2.sot/API_SOT.md` §1-4
+  - [ ] Read `docs/sot/API_SOT.md` §1-4
   - [ ] Understand API structure: `/api/v1/{resource}`
   - [ ] Review HTTP method conventions (GET/POST/PUT/DELETE)
   - [ ] Study response format (JSON with `data`/`error` envelope)
@@ -223,7 +223,7 @@ Week 3: Advanced Topics + Independent Work
   - [ ] Note authentication headers (Authorization: Bearer {token})
 
 - [ ] **ERROR_CODES_SOT.md v2.1** (30 minutes)
-  - [ ] Read `docs/2.sot/ERROR_CODES_SOT.md` §1-5
+  - [ ] Read `docs/sot/ERROR_CODES_SOT.md` §1-5
   - [ ] Understand error code categories:
     - [ ] `AUTH-xxx`: Authentication/Authorization errors
     - [ ] `VAL-xxx`: Validation errors
@@ -1161,7 +1161,7 @@ A: _______________________
 
 - [ ] **Practice: SoT-First Query**
   - [ ] Open terminal in Cursor
-  - [ ] Type: `/sc:explain @docs/2.sot/STATE_MACHINE.md daily_reports state machine`
+  - [ ] Type: `/sc:explain @docs/sot/STATE_MACHINE.md daily_reports state machine`
   - [ ] Review agent's explanation
   - [ ] Ask follow-up: "What are the prohibited transitions?"
   - [ ] Verify agent references STATE_MACHINE.md v2.6
@@ -1242,7 +1242,7 @@ A: _______________________
 
 - [ ] **Agent Workflow Best Practices**
   - [ ] Always reference specific SoT documents in prompts
-  - [ ] Use `@file:docs/2.sot/MASTER.md` to include context
+  - [ ] Use `@file:docs/sot/MASTER.md` to include context
   - [ ] Break complex tasks into small agent calls
   - [ ] Review all agent-generated code (do not blindly accept)
   - [ ] Verify SoT references are accurate and up-to-date
@@ -1469,14 +1469,14 @@ A: _______________________
 
 | Category | Document | Location | Version |
 |----------|----------|----------|---------|
-| **Architecture** | MASTER.md | `docs/1.overview/MASTER.md` | v3.4 |
+| **Architecture** | MASTER.md | `docs/sot/MASTER.md` | v3.4 |
 | **Architecture** | PROJECT.md | `docs/1.overview/PROJECT.md` | v1.2 |
-| **SoT** | STATE_MACHINE.md | `docs/2.sot/STATE_MACHINE.md` | v2.6 |
-| **SoT** | DATA_SCHEMA.md | `docs/2.sot/DATA_SCHEMA.md` | v5.2 |
-| **SoT** | LEDGER_SOT.md | `docs/2.sot/LEDGER_SOT.md` | v1.1 |
-| **SoT** | BUSINESS_RULES.md | `docs/2.sot/BUSINESS_RULES.md` | v3.1 |
-| **SoT** | API_SOT.md | `docs/2.sot/API_SOT.md` | v9.0 |
-| **SoT** | ERROR_CODES_SOT.md | `docs/2.sot/ERROR_CODES_SOT.md` | v2.1 |
+| **SoT** | STATE_MACHINE.md | `docs/sot/STATE_MACHINE.md` | v2.6 |
+| **SoT** | DATA_SCHEMA.md | `docs/sot/DATA_SCHEMA.md` | v5.2 |
+| **SoT** | LEDGER_SOT.md | `docs/sot/LEDGER_SOT.md` | v1.1 |
+| **SoT** | BUSINESS_RULES.md | `docs/sot/BUSINESS_RULES.md` | v3.1 |
+| **SoT** | API_SOT.md | `docs/sot/API_SOT.md` | v9.0 |
+| **SoT** | ERROR_CODES_SOT.md | `docs/sot/ERROR_CODES_SOT.md` | v2.1 |
 | **Dev Guide** | API_DEVELOPMENT_FLOW.md | `docs/3.dev-guides/API_DEVELOPMENT_FLOW.md` | v1.0 |
 | **Dev Guide** | FRONTEND_DEVELOPMENT_RULES.md | `docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md` | v1.0 |
 | **Dev Guide** | TESTING_STRATEGY.md | `docs/3.dev-guides/TESTING_STRATEGY.md` | v1.0 |
@@ -1578,7 +1578,7 @@ Q5: trend_ok or trend_flagged (STATE_MACHINE.md v2.6 §8)
 Q6: REVERSAL with approval_ref (MASTER.md v4.4 INV-003)
 Q7: DECIMAL(12,2) (BR-FIN-003 in BUSINESS_RULES.md v4.1)
 Q8: Prohibited, should fail (INV-001 Immutable Audit Trail)
-Q9: ERROR_CODES_SOT.md v2.1 (docs/2.sot/ERROR_CODES_SOT.md)
+Q9: ERROR_CODES_SOT.md v2.1 (docs/sot/ERROR_CODES_SOT.md)
 Q10: completed, rejected, or cancelled (STATE_MACHINE.md v2.6 §11)
 ```
 

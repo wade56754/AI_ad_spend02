@@ -878,14 +878,14 @@ layer: Skill
 
 sot_dependencies:
   required:
-    - docs/2.sot/DATA_SCHEMA.md
-    - docs/2.sot/STATE_MACHINE.md
-    - docs/2.sot/API_SOT.md
-    - docs/2.sot/BUSINESS_RULES.md
-    - docs/2.sot/ERROR_CODES_SOT.md
+    - docs/sot/DATA_SCHEMA.md
+    - docs/sot/STATE_MACHINE.md
+    - docs/sot/API_SOT.md
+    - docs/sot/BUSINESS_RULES.md
+    - docs/sot/ERROR_CODES_SOT.md
   optional:
-    - docs/2.sot/LEDGER_SOT.md
-    - docs/2.sot/AUTH_SPEC.md
+    - docs/sot/LEDGER_SOT.md
+    - docs/sot/AUTH_SPEC.md
 
 # ⚠️ enhancement 字段为文档标注，暂无 runtime 消费
 enhancement:
@@ -1022,12 +1022,12 @@ layer: Skill
 
 sot_dependencies:
   required:
-    - docs/2.sot/STATE_MACHINE.md
-    - docs/2.sot/DATA_SCHEMA.md
-    - docs/2.sot/BUSINESS_RULES.md
-    - docs/2.sot/ERROR_CODES_SOT.md
+    - docs/sot/STATE_MACHINE.md
+    - docs/sot/DATA_SCHEMA.md
+    - docs/sot/BUSINESS_RULES.md
+    - docs/sot/ERROR_CODES_SOT.md
   optional:
-    - docs/2.sot/LEDGER_SOT.md
+    - docs/sot/LEDGER_SOT.md
 
 # ⚠️ enhancement 字段为文档标注，暂无 runtime 消费
 enhancement:
@@ -1700,10 +1700,10 @@ layer: Skill
 # SoT 依赖声明
 sot_dependencies:
   required:
-    - docs/2.sot/STATE_MACHINE.md
-    - docs/2.sot/DATA_SCHEMA.md
+    - docs/sot/STATE_MACHINE.md
+    - docs/sot/DATA_SCHEMA.md
   optional:
-    - docs/2.sot/LEDGER_SOT.md
+    - docs/sot/LEDGER_SOT.md
 
 # 输出边界声明
 output_boundaries:
@@ -1828,7 +1828,7 @@ else:
 │  技巧 1: 完整功能开发 (v2.4)                                          │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Step 1: /sc:pm "分析需求"                                           │
-│  Step 2: /sot-check docs/2.sot/                                      │
+│  Step 2: /sot-check docs/sot/                                      │
 │  Step 3: /gen be "实现功能"                                          │
 │  Step 4: /gen test "生成测试"                                        │
 │  Step 5: /review backend/services/xxx.py                             │
@@ -1869,7 +1869,7 @@ else:
 我正在开发 AI 广告代投系统，请遵循以下规则：
 
 1. 代码生成任务优先使用 AI 代码工厂 (/gen be, /gen fe, /gen test)
-2. 所有代码必须符合 SoT 文档约束 (docs/2.sot/)
+2. 所有代码必须符合 SoT 文档约束 (docs/sot/)
 3. 代码审查使用 /review，文档审计使用 /doc
 4. 分析和研究任务使用 SuperClaude (/sc:*)
 5. 提交前使用 /sot-check 验证合规性

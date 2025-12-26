@@ -40,7 +40,7 @@ owner: wade
 ## 4. Relation to SoT
 
 本文档引用以下 SoT 文档：
-- TODO: `docs/2.sot/DATA_SCHEMA.md` - 目标 Schema 定义
+- TODO: `docs/sot/DATA_SCHEMA.md` - 目标 Schema 定义
 
 ## 5. References
 

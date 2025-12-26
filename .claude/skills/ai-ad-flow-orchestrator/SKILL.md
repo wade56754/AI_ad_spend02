@@ -8,14 +8,14 @@ last_reviewed: 2025-12-07
 
 sot_dependencies:
   required:
-    - docs/2.sot/DEV_FLOW_SOT_v1.0.md  # v1.1 (7 Flow 架构)
-    - docs/2.sot/STATE_MACHINE.md
-    - docs/2.sot/DATA_SCHEMA.md
-    - docs/2.sot/BUSINESS_RULES.md
-    - docs/2.sot/API_SOT.md
+    - docs/sot/DEV_FLOW_SOT_v1.0.md  # v1.1 (7 Flow 架构)
+    - docs/sot/STATE_MACHINE.md
+    - docs/sot/DATA_SCHEMA.md
+    - docs/sot/BUSINESS_RULES.md
+    - docs/sot/API_SOT.md
   optional:
-    - docs/2.sot/ERROR_CODES_SOT.md
-    - docs/2.sot/LEDGER_SOT.md
+    - docs/sot/ERROR_CODES_SOT.md
+    - docs/sot/LEDGER_SOT.md
 
 sub_skills:
   - ai-ad-spec-governor    # /sot-check
@@ -244,7 +244,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, DEV_FLOW_SOT_v1.1, SoT Freeze v2.6
     <!-- BE_DEV_FLOW 命令序列 (DEV_FLOW_SOT §4) -->
     <template flow="BE_DEV_FLOW">
       <step n="1">
-        <command>/sot-check docs/2.sot/</command>
+        <command>/sot-check docs/sot/</command>
         <purpose>SoT 对齐 - 确认相关规则</purpose>
         <expected>SoT 规则清单 + 依赖关系</expected>
       </step>
@@ -283,7 +283,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, DEV_FLOW_SOT_v1.1, SoT Freeze v2.6
     <!-- FE_DEV_FLOW 命令序列 (DEV_FLOW_SOT §5) -->
     <template flow="FE_DEV_FLOW">
       <step n="1">
-        <command>/sot-check docs/2.sot/API_SOT.md</command>
+        <command>/sot-check docs/sot/API_SOT.md</command>
         <purpose>API 契约确认</purpose>
         <expected>相关 API 端点列表 + 数据结构</expected>
       </step>
@@ -377,7 +377,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, DEV_FLOW_SOT_v1.1, SoT Freeze v2.6
         <expected>P0/P1/P2 问题清单</expected>
       </step>
       <step n="2">
-        <command>/sot-check docs/2.sot/</command>
+        <command>/sot-check docs/sot/</command>
         <purpose>SoT 一致性检查</purpose>
         <expected>SoT 一致性报告</expected>
       </step>
@@ -598,7 +598,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, DEV_FLOW_SOT_v1.1, SoT Freeze v2.6
         flow_type: BE_DEV_FLOW
         command: /dev-flow be 实现充值审批功能
         command_sequence:
-          1. /sot-check docs/2.sot/
+          1. /sot-check docs/sot/
           2. /gen be "生成 topup_approval 的 Pydantic Schema"
           3. /gen be "实现 topup_approval 的 Service 层"
           4. /gen be "实现 topup_approval 的 Router 层"

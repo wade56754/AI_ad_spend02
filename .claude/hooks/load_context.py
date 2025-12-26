@@ -21,25 +21,25 @@ if sys.platform == "win32":
 # SoT 文档列表（按裁判链优先级排序）
 SOT_DOCUMENTS = [
     {
-        "path": "docs/1.overview/MASTER.md",
+        "path": "docs/sot/MASTER.md",
         "title": "架构宪法",
         "priority": 1,
         "description": "系统全局规则、角色定义、AI 防幻觉原则",
     },
     {
-        "path": "docs/2.sot/DATA_SCHEMA.md",
+        "path": "docs/sot/DATA_SCHEMA.md",
         "title": "数据模型",
         "priority": 2,
         "description": "数据库模型、字段定义、外键关系",
     },
     {
-        "path": "docs/2.sot/STATE_MACHINE.md",
+        "path": "docs/sot/STATE_MACHINE.md",
         "title": "状态机",
         "priority": 3,
         "description": "日报 8 状态流转、状态转换规则",
     },
     {
-        "path": "docs/2.sot/BUSINESS_RULES.md",
+        "path": "docs/sot/BUSINESS_RULES.md",
         "title": "业务规则",
         "priority": 4,
         "description": "业务逻辑、验证规则、计算公式",

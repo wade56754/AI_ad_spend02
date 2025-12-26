@@ -678,9 +678,9 @@ sequenceDiagram
 
 | Type | Layer | Template | Example |
 |------|-------|----------|---------|
-| SoT Documents | `docs/2.sot/` | STATE_MACHINE.md | DATA_SCHEMA.md v5.2 |
+| SoT Documents | `docs/sot/` | STATE_MACHINE.md | DATA_SCHEMA.md v5.2 |
 | Dev Guides | `docs/3.dev-guides/` | API_DEVELOPMENT_FLOW.md | This document |
-| API Specs | `docs/2.sot/` | API_SOT.md | API_SOT.md v9.3 |
+| API Specs | `docs/sot/` | API_SOT.md | API_SOT.md v9.3 |
 | Testing Guides | `docs/3.dev-guides/` | TESTING_GUIDE.md | Test strategy |
 
 **Document Frontmatter** (required):
@@ -982,7 +982,7 @@ def check_state_machine_compliance(changed_files):
     Check if code uses states defined in STATE_MACHINE.md v2.6
     """
     violations = []
-    allowed_states = load_sot_states('docs/2.sot/STATE_MACHINE.md')
+    allowed_states = load_sot_states('docs/sot/STATE_MACHINE.md')
 
     for file in changed_files:
         used_states = extract_states_from_code(file)
@@ -1003,7 +1003,7 @@ def check_error_code_compliance(changed_files):
     Check if code uses error codes from ERROR_CODES_SOT.md v2.1
     """
     violations = []
-    allowed_codes = load_sot_error_codes('docs/2.sot/ERROR_CODES_SOT.md')
+    allowed_codes = load_sot_error_codes('docs/sot/ERROR_CODES_SOT.md')
 
     for file in changed_files:
         used_codes = extract_error_codes_from_code(file)

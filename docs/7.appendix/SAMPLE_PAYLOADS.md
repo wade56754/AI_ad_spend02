@@ -45,8 +45,8 @@ owner: wade
 ## 4. Relation to SoT
 
 本文档引用以下 SoT 文档：
-- TODO: `docs/2.sot/API_SOT.md` - API 端点定义
-- TODO: `docs/2.sot/ERROR_CODES_SOT.md` - 错误响应格式
+- TODO: `docs/sot/API_SOT.md` - API 端点定义
+- TODO: `docs/sot/ERROR_CODES_SOT.md` - 错误响应格式
 
 ## 5. Usage
 

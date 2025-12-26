@@ -145,15 +145,15 @@
 
 | 目录 / 文件 | 说明 |
 |-------------|------|
-| `docs/2.sot/MASTER_SPEC.md` | 主规范 |
-| `docs/2.sot/STATE_MACHINE.md` | 状态机定义 |
-| `docs/2.sot/DATA_SCHEMA.md` | 数据模型定义 |
-| `docs/2.sot/LEDGER_SOT.md` | 账本规则 |
-| `docs/2.sot/AUTH_SPEC.md` | 认证授权规范 |
-| `docs/2.sot/BUSINESS_RULES.md` | 业务规则 |
-| `docs/2.sot/ERROR_CODES_SOT.md` | 错误码定义本体 |
-| `docs/2.sot/API_SOT.md` | API 规范 |
-| `docs/2.sot/*_SOT.md` | 所有 SoT 文档 |
+| `docs/sot/MASTER_SPEC.md` | 主规范 |
+| `docs/sot/STATE_MACHINE.md` | 状态机定义 |
+| `docs/sot/DATA_SCHEMA.md` | 数据模型定义 |
+| `docs/sot/LEDGER_SOT.md` | 账本规则 |
+| `docs/sot/AUTH_SPEC.md` | 认证授权规范 |
+| `docs/sot/BUSINESS_RULES.md` | 业务规则 |
+| `docs/sot/ERROR_CODES_SOT.md` | 错误码定义本体 |
+| `docs/sot/API_SOT.md` | API 规范 |
+| `docs/sot/*_SOT.md` | 所有 SoT 文档 |
 
 > **如果要改 SoT**：只能人工改，或开专门的 `doc-architect` 流程由人盯着改。
 
@@ -185,7 +185,7 @@
 │                           ▼                                  │
 │  ┌───────────────────────────────────────────────────────┐  │
 │  │  只读区 (READ-ONLY)                                    │  │
-│  │  docs/2.sot/** - 所有 SoT 文档                         │  │
+│  │  docs/sot/** - 所有 SoT 文档                         │  │
 │  │  AI 读取作为生成依据，但不能修改                        │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                           │                                  │
@@ -203,7 +203,7 @@
 
 > ⚠️ **重要**: SuperClaude 命令 (`/sc:*`) 在本项目中执行时，必须遵守与 AI 代码工厂相同的目录边界约束：
 > - 可写区：仅限 `schemas/services/routers/tests/` 等
-> - 只读区：所有 `docs/2.sot/**` 文档
+> - 只读区：所有 `docs/sot/**` 文档
 > - 禁区：`models/migrations/.env` 等
 >
 > SuperClaude 的通用能力不能越过本项目的 SoT 边界。
@@ -260,7 +260,7 @@ python tools/guard_paths.py --mode ci
 | `migrations/**` | 需 DBA 审核 |
 | `.env*` | 安全敏感 |
 | `.github/workflows/**` | CI 基础设施 |
-| `docs/2.sot/**` | SoT 只读 |
+| `docs/sot/**` | SoT 只读 |
 
 **CI 阻断规则**:
 - 任何对黑名单目录的写入尝试 → 立即 fail，阻断流水线
@@ -1351,7 +1351,7 @@ openspec/changes/topup-approval-v1/
 │                                    ▼                                 │
 │  ┌──────────────────────────────────────────────────────────────┐   │
 │  │  Layer 6: SoT 文档层 (Single Source of Truth)                 │   │
-│  │  docs/2.sot/                                                  │   │
+│  │  docs/sot/                                                  │   │
 │  │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ │   │
 │  │  │STATE_MACH │ │DATA_SCHEMA │ │ LEDGER_SOT │ │ AUTH_SPEC  │ │   │
 │  │  │ API_SOT   │ │ERROR_CODES │ │BUSINESS_R  │ │ MASTER_SP  │ │   │
@@ -1558,7 +1558,7 @@ AI_ad_spend02/
 │   │   └── orchestrator_agent.py     # 编排 Agent
 │   └── skills/                       # Skill 函数
 │
-├── docs/2.sot/                       # SoT 文档层 (只读!)
+├── docs/sot/                       # SoT 文档层 (只读!)
 │   ├── STATE_MACHINE.md
 │   ├── DATA_SCHEMA.md
 │   ├── LEDGER_SOT.md
@@ -1708,12 +1708,12 @@ layer: Skill
 
 sot_dependencies:
   required:
-    - docs/2.sot/DATA_SCHEMA.md
-    - docs/2.sot/STATE_MACHINE.md
-    - docs/2.sot/API_SOT.md
+    - docs/sot/DATA_SCHEMA.md
+    - docs/sot/STATE_MACHINE.md
+    - docs/sot/API_SOT.md
   optional:
-    - docs/2.sot/LEDGER_SOT.md
-    - docs/2.sot/ERROR_CODES_SOT.md
+    - docs/sot/LEDGER_SOT.md
+    - docs/sot/ERROR_CODES_SOT.md
 
 output_boundaries:
   writable:
@@ -1846,7 +1846,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.3, SoT Freeze v2.6
 /sc:pm "分析 XXX 功能需求，制定实施计划"
 
 # Step 2: SoT 合规检查 (AI 代码工厂)
-/sot-check docs/2.sot/
+/sot-check docs/sot/
 
 # Step 3: 代码生成 (AI 代码工厂)
 /gen be "生成 XXX 模块的 Schema 层"

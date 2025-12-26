@@ -701,13 +701,13 @@ USING (
 ### 15.2 代码版本对齐
 
 **Service 层要求**:
-- 引用文档: `docs/2.sot/RECONCILIATION_SOT.md v1.0`
+- 引用文档: `docs/sot/RECONCILIATION_SOT.md v1.0`
 - 实现模块: `backend/services/reconciliation_service.py`
 - 核心功能: 对账批次创建、差异计算、审批流转、调整执行
 - 业务规则遵循: RECONCILIATION_SOT.md 定义
 
 **API Router 要求**:
-- 引用文档: `docs/2.sot/API_SOT.md` (对账端点章节)
+- 引用文档: `docs/sot/API_SOT.md` (对账端点章节)
 - 实现模块: `backend/routers/reconciliations.py`
 - 业务规则遵循: RECONCILIATION_SOT.md v1.0
 

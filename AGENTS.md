@@ -221,7 +221,7 @@ VALID_ROLES = [
 
 ### 错误码规范
 
-所有错误码必须来自 `docs/2.sot/ERROR_CODES_SOT.md`:
+所有错误码必须来自 `docs/sot/ERROR_CODES_SOT.md`:
 
 ```python
 # 正确
@@ -403,10 +403,10 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 
 | 文档 | 路径 |
 |------|------|
-| SoT 文档 | `docs/2.sot/` |
-| API 文档 | `docs/2.sot/API_SOT.md` |
-| 状态机 | `docs/2.sot/STATE_MACHINE.md` |
-| 错误码 | `docs/2.sot/ERROR_CODES_SOT.md` |
+| SoT 文档 | `docs/sot/` |
+| API 文档 | `docs/sot/API_SOT.md` |
+| 状态机 | `docs/sot/STATE_MACHINE.md` |
+| 错误码 | `docs/sot/ERROR_CODES_SOT.md` |
 | 开发指南 | `docs/3.dev-guides/` |
 | Claude 规则 | `CLAUDE.md` |
 

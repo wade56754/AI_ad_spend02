@@ -67,7 +67,7 @@ upstream_sot:
 ### 2.1 SoT 裁判链 (Layer 6 视角)
 
 ```
-Tier-1 SoT (docs/2.sot/)
+Tier-1 SoT (docs/sot/)
     ├── STATE_MACHINE.md v2.6
     ├── DATA_SCHEMA.md v5.2
     ├── BUSINESS_RULES.md v4.1
@@ -345,7 +345,7 @@ graph TB
         FREEZE[AGENT_LAYER_FREEZE_MANIFEST_v2.0.md]
     end
 
-    subgraph "Tier-1 SoT (docs/2.sot/)"
+    subgraph "Tier-1 SoT (docs/sot/)"
         STATE[STATE_MACHINE v2.6]
         DATA[DATA_SCHEMA v5.2]
         MASTER[MASTER.md v4.4]

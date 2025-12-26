@@ -171,7 +171,7 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 #### Layer 1: Overview (系统全局视图)
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|---------|
-| MASTER | v3.4 | `docs/1.overview/MASTER.md` | 系统宪法 (ASDD Freeze) |
+| MASTER | v3.4 | `docs/sot/MASTER.md` | 系统宪法 (ASDD Freeze) |
 | PROJECT | v1.2 | `docs/1.overview/PROJECT.md` | 业务定义与边界 |
 | ARCHITECTURE | v1.0 | `docs/1.overview/ARCHITECTURE.md` | 系统架构总览 |
 | DOMAIN | v1.0 | `docs/1.overview/DOMAIN.md` | 领域模型与业务逻辑 |
@@ -179,16 +179,16 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 #### Layer 2: SoT (单一真相来源)
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|---------|
-| STATE_MACHINE | v2.6 | `docs/2.sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
-| DATA_SCHEMA | v5.2 | `docs/2.sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
-| BUSINESS_RULES | v3.2 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
-| API_SOT | v9.0 | `docs/2.sot/API_SOT.md` | §9 Daily Reports API |
-| ERROR_CODES_SOT | v2.1 | `docs/2.sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
-| AUTH_SPEC | v2.0 | `docs/2.sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
-| LEDGER_SOT | v1.1 | `docs/2.sot/LEDGER_SOT.md` | §2 双账本体系 |
-| DAILY_REPORT_SOT | v1.0 | `docs/2.sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
-| RECONCILIATION_SOT | v1.0 | `docs/2.sot/RECONCILIATION_SOT.md` | §3 对账流程 |
-| TRANSFER_SOT | v1.0 | `docs/2.sot/TRANSFER_SOT.md` | §2 调拨规则 |
+| STATE_MACHINE | v2.6 | `docs/sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
+| DATA_SCHEMA | v5.2 | `docs/sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
+| BUSINESS_RULES | v3.2 | `docs/sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
+| API_SOT | v9.0 | `docs/sot/API_SOT.md` | §9 Daily Reports API |
+| ERROR_CODES_SOT | v2.1 | `docs/sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
+| AUTH_SPEC | v2.0 | `docs/sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
+| LEDGER_SOT | v1.1 | `docs/sot/LEDGER_SOT.md` | §2 双账本体系 |
+| DAILY_REPORT_SOT | v1.0 | `docs/sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
+| RECONCILIATION_SOT | v1.0 | `docs/sot/RECONCILIATION_SOT.md` | §3 对账流程 |
+| TRANSFER_SOT | v1.0 | `docs/sot/TRANSFER_SOT.md` | §2 调拨规则 |
 
 #### Layer 3: Dev-Guides (开发指南)
 | 文档 | 路径 | 核心内容 |
@@ -775,7 +775,7 @@ ledger_entry = LedgerEntry(amount=100, entry_type="SPEND")
 ```
 docs/1.overview/  (系统全局视图 - Freeze v1.0)
     ↓ 引用
-docs/2.sot/       (单一真相来源 - Freeze v2.6)
+docs/sot/       (单一真相来源 - Freeze v2.6)
     ↓ 引用
 docs/3.dev-guides/ (开发指南 - Freeze v2.1)
     ↓ 引用
@@ -823,7 +823,7 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
 1. **Freeze 状态查询**
    ```markdown
    Q: 我要修改 STATE_MACHINE.md，是否允许？
-   A: 查询 docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md
+   A: 查询 docs/sot/SOT_FREEZE_MANIFEST_v2.6.md
       → STATE_MACHINE.md status: frozen → 禁止直接修改
       → 必须提交 RFC → 解冻 → 修改 → 重新 Freeze
    ```
@@ -831,7 +831,7 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
 2. **版本引用检查**
    ```markdown
    Q: 我要引用 DATA_SCHEMA.md，应该用哪个版本？
-   A: 查询 docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md
+   A: 查询 docs/sot/SOT_FREEZE_MANIFEST_v2.6.md
       → DATA_SCHEMA.md v5.2 (frozen) → 使用 v5.2
    ```
 
@@ -849,7 +849,7 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
 | Layer | Freeze Manifest | 路径 |
 |-------|-----------------|------|
 | **Overview** | FREEZE_MANIFEST_v1.0.md | `docs/1.overview/FREEZE_MANIFEST_v1.0.md` |
-| **SoT** | SOT_FREEZE_MANIFEST_v2.6.md | `docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md` |
+| **SoT** | SOT_FREEZE_MANIFEST_v2.6.md | `docs/sot/SOT_FREEZE_MANIFEST_v2.6.md` |
 | **Dev-Guides** | DEV_GUIDES_FREEZE_MANIFEST_v2.1.md | `docs/3.dev-guides/DEV_GUIDES_FREEZE_MANIFEST_v2.1.md` |
 | **Architecture** | ARCHITECTURE_FREEZE_MANIFEST_v1.0.md | `docs/4.architecture/ARCHITECTURE_FREEZE_MANIFEST_v1.0.md` |
 
@@ -865,7 +865,7 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
 |---------|---------|---------|
 | `backend/services/*` | 修改任何 service 文件 | `python run_tests.py --type regression` |
 | `backend/routers/*` | 修改任何 router 文件 | `python run_tests.py --type regression` |
-| `docs/2.sot/*` | 修改任何 SoT 文档 | `python run_tests.py --type regression` |
+| `docs/sot/*` | 修改任何 SoT 文档 | `python run_tests.py --type regression` |
 | `.claude/skills/ai-ad-api-automation-test/*` | 修改测试自动化 skill | `python run_tests.py --type regression` |
 
 ### 回归测试套件定义
@@ -1040,7 +1040,7 @@ docs(sot): update STATE_MACHINE for 9-state [update-state-machine-v3]
 
 | OpenSpec 概念 | ASDD 等价物 |
 |---------------|------------|
-| `openspec/specs/` | `docs/2.sot/` (SoT Layer) |
+| `openspec/specs/` | `docs/sot/` (SoT Layer) |
 | `proposal.md` | RFC in `docs/1.overview/` |
 | `design.md` | Architecture views in `docs/4.architecture/` |
 | `tasks.md` | Dev-Guides 实施清单 |

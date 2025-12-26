@@ -260,7 +260,7 @@ baseline:
 
 ### 3.3 业务规则验收 (BUSINESS_RULES.md v4.1)
 
-> 引用: docs/2.sot/BUSINESS_RULES.md v4.1
+> 引用: docs/sot/BUSINESS_RULES.md v4.1
 
 | 验收项 | 规则编号 | 验收标准 | 状态 |
 |-------|---------|---------|------|
@@ -273,7 +273,7 @@ baseline:
 
 ### 3.4 错误码验收 (ERROR_CODES_SOT.md v2.1)
 
-> 引用: docs/2.sot/ERROR_CODES_SOT.md v2.1 §1.3 错误响应标准格式
+> 引用: docs/sot/ERROR_CODES_SOT.md v2.1 §1.3 错误响应标准格式
 
 | 验收项 | 验收标准 | 验证方法 | 状态 |
 |-------|---------|---------|------|

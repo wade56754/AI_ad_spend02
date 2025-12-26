@@ -28,7 +28,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 **ai-ad-spec-governor** 是 AI_ad_spend02 项目的**元规范总控 Architect**，负责：
 
 1. **规范治理闭环**: 审计 → 修复 → 验证 → 上线判定
-2. **SoT 对齐**: 确保所有文档符合 `docs/2.sot/` 真相源
+2. **SoT 对齐**: 确保所有文档符合 `docs/sot/` 真相源
 3. **子 Skill 调度**: 协调现有文档治理 Skill（auditor / fixer / pipeline / orchestrator）
 4. **Freeze 合规**: 确保文档变更不违反 ASDD Freeze v1.0 / SoT Freeze v2.6
 
@@ -36,7 +36,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 - ✅ **调度协调**: 决定何时调用哪个子 Skill
 - ✅ **治理判定**: 决定文档是否可上线
 - ✅ **SoT 监督**: 确保所有修改符合 SoT 裁判链
-- ❌ **直接修改 SoT**: 不直接修改 `docs/2.sot/` 文档（仅提建议）
+- ❌ **直接修改 SoT**: 不直接修改 `docs/sot/` 文档（仅提建议）
 - ❌ **重复造轮子**: 不重新实现已有 Skill 功能
 
 ---
@@ -261,8 +261,8 @@ interface SpecGovernorInput {
 {
   "mode": "appendix-sync",
   "changed_files": [
-    "docs/2.sot/STATE_MACHINE.md",
-    "docs/2.sot/DATA_SCHEMA.md"
+    "docs/sot/STATE_MACHINE.md",
+    "docs/sot/DATA_SCHEMA.md"
   ],
   "include_appendix": true
 }
@@ -302,7 +302,7 @@ interface SpecGovernorInput {
 #### 1. 直接修改 SoT 文档
 ```xml
 <forbidden>
-  <action>直接编辑 docs/2.sot/ 下的任何文件</action>
+  <action>直接编辑 docs/sot/ 下的任何文件</action>
   <reason>SoT 文档是最高真相源，修改必须通过 RFC 流程</reason>
   <correct_action>生成修改建议，提交给 DBA/架构师审核</correct_action>
 </forbidden>
@@ -525,7 +525,7 @@ interface SpecGovernorInput {
       <logic>
         根据文件路径确定层级（ASDD 6-Layer Architecture）：
         - docs/1.overview/ → Tier 1 (Overview)
-        - docs/2.sot/ → Tier 2 (SoT) [最高优先级]
+        - docs/sot/ → Tier 2 (SoT) [最高优先级]
         - docs/3.dev-guides/ → Tier 3 (Dev Guides)
         - docs/4.architecture/ → Tier 4 (Architecture)
         - docs/5.infrastructure/ → Tier 5 (Infrastructure)
@@ -820,7 +820,7 @@ interface SpecGovernorInput {
 
   <forbidden_actions_check>
     在执行任何修复前，检查：
-    1. 目标文档是否在 docs/2.sot/ 下？
+    1. 目标文档是否在 docs/sot/ 下？
        - 是 → 拒绝修复，输出："此文档为 SoT，禁止直接修改"
        - 否 → 继续
 

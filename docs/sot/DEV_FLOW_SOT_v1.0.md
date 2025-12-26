@@ -141,7 +141,7 @@ _FLOW     _FLOW     │ 涉及测试？│
 │                                                                  │
 │  Step 1: SoT 对齐                                                │
 │  ────────────────                                                │
-│  命令: /sot-check docs/2.sot/                                    │
+│  命令: /sot-check docs/sot/                                    │
 │  目的: 确认相关 SoT 规则，识别状态机/字段/业务规则               │
 │  产出: SoT 规则清单 + 依赖关系                                   │
 │                                                                  │
@@ -294,7 +294,7 @@ black --check backend/services/{module}_service.py
 │                                                                  │
 │  Step 1: SoT 对齐                                                │
 │  ────────────────                                                │
-│  命令: /sot-check docs/2.sot/API_SOT.md                          │
+│  命令: /sot-check docs/sot/API_SOT.md                          │
 │  目的: 确认 API 契约、状态枚举、字段定义                         │
 │  产出: API 端点清单 + 数据结构                                   │
 │                                                                  │
@@ -479,7 +479,7 @@ pytest backend/tests/ -k "state" -v
 │                                                                  │
 │  Step 2: SoT 一致性检查                                          │
 │  ────────────────────                                            │
-│  命令: /sot-check docs/2.sot/                                    │
+│  命令: /sot-check docs/sot/                                    │
 │  目的: 验证 SoT 文档间的交叉引用一致性                           │
 │  产出: SoT 一致性报告                                            │
 │                                                                  │

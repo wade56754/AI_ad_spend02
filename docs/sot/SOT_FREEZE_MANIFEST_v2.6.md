@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-The SoT Layer (`docs/2.sot/`) has successfully completed automated governance pipeline and is hereby declared **FROZEN** for production use. All 12 SoT documents have passed rigorous auditing with zero blocking issues.
+The SoT Layer (`docs/sot/`) has successfully completed automated governance pipeline and is hereby declared **FROZEN** for production use. All 12 SoT documents have passed rigorous auditing with zero blocking issues.
 
 **Final Status**:
 - **P0 Issues**: 0 (Zero blocking defects)
@@ -47,16 +47,16 @@ The layer is fully compliant with ASDD Freeze v1.0 and ready for operational dep
 
 | Document | Version | Status | Owner | Last Reviewed | Path |
 |----------|---------|--------|-------|---------------|------|
-| API_SOT.md | v9.0 | frozen* | wade | 2025-11-27 | [docs/2.sot/API_SOT.md](API_SOT.md) |
-| DATA_SCHEMA.md | v5.2 | active→frozen | wade | 2025-11-27 | [docs/2.sot/DATA_SCHEMA.md](DATA_SCHEMA.md) |
-| STATE_MACHINE.md | v2.6 | active→frozen | wade | 2025-11-27 | [docs/2.sot/STATE_MACHINE.md](STATE_MACHINE.md) |
-| BUSINESS_RULES.md | v3.2 | active→frozen | wade | 2025-11-27 | [docs/2.sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
-| ERROR_CODES_SOT.md | v2.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/ERROR_CODES_SOT.md](ERROR_CODES_SOT.md) |
-| AUTH_SPEC.md | v2.0 | active→frozen | wade | 2025-11-27 | [docs/2.sot/AUTH_SPEC.md](AUTH_SPEC.md) |
-| LEDGER_SOT.md | v1.1 | active→frozen | wade | 2025-11-27 | [docs/2.sot/LEDGER_SOT.md](LEDGER_SOT.md) |
-| DAILY_REPORT_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/2.sot/DAILY_REPORT_SOT.md](DAILY_REPORT_SOT.md) |
-| TRANSFER_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/2.sot/TRANSFER_SOT.md](TRANSFER_SOT.md) |
-| RECONCILIATION_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/2.sot/RECONCILIATION_SOT.md](RECONCILIATION_SOT.md) |
+| API_SOT.md | v9.0 | frozen* | wade | 2025-11-27 | [docs/sot/API_SOT.md](API_SOT.md) |
+| DATA_SCHEMA.md | v5.2 | active→frozen | wade | 2025-11-27 | [docs/sot/DATA_SCHEMA.md](DATA_SCHEMA.md) |
+| STATE_MACHINE.md | v2.6 | active→frozen | wade | 2025-11-27 | [docs/sot/STATE_MACHINE.md](STATE_MACHINE.md) |
+| BUSINESS_RULES.md | v3.2 | active→frozen | wade | 2025-11-27 | [docs/sot/BUSINESS_RULES.md](BUSINESS_RULES.md) |
+| ERROR_CODES_SOT.md | v2.1 | active→frozen | wade | 2025-11-27 | [docs/sot/ERROR_CODES_SOT.md](ERROR_CODES_SOT.md) |
+| AUTH_SPEC.md | v2.0 | active→frozen | wade | 2025-11-27 | [docs/sot/AUTH_SPEC.md](AUTH_SPEC.md) |
+| LEDGER_SOT.md | v1.1 | active→frozen | wade | 2025-11-27 | [docs/sot/LEDGER_SOT.md](LEDGER_SOT.md) |
+| DAILY_REPORT_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/sot/DAILY_REPORT_SOT.md](DAILY_REPORT_SOT.md) |
+| TRANSFER_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/sot/TRANSFER_SOT.md](TRANSFER_SOT.md) |
+| RECONCILIATION_SOT.md | v1.0 | active→frozen | wade | 2025-11-27 | [docs/sot/RECONCILIATION_SOT.md](RECONCILIATION_SOT.md) |
 
 *Note: API_SOT.md status manually updated to frozen (1/10 completed before manifest generation)
 
@@ -64,8 +64,8 @@ The layer is fully compliant with ASDD Freeze v1.0 and ready for operational dep
 
 | Document | Version | Status | Owner | Last Reviewed | Path |
 |----------|---------|--------|-------|---------------|------|
-| RLS_POLICIES_SOT.md | v2.1 | planned | wade | 2025-11-27 | [docs/2.sot/RLS_POLICIES_SOT.md](RLS_POLICIES_SOT.md) |
-| RLS_POLICIES.md | v0.1 | planned | wade | 2025-11-27 | [docs/2.sot/RLS_POLICIES.md](RLS_POLICIES.md) |
+| RLS_POLICIES_SOT.md | v2.1 | planned | wade | 2025-11-27 | [docs/sot/RLS_POLICIES_SOT.md](RLS_POLICIES_SOT.md) |
+| RLS_POLICIES.md | v0.1 | planned | wade | 2025-11-27 | [docs/sot/RLS_POLICIES.md](RLS_POLICIES.md) |
 
 **Notes**:
 - RLS documents remain `status: planned` as RLS is not currently enabled (ENABLE_RLS=false)
@@ -301,7 +301,7 @@ docs/1.overview/ (Frozen v1.0 on 2025-11-27)
     ├─ PROJECT.md v1.2 → References "SoT Freeze v1.0"
     └─ DOMAIN.md v1.0 → References "DATA_SCHEMA.md v5.2"
          ▼
-docs/2.sot/ (Frozen v2.6 on 2025-11-27) ← THIS LAYER
+docs/sot/ (Frozen v2.6 on 2025-11-27) ← THIS LAYER
     ├─ STATE_MACHINE.md v2.6 (Frozen)
     ├─ DATA_SCHEMA.md v5.2 (Frozen)
     ├─ BUSINESS_RULES.md v4.1 (Frozen)

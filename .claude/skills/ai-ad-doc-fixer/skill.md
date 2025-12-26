@@ -13,22 +13,22 @@ description: |
 # SoT 依赖声明 (完整 15 个 SoT 文档)
 sot_dependencies:
   required:
-    - docs/1.overview/MASTER.md           # v4.4 系统宪法
-    - docs/2.sot/STATE_MACHINE.md         # v2.6 状态机
-    - docs/2.sot/DATA_SCHEMA.md           # v5.2 数据模型
-    - docs/2.sot/BUSINESS_RULES.md        # v3.2 业务规则
+    - docs/sot/MASTER.md           # v4.4 系统宪法
+    - docs/sot/STATE_MACHINE.md         # v2.6 状态机
+    - docs/sot/DATA_SCHEMA.md           # v5.2 数据模型
+    - docs/sot/BUSINESS_RULES.md        # v3.2 业务规则
   optional:
-    - docs/2.sot/API_SOT.md               # v9.0 API 规范
-    - docs/2.sot/ERROR_CODES_SOT.md       # v2.1 错误码
-    - docs/2.sot/AUTH_SPEC.md             # v2.0 认证授权
-    - docs/2.sot/LEDGER_SOT.md            # v1.1 账本规则
-    - docs/2.sot/DAILY_REPORT_SOT.md      # 日报规则
-    - docs/2.sot/TOPUP_SOT.md             # 充值规则
-    - docs/2.sot/TRANSFER_SOT.md          # 划转规则
-    - docs/2.sot/RECONCILIATION_SOT.md    # 对账规则
-    - docs/2.sot/PROFIT_SOT.md            # 利润规则
-    - docs/2.sot/RLS_POLICIES_SOT.md      # RLS 策略
-    - docs/2.sot/SOT_FREEZE_MANIFEST_v2.6.md # 冻结清单
+    - docs/sot/API_SOT.md               # v9.0 API 规范
+    - docs/sot/ERROR_CODES_SOT.md       # v2.1 错误码
+    - docs/sot/AUTH_SPEC.md             # v2.0 认证授权
+    - docs/sot/LEDGER_SOT.md            # v1.1 账本规则
+    - docs/sot/DAILY_REPORT_SOT.md      # 日报规则
+    - docs/sot/TOPUP_SOT.md             # 充值规则
+    - docs/sot/TRANSFER_SOT.md          # 划转规则
+    - docs/sot/RECONCILIATION_SOT.md    # 对账规则
+    - docs/sot/PROFIT_SOT.md            # 利润规则
+    - docs/sot/RLS_POLICIES_SOT.md      # RLS 策略
+    - docs/sot/SOT_FREEZE_MANIFEST_v2.6.md # 冻结清单
 
 # 输出边界声明
 output_boundaries:
@@ -40,11 +40,11 @@ output_boundaries:
     - docs/3.dev-guides/**/*.md
     - docs/10.module-specs/**/*.md
   read_only:  # 仅可审核，不允许直接修订
-    - docs/1.overview/MASTER.md
-    - docs/2.sot/*_SOT.md
-    - docs/2.sot/STATE_MACHINE.md
-    - docs/2.sot/DATA_SCHEMA.md
-    - docs/2.sot/BUSINESS_RULES.md
+    - docs/sot/MASTER.md
+    - docs/sot/*_SOT.md
+    - docs/sot/STATE_MACHINE.md
+    - docs/sot/DATA_SCHEMA.md
+    - docs/sot/BUSINESS_RULES.md
   forbidden:  # 完全禁止修改
     - backend/**
     - frontend/**
@@ -174,8 +174,8 @@ interface Conflict {
 | DEV_GUIDE | `docs/3.dev-guides/*.md` | ✅ audit + fix | 开发指南 |
 | ARCH_VIEW | `docs/4.architecture/**/*.md` | ✅ audit + fix | 架构视图 |
 | MODULE_SPEC | `docs/10.module-specs/*.md` | ✅ audit + fix | 模块规格 |
-| MASTER | `docs/1.overview/MASTER.md` | 👁️ audit only | 系统宪法 |
-| SoT | `docs/2.sot/*.md` | 👁️ audit only | 真相来源 |
+| MASTER | `docs/sot/MASTER.md` | 👁️ audit only | 系统宪法 |
+| SoT | `docs/sot/*.md` | 👁️ audit only | 真相来源 |
 | CODE | `backend/**`, `frontend/**` | ❌ forbidden | 代码文件 |
 
 ## 5. Issue Levels

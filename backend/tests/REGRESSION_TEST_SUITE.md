@@ -143,7 +143,7 @@ python -m pytest backend/tests/api/test_trend_risk_flow_generated.py -q
 
 ## 🔗 相关文档
 
-- **SoT 文档**: `docs/2.sot/STATE_MACHINE.md v2.6`, `API_SOT.md v9.0`
+- **SoT 文档**: `docs/sot/STATE_MACHINE.md v2.6`, `API_SOT.md v9.0`
 - **测试规范**: `docs/3.dev-guides/TESTING_STRATEGY.md`
 - **自动化测试**: `.claude/skills/ai-ad-api-automation-test/SKILL.md`
 

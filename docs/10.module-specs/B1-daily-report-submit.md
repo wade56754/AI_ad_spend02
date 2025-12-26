@@ -794,5 +794,5 @@ async def test_role_permissions(client, role, action, expected):
 **维护者**: AI 广告代投系统开发团队
 **参考文档**:
 - `docs/3.dev-guides/BACKEND_MODULE_SPEC_GUIDE.md`
-- `docs/2.sot/STATE_MACHINE.md` v2.6 §8
-- `docs/2.sot/DATA_SCHEMA.md` v5.2 §6.1
+- `docs/sot/STATE_MACHINE.md` v2.6 §8
+- `docs/sot/DATA_SCHEMA.md` v5.2 §6.1

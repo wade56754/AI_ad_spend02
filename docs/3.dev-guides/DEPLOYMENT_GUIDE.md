@@ -1633,10 +1633,10 @@ A:
 - **核心规范**:
   - `docs/1.core/MASTER.md` v3.4 - 系统总纲
 - **SoT 文档**:
-  - `docs/2.sot/DATA_SCHEMA.md` v5.2 - 数据结构
-  - `docs/2.sot/STATE_MACHINE.md` v2.6 - 状态机
-  - `docs/2.sot/ERROR_CODES_SOT.md` v2.1 - 错误码
-  - `docs/2.sot/BUSINESS_RULES.md` v3.1 - 业务规则
+  - `docs/sot/DATA_SCHEMA.md` v5.2 - 数据结构
+  - `docs/sot/STATE_MACHINE.md` v2.6 - 状态机
+  - `docs/sot/ERROR_CODES_SOT.md` v2.1 - 错误码
+  - `docs/sot/BUSINESS_RULES.md` v3.1 - 业务规则
 - **开发指南**:
   - `docs/3.dev-guides/BACKEND_SETUP.md` - 后端配置
   - `docs/3.dev-guides/FRONTEND_SETUP.md` - 前端配置

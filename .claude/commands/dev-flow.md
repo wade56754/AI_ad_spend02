@@ -7,7 +7,7 @@ argument-hint: "<flow-type> <task-description>"
 
 执行完整的开发周期，自动组合 SuperClaude 分析能力与 AI 代码工厂代码生成能力。
 
-> **SoT 基准**: DEV_FLOW_SOT_v1.1 (docs/2.sot/DEV_FLOW_SOT_v1.0.md)
+> **SoT 基准**: DEV_FLOW_SOT_v1.1 (docs/sot/DEV_FLOW_SOT_v1.0.md)
 
 ## 可用流程 (7 大 Flow)
 
@@ -48,7 +48,7 @@ argument-hint: "<flow-type> <task-description>"
 │  输出: 任务分解清单 + 技术方案                                    │
 ├─────────────────────────────────────────────────────────────────┤
 │  Phase 2: SoT 合规检查 [AI代码工厂]                              │
-│  /sot-check docs/2.sot/                                         │
+│  /sot-check docs/sot/                                         │
 │  检查: STATE_MACHINE.md, BUSINESS_RULES.md, ERROR_CODES_SOT.md  │
 │  输出: SoT 覆盖报告 (blocking_gaps / can_proceed)               │
 ├─────────────────────────────────────────────────────────────────┤
@@ -78,7 +78,7 @@ argument-hint: "<flow-type> <task-description>"
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Phase 1: SoT 对齐 [AI代码工厂]                                  │
-│  /sot-check docs/2.sot/API_SOT.md                               │
+│  /sot-check docs/sot/API_SOT.md                               │
 │  输出: API 端点清单 + 数据结构                                   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Phase 2: API Client 生成 [AI代码工厂]                           │
@@ -153,7 +153,7 @@ argument-hint: "<flow-type> <task-description>"
 │  输出: DOC_AUDIT_REPORT (P0/P1/P2 问题清单)                     │
 ├─────────────────────────────────────────────────────────────────┤
 │  Phase 2: SoT 一致性检查 [AI代码工厂]                            │
-│  /sot-check docs/2.sot/                                         │
+│  /sot-check docs/sot/                                         │
 │  输出: SoT 一致性报告                                            │
 ├─────────────────────────────────────────────────────────────────┤
 │  Phase 3: Freeze 报告生成 [AI代码工厂]                           │
@@ -279,6 +279,6 @@ STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.2
 
 ## 参考文档
 
-- [DEV_FLOW_SOT v1.1](../docs/2.sot/DEV_FLOW_SOT_v1.0.md) - 开发流程真相源
+- [DEV_FLOW_SOT v1.1](../docs/sot/DEV_FLOW_SOT_v1.0.md) - 开发流程真相源
 - [SUPERCLAUDE_INTEGRATION_GUIDE v2.2](../docs/6.agent-layer/SUPERCLAUDE_INTEGRATION_GUIDE_v2.2.md)
 - [AI_CODE_FACTORY_DEV_GUIDE v2.4](../docs/6.agent-layer/AI_CODE_FACTORY_DEV_GUIDE_v2.3.md)

@@ -17,7 +17,7 @@ CLAUDE.md (精简版强制规则)
   ↓ 引用
 .claude/PROJECT_RULES.md v3.0 (完整规则总纲 - Meta-SoT)
   ↓ 引用
-docs/2.sot/*.md (10个 SoT 文档 - 权威源, 已 Freeze v1.0)
+docs/sot/*.md (10个 SoT 文档 - 权威源, 已 Freeze v1.0)
 ```
 
 ### 🔒 5 大不可侵犯原则 (Inviolable Rules)
@@ -179,21 +179,21 @@ service.transition_to(
 
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|------------|
-| **STATE_MACHINE** | v2.6 | `docs/2.sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
-| **DATA_SCHEMA** | v5.2 | `docs/2.sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
-| **BUSINESS_RULES** | v3.2 | `docs/2.sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
-| **API_SOT** | v9.0 | `docs/2.sot/API_SOT.md` | §9 Daily Reports API |
-| **ERROR_CODES_SOT** | v2.1 | `docs/2.sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
-| **AUTH_SPEC** | v2.0 | `docs/2.sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
-| **LEDGER_SOT** | v1.1 | `docs/2.sot/LEDGER_SOT.md` | §2 双账本体系 |
+| **STATE_MACHINE** | v2.6 | `docs/sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
+| **DATA_SCHEMA** | v5.2 | `docs/sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
+| **BUSINESS_RULES** | v3.2 | `docs/sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
+| **API_SOT** | v9.0 | `docs/sot/API_SOT.md` | §9 Daily Reports API |
+| **ERROR_CODES_SOT** | v2.1 | `docs/sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
+| **AUTH_SPEC** | v2.0 | `docs/sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
+| **LEDGER_SOT** | v1.1 | `docs/sot/LEDGER_SOT.md` | §2 双账本体系 |
 
 ### P1 - 流程 SoT 文档 (按需参考)
 
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|------------|
-| **DAILY_REPORT_SOT** | v1.0 | `docs/2.sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
-| **RECONCILIATION_SOT** | v1.0 | `docs/2.sot/RECONCILIATION_SOT.md` | §3 对账流程 |
-| **TRANSFER_SOT** | v1.0 | `docs/2.sot/TRANSFER_SOT.md` | §2 调拨规则 |
+| **DAILY_REPORT_SOT** | v1.0 | `docs/sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
+| **RECONCILIATION_SOT** | v1.0 | `docs/sot/RECONCILIATION_SOT.md` | §3 对账流程 |
+| **TRANSFER_SOT** | v1.0 | `docs/sot/TRANSFER_SOT.md` | §2 调拨规则 |
 
 ---
 

@@ -20,7 +20,7 @@
 
 ### 变更
 - MASTER.md: 从 docs/1.overview/ 移动到 docs/sot/
-- 所有SoT文件: 从 docs/2.sot/ 移动到 docs/sot/
+- 所有SoT文件: 从 docs/sot/ 移动到 docs/sot/
 
 ### 文档结构
 ```

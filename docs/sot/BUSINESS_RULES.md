@@ -1552,7 +1552,7 @@ GROUP BY project_id;
 
 **维护者**: AI 广告代投系统技术团队
 **关联文档**:
-- `docs/1.overview/MASTER.md` - 系统宪法
-- `docs/2.sot/STATE_MACHINE.md` - 状态机规范
-- `docs/2.sot/DATA_SCHEMA.md` - 数据模型
-- `docs/2.sot/LEDGER_SOT.md` - 账本规则
+- `docs/sot/MASTER.md` - 系统宪法
+- `docs/sot/STATE_MACHINE.md` - 状态机规范
+- `docs/sot/DATA_SCHEMA.md` - 数据模型
+- `docs/sot/LEDGER_SOT.md` - 账本规则

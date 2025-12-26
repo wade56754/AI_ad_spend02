@@ -163,7 +163,7 @@ MASTER.md → STATE_MACHINE.md → DATA_SCHEMA.md → BUSINESS_RULES.md
 | 层级 | 目录 | 文档类型 | 命名规范 |
 |------|------|---------|---------|
 | **Tier 1** | `docs/1.overview/` | 系统架构、总体设计 | `MASTER.md`, `SYSTEM_OVERVIEW.md` |
-| **Tier 2** | `docs/2.sot/` | 规范真相源 | `*_SOT.md`, `STATE_MACHINE.md` |
+| **Tier 2** | `docs/sot/` | 规范真相源 | `*_SOT.md`, `STATE_MACHINE.md` |
 | **Tier 3** | `docs/3.dev-guides/` | 开发指南 | `API_DEVELOPMENT_FLOW.md` |
 | **Tier 4** | `docs/4.appendix/` | 附录 | `GLOSSARY.md`, `DECISIONS.md` |
 
@@ -334,7 +334,7 @@ data_operator 复核 → 检查金额合规性
 
 ## 专项检查：SoT 文档
 
-**适用于**: `docs/2.sot/` 目录下的所有 SoT 文档
+**适用于**: `docs/sot/` 目录下的所有 SoT 文档
 
 ### SoT-1: 唯一真相源标识
 

@@ -8,8 +8,8 @@ last_reviewed: 2025-12-24
 
 sot_dependencies:
   required:
-    - docs/2.sot/API_SOT.md
-    - docs/2.sot/STATE_MACHINE.md
+    - docs/sot/API_SOT.md
+    - docs/sot/STATE_MACHINE.md
     - docs/3.dev-guides/COMPONENT_REGISTRY.md  # 组件注册表 (71 个组件)
   optional:
     - docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md

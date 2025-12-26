@@ -435,7 +435,7 @@ def handle_request(self, request):
     # 1. 调用 ai-ad-spec-governor Skill
     result = SlashCommand.execute("/ai-ad-spec-governor", {
         "mode": "single-doc",
-        "target_docs": ["docs/2.sot/STATE_MACHINE.md"]
+        "target_docs": ["docs/sot/STATE_MACHINE.md"]
     })
 
     # 2. 处理结果

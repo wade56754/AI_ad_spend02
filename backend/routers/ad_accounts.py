@@ -34,7 +34,7 @@ class BalanceTransferRequest(BaseModel):
     """
     死号余额迁移请求体
 
-    SoT Ref: docs/2.sot/TRANSFER_SOT.md v1.0
+    SoT Ref: docs/sot/TRANSFER_SOT.md v1.0
     """
     target_ad_account_id: int = Field(..., description="目标账户ID（接收余额的活跃账户）")
     transfer_amount: Optional[Decimal] = Field(

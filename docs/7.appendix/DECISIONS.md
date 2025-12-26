@@ -920,7 +920,7 @@ MASTER.md → STATE_MACHINE.md → DATA_SCHEMA.md → BUSINESS_RULES.md
 
 **四层文档架构**:
 - Tier 1: `docs/1.overview/` - 系统架构
-- Tier 2: `docs/2.sot/` - 规范真相源
+- Tier 2: `docs/sot/` - 规范真相源
 - Tier 3: `docs/3.dev-guides/` - 开发指南
 - Tier 4: `docs/4.appendix/` - 附录
 

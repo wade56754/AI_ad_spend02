@@ -45,9 +45,9 @@ owner: wade
 ## 4. Relation to SoT
 
 本文档引用以下 SoT 文档：
-- TODO: `docs/2.sot/DATA_SCHEMA.md` - 数据结构定义
-- TODO: `docs/2.sot/BUSINESS_RULES.md` - 业务规则
-- TODO: `docs/2.sot/STATE_MACHINE.md` - 状态机规则
+- TODO: `docs/sot/DATA_SCHEMA.md` - 数据结构定义
+- TODO: `docs/sot/BUSINESS_RULES.md` - 业务规则
+- TODO: `docs/sot/STATE_MACHINE.md` - 状态机规则
 
 ## 5. Usage
 

@@ -10,7 +10,7 @@
 
 ```bash
 # 在项目根目录执行
-cp RECONCILIATION_CONTROL_CENTER_SOT.md docs/2.sot/
+cp RECONCILIATION_CONTROL_CENTER_SOT.md docs/sot/
 
 # 目录结构
 docs/

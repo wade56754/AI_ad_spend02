@@ -878,11 +878,11 @@ def get_conversions_for_billing(report: DailyReport, phase: str) -> int:
 ### 8.2 文档索引
 
 **Tier 1: 架构宪法**
-- **docs/1.overview/MASTER.md** v4.0 - 系统唯一入口（本文档）
+- **docs/sot/MASTER.md** v4.0 - 系统唯一入口（本文档）
 - **dataset/out/BUSINESS_FLOW_MANAGEMENT.md** - 业务流程优化方案
 - **dataset/out/MVP_PHASE_DESIGN.md** - MVP 分阶段执行方案
 
-**Tier 2: 单源真相 (docs/2.sot/)**
+**Tier 2: 单源真相 (docs/sot/)**
 - **STATE_MACHINE.md** - 状态定义与转换规则
 - **DATA_SCHEMA.md** - 数据库表结构与字段定义
 - **LEDGER_SOT.md** - 双账本规则与计费公式（Phase 2）

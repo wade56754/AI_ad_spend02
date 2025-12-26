@@ -637,7 +637,7 @@ docs/1.overview/ (Frozen v1.0 on 2025-11-27)
     ├─ PROJECT.md v1.2 → References "SoT Freeze v1.0"
     └─ ARCHITECTURE.md v1.0 → System design principles
          ▼
-docs/2.sot/ (Frozen v2.6 on 2025-11-27)
+docs/sot/ (Frozen v2.6 on 2025-11-27)
     ├─ STATE_MACHINE.md v2.6 → 8-state workflow
     ├─ DATA_SCHEMA.md v5.2 → Database schema
     ├─ API_SOT.md v9.3 → API contracts

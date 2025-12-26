@@ -41,7 +41,7 @@ claude
 | `/dev-flow fe` | FE_DEV_FLOW | 前端功能开发 | `/dev-flow fe 实现充值页面` |
 | `/dev-flow fix` | API_FIX_FLOW | 接口 Bug 修复 | `/dev-flow fix 日报导出返回空` |
 | `/dev-flow test` | TEST_HARDEN_FLOW | 测试加固 | `/dev-flow test 补齐状态机测试` |
-| `/dev-flow doc` | DOC_FREEZE_FLOW | 文档审计/冻结 | `/dev-flow doc docs/2.sot/` |
+| `/dev-flow doc` | DOC_FREEZE_FLOW | 文档审计/冻结 | `/dev-flow doc docs/sot/` |
 | `/dev-flow full` | FULL_FLOW | 完整功能开发 | `/dev-flow full 实现对账模块` |
 | `/dev-flow refactor` | REFACTOR_FLOW | 代码重构 | `/dev-flow refactor 重构审批逻辑` |
 
@@ -54,7 +54,7 @@ claude
 | `/gen test` | 测试代码生成 | `/gen test 为充值模块生成测试` |
 | `/review` | 代码审查 | `/review backend/services/topup_service.py` |
 | `/sot-check` | SoT 合规检查 | `/sot-check backend/routers/` |
-| `/doc` | 文档审计 | `/doc docs/2.sot/` |
+| `/doc` | 文档审计 | `/doc docs/sot/` |
 
 ---
 
@@ -177,7 +177,7 @@ claude
 /sot-check backend/services/
 
 # 检查 SoT 文档一致性
-/sot-check docs/2.sot/
+/sot-check docs/sot/
 ```
 
 ### 输出示例
@@ -241,7 +241,7 @@ claude
 /doc
 
 # 扫描指定目录
-/doc docs/2.sot/
+/doc docs/sot/
 
 # 扫描并自动修复
 /doc --auto-fix
@@ -270,7 +270,7 @@ claude
 /dev-flow test 补齐对账模块状态机测试
 
 # 文档审计/冻结 (DOC_FREEZE_FLOW)
-/dev-flow doc docs/2.sot/
+/dev-flow doc docs/sot/
 
 # 完整功能开发 (FULL_FLOW)
 /dev-flow full 实现对账模块
@@ -285,7 +285,7 @@ claude
 
 ```bash
 # Step 1: SoT 对齐检查
-/sot-check docs/2.sot/
+/sot-check docs/sot/
 
 # Step 2: Schema 层
 /gen be 生成充值审批的 Pydantic Schema
@@ -420,7 +420,7 @@ A: 使用 `/sot-check` 检查合规性，然后手动修复或重新生成。
 
 ### Q: 如何查看加载了哪些 SoT 文档?
 
-A: Skill 会自动加载 `docs/2.sot/` 目录下的所有 SoT 文档。
+A: Skill 会自动加载 `docs/sot/` 目录下的所有 SoT 文档。
 
 ### Q: 生成的代码不符合项目规范?
 
