@@ -1,5 +1,7 @@
 # AI广告代投管理系统
 
+> 详细规范请参阅 `AGENTS.md`
+
 ## 定位
 广告投放业务的"人、账户、项目、钱"管理系统，让账目清清楚楚、有据可查。
 
@@ -15,7 +17,7 @@
 
 ## 开发前必做
 1. 查 `docs/sot/INDEX.md` 找到对应规格章节
-2. 查 `docs/sot/MASTER.md` 确认规则
+2. 查 `docs/MASTER.md` 确认规则
 3. 检查状态机是否符合
 
 ## 常用命令
@@ -27,6 +29,8 @@ just release-check    # 上线门禁
 ```
 
 ## 关键文件
-- **SoT**: `docs/sot/MASTER.md`（唯一真相源）
-- **索引**: `docs/sot/INDEX.md`（模块→规格映射）
-- **门禁**: `.ai-rules/quality-gates.md`
+- **AI 指令**: `AGENTS.md`（AI Agent 通用指令）
+- **架构宪法**: `docs/MASTER.md`（系统最高规则）
+- **产品需求**: `docs/PRD.md`（老板视角）
+- **SoT 索引**: `docs/sot/INDEX.md`（模块→规格映射）
+- **AI 工作流**: `.agents/`（规划与实现模板）

@@ -1,16 +1,17 @@
 # AI广告代投系统 - 状态机定义文档（SoT-State）
 
-> **版本**: v2.6
-> **status**: frozen
+> **版本**: v2.7
+> **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-11-27
-> **更新日期**: 2025‑11‑22
+> **last_reviewed**: 2025-12-27
+> **更新日期**: 2025-12-27
 > **类型**: 状态与合法流转的唯一事实来源（SoT-State）
 > **互锁文档**
-> - 实现规范 → `./MASTER.md` v4.4
+> - 实现规范 → `./MASTER.md` v4.6
 > - 数据结构 → `./DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）
 > - API 流程 → `../2.dev-guides/API_DEVELOPMENT_FLOW.md`
-> - 角色定义 → 仅 `admin/finance/data_operator/account_manager/media_buyer`（无其他角色）
+> - 技术层角色 → `admin/finance/data_operator/account_manager/media_buyer`
+> - 业务层角色（6角色）→ §2.1 映射表，PRD v2.2 已移除 supervisor
 
 ---
 
@@ -29,26 +30,27 @@
 - **system（虚拟操作者）**：用于定时任务/事件驱动的自动流转，不参与 RBAC，仅可出现在审计日志（`operator_role = 'system'`）。业务授权只看 5 个合法角色。  
 - 审批分离：提交者不能审批自身请求；终态回退仅 `admin`（需审计理由）。
 
-### 2.1 业务层角色映射（MASTER v4.4 对齐）
+### 2.1 业务层角色映射（MASTER v4.6 对齐）
 
-> **引用**: MASTER.md v4.4 §2.4
+> **引用**: MASTER.md v4.6 §2.4
+> **PRD v2.2 变更**: 移除 supervisor 角色，职责合并到 project_owner
 
 技术层维持 5 角色 CHECK 约束，业务层通过以下映射对齐 MASTER 定义：
 
 | MASTER 业务角色 | 技术层角色 | 说明 |
 |----------------|-----------|------|
 | ceo | admin | 系统最高权限，资金审批 |
-| project_owner | (users.is_project_owner=true) | 项目负责人，复用现有用户 |
-| finance | finance | 财务 |
-| supervisor | data_operator | 主管/运营 |
-| pitcher | media_buyer | 投手 |
-| account_manager | account_manager | 户管 |
+| project_owner | (users.is_project_owner=true) | 项目负责人，**日报审核**，复用现有用户 |
+| finance | finance | 财务，资金对账 |
+| pitcher | media_buyer | 投手，日报填报 |
+| account_manager | account_manager | 户管，账户分配 |
 | admin | admin | 系统管理员 |
 
 > **注意**：
 > - `project_owner` 通过 users 表的业务属性或 `project_members` 表实现，不新增角色枚举。
-> - 文档中出现的「运营」指代 `supervisor`（data_operator）或 `finance` 角色。
-> - 禁止新增角色枚举，必须复用上述 5 个技术层角色。
+> - 日报审核流程中的"运营"指代 `project_owner` 角色。
+> - PRD v2.2 已移除 supervisor 角色，其职责（日报审核、数据统计）合并到 project_owner。
+> - 禁止新增角色枚举，必须复用 5 个技术层角色 + project_owner 业务属性。
 
 ---
 
@@ -86,7 +88,7 @@
 
 ## 4A. Phase 边界说明
 
-> **引用**: MASTER.md v4.4 §2.5（Phase 1/Phase 2 执行边界）、§9 INV-003
+> **引用**: MASTER.md v4.6 §2.5（Phase 1/Phase 2 执行边界）、§9 INV-003
 
 ### 4A.1 日报状态机 Phase 边界
 
@@ -96,7 +98,7 @@
 | Phase 2 | 全部 8 状态 | 启用完整审核流程 |
 
 **Phase 1 约束**：
-- 日报从 `raw_submitted` 可直接跳转 `trend_ok`（主管快速确认）
+- 日报从 `raw_submitted` 可直接跳转 `trend_ok`（项目负责人快速确认）
 - `trend_ok` 可直接跳转 `final_confirmed`（财务快速确认）
 - 禁止任何系统自动阻断或惩罚性状态转换
 
@@ -195,7 +197,7 @@ raw_submitted → trend_ok → final_confirmed
 - ✅ 锁定仅用于归档（`final_confirmed` 后不再修改，但无强制约束）
 
 **业务约束**:
-- 投手提交日报后，主管快速确认（`raw_submitted` → `trend_ok`）
+- 投手提交日报后，项目负责人快速确认（`raw_submitted` → `trend_ok`）
 - 财务快速确认计费（`trend_ok` → `final_confirmed`）
 - 无自动拒绝、无自动暂停、无自动冻结
 
@@ -611,7 +613,7 @@ pending → confirmed → locked → archived
 ```
 draft → submitted
   ↑        ↓
-  └────────┘ (主管退回，Phase 2 可选)
+  └────────┘ (项目负责人退回，Phase 2 可选)
 ```
 
 **状态详解**：
@@ -625,7 +627,7 @@ draft → submitted
 ```python
 "weekly_briefs.status": {
     "draft": ["submitted"],
-    "submitted": ["draft"]  # Phase 2 可选：主管退回
+    "submitted": ["draft"]  # Phase 2 可选：项目负责人退回
 }
 ```
 
@@ -633,7 +635,7 @@ draft → submitted
 - 创建：pitcher/system（手动创建或周一自动创建）
 - 保存：pitcher（draft → draft），可多次编辑
 - 提交：pitcher（draft → submitted），[AUDIT]
-- 退回：supervisor/admin（submitted → draft），Phase 2 可选，[AUDIT]
+- 退回：project_owner/admin（submitted → draft），Phase 2 可选，[AUDIT]
 
 **时间约束**：
 - 周报周期：周一 00:00 至周日 23:59

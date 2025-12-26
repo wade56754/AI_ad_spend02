@@ -2,7 +2,7 @@
 
 > AI 广告代投系统 - AI Coding Agent 专属指南
 >
-> 版本: 1.0 | 基于 [agents.md](https://agents.md) 开放格式
+> 版本: v1.1 | 基准: MASTER.md v4.6, PRD v2.2 | 基于 [agents.md](https://agents.md) 开放格式
 
 <!-- OPENSPEC:START -->
 ## OpenSpec Instructions
@@ -85,24 +85,36 @@ pnpm run dev
 
 ```
 AI_ad_spend02/
+├── AGENTS.md              # AI Agent 主规则 (本文件)
+├── CLAUDE.md              # Claude 专用（引用 AGENTS.md）
+├── README.md              # 人类开发者文档
 ├── backend/
-│   ├── routers/      # API 路由 (thin layer)
-│   ├── services/     # 业务逻辑
-│   ├── models/       # SQLAlchemy 模型
-│   ├── schemas/      # Pydantic 模式
-│   └── core/         # 核心工具 (response, error_codes)
+│   ├── routers/           # API 路由 (thin layer)
+│   ├── services/          # 业务逻辑
+│   ├── models/            # SQLAlchemy 模型
+│   ├── schemas/           # Pydantic 模式
+│   └── core/              # 核心工具 (response, error_codes)
 ├── frontend/
 │   └── src/
-│       ├── app/          # Next.js App Router
-│       ├── components/   # 通用组件
-│       └── modules/      # 业务模块
+│       ├── app/           # Next.js App Router
+│       ├── components/    # 通用组件
+│       └── features/      # 业务模块
 ├── docs/
-│   ├── 1.overview/   # 系统概览
-│   ├── 2.sot/        # SoT 真相源文档
-│   ├── 3.dev-guides/ # 开发指南
-│   └── 4.architecture/ # 架构图
-└── agents/
-    └── skills/       # AI 代码工厂子技能
+│   ├── sot/               # SoT 真相源文档 (9 核心文档)
+│   │   ├── MASTER.md      # 架构宪法 v4.6
+│   │   ├── INDEX.md       # SoT 索引
+│   │   ├── STATE_MACHINE.md
+│   │   ├── DATA_SCHEMA.md
+│   │   ├── API_SOT.md
+│   │   ├── AUTH_SPEC.md
+│   │   ├── ERROR_CODES_SOT.md
+│   │   ├── BUSINESS_RULES.md
+│   │   └── LEDGER_SOT.md
+│   ├── 1.overview/        # 项目概览
+│   ├── 2.dev-guides/      # 开发指南
+│   └── 3.architecture/    # 架构视图
+└── openspec/              # OpenSpec 变更管理
+    └── AGENTS.md
 ```
 
 ### Monorepo 导航
@@ -166,37 +178,109 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 
 **这是最重要的部分！** 所有开发必须遵循 SoT 文档。
 
-### SoT 裁判链 (优先级从高到低)
+### 6.1 SoT 裁判链 (优先级从高到低)
 
 ```
-MASTER.md v4.0                      → 架构宪法，最高优先级
-BUSINESS_FLOW_MANAGEMENT.md        → 业务流程与责任模型
-MVP_PHASE_DESIGN.md                → Phase 边界与页面定义
-STATE_MACHINE.md v2.6              → 状态机定义
-DATA_SCHEMA.md v5.2                → 数据模型
-LEDGER_SOT.md v1.1                 → 账本规范（Phase 2）
-BUSINESS_RULES.md v3.2             → 业务规则
-API_SOT.md v9.0                    → API 契约
-ERROR_CODES_SOT.md v2.1            → 错误码
-AUTH_SPEC.md v2.0                  → 认证授权
+MASTER.md v4.6                     → 架构宪法，最高优先级
+STATE_MACHINE.md v2.7              → 状态机定义 (8 状态)
+DATA_SCHEMA.md v5.3                → 数据模型 (23 表)
+API_SOT.md v9.3                    → API 契约 (50+ 端点)
+ERROR_CODES_SOT.md v2.1            → 错误码注册表
+BUSINESS_RULES.md v4.1             → 业务规则
+AUTH_SPEC.md v2.0                  → 认证授权 (7 角色)
+LEDGER_SOT.md v1.2                 → 双账本规范
 ```
 
-### 核心管理目标（三权清晰）
+**规则**: 高层文档覆盖低层文档。遇到冲突时，先查 MASTER.md。
+
+### 6.2 核心管理目标（三权清晰）
 
 系统的唯一目标是：**支撑老板决策，而不是替代人做判断**
 
-- **谁对钱负责**：项目负责人申请 → 财务审核 → 老板批准
-- **谁对结果负责**：项目负责人对盈亏负责，主管对投手产出负责
-- **谁能纠偏**：日级主管、周级项目负责人、月级老板
+- **谁对钱负责**: 项目负责人申请 → 财务审核 → 老板批准
+- **谁对结果负责**: 项目负责人对项目盈亏 + 团队产出负责
+- **谁能纠偏**: 日级项目负责人、周级项目负责人、月级老板
 
-### Phase 1 / Phase 2 边界
+**责任链简化 (PRD v2.2)**:
+```
+投手执行 → 项目负责人监督+盈亏负责 → 老板最终决策
+```
+
+### 6.3 Phase 1 / Phase 2 边界
 
 | Phase | 系统行为 | 禁止行为 |
 |-------|---------|----------|
 | Phase 1（照亮） | 记录事实、展示状态、提示异常 | 不允许系统自动惩罚 |
 | Phase 2（问责） | 引入约束、强制审批、考核关联 | 需 Phase 1 稳定运行 2 个月后启动 |
 
-### 日报 8 状态机 (STATE_MACHINE.md v2.6)
+**Phase 1 特别说明**：
+- 投手 KPI（CPL）在 Phase 1 仅用于「观察与沟通」，**不用于问责与考核**
+- 系统可高亮异常，但不触发处罚逻辑
+- 项目负责人使用 CPL 发现问题 → 沟通调整 → 记录过程
+
+### 6.4 充值审批链（PRD v2.2）
+
+```
+投手申请 → 户管收集 → 财务审批 → 转账
+```
+
+- 日常充值不需要老板逐笔审批
+- 老板可随时查看资金状态，可随时介入
+
+**禁止**: F-009 禁止充值流程强制添加老板逐笔审批
+
+### 6.5 数据 SoT 三层架构（PRD v2.2）
+
+| 层级 | 数据来源 | 字段 | 用途 |
+|------|---------|------|------|
+| 行为记录层 | 投手自报 | daily_report.spend/conversions | 趋势监控（参考值） |
+| 实际数据层 | 平台拉取 | ad_spend_daily.spend | 成本 SoT |
+| 结算数据层 | 甲方确认 | conversions_final | 收入 SoT |
+
+**关键约束**:
+- 消耗 SoT = `ad_spend_daily.spend`
+- **禁止**用 `daily_report.spend` 计费
+
+```python
+# 正确：使用平台数据计算成本
+cost = sum(ad_spend_daily.spend for ad_spend_daily in period)
+
+# 错误：使用投手日报计算成本
+cost = sum(daily_report.spend for daily_report in period)  # ❌ 违反 SoT
+```
+
+### 6.6 成本分类（3 类）
+
+| 类型 | 说明 | 分摊方式 |
+|------|------|---------|
+| ad_topup | 广告费充值（含手续费） | 分摊到项目 |
+| ad_support | 广告配套（工具、素材） | 公司统一，**不分摊** |
+| overhead | 后勤支出（工资、房租） | 公司级 |
+
+```python
+EXPENSE_CATEGORY = frozenset([
+    "ad_topup",    # 广告费充值（含手续费）- 分摊到项目
+    "ad_support",  # 广告配套（公司统一记账，不分摊）
+    "overhead"     # 后勤支出（工资/房租等）- 公司级
+])
+```
+
+**禁止**: F-011 禁止将广告配套分摊到项目
+
+### 6.7 公司利润公式（PRD v2.2）
+
+```python
+公司利润 = 总收入 - 总支出
+        = Σ项目收款 - (Σ广告费充值 + Σ广告配套 + Σ后勤支出)
+```
+
+### 6.8 押款定义（PRD v2.2）
+
+```python
+押款 = 代理商未消耗余额 = Σ历史充值 - Σ历史消耗
+```
+
+### 6.9 日报 8 状态机 (STATE_MACHINE.md v2.7)
 
 ```
 raw_submitted → trend_pending → trend_ok/trend_flagged
@@ -205,21 +289,48 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 **禁止使用旧状态:** `draft`, `pending`, `approved` 等
 
-### 合法角色 (仅 5 个)
+### 6.10 角色定义（6 角色 + 技术映射）
+
+> **PRD v2.2 变更**：移除 supervisor 角色，其职责合并到 project_owner
+
+#### 业务层角色（PRD v2.2 / MASTER v4.6 §2.4）
 
 ```python
-VALID_ROLES = [
-    "admin",           # 系统管理员
-    "finance",         # 财务
-    "data_operator",   # 数据运营
-    "account_manager", # 账户管理员
-    "media_buyer"      # 广告投手
-]
+BUSINESS_ROLES = {
+    "ceo": "老板 - 资金安全、公司盈亏、最终决策",
+    "project_owner": "项目负责人 - 项目盈亏、日报审核、资金使用效率",
+    "finance": "财务 - 资金出入准确、对账",
+    "pitcher": "投手 - CPL达标、日报准确",
+    "account_manager": "户管 - 账户分配、充值收集",
+    "admin": "管理员 - 系统配置（不参与业务）"
+}
 ```
 
-**禁止使用旧角色:** `super_admin`, `accountant`, `operator` 等
+#### 技术层映射（数据库 CHECK 约束）
 
-### 错误码规范
+```python
+ROLE_MAPPING = {
+    "ceo": "admin",
+    "project_owner": None,  # 通过 project_members 表判断
+    "finance": "finance",
+    "pitcher": "media_buyer",
+    "account_manager": "account_manager",
+    "admin": "admin"
+}
+```
+
+| 业务角色(PRD v2.2) | 技术层角色 | 映射方式 |
+|-------------------|-----------|---------|
+| ceo | admin | 直接使用 |
+| project_owner | (业务属性) | users.is_project_owner=true 或 project_members |
+| finance | finance | 直接使用 |
+| pitcher | media_buyer | 直接使用 |
+| account_manager | account_manager | 直接使用 |
+| admin | admin | 直接使用 |
+
+**禁止使用旧角色:** `super_admin`, `accountant`, `operator`, `supervisor`, `data_operator`
+
+### 6.11 错误码规范
 
 所有错误码必须来自 `docs/sot/ERROR_CODES_SOT.md`:
 
@@ -257,7 +368,7 @@ pnpm run typecheck
 ### 回归测试 (PR 前必须通过)
 
 ```bash
-python run_tests.py --type regression
+python scripts/run_tests.py --type regression
 ```
 
 ### 测试失败处理
@@ -295,22 +406,12 @@ python run_tests.py --type regression
 - [ ] 通过 lint 检查 (`ruff check backend/`)
 - [ ] 通过类型检查 (`pnpm run typecheck`)
 - [ ] 通过单元测试 (`pytest tests/ -v`)
-- [ ] 通过回归测试 (`python run_tests.py --type regression`)
+- [ ] 通过回归测试 (`python scripts/run_tests.py --type regression`)
 - [ ] 无硬编码的敏感信息
 
 ---
 
 ## Security Considerations
-
-### 禁止行为
-
-| ID | 禁止行为 | 正确做法 |
-|----|---------|---------|
-| S-001 | 硬编码 API 密钥 | 使用环境变量 |
-| S-002 | 直接 SQL 拼接 | 使用 SQLAlchemy ORM |
-| S-003 | 绕过认证 | 使用 Supabase Auth |
-| S-004 | 直接修改 balance | 通过 ledger_entries 记录 |
-| S-005 | 前端直连数据库 | 使用 apiFetch 调 BFF |
 
 ### 敏感文件
 
@@ -321,36 +422,21 @@ python run_tests.py --type regression
 
 ---
 
-## AI Code Factory
+## 禁止行为清单
 
-本项目集成了 AI 代码工厂 v3.0，提供 5 阶段代码生成流水线:
-
-```
-SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY
-```
-
-### 使用方式
-
-```python
-from agents.skills.code_factory import CodeFactory, FactoryConfig
-
-config = FactoryConfig(
-    project_dir=Path("."),
-    search_sources={"local_project": True, "code_library": True},
-    enable_sot_check=True,  # 启用 SoT 合规检查
-)
-
-factory = CodeFactory(config)
-result = factory.run(requirement="实现用户充值 API")
-```
-
-### 代码适配规则
-
-工厂会自动应用以下适配:
-- Pydantic v1 → v2 (`class Config` → `model_config`)
-- SQLAlchemy 1 → 2 (`session.query()` → `session.execute(select())`)
-- 旧状态 → 8 状态机 (`draft` → `raw_submitted`)
-- 旧角色 → 标准角色 (`super_admin` → `admin`)
+| ID | 禁止行为 | 正确做法 | 来源 |
+|----|---------|---------|------|
+| F-001 | 自定义错误码 | 使用 ERROR_CODES_SOT.md | MASTER §9 |
+| F-002 | 发明新状态 | 使用 STATE_MACHINE.md v2.7 | MASTER §9 |
+| F-003 | 直接修改 balance | 通过 ledger_entries 记录 | MASTER §9 |
+| F-004 | 绕过 BFF 直连数据库 | 使用 apiFetch | 安全规范 |
+| F-005 | 硬编码 API 密钥 | 使用环境变量 | 安全规范 |
+| F-006 | 直接 SQL 拼接 | 使用 SQLAlchemy ORM | 安全规范 |
+| F-007 | 绕过认证 | 使用 Supabase Auth | 安全规范 |
+| F-008 | 使用旧 Pydantic/SQLAlchemy 语法 | 使用 v2 语法 | 技术栈规范 |
+| F-009 | 充值流程强制老板逐笔审批 | 日常充值由财务审批 | PRD v2.2 |
+| F-010 | 使用已移除角色(supervisor) | 使用 6 角色定义 | PRD v2.2 |
+| F-011 | 广告配套分摊到项目 | 公司统一记账 | PRD v2.2 |
 
 ---
 
@@ -373,6 +459,12 @@ class Config:
 
 # 反模式 5: 使用旧 SQLAlchemy 查询
 session.query(User).filter_by(id=1).first()  # ❌ 应使用 select()
+
+# 反模式 6: 使用已移除角色
+role = "supervisor"  # ❌ 已移除，使用 project_owner
+
+# 反模式 7: 用投手日报计算成本
+cost = daily_report.spend  # ❌ 应使用 ad_spend_daily.spend
 ```
 
 ---
@@ -401,14 +493,30 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 
 ### 文档位置
 
-| 文档 | 路径 |
-|------|------|
-| SoT 文档 | `docs/sot/` |
-| API 文档 | `docs/sot/API_SOT.md` |
-| 状态机 | `docs/sot/STATE_MACHINE.md` |
-| 错误码 | `docs/sot/ERROR_CODES_SOT.md` |
-| 开发指南 | `docs/3.dev-guides/` |
-| Claude 规则 | `CLAUDE.md` |
+| 文档 | 路径 | 版本 |
+|------|------|------|
+| 架构宪法 | `docs/sot/MASTER.md` | v4.6 |
+| 状态机 | `docs/sot/STATE_MACHINE.md` | v2.7 |
+| 数据模型 | `docs/sot/DATA_SCHEMA.md` | v5.3 |
+| API 契约 | `docs/sot/API_SOT.md` | v9.3 |
+| 错误码 | `docs/sot/ERROR_CODES_SOT.md` | v2.1 |
+| 认证授权 | `docs/sot/AUTH_SPEC.md` | v2.0 |
+| 开发指南 | `docs/2.dev-guides/` | - |
+| Claude 规则 | `CLAUDE.md` | - |
+
+---
+
+## 版本同步
+
+本文档基于：
+- **MASTER.md v4.6**
+- **PRD v2.2**
+
+当上游文档更新时，需同步更新：
+- 角色定义
+- Phase 边界
+- 禁止行为清单
+- SoT 版本号
 
 ---
 
@@ -425,4 +533,4 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 
 ---
 
-*最后更新: 2025-12-18 | 兼容 agents.md 开放格式*
+*最后更新: 2025-12-27 | 版本: v1.1 | 兼容 agents.md 开放格式*
