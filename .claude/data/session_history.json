@@ -1,110 +1,5 @@
 [
   {
-    "session_id": "64d2fc2f-be71-49e1-9e2d-2fe19d738300",
-    "start_time": "2025-12-25T16:22:04.858776",
-    "end_time": "2025-12-25T16:22:04.858781",
-    "duration": "0m",
-    "files_modified_count": 0,
-    "files_modified": [],
-    "file_types": {},
-    "tools_used": {},
-    "total_tool_calls": 0,
-    "modules_touched": [],
-    "overall_progress": 48,
-    "completed_tasks": 11,
-    "in_progress_tasks": 6
-  },
-  {
-    "session_id": "64d2fc2f-be71-49e1-9e2d-2fe19d738300",
-    "start_time": "2025-12-25T16:25:28.676257",
-    "end_time": "2025-12-25T16:25:28.676262",
-    "duration": "0m",
-    "files_modified_count": 0,
-    "files_modified": [],
-    "file_types": {},
-    "tools_used": {},
-    "total_tool_calls": 0,
-    "modules_touched": [],
-    "overall_progress": 48,
-    "completed_tasks": 11,
-    "in_progress_tasks": 6
-  },
-  {
-    "session_id": "9f15a42d-4fec-452c-9cd3-b05283dc590f",
-    "start_time": "2025-12-25T16:27:37.935336",
-    "end_time": "2025-12-25T16:27:37.935341",
-    "duration": "0m",
-    "files_modified_count": 0,
-    "files_modified": [],
-    "file_types": {},
-    "tools_used": {},
-    "total_tool_calls": 0,
-    "modules_touched": [],
-    "overall_progress": 48,
-    "completed_tasks": 11,
-    "in_progress_tasks": 6
-  },
-  {
-    "session_id": "64d2fc2f-be71-49e1-9e2d-2fe19d738300",
-    "start_time": "2025-12-25T16:45:25.668568",
-    "end_time": "2025-12-25T16:45:25.668574",
-    "duration": "0m",
-    "files_modified_count": 0,
-    "files_modified": [],
-    "file_types": {},
-    "tools_used": {},
-    "total_tool_calls": 0,
-    "modules_touched": [],
-    "overall_progress": 48,
-    "completed_tasks": 11,
-    "in_progress_tasks": 6
-  },
-  {
-    "session_id": "64d2fc2f-be71-49e1-9e2d-2fe19d738300",
-    "start_time": "2025-12-25T16:48:58.049559",
-    "end_time": "2025-12-25T16:48:58.049565",
-    "duration": "0m",
-    "files_modified_count": 0,
-    "files_modified": [],
-    "file_types": {},
-    "tools_used": {},
-    "total_tool_calls": 0,
-    "modules_touched": [],
-    "overall_progress": 48,
-    "completed_tasks": 11,
-    "in_progress_tasks": 6
-  },
-  {
-    "session_id": "9f15a42d-4fec-452c-9cd3-b05283dc590f",
-    "start_time": "2025-12-25T17:04:57.675101",
-    "end_time": "2025-12-25T17:04:57.675106",
-    "duration": "0m",
-    "files_modified_count": 0,
-    "files_modified": [],
-    "file_types": {},
-    "tools_used": {},
-    "total_tool_calls": 0,
-    "modules_touched": [],
-    "overall_progress": 48,
-    "completed_tasks": 11,
-    "in_progress_tasks": 6
-  },
-  {
-    "session_id": "9f15a42d-4fec-452c-9cd3-b05283dc590f",
-    "start_time": "2025-12-25T17:26:14.995500",
-    "end_time": "2025-12-25T17:26:14.995505",
-    "duration": "0m",
-    "files_modified_count": 0,
-    "files_modified": [],
-    "file_types": {},
-    "tools_used": {},
-    "total_tool_calls": 0,
-    "modules_touched": [],
-    "overall_progress": 48,
-    "completed_tasks": 11,
-    "in_progress_tasks": 6
-  },
-  {
     "session_id": "9f15a42d-4fec-452c-9cd3-b05283dc590f",
     "start_time": "2025-12-25T17:54:34.300918",
     "end_time": "2025-12-25T17:54:34.300924",
@@ -1889,6 +1784,144 @@
     "file_types": {},
     "tools_used": {},
     "total_tool_calls": 0,
+    "modules_touched": [],
+    "overall_progress": 49,
+    "completed_tasks": 12,
+    "in_progress_tasks": 5
+  },
+  {
+    "session_id": "24b6b094-62ba-4929-aa63-b354bd190a41",
+    "start_time": "2025-12-27T01:28:28.052157",
+    "end_time": "2025-12-27T01:28:28.052162",
+    "duration": "0m",
+    "files_modified_count": 0,
+    "files_modified": [],
+    "file_types": {},
+    "tools_used": {},
+    "total_tool_calls": 0,
+    "modules_touched": [],
+    "overall_progress": 49,
+    "completed_tasks": 12,
+    "in_progress_tasks": 5
+  },
+  {
+    "session_id": "486961d5-8c04-4d53-8b5b-27395ac79ad5",
+    "start_time": "2025-12-27T01:29:06.678132",
+    "end_time": "2025-12-27T01:38:19.192189",
+    "duration": "9m",
+    "files_modified_count": 2,
+    "files_modified": [
+      "d:\\project\\AI_ad_spend02\\docs\\README.md",
+      "d:\\project\\AI_ad_spend02\\docs\\3.dev-guides\\SOT_APPLICATION_GUIDE.md"
+    ],
+    "file_types": {
+      ".md": 2
+    },
+    "tools_used": {
+      "Bash": 80,
+      "Edit": 8
+    },
+    "total_tool_calls": 88,
+    "modules_touched": [
+      "C3"
+    ],
+    "overall_progress": 49,
+    "completed_tasks": 12,
+    "in_progress_tasks": 5
+  },
+  {
+    "session_id": "486961d5-8c04-4d53-8b5b-27395ac79ad5",
+    "start_time": "2025-12-27T01:47:52.184504",
+    "end_time": "2025-12-27T01:47:52.184510",
+    "duration": "0m",
+    "files_modified_count": 0,
+    "files_modified": [],
+    "file_types": {},
+    "tools_used": {},
+    "total_tool_calls": 0,
+    "modules_touched": [],
+    "overall_progress": 49,
+    "completed_tasks": 12,
+    "in_progress_tasks": 5
+  },
+  {
+    "session_id": "486961d5-8c04-4d53-8b5b-27395ac79ad5",
+    "start_time": "2025-12-27T01:48:19.722978",
+    "end_time": "2025-12-27T01:48:49.539789",
+    "duration": "0m",
+    "files_modified_count": 0,
+    "files_modified": [],
+    "file_types": {},
+    "tools_used": {
+      "Bash": 4
+    },
+    "total_tool_calls": 4,
+    "modules_touched": [],
+    "overall_progress": 49,
+    "completed_tasks": 12,
+    "in_progress_tasks": 5
+  },
+  {
+    "session_id": "486961d5-8c04-4d53-8b5b-27395ac79ad5",
+    "start_time": "2025-12-27T01:55:45.283113",
+    "end_time": "2025-12-27T01:59:40.711148",
+    "duration": "3m",
+    "files_modified_count": 1,
+    "files_modified": [
+      "d:\\project\\AI_ad_spend02\\.github\\workflows\\backend-regression.yml"
+    ],
+    "file_types": {
+      ".yml": 1
+    },
+    "tools_used": {
+      "Bash": 24,
+      "Edit": 1
+    },
+    "total_tool_calls": 25,
+    "modules_touched": [
+      "C3"
+    ],
+    "overall_progress": 49,
+    "completed_tasks": 12,
+    "in_progress_tasks": 5
+  },
+  {
+    "session_id": "486961d5-8c04-4d53-8b5b-27395ac79ad5",
+    "start_time": "2025-12-27T02:00:21.517283",
+    "end_time": "2025-12-27T02:16:00.196784",
+    "duration": "15m",
+    "files_modified_count": 2,
+    "files_modified": [
+      "d:\\project\\AI_ad_spend02\\.github\\workflows\\backend-regression.yml",
+      "d:\\project\\AI_ad_spend02\\.github\\workflows\\regression-tests.yml"
+    ],
+    "file_types": {
+      ".yml": 2
+    },
+    "tools_used": {
+      "Bash": 70,
+      "Edit": 4
+    },
+    "total_tool_calls": 74,
+    "modules_touched": [
+      "C3"
+    ],
+    "overall_progress": 49,
+    "completed_tasks": 12,
+    "in_progress_tasks": 5
+  },
+  {
+    "session_id": "486961d5-8c04-4d53-8b5b-27395ac79ad5",
+    "start_time": "2025-12-27T03:42:27.577318",
+    "end_time": "2025-12-27T03:43:19.916819",
+    "duration": "0m",
+    "files_modified_count": 0,
+    "files_modified": [],
+    "file_types": {},
+    "tools_used": {
+      "Bash": 6
+    },
+    "total_tool_calls": 6,
     "modules_touched": [],
     "overall_progress": 49,
     "completed_tasks": 12,
