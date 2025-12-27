@@ -1,5 +1,7 @@
 """
-AI 代码工厂 v3.0 - 自主编码集成版
+AI 代码工厂 v4.0 - 幻觉抑制增强版
+
+基准文档: MASTER.md v4.6, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
 
 借鉴 Anthropic autonomous-coding 项目的核心设计:
 - 双 Agent 模式 (Initializer + Factory)
@@ -7,8 +9,8 @@ AI 代码工厂 v3.0 - 自主编码集成版
 - 会话管理与恢复
 - Defense-in-Depth 安全模型
 
-结合我们的 5 阶段流水线:
-SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY
+结合我们的 6 阶段流水线:
+SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM
 """
 
 # 核心组件
@@ -24,7 +26,7 @@ from .adapter import CodeAdapter, AdaptResult, AdaptedFile
 from .assembler import CodeAssembler, AssembleResult
 from .verifier import CodeVerifier, VerifyResult, VerifyDecision
 
-__version__ = "3.0"
+__version__ = "4.0"
 __all__ = [
     # 核心
     "TaskList",
