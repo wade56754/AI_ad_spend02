@@ -87,27 +87,27 @@ VALID_ROLES = {
     "pitcher", "account_manager", "admin"
 }
 
-# Phase 2 禁止关键词
+# Phase 2 forbidden keywords
 PHASE2_PATTERNS = [
-    (r"auto[_-]?reject", "Phase 1 禁止 auto_reject"),
-    (r"auto[_-]?suspend", "Phase 1 禁止 auto_suspend"),
-    (r"auto[_-]?block", "Phase 1 禁止 auto_block"),
-    (r"auto[_-]?freeze", "Phase 1 禁止 auto_freeze"),
-    (r"force[_-]?stop", "Phase 1 禁止 force_stop"),
-    (r"forced?[_-]?approval", "Phase 1 禁止 forced_approval"),
+    (r"auto[_-]?reject", "Phase 1 violation: auto_reject forbidden"),
+    (r"auto[_-]?suspend", "Phase 1 violation: auto_suspend forbidden"),
+    (r"auto[_-]?block", "Phase 1 violation: auto_block forbidden"),
+    (r"auto[_-]?freeze", "Phase 1 violation: auto_freeze forbidden"),
+    (r"force[_-]?stop", "Phase 1 violation: force_stop forbidden"),
+    (r"forced?[_-]?approval", "Phase 1 violation: forced_approval forbidden"),
 ]
 
-# 禁止模式
+# Forbidden patterns
 FORBIDDEN_PATTERNS = [
-    (r"\.(balance|current_balance)\s*[+\-*/]?=", "禁止直接修改 balance"),
-    (r"status\s*[=!]=\s*['\"]?(draft|submitted|approved|rejected)['\"]?", "使用旧状态名"),
+    (r"\.(balance|current_balance)\s*[+\-*/]?=", "Direct balance modification forbidden"),
+    (r"status\s*[=!]=\s*['\"]?(draft|submitted|approved|rejected)['\"]?", "Legacy status name detected"),
 ]
 
-# Bash 危险命令
+# Bash dangerous commands
 BASH_DANGEROUS_PATTERNS = [
-    (r"UPDATE\s+.*balance", "禁止通过 SQL 直接修改 balance"),
-    (r"rm\s+-rf?\s+.*docs/2\.sot", "禁止删除 SoT 文档"),
-    (r"DELETE\s+FROM\s+.*sot", "禁止删除 SoT 相关数据"),
+    (r"UPDATE\s+.*balance", "SQL direct balance update forbidden"),
+    (r"rm\s+-rf?\s+.*docs/2\.sot", "SoT document deletion forbidden"),
+    (r"DELETE\s+FROM\s+.*sot", "SoT data deletion forbidden"),
 ]
 
 

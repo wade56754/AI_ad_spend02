@@ -98,9 +98,166 @@ MODULE_PATH_PATTERNS: dict[str, list[str]] = {
 # 文件操作记录（会话内）
 SESSION_DATA_FILE = Path(__file__).parent.parent / "data" / "session_data.json"
 
+# Progress file path
+PROGRESS_FILE = Path(__file__).parent.parent.parent / "memory-bank" / "progress.md"
+
+# File categories for progress tracking
+FILE_CATEGORIES = {
+    "backend": ["backend/", "routers/", "services/", "models/", "schemas/", "core/"],
+    "frontend": ["frontend/", "src/", "components/", "features/", "pages/"],
+    "docs": ["docs/", ".md", "README"],
+    "config": [".json", ".yaml", ".yml", ".toml", "config/"],
+    "hooks": [".claude/hooks/", "hooks/"],
+    "tests": ["test_", "_test.py", ".test.", "tests/"],
+}
+
 
 # =============================================================================
-# 辅助函数
+# Progress.md Update Functions
+# =============================================================================
+
+def categorize_file(file_path: str) -> str:
+    """Categorize file by path"""
+    path_lower = file_path.lower()
+    for category, patterns in FILE_CATEGORIES.items():
+        for pattern in patterns:
+            if pattern.lower() in path_lower:
+                return category
+    return "other"
+
+
+def get_relative_path(file_path: str) -> str:
+    """Get relative path from project root (with forward slashes)"""
+    try:
+        project_root = Path(__file__).parent.parent.parent
+        abs_path = Path(file_path)
+        if abs_path.is_absolute():
+            try:
+                rel = abs_path.relative_to(project_root)
+                # Use forward slashes for consistency
+                return str(rel).replace("\\", "/")
+            except ValueError:
+                return file_path.replace("\\", "/")
+        return file_path.replace("\\", "/")
+    except Exception:
+        return file_path.replace("\\", "/")
+
+
+def update_progress_file(file_path: str, action: str = "edit") -> bool:
+    """
+    Update memory-bank/progress.md with recent file changes.
+
+    Args:
+        file_path: Path of the modified file
+        action: 'edit', 'create', or 'delete'
+
+    Returns:
+        True if updated successfully
+    """
+    if not PROGRESS_FILE.exists():
+        logger.warning(f"Progress file not found: {PROGRESS_FILE}")
+        return False
+
+    try:
+        content = PROGRESS_FILE.read_text(encoding="utf-8")
+        lines = content.split("\n")
+
+        # Get today's date
+        today = datetime.now().strftime("%Y-%m-%d")
+        timestamp = datetime.now().strftime("%H:%M")
+
+        # Get relative path and category
+        rel_path = get_relative_path(file_path)
+        category = categorize_file(file_path)
+
+        # Skip updating for certain files to avoid loops
+        skip_patterns = ["progress.md", "session_data.json", ".log", "__pycache__"]
+        if any(p in rel_path.lower() for p in skip_patterns):
+            logger.debug(f"Skipping progress update for: {rel_path}")
+            return False
+
+        # Find and update "最后更新" line
+        for i, line in enumerate(lines):
+            if line.startswith("> **最后更新**:"):
+                lines[i] = f"> **最后更新**: {today} {timestamp}"
+                break
+
+        # Find "## 4. 最近完成" section
+        recent_section_idx = -1
+        today_header_idx = -1
+
+        for i, line in enumerate(lines):
+            if "## 4. 最近完成" in line or "## 4. Recent Changes" in line:
+                recent_section_idx = i
+            elif recent_section_idx > 0 and line.startswith(f"### {today}"):
+                today_header_idx = i
+                break
+            elif recent_section_idx > 0 and line.startswith("### 20"):
+                # Found a different date header, stop looking
+                break
+            elif recent_section_idx > 0 and line.startswith("## "):
+                # Found next section, stop
+                break
+
+        if recent_section_idx == -1:
+            logger.warning("Could not find '## 4. 最近完成' section")
+            return False
+
+        # Create the new entry
+        action_icon = "+" if action == "create" else "~" if action == "edit" else "-"
+        new_entry = f"- [{action_icon}] `{rel_path}` ({category}) @ {timestamp}"
+
+        if today_header_idx > 0:
+            # Today's section exists, add entry after header
+            # Find where to insert (after header, before next entry or blank line)
+            insert_idx = today_header_idx + 1
+
+            # Skip any blank lines right after header
+            while insert_idx < len(lines) and lines[insert_idx].strip() == "":
+                insert_idx += 1
+
+            # Check if this file is already in today's entries (avoid duplicates)
+            # Look for entries until we hit a new section
+            check_idx = insert_idx
+            file_already_logged = False
+            while check_idx < len(lines):
+                check_line = lines[check_idx]
+                if check_line.startswith("### ") or check_line.startswith("## "):
+                    break
+                if f"`{rel_path}`" in check_line:
+                    file_already_logged = True
+                    # Update the timestamp of existing entry
+                    lines[check_idx] = new_entry
+                    break
+                check_idx += 1
+
+            if not file_already_logged:
+                lines.insert(insert_idx, new_entry)
+        else:
+            # Today's section doesn't exist, create it
+            insert_idx = recent_section_idx + 1
+
+            # Skip blank lines after section header
+            while insert_idx < len(lines) and lines[insert_idx].strip() == "":
+                insert_idx += 1
+
+            # Insert new date header and entry
+            lines.insert(insert_idx, "")
+            lines.insert(insert_idx, new_entry)
+            lines.insert(insert_idx, f"### {today}")
+
+        # Write back
+        PROGRESS_FILE.write_text("\n".join(lines), encoding="utf-8")
+        logger.info(f"Updated progress.md: {action} {rel_path}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to update progress.md: {e}")
+        return False
+
+
+# =============================================================================
+# Helper Functions
 # =============================================================================
 
 def load_session_data() -> dict:
@@ -235,7 +392,7 @@ def format_typescript_file(file_path: str) -> bool:
 # =============================================================================
 
 def handle_write_tool(tool_input: dict, success: bool) -> None:
-    """处理 Write 工具"""
+    """Handle Write tool - create new file"""
     file_path = tool_input.get("file_path", "")
 
     if not success or not file_path:
@@ -243,29 +400,32 @@ def handle_write_tool(tool_input: dict, success: bool) -> None:
 
     logger.info(f"File created: {file_path}")
 
-    # 记录到会话数据
+    # Update progress.md (create action)
+    update_progress_file(file_path, action="create")
+
+    # Record to session data
     session_data = load_session_data()
     if file_path not in session_data["files_modified"]:
         session_data["files_modified"].append(file_path)
 
-    # 检测关联模块
+    # Detect related module
     module_id = detect_module(file_path)
     if module_id:
         logger.info(f"Detected module: {module_id}")
 
-        # 记录模块
+        # Record module
         modules = set(session_data.get("modules_touched", []))
         modules.add(module_id)
         session_data["modules_touched"] = modules
 
-        # 更新进行中的任务进度
+        # Update in-progress task progress
         related_tasks = get_related_tasks(module_id)
-        for task_id in related_tasks[:1]:  # 只更新第一个进行中的任务
+        for task_id in related_tasks[:1]:
             update_task_progress(task_id, increment=10)
 
     save_session_data(session_data)
 
-    # 格式化代码
+    # Format code
     if os.path.exists(file_path):
         if file_path.endswith(".py"):
             format_python_file(file_path)
@@ -274,7 +434,7 @@ def handle_write_tool(tool_input: dict, success: bool) -> None:
 
 
 def handle_edit_tool(tool_input: dict, success: bool) -> None:
-    """处理 Edit 工具"""
+    """Handle Edit tool - modify existing file"""
     file_path = tool_input.get("file_path", "")
 
     if not success or not file_path:
@@ -282,12 +442,15 @@ def handle_edit_tool(tool_input: dict, success: bool) -> None:
 
     logger.info(f"File edited: {file_path}")
 
-    # 记录到会话数据
+    # Update progress.md (edit action)
+    update_progress_file(file_path, action="edit")
+
+    # Record to session data
     session_data = load_session_data()
     if file_path not in session_data["files_modified"]:
         session_data["files_modified"].append(file_path)
 
-    # 检测关联模块
+    # Detect related module
     module_id = detect_module(file_path)
     if module_id:
         logger.info(f"Detected module: {module_id}")
@@ -296,14 +459,14 @@ def handle_edit_tool(tool_input: dict, success: bool) -> None:
         modules.add(module_id)
         session_data["modules_touched"] = modules
 
-        # 编辑操作增加较少进度
+        # Edit operation increments less progress
         related_tasks = get_related_tasks(module_id)
         for task_id in related_tasks[:1]:
             update_task_progress(task_id, increment=5)
 
     save_session_data(session_data)
 
-    # 格式化代码
+    # Format code
     if os.path.exists(file_path):
         if file_path.endswith(".py"):
             format_python_file(file_path)

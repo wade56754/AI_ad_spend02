@@ -28,64 +28,64 @@ valid_roles:
   - admin            # 管理员 - 系统配置（不参与业务）
 
 # =============================================================================
-# 禁止的代码模式 (正则表达式)
+# Forbidden code patterns (regex)
 # =============================================================================
 forbidden_patterns:
-  # F-001: 禁止直接修改余额
+  # F-001: Direct balance modification forbidden
   direct_balance_modify:
     pattern: >-
       \.(balance|current_balance)\s*[+\-*/]?=
-    message: "禁止直接修改 balance，必须通过 ledger_entries 记录"
+    message: "Direct balance modification forbidden, must use ledger_entries"
     severity: error
-    rule_ref: "LEDGER_SOT.md §2"
+    rule_ref: "LEDGER_SOT.md S2"
 
-  # F-002: 禁止旧状态名
+  # F-002: Legacy status names forbidden
   old_status_names:
     pattern: >-
       status\s*[=!]=\s*['"]?(draft|submitted|approved|rejected)['"]?
-    message: "使用旧状态名，应使用 STATE_MACHINE.md v2.6 定义的 8 状态"
+    message: "Legacy status name detected, use 8-state machine from STATE_MACHINE.md v2.6"
     severity: error
     rule_ref: "STATE_MACHINE.md v2.6"
 
-  # F-003: 禁止自定义错误码
+  # F-003: Custom error codes forbidden
   custom_error_code:
     pattern: >-
       HTTPException\s*\(\s*\d+\s*,\s*['"][^'"]+['"]\s*\)
-    message: "禁止自定义错误码，使用 ERROR_CODES_SOT.md 标准错误码"
+    message: "Custom error codes forbidden, use ERROR_CODES_SOT.md standard codes"
     severity: warning
     rule_ref: "ERROR_CODES_SOT.md v2.1"
 
-  # F-004: 禁止直接数据库连接
+  # F-004: Direct database connection forbidden
   direct_db_connect:
     pattern: >-
       supabase\.(from_|table|rpc)\s*\(
-    message: "禁止直接连接 Supabase 数据库，使用 BFF API"
+    message: "Direct Supabase connection forbidden, use BFF API"
     severity: error
-    rule_ref: "MASTER.md §4.2"
+    rule_ref: "MASTER.md S4.2"
 
-  # F-005: 禁止自动阻断 (Phase 1)
+  # F-005: Auto-blocking forbidden (Phase 1)
   auto_block:
     pattern: >-
       (auto_?reject|auto_?block|auto_?suspend|auto_?freeze|force_?stop)
-    message: "Phase 1 禁止自动阻断，仅允许记录和提示"
+    message: "Phase 1 violation: auto-blocking forbidden, only logging/alerting allowed"
     severity: error
-    rule_ref: "MASTER.md §6 Phase 1"
+    rule_ref: "MASTER.md S6 Phase 1"
 
-  # F-006: 禁止旧角色名
+  # F-006: Legacy role names forbidden
   old_role_names:
     pattern: >-
       role\s*[=!]=\s*['"]?(operator|manager|owner|viewer|editor)['"]?
-    message: "使用旧角色名，仅允许 7 个标准角色"
+    message: "Legacy role name detected, only 7 standard roles allowed"
     severity: error
-    rule_ref: "MASTER.md v4.4 §2.4"
+    rule_ref: "MASTER.md v4.4 S2.4"
 
-  # F-007: 禁止 Pydantic v1 语法
+  # F-007: Pydantic v1 syntax forbidden
   pydantic_v1_syntax:
     pattern: >-
       \bclass Config\b|\borm_mode\s*=
-    message: "使用 Pydantic v1 语法，应使用 model_config = ConfigDict(...)"
+    message: "Pydantic v1 syntax detected, use model_config = ConfigDict(...)"
     severity: warning
-    rule_ref: "依赖规范"
+    rule_ref: "Dependency spec"
 
 # =============================================================================
 # 风险阈值配置
