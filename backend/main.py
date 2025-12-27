@@ -43,8 +43,10 @@ from backend.routers import (
     spend,  # ✅ 消耗导入API (Financial SoT Phase 2)
     dashboard,  # ✅ CEO驾驶舱API (Phase C - MASTER.md v4.4 §6.5)
     weekly_briefs,  # ✅ 周度简报API (B3-weekly-brief.md)
+    weekly_reports,  # ✅ 周报管理API (TASK-WEEKLY-002)
     fund,  # ✅ 资金总览API (A2-fund-overview.md)
     finance_v2,  # ✅ 财务管理V2 (资金总览+项目盈亏重构)
+    profit,  # ✅ 利润模块API (TASK-PROFIT-001)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
@@ -114,10 +116,14 @@ app.include_router(
 app.include_router(
     weekly_briefs.router, prefix=API_V1_PREFIX
 )  # 周度简报 ✅ B3-weekly-brief.md
+app.include_router(
+    weekly_reports.router, prefix=API_V1_PREFIX
+)  # 周报管理 ✅ TASK-WEEKLY-002
 app.include_router(fund.router, prefix=API_V1_PREFIX)  # 资金总览 ✅ A2-fund-overview.md
 app.include_router(
     finance_v2.router
 )  # 财务管理V2 ✅ 资金总览+项目盈亏重构 (已包含 /api/v1 前缀)
+app.include_router(profit.router, prefix=API_V1_PREFIX)  # 利润模块 ✅ TASK-PROFIT-001
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 
