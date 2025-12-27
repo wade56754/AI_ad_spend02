@@ -2,7 +2,7 @@
 功能开关 - 支持灰度和回滚
 
 基准文档: MASTER.md v4.6
-版本: v4.2
+版本: v4.4
 
 设计理念:
 - 所有新功能默认通过开关控制
@@ -34,6 +34,16 @@ class FeatureFlags:
     enable_task_persistence: bool = True    # 任务持久化
     enable_event_stream: bool = True        # 事件流记录
 
+    # ========== v4.3 功能 ==========
+    enable_task_cards: bool = True          # 任务卡匹配
+
+    # ========== v4.4 提示词系统 ==========
+    enable_prompt_system: bool = True       # 提示词系统总开关
+    enable_prompt_injection: bool = True    # 提示词注入
+    enable_system_constraints: bool = True  # 系统约束提示词 (SoT, Phase1, etc)
+    prompt_max_supporting: int = 3          # 最多辅助提示词数量
+    enable_phase1_soft_mode: bool = True    # Phase 1 软性模式 (状态问题仅警告)
+
     # ========== 阈值配置 ==========
     strict_trace_rate: float = 1.0          # 追溯率阈值 (100%)
     guardrails_max_retries: int = 3         # Guardrails 最大重试次数
@@ -62,6 +72,16 @@ class FeatureFlags:
             enable_task_persistence=os.getenv("CF_TASKS", "1") == "1",
             enable_event_stream=os.getenv("CF_EVENTS", "1") == "1",
 
+            # v4.3 功能
+            enable_task_cards=os.getenv("CF_TASK_CARDS", "1") == "1",
+
+            # v4.4 提示词系统
+            enable_prompt_system=os.getenv("CF_PROMPT_SYSTEM", "1") == "1",
+            enable_prompt_injection=os.getenv("CF_PROMPT_INJECT", "1") == "1",
+            enable_system_constraints=os.getenv("CF_SYSTEM_CONSTRAINTS", "1") == "1",
+            prompt_max_supporting=int(os.getenv("CF_PROMPT_MAX_SUPPORTING", "3")),
+            enable_phase1_soft_mode=os.getenv("CF_PHASE1_SOFT", "1") == "1",
+
             # 阈值
             strict_trace_rate=float(os.getenv("CF_TRACE_RATE", "1.0")),
             guardrails_max_retries=int(os.getenv("CF_GUARDRAILS_RETRIES", "3")),
@@ -83,6 +103,12 @@ class FeatureFlags:
             "enable_guardrails": self.enable_guardrails,
             "enable_task_persistence": self.enable_task_persistence,
             "enable_event_stream": self.enable_event_stream,
+            "enable_task_cards": self.enable_task_cards,
+            "enable_prompt_system": self.enable_prompt_system,
+            "enable_prompt_injection": self.enable_prompt_injection,
+            "enable_system_constraints": self.enable_system_constraints,
+            "prompt_max_supporting": self.prompt_max_supporting,
+            "enable_phase1_soft_mode": self.enable_phase1_soft_mode,
             "strict_trace_rate": self.strict_trace_rate,
             "guardrails_max_retries": self.guardrails_max_retries,
         }

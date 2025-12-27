@@ -2,13 +2,13 @@
 常量定义
 
 基准文档: MASTER.md v4.6
-版本: v4.2
+版本: v4.3
 """
 
 from typing import List, Set, Dict
 
 # 版本号
-VERSION = "4.2.0"
+VERSION = "4.4.0"
 
 # 10 阶段流水线名称
 PHASE_NAMES: List[str] = [

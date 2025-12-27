@@ -1,8 +1,8 @@
 """
-AI 代码工厂 v4.2 - 核心模块
+AI 代码工厂 v4.4 - 核心模块
 
 包含:
-- factory.py: 主编排器
+- factory.py: 主编排器 (含 Phase 6 CONFIRM)
 - config.py: 配置类
 - feature_flags.py: 功能开关
 - exceptions.py: 自定义异常
