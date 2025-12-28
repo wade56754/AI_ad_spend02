@@ -7,8 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from contextlib import asynccontextmanager
+
 from backend.core.config import get_settings
 from backend.core.db import get_engine
+from backend.core.cache import init_cache, close_cache
 from backend.core.response import (
     fail,
     ok,
@@ -57,8 +60,28 @@ from backend.routers import (
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    应用生命周期管理
+
+    Phase 3 性能优化: 初始化/关闭 Redis 缓存
+    """
+    # 启动时初始化
+    await init_cache()
+    yield
+    # 关闭时清理
+    await close_cache()
+
+
 # 禁用 redirect_slashes 避免 307 重定向导致 Authorization header 丢失
-app = FastAPI(title=settings.app_name, debug=settings.debug, redirect_slashes=False)
+app = FastAPI(
+    title=settings.app_name,
+    debug=settings.debug,
+    redirect_slashes=False,
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,

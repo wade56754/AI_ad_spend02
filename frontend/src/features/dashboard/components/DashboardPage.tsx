@@ -11,7 +11,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   DollarSign,
@@ -237,10 +237,30 @@ export function DashboardPage() {
    * 刷新所有驾驶舱数据
    * SoT: A1-dashboard.md §2.4 数据刷新策略
    */
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     await refreshAll();
     showSuccessToast('数据刷新成功');
-  };
+  }, [refreshAll]);
+
+  // 稳定的指标切换回调 (避免子组件不必要的重渲染)
+  const handleMetricChange = useCallback((metric: MetricType) => {
+    setActiveMetric(metric);
+  }, []);
+
+  // 各指标的独立回调 (用于 StatCard onClick)
+  const handleSpendClick = useCallback(() => setActiveMetric('spend'), []);
+  const handleConversionsClick = useCallback(() => setActiveMetric('conversions'), []);
+  const handleProfitClick = useCallback(() => setActiveMetric('profit'), []);
+
+  // 稳定的日期范围切换回调
+  const handleDateRangeChange = useCallback((preset: DateRangePreset) => {
+    setGlobalDateRange(preset);
+  }, []);
+
+  // 稳定的告警关闭回调
+  const handleDismissAlert = useCallback((id: string) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  }, []);
 
   // Show skeleton loading state while auth or data is initializing
   if (isAuthLoading || isDataLoading) {
@@ -357,7 +377,7 @@ export function DashboardPage() {
         />
         <GlobalDateFilter
           value={globalDateRange}
-          onChange={(preset) => setGlobalDateRange(preset)}
+          onChange={handleDateRangeChange}
         />
       </div>
 
@@ -365,7 +385,7 @@ export function DashboardPage() {
       {alerts.length > 0 && (
         <AlertBanner
           alerts={alerts}
-          onDismiss={(id) => setAlerts(alerts.filter((a) => a.id !== id))}
+          onDismiss={handleDismissAlert}
         />
       )}
 
@@ -403,7 +423,7 @@ export function DashboardPage() {
             target={`今日 ${formatCurrency(stats.today_spend)}`}
             icon={<DollarSign className="h-6 w-6" />}
             color="blue"
-            onClick={() => setActiveMetric('spend')}
+            onClick={handleSpendClick}
             isActive={activeMetric === 'spend'}
             testId="kpi-spend"
           />
@@ -415,7 +435,7 @@ export function DashboardPage() {
             target={`今日 ${stats.today_conversions.toLocaleString()}`}
             icon={<Users className="h-6 w-6" />}
             color="purple"
-            onClick={() => setActiveMetric('conversions')}
+            onClick={handleConversionsClick}
             isActive={activeMetric === 'conversions'}
             testId="kpi-conversions"
           />
@@ -436,7 +456,7 @@ export function DashboardPage() {
             target={`今日 ${formatCurrency(stats.today_profit)}`}
             icon={<Target className="h-6 w-6" />}
             color={stats.estimated_profit >= 0 ? 'green' : 'red'}
-            onClick={() => setActiveMetric('profit')}
+            onClick={handleProfitClick}
             isActive={activeMetric === 'profit'}
             testId="kpi-profit"
           />
@@ -483,7 +503,7 @@ export function DashboardPage() {
       <MainTrendChart
         data={mainTrendData}
         activeMetric={activeMetric}
-        onMetricChange={setActiveMetric}
+        onMetricChange={handleMetricChange}
         summary={trendSummary}
       />
 

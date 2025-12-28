@@ -2,12 +2,16 @@
 Dashboard Service - 驾驶舱业务逻辑
 
 SoT Reference: MASTER.md v4.4 - CEO Dashboard
+
+Phase 3 性能优化 (TASK-PERF-001):
+- Redis 缓存集成
+- KPI/趋势数据缓存
 """
 
 import logging
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
@@ -22,6 +26,7 @@ from backend.schemas.dashboard import (
     AlertItem, DashboardSummary, DashboardDetail
 )
 from backend.core.phase_config import get_phase_config
+from backend.core.cache import cache_manager
 
 logger = logging.getLogger(__name__)
 
@@ -575,3 +580,254 @@ class DashboardService:
             worst_cpl_projects=worst_cpl,
             todos=todos
         )
+
+
+# ============ 缓存辅助函数 (Phase 3 TASK-PERF-001) ============
+
+
+def _serialize_kpi(kpi: KpiData) -> Dict[str, Any]:
+    """序列化 KpiData 为可缓存的字典"""
+    return {
+        "total_spend": str(kpi.total_spend) if kpi.total_spend else None,
+        "total_conversions": kpi.total_conversions,
+        "total_follows": kpi.total_follows,
+        "total_revenue": str(kpi.total_revenue) if kpi.total_revenue else None,
+        "avg_cpl": str(kpi.avg_cpl) if kpi.avg_cpl else None,
+        "roi": kpi.roi,
+        "profit_margin": kpi.profit_margin,
+        "spend_change": kpi.spend_change,
+        "conversion_change": kpi.conversion_change,
+        "cpl_change": kpi.cpl_change,
+    }
+
+
+def _deserialize_kpi(data: Dict[str, Any]) -> KpiData:
+    """反序列化字典为 KpiData"""
+    return KpiData(
+        total_spend=Decimal(data["total_spend"]) if data.get("total_spend") else Decimal("0"),
+        total_conversions=data.get("total_conversions", 0),
+        total_follows=data.get("total_follows", 0),
+        total_revenue=Decimal(data["total_revenue"]) if data.get("total_revenue") else Decimal("0"),
+        avg_cpl=Decimal(data["avg_cpl"]) if data.get("avg_cpl") else None,
+        roi=data.get("roi"),
+        profit_margin=data.get("profit_margin"),
+        spend_change=data.get("spend_change"),
+        conversion_change=data.get("conversion_change"),
+        cpl_change=data.get("cpl_change"),
+    )
+
+
+def _serialize_trend(items: List[TrendItem]) -> List[Dict[str, Any]]:
+    """序列化趋势数据"""
+    return [
+        {
+            "report_date": item.report_date.isoformat(),
+            "spend": str(item.spend) if item.spend else "0",
+            "conversions": item.conversions,
+            "follows": item.follows,
+            "cpl": str(item.cpl) if item.cpl else None,
+        }
+        for item in items
+    ]
+
+
+def _deserialize_trend(data: List[Dict[str, Any]]) -> List[TrendItem]:
+    """反序列化趋势数据"""
+    return [
+        TrendItem(
+            report_date=date.fromisoformat(item["report_date"]),
+            spend=Decimal(item["spend"]) if item.get("spend") else Decimal("0"),
+            conversions=item.get("conversions", 0),
+            follows=item.get("follows", 0),
+            cpl=Decimal(item["cpl"]) if item.get("cpl") else None,
+        )
+        for item in data
+    ]
+
+
+async def get_kpi_cached(
+    db: Session,
+    start_date: date,
+    end_date: date,
+    project_id: Optional[int] = None,
+    ttl: int = 60
+) -> KpiData:
+    """
+    获取 KPI 数据 (带缓存)
+
+    Args:
+        db: 数据库会话
+        start_date: 开始日期
+        end_date: 结束日期
+        project_id: 项目ID筛选
+        ttl: 缓存过期时间 (秒)
+
+    Returns:
+        KpiData
+    """
+    # 构建缓存键
+    cache_key = cache_manager.make_key(
+        "dashboard", "kpi",
+        start_date.isoformat(),
+        end_date.isoformat(),
+        str(project_id or "all")
+    )
+
+    # 尝试从缓存获取
+    cached = await cache_manager.get(cache_key)
+    if cached:
+        logger.debug(f"KPI 缓存命中: {cache_key}")
+        return _deserialize_kpi(cached)
+
+    # 查询数据库
+    service = DashboardService(db)
+    kpi = service.get_kpi(start_date, end_date, project_id)
+
+    # 写入缓存
+    await cache_manager.set(cache_key, _serialize_kpi(kpi), ttl=ttl)
+    logger.debug(f"KPI 缓存写入: {cache_key}")
+
+    return kpi
+
+
+async def get_trend_cached(
+    db: Session,
+    start_date: date,
+    end_date: date,
+    project_id: Optional[int] = None,
+    granularity: str = "day",
+    ttl: int = 120
+) -> List[TrendItem]:
+    """
+    获取趋势数据 (带缓存)
+
+    Args:
+        db: 数据库会话
+        start_date: 开始日期
+        end_date: 结束日期
+        project_id: 项目ID筛选
+        granularity: 粒度
+        ttl: 缓存过期时间 (秒)
+
+    Returns:
+        TrendItem 列表
+    """
+    # 构建缓存键
+    cache_key = cache_manager.make_key(
+        "dashboard", "trend",
+        start_date.isoformat(),
+        end_date.isoformat(),
+        str(project_id or "all"),
+        granularity
+    )
+
+    # 尝试从缓存获取
+    cached = await cache_manager.get(cache_key)
+    if cached:
+        logger.debug(f"趋势缓存命中: {cache_key}")
+        return _deserialize_trend(cached)
+
+    # 查询数据库
+    service = DashboardService(db)
+    items = service.get_trend(start_date, end_date, project_id, granularity)
+
+    # 写入缓存
+    await cache_manager.set(cache_key, _serialize_trend(items), ttl=ttl)
+    logger.debug(f"趋势缓存写入: {cache_key}")
+
+    return items
+
+
+async def get_summary_cached(
+    db: Session,
+    period: Optional[str] = None,
+    project_id: Optional[int] = None,
+    ttl: int = 60
+) -> DashboardSummary:
+    """
+    获取 Dashboard 汇总 (带缓存)
+
+    注意: 待办/告警等实时性要求高的数据不缓存
+    """
+    # 构建缓存键
+    cache_key = cache_manager.make_key(
+        "dashboard", "summary",
+        period or "current",
+        str(project_id or "all")
+    )
+
+    # 尝试从缓存获取
+    cached = await cache_manager.get(cache_key)
+    if cached:
+        logger.debug(f"汇总缓存命中: {cache_key}")
+        # 重新获取实时数据
+        service = DashboardService(db)
+        todos = service.get_todos()
+        alerts = service.get_alerts()
+
+        # 合并缓存的静态数据和实时数据
+        start_date, end_date, period_str = DashboardService.parse_period(period)
+        kpi = _deserialize_kpi(cached["kpi"])
+
+        return DashboardSummary(
+            period=cached["period"],
+            start_date=date.fromisoformat(cached["start_date"]),
+            end_date=date.fromisoformat(cached["end_date"]),
+            total_projects=cached["total_projects"],
+            active_projects=cached["active_projects"],
+            suspended_projects=cached["suspended_projects"],
+            kpi=kpi,
+            pending_reports=sum(item.count for item in todos.items if item.type == "pending_report"),
+            pending_topups=sum(item.count for item in todos.items if item.type == "pending_topup"),
+            trend_flagged_count=sum(item.count for item in todos.items if item.type == "trend_flagged"),
+            alerts=alerts,
+            current_phase=cached["current_phase"]
+        )
+
+    # 查询数据库
+    service = DashboardService(db)
+    summary = service.get_summary(period, project_id)
+
+    # 只缓存静态部分
+    cache_data = {
+        "period": summary.period,
+        "start_date": summary.start_date.isoformat(),
+        "end_date": summary.end_date.isoformat(),
+        "total_projects": summary.total_projects,
+        "active_projects": summary.active_projects,
+        "suspended_projects": summary.suspended_projects,
+        "kpi": _serialize_kpi(summary.kpi),
+        "current_phase": summary.current_phase,
+    }
+    await cache_manager.set(cache_key, cache_data, ttl=ttl)
+    logger.debug(f"汇总缓存写入: {cache_key}")
+
+    return summary
+
+
+async def invalidate_dashboard_cache(
+    project_id: Optional[int] = None,
+    period: Optional[str] = None
+):
+    """
+    失效 Dashboard 相关缓存
+
+    在以下场景调用:
+    - 日报提交/审核
+    - 充值申请状态变更
+    - 项目状态变更
+
+    Args:
+        project_id: 指定项目ID
+        period: 指定周期
+    """
+    patterns = [
+        "ai_ads:dashboard:kpi:*",
+        "ai_ads:dashboard:trend:*",
+        "ai_ads:dashboard:summary:*",
+    ]
+
+    for pattern in patterns:
+        await cache_manager.delete_pattern(pattern)
+
+    logger.info(f"Dashboard 缓存已失效: project_id={project_id}, period={period}")

@@ -95,6 +95,13 @@ class Settings(BaseSettings):
     # 日志配置
     log_level: str = Field("INFO", pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$", description="日志级别")
 
+    # Redis 缓存配置 (Phase 3 性能优化)
+    redis_url: str = Field("redis://localhost:6379/0", description="Redis 连接 URL")
+    redis_enabled: bool = Field(False, description="是否启用 Redis 缓存")
+    cache_ttl_default: int = Field(300, ge=10, le=3600, description="默认缓存过期时间（秒）")
+    cache_ttl_dashboard: int = Field(60, ge=10, le=600, description="Dashboard 缓存过期时间（秒）")
+    cache_ttl_list: int = Field(120, ge=10, le=600, description="列表查询缓存过期时间（秒）")
+
     @field_validator("allowed_origins", mode="before")
     def parse_allowed_origins(cls, v: Any) -> List[str]:
         """解析允许的源地址列表"""

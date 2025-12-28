@@ -708,3 +708,125 @@ class AdAccountService:
 
         self.db.add(history)
         self.db.commit()
+
+
+# ========================================
+# 缓存支持 (Phase 3 性能优化)
+# ========================================
+
+async def get_account_statistics_cached(
+    db: Session,
+    project_id: Optional[int] = None,
+    channel_id: Optional[int] = None,
+    current_user_id: int = None,
+    user_role: str = None,
+    ttl: int = 120
+) -> AdAccountStatisticsResponse:
+    """
+    获取账户统计 (带缓存)
+
+    缓存策略:
+    - 缓存键: ai_ads:accounts:statistics:{user_id}:{role}:{project_id}:{channel_id}
+    - TTL: 120 秒 (默认)
+    - 失效时机: 账户创建/更新/删除
+
+    Args:
+        db: 数据库会话
+        project_id: 项目 ID 筛选
+        channel_id: 渠道 ID 筛选
+        current_user_id: 当前用户 ID
+        user_role: 用户角色
+        ttl: 缓存过期时间
+
+    Returns:
+        账户统计响应
+    """
+    from backend.core.cache import cache_manager
+
+    # 生成缓存键
+    cache_key = cache_manager.make_key(
+        "accounts", "statistics",
+        str(current_user_id or "all"),
+        user_role or "any",
+        str(project_id or "all"),
+        str(channel_id or "all")
+    )
+
+    # 尝试从缓存获取
+    cached = await cache_manager.get(cache_key)
+    if cached is not None:
+        # 反序列化 Decimal 字段
+        for field in ["total_spend", "avg_cpl", "best_cpl", "total_budget", "total_daily_budget"]:
+            if field in cached and cached[field] is not None:
+                cached[field] = Decimal(str(cached[field]))
+        return AdAccountStatisticsResponse(**cached)
+
+    # 缓存未命中，从数据库查询
+    service = AdAccountService(db)
+    stats = await service.get_account_statistics(
+        project_id=project_id,
+        channel_id=channel_id,
+        current_user_id=current_user_id,
+        user_role=user_role
+    )
+
+    # 序列化为可缓存格式
+    cache_data = stats.model_dump()
+    for field in ["total_spend", "avg_cpl", "best_cpl", "total_budget", "total_daily_budget"]:
+        if field in cache_data and cache_data[field] is not None:
+            cache_data[field] = str(cache_data[field])
+
+    # 写入缓存
+    await cache_manager.set(cache_key, cache_data, ttl)
+
+    return stats
+
+
+async def invalidate_account_cache(
+    account_id: Optional[int] = None,
+    project_id: Optional[int] = None,
+    user_id: Optional[str] = None
+) -> int:
+    """
+    失效广告账户相关缓存
+
+    失效时机:
+    - 账户创建/更新/删除
+    - 账户状态变更
+    - 账户预算调整
+
+    Args:
+        account_id: 指定账户 ID (可选)
+        project_id: 指定项目 ID (可选)
+        user_id: 指定用户 ID (可选)
+
+    Returns:
+        删除的缓存键数量
+    """
+    from backend.core.cache import cache_manager
+
+    count = 0
+
+    # 失效账户统计缓存
+    if user_id:
+        pattern = f"ai_ads:accounts:statistics:{user_id}:*"
+    else:
+        pattern = "ai_ads:accounts:statistics:*"
+    count += await cache_manager.delete_pattern(pattern)
+
+    # 失效账户列表缓存
+    if project_id:
+        pattern = f"ai_ads:accounts:list:*:{project_id}:*"
+    else:
+        pattern = "ai_ads:accounts:list:*"
+    count += await cache_manager.delete_pattern(pattern)
+
+    # 失效单个账户详情缓存
+    if account_id:
+        pattern = f"ai_ads:accounts:detail:{account_id}:*"
+        count += await cache_manager.delete_pattern(pattern)
+
+    # 同时失效 Dashboard 缓存 (账户数据变更影响 Dashboard)
+    await cache_manager.invalidate_dashboard()
+
+    return count

@@ -738,3 +738,106 @@ class ProjectService:
         if isinstance(user_id, UUID):
             return abs(user_id.int) % (2**63)
         return None
+
+
+# ========================================
+# 缓存支持 (Phase 3 性能优化)
+# ========================================
+
+async def get_project_statistics_cached(
+    db: Session,
+    current_user: User,
+    ttl: int = 120
+) -> dict:
+    """
+    获取项目统计信息 (带缓存)
+
+    缓存策略:
+    - 缓存键: ai_ads:projects:statistics:{user_id}:{role}
+    - TTL: 120 秒 (默认)
+    - 失效时机: 项目创建/更新/删除
+
+    Args:
+        db: 数据库会话
+        current_user: 当前用户
+        ttl: 缓存过期时间
+
+    Returns:
+        项目统计字典
+    """
+    from backend.core.cache import cache_manager
+
+    # 生成缓存键 (包含用户角色，因为不同角色看到的统计不同)
+    cache_key = cache_manager.make_key(
+        "projects", "statistics",
+        str(current_user.id), current_user.role
+    )
+
+    # 尝试从缓存获取
+    cached = await cache_manager.get(cache_key)
+    if cached is not None:
+        # 反序列化 Decimal
+        if "total_budget" in cached:
+            cached["total_budget"] = Decimal(str(cached["total_budget"]))
+        return cached
+
+    # 缓存未命中，从数据库查询
+    service = ProjectService(db)
+    stats = service.get_project_statistics(current_user)
+
+    # 序列化 Decimal 为字符串
+    cache_data = {
+        k: str(v) if isinstance(v, Decimal) else v
+        for k, v in stats.items()
+    }
+
+    # 写入缓存
+    await cache_manager.set(cache_key, cache_data, ttl)
+
+    return stats
+
+
+async def invalidate_project_cache(
+    project_id: Optional[int] = None,
+    user_id: Optional[str] = None
+) -> int:
+    """
+    失效项目相关缓存
+
+    失效时机:
+    - 项目创建/更新/删除
+    - 项目成员变更
+    - 项目费用变更
+
+    Args:
+        project_id: 指定项目 ID (可选)
+        user_id: 指定用户 ID (可选)
+
+    Returns:
+        删除的缓存键数量
+    """
+    from backend.core.cache import cache_manager
+
+    count = 0
+
+    # 失效项目统计缓存
+    if user_id:
+        # 失效指定用户的缓存
+        pattern = f"ai_ads:projects:statistics:{user_id}:*"
+    else:
+        # 失效所有用户的项目统计缓存
+        pattern = "ai_ads:projects:statistics:*"
+
+    count += await cache_manager.delete_pattern(pattern)
+
+    # 失效项目列表缓存
+    if project_id:
+        # 单个项目详情缓存
+        detail_pattern = f"ai_ads:projects:detail:{project_id}:*"
+        count += await cache_manager.delete_pattern(detail_pattern)
+
+    # 失效列表缓存 (所有用户)
+    list_pattern = "ai_ads:projects:list:*"
+    count += await cache_manager.delete_pattern(list_pattern)
+
+    return count

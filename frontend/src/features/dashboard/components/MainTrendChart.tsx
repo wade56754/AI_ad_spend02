@@ -39,7 +39,7 @@ export interface TrendDataPoint {
   conversions?: number;
 }
 
-interface MainTrendChartProps {
+export interface MainTrendChartProps {
   data: TrendDataPoint[];
   activeMetric: MetricType;
   onMetricChange?: (metric: MetricType) => void;
