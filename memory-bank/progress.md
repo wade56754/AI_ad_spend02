@@ -1,7 +1,7 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2025-12-27 23:17
-> **当前阶段**: Phase 1 开发中
+> **最后更新**: 2025-12-28 09:15
+> **当前阶段**: Phase 3 性能优化
 > **SoT 基准**: MASTER.md v4.6 / 6 角色白名单
 
 ---
@@ -9,24 +9,24 @@
 ## 1. 总体进度
 
 ```
-整体进度: ████████░░░░░░░░░░░░ 40%
+整体进度: ████████████████████ 100%
 
-Phase 1 (48 任务): ██████████████░░░░░░ 70%
-Phase 2 (9 任务):  ░░░░░░░░░░░░░░░░░░░░  0%
+Phase 1 (48 任务): ████████████████████ 100% ✅
+Phase 2 (9 任务):  ████████████████████ 100% ✅
+Phase 3 (优化):    ███████████████░░░░░  75%
 ```
 
 | 指标 | 数值 |
 |------|------|
-| 已完成任务 | 28 / 57 |
-| 已完成模块 | 5 / 11 |
-| 剩余 Phase 1 | 20 任务 |
-| 剩余 Phase 2 | 9 任务 |
+| 已完成任务 | 57 / 57 |
+| 已完成模块 | 11 / 11 |
+| Phase 3 优化 | 前端优化 + Redis 缓存 + N+1 修复完成 |
 
 ---
 
 ## 2. 模块完成状态
 
-### Phase 1 模块
+### Phase 1 模块 (全部完成)
 
 | 模块 | 状态 | 任务卡 | 备注 |
 |------|------|--------|------|
@@ -35,40 +35,110 @@ Phase 2 (9 任务):  ░░░░░░░░░░░░░░░░░░░�
 | M3 项目 | ✅ 完成 | 6/6 | TASK-PROJ-001~006 |
 | M4 渠道 | ✅ 完成 | 4/4 | TASK-CHAN-001~004 |
 | M5 账户 | ✅ 完成 | 6/6 | TASK-ACCT-001~006 |
-| M6 日报 P1 | 🔄 进行中 | 2/4 | 3 状态简化版 |
-| M7 充值 | ⏳ 待开始 | 0/7 | 依赖 M5 |
-| M8 账本 | ⏳ 待开始 | 0/4 | 依赖 M6, M7 |
-| M10 利润 | ⏳ 待开始 | 0/4 | 依赖 M8 |
-| M11 周报 | ⏳ 待开始 | 0/3 | 依赖 M6 |
+| M6 日报 P1 | ✅ 完成 | 4/4 | 3 状态简化版 |
+| M7 充值 | ✅ 完成 | 7/7 | TASK-TOP-001~007 |
+| M8 账本 | ✅ 完成 | 4/4 | TASK-LED-001~004 |
+| M10 利润 | ✅ 完成 | 4/4 | TASK-PROF-001~004 |
+| M11 周报 | ✅ 完成 | 3/3 | TASK-WB-001~003 |
 
-### Phase 2 模块
+### Phase 2 模块 (全部完成)
 
 | 模块 | 状态 | 任务卡 | 备注 |
 |------|------|--------|------|
-| M6 日报 P2 | ⏳ Phase 2 | 0/5 | 8 状态完整版 |
-| M9 对账 | ⏳ Phase 2 | 0/4 | 对账批次管理 |
+| M6 日报 P2 | ✅ 完成 | 5/5 | 8 状态完整版, 114 测试 |
+| M9 对账 | ✅ 完成 | 4/4 | 52 测试通过 |
+
+### Phase 3 性能优化 (进行中)
+
+| 优化项 | 状态 | 描述 |
+|--------|------|------|
+| 前端性能优化 | ✅ 完成 | TASK-PERF-004 |
+| 后端 Redis 缓存 | ✅ 完成 | TASK-PERF-001 |
+| N+1 查询修复 | ✅ 完成 | TASK-PERF-002 |
+| 监控告警 | ⏳ 待开始 | APM、日志聚合 |
 
 ---
 
 ## 3. 当前任务卡进度
 
-### M6 日报模块 (Phase 1)
+### Phase 3 性能优化
 
 | 任务卡 | 描述 | 状态 | 验收 |
 |--------|------|------|------|
-| TASK-RPT-001 | 日报创建 API | 🔄 进行中 | - |
-| TASK-RPT-002 | 日报列表查询 | ⏳ 待开始 | - |
-| TASK-RPT-003 | 日报状态流转 (3 状态) | ⏳ 待开始 | - |
-| TASK-RPT-004 | 日报审核 API | ⏳ 待开始 | - |
+| TASK-PERF-001 | 后端 Redis 缓存 | ✅ 完成 | 模块导入通过 |
+| TASK-PERF-002 | N+1 查询修复 | ✅ 完成 | 模块导入通过 |
+| TASK-PERF-003 | APM 监控集成 | ⏳ 待开始 | - |
+| TASK-PERF-004 | 前端性能优化 | ✅ 完成 | TypeScript 编译通过 |
 
-**Phase 1 日报状态机** (3 状态):
+**Phase 3 前端优化清单**:
 ```
-raw_submitted → trend_ok → final_confirmed
+✅ React.memo - 关键组件已应用
+✅ recharts 动态导入 - LazyMainTrendChart
+✅ useCallback - DashboardPage 事件处理器
+✅ TanStack Query - 缓存/重试策略优化
+```
+
+**Phase 3 后端 Redis 缓存清单**:
+```
+✅ core/cache.py - CacheManager 缓存管理器
+✅ core/cache_invalidation.py - 缓存失效策略
+✅ services/dashboard_service.py - Dashboard 缓存
+✅ services/project_service.py - 项目统计缓存
+✅ services/ad_account_service.py - 账户统计缓存
+✅ main.py - lifespan 生命周期集成
+✅ core/config.py - Redis 配置项
+```
+
+**Phase 3 N+1 查询修复清单**:
+```
+✅ profit_service_v2.py - 批量预取项目日报聚合数据
+✅ profit_service_v2.py - _calculate_project_profit_from_agg 方法
+✅ ad_accounts.py - list_ad_accounts joinedload(project, channel)
+✅ ad_accounts.py - get_ad_account joinedload(project, channel)
+✅ project_service.py - _compute_batch_project_stats 批量计算
+✅ Project model - lazy="selectin" 关系加载策略
 ```
 
 ---
 
 ## 4. 最近完成
+
+### 2025-12-28
+- [x] **Phase 3 后端 Redis 缓存 (TASK-PERF-001)**
+  - `core/cache.py`: CacheManager 异步缓存管理器
+    - 连接池管理、自动重连
+    - JSON 序列化/反序列化
+    - 优雅降级 (Redis 不可用时回退)
+    - 装饰器模式支持
+  - `core/cache_invalidation.py`: 缓存失效策略
+    - 事件驱动失效 (项目/账户/日报/充值变更)
+    - 级联失效规则
+  - `services/dashboard_service.py`: Dashboard 缓存函数
+  - `services/project_service.py`: 项目统计缓存函数
+  - `services/ad_account_service.py`: 账户统计缓存函数
+  - `main.py`: lifespan 生命周期集成
+  - `core/config.py`: Redis 配置项 (redis_url, redis_enabled, TTL)
+  - `requirements.txt`: 添加 redis==5.0.1
+
+- [x] **Phase 3 N+1 查询修复 (TASK-PERF-002)**
+  - `services/profit_service_v2.py`: 批量预取项目日报聚合数据
+    - 重构 `get_project_profits` 使用批量查询
+    - 新增 `_calculate_project_profit_from_agg` 方法
+  - `routers/ad_accounts.py`: 添加 joinedload 预加载
+    - `list_ad_accounts`: joinedload(project, channel)
+    - `get_ad_account`: joinedload(project, channel)
+  - `services/project_service.py`: 已有 `_compute_batch_project_stats` 批量方法
+  - `models/core/project.py`: 使用 `lazy="selectin"` 策略
+
+- [x] **Phase 3 前端性能优化 (TASK-PERF-004)**
+  - LazyMainTrendChart: recharts 动态导入 (~500KB 减少)
+  - MainTrendChart: 导出 Props 类型供 lazy 组件使用
+  - DashboardPage: useCallback 优化事件处理器
+  - providers.tsx: TanStack Query 配置优化
+    - staleTime: 2 分钟
+    - gcTime: 10 分钟
+    - refetchOnWindowFocus: false
+    - 指数退避重试策略
 
 ### 2025-12-27
 

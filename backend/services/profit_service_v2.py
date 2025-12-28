@@ -132,6 +132,10 @@ class ProfitServiceV2:
 
         Returns:
             ProjectProfitsData
+
+        优化说明 (Phase 3 N+1 修复):
+        - 使用批量查询预取所有项目的日报聚合数据
+        - 避免在循环中对每个项目单独查询
         """
         start_date, end_date, _ = self._parse_period(period)
 
@@ -144,6 +148,27 @@ class ProfitServiceV2:
             query = query.filter(Project.status.in_(["refunded", "closed", "cancelled"]))
 
         projects = query.all()
+        project_ids = [p.id for p in projects]
+
+        # ===== N+1 优化: 批量预取所有项目的日报聚合数据 =====
+        daily_report_aggs = {}
+        if project_ids:
+            agg_results = self.db.query(
+                DailyReport.project_id,
+                func.coalesce(func.sum(DailyReport.conversions_final), 0).label("conversions"),
+                func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
+            ).filter(
+                DailyReport.project_id.in_(project_ids),
+                DailyReport.report_date >= start_date,
+                DailyReport.report_date <= end_date,
+                DailyReport.status == "final_locked",
+            ).group_by(DailyReport.project_id).all()
+
+            for row in agg_results:
+                daily_report_aggs[row.project_id] = {
+                    "conversions": int(row.conversions or 0),
+                    "spend": Decimal(str(row.spend or 0)),
+                }
 
         items = []
         total_conversions = 0
@@ -152,7 +177,9 @@ class ProfitServiceV2:
         total_profit = Decimal("0.00")
 
         for project in projects:
-            item = self._calculate_project_profit(project, start_date, end_date)
+            # 使用预取的数据代替单独查询
+            agg_data = daily_report_aggs.get(project.id, {"conversions": 0, "spend": Decimal("0")})
+            item = self._calculate_project_profit_from_agg(project, agg_data)
             items.append(item)
 
             total_conversions += item.conversions or 0
@@ -412,6 +439,68 @@ class ProfitServiceV2:
 
         conversions = int(result.conversions or 0)
         spend = Decimal(str(result.spend or 0))
+
+        # 收入计算（支持阶梯定价）
+        revenue = self._calculate_revenue(project, conversions)
+
+        # 平均单价
+        avg_unit_price = revenue / conversions if conversions > 0 else unit_price
+
+        # 费用（假设 8%）
+        fee_rate = 0.08
+        fee = spend * Decimal(str(fee_rate))
+
+        # 成本
+        cost = spend + fee
+
+        # 利润
+        profit = revenue - cost
+
+        # 利润率
+        profit_rate = float(profit / revenue) if revenue > 0 else 0.0
+
+        # 利润状态
+        profit_status = self._get_profit_status(profit_rate, project.status)
+
+        # 价格规则
+        price_rules = self._get_price_rules(project)
+
+        return ProjectProfitItem(
+            project_id=project.id,
+            project_name=project.name,
+            status=project.status or "active",
+            profit_status=profit_status,
+            conversions=conversions if conversions > 0 else None,
+            revenue=revenue,
+            avg_unit_price=avg_unit_price,
+            cost=cost,
+            fee_rate=fee_rate,
+            profit=profit,
+            profit_rate=profit_rate,
+            price_rules=price_rules,
+        )
+
+    def _calculate_project_profit_from_agg(
+        self,
+        project: Project,
+        agg_data: dict,
+    ) -> ProjectProfitItem:
+        """
+        使用预取的聚合数据计算单个项目的利润
+
+        Phase 3 N+1 优化: 避免在循环中对每个项目单独查询
+
+        Args:
+            project: 项目对象
+            agg_data: 预取的聚合数据 {"conversions": int, "spend": Decimal}
+
+        Returns:
+            ProjectProfitItem
+        """
+        unit_price = project.unit_price or Decimal("0")
+
+        conversions = agg_data.get("conversions", 0)
+        spend = agg_data.get("spend", Decimal("0"))
 
         # 收入计算（支持阶梯定价）
         revenue = self._calculate_revenue(project, conversions)
