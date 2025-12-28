@@ -1,12 +1,27 @@
 """
-结算管理数据模型
-Version: 1.0
-Author: Claude Code (full_pipeline)
+结算管理数据模型 (重构版)
 
-Aligned with SoT:
-- DATA_SCHEMA.md v5.2 (settlement entity)
-- BUSINESS_RULES.md v3.1 (settlement constraints)
-- LEDGER_SOT.md v1.1 (settlement ledger entries)
+SoT References:
+- DATA_SCHEMA.md v5.3 (settlements 表)
+- API_SOT.md v9.3 §6 Settlements API
+- STATE_MACHINE.md v2.6 §4 结算状态机
+- LEDGER_SOT.md v1.1 (结算账本分录)
+- MASTER.md v4.4 §2.4 (7角色模型)
+- ERROR_CODES_SOT.md v2.1 (错误码)
+
+状态机 (5状态):
+- draft → pending → approved → paid
+- draft/pending/approved → cancelled
+
+依赖代码块:
+- response-envelope: 标准响应格式
+- pagination: 分页查询
+- state-machine: 状态流转
+- ledger-entry: 账本分录
+- audit-log: 审计日志
+
+Version: 2.0
+Author: Claude Code
 """
 
 from datetime import datetime, date

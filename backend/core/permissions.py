@@ -1,8 +1,35 @@
 """
-权限管理模块
-提供角色和权限检查功能
+权限管理模块 (Core Layer)
 
 SoT Reference: MASTER.md v4.4 §2.4 (角色定义)
+SoT Reference: AUTH_SPEC.md v2.0 (认证授权规范)
+
+本模块是 permission-filter 代码块，提供:
+1. Permission - 权限枚举
+2. ROLE_PERMISSIONS - 角色权限映射
+3. apply_permission_filter() - 根据角色过滤查询数据
+4. PermissionRule - 权限规则配置
+5. 各类权限检查装饰器和守卫
+
+权限过滤规则 (按角色):
+- ceo/admin: 无过滤，看全部数据
+- project_owner: 过滤本项目数据 (通过 project_members 表)
+- supervisor: 过滤本团队数据
+- pitcher: 过滤本人数据 (owner_id/submitted_by/pitcher_id)
+- finance: 财务相关数据
+- account_manager: 账户相关数据
+
+使用示例:
+    from backend.core.permissions import apply_permission_filter
+
+    @router.get("/daily-reports")
+    def list_reports(
+        user: AuthenticatedUser = Depends(get_current_active_user),
+        db: Session = Depends(get_db)
+    ):
+        query = db.query(DailyReport)
+        query = apply_permission_filter(query, DailyReport, user, db)
+        return query.all()
 """
 
 from functools import wraps
@@ -20,7 +47,7 @@ from backend.core.security import (
     require_roles as _require_roles,
     require_permissions as _require_permissions
 )
-from backend.core.database import get_db
+from backend.core.db import get_db
 from backend.models.enums import UserRole
 
 
@@ -542,4 +569,271 @@ def require_project_member(project_id: int, allowed_roles: List[str] = None):
         return current_user
 
     return project_member_dependency
+
+
+# ============================================================================
+# 数据权限过滤 (CB-04)
+# ============================================================================
+
+from dataclasses import dataclass
+from typing import Type
+from sqlalchemy.orm import Query as SAQuery
+
+
+@dataclass
+class PermissionRule:
+    """
+    权限规则配置
+
+    Attributes:
+        model: SQLAlchemy 模型类
+        user_field: 用户关联字段 (如 owner_id, submitted_by)
+        project_field: 项目关联字段 (如 project_id)
+        team_field: 团队关联字段 (如 team_id)
+        admin_bypass: 管理员是否绕过过滤
+    """
+    model: Type
+    user_field: str
+    project_field: Optional[str] = None
+    team_field: Optional[str] = None
+    admin_bypass: bool = True
+
+
+# 权限规则注册表 - 延迟初始化
+_PERMISSION_RULES: Dict[str, PermissionRule] = {}
+
+
+def register_permission_rule(model_name: str, rule: PermissionRule):
+    """注册权限规则"""
+    _PERMISSION_RULES[model_name] = rule
+
+
+def get_permission_rule(model: Type) -> Optional[PermissionRule]:
+    """获取模型的权限规则"""
+    return _PERMISSION_RULES.get(model.__name__)
+
+
+def apply_permission_filter(
+    query: SAQuery,
+    model: Type,
+    user: AuthenticatedUser,
+    db: Session = None
+) -> SAQuery:
+    """
+    根据用户角色过滤查询结果
+
+    权限过滤规则 (MASTER.md v4.4 §2.4):
+    - ceo/admin: 无过滤，看全部
+    - project_owner: 过滤本项目数据
+    - supervisor/data_operator: 过滤本团队数据
+    - pitcher/media_buyer: 过滤本人数据
+    - finance: 看财务相关数据
+    - account_manager: 看账户相关数据
+
+    Args:
+        query: SQLAlchemy Query 对象
+        model: SQLAlchemy 模型类
+        user: 认证用户对象
+        db: 数据库会话 (用于查询项目成员关系)
+
+    Returns:
+        过滤后的 Query 对象
+
+    Usage:
+        query = db.query(DailyReport)
+        query = apply_permission_filter(query, DailyReport, current_user, db)
+        items = query.all()
+    """
+    user_role = user.role
+    user_id = UUID(str(user.id)) if not isinstance(user.id, UUID) else user.id
+
+    # 1. CEO/Admin 不过滤
+    if user_role in ['ceo', 'admin', UserRole.ADMIN.value]:
+        return query
+
+    # 2. 检查模型是否有 RLSAwareMixin
+    if hasattr(model, 'apply_rls_filter'):
+        try:
+            user_role_enum = UserRole(user_role)
+        except ValueError:
+            # 尝试业务角色映射
+            role_map = {
+                'supervisor': UserRole.DATA_OPERATOR,
+                'pitcher': UserRole.MEDIA_BUYER,
+            }
+            user_role_enum = role_map.get(user_role)
+
+        if user_role_enum:
+            return model.apply_rls_filter(query, user_id, user_role_enum)
+
+    # 3. 检查注册的权限规则
+    rule = get_permission_rule(model)
+    if rule:
+        return _apply_rule_filter(query, model, rule, user, db)
+
+    # 4. 默认行为：尝试按常见字段过滤
+    return _apply_default_filter(query, model, user_id, user_role, db)
+
+
+def _apply_rule_filter(
+    query: SAQuery,
+    model: Type,
+    rule: PermissionRule,
+    user: AuthenticatedUser,
+    db: Session
+) -> SAQuery:
+    """应用注册的权限规则"""
+    user_id = UUID(str(user.id)) if not isinstance(user.id, UUID) else user.id
+    user_role = user.role
+
+    # admin 绕过
+    if rule.admin_bypass and user_role in ['admin', 'ceo', UserRole.ADMIN.value]:
+        return query
+
+    # project_owner: 过滤本项目
+    if user_role == 'project_owner' and rule.project_field and db:
+        project_ids = get_user_owned_projects(user_id, db)
+        if project_ids:
+            project_column = getattr(model, rule.project_field)
+            return query.filter(project_column.in_(project_ids))
+        # 无项目时返回空结果
+        return query.filter(False)
+
+    # supervisor/data_operator: 过滤本团队
+    if user_role in ['supervisor', 'data_operator', UserRole.DATA_OPERATOR.value] and rule.team_field:
+        # TODO: 获取用户所属团队
+        pass
+
+    # pitcher/media_buyer: 过滤本人
+    if user_role in ['pitcher', 'media_buyer', UserRole.MEDIA_BUYER.value] and rule.user_field:
+        user_column = getattr(model, rule.user_field)
+        return query.filter(user_column == user_id)
+
+    return query
+
+
+def _apply_default_filter(
+    query: SAQuery,
+    model: Type,
+    user_id: UUID,
+    user_role: str,
+    db: Session
+) -> SAQuery:
+    """
+    默认过滤逻辑 - 按常见字段名猜测
+
+    检查模型是否有以下字段:
+    - owner_id, submitted_by, created_by, user_id, pitcher_id
+    - project_id (用于 project_owner 角色)
+    - team_id (用于 supervisor 角色)
+    """
+    # project_owner: 按项目过滤
+    if user_role == 'project_owner' and hasattr(model, 'project_id') and db:
+        project_ids = get_user_owned_projects(user_id, db)
+        if project_ids:
+            return query.filter(model.project_id.in_(project_ids))
+        return query.filter(False)
+
+    # pitcher/media_buyer: 按用户字段过滤
+    user_fields = ['owner_id', 'submitted_by', 'pitcher_id', 'user_id', 'created_by']
+    for field in user_fields:
+        if hasattr(model, field):
+            column = getattr(model, field)
+            return query.filter(column == user_id)
+
+    # 无法过滤时返回原查询 (可能导致数据泄露，建议注册规则)
+    return query
+
+
+def filter_accessible_items(
+    items: List[Any],
+    user: AuthenticatedUser,
+    check_method: str = 'is_accessible_by'
+) -> List[Any]:
+    """
+    过滤列表中用户可访问的项目
+
+    用于已查询出的列表进行二次过滤
+
+    Args:
+        items: 对象列表
+        user: 认证用户
+        check_method: 检查方法名
+
+    Returns:
+        过滤后的列表
+
+    Usage:
+        reports = db.query(DailyReport).all()
+        accessible = filter_accessible_items(reports, current_user)
+    """
+    user_id = UUID(str(user.id)) if not isinstance(user.id, UUID) else user.id
+
+    try:
+        user_role = UserRole(user.role)
+    except ValueError:
+        role_map = {'supervisor': UserRole.DATA_OPERATOR, 'pitcher': UserRole.MEDIA_BUYER}
+        user_role = role_map.get(user.role)
+
+    result = []
+    for item in items:
+        if hasattr(item, check_method):
+            checker = getattr(item, check_method)
+            if checker(user_id, user_role):
+                result.append(item)
+        else:
+            # 无检查方法时包含
+            result.append(item)
+
+    return result
+
+
+# ============================================================================
+# 导出列表
+# ============================================================================
+
+__all__ = [
+    # 权限枚举
+    "Permission",
+    "ROLE_PERMISSIONS",
+
+    # 权限检查函数
+    "get_user_permissions",
+    "check_role_permission",
+    "check_user_permission",
+
+    # 权限装饰器
+    "require_roles",
+    "require_permissions",
+    "require_any_role",
+    "require_any_permission",
+
+    # 资源访问装饰器
+    "require_project_access",
+    "require_account_access",
+
+    # 权限检查器
+    "PermissionChecker",
+    "get_permission_checker",
+
+    # 便捷装饰器
+    "admin_required",
+    "finance_required",
+    "account_manager_required",
+    "data_operator_required",
+    "media_buyer_required",
+
+    # 项目权限守卫
+    "require_project_owner",
+    "require_project_member",
+    "is_project_owner",
+    "get_user_owned_projects",
+
+    # 数据权限过滤 (核心接口)
+    "PermissionRule",
+    "register_permission_rule",
+    "get_permission_rule",
+    "apply_permission_filter",
+    "filter_accessible_items",
+]
 

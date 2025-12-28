@@ -272,9 +272,9 @@ echo '{"session_id":"test","start_time":"2025-12-24T20:00:00"}' | python .claude
 
 ## 相关文档
 
-- docs/1.overview/MASTER.md v4.4
-- docs/2.sot/STATE_MACHINE.md v2.6
-- docs/2.sot/API_SOT.md v9.0
+- docs/sot/MASTER.md v4.4
+- docs/sot/STATE_MACHINE.md v2.6
+- docs/sot/API_SOT.md v9.0
 
 ---
 

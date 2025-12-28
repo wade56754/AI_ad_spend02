@@ -4,9 +4,9 @@ Version: 1.0
 Author: Claude协作开发
 
 SoT References:
-- docs/2.sot/STATE_MACHINE.md v2.6 第12章 (transfer_requests 状态机)
-- docs/2.sot/API_SOT.md v9.0 (API 规范)
-- docs/2.sot/ERROR_CODES_SOT.md v2.1 (错误码)
+- docs/sot/STATE_MACHINE.md v2.6 第12章 (transfer_requests 状态机)
+- docs/sot/API_SOT.md v9.0 (API 规范)
+- docs/sot/ERROR_CODES_SOT.md v2.1 (错误码)
 """
 
 from typing import Optional

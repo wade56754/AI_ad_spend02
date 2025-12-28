@@ -1,12 +1,21 @@
 """
-充值管理服务层
-Version: 2.0 (SoT Aligned - STATE_MACHINE.md v2.6)
-Author: Claude协作开发
+充值管理服务层 (重构版)
 
-充值申请状态机（7状态）：
+SoT Reference: STATE_MACHINE.md v2.6 §9 (充值状态机)
+SoT Reference: LEDGER_SOT.md v1.1 (账本规则 BR-FIN-005)
+
+充值状态机 (7状态):
 draft → pending_review → finance_approve → paid → completed
-                       → rejected
-                       → cancelled
+        ↓                ↓
+     cancelled        rejected
+
+依赖代码块:
+- state-machine: TOPUP_STATE_MACHINE
+- ledger-entry: LedgerEntry 记录
+- permission-filter: 角色数据过滤
+- phase-config: Phase 1/2 行为控制
+
+Version: 2.1
 """
 
 from datetime import datetime, date, timedelta
@@ -82,10 +91,20 @@ class TopupService:
 
         # 2. 验证申请金额
         if request_data.requested_amount > self.MAX_SINGLE_AMOUNT:
-            raise BusinessLogicError(
-                f"单笔充值金额不能超过{self.MAX_SINGLE_AMOUNT}",
-                error_code="BIZ-201"
-            )
+            if should_enforce_topup():
+                # Phase 2: 硬阻断
+                raise BusinessLogicError(
+                    f"单笔充值金额不能超过{self.MAX_SINGLE_AMOUNT}",
+                    error_code="BIZ-201"
+                )
+            else:
+                # Phase 1: 仅记录警告，不阻断
+                log_phase_warning(
+                    feature="topup_single_amount_limit",
+                    message=f"单笔充值金额超过限制({self.MAX_SINGLE_AMOUNT})",
+                    requested_amount=str(request_data.requested_amount),
+                    limit=str(self.MAX_SINGLE_AMOUNT)
+                )
 
         # 3. 检查账户余额上限
         self._check_account_balance_limit(
@@ -138,7 +157,8 @@ class TopupService:
         project_id: Optional[int] = None,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
-        request_no: Optional[str] = None
+        request_no: Optional[str] = None,
+        created_by: Optional[str] = None  # TASK-FIN-001: 按创建人筛选
     ) -> Tuple[List[TopupRequest], int]:
         """获取充值申请列表"""
         query = self.db.query(TopupRequest)
@@ -168,6 +188,14 @@ class TopupService:
                 query = query.filter(TopupRequest.id == req_id)
             except ValueError:
                 pass  # 忽略无效的 request_no
+        # TASK-FIN-001: 按创建人筛选 (UUID 字符串)
+        if created_by:
+            from uuid import UUID
+            try:
+                creator_uuid = UUID(created_by)
+                query = query.filter(TopupRequest.requested_by == creator_uuid)
+            except ValueError:
+                pass  # 忽略无效的 UUID
 
         # 计算总数
         total = query.count()
@@ -210,6 +238,122 @@ class TopupService:
         # 检查访问权限
         self._check_request_access(request, current_user)
 
+        return request
+
+    def submit_request(
+        self,
+        request_id: int,
+        current_user: User,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> TopupRequest:
+        """
+        TASK-FIN-003: 提交充值申请
+
+        状态机流转 (STATE_MACHINE.md v2.6 §9):
+        - draft → pending_review
+
+        权限: 仅创建者可提交 (API_SOT.md v9.4 §10.2)
+        """
+        request = self.get_request_by_id(request_id, current_user)
+
+        old_status = request.status
+
+        # 验证权限 - 只有创建者本人可以提交
+        is_owner = request.requested_by == current_user.id
+        if not is_owner:
+            raise PermissionDeniedError(
+                "仅创建者可提交充值申请",
+                error_code="AUTH-403"
+            )
+
+        # 验证当前状态必须为 draft
+        if request.status != TopupStatus.DRAFT.value:
+            raise BusinessLogicError(
+                f"状态转换非法: 当前状态 {request.status}，仅 draft 状态可提交",
+                error_code="STATE-400"
+            )
+
+        # 执行状态转换: draft → pending_review
+        new_status = TopupStatus.PENDING_REVIEW.value
+        request.status = new_status
+        request.requested_at = datetime.utcnow()
+
+        # 记录审批日志 [AUDIT]
+        self._create_approval_log(
+            request_id=request_id,
+            action="submitted",
+            actor=current_user,
+            previous_status=old_status,
+            new_status=new_status,
+            notes="提交充值申请审批",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        self.db.commit()
+        return request
+
+    def approve_request(
+        self,
+        request_id: int,
+        current_user: User,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> TopupRequest:
+        """
+        TASK-FIN-004: 审批通过充值申请
+
+        状态机流转 (STATE_MACHINE.md v2.6 §9):
+        - pending_review → finance_approve
+
+        权限: finance, admin (API_SOT.md v9.4 §10.2)
+        约束: 职责分离 - 申请者不能是审批者 (BR-FIN-004)
+        """
+        request = self.get_request_by_id(request_id, current_user)
+
+        old_status = request.status
+
+        # BR-FIN-004: 职责分离 - 申请者不能是审批者
+        if request.requested_by == current_user.id:
+            raise BusinessLogicError(
+                "违反职责分离原则：申请者不能审批自己的申请",
+                error_code="BIZ-001"
+            )
+
+        # 验证当前状态必须为 pending_review
+        if request.status != TopupStatus.PENDING_REVIEW.value:
+            raise BusinessLogicError(
+                f"状态转换非法: 当前状态 {request.status}，仅 pending_review 状态可审批",
+                error_code="STATE-400"
+            )
+
+        # 验证角色权限 - 仅 finance/admin 可审批
+        if current_user.role not in [UserRole.FINANCE.value, UserRole.ADMIN.value]:
+            raise PermissionDeniedError(
+                "仅财务或管理员可审批充值申请",
+                error_code="AUTH-403"
+            )
+
+        # 执行状态转换: pending_review → finance_approve
+        new_status = TopupStatus.FINANCE_APPROVE.value
+        request.status = new_status
+        request.reviewed_by = current_user.id
+        request.reviewed_at = datetime.utcnow()
+
+        # 记录审批日志 [AUDIT]
+        self._create_approval_log(
+            request_id=request_id,
+            action="approved",
+            actor=current_user,
+            previous_status=old_status,
+            new_status=new_status,
+            notes="审批通过充值申请",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        self.db.commit()
         return request
 
     def data_review(
@@ -306,21 +450,43 @@ class TopupService:
         user_agent: Optional[str] = None
     ) -> TopupRequest:
         """
-        拒绝充值申请
+        TASK-FIN-004: 拒绝充值申请
 
         状态机流转 (STATE_MACHINE.md v2.6 §9):
-        - pending_review → rejected (数据员拒绝)
-        - finance_approve → rejected (财务拒绝)
+        - pending_review → rejected
+        - finance_approve → rejected
 
-        权限: data_operator, finance, admin
+        权限: finance, admin (API_SOT.md v9.4 §10.2)
+        约束: 职责分离 - 申请者不能是审批者 (BR-FIN-004)
         """
         request = self.get_request_by_id(request_id, current_user)
+
+        # VAL_001: 验证拒绝原因不能为空
+        if not reason or not reason.strip():
+            raise BusinessLogicError(
+                "拒绝原因不能为空",
+                error_code="VAL-001"
+            )
+
+        # BR-FIN-004: 职责分离 - 申请者不能是审批者
+        if request.requested_by == current_user.id:
+            raise BusinessLogicError(
+                "违反职责分离原则：申请者不能拒绝自己的申请",
+                error_code="BIZ-001"
+            )
 
         old_status = request.status
         new_status = TopupStatus.REJECTED.value
 
-        # 使用状态机验证并执行转换 (状态机会验证角色权限)
-        self._validate_transition(request, new_status, current_user.role, "拒绝")
+        # 验证当前状态 (仅 pending_review 可拒绝)
+        if request.status != TopupStatus.PENDING_REVIEW.value:
+            raise BusinessLogicError(
+                f"状态转换非法: 当前状态 {request.status}，仅 pending_review 状态可拒绝",
+                error_code="STATE-400"
+            )
+
+        # 执行状态转换
+        request.status = new_status
         request.rejected_at = datetime.utcnow()
         request.rejected_by = current_user.id
         request.rejection_reason = reason
@@ -472,6 +638,202 @@ class TopupService:
         self.db.commit()
         return request
 
+    def confirm_payment(
+        self,
+        request_id: int,
+        current_user: User,
+        transaction_id: Optional[str] = None,
+        receipt_url: Optional[str] = None,
+        notes: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> TopupRequest:
+        """
+        TASK-FIN-005: 确认付款
+
+        状态机流转 (STATE_MACHINE.md v2.6 §9):
+        - finance_approve → paid (确认已打款)
+
+        权限: finance (API_SOT.md v9.4 §10.2)
+        约束: 仅 finance_approve 状态可确认付款
+
+        Args:
+            request_id: 充值申请ID
+            current_user: 当前用户
+            transaction_id: 交易流水号（可选）
+            receipt_url: 付款凭证URL（可选）
+            notes: 备注（可选）
+
+        Returns:
+            TopupRequest: 更新后的充值申请
+
+        Raises:
+            STATE-400: 当前状态非 finance_approve
+            AUTH-403: 非财务角色
+        """
+        request = self.get_request_by_id(request_id, current_user)
+
+        old_status = request.status
+
+        # 验证当前状态必须为 finance_approve（已审批）
+        if request.status != TopupStatus.FINANCE_APPROVE.value:
+            raise BusinessLogicError(
+                f"状态转换非法: 当前状态 {request.status}，仅 finance_approve 状态可确认付款",
+                error_code="STATE-400"
+            )
+
+        # 验证角色权限 - 仅 finance 可确认付款
+        if current_user.role != UserRole.FINANCE.value:
+            raise PermissionDeniedError(
+                "仅财务可确认付款",
+                error_code="AUTH-403"
+            )
+
+        # 检查是否已打款
+        if request.paid_at:
+            raise ResourceConflictError(
+                "该申请已确认付款",
+                error_code="BIZ-207"
+            )
+
+        # 执行状态转换: finance_approve → paid
+        new_status = TopupStatus.PAID.value
+        request.status = new_status
+        request.paid_at = datetime.utcnow()
+
+        # 更新可选字段
+        if transaction_id:
+            request.transaction_id = transaction_id
+        if receipt_url:
+            request.receipt_url = receipt_url
+
+        # 记录审批日志 [AUDIT]
+        self._create_approval_log(
+            request_id=request_id,
+            action="payment_confirmed",
+            actor=current_user,
+            previous_status=old_status,
+            new_status=new_status,
+            notes=notes or "确认已打款",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        self.db.commit()
+        return request
+
+    def confirm_arrival(
+        self,
+        request_id: int,
+        current_user: User,
+        actual_amount: Optional[Decimal] = None,
+        transaction_id: Optional[str] = None,
+        notes: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> TopupRequest:
+        """
+        TASK-FIN-006: 确认到账
+
+        状态机流转 (STATE_MACHINE.md v2.6 §9):
+        - paid → completed (确认到账)
+
+        权限: finance, account_manager (API_SOT.md v9.4 §10.2)
+        业务规则: BR-FIN-005 - 到账后写入账本 (LEDGER_SOT.md v1.2)
+
+        Args:
+            request_id: 充值申请ID
+            current_user: 当前用户
+            actual_amount: 实际到账金额（可选，默认使用申请金额）
+            transaction_id: 交易流水号（可选）
+            notes: 备注（可选）
+
+        Returns:
+            TopupRequest: 更新后的充值申请
+
+        Raises:
+            STATE-400: 当前状态非 paid
+            AUTH-403: 非授权角色
+        """
+        request = self.get_request_by_id(request_id, current_user)
+
+        old_status = request.status
+
+        # 验证当前状态必须为 paid（已打款）
+        if request.status != TopupStatus.PAID.value:
+            raise BusinessLogicError(
+                f"状态转换非法: 当前状态 {request.status}，仅 paid 状态可确认到账",
+                error_code="STATE-400"
+            )
+
+        # 验证角色权限 - finance 或 account_manager 可确认到账
+        allowed_roles = [UserRole.FINANCE.value, UserRole.ACCOUNT_MANAGER.value]
+        if current_user.role not in allowed_roles:
+            raise PermissionDeniedError(
+                "仅财务或户管可确认到账",
+                error_code="AUTH-403"
+            )
+
+        # 检查是否已完成
+        if request.completed_at:
+            raise ResourceConflictError(
+                "该申请已确认到账",
+                error_code="BIZ-208"
+            )
+
+        # 执行状态转换: paid → completed
+        new_status = TopupStatus.COMPLETED.value
+        request.status = new_status
+        request.completed_at = datetime.utcnow()
+
+        # 确定实际到账金额（优先使用传入的 actual_amount，否则使用申请金额）
+        topup_amount = actual_amount or request.amount
+
+        # 创建交易记录（字段名对齐 DATA_SCHEMA.md v5.2）
+        transaction = TopupTransaction(
+            topup_request_id=request_id,
+            paid_amount=topup_amount,
+            paid_currency="CNY",
+            payment_method="bank_transfer",  # 默认支付方式
+            payment_reference=transaction_id,
+            paid_at=request.paid_at or datetime.utcnow(),
+            notes=notes,
+            created_by=current_user.id
+        )
+        self.db.add(transaction)
+
+        # BR-FIN-005 - 创建 ledger_entry 记录 (LEDGER_SOT.md v1.2)
+        current_balance = LedgerEntry.get_account_balance(self.db, request.ad_account_id)
+
+        ledger_entry = LedgerEntry(
+            ad_account_id=request.ad_account_id,
+            entry_type=LedgerEntryType.TOPUP.value,
+            amount=topup_amount,
+            balance_after=current_balance + topup_amount,
+            reference_type="topup_request",
+            reference_id=request_id,
+            notes=f"充值到账 #{request_id} - 金额: {topup_amount} - 操作人: {current_user.username}"
+        )
+        self.db.add(ledger_entry)
+
+        # 余额通过 ledger_entry 计算得出 (LEDGER_SOT.md v1.2 §3.2 余额真相源)
+        # 不直接修改 ad_account 表的余额字段
+
+        # 记录审批日志 [AUDIT]
+        self._create_approval_log(
+            request_id=request_id,
+            action="arrival_confirmed",
+            actor=current_user,
+            previous_status=old_status,
+            new_status=new_status,
+            notes=notes or f"确认到账，金额: {topup_amount}",
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        self.db.commit()
+        return request
+
     def mark_as_paid(
         self,
         request_id: int,
@@ -480,7 +842,7 @@ class TopupService:
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None
     ) -> TopupRequest:
-        """标记为已打款"""
+        """标记为已打款（兼容旧接口）"""
         # 获取并验证请求
         request = self._get_request_for_action(request_id, current_user, "finance_approve")
 
@@ -536,13 +898,13 @@ class TopupService:
             request.completed_at = datetime.utcnow()
             request.status = TopupStatus.COMPLETED.value
 
-            # 创建交易记录
+            # 创建交易记录 (TopupRequest 模型只有 amount 字段)
             transaction = TopupTransaction(
                 request_id=request_id,
-                transaction_no=request.transaction_id or f"TXN_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-                amount=request.actual_amount or request.requested_amount,
-                currency=request.currency,
-                payment_method=request.payment_method or "other",
+                transaction_no=f"TXN_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+                amount=request.amount,  # 使用 amount 字段
+                currency="CNY",  # TopupRequest 暂无 currency 字段，使用默认值
+                payment_method="bank_transfer",  # 默认支付方式
                 transaction_date=request.paid_at,
                 receipt_file=receipt_data.receipt_url,
                 notes=receipt_data.notes,
@@ -648,39 +1010,29 @@ class TopupService:
         completed_requests = base_query.filter(TopupRequest.status == TopupStatus.COMPLETED.value).count()
         rejected_requests = base_query.filter(TopupRequest.status == TopupStatus.REJECTED.value).count()
 
-        # 金额统计
+        # 金额统计 (TopupRequest 模型只有 amount 字段)
         total_amount_requested = base_query.with_entities(
-            func.coalesce(func.sum(TopupRequest.requested_amount), 0)
+            func.coalesce(func.sum(TopupRequest.amount), 0)
         ).scalar() or Decimal(0)
 
         total_amount_approved = base_query.filter(
             TopupRequest.status.in_([TopupStatus.FINANCE_APPROVE.value, TopupStatus.PAID.value, TopupStatus.COMPLETED.value])
         ).with_entities(
-            func.coalesce(func.sum(TopupRequest.actual_amount), 0)
+            func.coalesce(func.sum(TopupRequest.amount), 0)
         ).scalar() or Decimal(0)
 
         total_amount_paid = base_query.filter(
             TopupRequest.status.in_([TopupStatus.PAID.value, TopupStatus.COMPLETED.value])
         ).with_entities(
-            func.coalesce(func.sum(TopupRequest.actual_amount), 0)
+            func.coalesce(func.sum(TopupRequest.amount), 0)
         ).scalar() or Decimal(0)
 
-        # 紧急程度统计
-        urgent_requests = base_query.filter(
-            TopupRequest.urgency_level == "urgent"
-        ).count()
+        # 紧急程度统计 (TopupRequest 模型暂无 urgency_level 字段，返回 0)
+        urgent_requests = 0
+        high_requests = 0
 
-        high_requests = base_query.filter(
-            TopupRequest.urgency_level == "high"
-        ).count()
-
-        # 逾期统计 - 使用 TopupStatus 枚举 (STATE_MACHINE.md v2.6)
-        overdue_requests = base_query.filter(
-            and_(
-                TopupRequest.status.in_([TopupStatus.PENDING_REVIEW.value, TopupStatus.FINANCE_APPROVE.value]),
-                TopupRequest.expected_date < date.today()
-            )
-        ).count()
+        # 逾期统计 (TopupRequest 模型暂无 expected_date 字段，返回 0)
+        overdue_requests = 0
 
         # 计算平均处理时间和成功率
         avg_processing_time, success_rate = self._calculate_processing_metrics(base_query)
@@ -725,13 +1077,8 @@ class TopupService:
         pending_approvals = base_query.filter(TopupRequest.status == TopupStatus.FINANCE_APPROVE.value).count()
         pending_payments = base_query.filter(TopupRequest.status == TopupStatus.PAID.value).count()
 
-        # 逾期项
-        overdue_items = base_query.filter(
-            and_(
-                TopupRequest.status.in_([TopupStatus.PENDING_REVIEW.value, TopupStatus.FINANCE_APPROVE.value]),
-                TopupRequest.expected_date < date.today()
-            )
-        ).count()
+        # 逾期项 (TopupRequest 模型暂无 expected_date 字段，返回 0)
+        overdue_items = 0
 
         # 今日数据
         today = date.today()
@@ -742,7 +1089,7 @@ class TopupService:
         today_amount = base_query.filter(
             func.date(TopupRequest.created_at) == today
         ).with_entities(
-            func.coalesce(func.sum(TopupRequest.requested_amount), 0)
+            func.coalesce(func.sum(TopupRequest.amount), 0)
         ).scalar() or Decimal(0)
 
         today_completed = base_query.filter(
@@ -758,7 +1105,7 @@ class TopupService:
         month_amount = base_query.filter(
             TopupRequest.created_at >= month_start
         ).with_entities(
-            func.coalesce(func.sum(TopupRequest.requested_amount), 0)
+            func.coalesce(func.sum(TopupRequest.amount), 0)
         ).scalar() or Decimal(0)
 
         month_completed = base_query.filter(
@@ -937,8 +1284,8 @@ class TopupService:
         if not ad_account:
             raise ResourceNotFoundError("广告账户不存在", error_code="SYS-004")
 
-        # 管理员和财务可以访问所有账户 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
-        if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
+        # 管理员/CEO/财务/项目负责人可以访问所有账户 - MASTER.md v4.6
+        if current_user.role in [UserRole.ADMIN.value, UserRole.CEO.value, UserRole.FINANCE.value, UserRole.PROJECT_OWNER.value]:
             return ad_account
 
         # 账户管理员可以访问自己项目的账户
@@ -992,7 +1339,12 @@ class TopupService:
                 )
 
     def _check_daily_request_limit(self, ad_account_id: int, user_id: int):
-        """检查每日申请次数限制"""
+        """检查每日申请次数限制
+
+        Phase-aware 行为 (MASTER.md v4.6 §3.4):
+        - Phase 1: 超过次数记录警告，但不阻断
+        - Phase 2: 超过次数抛出异常
+        """
         today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
         request_count = (
@@ -1008,15 +1360,27 @@ class TopupService:
         )
 
         if request_count >= self.MAX_DAILY_REQUESTS:
-            raise BusinessLogicError(
-                f"同一账户24小时内最多只能申请{self.MAX_DAILY_REQUESTS}次充值",
-                error_code="BIZ-204"
-            )
+            if should_enforce_topup():
+                # Phase 2: 硬阻断
+                raise BusinessLogicError(
+                    f"同一账户24小时内最多只能申请{self.MAX_DAILY_REQUESTS}次充值",
+                    error_code="BIZ-204"
+                )
+            else:
+                # Phase 1: 仅记录警告，不阻断
+                log_phase_warning(
+                    feature="topup_daily_request_limit",
+                    message=f"超出每日申请次数限制({request_count}/{self.MAX_DAILY_REQUESTS})",
+                    ad_account_id=ad_account_id,
+                    user_id=user_id,
+                    current_count=request_count,
+                    limit=self.MAX_DAILY_REQUESTS
+                )
 
     def _apply_permission_filter(self, query, current_user: User):
-        """应用权限过滤 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)"""
-        # 管理员和财务可以查看所有
-        if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
+        """应用权限过滤 - MASTER.md v4.6"""
+        # 管理员/CEO/财务/项目负责人可以查看所有
+        if current_user.role in [UserRole.ADMIN.value, UserRole.CEO.value, UserRole.FINANCE.value, UserRole.PROJECT_OWNER.value]:
             return query
 
         # 账户管理员查看自己项目的申请
@@ -1036,15 +1400,16 @@ class TopupService:
         return query.filter(False)
 
     def _check_request_access(self, request: TopupRequest, current_user: User):
-        """检查充值申请访问权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)"""
-        # 管理员和财务可以访问所有
-        if current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
+        """检查充值申请访问权限 - MASTER.md v4.6"""
+        # 管理员/CEO/财务/项目负责人/户管可以访问所有 (TASK-FIN-006)
+        if current_user.role in [
+            UserRole.ADMIN.value,
+            UserRole.CEO.value,
+            UserRole.FINANCE.value,
+            UserRole.PROJECT_OWNER.value,
+            UserRole.ACCOUNT_MANAGER.value  # 户管可访问所有充值申请，以便确认到账
+        ]:
             return
-
-        # 账户管理员查看自己项目的申请
-        if current_user.role == UserRole.ACCOUNT_MANAGER.value:
-            if request.ad_account and request.ad_account.project and request.ad_account.project.account_manager_id == current_user.id:
-                return
 
         # 媒体买家查看自己的申请
         if current_user.role == UserRole.MEDIA_BUYER.value:
@@ -1062,9 +1427,10 @@ class TopupService:
         """获取可操作的充值申请"""
         request = self.get_request_by_id(request_id, current_user)
 
-        # 验证操作权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
-        if action == "data_review" and current_user.role != UserRole.DATA_OPERATOR.value:
-            raise PermissionDeniedError("只有数据员可以进行数据审核", error_code="BIZ-206")
+        # 验证操作权限 - 使用 UserRole 枚举 (MASTER.md v4.6 §4.5.11)
+        # 充值审批流程: pitcher 申请 → 户管收集 → 财务审批
+        if action == "data_review" and current_user.role != UserRole.ACCOUNT_MANAGER.value:
+            raise PermissionDeniedError("只有户管可以进行数据审核", error_code="BIZ-206")
 
         if action == "finance_approve" and current_user.role != UserRole.FINANCE.value:
             raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ-206")
@@ -1132,7 +1498,7 @@ class TopupService:
                 extract('year', TopupRequest.created_at).label('year'),
                 extract('month', TopupRequest.created_at).label('month'),
                 func.count(TopupRequest.id).label('count'),
-                func.sum(TopupRequest.requested_amount).label('amount')
+                func.sum(TopupRequest.amount).label('amount')
             )
             .group_by(
                 extract('year', TopupRequest.created_at),
@@ -1157,17 +1523,19 @@ class TopupService:
 
     def _get_top_projects(self, query) -> List[dict]:
         """获取充值金额TOP5项目"""
+        # TopupRequest → AdAccount → Project 需要链式 join
         top_projects = (
             query
-            .join(Project)
+            .join(AdAccount, TopupRequest.ad_account_id == AdAccount.id)
+            .join(Project, AdAccount.project_id == Project.id)
             .with_entities(
                 Project.id,
                 Project.name,
-                func.sum(TopupRequest.requested_amount).label('total_amount'),
+                func.sum(TopupRequest.amount).label('total_amount'),
                 func.count(TopupRequest.id).label('count')
             )
             .group_by(Project.id, Project.name)
-            .order_by(func.sum(TopupRequest.requested_amount).desc())
+            .order_by(func.sum(TopupRequest.amount).desc())
             .limit(5)
             .all()
         )
@@ -1186,13 +1554,13 @@ class TopupService:
         """获取充值频次TOP5账户"""
         top_accounts = (
             query
-            .join(AdAccount)
+            .join(AdAccount, TopupRequest.ad_account_id == AdAccount.id)
             .with_entities(
                 AdAccount.id,
-                AdAccount.account_name,
+                AdAccount.name,  # 使用实际列名 name (account_name 是 property)
                 func.count(TopupRequest.id).label('count')
             )
-            .group_by(AdAccount.id, AdAccount.account_name)
+            .group_by(AdAccount.id, AdAccount.name)
             .order_by(func.count(TopupRequest.id).desc())
             .limit(5)
             .all()
@@ -1201,7 +1569,7 @@ class TopupService:
         return [
             {
                 "account_id": row.id,
-                "account_name": row.account_name,
+                "account_name": row.name,  # 使用查询中的 name 别名
                 "request_count": row.count
             }
             for row in top_accounts

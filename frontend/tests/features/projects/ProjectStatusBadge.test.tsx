@@ -131,6 +131,7 @@ describe('ProjectStatsCard', () => {
 describe('ProjectStatusLegend', () => {
   it('renders all status labels', () => {
     render(<ProjectStatusLegend />);
+    expect(screen.getByText('规划中')).toBeInTheDocument();
     expect(screen.getByText('进行中')).toBeInTheDocument();
     expect(screen.getByText('已暂停')).toBeInTheDocument();
     expect(screen.getByText('已完成')).toBeInTheDocument();
@@ -139,8 +140,9 @@ describe('ProjectStatusLegend', () => {
 });
 
 describe('PROJECT_STATUS_CONFIG', () => {
-  it('has configuration for all 4 statuses', () => {
-    expect(Object.keys(PROJECT_STATUS_CONFIG)).toHaveLength(4);
+  it('has configuration for all 5 statuses', () => {
+    expect(Object.keys(PROJECT_STATUS_CONFIG)).toHaveLength(5);
+    expect(PROJECT_STATUS_CONFIG.planning).toBeDefined();
     expect(PROJECT_STATUS_CONFIG.active).toBeDefined();
     expect(PROJECT_STATUS_CONFIG.paused).toBeDefined();
     expect(PROJECT_STATUS_CONFIG.completed).toBeDefined();

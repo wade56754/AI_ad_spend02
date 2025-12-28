@@ -269,7 +269,7 @@ export function DailyReportsDashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">总消耗</p>
-                <p className="text-2xl font-bold">¥{data.summary.total_spend.toLocaleString()}</p>
+                <p className="text-2xl font-bold">¥{(Number(data.summary.total_spend) || 0).toLocaleString()}</p>
               </div>
               <DollarSign className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -286,7 +286,7 @@ export function DailyReportsDashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">新增粉丝</p>
-                <p className="text-2xl font-bold">{data.summary.total_follows.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{(Number(data.summary.total_follows) || 0).toLocaleString()}</p>
               </div>
               <Users className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -327,9 +327,9 @@ export function DailyReportsDashboard({
             <div className="mt-2 flex items-center text-sm">
               <Badge
                 variant="secondary"
-                className={data.summary.avg_roas >= 3 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
+                className={(Number(data.summary.avg_roas) || 0) >= 3 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}
               >
-                {data.summary.avg_roas >= 3 ? "表现良好" : "需要优化"}
+                {(Number(data.summary.avg_roas) || 0) >= 3 ? "表现良好" : "需要优化"}
               </Badge>
             </div>
           </CardContent>

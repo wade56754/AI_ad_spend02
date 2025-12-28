@@ -473,7 +473,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
     使用 ai-ad-doc-architect，
     mode = OUTLINE-REVIEW，
     target_docs = ["docs/drafts/TESTING_OUTLINE.md"]，
-    reference_docs = ["docs/1.overview/MASTER.md", "docs/2.sot/STATE_MACHINE.md"]。
+    reference_docs = ["docs/sot/MASTER.md", "docs/sot/STATE_MACHINE.md"]。
     审查 TESTING 大纲是否符合 ASDD 规范，是否有边界污染。
     」
   </usage>

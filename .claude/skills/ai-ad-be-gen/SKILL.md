@@ -1,6 +1,6 @@
 ---
 name: ai-ad-be-gen
-version: "2.3"
+version: "2.4"
 status: production
 layer: skill
 owner: wade
@@ -8,14 +8,14 @@ last_reviewed: 2025-12-22
 
 sot_dependencies:
   required:
-    - docs/2.sot/DATA_SCHEMA.md
-    - docs/2.sot/STATE_MACHINE.md
-    - docs/2.sot/API_SOT.md
-    - docs/2.sot/BUSINESS_RULES.md
-    - docs/2.sot/ERROR_CODES_SOT.md
+    - docs/sot/DATA_SCHEMA.md
+    - docs/sot/STATE_MACHINE.md
+    - docs/sot/API_SOT.md
+    - docs/sot/BUSINESS_RULES.md
+    - docs/sot/ERROR_CODES_SOT.md
   optional:
-    - docs/2.sot/LEDGER_SOT.md
-    - docs/2.sot/AUTH_SPEC.md
+    - docs/sot/LEDGER_SOT.md
+    - docs/sot/AUTH_SPEC.md
 
 output_boundaries:
   writable:
@@ -237,6 +237,45 @@ PRE_ANALYSIS_CONTEXT:
 {{TASK}}
 </TASK>
 
+<!-- ========== Anti-Hallucination Pre-Check (MASTER.md v4.4 §7) ========== -->
+<PRE_CHECK>
+**开发前 4 步检查 (AH-01~05)** - 每次代码生成前必须执行
+
+**Step -4: 边界确认** (AH-05)
+- □ 任务边界是否明确？
+- □ 模块归属是否确定？(pitcher/finance/ad_account/project)
+- □ 如有歧义 → **STOP** → 列出歧义点 → 询问用户
+
+**Step -3: SoT 查询** (AH-03)
+- □ 按裁判链顺序查询相关文档:
+  MASTER.md v4.4 → DATA_SCHEMA.md v5.2 → STATE_MACHINE.md v2.6
+  → BUSINESS_RULES.md v3.2 → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1
+- □ 确认状态值在 STATE_MACHINE.md 的 8 状态机中存在
+- □ 确认角色值在 7 角色白名单中
+- □ 确认错误码在 ERROR_CODES_SOT.md 中
+- □ 如发现缺失 → **STOP** → 询问用户
+
+**Step -2: 现有代码定位**
+- □ 确认目标文件位置
+- □ 检查是否有可复用代码
+- □ 避免重复实现
+
+**Step -1: 常量验证** (AH-01, AH-02)
+- □ 状态值 → STATE_MACHINE.md 8 状态白名单
+  (raw_submitted, trend_pending, trend_ok, trend_flagged, trend_resolved, final_pending, final_confirmed, final_locked)
+- □ 角色值 → 7 角色白名单
+  (ceo, project_owner, finance, supervisor, pitcher, account_manager, admin)
+- □ 错误码前缀 → 16 前缀白名单
+  (VAL, AUTH, BIZ, DB, INT, SYS, FIN, RPT, ACC, PRJ, PIT, TOP, IMP, EXP, REC, SET)
+
+**Phase 1 行为约束** (AH-04):
+- ✅ 允许: 记录事件、返回警告、前端高亮、数据统计
+- ❌ 禁止: 自动阻断、自动拒绝、自动暂停、自动冻结、自动批准
+
+如任一检查失败 → BLOCKING → 停止生成 → 询问用户
+</PRE_CHECK>
+<!-- ========== End Pre-Check ========== -->
+
 <THINKING_CHAIN>
 请按以下步骤思考：
 
@@ -452,6 +491,7 @@ POST_REVIEW_RESULT:
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v2.4 | 2025-12-24 | 防幻觉规则集成：添加 PRE_CHECK 开发前 4 步检查 (AH-01~05)，SoT 裁判链，常量白名单验证 |
 | v2.3 | 2025-12-22 | P1 修复：添加模块表边界、跨模块交互检查、幻觉抑制最终确认 |
 | v2.2 | 2025-12-22 | P0 修复：添加模块归属判定步骤、完善 Self-Check 清单 |
 | v2.0 | 2025-12-06 | 重构：对齐 AI_CODE_FACTORY_DEV_GUIDE_v2.0，增加 SoT refs 输出 |

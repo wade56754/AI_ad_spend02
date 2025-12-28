@@ -1,7 +1,7 @@
 """
 日报模型 - 投手每日报告
 
-对齐 DATA_SCHEMA.md v5.2 和 init_schema.sql §6.1
+对齐 DATA_SCHEMA.md v5.3 和 init_schema.sql §6.1
 字段来源: init_schema.sql 第 408-447 行
 状态机: STATE_MACHINE.md v2.6 第 8 章 (8 状态机)
 
@@ -11,6 +11,11 @@ v2.0 更新 (2024-12):
 - 新增 result_count 成效数
 - 新增 follows_count 进粉数
 - 新增计算属性: cost_per_follow, cost_per_result
+
+v2.1 更新 (2025-12):
+- 唯一约束变更: (report_date, ad_account_id) → (report_date, ad_account_id, region)
+- 支持投手按地区分别提交日报（同一天同一账户可有多个地区报告）
+- 新增 region 索引优化地区维度查询
 """
 from decimal import Decimal
 from uuid import UUID
@@ -230,15 +235,18 @@ class DailyReport(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
             "trend_flag IN ('normal', 'flagged', 'resolved')",
             name='chk_daily_reports_trend_flag'
         ),
+        # 唯一约束：同一账户同一天同一地区只能有一条日报
+        # v2.1 更新：添加 region 维度，支持投手按地区分别报告
         UniqueConstraint(
-            'report_date', 'ad_account_id',
-            name='uq_daily_reports_date_account'
+            'report_date', 'ad_account_id', 'region',
+            name='uq_daily_reports_date_account_region'
         ),
         Index('idx_daily_reports_date', 'report_date'),
         Index('idx_daily_reports_account', 'ad_account_id'),
         Index('idx_daily_reports_status', 'status'),
         Index('idx_daily_reports_created_by', 'created_by'),
         Index('idx_daily_reports_date_status', 'report_date', 'status'),
+        Index('idx_daily_reports_region', 'region'),  # v2.1: 地区索引
     )
 
     def __repr__(self):

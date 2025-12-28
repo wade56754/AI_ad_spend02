@@ -123,7 +123,7 @@ Scope: backend, frontend, docs, agents, infra
 **PR Requirements**:
 - Must pass CI (lint, type-check, tests)
 - Must not conflict with frozen SoT documents
-- Requires review for `docs/2.sot/` changes
+- Requires review for `docs/sot/` changes
 
 ## Domain Context
 
@@ -260,11 +260,11 @@ When conflicts arise, follow this hierarchy:
 
 | Document | Version | Purpose |
 |----------|---------|---------|
-| `docs/2.sot/STATE_MACHINE.md` | v2.6 | 8-state machine definitions |
-| `docs/2.sot/DATA_SCHEMA.md` | v5.2 | 23 database tables |
-| `docs/2.sot/API_SOT.md` | v9.0 | 50+ REST API endpoints |
-| `docs/2.sot/ERROR_CODES_SOT.md` | v2.1 | Error code registry |
-| `docs/2.sot/LEDGER_SOT.md` | v1.1 | Dual-ledger system |
+| `docs/sot/STATE_MACHINE.md` | v2.6 | 8-state machine definitions |
+| `docs/sot/DATA_SCHEMA.md` | v5.2 | 23 database tables |
+| `docs/sot/API_SOT.md` | v9.0 | 50+ REST API endpoints |
+| `docs/sot/ERROR_CODES_SOT.md` | v2.1 | Error code registry |
+| `docs/sot/LEDGER_SOT.md` | v1.1 | Dual-ledger system |
 
 ## OpenSpec Integration Notes
 
@@ -287,7 +287,7 @@ When conflicts arise, follow this hierarchy:
 
 | OpenSpec Concept | ASDD Equivalent |
 |------------------|-----------------|
-| `specs/` | `docs/2.sot/` (SoT Layer) |
+| `specs/` | `docs/sot/` (SoT Layer) |
 | `proposal.md` | RFC in `docs/1.overview/` |
 | `design.md` | Architecture views in `docs/4.architecture/` |
 | `tasks.md` | Dev-Guides implementation checklists |

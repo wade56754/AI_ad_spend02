@@ -202,12 +202,16 @@ describe('useAuth Hook', () => {
         });
       });
 
-      expect(authServices.login).toHaveBeenCalledWith({
+      // TanStack Query passes credentials as first argument
+      expect(authServices.login).toHaveBeenCalled();
+      const loginCall = (authServices.login as jest.Mock).mock.calls[0][0];
+      expect(loginCall).toEqual({
         identifier: 'test@example.com',
         password: 'password123',
       });
       expect(localStorageMock.setItem).toHaveBeenCalledWith('auth-token', 'new-access-token');
-      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+      // Dashboard is under (dashboard) route group at /
+      expect(mockPush).toHaveBeenCalledWith('/');
     });
 
     it('should handle login error', async () => {
@@ -309,13 +313,17 @@ describe('useAuth Hook', () => {
         });
       });
 
-      expect(authServices.register).toHaveBeenCalledWith({
+      // TanStack Query passes credentials as first argument
+      expect(authServices.register).toHaveBeenCalled();
+      const registerCall = (authServices.register as jest.Mock).mock.calls[0][0];
+      expect(registerCall).toEqual({
         email: 'new@example.com',
         password: 'password123',
         username: 'newuser',
       });
       expect(localStorageMock.setItem).toHaveBeenCalledWith('auth-token', 'new-access-token');
-      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+      // Dashboard is under (dashboard) route group at /
+      expect(mockPush).toHaveBeenCalledWith('/');
     });
   });
 
@@ -343,7 +351,10 @@ describe('useAuth Hook', () => {
         });
       });
 
-      expect(authServices.changePassword).toHaveBeenCalledWith({
+      // TanStack Query passes credentials as first argument
+      expect(authServices.changePassword).toHaveBeenCalled();
+      const changePasswordCall = (authServices.changePassword as jest.Mock).mock.calls[0][0];
+      expect(changePasswordCall).toEqual({
         old_password: 'oldpass',
         new_password: 'newpass',
       });
@@ -374,7 +385,10 @@ describe('useAuth Hook', () => {
         });
       });
 
-      expect(result.current.isLoggingIn).toBe(true);
+      // Wait for the loading state to be set
+      await waitFor(() => {
+        expect(result.current.isLoggingIn).toBe(true);
+      });
 
       // Resolve the login
       await act(async () => {
@@ -413,7 +427,10 @@ describe('useAuth Hook', () => {
         result.current.logout();
       });
 
-      expect(result.current.isLoggingOut).toBe(true);
+      // Wait for the loading state to be set
+      await waitFor(() => {
+        expect(result.current.isLoggingOut).toBe(true);
+      });
 
       // Resolve the logout
       await act(async () => {

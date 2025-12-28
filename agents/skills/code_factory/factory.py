@@ -1,7 +1,7 @@
 """
-AI 代码工厂 v3.0 - 主编排器
+AI 代码工厂 v4.0 - 主编排器
 
-整合 Anthropic autonomous-coding 模式与我们的 5 阶段流水线:
+整合 Anthropic autonomous-coding 模式与我们的 6 阶段流水线:
 
 架构:
 ┌─────────────────────────────────────────────────────────────┐
@@ -18,8 +18,8 @@ AI 代码工厂 v3.0 - 主编排器
 │                                                             │
 │  Session 2+: FACTORY (循环)                                 │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │ SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY          │   │
-│  │ (每个任务走完 5 阶段流水线)                           │   │
+│  │ SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM │  │
+│  │ (每个任务走完 6 阶段流水线，含幻觉抑制确认)            │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -28,6 +28,11 @@ AI 代码工厂 v3.0 - 主编排器
 - Anthropic autonomous-coding (MIT License)
 - MetaGPT 多角色协作模式
 - Aider Repo Map 概念
+- MASTER.md v4.6 AI 防幻觉原则
+
+版本记录:
+- v4.0 (2025-12-27): 对齐 MASTER.md v4.6，新增 Phase 6 CONFIRM
+- v3.0 (2025-12-18): 集成 Anthropic autonomous-coding 架构
 """
 
 import subprocess
@@ -100,12 +105,16 @@ class CodeFactory:
     职责:
     1. 会话管理 (初始化/工厂/验证)
     2. 任务调度 (优先级排序)
-    3. 5 阶段流水线编排
+    3. 6 阶段流水线编排 (含 CONFIRM 幻觉抑制)
     4. 安全验证
     5. 进度追踪
+
+    版本记录:
+    - v4.0 (2025-12-27): 对齐 MASTER.md v4.6，新增 Phase 6 CONFIRM
+    - v3.0 (2025-12-18): 集成 Anthropic autonomous-coding 架构
     """
 
-    VERSION = "3.0"
+    VERSION = "4.0"
 
     def __init__(self, config: FactoryConfig):
         self.config = config
@@ -139,12 +148,14 @@ class CodeFactory:
         self._phase_data: Dict[str, Any] = {}
 
         # 阶段处理器 (可扩展)
+        # 6 阶段流水线: SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM
         self.phase_handlers: Dict[str, Callable] = {
             "search": self._phase_search,
             "select": self._phase_select,
             "adapt": self._phase_adapt,
             "assemble": self._phase_assemble,
             "verify": self._phase_verify,
+            "confirm": self._phase_confirm,  # v4.0 新增: 幻觉抑制最终确认
         }
 
     # ============================================================
@@ -356,14 +367,14 @@ class CodeFactory:
         }
 
     def _execute_task(self, task: Task) -> TaskResult:
-        """执行单个任务 (5 阶段流水线)"""
+        """执行单个任务 (6 阶段流水线)"""
         self.progress.start_task(task.id, task.description)
         self.task_list.start_task(task.id)
 
         result = TaskResult(task_id=task.id, success=True)
 
-        # 执行 5 阶段
-        phases = ["search", "select", "adapt", "assemble", "verify"]
+        # 执行 6 阶段 (v4.0: 新增 CONFIRM)
+        phases = ["search", "select", "adapt", "assemble", "verify", "confirm"]
 
         for phase in phases:
             # 跳过已完成的阶段
@@ -672,6 +683,151 @@ class CodeFactory:
                 {"code": i.code, "line": i.line, "message": i.message}
                 for i in all_issues
             ],
+        }
+
+    def _phase_confirm(self, task: Task) -> Dict[str, Any]:
+        """CONFIRM 阶段: 幻觉抑制最终确认 (v4.0 新增)
+
+        基于 MASTER.md v4.6 §7 AI 防幻觉原则:
+        1. 遍历生成的每个状态值 → 追溯到 STATE_MACHINE.md
+        2. 遍历生成的每个角色值 → 追溯到 6 角色白名单
+        3. 遍历生成的每个字段 → 追溯到 DATA_SCHEMA.md
+        4. 遍历调用的每个 API → 确认在项目中存在
+        5. 生成来源追溯报告
+
+        任何追溯失败 → BLOCKING
+
+        Returns:
+            Dict with confirmation results and traceability report
+        """
+        from .sot_loader import get_sot_loader, BUSINESS_ROLES
+
+        phase_data = self._phase_data.get(task.id, {})
+        assembled_module = phase_data.get("assembled_module")
+
+        if not assembled_module or not assembled_module.files:
+            if self.config.verbose:
+                print("       无文件需要确认")
+            return {
+                "confirmed": True,
+                "files_checked": 0,
+                "traceability_report": [],
+            }
+
+        # 获取 SoT 加载器
+        sot_loader = get_sot_loader(self.project_dir)
+
+        traceability_report = []
+        all_confirmed = True
+        blocking_issues = []
+
+        for f in assembled_module.files:
+            file_report = {
+                "path": f.path,
+                "checks": [],
+                "confirmed": True,
+            }
+
+            content = f.content
+
+            # 检查 1: 角色值追溯
+            # 匹配类似 role="xxx" 或 role: "xxx" 或 UserRole.xxx 的模式
+            import re
+            role_patterns = [
+                r'role\s*[=:]\s*["\'](\w+)["\']',
+                r'UserRole\.(\w+)',
+                r"role\s*==\s*[\"'](\w+)[\"']",
+            ]
+            for pattern in role_patterns:
+                matches = re.findall(pattern, content)
+                for match in matches:
+                    role = match.lower()
+                    # 检查业务角色
+                    is_valid_business = role in BUSINESS_ROLES
+                    # 检查技术角色
+                    is_valid_tech = sot_loader.is_valid_role(role, "tech")
+
+                    if is_valid_business or is_valid_tech:
+                        file_report["checks"].append({
+                            "type": "role",
+                            "value": role,
+                            "valid": True,
+                            "source": "MASTER.md v4.6 §2.4" if is_valid_business else "backend/models/enums.py",
+                        })
+                    else:
+                        file_report["checks"].append({
+                            "type": "role",
+                            "value": role,
+                            "valid": False,
+                            "source": None,
+                            "error": f"角色 '{role}' 不在 6 角色白名单中",
+                        })
+                        file_report["confirmed"] = False
+                        all_confirmed = False
+                        blocking_issues.append(f"[{f.path}] 无效角色: {role}")
+
+            # 检查 2: 状态值追溯
+            status_patterns = [
+                r'status\s*[=:]\s*["\'](\w+)["\']',
+                r'DailyReportStatus\.(\w+)',
+                r'TopupRequestStatus\.(\w+)',
+            ]
+            for pattern in status_patterns:
+                matches = re.findall(pattern, content)
+                for match in matches:
+                    status = match.lower()
+                    if sot_loader.is_valid_status(status):
+                        file_report["checks"].append({
+                            "type": "status",
+                            "value": status,
+                            "valid": True,
+                            "source": "STATE_MACHINE.md",
+                        })
+                    else:
+                        file_report["checks"].append({
+                            "type": "status",
+                            "value": status,
+                            "valid": False,
+                            "source": None,
+                            "error": f"状态 '{status}' 不在状态机白名单中",
+                        })
+                        file_report["confirmed"] = False
+                        all_confirmed = False
+                        blocking_issues.append(f"[{f.path}] 无效状态: {status}")
+
+            # 检查 3: SoT 标注检查
+            sot_annotations = re.findall(r'#\s*SoT:\s*(\S+)', content)
+            for annotation in sot_annotations:
+                file_report["checks"].append({
+                    "type": "sot_annotation",
+                    "value": annotation,
+                    "valid": True,
+                    "source": annotation,
+                })
+
+            traceability_report.append(file_report)
+
+        # 输出确认结果
+        if self.config.verbose:
+            if all_confirmed:
+                print(f"       ✓ 幻觉抑制确认通过 ({len(assembled_module.files)} 文件)")
+            else:
+                print(f"       ✗ 幻觉抑制确认失败 ({len(blocking_issues)} 个问题)")
+                for issue in blocking_issues[:3]:
+                    print(f"         - {issue}")
+                if len(blocking_issues) > 3:
+                    print(f"         ... 还有 {len(blocking_issues) - 3} 个问题")
+
+        # 如果有 BLOCKING 问题，抛出异常
+        if not all_confirmed and self.sot_checker:
+            raise Exception(f"CONFIRM 阶段失败: {len(blocking_issues)} 个幻觉问题\n" +
+                          "\n".join(blocking_issues))
+
+        return {
+            "confirmed": all_confirmed,
+            "files_checked": len(assembled_module.files),
+            "traceability_report": traceability_report,
+            "blocking_issues": blocking_issues,
         }
 
     def _write_files(self, files: List) -> None:

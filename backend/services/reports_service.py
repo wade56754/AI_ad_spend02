@@ -327,7 +327,7 @@ class ReportsService:
         # 查询账户财务数据
         query = self.db.query(
             AdAccount.id.label("account_id"),
-            AdAccount.account_name.label("account_name"),
+            AdAccount.name.label("account_name"),  # 使用实际列名 name
             AdAccount.balance.label("current_balance"),
             Project.id.label("project_id"),
             Project.name.label("project_name"),

@@ -1136,3 +1136,326 @@ def get_error_code(code: str) -> ErrorCode:
         ErrorCode对象
     """
     return ERROR_CODE_MAP.get(code, SystemErrorCodes.INTERNAL_ERROR)
+
+
+# ============================================
+# 统一错误码枚举 (ErrorCodes)
+# SoT Reference: ERROR_CODES_SOT.md v2.1
+# ============================================
+
+from enum import Enum
+
+
+class ErrorCategory(str, Enum):
+    """错误码类别"""
+    VAL = "VALIDATION"   # 参数验证错误
+    AUTH = "AUTH"        # 认证错误
+    PERM = "PERM"        # 权限错误 (AUTH_500+)
+    RES = "RESOURCE"     # 资源错误 (BIZ_002, BIZ_003)
+    STATE = "STATE"      # 状态机错误
+    BIZ = "BIZ"          # 业务逻辑错误
+    SYS = "SYS"          # 系统错误
+    DB = "DB"            # 数据库错误
+    TREND = "TREND"      # 趋势风控错误
+    PROFIT = "PROFIT"    # 利润统计错误
+    RECON = "RECON"      # 对账错误
+    FEE = "FEE"          # 手续费错误
+
+
+class ErrorCodes(str, Enum):
+    """
+    统一错误码枚举
+
+    提供所有错误码的统一访问入口，支持按类别分组。
+
+    使用示例:
+        from backend.core.error_codes import ErrorCodes, get_http_status, get_message_template
+
+        code = ErrorCodes.AUTH_INVALID_TOKEN
+        status = get_http_status(code)  # 401
+        message = get_message_template(code)  # "无效的认证令牌"
+
+    类别映射:
+        VAL   - VALIDATION_xxx (参数验证)
+        AUTH  - AUTH_xxx (认证)
+        PERM  - AUTH_500+ (权限)
+        RES   - BIZ_002, BIZ_003 (资源)
+        STATE - STATE_xxx (状态机)
+        BIZ   - BIZ_xxx (业务)
+        SYS   - SYS_xxx (系统)
+    """
+
+    # ========== VAL: 参数验证错误 ==========
+    VAL_REQUIRED_FIELD = "VALIDATION_001"
+    VAL_INVALID_FORMAT = "VALIDATION_002"
+    VAL_INVALID_EMAIL = "VALIDATION_003"
+    VAL_INVALID_PHONE = "VALIDATION_004"
+    VAL_OUT_OF_RANGE = "VALIDATION_005"
+    VAL_INVALID_ENUM = "VALIDATION_006"
+    VAL_MISSING_COLUMN = "VALIDATION_100"
+    VAL_EMPTY_FIELD = "VALIDATION_101"
+    VAL_STRING_TOO_LONG = "VALIDATION_102"
+    VAL_TYPE_ERROR = "VALIDATION_103"
+    VAL_PARSE_ERROR = "VALIDATION_104"
+    VAL_VALIDATION_ERROR = "VALIDATION_105"
+
+    # ========== AUTH: 认证错误 ==========
+    AUTH_INVALID_CREDENTIALS = "AUTH_001"
+    AUTH_ACCOUNT_DISABLED = "AUTH_002"
+    AUTH_TOKEN_REVOKED = "AUTH_003"
+    AUTH_USER_NOT_FOUND = "AUTH_004"
+    AUTH_REFRESH_FAILED = "AUTH_005"
+    AUTH_EMAIL_EXISTS = "AUTH_100"
+    AUTH_USERNAME_EXISTS = "AUTH_101"
+    AUTH_REGISTER_FAILED = "AUTH_102"
+    AUTH_TOKEN_MISSING = "AUTH_400"
+    AUTH_INVALID_TOKEN = "AUTH_401"
+    AUTH_TOKEN_EXPIRED = "AUTH_402"
+    AUTH_LOGIN_FAILED = "AUTH_900"
+    AUTH_LOGOUT_FAILED = "AUTH_901"
+    AUTH_GENERIC_ERROR = "AUTH_999"
+
+    # ========== PERM: 权限错误 ==========
+    PERM_DENIED = "AUTH_500"
+    PERM_ROLE_NOT_ALLOWED = "AUTH_501"
+
+    # ========== RES: 资源错误 ==========
+    RES_NOT_FOUND = "BIZ_002"
+    RES_ALREADY_EXISTS = "BIZ_003"
+
+    # ========== STATE: 状态机错误 ==========
+    STATE_FORBIDDEN_TRANSITION = "STATE_400"
+    STATE_SKIP_REQUIRED_STEP = "STATE_401"
+    STATE_FINAL_ROLLBACK = "STATE_402"
+    STATE_SYSTEM_FORBIDDEN = "STATE_403"
+    STATE_ABSOLUTELY_FORBIDDEN = "STATE_405"
+    STATE_CONCURRENCY_CONFLICT = "STATE_409"
+
+    # ========== BIZ: 业务逻辑错误 ==========
+    BIZ_INVALID_OPERATION = "BIZ_001"
+    BIZ_INVALID_AMOUNT = "BIZ_100"
+    BIZ_INSUFFICIENT_BALANCE = "BIZ_101"
+    BIZ_INVALID_DATE_RANGE = "BIZ_200"
+    BIZ_DATE_IN_FUTURE = "BIZ_201"
+    BIZ_INVALID_STATUS = "BIZ_300"
+    BIZ_STATUS_TRANSITION_NOT_ALLOWED = "BIZ_301"
+    BIZ_UPDATE_PROFILE_FAILED = "BIZ_400"
+    BIZ_INVALID_FILE_TYPE = "BIZ_500"
+    BIZ_FILE_TOO_LARGE = "BIZ_501"
+    BIZ_EXCEL_PARSE_ERROR = "BIZ_502"
+    BIZ_EMPTY_FILE = "BIZ_503"
+    BIZ_MISSING_COLUMNS = "BIZ_504"
+    BIZ_LEDGER_CREATE_ERROR = "BIZ_600"
+    BIZ_LEDGER_QUERY_ERROR = "BIZ_601"
+    BIZ_TRANSACTION_NOT_FOUND = "BIZ_602"
+    BIZ_READY_CHECK_FAILED = "BIZ_700"
+
+    # ========== SYS: 系统错误 ==========
+    SYS_INTERNAL_ERROR = "SYS_001"
+    SYS_SERVICE_UNAVAILABLE = "SYS_002"
+    SYS_TIMEOUT = "SYS_003"
+    SYS_RATE_LIMIT = "SYS_004"
+
+    # ========== DB: 数据库错误 ==========
+    DB_CONNECTION_FAILED = "DB_001"
+    DB_QUERY_FAILED = "DB_002"
+    DB_CONSTRAINT_VIOLATION = "DB_003"
+    DB_UNIQUE_VIOLATION = "DB_004"
+    DB_FOREIGN_KEY_VIOLATION = "DB_005"
+
+    # ========== TREND: 趋势风控错误 ==========
+    TREND_RISK_TRIGGERED = "TREND_001"
+    TREND_REVIEW_REQUIRED = "TREND_002"
+    TREND_RULE_CONFIG_ERROR = "TREND_003"
+    TREND_RESOLUTION_NOTE_MISSING = "TREND_010"
+    TREND_ALREADY_RESOLVED = "TREND_011"
+
+    # ========== PROFIT: 利润统计错误 ==========
+    PROFIT_INVALID_PERIOD = "PROFIT_001"
+    PROFIT_FUTURE_DATE = "PROFIT_002"
+    PROFIT_PROJECT_NOT_FOUND = "PROFIT_003"
+    PROFIT_PERIOD_LOCKED = "PROFIT_004"
+    PROFIT_NO_DATA = "PROFIT_005"
+
+    @property
+    def category(self) -> ErrorCategory:
+        """获取错误码类别"""
+        prefix = self.value.split("_")[0]
+        category_map = {
+            "VALIDATION": ErrorCategory.VAL,
+            "AUTH": ErrorCategory.AUTH if int(self.value.split("_")[1]) < 500 else ErrorCategory.PERM,
+            "STATE": ErrorCategory.STATE,
+            "BIZ": ErrorCategory.BIZ,
+            "SYS": ErrorCategory.SYS,
+            "DB": ErrorCategory.DB,
+            "TREND": ErrorCategory.TREND,
+            "PROFIT": ErrorCategory.PROFIT,
+            "RECON": ErrorCategory.RECON,
+            "FEE": ErrorCategory.FEE,
+        }
+        return category_map.get(prefix, ErrorCategory.SYS)
+
+    @property
+    def http_status(self) -> int:
+        """获取 HTTP 状态码"""
+        return get_http_status(self.value)
+
+    @property
+    def message(self) -> str:
+        """获取错误消息模板"""
+        return get_message_template(self.value)
+
+
+# ============================================
+# 辅助函数
+# ============================================
+
+def get_http_status(code: str | ErrorCodes) -> int:
+    """
+    获取错误码对应的 HTTP 状态码
+
+    Args:
+        code: 错误码字符串或 ErrorCodes 枚举
+
+    Returns:
+        HTTP 状态码 (如 400, 401, 404, 500)
+
+    使用示例:
+        status = get_http_status("AUTH_401")  # 401
+        status = get_http_status(ErrorCodes.AUTH_INVALID_TOKEN)  # 401
+    """
+    if isinstance(code, ErrorCodes):
+        code = code.value
+
+    error = ERROR_CODE_MAP.get(code)
+    if error:
+        return error.status_code
+
+    # 默认根据前缀推断
+    prefix = code.split("_")[0] if "_" in code else code
+    default_status = {
+        "AUTH": 401,
+        "VALIDATION": 400,
+        "BIZ": 400,
+        "STATE": 400,
+        "SYS": 500,
+        "DB": 500,
+        "TREND": 400,
+        "PROFIT": 400,
+        "RECON": 400,
+        "FEE": 400,
+    }
+    return default_status.get(prefix, 500)
+
+
+def get_message_template(code: str | ErrorCodes) -> str:
+    """
+    获取错误码对应的消息模板
+
+    Args:
+        code: 错误码字符串或 ErrorCodes 枚举
+
+    Returns:
+        错误消息模板 (中文)
+
+    使用示例:
+        message = get_message_template("AUTH_401")  # "无效的认证令牌"
+        message = get_message_template(ErrorCodes.RES_NOT_FOUND)  # "资源不存在"
+    """
+    if isinstance(code, ErrorCodes):
+        code = code.value
+
+    error = ERROR_CODE_MAP.get(code)
+    if error:
+        return error.message
+
+    # 默认消息
+    return f"错误码 {code} 未定义消息模板"
+
+
+def get_category(code: str | ErrorCodes) -> ErrorCategory:
+    """
+    获取错误码类别
+
+    Args:
+        code: 错误码字符串或 ErrorCodes 枚举
+
+    Returns:
+        ErrorCategory 枚举
+
+    使用示例:
+        category = get_category("AUTH_401")  # ErrorCategory.AUTH
+        category = get_category("AUTH_500")  # ErrorCategory.PERM
+    """
+    if isinstance(code, ErrorCodes):
+        return code.category
+
+    prefix = code.split("_")[0] if "_" in code else code
+
+    # AUTH_500+ 是权限错误
+    if prefix == "AUTH":
+        try:
+            num = int(code.split("_")[1])
+            if num >= 500:
+                return ErrorCategory.PERM
+        except (ValueError, IndexError):
+            pass
+        return ErrorCategory.AUTH
+
+    category_map = {
+        "VALIDATION": ErrorCategory.VAL,
+        "STATE": ErrorCategory.STATE,
+        "BIZ": ErrorCategory.BIZ,
+        "SYS": ErrorCategory.SYS,
+        "DB": ErrorCategory.DB,
+        "TREND": ErrorCategory.TREND,
+        "PROFIT": ErrorCategory.PROFIT,
+        "RECON": ErrorCategory.RECON,
+        "FEE": ErrorCategory.FEE,
+    }
+    return category_map.get(prefix, ErrorCategory.SYS)
+
+
+def is_client_error(code: str | ErrorCodes) -> bool:
+    """判断是否为客户端错误 (4xx)"""
+    return 400 <= get_http_status(code) < 500
+
+
+def is_server_error(code: str | ErrorCodes) -> bool:
+    """判断是否为服务端错误 (5xx)"""
+    return get_http_status(code) >= 500
+
+
+# ============================================
+# 导出列表
+# ============================================
+
+__all__ = [
+    # 基础类
+    "ErrorCode",
+    "ErrorCategory",
+    "ErrorCodes",
+
+    # 错误码类
+    "AuthErrorCodes",
+    "BusinessErrorCodes",
+    "SystemErrorCodes",
+    "DatabaseErrorCodes",
+    "ValidationErrorCodes",
+    "StateErrorCodes",
+    "TrendErrorCodes",
+    "ProfitErrorCodes",
+    "ReconciliationErrorCodes",
+    "FeeErrorCodes",
+
+    # 映射表
+    "ERROR_CODE_MAP",
+
+    # 辅助函数
+    "get_error_code",
+    "get_http_status",
+    "get_message_template",
+    "get_category",
+    "is_client_error",
+    "is_server_error",
+]

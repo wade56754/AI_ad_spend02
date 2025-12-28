@@ -57,14 +57,16 @@ export function useProfitOverview(
 }
 
 /**
- * Fetch profit summary
+ * Fetch profit summary for a specific month
+ * @param params.year - 年份 (2020-2099)
+ * @param params.month - 月份 (1-12)
  */
 export function useProfitSummary(
-  params: ProfitSummaryParams = {},
+  params: ProfitSummaryParams,
   options?: Omit<UseQueryOptions<ProfitSummaryResponse>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: queryKeys.financeProfit.summary(params as Record<string, unknown>),
+    queryKey: queryKeys.financeProfit.summary({ year: params.year, month: params.month }),
     queryFn: () => getProfitSummary(params),
     ...options,
   });

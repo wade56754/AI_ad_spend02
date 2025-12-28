@@ -1,45 +1,57 @@
 """
-充值管理API路由
-Version: 1.0
-Author: Claude协作开发
+充值管理API路由 (重构版)
+
+SoT Reference: STATE_MACHINE.md v2.6 §9 (充值状态机)
+SoT Reference: LEDGER_SOT.md v1.1 (账本规则)
+
+状态机 (7状态):
+draft → pending_review → finance_approve → paid → completed
+        ↓                ↓
+     cancelled        rejected
+
+依赖代码块:
+- response-envelope: success_response, error_response
+- pagination: get_pagination, create_paginated_response
+- error-codes: ErrorCodes
+- state-machine: TOPUP_STATE_MACHINE
+
+Version: 2.0
 """
 
-from typing import List, Optional
+from typing import Optional, List
 from datetime import date
+from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+import structlog
+from fastapi import APIRouter, Depends, Query, Path, status, Request
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user, require_role, get_client_info
-from backend.core.response import (
-    success_response,
-    error_response,
-    StandardResponse
-)
-from backend.core.error_codes import SystemErrorCodes, BusinessErrorCodes
-from backend.exceptions.custom_exceptions import (
-    BusinessLogicError,
-    ResourceNotFoundError,
-    PermissionDeniedError,
-    ResourceConflictError
+from backend.core.response import success_response, error_response
+from backend.core.pagination import get_pagination, PaginationParams, create_paginated_response
+from backend.core.exceptions import (
+    NotFoundError,
+    ConflictError,
+    ValidationError,
+    BusinessError,
+    PermissionError,
 )
 from backend.models import User
 from backend.schemas.topup import (
     TopupRequestCreate,
     TopupRequestResponse,
-    TopupRequestListResponse,
     TopupDataReviewRequest,
     TopupFinanceApprovalRequest,
     TopupMarkPaidRequest,
-    TopupReceiptUploadRequest,
     TopupApprovalLogResponse,
     TopupStatisticsResponse,
-    TopupDashboardResponse,
-    AdAccountBalance
+    AdAccountBalance,
 )
 from backend.services.topup_service import TopupService
 
+logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/topups", tags=["topups"])
 
 
@@ -48,707 +60,492 @@ def get_topup_service(db: Session = Depends(get_db)) -> TopupService:
     return TopupService(db)
 
 
-def _build_topup_request_response(topup_request) -> TopupRequestResponse:
-    """构建充值申请响应，映射模型字段到 schema 字段"""
+# ========================================
+# Response Builder (ORM → Pydantic)
+# ========================================
+
+def build_topup_response(topup) -> TopupRequestResponse:
+    """构建充值申请响应"""
     return TopupRequestResponse(
-        id=topup_request.id,
-        request_no=str(topup_request.id),  # 使用 id 作为 request_no
-        ad_account_id=topup_request.ad_account_id,
-        ad_account_name=topup_request.ad_account.account_name or topup_request.ad_account.account_code if topup_request.ad_account else "",
-        project_id=topup_request.ad_account.project_id if topup_request.ad_account and topup_request.ad_account.project else None,
-        project_name=topup_request.ad_account.project.name if topup_request.ad_account and topup_request.ad_account.project else "",
-        requested_amount=topup_request.amount,
-        actual_amount=None,
-        currency="CNY",  # 默认货币
-        urgency_level="normal",  # 默认紧急程度
-        reason=topup_request.request_notes or "",
-        notes=topup_request.request_notes or "",
-        status=topup_request.status,
-        requested_by=0,  # Schema 期望 int，但模型使用 UUID，暂时使用 0 作为占位符
-        requested_by_name=topup_request.requester.username if topup_request.requester else "",
-        data_reviewed_by=0 if topup_request.reviewed_by else None,
-        data_reviewed_by_name=topup_request.reviewer.username if topup_request.reviewer else None,
-        data_reviewed_at=topup_request.reviewed_at,
+        id=topup.id,
+        request_no=str(topup.id),
+        ad_account_id=topup.ad_account_id,
+        ad_account_name=topup.ad_account.account_name or topup.ad_account.account_code if topup.ad_account else "",
+        project_id=topup.ad_account.project_id if topup.ad_account and topup.ad_account.project else 0,
+        project_name=topup.ad_account.project.name if topup.ad_account and topup.ad_account.project else "",
+        requested_amount=topup.amount or Decimal('0'),
+        actual_amount=getattr(topup, 'actual_amount', None),
+        currency="CNY",
+        urgency_level="normal",
+        reason=topup.request_notes or "",
+        notes=topup.request_notes or "",
+        status=topup.status,
+        requested_by=0,  # UUID → int placeholder
+        requested_by_name=topup.requester.username if topup.requester else "",
+        data_reviewed_by=0 if topup.reviewed_by else None,
+        data_reviewed_by_name=topup.reviewer.username if topup.reviewer else None,
+        data_reviewed_at=topup.reviewed_at,
         data_review_notes=None,
-        finance_approved_by=0 if topup_request.approved_by else None,
-        finance_approved_by_name=topup_request.approver.username if topup_request.approver else None,
-        finance_approved_at=topup_request.approved_at,
+        finance_approved_by=0 if topup.approved_by else None,
+        finance_approved_by_name=topup.approver.username if topup.approver else None,
+        finance_approved_at=topup.approved_at,
         finance_approve_notes=None,
-        paid_at=topup_request.paid_at,
-        completed_at=topup_request.completed_at,
+        paid_at=topup.paid_at,
+        completed_at=topup.completed_at,
         expected_date=None,
-        payment_method=None,
-        transaction_id=None,
-        receipt_url=None,
-        created_at=topup_request.created_at,
-        updated_at=topup_request.updated_at
+        payment_method=getattr(topup, 'payment_method', None),
+        transaction_id=getattr(topup, 'transaction_id', None),
+        receipt_url=getattr(topup, 'receipt_url', None),
+        created_at=topup.created_at,
+        updated_at=topup.updated_at,
     )
 
 
+# ========================================
+# CRUD 端点
+# ========================================
+
 @router.get(
     "",
-    response_model=StandardResponse[TopupRequestListResponse],
-    summary="获取充值申请列表"
+    summary="获取充值申请列表",
+    description="支持分页、状态筛选。权限过滤自动应用。"
 )
-async def list_topup_requests(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = Query(None),
-    urgency: Optional[str] = Query(None),
-    ad_account_id: Optional[int] = Query(None),
-    project_id: Optional[int] = Query(None),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    request_no: Optional[str] = Query(None),
+async def list_topups(
+    status_filter: Optional[str] = Query(None, alias="status", description="状态筛选"),
+    ad_account_id: Optional[int] = Query(None, description="账户ID筛选"),
+    project_id: Optional[int] = Query(None, description="项目ID筛选"),
+    start_date: Optional[date] = Query(None, description="开始日期"),
+    end_date: Optional[date] = Query(None, description="结束日期"),
+    pagination: PaginationParams = Depends(get_pagination),
     service: TopupService = Depends(get_topup_service),
     current_user: User = Depends(get_current_user)
 ):
-    """获取充值申请列表API"""
+    """获取充值申请列表 (带分页和权限过滤)"""
     try:
         requests, total = service.get_requests(
             current_user=current_user,
-            page=page,
-            page_size=page_size,
-            status=status,
-            urgency=urgency,
+            page=pagination.page,
+            page_size=pagination.page_size,
+            status=status_filter,
             ad_account_id=ad_account_id,
             project_id=project_id,
             start_date=start_date,
-            end_date=end_date,
-            request_no=request_no
+            end_date=end_date
         )
 
-        # 转换为响应格式
-        request_responses = [
-            _build_topup_request_response(req)
-            for req in requests
-        ]
+        responses = [build_topup_response(req) for req in requests]
 
-        # 构建分页元数据
-        meta = {
-            "pagination": {
-                "page": page,
-                "page_size": page_size,
-                "total": total,
-                "total_pages": (total + page_size - 1) // page_size
-            }
-        }
-
-        return success_response(
-            data={"items": request_responses, "meta": meta},
+        return create_paginated_response(
+            items=responses,
+            total=total,
+            pagination=pagination,
             message="获取充值申请列表成功"
         )
 
     except Exception as e:
-        import traceback
-        print(f"[TOPUP_LIST_ERROR] {e}")
-        traceback.print_exc()
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message=f"获取充值申请列表失败: {str(e)}",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
-        )
+        logger.error("list_topups_error", error=str(e))
+        return error_response(code="SYS-500", message="获取列表失败", status_code=500)
 
-
-# ============================================
-# 静态路由必须在 /{request_id} 之前定义
-# ============================================
-
-@router.get(
-    "/stats",
-    response_model=StandardResponse[dict],
-    summary="获取充值状态统计"
-)
-async def get_topup_stats(
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
-):
-    """获取充值状态统计API（前端使用）"""
-    try:
-        # 获取各状态的统计数量
-        stats = service.get_status_stats(current_user)
-        return success_response(data=stats, message="获取统计成功")
-    except Exception as e:
-        import traceback
-        print(f"[TOPUP_STATS_ERROR] {e}")
-        traceback.print_exc()
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message=f"获取统计信息失败: {str(e)}",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
-        )
-
-
-@router.get(
-    "/statistics",
-    response_model=StandardResponse[TopupStatisticsResponse],
-    summary="获取充值统计详情"
-)
-async def get_statistics(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
-):
-    """获取充值统计API"""
-    try:
-        stats = service.get_statistics(
-            current_user=current_user,
-            start_date=start_date,
-            end_date=end_date
-        )
-        stats_response = TopupStatisticsResponse.model_validate(stats)
-        return success_response(data=stats_response)
-    except Exception as e:
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="获取统计信息失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
-        )
-
-
-@router.get(
-    "/dashboard",
-    response_model=StandardResponse[TopupDashboardResponse],
-    summary="获取仪表板数据"
-)
-async def get_dashboard(
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
-):
-    """获取仪表板数据API"""
-    try:
-        dashboard_data = service.get_dashboard_data(current_user)
-        dashboard_response = TopupDashboardResponse.model_validate(dashboard_data)
-        return success_response(data=dashboard_response)
-    except Exception as e:
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="获取仪表板数据失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
-        )
-
-
-@router.get(
-    "/export",
-    response_model=StandardResponse[List[dict]],
-    summary="导出充值记录"
-)
-async def export_requests(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    status: Optional[str] = Query(None),
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["admin", "finance"]))
-):
-    """导出充值记录API"""
-    try:
-        export_data = service.export_requests(
-            current_user=current_user,
-            start_date=start_date,
-            end_date=end_date,
-            status=status
-        )
-        return success_response(
-            data=export_data,
-            message="导出数据生成成功"
-        )
-    except Exception as e:
-        return error_response(
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="导出数据失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
-        )
-
-
-# ============================================
-# 带路径参数的路由
-# ============================================
 
 @router.post(
     "",
-    response_model=StandardResponse[TopupRequestResponse],
     status_code=status.HTTP_201_CREATED,
-    summary="创建充值申请"
+    summary="创建充值申请",
+    description="创建新充值申请。初始状态: draft。"
 )
-async def create_topup_request(
+async def create_topup(
     request_data: TopupRequestCreate,
     req: Request,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["media_buyer", "account_manager"]))
+    current_user: User = Depends(require_role(["media_buyer", "account_manager", "pitcher"]))
 ):
-    """创建充值申请API"""
+    """创建充值申请"""
     try:
-        # 获取客户端信息
         client_ip, user_agent = get_client_info(req)
 
-        topup_request = service.create_request(
+        topup = service.create_request(
             request_data,
             current_user,
             ip_address=client_ip,
             user_agent=user_agent
         )
 
-        response = _build_topup_request_response(topup_request)
-
         return success_response(
-            data=response,
+            data=build_topup_response(topup),
             message="充值申请创建成功",
             status_code=201
         )
 
-    except (BusinessLogicError, ResourceConflictError) as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
-            message=str(e),
-            status_code=400
-        )
-    except PermissionDeniedError as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
-            message=str(e),
-            status_code=403
-        )
+    except BusinessError as e:
+        return error_response(code="BIZ-201", message=str(e), status_code=400)
+    except ConflictError as e:
+        return error_response(code="RES-002", message=str(e), status_code=409)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
 
 
 @router.get(
-    "/{request_id}",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="获取充值申请详情"
+    "/stats",
+    summary="获取充值状态统计"
 )
-async def get_topup_request(
-    request_id: int,
+async def get_topup_stats(
     service: TopupService = Depends(get_topup_service),
     current_user: User = Depends(get_current_user)
 ):
-    """获取充值申请详情API"""
+    """获取各状态的统计数量"""
     try:
-        request = service.get_request_by_id(request_id, current_user)
-        response = _build_topup_request_response(request)
-
-        return success_response(data=response)
-
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except PermissionDeniedError as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
-            message=str(e),
-            status_code=403
-        )
+        stats = service.get_status_stats(current_user)
+        return success_response(data=stats, message="获取统计成功")
+    except Exception as e:
+        logger.error("get_stats_error", error=str(e))
+        return error_response(code="SYS-500", message="获取统计失败", status_code=500)
 
 
-@router.put(
-    "/{request_id}/review",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="数据员审核"
+@router.get(
+    "/statistics",
+    summary="获取充值统计详情"
 )
-async def data_review_request(
-    request_id: int,
-    review_data: TopupDataReviewRequest,
-    req: Request,
+async def get_statistics(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["data_operator"]))
+    current_user: User = Depends(require_role(["admin", "finance", "data_operator", "ceo"]))
 ):
-    """数据员审核API"""
+    """获取充值统计详情"""
     try:
-        # 获取客户端信息
-        client_ip, user_agent = get_client_info(req)
-
-        request = service.data_review(
-            request_id,
-            review_data,
-            current_user,
-            ip_address=client_ip,
-            user_agent=user_agent
-        )
-
-        response = _build_topup_request_response(request)
-
-        return success_response(
-            data=response,
-            message="审核完成"
-        )
-
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except (BusinessLogicError, PermissionDeniedError) as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
-            message=str(e),
-            status_code=400
-        )
+        stats = service.get_statistics(current_user, start_date, end_date)
+        return success_response(data=stats, message="获取统计详情成功")
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
 
 
-@router.put(
-    "/{request_id}/approve",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="财务审批"
+@router.get(
+    "/{topup_id}",
+    summary="获取充值申请详情"
 )
-async def finance_approve_request(
-    request_id: int,
-    approval_data: TopupFinanceApprovalRequest,
-    req: Request,
+async def get_topup(
+    topup_id: int = Path(..., gt=0),
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["finance"]))
+    current_user: User = Depends(get_current_user)
 ):
-    """财务审批API"""
+    """获取充值申请详情"""
     try:
-        # 获取客户端信息
-        client_ip, user_agent = get_client_info(req)
+        topup = service.get_request_by_id(topup_id, current_user)
+        return success_response(data=build_topup_response(topup))
 
-        request = service.finance_approve(
-            request_id,
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+# ========================================
+# 审批流程端点 (用户请求的简化接口)
+# ========================================
+
+@router.post(
+    "/{topup_id}/approve",
+    summary="审批充值申请",
+    description="财务审批。状态流转: finance_approve → paid"
+)
+async def approve_topup(
+    topup_id: int = Path(..., gt=0),
+    approval_data: TopupFinanceApprovalRequest = None,
+    req: Request = None,
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(require_role(["finance", "admin", "ceo"]))
+):
+    """
+    审批充值申请
+
+    状态机流转 (STATE_MACHINE.md v2.6 §9):
+    - finance_approve → paid (审批通过)
+    - finance_approve → rejected (审批拒绝)
+    """
+    try:
+        client_ip, user_agent = get_client_info(req) if req else (None, None)
+
+        topup = service.finance_approve(
+            topup_id,
             approval_data,
             current_user,
             ip_address=client_ip,
             user_agent=user_agent
         )
 
-        response = _build_topup_request_response(request)
-
         return success_response(
-            data=response,
-            message="财务审批完成"
+            data=build_topup_response(topup),
+            message="审批完成"
         )
 
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except (BusinessLogicError, PermissionDeniedError) as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
-            message=str(e),
-            status_code=400
-        )
-
-
-@router.put(
-    "/{request_id}/pay",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="标记已打款"
-)
-async def mark_as_paid(
-    request_id: int,
-    paid_data: TopupMarkPaidRequest,
-    req: Request,
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["finance"]))
-):
-    """标记已打款API"""
-    try:
-        # 获取客户端信息
-        client_ip, user_agent = get_client_info(req)
-
-        request = service.mark_as_paid(
-            request_id,
-            paid_data,
-            current_user,
-            ip_address=client_ip,
-            user_agent=user_agent
-        )
-
-        response = _build_topup_request_response(request)
-
-        return success_response(
-            data=response,
-            message="已标记为打款"
-        )
-
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except (BusinessLogicError, PermissionDeniedError, ResourceConflictError) as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
-            message=str(e),
-            status_code=400
-        )
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except BusinessError as e:
+        return error_response(code="STATE-400", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
 
 
 @router.post(
-    "/{request_id}/receipt",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="上传打款凭证"
+    "/{topup_id}/reject",
+    summary="拒绝充值申请",
+    description="拒绝充值申请。状态流转: pending_review/finance_approve → rejected"
 )
-async def upload_receipt(
-    request_id: int,
-    receipt_data: TopupReceiptUploadRequest,
-    req: Request,
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["finance"]))
-):
-    """上传打款凭证API"""
-    try:
-        # 获取客户端信息
-        client_ip, user_agent = get_client_info(req)
-
-        request = service.upload_receipt(
-            request_id,
-            receipt_data,
-            current_user,
-            ip_address=client_ip,
-            user_agent=user_agent
-        )
-
-        response = _build_topup_request_response(request)
-
-        return success_response(
-            data=response,
-            message="凭证上传成功"
-        )
-
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except PermissionDeniedError as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
-            message=str(e),
-            status_code=403
-        )
-
-
-@router.post(
-    "/{request_id}/reject",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="拒绝充值申请"
-)
-async def reject_request(
-    request_id: int,
-    req: Request,
+async def reject_topup(
+    topup_id: int = Path(..., gt=0),
     reason: str = Query(..., description="拒绝原因"),
+    req: Request = None,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["data_operator", "finance", "admin"]))
+    current_user: User = Depends(require_role(["data_operator", "finance", "admin", "ceo"]))
 ):
     """
-    拒绝充值申请API
+    拒绝充值申请
 
     状态机流转 (STATE_MACHINE.md v2.6 §9):
     - pending_review → rejected
     - finance_approve → rejected
-
-    权限: data_operator, finance, admin
     """
     try:
-        client_ip, user_agent = get_client_info(req)
+        client_ip, user_agent = get_client_info(req) if req else (None, None)
 
-        request = service.reject_request(
-            request_id=request_id,
-            current_user=current_user,
-            reason=reason,
+        topup = service.reject_request(
+            topup_id,
+            current_user,
+            reason,
             ip_address=client_ip,
             user_agent=user_agent
         )
 
-        response = _build_topup_request_response(request)
-
         return success_response(
-            data=response,
+            data=build_topup_response(topup),
             message="充值申请已拒绝"
         )
 
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except (BusinessLogicError, PermissionDeniedError) as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
-            message=str(e),
-            status_code=400
-        )
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except BusinessError as e:
+        return error_response(code="STATE-400", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
 
 
 @router.post(
-    "/{request_id}/cancel",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="取消充值申请"
+    "/{topup_id}/complete",
+    summary="确认充值完成",
+    description="确认收款入账。状态流转: paid → completed。同时创建 ledger_entry。"
 )
-async def cancel_request(
-    request_id: int,
-    req: Request,
-    reason: str = Query(..., description="取消原因"),
-    service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    取消充值申请API
-
-    状态机流转 (STATE_MACHINE.md v2.6 §9):
-    - draft → cancelled
-    - pending_review → cancelled
-
-    权限: 申请人本人, admin
-    """
-    try:
-        client_ip, user_agent = get_client_info(req)
-
-        request = service.cancel_request(
-            request_id=request_id,
-            current_user=current_user,
-            reason=reason,
-            ip_address=client_ip,
-            user_agent=user_agent
-        )
-
-        response = _build_topup_request_response(request)
-
-        return success_response(
-            data=response,
-            message="充值申请已取消"
-        )
-
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except (BusinessLogicError, PermissionDeniedError) as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
-            message=str(e),
-            status_code=400
-        )
-
-
-@router.post(
-    "/{request_id}/confirm-paid",
-    response_model=StandardResponse[TopupRequestResponse],
-    summary="确认收款完成"
-)
-async def confirm_paid_request(
-    request_id: int,
-    req: Request,
+async def complete_topup(
+    topup_id: int = Path(..., gt=0),
     transaction_id: Optional[str] = Query(None, description="交易流水号"),
     notes: Optional[str] = Query(None, description="备注"),
+    req: Request = None,
     service: TopupService = Depends(get_topup_service),
     current_user: User = Depends(require_role(["finance", "admin"]))
 ):
     """
-    确认收款完成API
+    确认充值完成
 
     状态机流转 (STATE_MACHINE.md v2.6 §9):
     - paid → completed
 
-    权限: finance, admin
+    业务规则 (LEDGER_SOT.md v1.1):
+    - BR-FIN-005: 必须同时创建 ledger_entry
     """
     try:
-        client_ip, user_agent = get_client_info(req)
+        client_ip, user_agent = get_client_info(req) if req else (None, None)
 
-        request = service.confirm_paid(
-            request_id=request_id,
-            current_user=current_user,
+        topup = service.confirm_paid(
+            topup_id,
+            current_user,
             transaction_id=transaction_id,
             notes=notes,
             ip_address=client_ip,
             user_agent=user_agent
         )
 
-        response = _build_topup_request_response(request)
+        return success_response(
+            data=build_topup_response(topup),
+            message="充值已完成，账本已更新"
+        )
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except BusinessError as e:
+        return error_response(code="STATE-400", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+# ========================================
+# 其他操作端点
+# ========================================
+
+@router.put(
+    "/{topup_id}/review",
+    summary="数据员审核",
+    description="数据员审核。状态流转: pending_review → finance_approve/rejected"
+)
+async def review_topup(
+    topup_id: int = Path(..., gt=0),
+    review_data: TopupDataReviewRequest = None,
+    req: Request = None,
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(require_role(["data_operator", "supervisor"]))
+):
+    """数据员审核"""
+    try:
+        client_ip, user_agent = get_client_info(req) if req else (None, None)
+
+        topup = service.data_review(
+            topup_id,
+            review_data,
+            current_user,
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
 
         return success_response(
-            data=response,
-            message="收款确认完成"
+            data=build_topup_response(topup),
+            message="审核完成"
         )
 
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except (BusinessLogicError, PermissionDeniedError) as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
-            message=str(e),
-            status_code=400
-        )
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except BusinessError as e:
+        return error_response(code="STATE-400", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
 
 
-@router.get(
-    "/{request_id}/logs",
-    response_model=StandardResponse[List[TopupApprovalLogResponse]],
-    summary="获取审批日志"
+@router.post(
+    "/{topup_id}/cancel",
+    summary="取消充值申请",
+    description="取消充值申请。仅申请人或管理员可操作。"
 )
-async def get_approval_logs(
-    request_id: int,
+async def cancel_topup(
+    topup_id: int = Path(..., gt=0),
+    reason: str = Query(..., description="取消原因"),
+    req: Request = None,
     service: TopupService = Depends(get_topup_service),
     current_user: User = Depends(get_current_user)
 ):
-    """获取审批日志API"""
+    """取消充值申请"""
     try:
-        logs = service.get_approval_logs(request_id, current_user)
-        log_responses = [
-            TopupApprovalLogResponse.model_validate(log)
-            for log in logs
-        ]
+        client_ip, user_agent = get_client_info(req) if req else (None, None)
+
+        topup = service.cancel_request(
+            topup_id,
+            current_user,
+            reason,
+            ip_address=client_ip,
+            user_agent=user_agent
+        )
 
         return success_response(
-            data=log_responses,
-            message="获取审批日志成功"
+            data=build_topup_response(topup),
+            message="充值申请已取消"
         )
 
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except BusinessError as e:
+        return error_response(code="STATE-400", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+@router.put(
+    "/{topup_id}/pay",
+    summary="标记已打款",
+    description="财务标记已打款。状态流转: finance_approve → paid"
+)
+async def mark_paid(
+    topup_id: int = Path(..., gt=0),
+    paid_data: TopupMarkPaidRequest = None,
+    req: Request = None,
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(require_role(["finance"]))
+):
+    """标记已打款"""
+    try:
+        client_ip, user_agent = get_client_info(req) if req else (None, None)
+
+        topup = service.mark_as_paid(
+            topup_id,
+            paid_data,
+            current_user,
+            ip_address=client_ip,
+            user_agent=user_agent
         )
-    except PermissionDeniedError as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
-            message=str(e),
-            status_code=403
+
+        return success_response(
+            data=build_topup_response(topup),
+            message="已标记为打款"
         )
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except ConflictError as e:
+        return error_response(code="RES-002", message=str(e), status_code=409)
+    except BusinessError as e:
+        return error_response(code="STATE-400", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+@router.get(
+    "/{topup_id}/logs",
+    summary="获取审批日志"
+)
+async def get_logs(
+    topup_id: int = Path(..., gt=0),
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(get_current_user)
+):
+    """获取审批日志"""
+    try:
+        logs = service.get_approval_logs(topup_id, current_user)
+
+        log_responses = []
+        for log in logs:
+            log_responses.append(TopupApprovalLogResponse(
+                id=log.id,
+                request_id=log.topup_request_id,
+                action=log.action,
+                actor_id=0,  # UUID placeholder
+                actor_name=log.operator.username if log.operator else "",
+                actor_role=log.operator.role if log.operator else "",
+                notes=log.comments,
+                previous_status=log.from_status,
+                new_status=log.to_status,
+                ip_address=None,
+                user_agent=None,
+                created_at=log.created_at,
+            ))
+
+        return success_response(data=log_responses, message="获取审批日志成功")
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
 
 
 @router.get(
     "/accounts/{account_id}/balance",
-    response_model=StandardResponse[AdAccountBalance],
     summary="获取账户余额"
 )
 async def get_account_balance(
-    account_id: int,
+    account_id: int = Path(..., gt=0),
     service: TopupService = Depends(get_topup_service),
     current_user: User = Depends(get_current_user)
 ):
-    """获取账户余额API"""
+    """获取账户余额信息"""
     try:
         balance = service.get_account_balance(account_id, current_user)
-        balance_response = AdAccountBalance.model_validate(balance)
+        return success_response(data=balance, message="获取余额成功")
 
-        return success_response(data=balance_response)
-
-    except ResourceNotFoundError as e:
-        return error_response(
-            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-            message=str(e),
-            status_code=404
-        )
-    except PermissionDeniedError as e:
-        return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
-            message=str(e),
-            status_code=403
-        )
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)

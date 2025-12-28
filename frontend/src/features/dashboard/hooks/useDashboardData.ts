@@ -6,7 +6,15 @@
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { dashboardApi } from '../services/dashboardApi';
+import dashboardApi, { ceoV3Api } from '../services/dashboardApi';
+import type {
+  CeoV3OverviewResponse,
+  CeoV3ProfitSummaryResponse,
+  CeoV3ProjectBalanceResponse,
+  CeoV3ProjectRankingResponse,
+  CeoV3TrendResponse,
+  CeoV3ActionItemsResponse,
+} from '../services/dashboardApi';
 import type {
   DashboardOverviewParams,
   DashboardTrendParams,
@@ -149,6 +157,8 @@ export function useRefreshDashboard() {
 
   return {
     refreshAll: () => {
+      // 清除 API 缓存
+      dashboardApi.clearCache();
       queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
     refreshOverview: () => {
@@ -162,6 +172,138 @@ export function useRefreshDashboard() {
     },
     refreshPendingCounts: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKeys.pendingCounts() });
+    },
+  };
+}
+
+// ============ CEO Dashboard V3 Hooks ============
+// 核心公式: 毛利 = 收款 - 消耗 (不含手续费)
+
+/**
+ * CEO V3 Query Keys
+ */
+export const ceoV3Keys = {
+  all: ['ceo-v3'] as const,
+  overview: (period?: string) => [...ceoV3Keys.all, 'overview', period] as const,
+  profitSummary: (period?: string) => [...ceoV3Keys.all, 'profit-summary', period] as const,
+  projectBalance: (period?: string) => [...ceoV3Keys.all, 'project-balance', period] as const,
+  projectRanking: (period?: string, limit?: number) => [...ceoV3Keys.all, 'project-ranking', period, limit] as const,
+  trend: (period?: string, granularity?: string) => [...ceoV3Keys.all, 'trend', period, granularity] as const,
+  actionItems: (period?: string) => [...ceoV3Keys.all, 'action-items', period] as const,
+};
+
+/**
+ * CEO V3 Overview Hook
+ */
+export function useCeoV3Overview(period?: string) {
+  return useQuery({
+    queryKey: ceoV3Keys.overview(period),
+    queryFn: () => ceoV3Api.getOverview(period),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * CEO V3 Profit Summary Hook
+ * 核心公式: 毛利 = 收款 - 消耗
+ */
+export function useCeoV3ProfitSummary(period?: string) {
+  return useQuery({
+    queryKey: ceoV3Keys.profitSummary(period),
+    queryFn: () => ceoV3Api.getProfitSummary(period),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * CEO V3 Project Balance Hook
+ */
+export function useCeoV3ProjectBalance(period?: string) {
+  return useQuery({
+    queryKey: ceoV3Keys.projectBalance(period),
+    queryFn: () => ceoV3Api.getProjectBalance(period),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * CEO V3 Project Ranking Hook
+ */
+export function useCeoV3ProjectRanking(period?: string, limit: number = 10) {
+  return useQuery({
+    queryKey: ceoV3Keys.projectRanking(period, limit),
+    queryFn: () => ceoV3Api.getProjectRanking(period, limit),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * CEO V3 Trend Hook
+ */
+export function useCeoV3Trend(period?: string, granularity: string = 'daily') {
+  return useQuery({
+    queryKey: ceoV3Keys.trend(period, granularity),
+    queryFn: () => ceoV3Api.getTrend(period, granularity),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * CEO V3 Action Items Hook
+ */
+export function useCeoV3ActionItems(period?: string) {
+  return useQuery({
+    queryKey: ceoV3Keys.actionItems(period),
+    queryFn: () => ceoV3Api.getActionItems(period),
+    staleTime: 1000 * 60 * 2, // 2 minutes for action items
+  });
+}
+
+/**
+ * Combined CEO V3 Dashboard Data Hook
+ */
+export function useCeoV3DashboardData(period?: string) {
+  const overview = useCeoV3Overview(period);
+  const projectRanking = useCeoV3ProjectRanking(period, 10);
+  const trend = useCeoV3Trend(period);
+
+  const isLoading = overview.isLoading || projectRanking.isLoading || trend.isLoading;
+  const isError = overview.isError || projectRanking.isError || trend.isError;
+  const error = overview.error || projectRanking.error || trend.error;
+
+  return {
+    overview: overview.data,
+    projectRanking: projectRanking.data,
+    trend: trend.data,
+    isLoading,
+    isError,
+    error,
+    queries: {
+      overview,
+      projectRanking,
+      trend,
+    },
+  };
+}
+
+/**
+ * Refresh CEO V3 Dashboard Data
+ */
+export function useRefreshCeoV3Dashboard() {
+  const queryClient = useQueryClient();
+
+  return {
+    refreshAll: () => {
+      queryClient.invalidateQueries({ queryKey: ceoV3Keys.all });
+    },
+    refreshOverview: (period?: string) => {
+      queryClient.invalidateQueries({ queryKey: ceoV3Keys.overview(period) });
+    },
+    refreshProjectRanking: (period?: string) => {
+      queryClient.invalidateQueries({ queryKey: ceoV3Keys.projectRanking(period) });
+    },
+    refreshTrend: (period?: string) => {
+      queryClient.invalidateQueries({ queryKey: ceoV3Keys.trend(period) });
     },
   };
 }

@@ -287,7 +287,7 @@ class TestSettlementAPI:
             ]
 
     class TestRecordPaymentEndpoint:
-        """POST /settlements/{settlement_id}/payment 测试"""
+        """POST /settlements/{settlement_id}/pay 测试"""
 
         @patch('backend.routers.settlements.get_current_user')
         @patch('backend.routers.settlements.SettlementService')
@@ -301,7 +301,7 @@ class TestSettlementAPI:
             mock_service_class.return_value = mock_service
 
             response = client.post(
-                "/api/v1/settlements/1/payment",
+                "/api/v1/settlements/1/pay",
                 json={
                     "paid_amount": "5000.00",
                     "payment_method": "bank_transfer",

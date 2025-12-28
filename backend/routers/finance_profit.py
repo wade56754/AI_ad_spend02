@@ -1,11 +1,8 @@
 """
-财务利润报表 API 路由
-Version: 1.0
-Author: Claude协作开发
+财务利润报表 API 路由 (重构版)
 
-对齐文档：
-- PROFIT_SOT.md v1.1 §3
-- OpenSpec Change: finance-profit-v1
+SoT Reference: PROFIT_SOT.md v1.1 §3
+SoT Reference: MASTER.md v4.4 §2.4 (7角色模型)
 
 端点列表：
 - POST /generate - 生成/刷新利润聚合
@@ -14,12 +11,27 @@ Author: Claude协作开发
 - GET /projects/{project_id} - 获取项目利润明细
 - GET /accounts/{account_id} - 获取账户消耗明细
 - GET /summary - 获取整体利润汇总
+- GET /overview - 获取利润概览
+- GET /by-project - 按项目统计利润
+- GET /by-account - 按账户统计利润
+- GET /by-channel - 按渠道统计利润
+- GET /trend - 获取利润趋势
+- POST /compare - 利润对比分析
 
-权限矩阵 (PROFIT_SOT.md v1.1 §3):
+权限矩阵 (MASTER.md v4.4 §2.4 - 7角色模型):
 - admin, finance: 全部权限
-- account_manager: projects/{id}, accounts/{id}
-- media_buyer, data_operator: accounts/{id}
-- viewer: 无权限
+- ceo: 只读全局利润概览
+- project_owner: 自己负责的项目利润
+- account_manager: 自己管理的项目/账户
+- pitcher: 自己创建日报对应的账户
+- supervisor: 团队相关利润概览
+
+依赖代码块:
+- response-envelope: success_response, error_response
+- pagination: create_paginated_response
+- error-codes: BusinessErrorCodes, SystemErrorCodes
+
+Version: 2.0
 """
 
 import logging
@@ -32,7 +44,8 @@ from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user, require_role
-from backend.core.response import StandardResponse
+from backend.core.response import success_response, error_response
+from backend.core.pagination import create_paginated_response, PaginationParams, get_pagination
 from backend.core.error_codes import (
     AuthErrorCodes,
     BusinessErrorCodes,
@@ -109,14 +122,14 @@ PROFIT_ERROR_CODES = {
 
 
 def _get_error_response(error_code: str, details: dict = None):
-    """获取错误响应"""
+    """获取错误响应 (使用标准 error_response)"""
     error_info = PROFIT_ERROR_CODES.get(error_code, {
         "message": "未知错误",
         "status_code": 400
     })
-    return StandardResponse.error(
-        message=error_info["message"],
+    return error_response(
         code=error_code,
+        message=error_info["message"],
         status_code=error_info["status_code"],
         details=details
     )
@@ -131,16 +144,16 @@ def _handle_service_exception(e: Exception):
     elif isinstance(e, ResourceConflictError):
         return _get_error_response(e.error_code, getattr(e, 'details', None))
     elif isinstance(e, PermissionDeniedError):
-        return StandardResponse.error(
+        return error_response(
+            code="PERM-001",
             message=str(e),
-            code=AuthErrorCodes.PERMISSION_DENIED.code,
             status_code=403
         )
     else:
         logger.exception(f"Unexpected error: {e}")
-        return StandardResponse.error(
+        return error_response(
+            code="SYS-500",
             message="系统内部错误",
-            code=SystemErrorCodes.INTERNAL_ERROR.code,
             status_code=500
         )
 
@@ -183,9 +196,9 @@ async def generate_profit_aggregates(
 
     # force_refresh 仅 admin 可用 (BR-PROFIT-004)
     if request.force_refresh and current_user.role != "admin":
-        return StandardResponse.error(
+        return error_response(
+            code="PERM-001",
             message="强制刷新仅管理员可用",
-            code=AuthErrorCodes.PERMISSION_DENIED.code,
             status_code=403
         )
 
@@ -218,10 +231,9 @@ async def generate_profit_aggregates(
             )
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
-            message="利润聚合生成成功",
-            code="SUCCESS"
+            message="利润聚合生成成功"
         )
 
     except (BusinessLogicError, ResourceNotFoundError, ResourceConflictError) as e:
@@ -324,10 +336,9 @@ async def get_monthly_profit(
             by_project=by_project_items,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
 
     except (BusinessLogicError, ResourceNotFoundError) as e:
@@ -425,10 +436,9 @@ async def get_daily_profit(
             pages=pages,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
 
     except (BusinessLogicError, ResourceNotFoundError) as e:
@@ -455,7 +465,7 @@ async def get_project_profit(
     start_date: date = Query(..., description="开始日期"),
     end_date: date = Query(..., description="结束日期"),
     granularity: ProfitGranularity = Query(ProfitGranularity.MONTHLY, description="粒度"),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator", "account_manager"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "project_owner", "account_manager"])),
     db: Session = Depends(get_db),
 ):
     """
@@ -468,7 +478,8 @@ async def get_project_profit(
 
     权限控制 (PROFIT_SOT.md v1.1 §3.5):
     - admin, finance: 所有项目
-    - data_operator: 所有项目（只读）
+    - ceo: 所有项目（只读）
+    - project_owner: 自己负责的项目
     - account_manager: 仅自己管理的项目
 
     对齐 PROFIT_SOT.md v1.1 §3.5
@@ -483,12 +494,12 @@ async def get_project_profit(
     if not project:
         return _get_error_response("PROFIT_003", {"project_id": project_id})
 
-    # 权限检查: account_manager 仅可访问自己管理的项目
+    # 权限检查: account_manager 仅可访问自己管理的项目 (MASTER.md v4.4 §2.4)
     if current_user.role == "account_manager":
         if not hasattr(project, 'account_manager_id') or project.account_manager_id != current_user.id:
-            return StandardResponse.error(
+            return error_response(
+                code="PERM-001",
                 message="无权限访问该项目",
-                code=AuthErrorCodes.PERMISSION_DENIED.code,
                 status_code=403
             )
 
@@ -560,10 +571,9 @@ async def get_project_profit(
             by_account=by_account,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
 
     except (BusinessLogicError, ResourceNotFoundError) as e:
@@ -577,7 +587,7 @@ async def get_project_profit(
 @router.get(
     "/accounts/{account_id}",
     summary="获取账户消耗明细",
-    description="获取单个广告账户的消耗与利润明细。media_buyer 仅可访问自己创建日报的账户。",
+    description="获取单个广告账户的消耗与利润明细。pitcher 仅可访问自己创建日报的账户。",
     responses={
         200: {"description": "查询成功"},
         400: {"description": "参数错误"},
@@ -589,7 +599,7 @@ async def get_account_profit(
     account_id: int,
     start_date: date = Query(..., description="开始日期"),
     end_date: date = Query(..., description="结束日期"),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator", "account_manager", "media_buyer"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "project_owner", "account_manager", "pitcher"])),
     db: Session = Depends(get_db),
 ):
     """
@@ -601,9 +611,10 @@ async def get_account_profit(
 
     权限控制 (PROFIT_SOT.md v1.1 §3.6):
     - admin, finance: 所有账户
-    - data_operator: 所有账户（只读）
+    - ceo: 所有账户（只读）
+    - project_owner: 自己负责的项目下的账户
     - account_manager: 自己管理的项目下的账户
-    - media_buyer: 仅自己创建日报对应的账户
+    - pitcher: 仅自己创建日报对应的账户
 
     对齐 PROFIT_SOT.md v1.1 §3.6
     """
@@ -617,28 +628,28 @@ async def get_account_profit(
     if not account:
         return _get_error_response("PROFIT_007", {"account_id": account_id})
 
-    # 权限检查
+    # 权限检查 (MASTER.md v4.4 §2.4 - 7角色模型)
     if current_user.role == "account_manager":
         # account_manager: 检查是否管理该账户所属项目
         project = db.query(Project).filter(Project.id == account.project_id).first()
         if project and hasattr(project, 'account_manager_id'):
             if project.account_manager_id != current_user.id:
-                return StandardResponse.error(
+                return error_response(
+                    code="PERM-001",
                     message="无权限访问该账户",
-                    code=AuthErrorCodes.PERMISSION_DENIED.code,
                     status_code=403
                 )
-    elif current_user.role == "media_buyer":
-        # media_buyer: 检查是否有该账户的日报创建记录
+    elif current_user.role == "pitcher":
+        # pitcher: 检查是否有该账户的日报创建记录
         from backend.models import DailyReport
         has_report = db.query(DailyReport).filter(
             DailyReport.ad_account_id == account_id,
             DailyReport.submitted_by == current_user.id
         ).first()
         if not has_report:
-            return StandardResponse.error(
+            return error_response(
+                code="PERM-001",
                 message="无权限访问该账户",
-                code=AuthErrorCodes.PERMISSION_DENIED.code,
                 status_code=403
             )
 
@@ -701,10 +712,9 @@ async def get_account_profit(
             daily_trend=daily_trend,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
 
     except (BusinessLogicError, ResourceNotFoundError) as e:
@@ -798,10 +808,9 @@ async def get_profit_summary(
             is_locked=result.get("is_locked", False),
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=response_data.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
 
     except (BusinessLogicError, ResourceNotFoundError) as e:
@@ -823,13 +832,13 @@ async def get_profit_summary(
     }
 )
 async def get_profit_overview(
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "supervisor"])),
     db: Session = Depends(get_db),
 ):
     """
     获取利润概览（今日/本周/本月）
 
-    权限: admin, finance, data_operator
+    权限: admin, finance, ceo, supervisor
     """
     logger.info(f"GET /finance/profit/overview: user={current_user.email}")
 
@@ -837,10 +846,9 @@ async def get_profit_overview(
         service = FinanceService(db)
         overview = service.get_profit_overview()
 
-        return StandardResponse.success(
+        return success_response(
             data=overview.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
     except Exception as e:
         return _handle_service_exception(e)
@@ -860,13 +868,13 @@ async def get_profit_by_project(
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
     limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "supervisor"])),
     db: Session = Depends(get_db),
 ):
     """
     按项目统计利润
 
-    权限: admin, finance, data_operator
+    权限: admin, finance, ceo, supervisor
     """
     logger.info(
         f"GET /finance/profit/by-project: user={current_user.email}, "
@@ -875,9 +883,9 @@ async def get_profit_by_project(
 
     # 参数校验
     if start_date and end_date and end_date < start_date:
-        return StandardResponse.error(
-            message="开始日期不能晚于结束日期",
+        return error_response(
             code="BIZ-001",
+            message="开始日期不能晚于结束日期",
             status_code=400
         )
 
@@ -889,10 +897,9 @@ async def get_profit_by_project(
             limit=limit,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=result.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
     except Exception as e:
         return _handle_service_exception(e)
@@ -914,13 +921,13 @@ async def get_profit_by_account(
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
     limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "supervisor"])),
     db: Session = Depends(get_db),
 ):
     """
     按账户统计利润
 
-    权限: admin, finance, data_operator
+    权限: admin, finance, ceo, supervisor
     """
     logger.info(
         f"GET /finance/profit/by-account: user={current_user.email}, "
@@ -929,9 +936,9 @@ async def get_profit_by_account(
 
     # 参数校验
     if start_date and end_date and end_date < start_date:
-        return StandardResponse.error(
-            message="开始日期不能晚于结束日期",
+        return error_response(
             code="BIZ-001",
+            message="开始日期不能晚于结束日期",
             status_code=400
         )
 
@@ -939,9 +946,9 @@ async def get_profit_by_account(
     if project_id:
         project = db.query(Project).filter(Project.id == project_id).first()
         if not project:
-            return StandardResponse.error(
+            return error_response(
+                code="RES-001",
                 message=f"项目不存在: project_id={project_id}",
-                code="BIZ-002",
                 status_code=404
             )
 
@@ -954,10 +961,9 @@ async def get_profit_by_account(
             limit=limit,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=result.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
     except Exception as e:
         return _handle_service_exception(e)
@@ -977,21 +983,21 @@ async def get_profit_by_channel(
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
     limit: int = Query(20, ge=1, le=100, description="返回数量限制"),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "supervisor"])),
     db: Session = Depends(get_db),
 ):
     """
     按渠道统计利润
 
-    权限: admin, finance, data_operator
+    权限: admin, finance, ceo, supervisor
     """
     logger.info(f"GET /finance/profit/by-channel: user={current_user.email}")
 
     # 参数校验
     if start_date and end_date and end_date < start_date:
-        return StandardResponse.error(
-            message="开始日期不能晚于结束日期",
+        return error_response(
             code="BIZ-001",
+            message="开始日期不能晚于结束日期",
             status_code=400
         )
 
@@ -1003,10 +1009,9 @@ async def get_profit_by_channel(
             limit=limit,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=result.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
     except Exception as e:
         return _handle_service_exception(e)
@@ -1027,13 +1032,13 @@ async def get_profit_trend(
     project_id: Optional[int] = Query(None, description="项目ID过滤"),
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "supervisor"])),
     db: Session = Depends(get_db),
 ):
     """
     获取利润趋势
 
-    权限: admin, finance, data_operator
+    权限: admin, finance, ceo, supervisor
     """
     logger.info(
         f"GET /finance/profit/trend: user={current_user.email}, "
@@ -1042,18 +1047,18 @@ async def get_profit_trend(
 
     # 参数校验
     if start_date and end_date and end_date < start_date:
-        return StandardResponse.error(
-            message="开始日期不能晚于结束日期",
+        return error_response(
             code="BIZ-001",
+            message="开始日期不能晚于结束日期",
             status_code=400
         )
 
     # 验证 granularity
     valid_granularities = ["daily", "weekly", "monthly"]
     if granularity not in valid_granularities:
-        return StandardResponse.error(
+        return error_response(
+            code="VAL-001",
             message=f"无效的粒度值: {granularity}",
-            code="BIZ-001",
             status_code=400
         )
 
@@ -1066,10 +1071,9 @@ async def get_profit_trend(
             end_date=end_date,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=result.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
     except Exception as e:
         return _handle_service_exception(e)
@@ -1090,13 +1094,13 @@ async def compare_profit(
     request: ProfitCompareRequest,
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"])),
+    current_user: User = Depends(require_role(["admin", "finance", "ceo", "supervisor"])),
     db: Session = Depends(get_db),
 ):
     """
     利润对比分析
 
-    权限: admin, finance, data_operator
+    权限: admin, finance, ceo, supervisor
     """
     logger.info(
         f"POST /finance/profit/compare: user={current_user.email}, "
@@ -1107,9 +1111,9 @@ async def compare_profit(
     for pid in request.project_ids:
         project = db.query(Project).filter(Project.id == pid).first()
         if not project:
-            return StandardResponse.error(
+            return error_response(
+                code="RES-001",
                 message=f"项目不存在: project_id={pid}",
-                code="BIZ-002",
                 status_code=404
             )
 
@@ -1121,10 +1125,9 @@ async def compare_profit(
             end_date=end_date or request.end_date,
         )
 
-        return StandardResponse.success(
+        return success_response(
             data=result.model_dump(),
-            message="ok",
-            code="SUCCESS"
+            message="查询成功"
         )
     except Exception as e:
         return _handle_service_exception(e)

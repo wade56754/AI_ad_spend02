@@ -1,110 +1,62 @@
 """
-CEO Dashboard API 路由
+Dashboard API 路由
 
-提供老板驾驶舱汇总数据，包括：
-- 项目总览
-- 消耗/收入汇总
-- 待处理事项
-- 异常告警
+提供运营驾驶舱数据，包括：
+- KPI 指标
+- 消耗趋势
+- 项目排行
+- 待办事项
+- 告警信息
 
-权限：仅 admin/ceo 可访问
+权限：
+- CEO 驾驶舱端点仅 admin/ceo 可访问
+- 通用端点根据角色过滤数据
 
 SoT Reference: MASTER.md v4.4 §6.5
 """
 
 import logging
-from datetime import date, datetime, timedelta
-from decimal import Decimal
-from typing import List, Optional, Dict, Any
+from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query, HTTPException, status
-from sqlalchemy import func, and_, or_
-from sqlalchemy.orm import Session, joinedload
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user
-from backend.core.response import success_response, error_response, StandardResponse
 from backend.core.error_codes import SystemErrorCodes
-from backend.core.role_mapping import role_in_list, normalize_role
-from backend.core.phase_config import get_phase_config
+from backend.core.response import StandardResponse, error_response, success_response
+from backend.core.role_mapping import role_in_list
+from backend.models import User
+from backend.schemas.dashboard import (
+    DashboardDetail,
+    DashboardSummary,
+    KpiResponse,
+    RankingResponse,
+    TodoResponse,
+    TrendResponse,
+)
+from backend.services.dashboard_service import DashboardService
+from backend.services.dashboard.ceo_dashboard_service import CEODashboardService
+from backend.services.dashboard.profit_service import ProfitService
+from backend.services.dashboard.project_balance_service import ProjectBalanceService
+from backend.services.dashboard.cash_status_service import CashStatusService
+from backend.schemas.dashboard.ceo import (
+    CEOOverviewResponse,
+    CashStatusResponse,
+    ProfitSummaryResponse,
+    ProjectBalanceResponse,
+    ActionItemsResponse,
+    ProjectRankingResponse,
+    TrendDataResponse,
+)
 
-from backend.models import User, DailyReport, Project, AdAccount
-from backend.models.workflow.topup_request import TopupRequest
-from backend.models.enums import DailyReportStatus, TopupRequestStatus, ProjectStatus
-
-from pydantic import BaseModel, Field, ConfigDict
-
-# 创建 logger 实例
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/dashboards", tags=["dashboards"])
 
 
-# ============ Schema 定义 ============
-
-class AlertItem(BaseModel):
-    """告警项"""
-    type: str = Field(..., description="告警类型: budget_warning/trend_anomaly/pending_approval")
-    severity: str = Field("medium", description="严重程度: low/medium/high/critical")
-    project_id: Optional[int] = None
-    project_name: Optional[str] = None
-    message: str = Field(..., description="告警消息")
-    created_at: Optional[datetime] = None
-
-
-class CEODashboardSummary(BaseModel):
-    """CEO 驾驶舱汇总响应"""
-    model_config = ConfigDict(from_attributes=True)
-
-    # 时间范围
-    period: str = Field(..., description="统计周期，如 2024-12")
-    start_date: date
-    end_date: date
-
-    # 项目统计
-    total_projects: int = Field(0, description="项目总数")
-    active_projects: int = Field(0, description="活跃项目数")
-    suspended_projects: int = Field(0, description="暂停项目数")
-
-    # 消耗统计
-    total_spend: Decimal = Field(Decimal("0.00"), description="总消耗")
-    total_revenue: Decimal = Field(Decimal("0.00"), description="总收入（conversions × unit_price）")
-    profit_margin: Optional[float] = Field(None, description="利润率 = (revenue - spend) / revenue")
-
-    # 待处理事项
-    pending_reports: int = Field(0, description="待审核日报数")
-    pending_topups: int = Field(0, description="待审批充值数")
-    trend_flagged_count: int = Field(0, description="趋势异常日报数")
-
-    # 告警列表
-    alerts: List[AlertItem] = Field(default_factory=list, description="告警列表")
-
-    # Phase 信息
-    current_phase: int = Field(1, description="当前 Phase (1 或 2)")
-
-
-class ProjectRankingItem(BaseModel):
-    """项目排名项"""
-    model_config = ConfigDict(from_attributes=True)
-
-    project_id: int
-    project_name: str
-    total_spend: Decimal = Decimal("0.00")
-    total_follows: int = 0
-    cost_per_follow: Optional[Decimal] = None
-    roas: Optional[float] = None
-
-
-class CEODashboardDetail(BaseModel):
-    """CEO 驾驶舱详细数据"""
-    model_config = ConfigDict(from_attributes=True)
-
-    summary: CEODashboardSummary
-    top_spend_projects: List[ProjectRankingItem] = Field(default_factory=list)
-    worst_roas_projects: List[ProjectRankingItem] = Field(default_factory=list)
-
-
 # ============ 权限检查 ============
+
 
 def require_ceo_access(current_user: User = Depends(get_current_user)) -> User:
     """
@@ -124,27 +76,231 @@ def require_ceo_access(current_user: User = Depends(get_current_user)) -> User:
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "code": "AUTH_500",
-                "message": "CEO 驾驶舱仅限老板和管理员访问"
-            }
+            detail={"code": "AUTH_500", "message": "CEO 驾驶舱仅限老板和管理员访问"},
         )
 
     return current_user
 
 
-# ============ API 端点 ============
+def get_dashboard_service(db: Session = Depends(get_db)) -> DashboardService:
+    """Dashboard Service 依赖注入"""
+    return DashboardService(db)
+
+
+# ============ KPI 端点 ============
+
+
+@router.get(
+    "/kpi",
+    response_model=StandardResponse[KpiResponse],
+    summary="KPI 指标",
+    description="获取核心 KPI 指标数据，包括消耗、转化、CPL、ROI 及环比变化",
+)
+async def get_kpi(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)，默认当月"),
+    project_id: Optional[int] = Query(None, description="项目ID筛选"),
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    KPI 指标 API
+
+    返回：
+    - 总消耗、总转化、总进粉
+    - 平均 CPL、ROI、利润率
+    - 消耗/转化/CPL 环比变化
+
+    Phase 1 行为：仅展示数据，不阻断任何操作
+    """
+    try:
+        logger.info(f"KPI request: user={current_user.id}, period={period}")
+
+        start_date, end_date, period_str = service.parse_period(period)
+        kpi = service.get_kpi(start_date, end_date, project_id)
+
+        response = KpiResponse(
+            period=period_str,
+            start_date=start_date,
+            end_date=end_date,
+            kpi=kpi,
+        )
+
+        return success_response(data=response)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in KPI endpoint: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取 KPI 数据失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+# ============ 趋势端点 ============
+
+
+@router.get(
+    "/trend",
+    response_model=StandardResponse[TrendResponse],
+    summary="消耗趋势",
+    description="获取时间维度的消耗趋势数据",
+)
+async def get_trend(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)"),
+    project_id: Optional[int] = Query(None, description="项目ID筛选"),
+    granularity: Literal["day", "week", "month"] = Query(
+        "day", description="数据粒度"
+    ),
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    消耗趋势 API
+
+    返回：
+    - 按日/周/月聚合的消耗、转化、进粉、CPL 数据
+    """
+    try:
+        logger.info(
+            f"Trend request: user={current_user.id}, period={period}, granularity={granularity}"
+        )
+
+        start_date, end_date, period_str = service.parse_period(period)
+        items = service.get_trend(start_date, end_date, project_id, granularity)
+
+        response = TrendResponse(
+            period=period_str,
+            start_date=start_date,
+            end_date=end_date,
+            granularity=granularity,
+            items=items,
+        )
+
+        return success_response(data=response)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in trend endpoint: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取趋势数据失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+# ============ 项目排行端点 ============
+
+
+@router.get(
+    "/ranking",
+    response_model=StandardResponse[RankingResponse],
+    summary="项目排行",
+    description="获取项目排行榜数据",
+)
+async def get_ranking(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)"),
+    ranking_type: Literal["spend", "cpl", "roas"] = Query(
+        "spend", description="排名类型: spend(消耗)/cpl(单粉成本)/roas(回报率)"
+    ),
+    top_n: int = Query(10, ge=1, le=50, description="返回 Top N 项目"),
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    项目排行 API
+
+    返回：
+    - 按消耗/CPL/ROAS 排名的项目列表
+    """
+    try:
+        logger.info(
+            f"Ranking request: user={current_user.id}, type={ranking_type}, top_n={top_n}"
+        )
+
+        start_date, end_date, period_str = service.parse_period(period)
+        items = service.get_project_ranking(start_date, end_date, ranking_type, top_n)
+
+        response = RankingResponse(
+            period=period_str,
+            start_date=start_date,
+            end_date=end_date,
+            ranking_type=ranking_type,
+            items=items,
+        )
+
+        return success_response(data=response)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in ranking endpoint: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取排行数据失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+# ============ 待办事项端点 ============
+
+
+@router.get(
+    "/todos",
+    response_model=StandardResponse[TodoResponse],
+    summary="待办事项",
+    description="获取当前待处理事项列表",
+)
+async def get_todos(
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    待办事项 API
+
+    返回：
+    - 待审核日报数
+    - 趋势异常日报数
+    - 待审批充值数
+
+    优先级规则：
+    - urgent: 趋势异常
+    - high: 数量 > 10
+    - normal: 其他
+    """
+    try:
+        logger.info(f"Todos request: user={current_user.id}")
+
+        response = service.get_todos(current_user)
+
+        return success_response(data=response)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in todos endpoint: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取待办事项失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+# ============ CEO 驾驶舱端点 (保持向后兼容) ============
+
 
 @router.get(
     "/ceo/summary",
-    response_model=StandardResponse[CEODashboardSummary],
+    response_model=StandardResponse[DashboardSummary],
     summary="CEO 驾驶舱汇总",
-    description="获取 CEO 驾驶舱汇总数据，包括项目统计、消耗统计、待处理事项、告警列表"
+    description="获取 CEO 驾驶舱汇总数据，包括项目统计、消耗统计、待处理事项、告警列表",
 )
 async def get_ceo_dashboard_summary(
     period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)，默认当月"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_ceo_access)
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user: User = Depends(require_ceo_access),
 ):
     """
     CEO 驾驶舱汇总 API
@@ -153,150 +309,21 @@ async def get_ceo_dashboard_summary(
 
     返回：
     - 项目总数、活跃项目数
-    - 总消耗、总收入、利润率
+    - KPI 数据 (消耗、收入、利润率)
     - 待审核日报数、待审批充值数
     - 异常告警列表
 
-    Phase 1 行为：
-    - 仅展示数据，不阻断任何操作
+    Phase 1 行为：仅展示数据，不阻断任何操作
     """
     try:
-        logger.info(
-            f"CEO dashboard summary request: user={current_user.id}, period={period}"
-        )
+        logger.info(f"CEO dashboard summary request: user={current_user.id}, period={period}")
 
-        # 解析统计周期
-        if period:
-            try:
-                year, month = map(int, period.split("-"))
-                start_date = date(year, month, 1)
-                if month == 12:
-                    end_date = date(year + 1, 1, 1) - timedelta(days=1)
-                else:
-                    end_date = date(year, month + 1, 1) - timedelta(days=1)
-            except (ValueError, AttributeError):
-                start_date = date.today().replace(day=1)
-                end_date = date.today()
-                period = start_date.strftime("%Y-%m")
-        else:
-            start_date = date.today().replace(day=1)
-            end_date = date.today()
-            period = start_date.strftime("%Y-%m")
-
-        # ========== 项目统计 ==========
-        total_projects = db.query(func.count(Project.id)).scalar() or 0
-
-        active_projects = db.query(func.count(Project.id)).filter(
-            Project.status == ProjectStatus.ACTIVE.value
-        ).scalar() or 0
-
-        suspended_projects = db.query(func.count(Project.id)).filter(
-            Project.status == ProjectStatus.SUSPENDED.value
-        ).scalar() or 0
-
-        # ========== 消耗统计（从日报聚合）==========
-        spend_query = db.query(
-            func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0.00")).label("total_spend"),
-            func.coalesce(func.sum(DailyReport.conversions_final), 0).label("total_conversions")
-        ).filter(
-            DailyReport.report_date >= start_date,
-            DailyReport.report_date <= end_date
-        ).first()
-
-        total_spend = spend_query.total_spend if spend_query else Decimal("0.00")
-        total_conversions = spend_query.total_conversions if spend_query else 0
-
-        # 计算收入（假设平均单价，实际应从项目配置获取）
-        # 这里简化为：从 final_locked 日报计算收入
-        revenue_query = db.query(
-            func.coalesce(func.sum(
-                DailyReport.conversions_final * DailyReport.unit_price
-            ), Decimal("0.00")).label("total_revenue")
-        ).filter(
-            DailyReport.report_date >= start_date,
-            DailyReport.report_date <= end_date,
-            DailyReport.status == DailyReportStatus.FINAL_LOCKED.value
-        ).first()
-
-        total_revenue = revenue_query.total_revenue if revenue_query else Decimal("0.00")
-
-        # 计算利润率
-        profit_margin = None
-        if total_revenue and total_revenue > 0:
-            profit = total_revenue - total_spend
-            profit_margin = float(profit / total_revenue)
-
-        # ========== 待处理事项 ==========
-        # 待审核日报（需要 data_operator 处理的状态）
-        pending_reports = db.query(func.count(DailyReport.id)).filter(
-            DailyReport.status.in_([
-                DailyReportStatus.TREND_PENDING.value,
-                DailyReportStatus.TREND_FLAGGED.value,
-                DailyReportStatus.FINAL_PENDING.value
-            ])
-        ).scalar() or 0
-
-        # 趋势异常数
-        trend_flagged_count = db.query(func.count(DailyReport.id)).filter(
-            DailyReport.status == DailyReportStatus.TREND_FLAGGED.value
-        ).scalar() or 0
-
-        # 待审批充值
-        pending_topups = db.query(func.count(TopupRequest.id)).filter(
-            TopupRequest.status.in_([
-                TopupRequestStatus.PENDING_REVIEW.value,
-                TopupRequestStatus.FINANCE_APPROVE.value
-            ])
-        ).scalar() or 0
-
-        # ========== 告警列表 ==========
-        alerts: List[AlertItem] = []
-
-        # 告警 1: 趋势异常日报
-        if trend_flagged_count > 0:
-            alerts.append(AlertItem(
-                type="trend_anomaly",
-                severity="high",
-                message=f"有 {trend_flagged_count} 个日报存在趋势异常，需人工复核"
-            ))
-
-        # 告警 2: 待审批充值积压
-        if pending_topups > 5:
-            alerts.append(AlertItem(
-                type="pending_approval",
-                severity="medium",
-                message=f"有 {pending_topups} 个充值申请待审批"
-            ))
-
-        # 告警 3: 获取消耗超预算的项目
-        # （简化实现：检查项目是否有预算字段）
-        # 此处需要 Project 模型有 budget 字段，暂时跳过
-
-        # 获取 Phase 信息
-        phase_config = get_phase_config()
-
-        # 构建响应
-        summary = CEODashboardSummary(
-            period=period,
-            start_date=start_date,
-            end_date=end_date,
-            total_projects=total_projects,
-            active_projects=active_projects,
-            suspended_projects=suspended_projects,
-            total_spend=total_spend,
-            total_revenue=total_revenue,
-            profit_margin=profit_margin,
-            pending_reports=pending_reports,
-            pending_topups=pending_topups,
-            trend_flagged_count=trend_flagged_count,
-            alerts=alerts,
-            current_phase=2 if phase_config.is_phase2_enabled() else 1
-        )
+        summary = service.get_summary(period)
 
         logger.info(
-            f"CEO dashboard summary: total_projects={total_projects}, "
-            f"active={active_projects}, spend={total_spend}, "
-            f"pending_reports={pending_reports}, alerts={len(alerts)}"
+            f"CEO dashboard summary: total_projects={summary.total_projects}, "
+            f"active={summary.active_projects}, spend={summary.kpi.total_spend}, "
+            f"pending_reports={summary.pending_reports}, alerts={len(summary.alerts)}"
         )
 
         return success_response(data=summary)
@@ -308,239 +335,38 @@ async def get_ceo_dashboard_summary(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取驾驶舱数据失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
-
-
-def _build_ceo_summary(
-    period: Optional[str],
-    db: Session
-) -> CEODashboardSummary:
-    """
-    内部函数：构建 CEO Dashboard 汇总数据
-
-    被 summary 和 detail 端点共用
-    """
-    # 解析统计周期
-    if period:
-        try:
-            year, month = map(int, period.split("-"))
-            start_date = date(year, month, 1)
-            if month == 12:
-                end_date = date(year + 1, 1, 1) - timedelta(days=1)
-            else:
-                end_date = date(year, month + 1, 1) - timedelta(days=1)
-        except (ValueError, AttributeError):
-            start_date = date.today().replace(day=1)
-            end_date = date.today()
-            period = start_date.strftime("%Y-%m")
-    else:
-        start_date = date.today().replace(day=1)
-        end_date = date.today()
-        period = start_date.strftime("%Y-%m")
-
-    # 项目统计
-    total_projects = db.query(func.count(Project.id)).scalar() or 0
-    active_projects = db.query(func.count(Project.id)).filter(
-        Project.status == ProjectStatus.ACTIVE.value
-    ).scalar() or 0
-    suspended_projects = db.query(func.count(Project.id)).filter(
-        Project.status == ProjectStatus.SUSPENDED.value
-    ).scalar() or 0
-
-    # 消耗统计
-    spend_query = db.query(
-        func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0.00")).label("total_spend"),
-        func.coalesce(func.sum(DailyReport.conversions_final), 0).label("total_conversions")
-    ).filter(
-        DailyReport.report_date >= start_date,
-        DailyReport.report_date <= end_date
-    ).first()
-
-    total_spend = spend_query.total_spend if spend_query else Decimal("0.00")
-
-    # 计算收入
-    revenue_query = db.query(
-        func.coalesce(func.sum(
-            DailyReport.conversions_final * DailyReport.unit_price
-        ), Decimal("0.00")).label("total_revenue")
-    ).filter(
-        DailyReport.report_date >= start_date,
-        DailyReport.report_date <= end_date,
-        DailyReport.status == DailyReportStatus.FINAL_LOCKED.value
-    ).first()
-
-    total_revenue = revenue_query.total_revenue if revenue_query else Decimal("0.00")
-
-    # 计算利润率
-    profit_margin = None
-    if total_revenue and total_revenue > 0:
-        profit = total_revenue - total_spend
-        profit_margin = float(profit / total_revenue)
-
-    # 待处理事项
-    pending_reports = db.query(func.count(DailyReport.id)).filter(
-        DailyReport.status.in_([
-            DailyReportStatus.TREND_PENDING.value,
-            DailyReportStatus.TREND_FLAGGED.value,
-            DailyReportStatus.FINAL_PENDING.value
-        ])
-    ).scalar() or 0
-
-    trend_flagged_count = db.query(func.count(DailyReport.id)).filter(
-        DailyReport.status == DailyReportStatus.TREND_FLAGGED.value
-    ).scalar() or 0
-
-    pending_topups = db.query(func.count(TopupRequest.id)).filter(
-        TopupRequest.status.in_([
-            TopupRequestStatus.PENDING_REVIEW.value,
-            TopupRequestStatus.FINANCE_APPROVE.value
-        ])
-    ).scalar() or 0
-
-    # 告警列表
-    alerts: List[AlertItem] = []
-    if trend_flagged_count > 0:
-        alerts.append(AlertItem(
-            type="trend_anomaly",
-            severity="high",
-            message=f"有 {trend_flagged_count} 个日报存在趋势异常，需人工复核"
-        ))
-    if pending_topups > 5:
-        alerts.append(AlertItem(
-            type="pending_approval",
-            severity="medium",
-            message=f"有 {pending_topups} 个充值申请待审批"
-        ))
-
-    # Phase 信息
-    phase_config = get_phase_config()
-
-    return CEODashboardSummary(
-        period=period,
-        start_date=start_date,
-        end_date=end_date,
-        total_projects=total_projects,
-        active_projects=active_projects,
-        suspended_projects=suspended_projects,
-        total_spend=total_spend,
-        total_revenue=total_revenue,
-        profit_margin=profit_margin,
-        pending_reports=pending_reports,
-        pending_topups=pending_topups,
-        trend_flagged_count=trend_flagged_count,
-        alerts=alerts,
-        current_phase=2 if phase_config.is_phase2_enabled() else 1
-    )
 
 
 @router.get(
     "/ceo/detail",
-    response_model=StandardResponse[CEODashboardDetail],
+    response_model=StandardResponse[DashboardDetail],
     summary="CEO 驾驶舱详细数据",
-    description="获取 CEO 驾驶舱详细数据，包括汇总 + 项目排名"
+    description="获取 CEO 驾驶舱详细数据，包括汇总 + 趋势 + 项目排名 + 待办",
 )
 async def get_ceo_dashboard_detail(
     period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)"),
     top_n: int = Query(5, ge=1, le=20, description="Top N 项目数"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_ceo_access)
+    service: DashboardService = Depends(get_dashboard_service),
+    current_user: User = Depends(require_ceo_access),
 ):
     """
     CEO 驾驶舱详细数据 API
 
+    权限：仅 admin/ceo 可访问
+
     返回：
     - 汇总数据
+    - 消耗趋势
     - 消耗 Top N 项目
-    - ROAS 最差 Top N 项目
+    - CPL 最差 Top N 项目
+    - 待办事项
     """
     try:
-        # 构建汇总数据
-        summary = _build_ceo_summary(period, db)
+        logger.info(f"CEO dashboard detail request: user={current_user.id}, top_n={top_n}")
 
-        # 解析日期范围
-        start_date = summary.start_date
-        end_date = summary.end_date
-
-        # ========== 消耗 Top N 项目 ==========
-        top_spend_query = db.query(
-            AdAccount.project_id,
-            func.sum(DailyReport.raw_spend).label("total_spend"),
-            func.sum(DailyReport.follows_count).label("total_follows")
-        ).join(
-            DailyReport, DailyReport.ad_account_id == AdAccount.id
-        ).filter(
-            DailyReport.report_date >= start_date,
-            DailyReport.report_date <= end_date,
-            AdAccount.project_id.isnot(None)
-        ).group_by(
-            AdAccount.project_id
-        ).order_by(
-            func.sum(DailyReport.raw_spend).desc()
-        ).limit(top_n).all()
-
-        # 获取项目名称
-        project_ids = [row.project_id for row in top_spend_query if row.project_id]
-        projects = {
-            p.id: p.name
-            for p in db.query(Project.id, Project.name).filter(Project.id.in_(project_ids)).all()
-        } if project_ids else {}
-
-        top_spend_projects = []
-        for row in top_spend_query:
-            if row.project_id:
-                cost_per_follow = None
-                if row.total_follows and row.total_follows > 0:
-                    cost_per_follow = Decimal(str(row.total_spend)) / Decimal(row.total_follows)
-
-                top_spend_projects.append(ProjectRankingItem(
-                    project_id=row.project_id,
-                    project_name=projects.get(row.project_id, f"项目 #{row.project_id}"),
-                    total_spend=row.total_spend or Decimal("0.00"),
-                    total_follows=row.total_follows or 0,
-                    cost_per_follow=cost_per_follow
-                ))
-
-        # ========== ROAS 最差项目（按单粉成本排序）==========
-        worst_roas_query = db.query(
-            AdAccount.project_id,
-            func.sum(DailyReport.raw_spend).label("total_spend"),
-            func.sum(DailyReport.follows_count).label("total_follows")
-        ).join(
-            DailyReport, DailyReport.ad_account_id == AdAccount.id
-        ).filter(
-            DailyReport.report_date >= start_date,
-            DailyReport.report_date <= end_date,
-            AdAccount.project_id.isnot(None),
-            DailyReport.follows_count > 0  # 排除零进粉
-        ).group_by(
-            AdAccount.project_id
-        ).having(
-            func.sum(DailyReport.follows_count) > 0
-        ).order_by(
-            (func.sum(DailyReport.raw_spend) / func.sum(DailyReport.follows_count)).desc()
-        ).limit(top_n).all()
-
-        worst_roas_projects = []
-        for row in worst_roas_query:
-            if row.project_id:
-                cost_per_follow = None
-                if row.total_follows and row.total_follows > 0:
-                    cost_per_follow = Decimal(str(row.total_spend)) / Decimal(row.total_follows)
-
-                worst_roas_projects.append(ProjectRankingItem(
-                    project_id=row.project_id,
-                    project_name=projects.get(row.project_id, f"项目 #{row.project_id}"),
-                    total_spend=row.total_spend or Decimal("0.00"),
-                    total_follows=row.total_follows or 0,
-                    cost_per_follow=cost_per_follow
-                ))
-
-        detail = CEODashboardDetail(
-            summary=summary,
-            top_spend_projects=top_spend_projects,
-            worst_roas_projects=worst_roas_projects
-        )
+        detail = service.get_detail(period, top_n)
 
         return success_response(data=detail)
 
@@ -551,5 +377,325 @@ async def get_ceo_dashboard_detail(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取驾驶舱详细数据失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+# ============ CEO Dashboard V3 端点 (毛利=收款-消耗) ============
+
+
+def get_ceo_dashboard_v3_service(db: Session = Depends(get_db)) -> CEODashboardService:
+    """CEO Dashboard V3 Service 依赖注入"""
+    return CEODashboardService(db)
+
+
+def get_profit_service(db: Session = Depends(get_db)) -> ProfitService:
+    """Profit Service 依赖注入"""
+    return ProfitService(db)
+
+
+def get_project_balance_service(db: Session = Depends(get_db)) -> ProjectBalanceService:
+    """Project Balance Service 依赖注入"""
+    return ProjectBalanceService(db)
+
+
+def get_cash_status_service(db: Session = Depends(get_db)) -> CashStatusService:
+    """Cash Status Service 依赖注入"""
+    return CashStatusService(db)
+
+
+@router.get(
+    "/ceo/v3/overview",
+    response_model=StandardResponse[CEOOverviewResponse],
+    summary="CEO 仪表盘概览 (V3)",
+    description="获取 CEO 仪表盘全部数据，包括现金、利润、项目余额、待办事项、Top项目",
+)
+async def get_ceo_overview_v3(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)，默认当月"),
+    service: CEODashboardService = Depends(get_ceo_dashboard_v3_service),
+    current_user: User = Depends(require_ceo_access),
+):
+    """
+    CEO 仪表盘概览 (V3)
+
+    核心公式：毛利 = 收款 - 消耗（不含手续费）
+
+    权限：仅 admin/ceo 可访问
+
+    返回：
+    - 公司现金状况
+    - 利润概览（毛利=收款-消耗）
+    - 项目余额汇总
+    - 待办事项
+    - Top 5 项目
+    """
+    try:
+        logger.info(f"CEO dashboard V3 overview: user={current_user.id}, period={period}")
+
+        data = service.get_overview(period)
+
+        logger.info(
+            f"CEO V3 overview: profit_rate={data['profit_summary']['profit_rate_pct']:.1f}%, "
+            f"projects={data['project_balance_summary']['total_projects']}"
+        )
+
+        return success_response(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in CEO dashboard V3 overview: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取 CEO 仪表盘概览失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+@router.get(
+    "/ceo/v3/cash-status",
+    response_model=StandardResponse[CashStatusResponse],
+    summary="公司现金状况",
+    description="获取公司现金状况，包括余额、收支明细、周转天数",
+)
+async def get_cash_status_v3(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)，默认当月"),
+    service: CashStatusService = Depends(get_cash_status_service),
+    current_user: User = Depends(require_ceo_access),
+):
+    """
+    公司现金状况 API
+
+    公式：期末余额 = 期初余额 + 收入 - 支出
+
+    权限：仅 admin/ceo 可访问
+    """
+    try:
+        logger.info(f"CEO cash status: user={current_user.id}, period={period}")
+
+        data = service.get_cash_status(period)
+
+        return success_response(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in cash status: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取公司现金状况失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+@router.get(
+    "/ceo/v3/profit-summary",
+    response_model=StandardResponse[ProfitSummaryResponse],
+    summary="利润概览",
+    description="获取利润概览，核心公式：毛利 = 收款 - 消耗（不含手续费）",
+)
+async def get_profit_summary_v3(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)，默认当月"),
+    service: ProfitService = Depends(get_profit_service),
+    current_user: User = Depends(require_ceo_access),
+):
+    """
+    利润概览 API
+
+    核心公式：毛利 = 收款 - 消耗（⚠️ 不含手续费）
+
+    权限：仅 admin/ceo 可访问
+
+    返回：
+    - 本月收款（=转化数×单价）
+    - 本月消耗（=real_spend）
+    - 本月毛利（=收款-消耗）
+    - 毛利率、CPL
+    """
+    try:
+        logger.info(f"CEO profit summary: user={current_user.id}, period={period}")
+
+        data = service.get_profit_summary(period)
+
+        logger.info(
+            f"Profit V3: revenue={data['revenue']['total']}, "
+            f"cost={data['cost']['total']}, "
+            f"profit_rate={data['profit']['rate_pct']:.1f}%"
+        )
+
+        return success_response(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in profit summary: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取利润概览失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+@router.get(
+    "/ceo/v3/project-balance",
+    response_model=StandardResponse[ProjectBalanceResponse],
+    summary="项目余额列表",
+    description="获取所有项目余额，公式：余额 = 累计收款 - 累计消耗",
+)
+async def get_project_balance_v3(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)"),
+    service: ProjectBalanceService = Depends(get_project_balance_service),
+    current_user: User = Depends(require_ceo_access),
+):
+    """
+    项目余额列表 API
+
+    公式：余额 = 累计收款 - 累计消耗
+
+    权限：仅 admin/ceo 可访问
+
+    状态说明：
+    - prepaid: 客户预付
+    - pending_refund: 待退款
+    - refunded: 已退款
+    - settled: 已结清
+    - need_topup: 需补款
+    """
+    try:
+        logger.info(f"CEO project balance: user={current_user.id}, period={period}")
+
+        data = service.get_all_balances(period)
+
+        return success_response(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in project balance: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取项目余额失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+@router.get(
+    "/ceo/v3/action-items",
+    response_model=StandardResponse[ActionItemsResponse],
+    summary="待办事项",
+    description="获取待办事项，包括异常项目、待处理日报、待退款项目",
+)
+async def get_action_items_v3(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)"),
+    service: CEODashboardService = Depends(get_ceo_dashboard_v3_service),
+    current_user: User = Depends(require_ceo_access),
+):
+    """
+    待办事项 API
+
+    权限：仅 admin/ceo 可访问
+
+    返回：
+    - 异常项目（毛利率<10%或亏损）
+    - 待处理日报
+    - 待退款项目
+    """
+    try:
+        logger.info(f"CEO action items: user={current_user.id}, period={period}")
+
+        data = service.get_action_items(period)
+
+        return success_response(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in action items: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取待办事项失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+@router.get(
+    "/ceo/v3/project-ranking",
+    response_model=StandardResponse[ProjectRankingResponse],
+    summary="项目毛利排行",
+    description="获取项目毛利排行，按毛利从高到低排序",
+)
+async def get_project_ranking_v3(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)，默认当月"),
+    limit: int = Query(10, ge=1, le=50, description="返回项目数"),
+    service: ProfitService = Depends(get_profit_service),
+    current_user: User = Depends(require_ceo_access),
+):
+    """
+    项目毛利排行 API
+
+    核心公式：毛利 = 收款 - 消耗（不含手续费）
+
+    权限：仅 admin/ceo 可访问
+
+    返回：
+    - 项目列表（按毛利排序）
+    - 每个项目：收入、成本、毛利、毛利率、CPL
+    - 状态：healthy(>=20%) / warning(>=10%) / danger(>=0%) / loss(<0%)
+    """
+    try:
+        logger.info(f"CEO project ranking: user={current_user.id}, period={period}, limit={limit}")
+
+        data = service.get_project_ranking(period, limit)
+
+        return success_response(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in project ranking: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取项目排行失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+        )
+
+
+@router.get(
+    "/ceo/v3/trend",
+    response_model=StandardResponse[TrendDataResponse],
+    summary="趋势数据",
+    description="获取收入、消耗、毛利的时间趋势",
+)
+async def get_trend_v3(
+    period: Optional[str] = Query(None, description="统计周期 (YYYY-MM)，默认当月"),
+    granularity: Literal["daily", "weekly", "monthly"] = Query(
+        "daily", description="数据粒度"
+    ),
+    service: CEODashboardService = Depends(get_ceo_dashboard_v3_service),
+    current_user: User = Depends(require_ceo_access),
+):
+    """
+    趋势数据 API
+
+    权限：仅 admin/ceo 可访问
+
+    返回：
+    - 按日/周/月聚合的数据
+    - 每个时间点：收入、消耗、毛利、转化数
+    """
+    try:
+        logger.info(f"CEO trend V3: user={current_user.id}, period={period}, granularity={granularity}")
+
+        data = service.get_trend_data(period, granularity)
+
+        return success_response(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Error in trend V3: {e}")
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message="获取趋势数据失败",
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )

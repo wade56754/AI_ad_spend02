@@ -45,8 +45,8 @@ describe('TopupStatusBadge', () => {
 
     it('hides icon when showIcon is false', () => {
       const { container } = render(<TopupStatusBadge status="draft" showIcon={false} />);
-      // No SVG inside the badge (there might be one in tooltip)
-      const badge = container.querySelector('[class*="badge"]');
+      // No SVG inside the badge
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge?.querySelector('svg')).not.toBeInTheDocument();
     });
   });
@@ -67,19 +67,20 @@ describe('TopupStatusBadge', () => {
   describe('size prop', () => {
     it('renders small size', () => {
       const { container } = render(<TopupStatusBadge status="draft" size="sm" />);
-      const badge = container.querySelector('[class*="badge"]');
+      // Badge uses inline-flex class, not "badge" class
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge).toHaveClass('text-xs');
     });
 
     it('renders default size', () => {
       const { container } = render(<TopupStatusBadge status="draft" size="default" />);
-      const badge = container.querySelector('[class*="badge"]');
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge).toHaveClass('text-sm');
     });
 
     it('renders large size', () => {
       const { container } = render(<TopupStatusBadge status="draft" size="lg" />);
-      const badge = container.querySelector('[class*="badge"]');
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge).toHaveClass('text-base');
     });
   });
@@ -87,25 +88,25 @@ describe('TopupStatusBadge', () => {
   describe('status-specific styles', () => {
     it('renders draft with gray colors', () => {
       const { container } = render(<TopupStatusBadge status="draft" showTooltip={false} />);
-      const badge = container.querySelector('[class*="badge"]');
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge).toHaveClass('bg-gray-50');
     });
 
     it('renders pending_review with amber colors', () => {
       const { container } = render(<TopupStatusBadge status="pending_review" showTooltip={false} />);
-      const badge = container.querySelector('[class*="badge"]');
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge).toHaveClass('bg-amber-50');
     });
 
     it('renders completed with green colors', () => {
       const { container } = render(<TopupStatusBadge status="completed" showTooltip={false} />);
-      const badge = container.querySelector('[class*="badge"]');
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge).toHaveClass('bg-green-50');
     });
 
     it('renders rejected with red colors', () => {
       const { container } = render(<TopupStatusBadge status="rejected" showTooltip={false} />);
-      const badge = container.querySelector('[class*="badge"]');
+      const badge = container.querySelector('[class*="inline-flex"]');
       expect(badge).toHaveClass('bg-red-50');
     });
   });

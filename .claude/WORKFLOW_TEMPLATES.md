@@ -1,6 +1,6 @@
 # 统一工作流模板配置
 
-> **SoT 基准**: DEV_FLOW_SOT_v1.1 (docs/2.sot/DEV_FLOW_SOT_v1.0.md)
+> **SoT 基准**: DEV_FLOW_SOT_v1.1 (docs/sot/DEV_FLOW_SOT_v1.0.md)
 > **版本**: v1.2 (7 Flow 架构)
 
 ## 概述
@@ -45,7 +45,7 @@ phases:
     required: true
 
   - id: sot_check
-    tool: "/sot-check docs/2.sot/"
+    tool: "/sot-check docs/sot/"
     type: ai_code_factory
     description: "SoT 合规性检查"
     required: true
@@ -98,7 +98,7 @@ flow_id: FE_DEV_FLOW
 description: "前端功能开发流程"
 phases:
   - id: sot_check
-    tool: "/sot-check docs/2.sot/API_SOT.md"
+    tool: "/sot-check docs/sot/API_SOT.md"
     type: ai_code_factory
     description: "API 契约检查"
     required: true
@@ -208,7 +208,7 @@ phases:
     required: true
 
   - id: verify
-    tool: "/sot-check docs/2.sot/"
+    tool: "/sot-check docs/sot/"
     type: ai_code_factory
     description: "SoT 一致性验证"
     required: true

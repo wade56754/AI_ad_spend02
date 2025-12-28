@@ -9,9 +9,16 @@ from sqlalchemy import text
 
 from backend.core.config import get_settings
 from backend.core.db import get_engine
-from backend.core.response import fail, ok, success_response, error_response, StandardResponse
+from backend.core.response import (
+    fail,
+    ok,
+    success_response,
+    error_response,
+    StandardResponse,
+)
 from backend.core.error_codes import SystemErrorCodes, ValidationErrorCodes
 from backend.exceptions.custom_exceptions import BaseCustomException
+
 # 导入核心路由模块
 from backend.routers import (
     health,
@@ -35,13 +42,17 @@ from backend.routers import (
     agents,  # ✅ Agent Platform API (新增)
     spend,  # ✅ 消耗导入API (Financial SoT Phase 2)
     dashboard,  # ✅ CEO驾驶舱API (Phase C - MASTER.md v4.4 §6.5)
+    weekly_briefs,  # ✅ 周度简报API (B3-weekly-brief.md)
+    weekly_reports,  # ✅ 周报管理API (TASK-WEEKLY-002)
+    fund,  # ✅ 资金总览API (A2-fund-overview.md)
+    finance_v2,  # ✅ 财务管理V2 (资金总览+项目盈亏重构)
+    profit,  # ✅ 利润模块API (TASK-PROFIT-001)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
     # ai_analytics,  # 待完善
     # project_templates,  # 待完善
 )
-
 
 
 settings = get_settings()
@@ -62,25 +73,57 @@ API_V1_PREFIX = "/api/v1"
 # 注册核心API路由
 app.include_router(health.router, prefix=API_V1_PREFIX)  # 健康检查
 app.include_router(projects.router, prefix=API_V1_PREFIX)  # 项目管理
-app.include_router(project_members.router, prefix=API_V1_PREFIX)  # 项目成员管理 ✅ MASTER.md v4.4
+app.include_router(
+    project_members.router, prefix=API_V1_PREFIX
+)  # 项目成员管理 ✅ MASTER.md v4.4
 app.include_router(authentication.router, prefix=API_V1_PREFIX)  # 用户认证
-app.include_router(users.router, prefix=API_V1_PREFIX)  # 用户管理 ✅ 新增 (API_SOT v9.0 §5)
+app.include_router(
+    users.router, prefix=API_V1_PREFIX
+)  # 用户管理 ✅ 新增 (API_SOT v9.0 §5)
 app.include_router(ad_spend.router, prefix=API_V1_PREFIX)  # 广告消耗
 app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)  # 广告账户
 app.include_router(channels.router, prefix=API_V1_PREFIX)  # 渠道管理
 app.include_router(topup.router, prefix=API_V1_PREFIX)  # 充值管理
 app.include_router(daily_reports.router, prefix=API_V1_PREFIX)  # 日报管理 ✅ 新启用
-app.include_router(suppliers.router, prefix=API_V1_PREFIX)  # 供应商管理 ✅ full_pipeline v2
-app.include_router(settlements.router, prefix=API_V1_PREFIX)  # 结算管理 ✅ full_pipeline v2
+app.include_router(
+    suppliers.router, prefix=API_V1_PREFIX
+)  # 供应商管理 ✅ full_pipeline v2
+app.include_router(
+    settlements.router, prefix=API_V1_PREFIX
+)  # 结算管理 ✅ full_pipeline v2
 app.include_router(transfers.router, prefix=API_V1_PREFIX)  # 死号余额迁移 ✅ 新增
-app.include_router(ledger.router, prefix=API_V1_PREFIX)  # 财务总账 ✅ 启用 (finance_profit bugfix)
-app.include_router(finance_profit.router, prefix=API_V1_PREFIX)  # 财务利润 ✅ 从 ledger 迁出
-app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 已实现ImportJob模型
+app.include_router(
+    ledger.router, prefix=API_V1_PREFIX
+)  # 财务总账 ✅ 启用 (finance_profit bugfix)
+app.include_router(
+    finance_profit.router, prefix=API_V1_PREFIX
+)  # 财务利润 ✅ 从 ledger 迁出
+app.include_router(
+    import_jobs.router, prefix=API_V1_PREFIX
+)  # 数据导入 ✅ 已实现ImportJob模型
 app.include_router(reconciliation.router, prefix=API_V1_PREFIX)  # 对账管理 ✅ 新启用
+# app.include_router(
+#     reconciliation_control.router, prefix=API_V1_PREFIX
+# )  # 对账中控 (待实现 - OpenSpec: add-reconciliation-control-center)
 app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表管理 ✅ v2.0 完整重构
 app.include_router(agents.router, prefix=API_V1_PREFIX)  # Agent Platform ✅ 新增
-app.include_router(spend.router, prefix=API_V1_PREFIX)  # 消耗导入 ✅ Financial SoT Phase 2
-app.include_router(dashboard.router, prefix=API_V1_PREFIX)  # CEO驾驶舱 ✅ Phase C - MASTER.md v4.4 §6.5
+app.include_router(
+    spend.router, prefix=API_V1_PREFIX
+)  # 消耗导入 ✅ Financial SoT Phase 2
+app.include_router(
+    dashboard.router, prefix=API_V1_PREFIX
+)  # CEO驾驶舱 ✅ Phase C - MASTER.md v4.4 §6.5
+app.include_router(
+    weekly_briefs.router, prefix=API_V1_PREFIX
+)  # 周度简报 ✅ B3-weekly-brief.md
+app.include_router(
+    weekly_reports.router, prefix=API_V1_PREFIX
+)  # 周报管理 ✅ TASK-WEEKLY-002
+app.include_router(fund.router, prefix=API_V1_PREFIX)  # 资金总览 ✅ A2-fund-overview.md
+app.include_router(
+    finance_v2.router
+)  # 财务管理V2 ✅ 资金总览+项目盈亏重构 (已包含 /api/v1 前缀)
+app.include_router(profit.router, prefix=API_V1_PREFIX)  # 利润模块 ✅ TASK-PROFIT-001
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 
@@ -101,6 +144,7 @@ async def healthz() -> JSONResponse:
 async def readyz() -> JSONResponse:
     """Readiness probe including database connectivity (Kubernetes compatible)."""
     from backend.core.response import success_response, error_response
+
     try:
         engine = get_engine()
         with engine.connect() as connection:
@@ -111,12 +155,12 @@ async def readyz() -> JSONResponse:
             message=message,
             code="READY_CHECK_FAILED",
             status_code=503,
-            details={"checks": {"database": "error"}}
+            details={"checks": {"database": "error"}},
         )
 
     return success_response(
         data={"status": "ok", "checks": {"database": "ok"}},
-        message="Readiness check passed"
+        message="Readiness check passed",
     )
 
 
@@ -174,12 +218,14 @@ async def handle_custom_exception(_: Request, exc: BaseCustomException) -> JSONR
         code=exc.error_code,
         message=exc.message,
         status_code=exc.status_code,
-        details=exc.details
+        details=exc.details,
     )
 
 
 @app.exception_handler(RequestValidationError)
-async def handle_validation_exception(_: Request, exc: RequestValidationError) -> JSONResponse:
+async def handle_validation_exception(
+    _: Request, exc: RequestValidationError
+) -> JSONResponse:
     """
     处理 Pydantic 验证错误，返回符合 SoT 约定的 StandardResponse 格式
 
@@ -192,7 +238,11 @@ async def handle_validation_exception(_: Request, exc: RequestValidationError) -
         error_type = first_error.get("type", "")
         error_msg = first_error.get("msg", "参数验证失败")
         loc = first_error.get("loc", [])
-        field_name = ".".join(str(x) for x in loc[1:]) if len(loc) > 1 else str(loc[0]) if loc else "unknown"
+        field_name = (
+            ".".join(str(x) for x in loc[1:])
+            if len(loc) > 1
+            else str(loc[0]) if loc else "unknown"
+        )
 
         if "missing" in error_type or "required" in error_type:
             code = ValidationErrorCodes.REQUIRED_FIELD_MISSING.code
@@ -204,22 +254,21 @@ async def handle_validation_exception(_: Request, exc: RequestValidationError) -
         code = ValidationErrorCodes.INVALID_FORMAT.code
         message = "参数验证失败"
 
-    return error_response(
-        code=code,
-        message=message,
-        status_code=422
-    )
+    return error_response(code=code, message=message, status_code=422)
 
 
 @app.exception_handler(Exception)
 async def handle_unexpected_exception(_: Request, exc: Exception) -> JSONResponse:
     import traceback
     import sys
-    error_msg = f"Unexpected exception: {type(exc).__name__}: {exc}\n{traceback.format_exc()}"
+
+    error_msg = (
+        f"Unexpected exception: {type(exc).__name__}: {exc}\n{traceback.format_exc()}"
+    )
     print(error_msg, file=sys.stderr, flush=True)
     message = str(exc) if settings.debug else "Internal server error"
-    return fail(code=SystemErrorCodes.INTERNAL_ERROR.code, message=message, status_code=SystemErrorCodes.INTERNAL_ERROR.status_code)
-
-
-
- 
+    return fail(
+        code=SystemErrorCodes.INTERNAL_ERROR.code,
+        message=message,
+        status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
+    )

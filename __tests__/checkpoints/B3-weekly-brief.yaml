@@ -1,0 +1,71 @@
+# B3 周度简报 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "B3-weekly-brief"
+spec_file: "docs/10.module-specs/B3-weekly-brief.md"
+page_path: "/weekly-briefs"
+priority: P2
+
+checkpoints:
+  # ===== CP-B3-001: 权限测试 =====
+  - id: CP-B3-001
+    category: permission
+    description: 周度简报页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, scope: "全公司" }
+      - { role: finance, expected: allowed, scope: "只读" }
+      - { role: supervisor, expected: allowed, scope: "团队" }
+      - { role: pitcher, expected: denied }
+      - { role: project_owner, expected: allowed, action: "创建+编辑" }
+      - { role: account_manager, expected: denied }
+      - { role: admin, expected: denied }
+
+  # ===== CP-B3-002: 页面渲染测试 =====
+  - id: CP-B3-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "周度简报" }
+      - { element: 周报列表, selector: "[data-testid='weekly-briefs-table']", expected: visible }
+      - { element: 周次选择器, selector: "[data-testid='week-picker']", expected: visible }
+
+  # ===== CP-B3-003: 数据状态测试 =====
+  - id: CP-B3-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏 }
+      - { scenario: empty, expected: "暂无周报" }
+      - { scenario: error, expected: 错误提示 }
+      - { scenario: success, expected: 周报列表 }
+
+  # ===== CP-B3-004: 功能操作测试 =====
+  - id: CP-B3-004
+    category: function
+    description: 核心功能操作
+    spec_ref: "§5 API 接口"
+    cases:
+      - { action: 创建周报, trigger: "[data-testid='create-brief-btn']", expected: 状态draft }
+      - { action: 编辑草稿, condition: "status=draft", expected: 保存成功 }
+      - { action: 提交周报, trigger: "[data-testid='submit-btn']", expected: 状态submitted }
+      - { action: 重复创建, condition: "已有本周周报", expected: 拒绝+提示 }
+
+  # ===== CP-B3-005: Phase 1 规则测试 =====
+  - id: CP-B3-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: 数据缺失, expected: 警告+可提交 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 3
+  data_cases: 4
+  function_cases: 4
+  phase1_cases: 1
+  total_cases: 19

@@ -6,13 +6,8 @@
 
 'use client';
 
-import dynamic from 'next/dynamic';
-
-// 动态导入以避免 SSR hydration 问题
-const ProjectsPage = dynamic(
-  () => import('@/features/projects').then(mod => ({ default: mod.ProjectsPage })),
-  { ssr: false, loading: () => <ProjectsPageSkeleton /> }
-);
+import { Suspense } from 'react';
+import { ProjectsPage } from '@/features/projects/components/ProjectsPage';
 
 function ProjectsPageSkeleton() {
   return (
@@ -35,5 +30,9 @@ function ProjectsPageSkeleton() {
 }
 
 export default function Page() {
-  return <ProjectsPage />;
+  return (
+    <Suspense fallback={<ProjectsPageSkeleton />}>
+      <ProjectsPage />
+    </Suspense>
+  );
 }

@@ -1,14 +1,15 @@
 ---
 name: ai-ad-code-factory
-version: "3.2"
+version: "3.4"
 status: ready_for_production
 layer: skill
 owner: wade
-last_reviewed: 2025-12-22
+last_reviewed: 2025-12-24
 baseline:
   - MASTER.md v3.5
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
   - AI_CODE_FACTORY_REFACTOR_PROPOSAL.md v1.0
+  - code-blocks-registry.md v2.0
 code_sources:
   - project: Anthropic autonomous-coding
     github: https://github.com/anthropics/claude-quickstarts/tree/main/autonomous-coding
@@ -208,6 +209,98 @@ code_sources:
       来源: mypy, ruff
     </skill>
   </sub_skills>
+
+
+  <!-- ======================================================
+       2.1 AI 防幻觉原则 (Anti-Hallucination Principles)
+       来源: MASTER.md v4.4 §7
+  ====================================================== -->
+  <anti_hallucination_principles>
+    **核心原则 (AH-01 ~ AH-05)** - BLOCKING 级别
+
+    每次代码生成前必须检查:
+
+    | 原则 | 标题 | 规则 | 违反后果 |
+    |------|------|------|---------|
+    | AH-01 | 禁止假设数据一致 | 遇到数据缺失，标记"待确认"，禁止自动填充 | BLOCKING |
+    | AH-02 | 禁止自动做管理裁决 | 禁止生成自动拒绝/暂停/终止/冻结代码 | BLOCKING |
+    | AH-03 | 禁止引入 SoT 未定义概念 | 发现缺失 → 立即停止 → 询问用户 | BLOCKING |
+    | AH-04 | 必须遵循 Phase 1 软性原则 | 仅提示+高亮+记录，不阻断 | WARNING |
+    | AH-05 | 遇到歧义必须停止并询问 | 停止 → 列出歧义点 → 询问用户 | BLOCKING |
+
+    **SoT 裁判链优先级** (高 → 低):
+    ```
+    MASTER.md v4.4 → DATA_SCHEMA.md v5.2 → STATE_MACHINE.md v2.6
+    → BUSINESS_RULES.md v3.2 → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1
+    ```
+
+    **常量白名单**:
+    - 日报状态: 8 个 (raw_submitted...final_locked)
+    - 用户角色: 7 个 (ceo, project_owner, finance, supervisor, pitcher, account_manager, admin)
+    - 错误码前缀: 16 个 (VAL, AUTH, BIZ, DB, INT, SYS, FIN, RPT, ACC, PRJ, PIT, TOP, IMP, EXP, REC, SET)
+
+    **Phase 1 行为约束**:
+    - ✅ 允许: 记录、提示、高亮、统计
+    - ❌ 禁止: 阻断、拒绝、暂停、冻结、自动批准/拒绝
+
+    **知识库详情**: knowledge/anti-hallucination-rules.md
+  </anti_hallucination_principles>
+
+  <!-- ======================================================
+       2.2 代码块优先原则 (Code Blocks First) [v3.4 新增]
+       来源: knowledge/code-blocks-registry.md v2.0
+  ====================================================== -->
+  <code_blocks_first>
+    **核心原则**: 代码块优先，减少重复编写
+
+    ### 强制规则 (BLOCKING)
+
+    | 规则 | 描述 | 违反后果 |
+    |------|------|---------|
+    | CB-001 | 生成代码前，必须先查询代码块注册表 | BLOCKING |
+    | CB-002 | 如果存在匹配的代码块，必须使用代码块，禁止重新编写 | BLOCKING |
+    | CB-003 | 代码块只能扩展，不能修改核心逻辑 | WARNING |
+    | CB-004 | 使用代码块时必须标注 `# CodeBlock: {block_id}` | WARNING |
+
+    ### 代码块优先查询流程
+
+    ```
+    用户需求 --> 提取关键词 --> 查询代码块注册表 --> 匹配成功?
+                                                    |
+                                               是 --> 使用代码块
+                                               否 --> 进入搜索流程
+    ```
+
+    ### 代码块注册表索引 (16 个代码块)
+
+    **前端代码块 (8个)**:
+    | ID | 名称 | 关键词 |
+    |----|------|--------|
+    | CB-FE-001 | DataTable | 表格, 列表, table, 分页, 排序 |
+    | CB-FE-002 | StatusBadge | 状态, 徽章, badge, 标签 |
+    | CB-FE-003 | DataState | 加载, loading, empty, skeleton |
+    | CB-FE-004 | ActionButtons | 操作, 按钮, action, 确认 |
+    | CB-FE-005 | GlobalFilters | 筛选, filter, 日期, select |
+    | CB-FE-006 | PageHeader | 页面标题, header, 面包屑 |
+    | CB-FE-007 | ApprovalTimeline | 时间线, timeline, 审批流程 |
+    | CB-FE-008 | FormDialog | 表单, form, 弹窗, dialog |
+
+    **后端代码块 (8个)**:
+    | ID | 名称 | 关键词 |
+    |----|------|--------|
+    | CB-BE-001 | Pagination | 分页, pagination, list |
+    | CB-BE-002 | ResponseEnvelope | 响应, response, 封装 |
+    | CB-BE-003 | ErrorCodes | 错误, error, 异常 |
+    | CB-BE-004 | PermissionFilter | 权限, permission, 过滤, role |
+    | CB-BE-005 | StateMachine | 状态机, state, transition |
+    | CB-BE-006 | AuditLog | 审计, audit, 日志, history |
+    | CB-BE-007 | LedgerEntry | 账本, ledger, 余额, balance |
+    | CB-BE-008 | KPICalculator | KPI, ROAS, CPL, CPA, 指标 |
+
+    **详细代码模板**: knowledge/code-blocks-registry.md
+  </code_blocks_first>
+
+
 
 
   <!-- ======================================================
@@ -634,6 +727,22 @@ code_sources:
        8. 版本记录 (Version Notes)
   ====================================================== -->
   <VERSION_NOTES>
+    ### v3.4 (2025-12-24) - 代码块优先版
+    - 新增 `<code_blocks_first>` 章节
+    - 新增 Phase 0: CODE BLOCKS CHECK (代码块检查)
+    - 集成代码块注册表 (knowledge/code-blocks-registry.md)
+    - 16 个代码块索引 (前端 8 个 + 后端 8 个)
+    - 强制规则: CB-001 ~ CB-004
+    - 核心原则: 代码块优先，减少重复编写
+
+    ### v3.3 (2025-12-24) - 防幻觉规则集成版
+    - 新增 `<anti_hallucination_principles>` 章节
+    - 集成 MASTER.md v4.4 §7 的 AI 防幻觉原则 (AH-01 ~ AH-05)
+    - 添加 SoT 裁判链优先级说明
+    - 添加常量白名单快速参考
+    - 添加 Phase 1 行为约束
+    - 知识库: knowledge/anti-hallucination-rules.md
+
     ### v3.2 (2025-12-22) - P2 优化版
     - 新增代码来源标注规范 (source_annotation_standard)
     - 统一格式: `# SoT: {DOC}#{SECTION}`

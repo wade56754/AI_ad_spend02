@@ -323,11 +323,11 @@ export function DailyReportsPage() {
 
   // ========== Render ==========
   return (
-    <div className="min-h-screen bg-gray-50 -m-6 p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 -m-6 p-6 space-y-6" data-testid="daily-report-page">
       {/* ====== Header ====== */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">日报管理</h1>
+          <h1 className="text-2xl font-bold text-gray-900">日报审核</h1>
           <p className="text-sm text-gray-500 mt-1">广告消耗日报数据及审批流程</p>
         </div>
         <div className="flex items-center gap-3">
@@ -418,6 +418,7 @@ export function DailyReportsPage() {
                   'h-10 w-[200px] justify-start text-left font-normal bg-gray-50 border-gray-200',
                   !dateRange.from && 'text-gray-500'
                 )}
+                data-testid="date-filter"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateRange.from ? (
@@ -450,7 +451,7 @@ export function DailyReportsPage() {
             value={filters.team_id || 'all'}
             onValueChange={(v) => handleFilterChange('team_id', v)}
           >
-            <SelectTrigger className="h-10 w-[140px] bg-gray-50 border-gray-200">
+            <SelectTrigger className="h-10 w-[140px] bg-gray-50 border-gray-200" data-testid="project-filter">
               <SelectValue placeholder="团队" />
             </SelectTrigger>
             <SelectContent>
@@ -555,7 +556,7 @@ export function DailyReportsPage() {
         )}
 
         {/* Row 3: 状态 Tab (替代原状态说明) */}
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-4 border-t border-gray-100" data-testid="status-filter">
           <StatusTabs
             value={statusFilter}
             onChange={handleStatusFilter}
@@ -566,7 +567,7 @@ export function DailyReportsPage() {
 
       {/* ====== Content ====== */}
       {viewMode === 'table' ? (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden" data-testid="daily-report-table">
           <DailyReportsTable filters={filters} onFiltersChange={setFilters} />
         </div>
       ) : (

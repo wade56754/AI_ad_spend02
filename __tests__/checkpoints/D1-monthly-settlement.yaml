@@ -1,0 +1,89 @@
+# D1 月度结算 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "D1-monthly-settlement"
+spec_file: "docs/10.module-specs/D1-monthly-settlement.md"
+page_path: "/settlements"
+priority: P2
+
+# 状态机定义 (4 状态)
+state_machine:
+  states:
+    - pending
+    - draft
+    - confirmed
+    - locked
+  transitions:
+    - { from: pending, to: draft, action: "生成结算", actor: finance }
+    - { from: draft, to: confirmed, action: "确认", actor: finance }
+    - { from: confirmed, to: locked, action: "锁定", actor: [ceo, finance] }
+    - { from: locked, to: confirmed, action: "解锁", actor: admin }
+  terminal_states:
+    - locked  # 可被 admin 解锁
+
+checkpoints:
+  # ===== CP-D1-001: 权限测试 =====
+  - id: CP-D1-001
+    category: permission
+    description: 月度结算页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, action: "锁定" }
+      - { role: finance, expected: allowed, action: "生成+确认" }
+      - { role: supervisor, expected: denied }
+      - { role: pitcher, expected: denied }
+      - { role: project_owner, expected: allowed, scope: "只读自己项目" }
+      - { role: account_manager, expected: denied }
+      - { role: admin, expected: allowed, action: "解锁" }
+
+  # ===== CP-D1-002: 页面渲染测试 =====
+  - id: CP-D1-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "月度结算" }
+      - { element: 结算表格, selector: "[data-testid='settlement-table']", expected: visible }
+      - { element: 月份选择, selector: "[data-testid='month-picker']", expected: visible }
+
+  # ===== CP-D1-003: 数据状态测试 =====
+  - id: CP-D1-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏 }
+      - { scenario: empty, expected: "暂无结算数据" }
+      - { scenario: error, expected: 错误提示 }
+      - { scenario: success, expected: 结算列表 }
+
+  # ===== CP-D1-004: 功能操作测试 (状态机) =====
+  - id: CP-D1-004
+    category: function
+    description: 状态机操作 (4 状态)
+    spec_ref: "§6.1 状态机"
+    cases:
+      # 合法转换
+      - { transition: "pending→draft", action: "生成结算", actor: finance }
+      - { transition: "draft→confirmed", action: "确认", actor: finance }
+      - { transition: "confirmed→locked", action: "锁定", actor: [ceo, finance] }
+      - { transition: "locked→confirmed", action: "解锁", actor: admin }
+      # 非法转换
+      - { transition: "pending→locked", expected: "400 ST-001", illegal: true }
+
+  # ===== CP-D1-005: Phase 1 规则测试 =====
+  - id: CP-D1-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: 负毛利, expected: 红色高亮+可锁定 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 3
+  data_cases: 4
+  function_cases: 5
+  phase1_cases: 1
+  total_cases: 20

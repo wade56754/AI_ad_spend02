@@ -52,25 +52,10 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
     }
   };
 
-  const formatAmount = (amount: number | undefined | null) => {
-    const num = Number(amount) || 0;
-    if (num >= 10000) {
-      return `¥${(num / 10000).toFixed(1)}万`;
-    }
-    return `¥${num.toFixed(2)}`;
-  };
-
-  // 预算进度颜色规则 - C1-project-mgmt.md §3.5
-  const getProgressColor = (usage: number) => {
-    if (usage >= 90) return 'bg-red-500';
-    if (usage >= 70) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
-
-  // 格式化 CPL
-  const formatCPL = (cpl: number | null | undefined) => {
-    if (cpl === null || cpl === undefined) return '--';
-    return `¥${cpl.toFixed(2)}`;
+  // 格式化单价
+  const formatCPL = (price: number | null | undefined) => {
+    if (price === null || price === undefined) return '--';
+    return `¥${Number(price).toFixed(2)}`;
   };
 
   if (isLoading) {
@@ -88,17 +73,33 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
   const projects = data?.data ?? [];
   const pagination = data?.meta?.pagination;
 
+  // 格式化日期
+  const formatDate = (dateStr: string | undefined | null) => {
+    if (!dateStr) return '--';
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // 格式化进粉数
+  const formatFollows = (follows: number | undefined | null) => {
+    const num = Number(follows) || 0;
+    if (num >= 10000) {
+      return `${(num / 10000).toFixed(1)}万`;
+    }
+    return num.toLocaleString();
+  };
+
   return (
     <div className="space-y-4">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>项目名称</TableHead>
-            <TableHead>负责人</TableHead>
-            <TableHead>客户</TableHead>
-            <TableHead>预算使用</TableHead>
-            <TableHead className="text-right">目标CPL</TableHead>
+            <TableHead>项目名</TableHead>
+            <TableHead>开始日期</TableHead>
+            <TableHead>地区</TableHead>
             <TableHead className="text-right">单价</TableHead>
+            <TableHead className="text-right">进粉数</TableHead>
+            <TableHead>负责人</TableHead>
             <TableHead>状态</TableHead>
             <TableHead className="w-[80px]">操作</TableHead>
           </TableRow>
@@ -113,9 +114,6 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
           ) : (
             projects.map((project) => {
               const statusConfig = PROJECT_STATUS_CONFIG[project.status];
-              const usagePercent = project.budget > 0
-                ? Math.min((project.total_spent / project.budget) * 100, 100)
-                : 0;
               // 获取负责人名称 (优先 owner_name，兼容旧字段)
               const ownerName = project.owner_name || project.account_manager_name;
               return (
@@ -124,37 +122,25 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
                     <div className="font-medium">{project.name}</div>
                   </TableCell>
                   <TableCell>
-                    <span className={ownerName ? 'text-foreground' : 'text-muted-foreground'}>
-                      {ownerName || '未分配'}
+                    <span className="text-muted-foreground">
+                      {formatDate(project.start_date)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div>
-                      <div>{project.client_name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {project.client_company}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1 min-w-[120px]">
-                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${getProgressColor(usagePercent)} transition-all`}
-                          style={{ width: `${usagePercent}%` }}
-                        />
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatAmount(project.total_spent)} / {formatAmount(project.budget)}
-                        <span className="ml-1">({usagePercent.toFixed(0)}%)</span>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCPL(project.target_cpl)}
+                    <span className={project.region ? 'text-foreground' : 'text-muted-foreground'}>
+                      {project.region || '--'}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     {formatCPL(project.unit_price)}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatFollows(project.total_follows)}
+                  </TableCell>
+                  <TableCell>
+                    <span className={ownerName ? 'text-foreground' : 'text-muted-foreground'}>
+                      {ownerName || '未分配'}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Badge

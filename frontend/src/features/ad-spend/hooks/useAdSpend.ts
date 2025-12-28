@@ -182,7 +182,7 @@ export function useRefreshAdSpend() {
     },
     /** 刷新消耗列表 */
     refreshList: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.adSpend.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.adSpend.list() });
     },
     /** 刷新汇总统计 */
     refreshSummary: () => {

@@ -22,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: '3.11'
           cache: 'pip'
       
       - name: Install backend dependencies
@@ -34,9 +34,12 @@ jobs:
         run: |
           pip install -r requirements-test.txt
       
+      - name: Create required directories
+        run: mkdir -p logs
+
       - name: Run regression tests
         run: |
-          python run_tests.py --type regression
+          python scripts/run_tests.py --type regression
       
       - name: Upload test results (if failed)
         if: failure()

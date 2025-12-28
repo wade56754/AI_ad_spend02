@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -8,19 +8,19 @@ import { useTheme } from '@/hooks/useTheme';
 import {
   LayoutDashboard,
   FolderKanban,
-  CreditCard,
   Users,
   UserCog,
   FileText,
   DollarSign,
   Settings,
-  Menu,
   X,
-  Bell,
-  HelpCircle,
-  BarChart3,
-  Target,
-  TrendingUp
+  CalendarDays,
+  Target,  // Logo 图标
+  // 暂未启用的图标
+  // BarChart3,
+  // TrendingUp,
+  // Bell,
+  // HelpCircle,
 } from 'lucide-react';
 
 interface NavigationItem {
@@ -28,6 +28,7 @@ interface NavigationItem {
   href: string;
   icon: React.ComponentType<any>;
   badge?: number;
+  testId?: string;
 }
 
 interface SidebarProps {
@@ -36,18 +37,41 @@ interface SidebarProps {
   className?: string;
 }
 
+/**
+ * 侧边栏导航配置
+ *
+ * 核心业务模块（已实现）:
+ * - 仪表盘: CEO 驾驶舱
+ * - 项目管理: 项目 CRUD
+ * - 广告账号: 账户管理
+ * - 日报管理: 日报审核流程
+ * - 周度简报: 项目周报
+ * - 财务管理: 充值/结算
+ */
 const navigation: NavigationItem[] = [
-  { name: '仪表盘', href: '/', icon: LayoutDashboard },
-  { name: '项目管理', href: '/projects', icon: FolderKanban, badge: 8 },
-  { name: '广告账号管理', href: '/ad-accounts', icon: Users, badge: 5 },
-  { name: '日报管理', href: '/reports', icon: FileText, badge: 12 },
-  { name: '财务管理', href: '/finance', icon: DollarSign },
-  { name: '数据统计', href: '/analytics', icon: BarChart3 },
-  { name: '广告投放', href: '/campaigns', icon: Target },
-  { name: 'AI监控', href: '/ai-monitoring', icon: TrendingUp },
-  { name: '用户管理', href: '/users', icon: UserCog },
-  { name: '系统设置', href: '/settings', icon: Settings },
+  { name: '仪表盘', href: '/', icon: LayoutDashboard, testId: 'nav-dashboard' },
+  { name: '项目管理', href: '/projects', icon: FolderKanban, testId: 'nav-projects' },
+  { name: '广告账户', href: '/ad-accounts', icon: Users, testId: 'nav-ad-accounts' },
+  { name: '日报管理', href: '/reports', icon: FileText, testId: 'nav-reports' },
+  { name: '周度简报', href: '/weekly-briefs', icon: CalendarDays, testId: 'nav-weekly-briefs' },
+  { name: '财务管理', href: '/finance', icon: DollarSign, testId: 'nav-finance' },
 ];
+
+/**
+ * 系统管理模块（管理员可见）
+ */
+const adminNavigation: NavigationItem[] = [
+  { name: '用户管理', href: '/users', icon: UserCog, testId: 'nav-users' },
+  { name: '系统设置', href: '/settings', icon: Settings, testId: 'nav-settings' },
+];
+
+/**
+ * 暂未启用的模块（Phase 2+）
+ *
+ * { name: '数据统计', href: '/analytics', icon: BarChart3 },
+ * { name: '广告投放', href: '/campaigns', icon: Target },
+ * { name: 'AI监控', href: '/ai-monitoring', icon: TrendingUp },
+ */
 
 export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarProps) {
   const pathname = usePathname();
@@ -96,11 +120,12 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
 
         {/* 导航菜单 */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          <div className="mb-8">
+          {/* 核心业务功能 */}
+          <div className="mb-6">
             <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-              主要功能
+              业务管理
             </h3>
-            {navigation.slice(0, 5).map((item) => {
+            {navigation.map((item) => {
               const isActive = item.href === '/'
                 ? pathname === '/'
                 : pathname === item.href || pathname.startsWith(item.href + '/');
@@ -108,6 +133,7 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
                 <Link
                   key={item.name}
                   href={item.href}
+                  data-testid={item.testId}
                   className={cn(
                     'group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 mb-1',
                     isActive
@@ -137,18 +163,18 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
             })}
           </div>
 
+          {/* 系统管理 */}
           <div>
             <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-              分析监控
+              系统管理
             </h3>
-            {navigation.slice(5).map((item) => {
-              const isActive = item.href === '/'
-                ? pathname === '/'
-                : pathname === item.href || pathname.startsWith(item.href + '/');
+            {adminNavigation.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.name}
                   href={item.href}
+                  data-testid={item.testId}
                   className={cn(
                     'group flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 mb-1',
                     isActive
@@ -163,16 +189,6 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
                     )} />
                     {item.name}
                   </div>
-                  {item.badge && (
-                    <span className={cn(
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                      isActive
-                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                    )}>
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               );
             })}
@@ -181,43 +197,22 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
 
         {/* 底部操作区域 */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <div className="space-y-2">
-            <Link
-              href="/help"
-              className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-            >
-              <HelpCircle className="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
-              帮助中心
-            </Link>
-
-            <Link
-              href="/notifications"
-              className="flex items-center justify-between px-3 py-2 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-            >
-              <div className="flex items-center">
-                <Bell className="w-4 h-4 mr-3 text-gray-400 dark:text-gray-500" />
-                通知中心
-              </div>
-              <span className="w-2 h-2 bg-red-500 rounded-full" aria-label="有新通知" />
-            </Link>
-
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-            >
-              {theme === 'dark' ? (
-                <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-              {theme === 'dark' ? '浅色模式' : '深色模式'}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+          >
+            {theme === 'dark' ? (
+              <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+            {theme === 'dark' ? '浅色模式' : '深色模式'}
+          </button>
         </div>
       </div>
     </>

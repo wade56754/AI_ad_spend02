@@ -232,7 +232,7 @@ jobs:
 
 ## References
 
-- [LEDGER_SOT.md v1.1](../../docs/2.sot/LEDGER_SOT.md) - Ledger system specification
-- [STATE_MACHINE.md v2.6](../../docs/2.sot/STATE_MACHINE.md) - State machine definitions
-- [DATA_SCHEMA.md v5.2](../../docs/2.sot/DATA_SCHEMA.md) - Database schema specification
+- [LEDGER_SOT.md v1.1](../../docs/sot/LEDGER_SOT.md) - Ledger system specification
+- [STATE_MACHINE.md v2.6](../../docs/sot/STATE_MACHINE.md) - State machine definitions
+- [DATA_SCHEMA.md v5.2](../../docs/sot/DATA_SCHEMA.md) - Database schema specification
 - [SQLAlchemy 2.0 Documentation](https://docs.sqlalchemy.org/en/20/)

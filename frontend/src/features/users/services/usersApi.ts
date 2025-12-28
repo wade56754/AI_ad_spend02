@@ -170,15 +170,25 @@ export async function getUsers(
       );
     }
 
+    const page = params.page || 1;
+    const pageSize = params.page_size || 20;
+    const total = mockItems.length;
+    const totalPages = Math.ceil(total / pageSize);
+
     return {
+      // New format
+      items: mockItems,
+      total,
+      page,
+      page_size: pageSize,
+      total_pages: totalPages,
+      // Legacy format
       data: mockItems,
       meta: {
-        pagination: {
-          page: params.page || 1,
-          page_size: params.page_size || 20,
-          total: mockItems.length,
-          total_pages: Math.ceil(mockItems.length / (params.page_size || 20)),
-        },
+        total,
+        page,
+        page_size: pageSize,
+        total_pages: totalPages,
       },
     };
   }

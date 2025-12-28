@@ -1,0 +1,75 @@
+# A2 资金总览 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "A2-fund-overview"
+spec_file: "docs/10.module-specs/A2-fund-overview.md"
+page_path: "/fund"
+priority: P0
+
+checkpoints:
+  # ===== CP-A2-001: 权限测试 =====
+  - id: CP-A2-001
+    category: permission
+    description: 资金总览页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, scope: "全公司" }
+      - { role: finance, expected: allowed, scope: "全公司+导出" }
+      - { role: supervisor, expected: denied }
+      - { role: pitcher, expected: denied }
+      - { role: project_owner, expected: allowed, scope: "项目关联" }
+      - { role: account_manager, expected: allowed, scope: "管理账户" }
+      - { role: admin, expected: denied }
+
+  # ===== CP-A2-002: 页面渲染测试 =====
+  - id: CP-A2-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "资金总览" }
+      - { element: 累计充值卡片, selector: "[data-testid='fund-topup']", expected: visible }
+      - { element: 累计消耗卡片, selector: "[data-testid='fund-spend']", expected: visible }
+      - { element: 当前余额卡片, selector: "[data-testid='fund-balance']", expected: visible }
+      - { element: 应收款卡片, selector: "[data-testid='fund-receivable']", expected: visible }
+      - { element: 资金占用卡片, selector: "[data-testid='fund-occupied']", expected: visible }
+      - { element: 流水表格, selector: "[data-testid='fund-table']", expected: visible }
+
+  # ===== CP-A2-003: 数据状态测试 =====
+  - id: CP-A2-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏, selector: "[data-testid='loading-skeleton']" }
+      - { scenario: empty, expected: "暂无资金记录", selector: "[data-testid='empty-state']" }
+      - { scenario: error, expected: 错误提示, selector: "[data-testid='error-state']" }
+      - { scenario: success, expected: 资金数据 }
+
+  # ===== CP-A2-004: 功能操作测试 =====
+  - id: CP-A2-004
+    category: function
+    description: 核心功能操作
+    spec_ref: "§5 API 接口"
+    cases:
+      - { action: 日期筛选, trigger: "[data-testid='date-filter']", expected: 数据更新 }
+      - { action: 账户筛选, trigger: "[data-testid='account-filter']", expected: 数据过滤 }
+      - { action: 导出, trigger: "[data-testid='export-button']", role: finance, expected: 下载Excel }
+
+  # ===== CP-A2-005: Phase 1 规则测试 =====
+  - id: CP-A2-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: 负余额, expected: 红色显示+不阻断, verify: "toHaveClass(/text-red|negative/)" }
+      - { scenario: 资金占用高, expected: 警告高亮+可操作 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 7
+  data_cases: 4
+  function_cases: 3
+  phase1_cases: 2
+  total_cases: 23

@@ -439,7 +439,7 @@ export function UsersPage() {
   const totalPages = usersData?.total_pages || usersData?.meta?.total_pages || 1;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" data-testid="pitcher-page">
       {/* Toast */}
       {toast && (
         <div
@@ -463,7 +463,7 @@ export function UsersPage() {
             <div className="flex items-center gap-3">
               <Users className="h-8 w-8 text-purple-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">用户管理</h1>
+                <h1 className="text-2xl font-bold text-gray-900">投手管理</h1>
                 <p className="text-sm text-gray-500">管理系统用户账号和权限</p>
               </div>
             </div>
@@ -479,6 +479,7 @@ export function UsersPage() {
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                data-testid="create-btn"
               >
                 <UserPlus className="h-4 w-4" />
                 添加用户
@@ -490,9 +491,9 @@ export function UsersPage() {
 
       {/* Filters - v3.0 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="bg-white rounded-xl shadow-sm p-4">
+        <div className="bg-white rounded-xl shadow-sm p-4" data-testid="pitcher-filters">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-[200px]" data-testid="search-filter">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -514,6 +515,7 @@ export function UsersPage() {
                 setPage(1);
               }}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+              data-testid="role-filter"
             >
               <option value="">全部角色</option>
               {USER_ROLE_OPTIONS.map((role) => (
@@ -541,9 +543,9 @@ export function UsersPage() {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden" data-testid="pitcher-table">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex items-center justify-center py-12" data-testid="loading-skeleton">
                 <Loader2 className="h-8 w-8 text-purple-600 animate-spin" />
               </div>
             ) : (

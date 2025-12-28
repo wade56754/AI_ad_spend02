@@ -4,8 +4,8 @@ Version: 1.0
 Author: Claude协作开发
 
 SoT References:
-- docs/2.sot/STATE_MACHINE.md v2.6 第12章 (transfer_requests 状态机)
-- docs/2.sot/DATA_SCHEMA.md v5.2 第3.4.6节 (transfer_requests 表结构)
+- docs/sot/STATE_MACHINE.md v2.6 第12章 (transfer_requests 状态机)
+- docs/sot/DATA_SCHEMA.md v5.2 第3.4.6节 (transfer_requests 表结构)
 """
 
 from datetime import datetime

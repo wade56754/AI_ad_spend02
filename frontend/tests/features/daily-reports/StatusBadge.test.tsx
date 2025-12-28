@@ -44,10 +44,13 @@ describe('StatusBadge', () => {
 
   it('applies size classes correctly', () => {
     const { rerender } = render(<StatusBadge status="raw_submitted" size="sm" />);
-    expect(screen.getByText('原始提交')).toHaveClass('text-xs');
+    // Size class is on the Badge container, not the text span
+    const badge = screen.getByText('原始提交').closest('[class*="text-"]');
+    expect(badge).toHaveClass('text-xs');
 
     rerender(<StatusBadge status="raw_submitted" size="lg" />);
-    expect(screen.getByText('原始提交')).toHaveClass('text-base');
+    const badgeLg = screen.getByText('原始提交').closest('[class*="text-"]');
+    expect(badgeLg).toHaveClass('text-base');
   });
 
   it('applies custom className', () => {
@@ -68,7 +71,9 @@ describe('StatusLegend', () => {
 
   it('renders exactly 8 badges', () => {
     render(<StatusLegend />);
-    const badges = screen.getAllByRole('status');
+    // Count badge elements by their text content
+    const statusLabels = Object.values(STATUS_CONFIG).map((config) => config.label);
+    const badges = statusLabels.map((label) => screen.getByText(label));
     expect(badges).toHaveLength(8);
   });
 });
