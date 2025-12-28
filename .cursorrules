@@ -1,132 +1,291 @@
 # ===========================
-# AI_ad_spend02 专用 Cursor 规则
-# SoT + Skills + super_review_agent 管线
+# AI_ad_spend02 Cursor Rules v2.1
+# 基于 PROJECT_RULES.md v3.5 + STATE_MACHINE.md v2.6
+# 兼容 Claude Code + Cursor IDE
 # ===========================
-
-# ---------- 🚨 AI Spec-Driven Development 框架规则 ----------
-
-RULE: Before generating any code, you MUST read and understand docs/1.overview/MASTER.md first, then docs/1.overview/MASTER_SPEC.md.
-
-RULE: Follow AI Spec-Driven Development principles:
-- TypeScript with strict type safety (strict: true in tsconfig.json)
-- No magic numbers (use named constants)
-- Result pattern for error handling (avoid throwing exceptions for business logic)
-- Test coverage 80%+ (maintain high test coverage)
-
-RULE: Document references priority:
-1) docs/1.overview/MASTER.md - Entry document, must read first (系统架构宪法，最高优先级)
-2) docs/1.overview/MASTER_SPEC.md - Project overview and rules (系统架构依据)
-3) docs/2.sot/ - Single Source of Truth documents (DATA_SCHEMA.md, STATE_MACHINE.md, API_SOT.md, etc.)
-4) docs/3.dev-guides/ - Development guides and architecture documents
-
-RULE: When implementing features:
-- Read the relevant SoT documents first
-- Follow the architecture defined in MASTER_SPEC.md
-- Ensure type safety and error handling patterns
-- Write tests alongside implementation
 
 # ---------- 全局行为约束 ----------
 
-RULE: Always prefer minimal, surgical changes instead of rewriting whole files, unless the user explicitly asks to rewrite the entire file.
-RULE: Never invent new concepts, fields, statuses, roles, or APIs that are not present in the SoT documents or clearly requested by the user.
-RULE: When editing code or docs, preserve existing intent and behavior unless the task is explicitly a redesign.
-RULE: When the user says "直接在源文件修改，不要在对话框输出", do not paste whole files in the chat; only show small, relevant snippets or summaries of changes.
+RULE: You are an expert AI coding assistant. Treat AI as a pair programmer, not autopilot.
+RULE: Always prefer minimal, surgical changes instead of rewriting whole files.
+RULE: Never invent new concepts, fields, statuses, roles, or APIs not in SoT documents.
+RULE: When editing code or docs, preserve existing intent unless task is explicitly a redesign.
 
-RULE: Before making large changes, quickly scan the project structure (core docs, backend, frontend, skills) to understand the context.
-RULE: Respect the existing architecture and terminology; reuse existing patterns instead of creating new ones.
+# ---------- SoT 裁判链（完整 8 层，优先级从高到低） ----------
 
-# ---------- SoT 文档优先级（Single Source of Truth） ----------
+RULE: Apply this SoT precedence for any conflict:
+```
+1) MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
+2) STATE_MACHINE.md v2.6 (状态定义 - 8 状态机)
+3) DATA_SCHEMA.md v5.2 (数据结构)
+4) BUSINESS_RULES.md v3.2 (业务规则 - BR-* 编号)
+5) API_SOT.md v9.0 (API 契约)
+6) ERROR_CODES_SOT.md v2.1 (错误码)
+7) AUTH_SPEC.md v2.0 (认证授权)
+8) LEDGER_SOT.md v1.1 (账本规则)
+```
 
-RULE: Treat the SoT documents as the single source of truth for the domain model, states, ledger rules, permissions, and APIs.
+RULE: Before generating code, read relevant SoT docs in docs/sot/ directory.
+RULE: If SoT doesn't cover a scenario, STOP and ask the user instead of guessing.
 
-RULE: When there is any conflict between documents, apply this precedence order:
-1) AI_AD_SYSTEM_MAIN_DOCUMENT.md / MASTER_SPEC.md
-2) DATA_SCHEMA.md (tables, fields, types, relationships, enums)
-3) STATE_MACHINE.md (states and allowed transitions)
-4) LEDGER_SOT.md (PROJECT/SUPPLIER ledgers, bookkeeping rules)
-5) AUTH_SPEC.md (auth, roles, RBAC, RLS)
-6) Domain SoTs: DAILY_REPORT_SOT.md, RECONCILIATION_SOT.md, API_SOT.md, etc.
-7) BUSINESS_RULES.md and BR-XXX rule files
-8) Other dev-guides, README, design notes
+# ---------- 技术栈约束 ----------
 
-RULE: When editing dev-guides, API docs, or implementation notes, align them with the SoT docs. If something conflicts with a SoT, assume the SoT is correct unless the user explicitly states they are updating the SoT itself.
+RULE: Backend stack (immutable):
+- Framework: FastAPI
+- ORM: SQLAlchemy 2.x
+- Validation: Pydantic v2
+- Database: PostgreSQL (Supabase)
+- Auth: Supabase Auth + JWT (NO custom bcrypt/JWT)
 
-RULE: When adding new documentation, clearly reference the relevant SoT sections instead of redefining the rules.
+RULE: Frontend stack (immutable):
+- Framework: Next.js 16 (App Router)
+- Language: TypeScript (strict: true)
+- UI: shadcn/ui + Tailwind CSS
+- HTTP: apiFetch (lib/api.ts) - NEVER use fetch/axios directly
+- State: TanStack Query v5
+- Form: react-hook-form + zod
 
-RULE: Do not rename fields, states, or roles that are already defined in DATA_SCHEMA, STATE_MACHINE, LEDGER_SOT, or AUTH_SPEC without an explicit migration plan from the user.
+# ---------- 角色约束 (5 角色白名单) ----------
 
-# ---------- 文档 + Skills 相关规则 ----------
+RULE: Only use these 5 roles (来源: PROJECT_RULES.md v3.5 §四):
+```
+admin          # 系统管理员 - 全部权限
+finance        # 财务 - 充值终审、对账、报表
+data_operator  # 数据运营 - 日报审核、数据管理
+account_manager # 账户管理员 - 项目管理、账户分配
+media_buyer    # 广告投手 - 日报提交、充值申请
+```
 
-RULE: The `.claude/PROJECT_RULES.md` file defines the meta-rules for AI behavior. When editing any other doc or code, try to keep it consistent with PROJECT_RULES.
-RULE: When editing SKILL.md files under `.claude/skills/`, preserve the core behavior and contract of each skill (inputs, outputs, responsibilities). Focus on clarity, structure, and robustness, not on changing the fundamental role of the skill.
+RULE: NEVER use deprecated roles:
+```
+❌ data_clerk (已废弃 → data_operator)
+❌ manager (已废弃 → account_manager)
+❌ trader (已废弃 → media_buyer)
+❌ ceo, project_owner, pitcher (业务层概念，非技术角色)
+```
 
-RULE: For doc-reviewer / doc-fixer / super-review-agent related docs:
-- Keep the separation of concerns: review → report → fix.
-- The reviewer (Codex) should not rewrite full docs.
-- The fixer (Claude) should follow the review report, prioritizing P0 then P1 issues.
-- The orchestrator (super_review_agent.py) should only coordinate, not embed domain rules.
+# ---------- 日报状态约束 (8 状态机) ----------
 
-RULE: When the user asks for “SuperClaude 风格 / Persona + plan + think-hard 模式”, keep prompts structured and explicit, and avoid changing the existing role/command taxonomy.
+RULE: Daily report status (来源: STATE_MACHINE.md v2.6 §8):
+```
+raw_submitted    # 投手提交原始数据
+    ↓
+trend_pending    # 趋势风控检测中
+    ↓
+trend_ok         # 趋势正常 (或)
+trend_flagged    # 趋势异常 → 需运营复核
+    ↓
+trend_resolved   # 运营确认正常波动
+    ↓
+final_pending    # 等待最终确认
+    ↓
+final_confirmed  # 运营确认最终粉数
+    ↓
+final_locked     # 计费锁定 (终态)
+```
 
-# ---------- super_review_agent.py 专用规则 ----------
+RULE: All 8 states are valid. Use the correct state for each workflow step.
 
-RULE: For `super_review_agent.py`, do NOT change:
-- The CLI subcommands: review-only, fix-once, auto-polish-loop, quick-check.
-- The argument names and semantics (doc, codex-prompt, codex-cmd, claude-cmd, skill-name, max-rounds, output, timeout, verbose).
-- The exit code semantics (0 = success, non-zero = some kind of error or failure).
-- The high-level behavior of each mode.
+# ---------- 充值状态约束 (7 状态) ----------
 
-RULE: Do not rename or remove `invoke_codex_review`, `invoke_claude_fix`, `parse_p0_p1_count`, or the mode_* functions unless explicitly requested by the user.
+RULE: Topup request status:
+```
+draft → pending_review → finance_approve → paid → completed
+  ↓           ↓                ↓
+cancelled   rejected        rejected
+```
 
-RULE: When optimizing `invoke_claude_fix`, it is allowed to:
-- Embed skill behavior rules into the prompt.
-- Improve error handling and logging.
-- Improve robustness of subprocess calls.
-But it is NOT allowed to:
-- Change the fundamental contract: input = original doc + review report; output = full fixed document.
-- Change the way output is written to disk or consumed by other tools.
+RULE: `cancelled` can only be reached from `draft`.
+RULE: `rejected` can be reached from `pending_review` OR `finance_approve`.
 
-RULE: When refactoring `parse_p0_p1_count`, preserve:
-- The ability to parse "P0 缺陷: X个" / "P1 缺陷: Y个".
-- The ability to count P0-XXX-123 / P1-XXX-123 IDs.
-- The ability to use Markdown sections as fallback parsing.
-Only add gentle fallbacks; do not break existing patterns.
+# ---------- 前端组件规范 ----------
 
-RULE: The auto-polish-loop mode must:
-- Stop when P0 and P1 are both zero OR when max_rounds is reached.
-- Keep intermediate round_x_review.md and round_x_fixed.md files.
-Do not change these core semantics.
+RULE: NEVER use bare HTML elements in frontend code:
+```
+❌ <button>, <input>, <table>, <select>, <textarea>
+✅ <Button>, <Input>, <DataTable>, <Select>, <Textarea> from shadcn/ui
+```
 
-# ---------- 代码修改风格 ----------
+RULE: Always add 'use client' directive for interactive components.
 
-RULE: Prefer small, incremental edits and keep changes tightly scoped to the user request.
-RULE: Always keep imports clean: remove unused imports when they appear because of refactors.
-RULE: Keep logging messages helpful but concise. Do not spam logs with redundant information.
+RULE: Import order for TypeScript/React files:
+```
+1. React/Next.js imports
+2. Third-party libraries
+3. UI components (@/components/ui/*)
+4. Local hooks/services
+5. Types
+6. Styles/constants
+```
 
-RULE: For Python:
-- Follow PEP8 style unless the surrounding code clearly uses a different style.
-- Use type hints when adding new functions if they fit naturally.
-- Avoid introducing heavy new dependencies.
+RULE: Use cn() from @/lib/utils for Tailwind class merging.
 
-RULE: For TypeScript/React/Next.js files:
-- Reuse existing UI components and design system rules (Tailwind, shadcn/ui, project-specific UI guidelines).
-- Keep pages composed from smaller components; do not dump huge JSX blocks into a single file.
+# ---------- API 调用规范 ----------
 
-# ---------- 文档编辑规则 ----------
+RULE: Frontend API calls must use apiFetch:
+```typescript
+// ❌ Wrong
+fetch('/api/...')
+axios.get('/api/...')
 
-RULE: When the user says “只优化文档，不要改结构”，only adjust wording, clarity, examples, and small structure tweaks; do not reorder or rename major sections.
-RULE: When the user says “可以重构结构”，you may reorganize sections, but keep all original content unless it is clearly redundant or conflicting with SoT.
+// ✅ Correct
+import { apiGet, apiPost } from '@/lib/api'
+const data = await apiGet('/api/v1/...')
+```
 
-RULE: For all SoT docs, maintain:
-- Clear headings.
-- Explicit versioning.
-- Clear change logs when the user requests version bumps.
+RULE: Backend responses must use Envelope format:
+```python
+# ❌ Wrong
+return {"id": 1, "name": "..."}
 
-# ---------- 交互与安全 ----------
+# ✅ Correct
+from core.responses import success_response
+return success_response(data={"id": 1, "name": "..."})
+```
 
-RULE: If a user instruction conflicts with SoT or PROJECT_RULES, point out the conflict briefly, then follow the user’s latest explicit instruction (the human can choose to override SoT).
-RULE: If a requested change could silently break the CLI, API contract, or SoT invariants, warn the user in a short note before applying the change.
+RULE: Error codes must come from ERROR_CODES_SOT.md v2.1:
+```python
+# ❌ Wrong
+raise HTTPException(400, "Invalid request")
 
-RULE: Avoid asking obvious or repetitive questions. Only ask for clarification when the task genuinely cannot be completed without missing information.
+# ✅ Correct
+from core.error_codes import BusinessErrorCodes
+raise BusinessError(code=BusinessErrorCodes.INVALID_STATE_TRANSITION)
+```
 
-# End of AI_ad_spend02 .cursorrules
+# ---------- 代码风格 ----------
+
+RULE: Python style:
+- Follow PEP8
+- Use type hints for function signatures
+- Use async/await for I/O operations
+- Avoid heavy new dependencies
+
+RULE: TypeScript style:
+- Enable strict mode
+- Never use 'any' type
+- Define Props interface for all components
+- Destructure props, avoid props.xxx
+
+RULE: Prefer small, incremental edits tightly scoped to user request.
+RULE: Remove unused imports after refactors.
+RULE: Keep logging concise and helpful, avoid spam.
+
+# ---------- 测试规范 ----------
+
+RULE: Write tests alongside implementation.
+RULE: Test naming: test_<action>_<expected_result>
+RULE: Use pytest for backend, Jest/Vitest for frontend.
+RULE: Run regression tests before PR:
+```bash
+python run_tests.py --type regression
+```
+
+RULE: 五连拍测试套件 (必须全部通过):
+1. Daily Reports API
+2. Trend Risk API
+3. Ledger
+4. Ad Accounts
+5. Topup API
+
+# ---------- Git 工作流 ----------
+
+RULE: Commit message format:
+```
+<type>(<scope>): <description>
+
+Types: feat, fix, docs, style, refactor, test, chore
+```
+
+RULE: Never force push to main/master.
+RULE: Create feature branches for new work.
+
+# ---------- OpenSpec 变更流程 ----------
+
+RULE: All SoT changes MUST go through OpenSpec:
+```
+openspec/changes/<change-id>/
+├── proposal.md        # 变更提案
+├── tasks.md           # 实施清单
+├── design.md          # 技术设计（可选）
+└── specs/             # Spec deltas
+```
+
+RULE: Branch naming for OpenSpec: feature/<change-id>
+RULE: Commit message must include [<change-id>] for SoT changes.
+
+# ---------- 文档约束 ----------
+
+RULE: When editing SoT docs:
+- Maintain clear headings and versioning
+- Follow OpenSpec change process for breaking changes
+- Update CHANGELOG when bumping versions
+
+RULE: Reference SoT sections instead of redefining rules.
+RULE: Do not rename fields/states/roles without migration plan.
+
+# ---------- ASDD 4 层架构 ----------
+
+RULE: Document layers (引用优先级):
+```
+docs/1.overview/      → Overview Layer (Freeze v1.0)
+docs/sot/             → SoT Layer (Freeze v2.6)
+docs/3.dev-guides/    → Dev-Guides Layer (Freeze v2.1)
+docs/4.architecture/  → Architecture Layer (Freeze v1.0)
+```
+
+RULE: Check Freeze status before modifying any document.
+RULE: Frozen documents require RFC to modify.
+
+# ---------- 安全约束 ----------
+
+RULE: Never hardcode secrets or API keys in code.
+RULE: Use environment variables for sensitive config.
+RULE: Validate all user input on server side.
+RULE: Use parameterized queries, never SQL string concatenation.
+
+# ---------- Memory Bank 规则 ----------
+
+RULE: At conversation start, read:
+- memory-bank/progress.md (current progress)
+- memory-bank/implementation-plan.md (current plan)
+
+RULE: After completing a step, update:
+- memory-bank/progress.md
+- memory-bank/architecture.md (if new files added)
+
+# ---------- 冲突处理 ----------
+
+RULE: If user instruction conflicts with SoT:
+1. Point out the conflict briefly
+2. Follow user's explicit instruction (human can override)
+
+RULE: If change could break CLI, API, or SoT invariants:
+1. Warn user in a short note
+2. Proceed only after acknowledgment
+
+# ---------- 快速参考 ----------
+
+# 5 角色 (技术层)
+# admin | finance | data_operator | account_manager | media_buyer
+
+# 8 日报状态
+# raw_submitted → trend_pending → trend_ok/trend_flagged
+# → trend_resolved → final_pending → final_confirmed → final_locked
+
+# 7 充值状态
+# draft → pending_review → finance_approve → paid → completed
+#   ↓           ↓                ↓
+# cancelled   rejected        rejected
+
+# 必须使用的组件
+# DataTable, StatusBadge, Form, Dialog, AlertDialog, Button, Input
+
+# 关键文件路径
+# API 客户端: frontend/src/lib/api.ts
+# 全局类型: frontend/src/types/common.ts
+# 项目规则: .claude/PROJECT_RULES.md
+# SoT 文档: docs/sot/*.md
+# AI 编程 SOP: docs/guides/AI_CODING_SOP_v2.1.md
+
+# End of Cursor Rules v2.1
