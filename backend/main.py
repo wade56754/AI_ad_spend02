@@ -41,6 +41,7 @@ from backend.routers import (
     finance_profit,  # ✅ 财务利润API (从 ledger 迁出)
     import_jobs,  # ✅ 数据导入API (已实现ImportJob模型)
     reconciliation,  # ✅ 对账管理API (新启用)
+    reconciliation_control,  # ✅ 对账中控API (OpenSpec: add-reconciliation-control-center)
     reports,  # ✅ 报表管理API (v2.0 - 完整重构)
     agents,  # ✅ Agent Platform API (新增)
     spend,  # ✅ 消耗导入API (Financial SoT Phase 2)
@@ -125,9 +126,9 @@ app.include_router(
     import_jobs.router, prefix=API_V1_PREFIX
 )  # 数据导入 ✅ 已实现ImportJob模型
 app.include_router(reconciliation.router, prefix=API_V1_PREFIX)  # 对账管理 ✅ 新启用
-# app.include_router(
-#     reconciliation_control.router, prefix=API_V1_PREFIX
-# )  # 对账中控 (待实现 - OpenSpec: add-reconciliation-control-center)
+app.include_router(
+    reconciliation_control.router, prefix=API_V1_PREFIX
+)  # 对账中控 ✅ OpenSpec: add-reconciliation-control-center
 app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表管理 ✅ v2.0 完整重构
 app.include_router(agents.router, prefix=API_V1_PREFIX)  # Agent Platform ✅ 新增
 app.include_router(
