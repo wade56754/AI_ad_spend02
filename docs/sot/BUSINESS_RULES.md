@@ -132,9 +132,10 @@ modules:
 |-----------|-----------|------|
 | `admin` | `ceo`, `admin` | 系统管理权限 |
 | `finance` | `finance` | 财务权限 |
-| `data_operator` | `project_owner` | PRD v2.2: 原 supervisor 已移除 |
-| `account_manager` | `account_manager` | 账户管理权限 |
+| `account_manager` | `account_manager`, `project_owner` | 账户管理 + 项目负责人权限 |
 | `media_buyer` | `pitcher` | 投放执行权限 |
+
+> **注**: `project_owner` 通过 `users.is_project_owner=true` 或 `project_members` 表判断，不是技术层枚举角色。
 
 ### 2.3 旧角色兼容映射
 

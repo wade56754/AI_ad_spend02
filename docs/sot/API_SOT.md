@@ -1,9 +1,9 @@
 # API 开发与使用规范（API Single Source of Truth）
 
-> **文档版本**: v9.3 (对齐 MASTER.md v4.4, BUSINESS_RULES.md v4.1)
+> **文档版本**: v9.4 (对齐 PRD v2.2, MASTER.md v4.6, STATE_MACHINE.md v2.8)
 > **status**: frozen
 > **owner**: wade
-> **last_reviewed**: 2025-12-24
+> **last_reviewed**: 2025-12-29
 > **文档类型**: 项目唯一真相源（SoT）
 > **适用范围**: 所有后端API开发与前端API调用
 > **规范级别**: 🔴 强制执行
@@ -60,24 +60,26 @@
 ### 1.2 五个不可违背的规则
 
 1. **数据库字段禁止自创** - 所有字段必须在 DATA_SCHEMA.md 中定义
-2. **角色限定为7个** - 见下方角色定义表（来源: MASTER.md v4.4 §2.4）
+2. **角色限定为6个** - 见下方角色定义表（来源: PRD v2.2 §1.2, MASTER.md v4.6 §2.4）
 3. **响应必须使用 Envelope** - 使用 `success_response`/`error_response`
 4. **前端必须通过 apiFetch** - 禁止直接 fetch 或其他 HTTP 库
 5. **开发顺序强制执行** - Schema → Service → Router → Test → Exception Handler
 
-#### 1.2.1 角色定义（7 角色，来源: MASTER.md v4.4 §2.4）
+#### 1.2.1 角色定义（6 角色，来源: PRD v2.2 §1.2, MASTER.md v4.6 §2.4）
 
 | 角色 | 系统角色名 | 职责边界 | 典型操作 |
 |------|-----------|---------|---------|
 | 老板 | `ceo` | 资金安全、公司盈亏、最终决策 | 批准充值、锁定结算、查看全部 |
-| 项目负责人 | `project_owner` | 项目盈亏、资金使用效率 | 申请充值、查看项目、提交周报 |
+| 项目负责人 | `project_owner` | 项目盈亏、资金使用效率、日报审核、统计实际消耗 | 申请充值、审核日报、查看项目、提交周报 |
 | 财务 | `finance` | 资金出入准确、数据真实、对账 | 审核充值、确认付款、查看账本 |
-| 主管 | `supervisor` | 团队产出、投手管理、日常监督 | 审核日报、标记异常、查看团队 |
 | 投手 | `pitcher` | CPL 达标、日报准确、执行投放 | 填报日报、查看自己数据 |
 | 户管 | `account_manager` | 账户分配、账户状态监控 | 分配账户、标记死号、余额迁移 |
 | 管理员 | `admin` | 系统配置（不参与业务） | 用户管理、系统配置 |
 
-> **旧角色映射说明**: 文档中出现的 `media_buyer` 等同于 `pitcher`，`data_operator` 等同于 `supervisor`。新开发应使用 7 角色标准名称。
+> **PRD v2.2 变更说明**:
+> - 移除 `supervisor` 角色，其职责（日报审核、数据统计）合并到 `project_owner`
+> - 移除 `data_operator` 角色，职责按场景分配到 `project_owner`（日报）或 `finance`（对账）
+> - 旧角色映射：`media_buyer` → `pitcher`，`supervisor` → `project_owner`，`data_operator` → `project_owner`/`finance`
 
 ### 1.3 三数据流与双账本（核心概念）
 
@@ -86,8 +88,8 @@
 | 数据流 | 字段 | 提交者 | 时效性 | 用途 |
 |-------|------|--------|--------|------|
 | **raw数据流** | `conversions_raw`, `raw_spend` | 投手 (pitcher) | T+0 23:59前 | 趋势监控，风控检查 |
-| **real数据流** | `real_spend` | 主管 (supervisor) | T+1 12:00前 | 成本核算 |
-| **final数据流** | `conversions_final` | 主管 (supervisor) | T+1 14:00前 | 计费基准 |
+| **real数据流** | `real_spend` | 项目负责人 (project_owner) | T+1 12:00前 | 成本核算 |
+| **final数据流** | `conversions_final` | 项目负责人 (project_owner) | T+1 14:00前 | 计费基准 |
 
 **引用**: MASTER.md v4.4 §4（三数据流）、BUSINESS_RULES.md v4.1
 
@@ -927,7 +929,7 @@ const newProject = await apiFetch('/api/v1/projects', {
 **Request示例**:
 ```json
 {
-  "role": "supervisor"
+  "role": "project_owner"
 }
 ```
 
@@ -942,7 +944,7 @@ const newProject = await apiFetch('/api/v1/projects', {
     "id": 1,
     "project_id": 101,
     "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "role": "supervisor",
+    "role": "project_owner",
     "updated_at": "2025-01-22T11:00:00Z"
   },
   "message": "成员角色更新成功"
@@ -1055,9 +1057,9 @@ const newProject = await apiFetch('/api/v1/projects', {
 | GET | `/api/v1/daily-reports/{report_id}` | 获取日报详情 | 根据角色过滤 | - | implemented |
 | PUT | `/api/v1/daily-reports/{report_id}` | 更新日报（仅草稿） | `pitcher`（仅自己的） | - | implemented |
 | POST | `/api/v1/daily-reports/{report_id}/trend-check` | 趋势风控检查 | 系统自动 | `trend_pending` → `trend_ok`/`trend_flagged` | implemented |
-| POST | `/api/v1/daily-reports/{report_id}/trend-resolve` | 趋势风控复核 | `supervisor`, `admin` | `trend_flagged` → `trend_resolved` | implemented |
-| PUT | `/api/v1/daily-reports/{report_id}/real-spend` | 录入real粉数 | `supervisor`, `admin` | `trend_ok`/`trend_resolved` → `final_pending` | implemented |
-| POST | `/api/v1/daily-reports/{report_id}/final-confirm` | 确认final粉数 | `supervisor`, `admin` | `final_pending` → `final_confirmed` | implemented |
+| POST | `/api/v1/daily-reports/{report_id}/trend-resolve` | 趋势风控复核 | `project_owner`, `admin` | `trend_flagged` → `trend_resolved` | implemented |
+| PUT | `/api/v1/daily-reports/{report_id}/real-spend` | 录入real粉数 | `project_owner`, `admin` | `trend_ok`/`trend_resolved` → `final_pending` | implemented |
+| POST | `/api/v1/daily-reports/{report_id}/final-confirm` | 确认final粉数 | `project_owner`, `admin` | `final_pending` → `final_confirmed` | implemented |
 | POST | `/api/v1/daily-reports/{report_id}/final-lock` | 计费锁定 | 系统自动 | `final_confirmed` → `final_locked` | implemented |
 | POST | `/api/v1/daily-reports/{report_id}/reversal` | 红冲修正 | `admin` | `final_locked` → (创建REVERSAL记录) | implemented |
 
@@ -1416,7 +1418,7 @@ def check_trend_risk(report: DailyReport):
 
 | 错误码 | HTTP状态码 | 触发场景 |
 |--------|-----------|----------|
-| `AUTH_500` | 403 | 非 supervisor/admin 角色 |
+| `AUTH_500` | 403 | 非 project_owner/admin 角色 |
 | `BIZ_002` | 404 | 日报不存在 |
 | `STATE_400` | 400 | 当前状态不是trend_flagged |
 | `VALIDATION_001` | 400 | 未填写复核说明 |
@@ -1428,7 +1430,7 @@ def check_trend_risk(report: DailyReport):
 
 #### 权限
 
-- **允许角色**: `supervisor`, `admin`
+- **允许角色**: `project_owner`, `admin`
 - **业务约束**:
   - 仅当status=trend_flagged时可执行
   - 必须填写trend_resolution_note
@@ -1499,7 +1501,7 @@ def check_trend_risk(report: DailyReport):
 
 | 错误码 | HTTP状态码 | 触发场景 |
 |--------|-----------|----------|
-| `AUTH_500` | 403 | 非 supervisor/admin 角色 |
+| `AUTH_500` | 403 | 非 project_owner/admin 角色 |
 | `BIZ_002` | 404 | 日报不存在 |
 | `STATE_400` | 400 | 当前状态不是trend_ok/trend_resolved |
 | `TREND_002` | 400 | 当前状态为trend_flagged，禁止录入 |
@@ -1513,7 +1515,7 @@ def check_trend_risk(report: DailyReport):
 
 #### 权限
 
-- **允许角色**: `supervisor`, `admin`
+- **允许角色**: `project_owner`, `admin`
 - **业务约束**:
   - 仅当status=trend_ok或trend_resolved时可执行
   - 禁止在trend_flagged状态下录入
@@ -1595,7 +1597,7 @@ def check_trend_risk(report: DailyReport):
 
 | 错误码 | HTTP状态码 | 触发场景 |
 |--------|-----------|----------|
-| `AUTH_500` | 403 | 非 supervisor/admin 角色 |
+| `AUTH_500` | 403 | 非 project_owner/admin 角色 |
 | `BIZ_002` | 404 | 日报不存在 |
 | `STATE_400` | 400 | 当前状态不是final_pending |
 | `VALIDATION_001` | 400 | 必填字段缺失 |
@@ -1608,7 +1610,7 @@ def check_trend_risk(report: DailyReport):
 
 #### 权限
 
-- **允许角色**: `supervisor`, `admin`
+- **允许角色**: `project_owner`, `admin`
 - **业务约束**:
   - 仅当status=final_pending时可执行
   - conversions_final可以≠conversions_raw（允许运营调整）
@@ -1948,11 +1950,11 @@ with db.begin():
 | POST | `/api/v1/topups` | 创建充值申请 | `admin`, `finance`, `pitcher`, `account_manager` | `draft` | implemented |
 | GET | `/api/v1/topups/{request_id}` | 获取充值申请详情 | 根据角色过滤 | - | implemented |
 | POST | `/api/v1/topups/{request_id}/submit` | 提交审批 | 申请人 | `draft` → `pending_review` | implemented |
-| POST | `/api/v1/topups/{request_id}/review` | 数据审核 | `supervisor`, `admin` | `pending_review` → `finance_approve` | implemented |
+| POST | `/api/v1/topups/{request_id}/review` | 数据审核 | `finance`, `admin` | `pending_review` → `finance_approve` | implemented |
 | POST | `/api/v1/topups/{request_id}/approve` | 财务审批 | `finance`, `admin` | `finance_approve` → `paid` | implemented |
 | PUT | `/api/v1/topups/{request_id}/pay` | 记录付款 | `finance`, `admin` | `paid` → - | implemented |
 | POST | `/api/v1/topups/{request_id}/confirm-paid` | 到账确认 | `finance`, `admin` | `paid` → `completed` | implemented |
-| POST | `/api/v1/topups/{request_id}/reject` | 拒绝申请 | `supervisor`, `finance`, `admin` | 任意状态 → `rejected` | implemented |
+| POST | `/api/v1/topups/{request_id}/reject` | 拒绝申请 | `finance`, `admin` | 任意状态 → `rejected` | implemented |
 | POST | `/api/v1/topups/{request_id}/cancel` | 取消申请 | 申请人 | `draft` → `cancelled` | implemented |
 | GET | `/api/v1/topups/{request_id}/logs` | 获取审批日志 | 所有已登录用户 | - | implemented |
 | GET | `/api/v1/topups/statistics` | 获取充值统计 | `admin`, `finance` | - | implemented |
@@ -2211,7 +2213,7 @@ Authorization: Bearer <token>
 | 错误码 | HTTP状态码 | 触发场景 | 对应异常类 |
 |--------|-----------|----------|-----------|
 | `AUTH_400` | 401 | 未提供认证令牌 | - |
-| `AUTH_500` | 403 | 非 admin/finance/supervisor 角色访问 | `AuthorizationException` |
+| `AUTH_500` | 403 | 非 admin/finance 角色访问 | `AuthorizationException` |
 | `BIZ_002` | 404 | project_id 不存在 | `ResourceNotFoundException` |
 | `BIZ_001` | 400 | start_date > end_date（日期范围无效） | `BusinessRuleException` |
 | `BIZ_607` | 500 | 利润统计查询失败 | 通用异常捕获 |
@@ -2222,7 +2224,7 @@ Authorization: Bearer <token>
 
 #### 权限
 
-- **允许角色**: `admin`, `finance`, `supervisor`
+- **允许角色**: `admin`, `finance`
 - **业务约束**:
   - 查询范围受角色限制（参考 AUTH_SPEC.md v2.0 第3章）
   - project_id 若指定必须存在
@@ -2274,9 +2276,9 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 | 方法 | 路径 | 功能 | 权限 | 状态机 | 状态 |
 |------|------|------|------|--------|------|
-| GET | `/api/v1/reconciliations/batches` | 获取对账批次列表 | `admin`, `finance`, `supervisor` | - | implemented |
+| GET | `/api/v1/reconciliations/batches` | 获取对账批次列表 | `admin`, `finance` | - | implemented |
 | POST | `/api/v1/reconciliations/batches` | 创建对账批次 | `finance`, `admin` | `draft` | implemented |
-| GET | `/api/v1/reconciliations/batches/{batch_id}` | 获取批次详情 | `admin`, `finance`, `supervisor` | - | implemented |
+| GET | `/api/v1/reconciliations/batches/{batch_id}` | 获取批次详情 | `admin`, `finance` | - | implemented |
 | PUT | `/api/v1/reconciliations/batches/{batch_id}` | 更新批次 | `finance`, `admin` | - | implemented |
 | DELETE | `/api/v1/reconciliations/batches/{batch_id}` | 删除批次 | `admin` | - | implemented |
 | POST | `/api/v1/reconciliations/batches/{batch_id}/submit` | 提交审核 | `finance`, `admin` | `draft` → `pending_review` | implemented |
@@ -2284,10 +2286,10 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | POST | `/api/v1/reconciliations/batches/{batch_id}/request-adjustment` | 要求调整 | `finance`, `admin` | `pending_review` → `needs_adjustment` | implemented |
 | POST | `/api/v1/reconciliations/batches/{batch_id}/complete` | 完成对账 | `finance`, `admin` | `approved` → `completed` | implemented |
 | POST | `/api/v1/reconciliations/batches/{batch_id}/run` | 执行对账 | `finance`, `admin` | - | implemented |
-| GET | `/api/v1/reconciliations/batches/{batch_id}/details` | 获取批次明细列表 | `admin`, `finance`, `supervisor` | - | implemented |
+| GET | `/api/v1/reconciliations/batches/{batch_id}/details` | 获取批次明细列表 | `admin`, `finance` | - | implemented |
 | PUT | `/api/v1/reconciliations/batches/{batch_id}/resubmit` | 重新提交 | `finance`, `admin` | - | implemented |
 | PUT | `/api/v1/reconciliations/batches/{batch_id}/force-complete` | 强制完成 | `admin` | - | implemented |
-| GET | `/api/v1/reconciliations/details/{detail_id}` | 获取明细详情 | `admin`, `finance`, `supervisor` | - | implemented |
+| GET | `/api/v1/reconciliations/details/{detail_id}` | 获取明细详情 | `admin`, `finance` | - | implemented |
 | PUT | `/api/v1/reconciliations/details/{detail_id}/review` | 审核明细 | `finance`, `admin` | - | implemented |
 | POST | `/api/v1/reconciliations/details/{detail_id}/adjust` | 调整明细 | `finance`, `admin` | - | implemented |
 | PUT | `/api/v1/reconciliations/details/{detail_id}/confirm` | 确认明细 | `finance`, `admin` | - | implemented |
@@ -2385,7 +2387,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | GET | `/api/v1/reports/dashboard` | 获取仪表盘数据 | 所有已登录用户 | implemented |
 | GET | `/api/v1/reports/performance` | 获取绩效报表 | 所有已登录用户 | implemented |
 | GET | `/api/v1/reports/profit` | 获取利润报表 | `admin`, `finance` | implemented |
-| GET | `/api/v1/reports/reconciliation` | 获取对账报表 | `admin`, `finance`, `supervisor` | implemented |
+| GET | `/api/v1/reports/reconciliation` | 获取对账报表 | `admin`, `finance` | implemented |
 | GET | `/api/v1/reports/financial` | 获取财务报表 | `admin`, `finance` | implemented |
 | GET | `/api/v1/reports/trends/{metric}` | 获取趋势数据 | 所有已登录用户 | implemented |
 | GET | `/api/v1/reports` | 获取报表列表 | 所有已登录用户 | implemented |
@@ -2415,16 +2417,16 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 | 方法 | 路径 | 功能 | 权限 | 状态 |
 |------|------|------|------|------|
-| POST | `/api/v1/import-jobs/upload` | 上传导入文件 | `admin`, `supervisor` | implemented |
-| GET | `/api/v1/import-jobs` | 获取导入任务列表 | `admin`, `supervisor` | implemented |
-| GET | `/api/v1/import-jobs/statistics` | 获取导入统计 | `admin`, `supervisor` | implemented |
-| GET | `/api/v1/import-jobs/{job_id}` | 获取任务详情 | `admin`, `supervisor` | implemented |
-| GET | `/api/v1/import-jobs/{job_id}/progress` | 获取任务进度 | `admin`, `supervisor` | implemented |
-| GET | `/api/v1/import-jobs/{job_id}/errors` | 获取错误详情 | `admin`, `supervisor` | implemented |
-| POST | `/api/v1/import-jobs/{job_id}/start` | 启动导入任务 | `admin`, `supervisor` | implemented |
-| POST | `/api/v1/import-jobs/{job_id}/cancel` | 取消导入任务 | `admin`, `supervisor` | implemented |
+| POST | `/api/v1/import-jobs/upload` | 上传导入文件 | `admin`, `project_owner` | implemented |
+| GET | `/api/v1/import-jobs` | 获取导入任务列表 | `admin`, `project_owner` | implemented |
+| GET | `/api/v1/import-jobs/statistics` | 获取导入统计 | `admin`, `project_owner` | implemented |
+| GET | `/api/v1/import-jobs/{job_id}` | 获取任务详情 | `admin`, `project_owner` | implemented |
+| GET | `/api/v1/import-jobs/{job_id}/progress` | 获取任务进度 | `admin`, `project_owner` | implemented |
+| GET | `/api/v1/import-jobs/{job_id}/errors` | 获取错误详情 | `admin`, `project_owner` | implemented |
+| POST | `/api/v1/import-jobs/{job_id}/start` | 启动导入任务 | `admin`, `project_owner` | implemented |
+| POST | `/api/v1/import-jobs/{job_id}/cancel` | 取消导入任务 | `admin`, `project_owner` | implemented |
 | DELETE | `/api/v1/import-jobs/{job_id}` | 删除导入任务 | `admin` | implemented |
-| POST | `/api/v1/import-jobs/check-duplicate` | 检查重复数据 | `admin`, `supervisor` | implemented |
+| POST | `/api/v1/import-jobs/check-duplicate` | 检查重复数据 | `admin`, `project_owner` | implemented |
 
 ---
 
@@ -2434,11 +2436,11 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 | 方法 | 路径 | 功能 | 权限 | 状态 |
 |------|------|------|------|------|
-| POST | `/api/v1/ai-analytics/predict` | AI 预测 | `admin`, `supervisor` | implemented |
-| POST | `/api/v1/ai-analytics/optimize` | AI 优化建议 | `admin`, `supervisor` | implemented |
+| POST | `/api/v1/ai-analytics/predict` | AI 预测 | `admin`, `project_owner` | implemented |
+| POST | `/api/v1/ai-analytics/optimize` | AI 优化建议 | `admin`, `project_owner` | implemented |
 | GET | `/api/v1/ai-analytics/insights` | 获取 AI 洞察 | 所有已登录用户 | implemented |
 | GET | `/api/v1/ai-analytics/recommendations` | 获取推荐 | 所有已登录用户 | implemented |
-| GET | `/api/v1/ai-analytics/anomalies` | 获取异常检测结果 | `admin`, `supervisor` | implemented |
+| GET | `/api/v1/ai-analytics/anomalies` | 获取异常检测结果 | `admin`, `project_owner` | implemented |
 | GET | `/api/v1/ai-analytics/forecasts` | 获取预测数据 | `admin`, `finance` | implemented |
 
 ---
@@ -2466,7 +2468,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | 方法 | 路径 | 功能 | 权限 | 状态 |
 |------|------|------|------|------|
 | GET | `/api/v1/weekly-briefs` | 获取周报列表 | 角色过滤 | implemented |
-| GET | `/api/v1/weekly-briefs/stats` | 获取周报统计 | `ceo`, `supervisor` | implemented |
+| GET | `/api/v1/weekly-briefs/stats` | 获取周报统计 | `ceo`, `project_owner` | implemented |
 | GET | `/api/v1/weekly-briefs/{brief_id}` | 获取周报详情 | 角色过滤 | implemented |
 | POST | `/api/v1/weekly-briefs` | 创建周报 | `project_owner`, `admin` | implemented |
 | PUT | `/api/v1/weekly-briefs/{brief_id}` | 更新周报 | `project_owner`(草稿), `admin` | implemented |
@@ -2519,14 +2521,14 @@ draft → submitted
 
 ### 12W.3 权限矩阵
 
-| 操作 | ceo | project_owner | supervisor | finance | pitcher | admin |
-|------|-----|---------------|------------|---------|---------|-------|
-| 列表查询 | 全部 | 自己项目 | 团队项目 | 全部(只读) | ❌ | 全部 |
-| 详情查询 | ✅ | 自己项目 | 团队项目 | ✅ | ❌ | ✅ |
+| 操作 | ceo | project_owner | finance | pitcher | account_manager | admin |
+|------|-----|---------------|---------|---------|-----------------|-------|
+| 列表查询 | 全部 | 自己项目/团队项目 | 全部(只读) | ❌ | ❌ | 全部 |
+| 详情查询 | ✅ | 自己项目/团队项目 | ✅ | ❌ | ❌ | ✅ |
 | 创建 | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
 | 更新(草稿) | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
 | 提交 | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| 统计查询 | ✅ | ❌ | ✅ | ❌ | ❌ | ✅ |
+| 统计查询 | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
 
 ### 12W.4 业务规则
 
@@ -2556,24 +2558,24 @@ draft → submitted
 
 ### 13.1 核心常量定义
 
-#### 13.1.1 角色常量（7 角色，来源: MASTER.md v4.4 §2.4）
+#### 13.1.1 角色常量（6 角色，来源: PRD v2.2 §1.2, MASTER.md v4.6 §2.4）
 
 ```python
 # backend/core/constants.py
 VALID_ROLES = [
     "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
-    "project_owner",   # 项目负责人 - 项目盈亏、资金使用效率
+    "project_owner",   # 项目负责人 - 项目盈亏、资金使用效率、日报审核、统计实际消耗
     "finance",         # 财务 - 资金出入准确、数据真实、对账
-    "supervisor",      # 主管 - 团队产出、投手管理、日常监督
     "pitcher",         # 投手 - CPL 达标、日报准确、执行投放
     "account_manager", # 户管 - 账户分配、账户状态监控
     "admin"            # 管理员 - 系统配置（不参与业务）
 ]
 
-# 旧角色映射（兼容性）
+# 旧角色映射（兼容性，PRD v2.2 废弃角色）
 ROLE_ALIASES = {
-    "media_buyer": "pitcher",      # 旧名 → 新名
-    "data_operator": "supervisor"  # 旧名 → 新名
+    "media_buyer": "pitcher",       # 旧名 → 新名
+    "supervisor": "project_owner",  # PRD v2.2 废弃，职责合并到 project_owner
+    "data_operator": "project_owner"  # PRD v2.2 废弃，日报相关职责合并到 project_owner
 }
 ```
 
@@ -2719,8 +2721,17 @@ try {
 **文档性质**: 项目强制规范
 **执行级别**: 🔴 必须严格遵守
 **违规处理**: PR自动拒绝 / 代码回滚
-**最后更新**: 2025-12-24
-**版本**: v9.3 (对齐 MASTER.md v4.4, BUSINESS_RULES.md v4.1)
+**最后更新**: 2025-12-29
+**版本**: v9.4 (对齐 PRD v2.2, MASTER.md v4.6, STATE_MACHINE.md v2.8)
+
+**v9.4 更新说明** (2025-12-29):
+- **【PRD v2.2 对齐】角色从 7 个精简为 6 个**
+- 移除 `supervisor` 角色，职责合并到 `project_owner`
+- 移除 `data_operator` 角色（废弃），职责按场景分配到 `project_owner`（日报）或 `finance`（对账）
+- 更新三数据流提交者：real/final 数据流改为 `project_owner`
+- 更新所有 API 端点权限：`supervisor` → `project_owner`，对账相关保持 `finance`
+- 更新权限矩阵（§12W.3）：移除 supervisor 列
+- 更新角色常量定义（§13.1.1）：6 角色 + 废弃角色映射
 
 **v9.3 更新说明** (2025-12-24):
 - 统一 BUSINESS_RULES.md 版本引用为 v4.1（原 v3.2/v4.0）
@@ -2737,7 +2748,7 @@ try {
 
 **v9.1 更新说明** (2025-12-23):
 - 修复 SYSTEM_OVERVIEW.md 断链引用（已归档），更新为 MASTER.md v4.4
-- 统一角色定义为 7 角色（ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）
+- 统一角色定义为 7 角色（ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）【已在 v9.4 更新为 6 角色】
 - 添加旧角色映射说明（media_buyer→pitcher, data_operator→supervisor）
 - 更新 BUSINESS_RULES.md 版本引用 v3.1 → v3.2
 - 新增 Weekly Briefs API（§12W）章节

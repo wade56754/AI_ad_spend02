@@ -231,7 +231,7 @@
 #### 核心枚举定义
 | 枚举类型 | 合法取值 | 引用 |
 |----------|----------|------|
-| 技术角色 | admin, finance, data_operator, account_manager, media_buyer | STATE_MACHINE.md §2 |
+| 技术角色 | admin, finance, account_manager, media_buyer | STATE_MACHINE.md §2, MASTER.md v4.6 §INV-007 |
 | 账户状态 | new, testing, active, suspended, dead, archived | STATE_MACHINE.md §6 |
 | 日报状态 | raw_submitted, trend_pending, trend_ok, ... | STATE_MACHINE.md §5 |
 | 项目状态 | draft, active, suspended, archived | STATE_MACHINE.md §4 |

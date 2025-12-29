@@ -135,7 +135,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 | 角色代码 | 业务名称 | 权限级别 | 技术层映射 |
 |---------|---------|---------|-----------|
 | `ceo` | 老板 | L6 (最高) | `admin` |
-| `project_owner` | 项目负责人 | L5 | `data_operator` |
+| `project_owner` | 项目负责人 | L5 | `is_project_owner=true` (业务属性) |
 | `finance` | 财务 | L4 | `finance` |
 | `pitcher` | 投手 | L3 | `media_buyer` |
 | `account_manager` | 户管 | L2 | `account_manager` |
@@ -180,7 +180,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 - 📌 **强制**: 权限校验必须在 Service 层执行
 
 #### 权限矩阵（摘要）
-| 操作 | admin | finance | data_operator | account_manager | media_buyer |
+| 操作 | admin | finance | project_owner | account_manager | media_buyer |
 |------|-------|---------|---------------|-----------------|-------------|
 | 创建用户 | ✅ | ❌ | ❌ | ❌ | ❌ |
 | 审核日报 | ✅ | ❌ | ✅ | ❌ | ❌ |
@@ -207,7 +207,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 | T1 | admin 创建用户 | role=admin | 成功 |
 | T2 | pitcher 创建用户 | role=media_buyer | `AUTH_500` |
 | T3 | finance 审核日报 | role=finance | `AUTH_500` |
-| T4 | data_operator 审核日报 | role=data_operator | 成功 |
+| T4 | project_owner 审核日报 | is_project_owner=true | 成功 |
 
 ---
 

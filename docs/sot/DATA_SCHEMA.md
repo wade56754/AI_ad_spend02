@@ -35,8 +35,9 @@
   - `admin` - 管理员
 
 **历史角色映射** (仅用于理解旧代码，新代码禁止使用):
-- `media_buyer` → `pitcher`
-- `data_operator` → `supervisor`  
+- `media_buyer` → `pitcher` (技术名→业务名)
+- `supervisor` → `project_owner` (PRD v2.2 废弃)
+- `data_operator` → `project_owner`/`finance` (PRD v2.2 废弃，按场景分配)  
 - **状态字段**: 仅引用 `STATE_MACHINE.md` 中的定义，禁止在本文件重复列举或扩展新枚举  
 - **主键/外键**:  
   - 用户、渠道等跨系统实体：主键使用 UUID（对齐 Supabase/外部系统 ID）  
@@ -802,7 +803,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.7 §4（周报状�
 
 1. **唯一性**：`request_no`, `account_code`, `(report_date, ad_account_id)` 等必须建唯一索引并在模型层校验。  
 2. **组合索引**：针对高频过滤场景建立，如 `daily_reports(report_date, status)`、`topup_requests(project_id, status)`、`ledger_entries(project_id, occurred_at)`。  
-3. **CHECK 约束**：角色字段仅允许 7 个技术层角色值（ceo/admin/project_owner/finance/data_operator/account_manager/media_buyer）；业务层角色到技术层的映射见 AUTH_SPEC.md v2.0 §2.2；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
+3. **CHECK 约束**：角色字段仅允许 4 个技术层角色值（admin/finance/account_manager/media_buyer），`project_owner` 通过 `is_project_owner=true` 业务属性判断；业务层角色到技术层的映射见 AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.6 §INV-007；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
 4. **外键一致性**：外键字段类型必须与被引用主键一致，迁移旧字段时需同步更新 FK 定义与索引。  
 5. **触发器**：`users` 使用 `update_users_updated_at`；其他表如需类似逻辑必须在本文件登记。
 
@@ -812,7 +813,7 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.7 §4（周报状�
 
 - **`users` 表**：业务层用户资料表，主键为 UUID，外键关联 `auth.users(id)`。`auth.users` 用于认证（Supabase Auth 内置用户表），`users` 用于业务逻辑（角色、权限、扩展信息等）。
 - **历史兼容**：旧代码中可能使用 `user_profiles` 表名，已统一改为 `users`。如发现遗留的 `user_profiles` 引用，请更新为 `users`。所有外键必须指向 `users.id`（UUID），不再使用 `user_profiles`。  
-- **旧角色名**：`manager` = `account_manager`，`data_clerk` = `data_operator`。历史数据可读，新增逻辑禁止使用旧名。  
+- **旧角色名**：`manager` = `account_manager`，`data_clerk` = `finance`，`data_operator` = `project_owner`/`finance`（PRD v2.2 废弃）。历史数据可读，新增逻辑禁止使用旧名。  
 - **`roles` 表**：标记为 `status: legacy`，仅用于兼容查询。  
 - **RLS**：部分迁移脚本包含 `ENABLE ROW LEVEL SECURITY`，当前版本规划中未启用（`ENABLE_RLS=false`），仅应用层RBAC；若未来启用须同步更新本文件与实现 SoT。  
 - **规划表**：如需新增表/字段，必须先在本文件创建 `status: planned` 条目并描述字段，再提交迁移。未登记的变更不予实施。

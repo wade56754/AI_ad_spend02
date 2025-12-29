@@ -88,16 +88,15 @@ CREATE TABLE users (
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(255),  -- 冗余字段，从auth.users同步
 
-    -- ===== 角色与权限（七枚举固定定义, AUTH_SPEC.md v2.0 §2.2） =====
+    -- ===== 角色与权限（4 技术层角色, 对齐 MASTER.md v4.6 §INV-007） =====
     role VARCHAR(20) NOT NULL CHECK (role IN (
-        'ceo',             -- 老板 (L7)
-        'admin',           -- 系统管理员 (L6)
-        'project_owner',   -- 项目负责人 (L5)
+        'admin',           -- 系统管理员/老板 (L6)
         'finance',         -- 财务 (L4)
-        'data_operator',   -- 主管/supervisor (L3)
         'account_manager', -- 户管 (L2)
         'media_buyer'      -- 投手/pitcher (L1)
     )),
+    -- project_owner 通过 is_project_owner 或 project_members 表判断（业务属性）
+    is_project_owner BOOLEAN DEFAULT FALSE,  -- 项目负责人标记
 
     -- ===== 组织信息 =====
     department VARCHAR(100),
@@ -145,25 +144,36 @@ CREATE INDEX idx_users_email ON users(email);
 
 | 角色代码 | 业务名称 | 权限级别 | 主要职责 | 可见范围 |
 |---------|---------|---------|---------|---------|
-| `ceo` | 老板 | L7 (最高) | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
-| `admin` | 系统管理员 | L6 | 系统配置、全局审计、紧急干预、用户管理 | 全部可见（不参与业务决策） |
-| `project_owner` | 项目负责人 | L5 | 项目盈亏、资金使用效率、团队协调 | 自己项目，申请充值，提交周报 |
+| `admin` | 系统管理员/老板 | L6 (最高) | 系统配置、全局审计、紧急干预、用户管理、资金安全 | 全部可见 |
 | `finance` | 财务 | L4 | 资金出入准确、数据真实、对账 | 充值/账本/对账，审核充值 |
-| `supervisor` | 主管 | L3 | 团队产出、投手管理、日常监督 | 全局日报/账户，审核日报，标记异常 |
 | `account_manager` | 户管 | L2 | 账户分配、账户状态监控 | 仅账户管理，分配账户给投手 |
-| `pitcher` | 投手 | L1 (最低) | CPL 达标、日报准确、执行投放 | 仅自己提交的日报和分配的账户 |
+| `media_buyer` | 投手 | L1 (最低) | CPL 达标、日报准确、执行投放 | 仅自己提交的日报和分配的账户 |
+| `project_owner` | 项目负责人 | (业务属性) | 项目盈亏、资金使用效率、日报审核、统计实际消耗 | 自己项目，申请充值，审核日报 |
 
-**技术层角色映射**（兼容旧代码）:
+> **PRD v2.2 变更说明**:
+> - 技术层角色精简为 4 个：`admin`, `finance`, `account_manager`, `media_buyer`
+> - `project_owner` 通过 `is_project_owner` 字段或 `project_members` 表判断（业务属性）
+> - `ceo` 业务角色对应技术层 `admin`
+> - `pitcher` 业务角色对应技术层 `media_buyer`
+> - `supervisor` 和 `data_operator` 已废弃，职责合并到 `project_owner`
 
-| 业务角色 | 技术层枚举 | 说明 |
-|---------|-----------|------|
-| ceo | `ceo` | 新增角色，不复用 admin |
-| admin | `admin` | 保持不变 |
-| project_owner | `project_owner` | 新增角色 |
-| finance | `finance` | 保持不变 |
-| supervisor | `data_operator` | 技术名保持兼容，业务文档使用 supervisor |
-| account_manager | `account_manager` | 保持不变 |
-| pitcher | `media_buyer` | 技术名保持兼容，业务文档使用 pitcher |
+**技术层角色映射（对齐 MASTER.md v4.6 §INV-007）**:
+
+| 业务角色 (PRD v2.2) | 技术层枚举 | 映射方式 | 说明 |
+|---------|-----------|---------|------|
+| ceo | `admin` | 直接映射 | 老板使用 admin 权限 |
+| project_owner | (业务属性) | `is_project_owner=true` 或 `project_members` | 项目级角色 |
+| finance | `finance` | 直接映射 | 财务角色 |
+| pitcher | `media_buyer` | 直接映射 | 投手 = 媒体采买 |
+| account_manager | `account_manager` | 直接映射 | 户管角色 |
+| admin | `admin` | 直接映射 | 系统管理员 |
+
+**废弃角色映射（兼容性）**:
+
+| 废弃角色 | 替代方案 | 说明 |
+|---------|---------|------|
+| supervisor | `project_owner` (业务属性) | PRD v2.2 移除，职责合并到 project_owner |
+| data_operator | `project_owner`/`finance` | PRD v2.2 移除，日报→project_owner，对账→finance |
 
 **强制约束**:
 - ❌ **禁止**添加白名单外的新角色
@@ -776,32 +786,35 @@ class AuthService:
 - 月度对账
 - 资金流水监控
 
-##### 角色3: data_operator（数据操作员/户管�?
+##### 角色3: project_owner（项目负责人 - 业务属性）
 
-**权限级别**: L3
+> **PRD v2.2 说明**: project_owner 不是技术层角色枚举，而是通过 `users.is_project_owner=true` 或 `project_members` 表判断的业务属性。
+
+**权限级别**: L5 (业务属性叠加)
 
 **可见范围**:
-- �?日报无过滤（全局视野�?
-- �?广告账户无过�?
-- �?项目无过�?
+- ✅ 自己负责项目的日报
+- ✅ 自己负责项目的广告账户
+- ✅ 自己负责项目的充值申请
 
-**可操作范�?*:
-- �?审核日报（趋势风控复核）
-- �?录入real_spend（真实消耗）
-- �?确认conversions_final（最终粉数）
-- �?批量导入Excel数据
-- �?充值申请数据审核（初审�?
+**可操作范围**:
+- ✅ 审核日报（趋势风控复核）
+- ✅ 录入real_spend（真实消耗）
+- ✅ 确认conversions_final（最终粉数）
+- ✅ 申请充值
+- ✅ 提交周报
 
 **禁止行为**:
-- �?**禁止**审核自己提交的日报（SOD�?
-- �?**禁止**财务审批充�?
-- �?**禁止**修改已锁定的日报（final_locked�?
-- �?**禁止**创建/编辑项目
+- ❌ **禁止**审核自己提交的日报（SOD）
+- ❌ **禁止**财务审批充值
+- ❌ **禁止**修改已锁定的日报（final_locked）
+- ❌ **禁止**修改用户角色
 
 **典型用例**:
-- 审核投手提交的日�?
-- 录入供应商后台真实消�?
+- 审核投手提交的日报
+- 录入供应商后台真实消耗
 - 趋势风控复核
+- 与甲方确认有效粉数
 
 ##### 角色4: account_manager（客户经理）
 
@@ -863,9 +876,9 @@ class AuthService:
 
 | 业务流程 | 提交角色 | 审核/审批角色 | SOD规则 | 违反错误�?|
 |---------|---------|--------------|--------|-----------|
-| **日报审核** | media_buyer | data_operator | 提交�?�?审核�?| `BIZ_001` |
-| **充值审�?* | media_buyer/account_manager | data_operator (初审) + finance (终审) | 申请�?�?审核�?�?审批�?| `BIZ_001` |
-| **对账确认** | data_operator | finance | 提交�?�?确认�?| `BIZ_001` |
+| **日报审核** | media_buyer | project_owner | 提交�?�?审核�?| `BIZ_001` |
+| **充值审�?* | media_buyer/account_manager | project_owner (初审) + finance (终审) | 申请�?�?审核�?�?审批�?| `BIZ_001` |
+| **对账确认** | project_owner | finance | 提交�?�?确认�?| `BIZ_001` |
 
 **实现示例**:
 
@@ -874,7 +887,7 @@ class AuthService:
 class DailyReportService:
     def approve_report(self, report_id: int, user: Dict) -> DailyReport:
         """
-        审核日报（data_operator操作�?
+        审核日报（project_owner操作�?
 
         业务规则: BR-FIN-002 - 职责分离
         """
@@ -886,10 +899,10 @@ class DailyReportService:
             raise ResourceNotFoundException(code="BIZ_002", message="日报不存�?)
 
         # ===== 角色权限校验 =====
-        if user["role"] not in ["admin", "data_operator"]:
+        if not (user["role"] == "admin" or user.get("is_project_owner")):
             raise AuthorizationException(
                 code="AUTH_500",
-                message="仅数据操作员可以审核日报"
+                message="仅项目负责人可以审核日报"
             )
 
         # ===== SOD检�?=====
@@ -949,9 +962,9 @@ def admin_force_approve(self, report_id: int, user: Dict, reason: str):
 
 ### 5.2 权限矩阵（Permission Matrix�?
 
-**完整权限表（模块 × API × 五角色）**:
+**完整权限表（模块 × API × 六业务角色）**:
 
-| 模块/API | admin | finance | data_operator | account_manager | media_buyer |
+| 模块/API | admin | finance | project_owner | account_manager | media_buyer |
 |---------|-------|---------|---------------|----------------|-------------|
 | **用户管理 (Users)** |
 | GET /users | �?全部 | 🔍 只读 | 🔍 只读 | 🔍 只读 | �?|
@@ -999,7 +1012,7 @@ def admin_force_approve(self, report_id: int, user: Dict, reason: str):
 |-----|------|-----------|------|
 | **admin** | 所有模�?| `WHERE 1=1` | 无过�?|
 | **finance** | 充�?账本/对账 | `WHERE 1=1` | 无过�?|
-| **data_operator** | 日报/账户/项目 | `WHERE 1=1` | 全局视野 |
+| **project_owner** | 日报/账户/项目 | `WHERE project_id IN (SELECT project_id FROM project_members WHERE user_id = :user_id)` | 仅所属项目 |
 | **account_manager** | 项目 | `WHERE account_manager_id = :user_id` | 仅自己管理的项目 |
 | **account_manager** | 日报 | `JOIN ad_accounts aa JOIN projects p WHERE p.account_manager_id = :user_id` | 仅所管项目的日报 |
 | **media_buyer** | 日报 | `WHERE created_by = :user_id` | 仅自己提交的 |
@@ -1027,8 +1040,14 @@ class DailyReportService:
         if user_role == "admin":
             pass  # 可见所有数�?
 
-        elif user_role == "data_operator":
-            pass  # 全局视野
+        elif user.get("is_project_owner"):
+            # 仅可见所属项目的日报
+            owned_project_ids = (
+                self.db.query(ProjectMember.project_id)
+                .filter(ProjectMember.user_id == user_id)
+                .subquery()
+            )
+            query = query.filter(DailyReport.project_id.in_(owned_project_ids))
 
         elif user_role == "account_manager":
             # 仅可见自己管理的项目的日�?
@@ -1102,7 +1121,7 @@ def list_reports_for_account_manager(self, user_id: str, filters: Dict):
 |------|-----------------|---------|
 | admin | 全部权限可用 | 禁止自动惩罚性操作 |
 | finance | 资金审批、账本查看 | 禁止自动阻断充值 |
-| data_operator | 日报审核、数据录入 | 禁止自动降级投手绩效 |
+| project_owner | 日报审核、项目管理 | 禁止自动降级投手绩效 |
 | account_manager | 项目管理、充值初审 | 禁止自动冻结项目 |
 | media_buyer | 日报提交、充值申请 | 禁止自动扣罚 |
 
@@ -1117,7 +1136,7 @@ def list_reports_for_account_manager(self, user_id: str, filters: Dict):
 | Feature Flag | 启用后行为 | 涉及角色 |
 |-------------|-----------|---------|
 | `ENABLE_BUDGET_BLOCK` | 超预算阻断充值 | finance |
-| `ENABLE_DAILY_REPORT_FULL_SM` | 8 状态完整审核流程 | data_operator |
+| `ENABLE_DAILY_REPORT_FULL_SM` | 8 状态完整审核流程 | project_owner |
 | `ENABLE_PROJECT_SUSPEND_BLOCK` | suspended 状态阻断投放 | admin |
 | `ENABLE_AUTO_PENALTY` | 自动惩罚性操作 | admin |
 
@@ -1894,8 +1913,8 @@ def update_report(
 | TC-AUTHZ-001 | 投手提交日报（允许） | media_buyer | POST /daily-reports (自己账户) | HTTP 201 | P0 |
 | TC-AUTHZ-002 | 投手提交他人账户日报（禁止） | media_buyer | POST /daily-reports (他人账户) | HTTP 403, `AUTH_500` | P0 |
 | TC-AUTHZ-003 | 投手审核日报（禁止） | media_buyer | POST /daily-reports/{id}/approve | HTTP 403, `AUTH_500` | P0 |
-| TC-AUTHZ-004 | 数据操作员审核日报（允许�?| data_operator | POST /daily-reports/{id}/approve | HTTP 200 | P0 |
-| TC-AUTHZ-005 | SOD检�?- 自我审核（禁止） | data_operator | 审核自己提交的日�?| HTTP 400, `BIZ_001` | P0 |
+| TC-AUTHZ-004 | 项目负责人审核日报（允许�?| project_owner | POST /daily-reports/{id}/approve | HTTP 200 | P0 |
+| TC-AUTHZ-005 | SOD检�?- 自我审核（禁止） | project_owner | 审核自己提交的日�?| HTTP 400, `BIZ_001` | P0 |
 | TC-AUTHZ-006 | 管理员强制审核（允许�?| admin | admin_force_approve(reason="...") | HTTP 200, 审计日志含`ADMIN_OVERRIDE` | P0 |
 | TC-AUTHZ-007 | 管理员强制审核缺少原因（禁止�?| admin | admin_force_approve(reason="") | HTTP 400, `VALIDATION_001` | P1 |
 

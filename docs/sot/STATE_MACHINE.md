@@ -1,16 +1,16 @@
 # AI广告代投系统 - 状态机定义文档（SoT-State）
 
-> **版本**: v2.7
+> **版本**: v2.8
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
-> **更新日期**: 2025-12-27
+> **last_reviewed**: 2025-12-29
+> **更新日期**: 2025-12-29
 > **类型**: 状态与合法流转的唯一事实来源（SoT-State）
 > **互锁文档**
 > - 实现规范 → `./MASTER.md` v4.6
 > - 数据结构 → `./DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）
 > - API 流程 → `../2.dev-guides/API_DEVELOPMENT_FLOW.md`
-> - 技术层角色 → `admin/finance/data_operator/account_manager/media_buyer`
+> - 技术层角色 → `admin/finance/account_manager/media_buyer` (4角色，对齐 MASTER.md v4.6 §INV-007)
 > - 业务层角色（6角色）→ §2.1 映射表，PRD v2.2 已移除 supervisor
 
 ---
@@ -26,8 +26,9 @@
 
 ## 2. 角色与操作者
 
-- 技术层合法角色：`admin`, `finance`, `data_operator`, `account_manager`, `media_buyer`。  
-- **system（虚拟操作者）**：用于定时任务/事件驱动的自动流转，不参与 RBAC，仅可出现在审计日志（`operator_role = 'system'`）。业务授权只看 5 个合法角色。  
+- 技术层合法角色：`admin`, `finance`, `account_manager`, `media_buyer`（4 角色，对齐 MASTER.md v4.6 §INV-007）。
+- **project_owner（业务属性）**：通过 `users.is_project_owner=true` 或 `project_members` 表判断，用于日报审核等业务操作。
+- **system（虚拟操作者）**：用于定时任务/事件驱动的自动流转，不参与 RBAC，仅可出现在审计日志（`operator_role = 'system'`）。业务授权只看 4 个技术层角色 + project_owner 业务属性。
 - 审批分离：提交者不能审批自身请求；终态回退仅 `admin`（需审计理由）。
 
 ### 2.1 业务层角色映射（MASTER v4.6 对齐）
@@ -35,7 +36,7 @@
 > **引用**: MASTER.md v4.6 §2.4
 > **PRD v2.2 变更**: 移除 supervisor 角色，职责合并到 project_owner
 
-技术层维持 5 角色 CHECK 约束，业务层通过以下映射对齐 MASTER 定义：
+技术层维持 4 角色 CHECK 约束（admin/finance/account_manager/media_buyer），业务层通过以下映射对齐 MASTER 定义：
 
 | MASTER 业务角色 | 技术层角色 | 说明 |
 |----------------|-----------|------|
@@ -50,7 +51,8 @@
 > - `project_owner` 通过 users 表的业务属性或 `project_members` 表实现，不新增角色枚举。
 > - 日报审核流程中的"运营"指代 `project_owner` 角色。
 > - PRD v2.2 已移除 supervisor 角色，其职责（日报审核、数据统计）合并到 project_owner。
-> - 禁止新增角色枚举，必须复用 5 个技术层角色 + project_owner 业务属性。
+> - 禁止新增角色枚举，必须复用 4 个技术层角色 + project_owner 业务属性。
+> - `data_operator` 已废弃（PRD v2.2），其职责按场景分配：日报审核→project_owner，充值/对账→finance。
 
 ---
 
@@ -140,8 +142,8 @@
 
 ### 6.2 渠道评审（channel_reviews.review_status）  
 合法取值：`draft`, `pending`, `approved`, `rejected`（终态：approved/rejected）  
-- 提交：account_manager/data_operator  
-- 审核：data_operator/admin，[AUDIT]
+- 提交：account_manager
+- 审核：account_manager/admin，[AUDIT]
 
 ### 6.3 渠道开户申请（channel_account_requests.status）  
 合法取值：`draft`, `pending`, `approved`, `rejected`（终态：approved/rejected）  
@@ -165,7 +167,7 @@
 
 ### 7.3 账户预警（account_alerts.status）  
 合法取值：`open`, `ack`, `resolved`（终态：resolved）  
-- 创建：system/data_operator  
+- 创建：system/admin  
 - 确认/解决：account_manager/admin，[AUDIT]
 
 ---
@@ -239,9 +241,9 @@ raw_submitted → trend_ok → final_confirmed
 | **trend_pending** | 等待趋势风控检查 | 自动触发(raw提交后) | 系统自动 | 无 |
 | **trend_ok** | 趋势正常 | 风控规则通过 | 系统自动 | 无 |
 | **trend_flagged** | 趋势异常,需人工复核 | 风控规则触发异常 | 系统自动 | `trend_flag_reason` |
-| **trend_resolved** | 运营确认异常已解决 | 运营复核后确认 | `data_operator` | `trend_resolution_note` |
-| **final_pending** | 等待最终粉数确认 | 运营录入real_spend后 | `data_operator` | `conversions_final`, `real_spend` |
-| **final_confirmed** | 最终粉数已确认 | 运营确认final | `data_operator` | 无 |
+| **trend_resolved** | 运营确认异常已解决 | 运营复核后确认 | `project_owner` | `trend_resolution_note` |
+| **final_pending** | 等待最终粉数确认 | 运营录入real_spend后 | `project_owner` | `conversions_final`, `real_spend` |
+| **final_confirmed** | 最终粉数已确认 | 运营确认final | `project_owner` | 无 |
 | **final_locked** | 已进入计费,锁定 | 系统计费后锁定 | 系统自动 | 无(仅可红冲) |
 
 ### 8.2 状态流转规则
@@ -295,7 +297,7 @@ T+1日 14:00前: 运营确认final
 **触发后处理**:
 1. 系统自动将状态设为 `trend_flagged`
 2. 填充 `trend_flag_reason` 字段 (如 "TF-001: 粉数骤降50%")
-3. 通知 `data_operator` 进行人工复核
+3. 通知 `project_owner` 进行人工复核
 4. 运营复核后填写 `trend_resolution_note`
 5. 运营确认后流转至 `trend_resolved`
 
@@ -307,11 +309,11 @@ T+1日 14:00前: 运营确认final
 |-------|------|------|--------|--------|------|
 | **conversions_raw** | INTEGER | 投手提交的原始粉数 | `media_buyer` | T+0 23:59前 | 趋势风控 |
 | **raw_spend** | DECIMAL(15,2) | 投手提交的原始消耗 | `media_buyer` | T+0 23:59前 | 趋势风控 |
-| **conversions_final** | INTEGER | 运营确认的最终粉数 | `data_operator` | T+1 14:00前 | 计费基准 |
-| **real_spend** | DECIMAL(15,2) | 真实消耗(运营录入) | `data_operator` | T+1 12:00前 | 成本核算 |
+| **conversions_final** | INTEGER | 运营确认的最终粉数 | `project_owner` | T+1 14:00前 | 计费基准 |
+| **real_spend** | DECIMAL(15,2) | 真实消耗(运营录入) | `project_owner` | T+1 12:00前 | 成本核算 |
 | **trend_flag** | VARCHAR(20) | 趋势异常标记 | 系统自动 | - | `normal`/`flagged`/`resolved` |
 | **trend_flag_reason** | TEXT | 异常原因 | 系统自动 | - | 如"TF-001: 粉数骤降" |
-| **trend_resolution_note** | TEXT | 运营复核说明 | `data_operator` | - | 运营填写 |
+| **trend_resolution_note** | TEXT | 运营复核说明 | `project_owner` | - | 运营填写 |
 | **final_locked_at** | TIMESTAMPTZ | 锁定时间 | 系统自动 | - | 计费锁定时间戳 |
 | **unit_price** | DECIMAL(15,2) | 单粉价格 | 系统自动 | - | 从项目继承 |
 
@@ -343,9 +345,9 @@ T+1日 14:00前: 运营确认final
 |-----|---------|------|
 | 提交raw粉数 | `media_buyer` | raw_submitted状态 |
 | 趋势风控检查 | 系统自动 | trend_pending → trend_ok/flagged |
-| 趋势风控复核 | `data_operator`, `admin` | trend_flagged → trend_resolved |
-| 录入real_spend | `data_operator`, `admin` | 填充real_spend字段 |
-| 确认final粉数 | `data_operator`, `admin` | final_pending → final_confirmed |
+| 趋势风控复核 | `project_owner`, `admin` | trend_flagged → trend_resolved |
+| 录入real_spend | `project_owner`, `admin` | 填充real_spend字段 |
+| 确认final粉数 | `project_owner`, `admin` | final_pending → final_confirmed |
 | 计费锁定 | 系统自动 | final_confirmed → final_locked |
 | 红冲修正 | `admin` | final_locked后的唯一修正方式 |
 
@@ -355,7 +357,7 @@ T+1日 14:00前: 运营确认final
 |---------|---------|---------|---------|---------|------|
 | `POST /daily-reports` | POST | - | raw_submitted | media_buyer | [AUDIT] |
 | `POST /daily-reports/{id}/trend-check` | POST | raw_submitted | trend_pending | system | [AUDIT] |
-| `PUT /daily-reports/{id}/final-confirm` | PUT | final_pending | final_confirmed | data_operator, admin | [AUDIT] |
+| `PUT /daily-reports/{id}/final-confirm` | PUT | final_pending | final_confirmed | project_owner, admin | [AUDIT] |
 | `POST /daily-reports/{id}/final-lock` | POST | final_confirmed | final_locked | system | [AUDIT] |
 | `POST /daily-reports/{id}/reversal` | POST | final_locked | - (红冲) | admin | [AUDIT]强制 |
 
@@ -439,7 +441,7 @@ ALTER COLUMN status SET NOT NULL;
 
 合法取值（与 DATA_SCHEMA 对齐）：`draft`, `pending_review`, `finance_approve`, `paid`, `completed`, `rejected`, `cancelled`  
 - 提交：media_buyer/account_manager（draft→pending_review）  
-- 数据复核：data_operator（pending_review→finance_approve/rejected）  
+- 数据复核：finance（pending_review→finance_approve/rejected）  
 - 财务终审：finance（finance_approve→paid/rejected）  
 - 入账确认：finance/system（paid→completed）  
 - 终态回退：仅 admin，[AUDIT]  
@@ -470,8 +472,8 @@ draft → pending_review → approved → completed
 
 | 状态 | 说明 | 触发条件 | 角色权限 |
 |-----|------|---------|---------|
-| `draft` | 草稿 | 初始创建 | finance, data_operator |
-| `pending_review` | 待审核 | 提交审核 | finance, data_operator |
+| `draft` | 草稿 | 初始创建 | finance |
+| `pending_review` | 待审核 | 提交审核 | finance |
 | `approved` | 已批准 | 审核通过 | finance, admin |
 | `needs_adjustment` | 需调整 | 发现差异需调整 | finance, admin |
 | `completed` | 已完成 | 对账完成并锁定 | finance, admin |
@@ -488,15 +490,15 @@ draft → pending_review → approved → completed
 ```
 
 **业务约束**：
-- 创建：finance/data_operator
-- 提交审核：finance/data_operator（draft → pending_review）
+- 创建：finance
+- 提交审核：finance（draft → pending_review）
 - 审批：finance/admin（pending_review → approved/needs_adjustment）
 - 完成：finance/admin（approved → completed），[AUDIT]
 - 终态回退：仅 admin，[AUDIT]
 
 ### 11.2 对账明细（reconciliation_details.status）
 合法取值：`pending`, `confirmed`, `adjusted`（终态：confirmed/adjusted）
-- 调整：finance/data_operator，[AUDIT]
+- 调整：finance，[AUDIT]
 - 终态回退：仅 admin，[AUDIT]
 
 ### 11.3 调整/报告
@@ -661,12 +663,12 @@ draft → submitted
 | --- | --- | --- |
 | 日报提交raw粉数 | →raw_submitted | media_buyer |
 | 趋势风控检查 | trend_pending→trend_ok/flagged | system (自动) |
-| 趋势风控复核 | trend_flagged→trend_resolved | data_operator (admin 兜底) |
-| 录入real_spend | trend_ok/resolved→final_pending | data_operator (admin 兜底) |
-| 确认final粉数 | final_pending→final_confirmed | data_operator (admin 兜底) |
+| 趋势风控复核 | trend_flagged→trend_resolved | project_owner (admin 兜底) |
+| 录入real_spend | trend_ok/resolved→final_pending | project_owner (admin 兜底) |
+| 确认final粉数 | final_pending→final_confirmed | project_owner (admin 兜底) |
 | 计费锁定 | final_confirmed→final_locked | system (自动) |
 | 充值提交 | draft→pending_review | media_buyer/account_manager |
-| 充值复核 | pending_review→finance_approve/rejected | data_operator |
+| 充值复核 | pending_review→finance_approve/rejected | finance |
 | 充值终审/支付 | finance_approve→paid | finance |
 | 充值完成 | paid→completed | finance/system |
 | 对账批次完成 | approved→completed | finance/admin |
@@ -917,7 +919,7 @@ def rollback_from_final_state(
 | 操作 | draft | pending_review | finance_approve | paid | completed/rejected/cancelled |
 |------|-------|---------------|----------------|------|------------------------------|
 | **申请人修改** | ✅ 允许 | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 |
-| **data_operator 修改** | ✅ 允许（协助申请人） | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 |
+| **account_manager 修改** | ✅ 允许（协助申请人） | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 |
 | **finance 修改** | ✅ 允许（协助申请人） | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 | ❌ 禁止 |
 | **admin 强制修改** | ✅ 允许 | ⚠️ 允许（需审计） | ⚠️ 允许（需审计） | ❌ 禁止 | ❌ 禁止 |
 
@@ -1833,9 +1835,9 @@ async def activate_project(
 |---------|---------|---------|---------|---------|------|--------|
 | `POST /daily-reports` | POST | - | raw_submitted | media_buyer | [AUDIT] | AUTH_500, BIZ_003 |
 | `POST /daily-reports/{id}/trend-check` | POST | raw_submitted | trend_pending | system | [AUDIT] | STATE_400 |
-| `PUT /daily-reports/{id}/trend-resolve` | PUT | trend_flagged | trend_resolved | data_operator, admin | [AUDIT] | STATE_400, AUTH_500 |
-| `PUT /daily-reports/{id}/update-real-spend` | PUT | trend_ok, trend_resolved | final_pending | data_operator, admin | [AUDIT] | STATE_400, AUTH_500 |
-| `PUT /daily-reports/{id}/final-confirm` | PUT | final_pending | final_confirmed | data_operator, admin | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /daily-reports/{id}/trend-resolve` | PUT | trend_flagged | trend_resolved | project_owner, admin | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /daily-reports/{id}/update-real-spend` | PUT | trend_ok, trend_resolved | final_pending | project_owner, admin | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /daily-reports/{id}/final-confirm` | PUT | final_pending | final_confirmed | project_owner, admin | [AUDIT] | STATE_400, AUTH_500 |
 | `POST /daily-reports/{id}/final-lock` | POST | final_confirmed | final_locked | system | [AUDIT] | STATE_400 |
 | `POST /daily-reports/{id}/reversal` | POST | final_locked | - (红冲) | admin | [AUDIT]强制 | STATE_402, AUTH_500 |
 
@@ -1854,9 +1856,9 @@ async def activate_project(
 |---------|---------|---------|---------|---------|------|--------|
 | `POST /topup-requests` | POST | - | draft | media_buyer, account_manager | [AUDIT] | AUTH_500, BIZ_100 |
 | `PUT /topup-requests/{id}/submit` | PUT | draft | pending_review | applicant | [AUDIT] | STATE_400, BIZ_100 |
-| `PUT /topup-requests/{id}/review` | PUT | pending_review | finance_approve, rejected | data_operator | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /topup-requests/{id}/review` | PUT | pending_review | finance_approve, rejected | finance | [AUDIT] | STATE_400, AUTH_500 |
 | `PUT /topup-requests/{id}/approve` | PUT | finance_approve | paid | finance | [AUDIT] | STATE_400, AUTH_500 |
-| `PUT /topup-requests/{id}/reject` | PUT | pending_review, finance_approve | rejected | data_operator, finance | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /topup-requests/{id}/reject` | PUT | pending_review, finance_approve | rejected | finance | [AUDIT] | STATE_400, AUTH_500 |
 | `PUT /topup-requests/{id}/complete` | PUT | paid | completed | finance, system | [AUDIT] | STATE_400, RECON_002 |
 | `PUT /topup-requests/{id}/cancel` | PUT | draft, pending_review | cancelled | applicant, admin | [AUDIT] | STATE_400, AUTH_500 |
 
@@ -1868,7 +1870,7 @@ async def activate_project(
 
 | API 端点 | HTTP 方法 | 当前状态 | 目标状态 | 允许角色 | 审计 | 错误码 |
 |---------|---------|---------|---------|---------|------|--------|
-| `POST /ad-accounts` | POST | - | new | admin, account_manager, data_operator | [AUDIT] | AUTH_500, BIZ_003 |
+| `POST /ad-accounts` | POST | - | new | admin, account_manager | [AUDIT] | AUTH_500, BIZ_003 |
 | `PUT /ad-accounts/{id}/activate` | PUT | new, testing, suspended | active | account_manager, admin | [AUDIT] | STATE_400, AUTH_500 |
 | `PUT /ad-accounts/{id}/suspend` | PUT | active, testing | suspended | account_manager, admin | [AUDIT] | STATE_400, AUTH_500 |
 | `PUT /ad-accounts/{id}/mark-dead` | PUT | any (non-terminal) | dead | admin | [AUDIT] | STATE_400, AUTH_500 |
@@ -1883,7 +1885,7 @@ async def activate_project(
 | API 端点 | HTTP 方法 | 当前状态 | 目标状态 | 允许角色 | 审计 | 错误码 |
 |---------|---------|---------|---------|---------|------|--------|
 | `POST /reconciliation-batches` | POST | - | draft | finance, admin | [AUDIT] | AUTH_500, BIZ_003 |
-| `PUT /reconciliation-batches/{id}/submit` | PUT | draft | pending_review | finance, data_operator | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /reconciliation-batches/{id}/submit` | PUT | draft | pending_review | finance | [AUDIT] | STATE_400, AUTH_500 |
 | `PUT /reconciliation-batches/{id}/approve` | PUT | pending_review | approved | finance, admin | [AUDIT] | STATE_400, AUTH_500 |
 | `PUT /reconciliation-batches/{id}/request-adjustment` | PUT | pending_review | needs_adjustment | finance, admin | [AUDIT] | STATE_400, AUTH_500 |
 | `PUT /reconciliation-batches/{id}/complete` | PUT | approved | completed | finance, admin | [AUDIT] | STATE_400, RECON_001/002/003 |
@@ -1898,9 +1900,9 @@ async def activate_project(
 
 | API 端点 | HTTP 方法 | 当前状态 | 目标状态 | 允许角色 | 审计 | 错误码 |
 |---------|---------|---------|---------|---------|------|--------|
-| `POST /reconciliation-details` | POST | - | pending | finance, data_operator | [AUDIT] | AUTH_500 |
-| `PUT /reconciliation-details/{id}/confirm` | PUT | pending | confirmed | finance, data_operator | [AUDIT] | STATE_400, AUTH_500 |
-| `PUT /reconciliation-details/{id}/adjust` | PUT | pending | adjusted | finance, data_operator | [AUDIT] | STATE_400, BIZ_100 |
+| `POST /reconciliation-details` | POST | - | pending | finance | [AUDIT] | AUTH_500 |
+| `PUT /reconciliation-details/{id}/confirm` | PUT | pending | confirmed | finance | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /reconciliation-details/{id}/adjust` | PUT | pending | adjusted | finance | [AUDIT] | STATE_400, BIZ_100 |
 
 **调整记录要求**：
 - adjusted 状态必须有对应的 `reconciliation_adjustments` 记录
@@ -1910,10 +1912,10 @@ async def activate_project(
 
 | API 端点 | HTTP 方法 | 当前状态 | 目标状态 | 允许角色 | 审计 | 错误码 |
 |---------|---------|---------|---------|---------|------|--------|
-| `POST /channel-reviews` | POST | - | draft | account_manager, data_operator | [AUDIT] | AUTH_500 |
-| `PUT /channel-reviews/{id}/submit` | PUT | draft | pending | account_manager, data_operator | [AUDIT] | STATE_400 |
-| `PUT /channel-reviews/{id}/approve` | PUT | pending | approved | data_operator, admin | [AUDIT] | STATE_400, AUTH_500 |
-| `PUT /channel-reviews/{id}/reject` | PUT | pending | rejected | data_operator, admin | [AUDIT] | STATE_400, AUTH_500 |
+| `POST /channel-reviews` | POST | - | draft | account_manager | [AUDIT] | AUTH_500 |
+| `PUT /channel-reviews/{id}/submit` | PUT | draft | pending | account_manager | [AUDIT] | STATE_400 |
+| `PUT /channel-reviews/{id}/approve` | PUT | pending | approved | account_manager, admin | [AUDIT] | STATE_400, AUTH_500 |
+| `PUT /channel-reviews/{id}/reject` | PUT | pending | rejected | account_manager, admin | [AUDIT] | STATE_400, AUTH_500 |
 
 ### 16.9 渠道开户申请状态流转 API
 
@@ -1928,7 +1930,7 @@ async def activate_project(
 
 | API 端点 | HTTP 方法 | 当前状态 | 目标状态 | 允许角色 | 审计 | 错误码 |
 |---------|---------|---------|---------|---------|------|--------|
-| `POST /account-alerts` | POST | - | open | system, data_operator | [AUDIT] | - |
+| `POST /account-alerts` | POST | - | open | system, admin | [AUDIT] | - |
 | `PUT /account-alerts/{id}/acknowledge` | PUT | open | ack | account_manager, admin | [AUDIT] | STATE_400 |
 | `PUT /account-alerts/{id}/resolve` | PUT | ack | resolved | account_manager, admin | [AUDIT] | STATE_400 |
 
@@ -2357,7 +2359,6 @@ def test_topup_approval_workflow_happy_path(
     self,
     db_session,
     media_buyer_user,
-    data_operator_user,
     finance_user
 ):
     """测试充值审批完整流程（正向路径）"""
@@ -2379,12 +2380,12 @@ def test_topup_approval_workflow_happy_path(
     )
     assert topup.status == "pending_review"
 
-    # 3. pending_review → finance_approve（数据复核）
+    # 3. pending_review → finance_approve（财务复核）
     topup = service.review_topup_request(
         topup_id=topup.id,
         approved=True,
         expected_version=topup.version,
-        operator=data_operator_user
+        operator=finance_user
     )
     assert topup.status == "finance_approve"
 
@@ -2587,8 +2588,8 @@ def test_system_forbidden_transitions_blocked(
 def test_concurrent_status_transition_conflict(
     self,
     db_session,
-    data_operator_user_a,
-    data_operator_user_b
+    project_owner_user_a,
+    project_owner_user_b
 ):
     """测试并发状态流转冲突"""
     from concurrent.futures import ThreadPoolExecutor
@@ -2604,7 +2605,7 @@ def test_concurrent_status_transition_conflict(
         return service.approve_daily_report(
             report_id=report.id,
             expected_version=initial_version,
-            operator=data_operator_user_a
+            operator=project_owner_user_a
         )
 
     def user_b_approve():
@@ -2613,7 +2614,7 @@ def test_concurrent_status_transition_conflict(
         return service.approve_daily_report(
             report_id=report.id,
             expected_version=initial_version,  # 使用相同版本号
-            operator=data_operator_user_b
+            operator=project_owner_user_b
         )
 
     # 3. 并发执行
@@ -2800,7 +2801,7 @@ pytest -m state_machine --cov=backend/services --cov-report=html
 
 1. 增删状态或调整流转：先改本文件，再改 DATA_SCHEMA CHECK、模型枚举、API 校验。
 2. Legacy 映射：
-   - 旧角色：`manager` → `account_manager`，`data_clerk` → `data_operator`。
+   - 旧角色：`manager` → `account_manager`，`data_clerk` → `finance`（已废弃，PRD v2.2），`data_operator` → `project_owner`/`finance`（已废弃，PRD v2.2）。
    - 旧充值状态：`pending` → `pending_review`；`posted` → `completed`。
 3. 所有变更需审计记录与评审通过后发布。
 
@@ -2831,6 +2832,7 @@ pytest -m state_machine --cov=backend/services --cov-report=html
 
 | 版本 | 日期 | 主要变更 |
 | --- | --- | --- |
+| **v2.8** | **2025‑12‑29** | **【PRD v2.2 + MASTER v4.6 对齐】角色系统重构**：<br>**移除 data_operator 角色**：全文 45 处替换，按场景分配到 project_owner/finance/admin/account_manager<br>**技术层角色精简**：从 5 角色调整为 4 角色（admin/finance/account_manager/media_buyer）<br>**业务层映射**：project_owner 通过 is_project_owner 属性或 project_members 表实现<br>**职责分配**：日报审核→project_owner，充值/对账→finance，渠道评审→account_manager<br>**对齐依据**：PRD v2.2 §1.2 + MASTER.md v4.6 §INV-007 |
 | **v2.6** | **2025‑01‑21** | **【BRD v3.1 对齐】粉数确认状态机重大更新**：<br>**第4章 全局状态一览表**：daily_reports.status更新为8状态粉数确认状态机(raw_submitted/trend_pending/trend_ok/trend_flagged/trend_resolved/final_pending/final_confirmed/final_locked)<br>**第8章 完全重写**：替换旧日报状态机为"粉数确认状态机(6状态流程)",新增8个小节(状态枚举/流转规则/趋势风控规则TF-001/002/003/三数据流字段定义/业务约束/角色权限/API端点映射/红冲修正机制/CHECK约束/审计日志要求)<br>**第13章 权限视角提示**：新增6个日报相关操作(提交raw粉数/趋势风控检查/复核/录入real_spend/确认final/计费锁定)<br>**第14.5章 白名单机制**：更新daily_reports.status流转白名单为8状态流转<br>**第15.2.2章 CHECK约束**：更新为8状态CHECK约束,默认值改为raw_submitted<br>**第16.3章 API映射表**：更新为7个粉数确认流程API端点(trend-check/trend-resolve/update-real-spend/final-confirm/final-lock/reversal)<br>**对齐依据**：MASTER_SPEC v2.2 第2.3.1节 + BRD v3.1第4章粉数确认状态机 |
 | **v2.5** | **2025‑01‑19** | **【P0 增强版】新增 4 个关键章节**：<br>**15. 数据库 CHECK 约束同步清单**：10 个状态字段的 CHECK 模板、ENUM vs TEXT 规范、与 DATA_SCHEMA 同步流程、约束变更迁移示例<br>**16. API → 状态流转映射表**：10 个模块、50+ API 端点的完整映射（当前状态、目标状态、角色、审计、错误码）<br>**17. 并发冲突处理规范**：Optimistic Locking 实施方案（version 字段 vs updated_at）、Service/API/前端实现模式、STATE_409 错误码<br>**18. 状态机测试用例规范**：5 类测试（正向/非法/终态/System/并发）、测试模板、覆盖率要求<br>**文档定位升级**：可直接作为后端实现与测试的唯一事实来源 |
 | **v2.4** | **2025‑01‑19** | **【P0 上线前补充】新增 5 个关键章节**：<br>14.1 System 自动状态流转规则（白名单、黑名单、审计要求）<br>14.2 终态回退规则（权限、禁止场景、错误码）<br>14.3 充值金额锁定规则（锁定时机、修改权限矩阵、Admin 强制修改）<br>14.4 对账批次关闭条件（前置条件、强制关闭机制）<br>14.5 禁止流转机制（白名单机制、非法流转处理、监控报告）<br>所有新增内容均可直接驱动后端开发，无模糊描述。 |

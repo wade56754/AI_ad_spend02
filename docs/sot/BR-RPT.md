@@ -92,7 +92,7 @@
 - 📌 **强制**: 审核人必须是日报所属项目的负责人或 admin
 
 #### 前置条件
-- 用户角色: `project_owner`（技术层: `data_operator` 或 `users.is_project_owner=true`）
+- 用户角色: `project_owner`（技术层: `users.is_project_owner=true` 或 `project_members` 表关联）
 - 数据状态: 日报状态必须为待审核状态（`trend_pending`, `final_pending`）
 - 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.6 §2.4
 
@@ -298,7 +298,7 @@ real 数据（`real_spend`）是项目负责人核算的实际广告消耗，用
 - 📌 **强制**: real_spend 必须大于等于 0
 
 #### 前置条件
-- 用户角色: `project_owner`（技术层: `data_operator`）
+- 用户角色: `project_owner`（技术层: `users.is_project_owner=true`）
 - 数据状态: 日报状态为 `trend_ok` 或 `trend_resolved`
 - 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.6 §2.4
 
@@ -339,7 +339,7 @@ final 数据（`conversions_final`）是甲方确认的有效进粉数，是计�
 - 📌 **强制**: 录入后触发状态变更为 `final_confirmed`
 
 #### 前置条件
-- 用户角色: `project_owner`（技术层: `data_operator`）
+- 用户角色: `project_owner`（技术层: `users.is_project_owner=true`）
 - 数据状态: 日报状态为 `final_pending`（Phase 2）或 `trend_ok`（Phase 1）
 - 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.6 §2.4
 

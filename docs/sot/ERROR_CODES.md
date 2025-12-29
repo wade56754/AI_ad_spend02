@@ -445,13 +445,13 @@ def update_real_spend(report_id: int, real_spend: Decimal):
 
 **权限矩阵**:
 
-| 端点 | admin | finance | account_manager | media_buyer | data_operator |
+| 端点 | admin | finance | account_manager | media_buyer | project_owner |
 |------|-------|---------|-----------------|-------------|---------------|
 | POST /generate | ✅ | ✅ | ❌ | ❌ | ❌ |
 | GET /monthly | ✅ | ✅ | ❌ | ❌ | ❌ |
 | GET /daily | ✅ | ✅ | ❌ | ❌ | ❌ |
-| GET /projects/{id} | ✅ | ✅ | ✅ (own) | ❌ | ✅ |
-| GET /accounts/{id} | ✅ | ✅ | ✅ | ✅ (own) | ✅ |
+| GET /projects/{id} | ✅ | ✅ | ✅ (own) | ❌ | ✅ (own) |
+| GET /accounts/{id} | ✅ | ✅ | ✅ | ✅ (own) | ✅ (own) |
 | GET /summary | ✅ | ✅ | ❌ | ❌ | ❌ |
 
 **使用示例**:

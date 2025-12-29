@@ -63,7 +63,7 @@
 | 业务角色 | 技术层枚举 | 说明 |
 |---------|-----------|------|
 | ceo | `admin` | 老板使用 admin 权限 |
-| project_owner | `data_operator` | 日报审核权限 |
+| project_owner | `is_project_owner=true` | 业务属性（非枚举角色） |
 | finance | `finance` | 保持不变 |
 | pitcher | `media_buyer` | 技术名保持兼容 |
 | account_manager | `account_manager` | 保持不变 |
@@ -82,7 +82,8 @@
 
 #### 代码引用
 - Model: `backend/models/user.py`
-- 字段: `role VARCHAR(20) CHECK (role IN ('admin', 'finance', 'data_operator', 'account_manager', 'media_buyer'))`
+- 字段: `role VARCHAR(20) CHECK (role IN ('admin', 'finance', 'account_manager', 'media_buyer'))`
+- 字段: `is_project_owner BOOLEAN DEFAULT FALSE`  -- 项目负责人标记
 
 #### Test Intent
 | ID | 测试场景 | 输入 | 预期结果 |
