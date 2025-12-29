@@ -3,14 +3,13 @@
  *
  * TanStack Query v5 hooks for user management
  *
- * SoT: docs/10.module-specs/C2-pitcher-mgmt.md §6.1 前端代码块
- * SoT: MASTER.md v4.4 §2.4 (7 角色定义)
+ * SoT: MASTER.md v4.6 §2.4 (6 角色定义)
  * SoT: API_SOT.md v9.0 §5 Users API
  *
  * 一句话定义: 管理用户/投手的数据获取和状态变更
  *
- * 标准角色 (MASTER.md v4.4):
- *   ceo, project_owner, finance, supervisor, pitcher, account_manager, admin
+ * 6 角色白名单 (MASTER.md v4.6 / PRD v2.2):
+ *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
  * Author: AI 代码工厂 v2.4
  */

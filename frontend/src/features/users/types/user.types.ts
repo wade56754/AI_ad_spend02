@@ -1,31 +1,30 @@
 /**
  * User Management Types
  *
- * SoT: docs/10.module-specs/C2-pitcher-mgmt.md §2 数据需求
- * SoT: MASTER.md v4.4 §2.4 (7 角色定义)
+ * SoT: MASTER.md v4.6 §2.4 (6 角色定义)
  * SoT: AUTH_SPEC.md v2.0
  *
- * 标准角色 (MASTER.md v4.4):
- *   ceo, project_owner, finance, supervisor, pitcher, account_manager, admin
+ * 6 角色白名单 (MASTER.md v4.6 / PRD v2.2):
+ *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
- * 角色映射 (C2-pitcher-mgmt.md §2.4):
- *   pitcher ← media_buyer (历史角色名)
- *   supervisor ← data_operator (历史角色名)
+ * 技术层别名 (兼容性保留):
+ *   pitcher ← media_buyer
+ *
+ * 废弃角色 (禁止使用):
+ *   supervisor → project_owner
+ *   data_operator → finance
  */
 
 export enum UserRole {
-  // 标准角色 (MASTER.md v4.4 §2.4)
+  // 6 角色白名单 (MASTER.md v4.6 §2.4 / PRD v2.2)
   CEO = 'ceo',
   PROJECT_OWNER = 'project_owner',
   FINANCE = 'finance',
-  SUPERVISOR = 'supervisor',
   PITCHER = 'pitcher',
   ACCOUNT_MANAGER = 'account_manager',
   ADMIN = 'admin',
 
-  // 历史角色名 (兼容性保留，禁止新代码使用)
-  /** @deprecated Use SUPERVISOR instead */
-  DATA_OPERATOR = 'data_operator',
+  // 技术层别名 (兼容性保留)
   /** @deprecated Use PITCHER instead */
   MEDIA_BUYER = 'media_buyer',
 }
@@ -49,13 +48,13 @@ export interface User {
   last_login?: string;
   // 关联字段
   account_manager_id?: string;
-  /** 主管姓名 (JOIN) - SoT: C2-pitcher-mgmt.md §2.2 */
-  supervisor_name?: string;
-  /** 团队名称 - SoT: C2-pitcher-mgmt.md §2.2 */
+  /** 管理者姓名 (JOIN from account_manager_id) - 投手的直属管理人 */
+  manager_name?: string;
+  /** 团队名称 */
   team_name?: string;
-  /** 负责账户数 (COUNT) - SoT: C2-pitcher-mgmt.md §2.2 */
+  /** 负责账户数 (COUNT) */
   account_count?: number;
-  /** 关联项目数 (COUNT) - SoT: C2-pitcher-mgmt.md §2.2 */
+  /** 关联项目数 (COUNT) */
   project_count?: number;
 }
 
@@ -92,14 +91,12 @@ export interface UserListResponse {
 }
 
 /**
- * 标准角色选项 (MASTER.md v4.4 §2.4)
- * SoT: C2-pitcher-mgmt.md §2.4
+ * 6 角色选项 (MASTER.md v4.6 §2.4 / PRD v2.2)
  */
 export const USER_ROLE_OPTIONS = [
   { value: UserRole.CEO, label: '老板', color: 'purple' },
   { value: UserRole.PROJECT_OWNER, label: '项目负责人', color: 'cyan' },
   { value: UserRole.FINANCE, label: '财务', color: 'green' },
-  { value: UserRole.SUPERVISOR, label: '主管', color: 'blue' },
   { value: UserRole.PITCHER, label: '投手', color: 'orange' },
   { value: UserRole.ACCOUNT_MANAGER, label: '户管', color: 'pink' },
   { value: UserRole.ADMIN, label: '管理员', color: 'red' },

@@ -59,8 +59,8 @@ const mockLogs = [
   },
   {
     id: 4,
-    user_name: 'operator@example.com',
-    user_role: 'data_operator',
+    user_name: 'owner@example.com',
+    user_role: 'project_owner',
     action: 'APPROVE',
     resource_type: 'daily_report',
     resource_name: '日报 #5678',

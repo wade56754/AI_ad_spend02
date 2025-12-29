@@ -1,7 +1,7 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2025-12-28 09:30
-> **当前阶段**: Phase 3 性能优化
+> **最后更新**: 2025-12-29 15:30
+> **当前阶段**: Phase 3 性能优化 + AI 编程工具链升级
 > **SoT 基准**: MASTER.md v4.6 / 6 角色白名单
 
 ---
@@ -102,6 +102,24 @@ Phase 3 (优化):    ███████████████░░░░�
 ---
 
 ## 4. 最近完成
+
+### 2025-12-29
+
+- [x] **AI 编程最佳实践 P0 实施**
+  - `scripts/sot-scan.sh`: SoT 5秒扫描脚本
+    - 废弃角色检查 (supervisor, data_operator, data_clerk)
+    - 直接 fetch 调用检查
+    - axios 使用检查
+    - 手写 HTML 标签检查
+    - 后端 SQL 注入风险检查
+  - `frontend/.husky/pre-commit`: 增强 pre-commit hook
+    - 集成 sot-scan.sh 自动化检查
+    - 保留原有 lint-staged 流程
+  - `docs/guides/TASK_COMPLEXITY.md`: 任务复杂度分级指南
+    - L1-L4 四级分类系统
+    - 快速评估流程图
+    - 与 SoT/OpenSpec/回归测试的关系
+  - `CLAUDE.md`: 添加复杂度分级速查表
 
 ### 2025-12-28
 - [~] `frontend/src/components/index.ts` (other) @ 09:30

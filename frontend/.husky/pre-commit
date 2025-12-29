@@ -1,1 +1,5 @@
+# SoT 5秒扫描 (AI防幻觉检查)
+cd "$(dirname "$0")/../.." && ./scripts/sot-scan.sh
+
+# lint-staged (代码格式化)
 cd frontend && npx lint-staged

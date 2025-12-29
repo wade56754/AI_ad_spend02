@@ -15,7 +15,7 @@
  * @module features/weekly-briefs/services
  */
 
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiDownload } from '@/lib/api';
 import type {
   WeeklyBrief,
   WeeklyBriefListParams,
@@ -357,13 +357,5 @@ export async function exportWeeklyBriefs(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/export?${query}` : `${BASE_PATH}/export`;
 
-  const response = await fetch(url, {
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    throw new Error('导出周报失败');
-  }
-
-  return response.blob();
+  return apiDownload(url);
 }

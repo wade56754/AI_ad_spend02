@@ -143,6 +143,19 @@ CPL: cpl = ad_spend / conversions_final
 
 ---
 
+## 任务复杂度分级
+
+| 级别 | 类型 | 流程 | SoT查阅 |
+|------|------|------|---------|
+| **L1** | 快速修复 | 直接执行 | 无 |
+| **L2** | 简单增强 | SoT查阅→执行 | DATA_SCHEMA, STATE_MACHINE |
+| **L3** | 功能开发 | Plan Mode→执行→测试 | + API_SOT, BUSINESS_RULES |
+| **L4** | 架构变更 | OpenSpec→审批→实施→回归 | 全部SoT |
+
+> 详见: `docs/guides/TASK_COMPLEXITY.md`
+
+---
+
 ## 常用命令
 
 ```bash
@@ -150,6 +163,7 @@ just dev              # 启动开发环境
 just test             # 运行测试
 just ci-check         # PR门禁
 just release-check    # 上线门禁
+./scripts/sot-scan.sh # SoT 5秒扫描 (防幻觉检查)
 ```
 
 ---

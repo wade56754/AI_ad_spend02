@@ -19,7 +19,7 @@
  * Author: AI 代码工厂 v2.4
  */
 
-import { apiFetch, apiFetchPaginated } from '@/lib/api';
+import { apiFetch, apiFetchPaginated, apiDownload } from '@/lib/api';
 import type { PaginatedResponse } from '@/lib/api';
 import type {
   Settlement,
@@ -475,17 +475,5 @@ export async function unlockMonthlySettlement(
  */
 export async function exportMonthlySettlement(month?: string): Promise<Blob> {
   const url = month ? `${MONTHLY_PATH}/export?month=${month}` : `${MONTHLY_PATH}/export`;
-
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('导出失败');
-  }
-
-  return response.blob();
+  return apiDownload(url);
 }

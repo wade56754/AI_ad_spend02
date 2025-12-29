@@ -239,16 +239,20 @@ export const TOPUP_TRANSITIONS: Record<TopupStatus, TopupStatus[]> = {
 
 // === Role-based Action Permissions ===
 
+/**
+ * 充值操作角色权限
+ * SoT: MASTER.md v4.6 §2.4, backend/routers/topup.py
+ */
 export const TOPUP_ACTION_ROLES: Record<TopupAction, string[]> = {
-  create: ['media_buyer', 'account_manager', 'admin'],
-  submit: ['media_buyer', 'account_manager', 'admin'],
-  data_review_approve: ['data_operator', 'admin'],
-  data_review_reject: ['data_operator', 'admin'],
+  create: ['pitcher', 'media_buyer', 'account_manager', 'admin'],
+  submit: ['pitcher', 'media_buyer', 'account_manager', 'admin'],
+  data_review_approve: ['project_owner', 'finance', 'admin'],
+  data_review_reject: ['project_owner', 'finance', 'admin'],
   finance_approve: ['finance', 'admin'],
   finance_reject: ['finance', 'admin'],
   mark_paid: ['finance', 'admin'],
   complete: ['finance', 'system', 'admin'],
-  cancel: ['media_buyer', 'account_manager', 'admin'],
+  cancel: ['pitcher', 'media_buyer', 'account_manager', 'admin'],
 };
 
 // === Statistics Types ===

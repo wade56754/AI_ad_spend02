@@ -16,28 +16,8 @@
  * @module features/daily-reports/services
  */
 
-import { apiFetch, apiFetchPaginated } from '@/lib/api';
+import { apiFetch, apiFetchPaginated, apiDownload } from '@/lib/api';
 import type { PaginatedResponse } from '@/lib/api';
-
-// 定义下载函数类型 (如果未导出)
-async function apiDownload(url: string, filename: string): Promise<void> {
-  const token = typeof window !== 'undefined'
-    ? localStorage.getItem('auth-token') || localStorage.getItem('access_token')
-    : null;
-
-  const response = await fetch(url, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-
-  if (!response.ok) throw new Error('Download failed');
-
-  const blob = await response.blob();
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(link.href);
-}
 import type {
   DailyReport,
   DailyReportListParams,

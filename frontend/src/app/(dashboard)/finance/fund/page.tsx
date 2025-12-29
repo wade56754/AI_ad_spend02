@@ -14,7 +14,7 @@
  * - project_owner: 只读，自己负责的项目
  * - account_manager: 只读，账户余额部分
  * - admin: 只读，全公司数据
- * - supervisor/pitcher: 禁止访问
+ * - pitcher: 禁止访问
  */
 
 import { FundOverviewPage } from '@/features/finance';
