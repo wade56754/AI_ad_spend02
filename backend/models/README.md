@@ -8,7 +8,6 @@
 
 ```
 backend/models/
-├── database_models.py      # ✅ 新版模型（推荐）- 包含所有 16 张表的完整定义
 ├── base.py                 # SQLAlchemy 基类和 Mixin
 ├── __init__.py            # 统一导出所有模型
 ├── README.md              # 本文件 - 使用说明
@@ -48,22 +47,14 @@ backend/models/
 ### 基本导入
 
 ```python
-# 推荐方式：从 database_models 导入
-from backend.models.database_models import (
+# 推荐方式：从 __init__.py 导入
+from backend.models import (
     Base,
     User,
     Project,
     AdAccount,
     DailyReport,
     TopupRequest,
-    # ... 其他模型
-)
-
-# 或者从 __init__.py 导入
-from backend.models import (
-    User,
-    Project,
-    AdAccount,
     # ... 其他模型
 )
 ```
@@ -73,7 +64,7 @@ from backend.models import (
 ```python
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from backend.models.database_models import Base
+from backend.models import Base
 
 # 从环境变量读取数据库 URL
 import os

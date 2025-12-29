@@ -1,26 +1,48 @@
 # AI广告代投管理系统
 
 > **SoT 版本**: MASTER.md v4.6 | BUSINESS_RULES.md v4.6 | DATA_SCHEMA.md v5.6 | STATE_MACHINE.md v2.7
+> **AI 模型**: Claude Opus 4.5 优化 | Cursor 兼容
+
+---
+
+## Claude Opus 4.5 专属配置
+
+### 深度思考模式
+当用户使用以下关键词时，启用扩展思考能力：
+- `ultra think` / `深度思考` / `详细分析`
+- 复杂架构设计、重构、性能优化任务
+
+### Agent 调度策略
+| Agent | 使用场景 | 并行数 |
+|-------|---------|--------|
+| `Explore` | 代码库探索、模式识别 | ≤3 |
+| `Plan` | 架构设计、重构规划 | ≤3 |
+| `claude-code-guide` | 工具使用问题 | 1 |
+
+### Plan Mode 工作流
+```
+理解需求 → 设计方案 → 审核计划 → 写入计划文件 → 执行实现
+    ↑ Explore Agent    ↑ Plan Agent    ↑ AskUserQuestion
+```
 
 ---
 
 ## 强制规则 (MANDATORY)
 
 ### 写任何代码前必须
-1. **完整阅读** `memory-bank/architecture.md` - 了解项目结构和文件职责
-2. **完整阅读** `memory-bank/game-design-document.md` - 了解需求和业务规则
+1. **完整阅读** `memory-bank/architecture.md` - 了解项目结构
+2. **完整阅读** `memory-bank/game-design-document.md` - 了解业务规则
 3. **查阅对应 SoT** - 不允许凭想象实现任何功能
 
 ### 每完成一个功能后必须
 1. **更新** `memory-bank/progress.md` - 记录完成状态
 2. **更新** `memory-bank/architecture.md` - 如有新文件/模块
+3. **使用 TodoWrite** - 跟踪任务进度
 
 ### 推荐工作流
 ```
 读取上下文 → 执行第 N 步 → 人工验证 → Git 提交 → 新建聊天 → 执行第 N+1 步
 ```
-
-> **价值**: 强制遵循约束，防止自行发明，保持上下文同步
 
 ---
 
@@ -52,14 +74,20 @@
 - ❌ 禁止强制审批流程（仅记录和提示）
 - ✅ 允许：记录事实、展示状态、提示异常、高亮警告
 
+---
+
 ## 不变量（绝对不能违反）
+
 1. **预收款≠收入**：履约完成前是负债
 2. **平台消耗不含手续费**：广告费和手续费分开核算
 3. **可用资金公式**：`opening_balance + Σtopup - Σad_spend`
 4. **锁定后不可改**：只能红冲（ref_id + reason）
 5. **数据域隔离**：投手只看自己账户，项目负责人只看自己项目
 
+---
+
 ## 合法角色（仅 6 个）
+
 | 角色 | 业务名称 | 核心职责 |
 |------|----------|----------|
 | `ceo` | 老板 | 资金安全、公司盈亏、最终决策 |
@@ -71,7 +99,10 @@
 
 > ⚠️ `supervisor` 角色已废弃（PRD v2.2）
 
+---
+
 ## 核心公式
+
 ```
 收入 (per_lead): revenue = conversions_final × unit_price
 收入 (fee_rate): revenue = ad_spend × service_fee_rate
@@ -80,7 +111,29 @@
 CPL: cpl = ad_spend / conversions_final
 ```
 
+---
+
+## 技术栈约束
+
+### 后端
+- **框架**: FastAPI
+- **ORM**: SQLAlchemy 2.x
+- **验证**: Pydantic v2
+- **数据库**: PostgreSQL (Supabase)
+- **认证**: Supabase Auth + JWT
+
+### 前端
+- **框架**: Next.js 16 (App Router)
+- **语言**: TypeScript (strict mode)
+- **UI**: shadcn/ui + Tailwind CSS
+- **HTTP**: `apiFetch` (lib/api.ts) - **禁止 fetch/axios**
+- **状态**: TanStack Query v5
+- **表单**: react-hook-form + zod
+
+---
+
 ## 开发前必做
+
 1. 读 `memory-bank/architecture.md` 了解项目结构
 2. 读 `memory-bank/game-design-document.md` 了解需求
 3. 查 `docs/sot/MASTER.md` 确认规则
@@ -88,13 +141,18 @@ CPL: cpl = ad_spend / conversions_final
 5. 检查 `docs/sot/STATE_MACHINE.md` 状态机是否符合
 6. 查 `docs/guides/TASK_CARDS_v2.md` 获取任务卡
 
+---
+
 ## 常用命令
+
 ```bash
 just dev              # 启动开发环境
 just test             # 运行测试
 just ci-check         # PR门禁
 just release-check    # 上线门禁
 ```
+
+---
 
 ## 关键文件
 
@@ -133,11 +191,82 @@ just release-check    # 上线门禁
 
 ### 开发指南
 - **任务卡**: `docs/guides/TASK_CARDS_v2.md`（57 个任务卡）
-- **AI SOP**: `docs/guides/AI_PROGRAMMING_SOP.md`（AI 编程规范）
+- **AI SOP**: `docs/guides/AI_CODING_SOP_v2.0.md`（AI 编程规范）
+
+---
 
 ## AI 防幻觉原则
+
 - **AH-01**: 禁止假设数据一致 - 遇到缺失标记"待确认"
 - **AH-02**: 禁止自动做管理裁决 - 不生成自动拒绝/暂停代码
 - **AH-03**: 禁止引入 SoT 未定义概念 - 发现缺失→停止→询问
 - **AH-04**: 必须遵循 Phase 1 软性原则 - 提示+高亮+记录
 - **AH-05**: 遇到歧义必须停止并询问 - 停止→列出歧义→询问
+
+---
+
+## 代码生成自检清单
+
+### 生成前检查
+```
+□ 确认 Phase 1 (日报只用 3 状态)
+□ 确认角色在 6 角色白名单内 (无 supervisor)
+□ 确认 API 端点在 API_SOT.md 中存在
+□ 确认使用必须的组件 (DataTable, StatusBadge)
+```
+
+### 生成后检查
+```
+□ 第一行是否为 'use client' (交互页面)
+□ 是否使用了禁止的角色 (supervisor)
+□ 是否使用了 Phase 2 日报状态
+□ 是否手写了 table/fetch (禁止)
+□ 错误处理是否完整 (try-catch/onError)
+□ toast 通知是否完整 (成功/失败)
+```
+
+---
+
+## 快速参考
+
+### 日报状态 (Phase 1: 3 个)
+```
+raw_submitted → trend_ok → final_confirmed
+```
+
+### 充值状态 (7 个)
+```
+draft → pending_review → finance_approve → paid → completed
+                    ↓                        ↓
+                rejected                 cancelled
+```
+
+### 必须使用的组件
+| 场景 | 组件 |
+|------|------|
+| 数据列表 | `DataTable` |
+| 状态标签 | `StatusBadge` |
+| 表单 | `Form` + `FormField` |
+| 弹窗 | `Dialog` / `AlertDialog` |
+| 通知 | `toast` (sonner) |
+
+---
+
+## 反模式（禁止）
+
+```typescript
+// ❌ 直接 fetch
+fetch('/api/...')  // → 使用 apiGet('/api/v1/...')
+
+// ❌ supervisor 角色
+if (user.role === 'supervisor')  // → 使用 'project_owner'
+
+// ❌ Phase 2 状态
+status="trend_pending"  // → 使用 "raw_submitted"
+
+// ❌ 手写 table
+<table>...</table>  // → 使用 <DataTable />
+
+// ❌ 缺少 'use client'
+export default function Page() { useState() }  // → 第一行加 'use client'
+```
