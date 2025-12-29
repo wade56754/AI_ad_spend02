@@ -17,6 +17,7 @@ PostToolUse Hook - 工具使用后的处理
 
 输出: 无（仅记录日志和更新进度）
 """
+from __future__ import annotations
 
 import io
 import json

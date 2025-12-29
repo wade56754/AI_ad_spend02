@@ -1,9 +1,4 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "python .claude/statusline.py",
-    "padding": 0
-  },
   "permissions": {
     "allow": [
       "Bash(python3:*)",
@@ -142,7 +137,17 @@
       "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" commit --no-verify -m \"$\\(cat <<''EOF''\nfix\\(frontend\\): 修复多个页面运行时错误\n\n修复内容:\n- AdAccountsPageV2: 修复变量引用顺序 \\(filteredAccounts 定义前置\\)\n- AdAccountsPageV2: 修复 TooltipTrigger 按钮嵌套问题 \\(使用 asChild + span\\)\n- AdAccountsPageV2: 修复 SelectItem 空值错误 \\(使用 __all__ 代替空字符串\\)\n- ActionButtons: 修复 report.id 类型转换 \\(number -> string\\)\n- ConfirmFinalDialog: 修复可选字段空值处理 \\(?? 0\\)\n- dailyReportsApi: 修复 URLSearchParams 类型转换\n- ProfilePage: 修复 User 类型属性访问 \\(full_name/username\\)\n- reset-password: 添加 Suspense 边界 \\(useSearchParams 要求\\)\n- layout.tsx: 添加 suppressHydrationWarning \\(消除浏览器扩展水合警告\\)\n- ProjectsTable: 添加安全数字格式化\n- formatters.ts: 添加 safeNumber 辅助函数\n- DailyReportDetail/TopLists/DailyReportsDashboard: 安全数字格式化\n\n错误类型:\n- TypeError: amount.toFixed is not a function\n- ReferenceError: filteredAccounts is not defined\n- HTML Hydration Error: <button> cannot be descendant of <button>\n- SelectItem value cannot be empty string\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git -C \"d:\\\\project\\\\AI_ad_spend02\" push origin sot-fix-20251123)",
       "Bash(del \"d:\\\\project\\\\AI_ad_spend02\\\\docs\\\\1.overview\\\\REFACTOR_PROPOSAL.md\")",
-      "Bash(del \"d:\\\\project\\\\AI_ad_spend02\\\\docs\\\\1.overview\\\\BUSINESS_FLOW_AND_MODULES_REFACTOR.md\")"
+      "Bash(del \"d:\\\\project\\\\AI_ad_spend02\\\\docs\\\\1.overview\\\\BUSINESS_FLOW_AND_MODULES_REFACTOR.md\")",
+      "Bash(xargs ls:*)",
+      "Bash(xargs -I {} bash -c 'echo \"\"\"\"=== {} ===\"\"\"\" && head -30 {}')",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:gist.github.com)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(gh pr create:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(claude mcp add:*)"
     ],
     "deny": [],
     "ask": []
@@ -158,19 +163,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/inject_timestamp.py",
+            "command": "python3 .claude/hooks/inject_timestamp.py",
             "timeout": 5000,
             "statusMessage": "📅 加载时间上下文..."
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/session_start.py",
+            "command": "python3 .claude/hooks/session_start.py",
             "timeout": 5000,
             "statusMessage": "🎯 加载 SoT 裁判链..."
           },
           {
             "type": "command",
-            "command": "python .claude/hooks/load_context.py",
+            "command": "python3 .claude/hooks/load_context.py",
             "timeout": 10000,
             "statusMessage": "📚 加载 SoT 文档上下文..."
           }
@@ -183,7 +188,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/pre_tool_use.py",
+            "command": "python3 .claude/hooks/pre_tool_use.py",
             "timeout": 10000,
             "statusMessage": "🔍 检查代码合规性..."
           }
@@ -194,7 +199,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/pre_tool_use.py",
+            "command": "python3 .claude/hooks/pre_tool_use.py",
             "timeout": 10000,
             "statusMessage": "🛡️ 检查命令安全性..."
           }
@@ -207,7 +212,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/post_tool_use.py",
+            "command": "python3 .claude/hooks/post_tool_use.py",
             "timeout": 5000,
             "statusMessage": "📝 记录变更..."
           }
@@ -219,12 +224,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/stop.py",
+            "command": "python3 .claude/hooks/stop.py",
             "timeout": 30000,
             "statusMessage": "📊 生成会话报告..."
           }
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 .claude/statusline.py",
+    "padding": 0
   }
 }
