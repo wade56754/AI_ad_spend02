@@ -19,6 +19,7 @@ from backend.core.security import AuthenticatedUser
 
 # ==================== Fixtures ====================
 
+
 @pytest.fixture
 def admin_user():
     """管理员用户 fixture"""
@@ -28,7 +29,7 @@ def admin_user():
         email="admin@example.com",
         raw_claims={},
         permissions=[],
-        is_active=True
+        is_active=True,
     )
 
 
@@ -41,7 +42,7 @@ def account_manager_user():
         email="am@example.com",
         raw_claims={},
         permissions=[],
-        is_active=True
+        is_active=True,
     )
 
 
@@ -54,7 +55,7 @@ def limited_user():
         email="buyer@example.com",
         raw_claims={},
         permissions=[],
-        is_active=True
+        is_active=True,
     )
 
 
@@ -67,11 +68,12 @@ def operator_user():
         email="operator@example.com",
         raw_claims={},
         permissions=[],
-        is_active=True
+        is_active=True,
     )
 
 
 # ==================== 权限枚举测试 ====================
+
 
 @pytest.mark.unit
 @pytest.mark.permissions
@@ -88,11 +90,17 @@ class TestPermissionEnum:
         """测试所有必要权限都已定义"""
         required_permissions = [
             "USER_MANAGE",
-            "PROJECT_CREATE", "PROJECT_READ", "PROJECT_UPDATE", "PROJECT_DELETE",
-            "DAILY_REPORT_CREATE", "DAILY_REPORT_READ", "DAILY_REPORT_AUDIT",
+            "PROJECT_CREATE",
+            "PROJECT_READ",
+            "PROJECT_UPDATE",
+            "PROJECT_DELETE",
+            "DAILY_REPORT_CREATE",
+            "DAILY_REPORT_READ",
+            "DAILY_REPORT_AUDIT",
             "TOPUP_APPROVE",
-            "REPORT_READ", "REPORT_EXPORT",
-            "SYSTEM_CONFIG"
+            "REPORT_READ",
+            "REPORT_EXPORT",
+            "SYSTEM_CONFIG",
         ]
 
         for perm_name in required_permissions:
@@ -100,6 +108,7 @@ class TestPermissionEnum:
 
 
 # ==================== 角色权限映射测试 ====================
+
 
 @pytest.mark.unit
 @pytest.mark.permissions
@@ -121,17 +130,24 @@ class TestRolePermissions:
         assert len(admin_permissions) >= 20
 
     def test_account_manager_permissions(self):
-        """测试客户经理权限配置"""
+        """测试客户经理权限配置
+
+        SoT Reference: CLAUDE.md
+        account_manager - 户管: 账户分配、账户状态监控
+        """
         am_permissions = ROLE_PERMISSIONS[UserRole.ACCOUNT_MANAGER]
 
-        # 客户经理应该有的权限
-        assert Permission.PROJECT_CREATE in am_permissions
+        # 户管应该有的权限 - 账户管理 + 只读项目
         assert Permission.PROJECT_READ in am_permissions
-        assert Permission.PROJECT_UPDATE in am_permissions
+        assert Permission.ACCOUNT_CREATE in am_permissions
+        assert Permission.ACCOUNT_READ in am_permissions
+        assert Permission.ACCOUNT_UPDATE in am_permissions
 
-        # 客户经理不应该有的权限
+        # 户管不应该有的权限 - 不能创建/更新/删除项目
+        assert Permission.PROJECT_CREATE not in am_permissions
+        assert Permission.PROJECT_UPDATE not in am_permissions
+        assert Permission.PROJECT_DELETE not in am_permissions
         assert Permission.SYSTEM_CONFIG not in am_permissions
-        assert Permission.PROJECT_DELETE not in am_permissions  # 通常不允许删除
 
     def test_media_buyer_permissions(self):
         """测试投手权限配置"""
@@ -156,6 +172,7 @@ class TestRolePermissions:
 
 # ==================== 权限检查函数测试 ====================
 
+
 @pytest.mark.unit
 @pytest.mark.permissions
 class TestCheckUserPermission:
@@ -169,8 +186,14 @@ class TestCheckUserPermission:
 
     def test_account_manager_has_limited_permissions(self, account_manager_user):
         """测试客户经理权限受限"""
-        assert check_user_permission(account_manager_user, [Permission.PROJECT_READ]) is True
-        assert check_user_permission(account_manager_user, [Permission.SYSTEM_CONFIG]) is False
+        assert (
+            check_user_permission(account_manager_user, [Permission.PROJECT_READ])
+            is True
+        )
+        assert (
+            check_user_permission(account_manager_user, [Permission.SYSTEM_CONFIG])
+            is False
+        )
 
     def test_media_buyer_has_limited_permissions(self, limited_user):
         """测试投手权限受限"""
@@ -186,7 +209,7 @@ class TestCheckUserPermission:
             email="inactive@example.com",
             raw_claims={},
             permissions=[],
-            is_active=False
+            is_active=False,
         )
 
         # 非活跃用户的权限检查（需要根据实际实现调整）
@@ -198,6 +221,7 @@ class TestCheckUserPermission:
 
 
 # ==================== 权限检查装饰器测试 ====================
+
 
 @pytest.mark.unit
 @pytest.mark.permissions
@@ -224,7 +248,9 @@ class TestRequirePermissionsDecorator:
 
     def test_require_multiple_permissions(self, admin_user, limited_user):
         """测试多权限检查"""
-        permission_dep = require_permissions(Permission.PROJECT_DELETE, Permission.SYSTEM_CONFIG)
+        permission_dep = require_permissions(
+            Permission.PROJECT_DELETE, Permission.SYSTEM_CONFIG
+        )
 
         # 管理员应该通过
         result = permission_dep(admin_user)
@@ -236,6 +262,7 @@ class TestRequirePermissionsDecorator:
 
 
 # ==================== 权限依赖测试 ====================
+
 
 @pytest.mark.unit
 @pytest.mark.permissions
@@ -265,6 +292,7 @@ class TestRequirePermissionsDependency:
 
 # ==================== 边界情况测试 ====================
 
+
 @pytest.mark.unit
 @pytest.mark.permissions
 class TestPermissionEdgeCases:
@@ -278,7 +306,7 @@ class TestPermissionEdgeCases:
             email="test@example.com",
             raw_claims={},
             permissions=[],
-            is_active=True
+            is_active=True,
         )
 
         # 确保有基本权限
@@ -295,11 +323,13 @@ class TestPermissionEdgeCases:
         # 所有角色的权限都应该是 Permission 枚举的实例
         for role, permissions in ROLE_PERMISSIONS.items():
             for perm in permissions:
-                assert isinstance(perm, Permission), \
-                    f"角色 {role} 的权限 {perm} 不是 Permission 枚举"
+                assert isinstance(
+                    perm, Permission
+                ), f"角色 {role} 的权限 {perm} 不是 Permission 枚举"
 
 
 # ==================== 集成测试 ====================
+
 
 @pytest.mark.integration
 @pytest.mark.permissions
@@ -315,7 +345,7 @@ class TestPermissionIntegration:
             email="admin@example.com",
             raw_claims={},
             permissions=[],
-            is_active=True
+            is_active=True,
         )
 
         buyer = AuthenticatedUser(
@@ -324,7 +354,7 @@ class TestPermissionIntegration:
             email="buyer@example.com",
             raw_claims={},
             permissions=[],
-            is_active=True
+            is_active=True,
         )
 
         # 测试层级权限

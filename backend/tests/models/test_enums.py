@@ -30,7 +30,7 @@ from backend.models.enums import (
     ChannelReviewStatus,
     TransferRequestStatus,
     ImportJobStatus,
-    ImportJobType
+    ImportJobType,
 )
 
 
@@ -38,23 +38,25 @@ from backend.models.enums import (
 # 1. UserRole 枚举测试
 # ============================================================================
 
+
 @pytest.mark.unit
 @pytest.mark.enums
 class TestUserRole:
     """测试用户角色枚举"""
 
     def test_user_role_values(self):
-        """测试 UserRole 所有枚举值 (SoT: 5个合法角色)"""
+        """测试 UserRole 所有枚举值 (SoT: 7个合法角色, MASTER.md v4.4)"""
+        assert UserRole.CEO.value == "ceo"
         assert UserRole.ADMIN.value == "admin"
+        assert UserRole.PROJECT_OWNER.value == "project_owner"
         assert UserRole.FINANCE.value == "finance"
         assert UserRole.DATA_OPERATOR.value == "data_operator"
         assert UserRole.ACCOUNT_MANAGER.value == "account_manager"
         assert UserRole.MEDIA_BUYER.value == "media_buyer"
-        # 注意: ANALYST 角色已从 SoT 移除
 
     def test_user_role_count(self):
-        """测试 UserRole 枚举数量 (SoT: 5个)"""
-        assert len(UserRole) == 5
+        """测试 UserRole 枚举数量 (SoT: 7个, MASTER.md v4.4)"""
+        assert len(UserRole) == 7
 
     def test_user_role_string_inheritance(self):
         """测试 UserRole 继承自 str"""
@@ -64,8 +66,9 @@ class TestUserRole:
     def test_user_role_iteration(self):
         """测试 UserRole 可迭代"""
         roles = list(UserRole)
-        assert len(roles) == 5
+        assert len(roles) == 7
         assert UserRole.ADMIN in roles
+        assert UserRole.CEO in roles
 
     def test_user_role_comparison(self):
         """测试 UserRole 字符串比较"""
@@ -76,6 +79,7 @@ class TestUserRole:
 # ============================================================================
 # 2. ChannelStatus 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -99,6 +103,7 @@ class TestChannelStatus:
 # ============================================================================
 # 3. ProjectStatus 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -125,6 +130,7 @@ class TestProjectStatus:
 # ============================================================================
 # 4. AdAccountStatus 枚举测试（包含状态转换方法）
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -229,6 +235,7 @@ class TestAdAccountStatusTransitions:
 # 5. DailyReportStatus 枚举测试（8状态机）
 # ============================================================================
 
+
 @pytest.mark.unit
 @pytest.mark.enums
 class TestDailyReportStatus:
@@ -258,6 +265,7 @@ class TestDailyReportStatus:
 # 6. TopupRequestStatus 枚举测试
 # ============================================================================
 
+
 @pytest.mark.unit
 @pytest.mark.enums
 class TestTopupRequestStatus:
@@ -281,6 +289,7 @@ class TestTopupRequestStatus:
 # ============================================================================
 # 7. ReconciliationBatchStatus 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -308,6 +317,7 @@ class TestReconciliationBatchStatus:
 # 8. ReconciliationDetailStatus 枚举测试
 # ============================================================================
 
+
 @pytest.mark.unit
 @pytest.mark.enums
 class TestReconciliationDetailStatus:
@@ -327,6 +337,7 @@ class TestReconciliationDetailStatus:
 # ============================================================================
 # 9. ReconciliationAdjustmentType 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -348,6 +359,7 @@ class TestReconciliationAdjustmentType:
 # 10. AccountAlertStatus 枚举测试
 # ============================================================================
 
+
 @pytest.mark.unit
 @pytest.mark.enums
 class TestAccountAlertStatus:
@@ -367,6 +379,7 @@ class TestAccountAlertStatus:
 # ============================================================================
 # 11. LedgerEntryType 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -391,7 +404,7 @@ class TestLedgerEntryType:
         project_types = [
             LedgerEntryType.REVENUE,
             LedgerEntryType.TOPUP,
-            LedgerEntryType.REVERSAL
+            LedgerEntryType.REVERSAL,
         ]
         assert len(project_types) == 3
 
@@ -402,7 +415,7 @@ class TestLedgerEntryType:
             LedgerEntryType.TOPUP,
             LedgerEntryType.TRANSFER_OUT,
             LedgerEntryType.TRANSFER_IN,
-            LedgerEntryType.REVERSAL
+            LedgerEntryType.REVERSAL,
         ]
         assert len(supplier_types) == 5
 
@@ -410,6 +423,7 @@ class TestLedgerEntryType:
 # ============================================================================
 # 12. ChannelAccountRequestStatus 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -432,6 +446,7 @@ class TestChannelAccountRequestStatus:
 # 13. ChannelReviewStatus 枚举测试
 # ============================================================================
 
+
 @pytest.mark.unit
 @pytest.mark.enums
 class TestChannelReviewStatus:
@@ -452,6 +467,7 @@ class TestChannelReviewStatus:
 # ============================================================================
 # 14. TransferRequestStatus 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -474,7 +490,7 @@ class TestTransferRequestStatus:
         """测试 TransferRequestStatus 终态"""
         terminal_states = [
             TransferRequestStatus.REJECTED,
-            TransferRequestStatus.COMPLETED
+            TransferRequestStatus.COMPLETED,
         ]
         assert len(terminal_states) == 2
 
@@ -482,6 +498,7 @@ class TestTransferRequestStatus:
 # ============================================================================
 # 15. ImportJobStatus 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -505,7 +522,7 @@ class TestImportJobStatus:
         terminal_states = [
             ImportJobStatus.COMPLETED,
             ImportJobStatus.FAILED,
-            ImportJobStatus.CANCELLED
+            ImportJobStatus.CANCELLED,
         ]
         assert len(terminal_states) == 3
 
@@ -513,6 +530,7 @@ class TestImportJobStatus:
 # ============================================================================
 # 16. ImportJobType 枚举测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -534,6 +552,7 @@ class TestImportJobType:
 # ============================================================================
 # 17. 枚举边界情况测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -563,8 +582,9 @@ class TestEnumEdgeCases:
     def test_enum_iteration_order(self):
         """测试枚举迭代顺序稳定"""
         roles = list(UserRole)
-        assert roles[0] == UserRole.ADMIN
-        assert roles[1] == UserRole.FINANCE
+        assert roles[0] == UserRole.CEO
+        assert roles[1] == UserRole.ADMIN
+        assert roles[2] == UserRole.PROJECT_OWNER
 
     def test_enum_string_format(self):
         """测试枚举字符串格式化"""
@@ -583,6 +603,7 @@ class TestEnumEdgeCases:
 # 18. 枚举集成测试
 # ============================================================================
 
+
 @pytest.mark.integration
 @pytest.mark.enums
 class TestEnumIntegration:
@@ -591,12 +612,22 @@ class TestEnumIntegration:
     def test_all_enums_inherit_str(self):
         """测试所有枚举继承自 str"""
         enum_classes = [
-            UserRole, ChannelStatus, ProjectStatus, AdAccountStatus,
-            DailyReportStatus, TopupRequestStatus, ReconciliationBatchStatus,
-            ReconciliationDetailStatus, ReconciliationAdjustmentType,
-            AccountAlertStatus, LedgerEntryType, ChannelAccountRequestStatus,
-            ChannelReviewStatus, TransferRequestStatus, ImportJobStatus,
-            ImportJobType
+            UserRole,
+            ChannelStatus,
+            ProjectStatus,
+            AdAccountStatus,
+            DailyReportStatus,
+            TopupRequestStatus,
+            ReconciliationBatchStatus,
+            ReconciliationDetailStatus,
+            ReconciliationAdjustmentType,
+            AccountAlertStatus,
+            LedgerEntryType,
+            ChannelAccountRequestStatus,
+            ChannelReviewStatus,
+            TransferRequestStatus,
+            ImportJobStatus,
+            ImportJobType,
         ]
         for enum_class in enum_classes:
             for member in enum_class:
@@ -613,15 +644,13 @@ class TestEnumIntegration:
         status_map = {
             ProjectStatus.DRAFT: "草稿",
             ProjectStatus.ACTIVE: "进行中",
-            ProjectStatus.ARCHIVED: "已归档"
+            ProjectStatus.ARCHIVED: "已归档",
         }
         assert status_map[ProjectStatus.DRAFT] == "草稿"
 
     def test_enum_usage_in_set(self):
         """测试枚举在集合中的使用"""
-        terminal_statuses = {
-            ProjectStatus.ARCHIVED
-        }
+        terminal_statuses = {ProjectStatus.ARCHIVED}
         assert ProjectStatus.ARCHIVED in terminal_statuses
         assert ProjectStatus.ACTIVE not in terminal_statuses
 
@@ -669,16 +698,22 @@ class TestEnumIntegration:
 # 19. SoT 文档一致性测试
 # ============================================================================
 
+
 @pytest.mark.unit
 @pytest.mark.enums
 class TestSoTConsistency:
     """测试与 SoT 文档一致性"""
 
     def test_user_role_sot_consistency(self):
-        """测试 UserRole 与 AUTH_SPEC.md 一致 (5个合法角色)"""
+        """测试 UserRole 与 MASTER.md v4.4 一致 (7个合法角色)"""
         expected_roles = {
-            "admin", "finance", "data_operator",
-            "account_manager", "media_buyer"
+            "ceo",
+            "admin",
+            "project_owner",
+            "finance",
+            "data_operator",
+            "account_manager",
+            "media_buyer",
         }
         actual_roles = {role.value for role in UserRole}
         assert actual_roles == expected_roles
@@ -687,8 +722,14 @@ class TestSoTConsistency:
         """测试 DailyReportStatus 遵循 STATE_MACHINE.md v2.6 第8章"""
         # 8状态机必须包含这8个状态
         required_states = {
-            "raw_submitted", "trend_pending", "trend_ok", "trend_flagged",
-            "trend_resolved", "final_pending", "final_confirmed", "final_locked"
+            "raw_submitted",
+            "trend_pending",
+            "trend_ok",
+            "trend_flagged",
+            "trend_resolved",
+            "final_pending",
+            "final_confirmed",
+            "final_locked",
         }
         actual_states = {status.value for status in DailyReportStatus}
         assert actual_states == required_states
@@ -708,17 +749,18 @@ class TestSoTConsistency:
     def test_reconciliation_batch_status_sot_consistency(self):
         """测试 ReconciliationBatchStatus 与 STATE_MACHINE.md 第4章一致"""
         expected_states = {
-            "draft", "pending_review", "approved",
-            "needs_adjustment", "completed"
+            "draft",
+            "pending_review",
+            "approved",
+            "needs_adjustment",
+            "completed",
         }
         actual_states = {status.value for status in ReconciliationBatchStatus}
         assert actual_states == expected_states
 
     def test_ad_account_status_sot_consistency(self):
         """测试 AdAccountStatus 与 STATE_MACHINE.md v2.5 第14.5章一致"""
-        expected_states = {
-            "new", "testing", "active", "suspended", "dead", "archived"
-        }
+        expected_states = {"new", "testing", "active", "suspended", "dead", "archived"}
         actual_states = {status.value for status in AdAccountStatus}
         assert actual_states == expected_states
 
@@ -726,6 +768,7 @@ class TestSoTConsistency:
 # ============================================================================
 # 20. 枚举数量汇总测试
 # ============================================================================
+
 
 @pytest.mark.unit
 @pytest.mark.enums
@@ -735,42 +778,52 @@ class TestEnumCounts:
     def test_total_enum_classes(self):
         """测试枚举类总数为16"""
         enum_classes = [
-            UserRole, ChannelStatus, ProjectStatus, AdAccountStatus,
-            DailyReportStatus, TopupRequestStatus, ReconciliationBatchStatus,
-            ReconciliationDetailStatus, ReconciliationAdjustmentType,
-            AccountAlertStatus, LedgerEntryType, ChannelAccountRequestStatus,
-            ChannelReviewStatus, TransferRequestStatus, ImportJobStatus,
-            ImportJobType
+            UserRole,
+            ChannelStatus,
+            ProjectStatus,
+            AdAccountStatus,
+            DailyReportStatus,
+            TopupRequestStatus,
+            ReconciliationBatchStatus,
+            ReconciliationDetailStatus,
+            ReconciliationAdjustmentType,
+            AccountAlertStatus,
+            LedgerEntryType,
+            ChannelAccountRequestStatus,
+            ChannelReviewStatus,
+            TransferRequestStatus,
+            ImportJobStatus,
+            ImportJobType,
         ]
         assert len(enum_classes) == 16
 
     def test_total_enum_members(self):
         """测试枚举成员总数"""
         total_members = (
-            len(UserRole) +
-            len(ChannelStatus) +
-            len(ProjectStatus) +
-            len(AdAccountStatus) +
-            len(DailyReportStatus) +
-            len(TopupRequestStatus) +
-            len(ReconciliationBatchStatus) +
-            len(ReconciliationDetailStatus) +
-            len(ReconciliationAdjustmentType) +
-            len(AccountAlertStatus) +
-            len(LedgerEntryType) +
-            len(ChannelAccountRequestStatus) +
-            len(ChannelReviewStatus) +
-            len(TransferRequestStatus) +
-            len(ImportJobStatus) +
-            len(ImportJobType)
+            len(UserRole)
+            + len(ChannelStatus)
+            + len(ProjectStatus)
+            + len(AdAccountStatus)
+            + len(DailyReportStatus)
+            + len(TopupRequestStatus)
+            + len(ReconciliationBatchStatus)
+            + len(ReconciliationDetailStatus)
+            + len(ReconciliationAdjustmentType)
+            + len(AccountAlertStatus)
+            + len(LedgerEntryType)
+            + len(ChannelAccountRequestStatus)
+            + len(ChannelReviewStatus)
+            + len(TransferRequestStatus)
+            + len(ImportJobStatus)
+            + len(ImportJobType)
         )
-        # 5+2+4+6+8+7+5+3+3+3+6+4+4+5+5+4 = 74
-        assert total_members == 74
+        # 7+2+4+6+8+7+5+3+3+3+6+4+4+5+5+4 = 76
+        assert total_members == 76
 
     def test_enum_member_count_breakdown(self):
         """测试各枚举成员数量明细"""
         expected_counts = {
-            "UserRole": 5,  # SoT: 5个合法角色
+            "UserRole": 7,  # SoT: 7个合法角色 (MASTER.md v4.4)
             "ChannelStatus": 2,
             "ProjectStatus": 4,  # SoT: draft/active/suspended/archived
             "AdAccountStatus": 6,
@@ -785,7 +838,7 @@ class TestEnumCounts:
             "ChannelReviewStatus": 4,
             "TransferRequestStatus": 5,
             "ImportJobStatus": 5,
-            "ImportJobType": 4
+            "ImportJobType": 4,
         }
 
         assert len(UserRole) == expected_counts["UserRole"]
@@ -794,12 +847,24 @@ class TestEnumCounts:
         assert len(AdAccountStatus) == expected_counts["AdAccountStatus"]
         assert len(DailyReportStatus) == expected_counts["DailyReportStatus"]
         assert len(TopupRequestStatus) == expected_counts["TopupRequestStatus"]
-        assert len(ReconciliationBatchStatus) == expected_counts["ReconciliationBatchStatus"]
-        assert len(ReconciliationDetailStatus) == expected_counts["ReconciliationDetailStatus"]
-        assert len(ReconciliationAdjustmentType) == expected_counts["ReconciliationAdjustmentType"]
+        assert (
+            len(ReconciliationBatchStatus)
+            == expected_counts["ReconciliationBatchStatus"]
+        )
+        assert (
+            len(ReconciliationDetailStatus)
+            == expected_counts["ReconciliationDetailStatus"]
+        )
+        assert (
+            len(ReconciliationAdjustmentType)
+            == expected_counts["ReconciliationAdjustmentType"]
+        )
         assert len(AccountAlertStatus) == expected_counts["AccountAlertStatus"]
         assert len(LedgerEntryType) == expected_counts["LedgerEntryType"]
-        assert len(ChannelAccountRequestStatus) == expected_counts["ChannelAccountRequestStatus"]
+        assert (
+            len(ChannelAccountRequestStatus)
+            == expected_counts["ChannelAccountRequestStatus"]
+        )
         assert len(ChannelReviewStatus) == expected_counts["ChannelReviewStatus"]
         assert len(TransferRequestStatus) == expected_counts["TransferRequestStatus"]
         assert len(ImportJobStatus) == expected_counts["ImportJobStatus"]

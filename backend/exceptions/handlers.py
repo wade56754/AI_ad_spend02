@@ -4,7 +4,7 @@
 """
 import logging
 import traceback
-from typing import Union
+from typing import Union, Optional
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -19,7 +19,9 @@ from datetime import datetime
 import uuid
 
 
-def create_error_response(code: str, message: str, details: dict | None = None) -> SimpleNamespace:
+def create_error_response(
+    code: str, message: str, details: Optional[dict] = None
+) -> SimpleNamespace:
     """兼容旧代码的错误响应构造器，返回带有 .dict() 方法的对象。
     最终由本模块使用 JSONResponse(status_code=..., content=...).
     """
@@ -35,18 +37,20 @@ def create_error_response(code: str, message: str, details: dict | None = None) 
         payload["details"] = details
     return SimpleNamespace(dict=lambda: payload)
 
+
 # 配置日志
 logger = logging.getLogger(__name__)
 
 
 class AppException(Exception):
     """应用基础异常类"""
+
     def __init__(
         self,
         code: str,
         message: str,
         status_code: int = status.HTTP_400_BAD_REQUEST,
-        details: dict = None
+        details: dict = None,
     ):
         self.code = code
         self.message = message
@@ -57,84 +61,80 @@ class AppException(Exception):
 
 class ValidationException(AppException):
     """验证异常"""
+
     def __init__(self, message: str = "参数验证失败", details: dict = None):
         super().__init__(
             code="VALIDATION_001",
             message=message,
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            details=details
+            details=details,
         )
 
 
 class AuthenticationException(AppException):
     """认证异常"""
+
     def __init__(self, message: str = "认证失败"):
         super().__init__(
-            code="AUTH_401",
-            message=message,
-            status_code=status.HTTP_401_UNAUTHORIZED
+            code="AUTH_401", message=message, status_code=status.HTTP_401_UNAUTHORIZED
         )
 
 
 class AuthorizationException(AppException):
     """授权异常"""
+
     def __init__(self, message: str = "权限不足"):
         super().__init__(
-            code="AUTH_500",
-            message=message,
-            status_code=status.HTTP_403_FORBIDDEN
+            code="AUTH_500", message=message, status_code=status.HTTP_403_FORBIDDEN
         )
 
 
 class ResourceNotFoundException(AppException):
     """资源未找到异常"""
+
     def __init__(self, message: str = "资源不存在"):
         super().__init__(
-            code="BIZ_002",
-            message=message,
-            status_code=status.HTTP_404_NOT_FOUND
+            code="BIZ_002", message=message, status_code=status.HTTP_404_NOT_FOUND
         )
 
 
 class ConflictException(AppException):
     """资源冲突异常"""
+
     def __init__(self, message: str = "资源冲突"):
         super().__init__(
-            code="BIZ_003",
-            message=message,
-            status_code=status.HTTP_409_CONFLICT
+            code="BIZ_003", message=message, status_code=status.HTTP_409_CONFLICT
         )
 
 
 class BusinessRuleException(AppException):
     """业务规则异常"""
+
     def __init__(self, message: str = "违反业务规则", details: dict = None):
-        super().__init__(
-            code="BIZ_001",
-            message=message,
-            details=details
-        )
+        super().__init__(code="BIZ_001", message=message, details=details)
 
 
 class ExternalServiceException(AppException):
     """外部服务异常"""
+
     def __init__(self, message: str = "外部服务错误", service_name: str = None):
         super().__init__(
             code="SYS_002",
             message=message,
             status_code=status.HTTP_502_BAD_GATEWAY,
-            details={"service_name": service_name} if service_name else None
+            details={"service_name": service_name} if service_name else None,
         )
 
 
 class RateLimitException(AppException):
     """限流异常"""
+
     def __init__(self, message: str = "请求过于频繁", retry_after: int = None):
         super().__init__(
             code="SYS_004",
             message=message,
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            details={"retry_after": retry_after} if retry_after else None
+            details={"retry_after": retry_after} if retry_after else None,
         )
 
 
@@ -149,7 +149,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
             "path": request.url.path,
             "method": request.method,
             "details": exc.details,
-        }
+        },
     )
 
     # 返回错误响应
@@ -162,8 +162,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 
 
 async def validation_exception_handler(
-    request: Request,
-    exc: Union[RequestValidationError, ValidationError]
+    request: Request, exc: Union[RequestValidationError, ValidationError]
 ) -> JSONResponse:
     """处理参数验证异常"""
     # 提取验证错误详情
@@ -178,7 +177,7 @@ async def validation_exception_handler(
             {
                 "field": ".".join(str(x) for x in error["loc"]),
                 "message": error["msg"],
-                "type": error["type"]
+                "type": error["type"],
             }
             for error in errors
         ]
@@ -192,7 +191,7 @@ async def validation_exception_handler(
             "path": request.url.path,
             "method": request.method,
             "details": details,
-        }
+        },
     )
 
     # 返回错误响应
@@ -205,8 +204,7 @@ async def validation_exception_handler(
 
 
 async def http_exception_handler(
-    request: Request,
-    exc: StarletteHTTPException
+    request: Request, exc: StarletteHTTPException
 ) -> JSONResponse:
     """处理HTTP异常"""
     # 映射HTTP状态码到错误码
@@ -232,7 +230,7 @@ async def http_exception_handler(
             "user_id": getattr(request.state, "user_id", None),
             "path": request.url.path,
             "method": request.method,
-        }
+        },
     )
 
     # 返回错误响应
@@ -244,8 +242,7 @@ async def http_exception_handler(
 
 
 async def sqlalchemy_exception_handler(
-    request: Request,
-    exc: SQLAlchemyError
+    request: Request, exc: SQLAlchemyError
 ) -> JSONResponse:
     """处理数据库异常"""
     # 获取错误详情
@@ -260,16 +257,14 @@ async def sqlalchemy_exception_handler(
             "path": request.url.path,
             "method": request.method,
             "traceback": traceback.format_exc(),
-        }
+        },
     )
 
     # 判断异常类型
     if isinstance(exc, IntegrityError):
         # 违反数据库约束
         error_response = create_error_response(
-            code="DB_004",
-            message="数据完整性错误",
-            details={"error": error_msg}
+            code="DB_004", message="数据完整性错误", details={"error": error_msg}
         )
         status_code = status.HTTP_400_BAD_REQUEST
     else:
@@ -277,14 +272,13 @@ async def sqlalchemy_exception_handler(
         error_response = create_error_response(
             code="DB_002",
             message="数据库操作失败",
-            details={"error": error_msg} if logger.isEnabledFor(logging.DEBUG) else None
+            details={"error": error_msg}
+            if logger.isEnabledFor(logging.DEBUG)
+            else None,
         )
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-    return JSONResponse(
-        status_code=status_code,
-        content=error_response.dict()
-    )
+    return JSONResponse(status_code=status_code, content=error_response.dict())
 
 
 async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -298,18 +292,14 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
             "path": request.url.path,
             "method": request.method,
             "traceback": traceback.format_exc(),
-        }
+        },
     )
 
     # 返回通用错误响应
-    error_response = create_error_response(
-        code="SYS_001",
-        message="服务器内部错误"
-    )
+    error_response = create_error_response(code="SYS_001", message="服务器内部错误")
 
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=error_response.dict()
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response.dict()
     )
 
 

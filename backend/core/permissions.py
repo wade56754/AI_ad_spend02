@@ -45,7 +45,7 @@ from backend.core.security import (
     AuthenticatedUser,
     get_current_active_user,
     require_roles as _require_roles,
-    require_permissions as _require_permissions
+    require_permissions as _require_permissions,
 )
 from backend.core.db import get_db
 from backend.models.enums import UserRole
@@ -53,6 +53,7 @@ from backend.models.enums import UserRole
 
 class Permission(str, Enum):
     """权限枚举 - 按系统概述权限矩阵设计"""
+
     # 用户管理权限
     USER_MANAGE = "user_manage"
 
@@ -111,56 +112,160 @@ class Permission(str, Enum):
 
 
 # 角色权限映射 - 严格按照系统概述权限矩阵
+# SoT Reference: MASTER.md v4.4 §2.4 (7个合法角色)
 ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
+    UserRole.CEO: [
+        # CEO(老板)拥有全部权限 - 资金安全、公司盈亏、最终决策
+        Permission.USER_MANAGE,
+        Permission.PROJECT_CREATE,
+        Permission.PROJECT_READ,
+        Permission.PROJECT_UPDATE,
+        Permission.PROJECT_DELETE,
+        Permission.CHANNEL_CREATE,
+        Permission.CHANNEL_READ,
+        Permission.CHANNEL_UPDATE,
+        Permission.CHANNEL_DELETE,
+        Permission.ACCOUNT_CREATE,
+        Permission.ACCOUNT_READ,
+        Permission.ACCOUNT_UPDATE,
+        Permission.ACCOUNT_DELETE,
+        Permission.DAILY_REPORT_CREATE,
+        Permission.DAILY_REPORT_READ,
+        Permission.DAILY_REPORT_UPDATE,
+        Permission.DAILY_REPORT_DELETE,
+        Permission.DAILY_REPORT_AUDIT,
+        Permission.TOPUP_CREATE,
+        Permission.TOPUP_READ,
+        Permission.TOPUP_UPDATE,
+        Permission.TOPUP_DELETE,
+        Permission.TOPUP_APPROVE,
+        Permission.RECONCILIATION_CREATE,
+        Permission.RECONCILIATION_READ,
+        Permission.RECONCILIATION_UPDATE,
+        Permission.RECONCILIATION_DELETE,
+        Permission.REPORT_READ,
+        Permission.REPORT_EXPORT,
+        Permission.AI_MONITORING,
+        Permission.AI_ANALYSIS,
+        Permission.NOTIFICATION_MANAGE,
+        Permission.SYSTEM_CONFIG,
+        Permission.AUDIT_LOG,
+    ],
     UserRole.ADMIN: [
         # 管理员拥有全部权限 ✅
         Permission.USER_MANAGE,
-        Permission.PROJECT_CREATE, Permission.PROJECT_READ, Permission.PROJECT_UPDATE, Permission.PROJECT_DELETE,
-        Permission.CHANNEL_CREATE, Permission.CHANNEL_READ, Permission.CHANNEL_UPDATE, Permission.CHANNEL_DELETE,
-        Permission.ACCOUNT_CREATE, Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE, Permission.ACCOUNT_DELETE,
-        Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE, Permission.DAILY_REPORT_DELETE, Permission.DAILY_REPORT_AUDIT,
-        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE, Permission.TOPUP_APPROVE,
-        Permission.RECONCILIATION_CREATE, Permission.RECONCILIATION_READ, Permission.RECONCILIATION_UPDATE, Permission.RECONCILIATION_DELETE,
-        Permission.REPORT_READ, Permission.REPORT_EXPORT,
-        Permission.AI_MONITORING, Permission.AI_ANALYSIS,
+        Permission.PROJECT_CREATE,
+        Permission.PROJECT_READ,
+        Permission.PROJECT_UPDATE,
+        Permission.PROJECT_DELETE,
+        Permission.CHANNEL_CREATE,
+        Permission.CHANNEL_READ,
+        Permission.CHANNEL_UPDATE,
+        Permission.CHANNEL_DELETE,
+        Permission.ACCOUNT_CREATE,
+        Permission.ACCOUNT_READ,
+        Permission.ACCOUNT_UPDATE,
+        Permission.ACCOUNT_DELETE,
+        Permission.DAILY_REPORT_CREATE,
+        Permission.DAILY_REPORT_READ,
+        Permission.DAILY_REPORT_UPDATE,
+        Permission.DAILY_REPORT_DELETE,
+        Permission.DAILY_REPORT_AUDIT,
+        Permission.TOPUP_CREATE,
+        Permission.TOPUP_READ,
+        Permission.TOPUP_UPDATE,
+        Permission.TOPUP_DELETE,
+        Permission.TOPUP_APPROVE,
+        Permission.RECONCILIATION_CREATE,
+        Permission.RECONCILIATION_READ,
+        Permission.RECONCILIATION_UPDATE,
+        Permission.RECONCILIATION_DELETE,
+        Permission.REPORT_READ,
+        Permission.REPORT_EXPORT,
+        Permission.AI_MONITORING,
+        Permission.AI_ANALYSIS,
         Permission.NOTIFICATION_MANAGE,
-        Permission.SYSTEM_CONFIG, Permission.AUDIT_LOG
+        Permission.SYSTEM_CONFIG,
+        Permission.AUDIT_LOG,
+    ],
+    UserRole.PROJECT_OWNER: [
+        # 项目负责人权限 - 项目盈亏、日报审核、资金使用效率
+        Permission.PROJECT_CREATE,
+        Permission.PROJECT_READ,
+        Permission.PROJECT_UPDATE,
+        Permission.ACCOUNT_READ,
+        Permission.DAILY_REPORT_CREATE,
+        Permission.DAILY_REPORT_READ,
+        Permission.DAILY_REPORT_UPDATE,
+        Permission.DAILY_REPORT_AUDIT,
+        Permission.TOPUP_READ,
+        Permission.RECONCILIATION_READ,
+        Permission.REPORT_READ,
+        Permission.REPORT_EXPORT,
     ],
     UserRole.ACCOUNT_MANAGER: [
-        # 户管权限 - ✅ 用户管理、项目管理、渠道管理(只读)、账户管理、日报管理(只读)、充值管理(只读)、财务对账(只读)、报表查看
-        Permission.USER_MANAGE,
-        Permission.PROJECT_CREATE, Permission.PROJECT_READ, Permission.PROJECT_UPDATE,
+        # 户管权限 - 账户分配、账户状态监控 (SoT: CLAUDE.md)
+        # 不可创建项目，只能管理账户
+        Permission.PROJECT_READ,  # 只读项目
         Permission.CHANNEL_READ,
-        Permission.ACCOUNT_CREATE, Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE,
+        Permission.ACCOUNT_CREATE,
+        Permission.ACCOUNT_READ,
+        Permission.ACCOUNT_UPDATE,
         Permission.DAILY_REPORT_READ,
         Permission.TOPUP_READ,
         Permission.RECONCILIATION_READ,
-        Permission.REPORT_READ, Permission.REPORT_EXPORT
+        Permission.REPORT_READ,
     ],
     UserRole.DATA_OPERATOR: [
         # 数据员权限 - 👁 项目管理(只读)、✅ 渠道管理、✅ 账户管理、✅ 日报管理、✅ 充值管理、👁 报表查看
         Permission.PROJECT_READ,
-        Permission.CHANNEL_CREATE, Permission.CHANNEL_READ, Permission.CHANNEL_UPDATE, Permission.CHANNEL_DELETE,
-        Permission.ACCOUNT_CREATE, Permission.ACCOUNT_READ, Permission.ACCOUNT_UPDATE, Permission.ACCOUNT_DELETE,
-        Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE, Permission.DAILY_REPORT_DELETE, Permission.DAILY_REPORT_AUDIT,
-        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE,
-        Permission.REPORT_READ
+        Permission.CHANNEL_CREATE,
+        Permission.CHANNEL_READ,
+        Permission.CHANNEL_UPDATE,
+        Permission.CHANNEL_DELETE,
+        Permission.ACCOUNT_CREATE,
+        Permission.ACCOUNT_READ,
+        Permission.ACCOUNT_UPDATE,
+        Permission.ACCOUNT_DELETE,
+        Permission.DAILY_REPORT_CREATE,
+        Permission.DAILY_REPORT_READ,
+        Permission.DAILY_REPORT_UPDATE,
+        Permission.DAILY_REPORT_DELETE,
+        Permission.DAILY_REPORT_AUDIT,
+        Permission.TOPUP_CREATE,
+        Permission.TOPUP_READ,
+        Permission.TOPUP_UPDATE,
+        Permission.TOPUP_DELETE,
+        Permission.REPORT_READ,
     ],
     UserRole.FINANCE: [
         # 财务权限 - 👁 项目管理(只读)、👁 账户管理(只读)、👁 日报管理(只读)、✅ 充值管理、✅ 财务对账、👁 报表查看
         Permission.PROJECT_READ,
         Permission.ACCOUNT_READ,
         Permission.DAILY_REPORT_READ,
-        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE, Permission.TOPUP_APPROVE,
-        Permission.RECONCILIATION_CREATE, Permission.RECONCILIATION_READ, Permission.RECONCILIATION_UPDATE, Permission.RECONCILIATION_DELETE,
-        Permission.REPORT_READ, Permission.REPORT_EXPORT
+        Permission.TOPUP_CREATE,
+        Permission.TOPUP_READ,
+        Permission.TOPUP_UPDATE,
+        Permission.TOPUP_DELETE,
+        Permission.TOPUP_APPROVE,
+        Permission.RECONCILIATION_CREATE,
+        Permission.RECONCILIATION_READ,
+        Permission.RECONCILIATION_UPDATE,
+        Permission.RECONCILIATION_DELETE,
+        Permission.REPORT_READ,
+        Permission.REPORT_EXPORT,
     ],
     UserRole.MEDIA_BUYER: [
         # 投手权限 - ✅ 账户管理(只读)、✅ 日报管理、✅ 充值管理、👁 报表查看
         Permission.ACCOUNT_READ,
-        Permission.DAILY_REPORT_CREATE, Permission.DAILY_REPORT_READ, Permission.DAILY_REPORT_UPDATE,
-        Permission.TOPUP_CREATE, Permission.TOPUP_READ, Permission.TOPUP_UPDATE, Permission.TOPUP_DELETE,
-        Permission.REPORT_READ
+        Permission.DAILY_REPORT_CREATE,
+        Permission.DAILY_REPORT_READ,
+        Permission.DAILY_REPORT_UPDATE,
+        Permission.TOPUP_CREATE,
+        Permission.TOPUP_READ,
+        Permission.TOPUP_UPDATE,
+        Permission.TOPUP_DELETE,
+        Permission.REPORT_READ,
     ]
     # 注意: ANALYST 角色已移除 (SoT 仅定义 5 个合法角色)
 }
@@ -196,7 +301,9 @@ def get_user_permissions(user: AuthenticatedUser) -> List[Permission]:
     return list(permissions)
 
 
-def check_role_permission(user: AuthenticatedUser, required_roles: Iterable[str]) -> bool:
+def check_role_permission(
+    user: AuthenticatedUser, required_roles: Iterable[str]
+) -> bool:
     """检查用户角色权限"""
     if not required_roles:
         return True
@@ -204,15 +311,21 @@ def check_role_permission(user: AuthenticatedUser, required_roles: Iterable[str]
     return user.role in required_roles
 
 
-def check_user_permission(user: AuthenticatedUser, required_permissions: Iterable[Union[str, Permission]]) -> bool:
+def check_user_permission(
+    user: AuthenticatedUser, required_permissions: Iterable[Union[str, Permission]]
+) -> bool:
     """检查用户具体权限"""
     if not required_permissions:
         return True
 
     # 获取用户权限值集合
-    user_permissions = set(p.value if isinstance(p, Permission) else p for p in get_user_permissions(user))
+    user_permissions = set(
+        p.value if isinstance(p, Permission) else p for p in get_user_permissions(user)
+    )
     # 获取所需权限值集合
-    required_perms = set(p.value if isinstance(p, Permission) else p for p in required_permissions)
+    required_perms = set(
+        p.value if isinstance(p, Permission) else p for p in required_permissions
+    )
 
     return required_perms.issubset(user_permissions)
 
@@ -230,7 +343,9 @@ def require_permissions(*permissions: Union[str, Permission]):
     权限检查装饰器
     要求用户具有所有指定权限
     """
-    return _require_permissions(*(p.value if isinstance(p, Permission) else p for p in permissions))
+    return _require_permissions(
+        *(p.value if isinstance(p, Permission) else p for p in permissions)
+    )
 
 
 def require_any_role(*roles: str):
@@ -246,16 +361,20 @@ def require_any_permission(*permissions: Union[str, Permission]):
     权限检查装饰器（任一权限）
     要求用户具有指定权限中的任意一个
     """
-    def permission_dependency(current_user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+
+    def permission_dependency(
+        current_user: AuthenticatedUser = Depends(get_current_active_user),
+    ) -> AuthenticatedUser:
         user_permissions = set(get_user_permissions(current_user))
         required_permissions = set(str(p) for p in permissions)
 
         if not user_permissions.intersection(required_permissions):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={"code": ErrorCode.PERMISSION_DENIED, "message": "权限不足"}
+                detail={"code": ErrorCode.PERMISSION_DENIED, "message": "权限不足"},
             )
         return current_user
+
     return permission_dependency
 
 
@@ -264,7 +383,10 @@ def require_project_access(project_id: str = None):
     项目访问权限装饰器
     检查用户是否有权访问指定项目
     """
-    def project_dependency(current_user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+
+    def project_dependency(
+        current_user: AuthenticatedUser = Depends(get_current_active_user),
+    ) -> AuthenticatedUser:
         # 这里应该实现实际的项目权限检查逻辑
         # 例如检查用户是否是项目的创建者、管理者或成员
 
@@ -276,6 +398,7 @@ def require_project_access(project_id: str = None):
         # 这里应该查询数据库检查用户与项目的关系
 
         return current_user
+
     return project_dependency
 
 
@@ -284,7 +407,10 @@ def require_account_access(account_id: str = None):
     账户访问权限装饰器
     检查用户是否有权访问指定账户
     """
-    def account_dependency(current_user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+
+    def account_dependency(
+        current_user: AuthenticatedUser = Depends(get_current_active_user),
+    ) -> AuthenticatedUser:
         # 这里应该实现实际的账户权限检查逻辑
 
         # 管理员可以访问所有账户
@@ -294,6 +420,7 @@ def require_account_access(account_id: str = None):
         # 其他角色需要检查账户所有权或权限
 
         return current_user
+
     return account_dependency
 
 
@@ -336,58 +463,70 @@ class PermissionChecker:
         return required_perms.issubset(user_perms)
 
 
-def get_permission_checker(user: AuthenticatedUser = Depends(get_current_active_user)) -> PermissionChecker:
+def get_permission_checker(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> PermissionChecker:
     """获取权限检查器依赖"""
     return PermissionChecker(user)
 
 
 # 便捷装饰器
-def admin_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+def admin_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
     """要求管理员角色"""
     if user.role != UserRole.ADMIN.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要管理员权限"}
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要管理员权限"},
         )
     return user
 
 
-def finance_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+def finance_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
     """要求财务权限"""
     if user.role not in [UserRole.ADMIN.value, UserRole.FINANCE.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要财务权限"}
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要财务权限"},
         )
     return user
 
 
-def account_manager_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+def account_manager_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
     """要求户管权限"""
     if user.role not in [UserRole.ADMIN.value, UserRole.ACCOUNT_MANAGER.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要户管权限"}
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要户管权限"},
         )
     return user
 
 
-def data_operator_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+def data_operator_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
     """要求数据员权限"""
     if user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要数据员权限"}
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要数据员权限"},
         )
     return user
 
 
-def media_buyer_required(user: AuthenticatedUser = Depends(get_current_active_user)) -> AuthenticatedUser:
+def media_buyer_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
     """要求投手权限"""
     if user.role not in [UserRole.ADMIN.value, UserRole.MEDIA_BUYER.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要投手权限"}
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要投手权限"},
         )
     return user
 
@@ -395,6 +534,7 @@ def media_buyer_required(user: AuthenticatedUser = Depends(get_current_active_us
 # ============================================================================
 # 项目负责人权限守卫
 # ============================================================================
+
 
 def require_project_owner(project_id: int):
     """
@@ -424,9 +564,10 @@ def require_project_owner(project_id: int):
         ):
             ...
     """
+
     def project_owner_dependency(
         current_user: AuthenticatedUser = Depends(get_current_active_user),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
     ) -> AuthenticatedUser:
         # admin 可以绕过检查
         if current_user.role == UserRole.ADMIN.value:
@@ -436,27 +577,25 @@ def require_project_owner(project_id: int):
         from backend.models.core.project_member import ProjectMember
 
         # 查询 project_members 表
-        membership = db.query(ProjectMember).filter(
-            ProjectMember.project_id == project_id,
-            ProjectMember.user_id == UUID(str(current_user.id))
-        ).first()
+        membership = (
+            db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == UUID(str(current_user.id)),
+            )
+            .first()
+        )
 
         if not membership:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": ErrorCode.PERMISSION_DENIED,
-                    "message": "您不是此项目的成员"
-                }
+                detail={"code": ErrorCode.PERMISSION_DENIED, "message": "您不是此项目的成员"},
             )
 
-        if membership.role != 'owner':
+        if membership.role != "owner":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": ErrorCode.PERMISSION_DENIED,
-                    "message": "此操作需要项目负责人权限"
-                }
+                detail={"code": ErrorCode.PERMISSION_DENIED, "message": "此操作需要项目负责人权限"},
             )
 
         return current_user
@@ -464,11 +603,7 @@ def require_project_owner(project_id: int):
     return project_owner_dependency
 
 
-def is_project_owner(
-    user_id: UUID,
-    project_id: int,
-    db: Session
-) -> bool:
+def is_project_owner(user_id: UUID, project_id: int, db: Session) -> bool:
     """
     检查用户是否为项目负责人（非装饰器版本）
 
@@ -485,18 +620,18 @@ def is_project_owner(
     """
     from backend.models.core.project_member import ProjectMember
 
-    membership = db.query(ProjectMember).filter(
-        ProjectMember.project_id == project_id,
-        ProjectMember.user_id == user_id
-    ).first()
+    membership = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
+        )
+        .first()
+    )
 
-    return membership is not None and membership.role == 'owner'
+    return membership is not None and membership.role == "owner"
 
 
-def get_user_owned_projects(
-    user_id: UUID,
-    db: Session
-) -> List[int]:
+def get_user_owned_projects(user_id: UUID, db: Session) -> List[int]:
     """
     获取用户作为负责人的所有项目 ID
 
@@ -509,10 +644,11 @@ def get_user_owned_projects(
     """
     from backend.models.core.project_member import ProjectMember
 
-    memberships = db.query(ProjectMember.project_id).filter(
-        ProjectMember.user_id == user_id,
-        ProjectMember.role == 'owner'
-    ).all()
+    memberships = (
+        db.query(ProjectMember.project_id)
+        .filter(ProjectMember.user_id == user_id, ProjectMember.role == "owner")
+        .all()
+    )
 
     return [m.project_id for m in memberships]
 
@@ -531,11 +667,11 @@ def require_project_member(project_id: int, allowed_roles: List[str] = None):
         FastAPI 依赖函数
     """
     if allowed_roles is None:
-        allowed_roles = ['owner', 'member', 'viewer']
+        allowed_roles = ["owner", "member", "viewer"]
 
     def project_member_dependency(
         current_user: AuthenticatedUser = Depends(get_current_active_user),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
     ) -> AuthenticatedUser:
         # admin 可以绕过检查
         if current_user.role == UserRole.ADMIN.value:
@@ -543,18 +679,19 @@ def require_project_member(project_id: int, allowed_roles: List[str] = None):
 
         from backend.models.core.project_member import ProjectMember
 
-        membership = db.query(ProjectMember).filter(
-            ProjectMember.project_id == project_id,
-            ProjectMember.user_id == UUID(str(current_user.id))
-        ).first()
+        membership = (
+            db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == UUID(str(current_user.id)),
+            )
+            .first()
+        )
 
         if not membership:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail={
-                    "code": ErrorCode.PERMISSION_DENIED,
-                    "message": "您不是此项目的成员"
-                }
+                detail={"code": ErrorCode.PERMISSION_DENIED, "message": "您不是此项目的成员"},
             )
 
         if membership.role not in allowed_roles:
@@ -562,8 +699,8 @@ def require_project_member(project_id: int, allowed_roles: List[str] = None):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail={
                     "code": ErrorCode.PERMISSION_DENIED,
-                    "message": f"此操作需要以下项目角色之一: {', '.join(allowed_roles)}"
-                }
+                    "message": f"此操作需要以下项目角色之一: {', '.join(allowed_roles)}",
+                },
             )
 
         return current_user
@@ -592,6 +729,7 @@ class PermissionRule:
         team_field: 团队关联字段 (如 team_id)
         admin_bypass: 管理员是否绕过过滤
     """
+
     model: Type
     user_field: str
     project_field: Optional[str] = None
@@ -614,10 +752,7 @@ def get_permission_rule(model: Type) -> Optional[PermissionRule]:
 
 
 def apply_permission_filter(
-    query: SAQuery,
-    model: Type,
-    user: AuthenticatedUser,
-    db: Session = None
+    query: SAQuery, model: Type, user: AuthenticatedUser, db: Session = None
 ) -> SAQuery:
     """
     根据用户角色过滤查询结果
@@ -648,18 +783,18 @@ def apply_permission_filter(
     user_id = UUID(str(user.id)) if not isinstance(user.id, UUID) else user.id
 
     # 1. CEO/Admin 不过滤
-    if user_role in ['ceo', 'admin', UserRole.ADMIN.value]:
+    if user_role in ["ceo", "admin", UserRole.ADMIN.value]:
         return query
 
     # 2. 检查模型是否有 RLSAwareMixin
-    if hasattr(model, 'apply_rls_filter'):
+    if hasattr(model, "apply_rls_filter"):
         try:
             user_role_enum = UserRole(user_role)
         except ValueError:
             # 尝试业务角色映射
             role_map = {
-                'supervisor': UserRole.DATA_OPERATOR,
-                'pitcher': UserRole.MEDIA_BUYER,
+                "supervisor": UserRole.DATA_OPERATOR,
+                "pitcher": UserRole.MEDIA_BUYER,
             }
             user_role_enum = role_map.get(user_role)
 
@@ -680,18 +815,18 @@ def _apply_rule_filter(
     model: Type,
     rule: PermissionRule,
     user: AuthenticatedUser,
-    db: Session
+    db: Session,
 ) -> SAQuery:
     """应用注册的权限规则"""
     user_id = UUID(str(user.id)) if not isinstance(user.id, UUID) else user.id
     user_role = user.role
 
     # admin 绕过
-    if rule.admin_bypass and user_role in ['admin', 'ceo', UserRole.ADMIN.value]:
+    if rule.admin_bypass and user_role in ["admin", "ceo", UserRole.ADMIN.value]:
         return query
 
     # project_owner: 过滤本项目
-    if user_role == 'project_owner' and rule.project_field and db:
+    if user_role == "project_owner" and rule.project_field and db:
         project_ids = get_user_owned_projects(user_id, db)
         if project_ids:
             project_column = getattr(model, rule.project_field)
@@ -700,12 +835,18 @@ def _apply_rule_filter(
         return query.filter(False)
 
     # supervisor/data_operator: 过滤本团队
-    if user_role in ['supervisor', 'data_operator', UserRole.DATA_OPERATOR.value] and rule.team_field:
+    if (
+        user_role in ["supervisor", "data_operator", UserRole.DATA_OPERATOR.value]
+        and rule.team_field
+    ):
         # TODO: 获取用户所属团队
         pass
 
     # pitcher/media_buyer: 过滤本人
-    if user_role in ['pitcher', 'media_buyer', UserRole.MEDIA_BUYER.value] and rule.user_field:
+    if (
+        user_role in ["pitcher", "media_buyer", UserRole.MEDIA_BUYER.value]
+        and rule.user_field
+    ):
         user_column = getattr(model, rule.user_field)
         return query.filter(user_column == user_id)
 
@@ -713,11 +854,7 @@ def _apply_rule_filter(
 
 
 def _apply_default_filter(
-    query: SAQuery,
-    model: Type,
-    user_id: UUID,
-    user_role: str,
-    db: Session
+    query: SAQuery, model: Type, user_id: UUID, user_role: str, db: Session
 ) -> SAQuery:
     """
     默认过滤逻辑 - 按常见字段名猜测
@@ -728,14 +865,14 @@ def _apply_default_filter(
     - team_id (用于 supervisor 角色)
     """
     # project_owner: 按项目过滤
-    if user_role == 'project_owner' and hasattr(model, 'project_id') and db:
+    if user_role == "project_owner" and hasattr(model, "project_id") and db:
         project_ids = get_user_owned_projects(user_id, db)
         if project_ids:
             return query.filter(model.project_id.in_(project_ids))
         return query.filter(False)
 
     # pitcher/media_buyer: 按用户字段过滤
-    user_fields = ['owner_id', 'submitted_by', 'pitcher_id', 'user_id', 'created_by']
+    user_fields = ["owner_id", "submitted_by", "pitcher_id", "user_id", "created_by"]
     for field in user_fields:
         if hasattr(model, field):
             column = getattr(model, field)
@@ -746,9 +883,7 @@ def _apply_default_filter(
 
 
 def filter_accessible_items(
-    items: List[Any],
-    user: AuthenticatedUser,
-    check_method: str = 'is_accessible_by'
+    items: List[Any], user: AuthenticatedUser, check_method: str = "is_accessible_by"
 ) -> List[Any]:
     """
     过滤列表中用户可访问的项目
@@ -772,7 +907,10 @@ def filter_accessible_items(
     try:
         user_role = UserRole(user.role)
     except ValueError:
-        role_map = {'supervisor': UserRole.DATA_OPERATOR, 'pitcher': UserRole.MEDIA_BUYER}
+        role_map = {
+            "supervisor": UserRole.DATA_OPERATOR,
+            "pitcher": UserRole.MEDIA_BUYER,
+        }
         user_role = role_map.get(user.role)
 
     result = []
@@ -796,39 +934,32 @@ __all__ = [
     # 权限枚举
     "Permission",
     "ROLE_PERMISSIONS",
-
     # 权限检查函数
     "get_user_permissions",
     "check_role_permission",
     "check_user_permission",
-
     # 权限装饰器
     "require_roles",
     "require_permissions",
     "require_any_role",
     "require_any_permission",
-
     # 资源访问装饰器
     "require_project_access",
     "require_account_access",
-
     # 权限检查器
     "PermissionChecker",
     "get_permission_checker",
-
     # 便捷装饰器
     "admin_required",
     "finance_required",
     "account_manager_required",
     "data_operator_required",
     "media_buyer_required",
-
     # 项目权限守卫
     "require_project_owner",
     "require_project_member",
     "is_project_owner",
     "get_user_owned_projects",
-
     # 数据权限过滤 (核心接口)
     "PermissionRule",
     "register_permission_rule",
@@ -836,4 +967,3 @@ __all__ = [
     "apply_permission_filter",
     "filter_accessible_items",
 ]
-

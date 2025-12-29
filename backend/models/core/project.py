@@ -9,7 +9,7 @@ Aligned with test_project_service.py expectations:
 - name (project name)
 - client_name, client_company
 - description
-- status (planning/active/paused/completed/cancelled)
+- status (draft/active/suspended/archived) - STATE_MACHINE.md v2.6 §5
 - budget, currency
 - start_date, end_date
 - account_manager_id
@@ -17,12 +17,30 @@ Aligned with test_project_service.py expectations:
 """
 from decimal import Decimal
 from datetime import datetime, timezone
-from sqlalchemy import Column, BigInteger, String, Text, Integer, Numeric, Date, DateTime, Index, CheckConstraint, ForeignKey
+from typing import Optional
+from sqlalchemy import (
+    Column,
+    BigInteger,
+    String,
+    Text,
+    Integer,
+    Numeric,
+    Date,
+    DateTime,
+    Index,
+    CheckConstraint,
+    ForeignKey,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import relationship
 
 from backend.models.base import Base, TimestampMixin, UserScopeMixin
-from backend.models.enums import ProjectStatus, UserRole, FulfillmentStatus, FulfillmentReason
+from backend.models.enums import (
+    ProjectStatus,
+    UserRole,
+    FulfillmentStatus,
+    FulfillmentReason,
+)
 from backend.models.mixins.serializable import SerializableMixin
 from backend.models.mixins.rls_aware import RLSAwareMixin
 
@@ -37,7 +55,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     - client_name: 客户名称
     - client_company: 客户公司
     - description: 项目描述
-    - status: 项目状态（planning/active/paused/completed/cancelled）
+    - status: 项目状态（draft/active/suspended/archived）
     - budget: 项目预算
     - currency: 预算货币
     - start_date: 开始日期
@@ -46,14 +64,15 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     - created_by: 创建者（来自 UserScopeMixin）
     - created_at/updated_at: 时间戳（自动管理）
     """
-    __tablename__ = 'projects'
+
+    __tablename__ = "projects"
 
     # RLS 配置
-    __rls_user_field__ = 'created_by'
+    __rls_user_field__ = "created_by"
     __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_OPERATOR]
 
     # 序列化配置
-    __json_include_relationships__ = ['creator', 'ad_accounts', 'account_manager']
+    __json_include_relationships__ = ["creator", "ad_accounts", "account_manager"]
 
     # 主键
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="项目ID")
@@ -65,11 +84,11 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     client_name = Column(String(100), nullable=True, comment="客户名称")
     client_company = Column(String(200), nullable=True, comment="客户公司")
     description = Column(Text, nullable=True, comment="项目描述")
-    status = Column(String(20), nullable=False, default='planning', comment="项目状态")
+    status = Column(String(20), nullable=False, default="draft", comment="项目状态")
 
     # 预算相关
     budget = Column(Numeric(15, 2), nullable=True, comment="项目预算")
-    currency = Column(String(3), nullable=True, default='USD', comment="预算货币")
+    currency = Column(String(3), nullable=True, default="USD", comment="预算货币")
 
     # 日期范围
     start_date = Column(Date, nullable=True, comment="开始日期")
@@ -80,60 +99,51 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     unit_price = Column(Numeric(15, 2), nullable=True, comment="单粉价格")
     # 阶梯定价字段 (v2.2)
     price_rules = Column(JSONB, nullable=True, comment="阶梯价格规则 JSON")
-    default_currency = Column(String(10), nullable=True, default="USD", comment="项目默认币种")
+    default_currency = Column(
+        String(10), nullable=True, default="USD", comment="项目默认币种"
+    )
 
     # 结算相关字段 (OpenSpec: add-reconciliation-control-center)
     settlement_type = Column(
-        String(20),
-        nullable=True,
-        default='fixed',
-        comment="结算类型: fixed/tiered/markup"
+        String(20), nullable=True, default="fixed", comment="结算类型: fixed/tiered/markup"
     )
     settlement_rules_id = Column(
         BigInteger,
         ForeignKey("settlement_rules.id"),
         nullable=True,
-        comment="结算规则ID (tiered/markup类型必填)"
+        comment="结算规则ID (tiered/markup类型必填)",
     )
 
     # 履约状态字段 (BUSINESS_RULES.md v4.6 BR-PROJ-006)
     fulfillment_status = Column(
         String(20),
         nullable=False,
-        default='running',
-        comment="履约状态: running/fulfilled (SoT: BUSINESS_RULES.md v4.6 §4.3.1)"
+        default="running",
+        comment="履约状态: running/fulfilled (SoT: BUSINESS_RULES.md v4.6 §4.3.1)",
     )
     fulfillment_reason = Column(
         String(30),
         nullable=True,
-        comment="履约结束原因: spend_exhausted/client_stopped (SoT: BI-06)"
+        comment="履约结束原因: spend_exhausted/client_stopped (SoT: BI-06)",
     )
     fulfilled_at = Column(
-        DateTime(timezone=True),
-        nullable=True,
-        comment="履约完成时间 (UTC)"
+        DateTime(timezone=True), nullable=True, comment="履约完成时间 (UTC)"
     )
 
     # 账户管理员ID（整数类型，用于测试兼容性）
     # 注意：不使用外键约束以兼容测试中直接传入整数ID的场景
     account_manager_id = Column(
-        BigInteger,
-        nullable=True,
-        index=True,
-        comment="账户管理员ID"
+        BigInteger, nullable=True, index=True, comment="账户管理员ID"
     )
 
     # 并发控制
-    version = Column(Integer, nullable=False, server_default='1', comment="乐观锁版本号")
+    version = Column(Integer, nullable=False, server_default="1", comment="乐观锁版本号")
 
     # ========== 关系定义 ==========
 
     # 多对一：项目 -> 创建者
     creator = relationship(
-        "User",
-        foreign_keys="Project.created_by",
-        lazy="selectin",
-        doc="项目创建者"
+        "User", foreign_keys="Project.created_by", lazy="selectin", doc="项目创建者"
     )
 
     # 一对多：项目 -> 广告账户
@@ -142,7 +152,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         back_populates="project",
         cascade="all, delete-orphan",
         lazy="selectin",
-        doc="项目下的所有广告账户"
+        doc="项目下的所有广告账户",
     )
 
     # 一对多：项目 -> 项目成员
@@ -151,7 +161,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         back_populates="project",
         cascade="all, delete-orphan",
         lazy="selectin",
-        doc="项目成员列表"
+        doc="项目成员列表",
     )
 
     # 一对多：项目 -> 项目费用
@@ -160,15 +170,12 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         back_populates="project",
         cascade="all, delete-orphan",
         lazy="selectin",
-        doc="项目费用记录"
+        doc="项目费用记录",
     )
 
     # 多对一：项目 -> 结算规则 (OpenSpec: add-reconciliation-control-center)
     settlement_rule = relationship(
-        "SettlementRule",
-        back_populates="projects",
-        lazy="selectin",
-        doc="关联的结算规则"
+        "SettlementRule", back_populates="projects", lazy="selectin", doc="关联的结算规则"
     )
 
     # 多对一：项目 -> 账户管理员
@@ -179,19 +186,19 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     # 约束与索引
     __table_args__ = (
         CheckConstraint(
-            "status IN ('planning', 'active', 'paused', 'completed', 'cancelled')",
-            name='chk_projects_status'
+            "status IN ('draft', 'active', 'suspended', 'archived')",
+            name="chk_projects_status",
         ),
-        Index('idx_projects_status', 'status'),
-        Index('idx_projects_created_by', 'created_by'),
+        Index("idx_projects_status", "status"),
+        Index("idx_projects_created_by", "created_by"),
         # account_manager_id 索引已在列定义中创建
     )
 
     def __init__(self, **kwargs):
         """初始化项目，支持测试兼容字段 project_name"""
         # 处理测试兼容字段 project_name -> name
-        if 'project_name' in kwargs and 'name' not in kwargs:
-            kwargs['name'] = kwargs.pop('project_name')
+        if "project_name" in kwargs and "name" not in kwargs:
+            kwargs["name"] = kwargs.pop("project_name")
         super().__init__(**kwargs)
 
     def __repr__(self):
@@ -220,14 +227,19 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         return self.status == ProjectStatus.ACTIVE.value
 
     @property
-    def is_completed(self) -> bool:
-        """是否已完成"""
-        return self.status == ProjectStatus.COMPLETED.value
+    def is_archived(self) -> bool:
+        """是否已归档（终态）"""
+        return self.status == ProjectStatus.ARCHIVED.value
 
     @property
-    def is_cancelled(self) -> bool:
-        """是否已取消"""
-        return self.status == ProjectStatus.CANCELLED.value
+    def is_suspended(self) -> bool:
+        """是否已暂停"""
+        return self.status == ProjectStatus.SUSPENDED.value
+
+    @property
+    def is_draft(self) -> bool:
+        """是否是草稿状态"""
+        return self.status == ProjectStatus.DRAFT.value
 
     @property
     def is_fulfilled(self) -> bool:
@@ -245,7 +257,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         return FulfillmentStatus(self.fulfillment_status)
 
     @property
-    def fulfillment_reason_enum(self) -> FulfillmentReason | None:
+    def fulfillment_reason_enum(self) -> Optional[FulfillmentReason]:
         """返回履约结束原因枚举对象"""
         if self.fulfillment_reason:
             return FulfillmentReason(self.fulfillment_reason)
@@ -287,20 +299,27 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         """
         检查是否可以转换到新状态
 
-        状态流转规则：
-        - planning -> active, paused, cancelled
-        - active -> paused, completed, cancelled
-        - paused -> active, completed, cancelled
-        - completed -> (终态)
-        - cancelled -> (终态)
+        状态流转规则（基于 STATE_MACHINE.md v2.6 第5章）：
+        - draft -> active, archived
+        - active -> suspended, archived
+        - suspended -> active, archived
+        - archived -> (终态)
         """
         current = ProjectStatus(self.status)
         transitions = {
-            ProjectStatus.PLANNING: [ProjectStatus.ACTIVE, ProjectStatus.PAUSED, ProjectStatus.CANCELLED],
-            ProjectStatus.ACTIVE: [ProjectStatus.PAUSED, ProjectStatus.COMPLETED, ProjectStatus.CANCELLED],
-            ProjectStatus.PAUSED: [ProjectStatus.ACTIVE, ProjectStatus.COMPLETED, ProjectStatus.CANCELLED],
-            ProjectStatus.COMPLETED: [],
-            ProjectStatus.CANCELLED: [],
+            ProjectStatus.DRAFT: [
+                ProjectStatus.ACTIVE,
+                ProjectStatus.ARCHIVED,
+            ],
+            ProjectStatus.ACTIVE: [
+                ProjectStatus.SUSPENDED,
+                ProjectStatus.ARCHIVED,
+            ],
+            ProjectStatus.SUSPENDED: [
+                ProjectStatus.ACTIVE,
+                ProjectStatus.ARCHIVED,
+            ],
+            ProjectStatus.ARCHIVED: [],
         }
         return new_status in transitions.get(current, [])
 
@@ -320,9 +339,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
             ValueError: 不允许的状态转换
         """
         if not self.can_transition_to(new_status):
-            raise ValueError(
-                f"不允许从 {self.status} 转换到 {new_status.value}"
-            )
+            raise ValueError(f"不允许从 {self.status} 转换到 {new_status.value}")
 
         old_status = self.status
         self.status = new_status.value

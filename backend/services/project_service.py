@@ -36,7 +36,14 @@ from backend.core.error_codes import BusinessErrorCodes, ValidationErrorCodes
 from backend.core.pagination import PaginationParams, paginate
 from backend.core.permissions import apply_permission_filter
 from backend.core.state_machine import ProjectStatus
-from backend.models import Project, ProjectMember, ProjectExpense, User, AdAccount, DailyReport
+from backend.models import (
+    Project,
+    ProjectMember,
+    ProjectExpense,
+    User,
+    AdAccount,
+    DailyReport,
+)
 from backend.schemas.project import (
     ProjectCreateRequest,
     ProjectUpdateRequest,
@@ -70,15 +77,15 @@ class ProjectService:
     # ========================================
 
     def create_project(
-        self,
-        request: ProjectCreateRequest,
-        current_user: User
+        self, request: ProjectCreateRequest, current_user: User
     ) -> Project:
         """
         创建项目
 
-        权限: admin, account_manager
+        权限: admin, ceo, project_owner
         初始状态: draft
+
+        SoT: 户管(account_manager)只能管理账户，不能创建项目
 
         Args:
             request: 创建请求
@@ -92,8 +99,8 @@ class ProjectService:
             ConflictError: 项目名称已存在
             ValidationError: 验证失败
         """
-        # 权限检查
-        if current_user.role not in ["admin", "account_manager"]:
+        # 权限检查 - 只有 admin/ceo/project_owner 可以创建项目
+        if current_user.role not in ["admin", "ceo", "project_owner"]:
             raise_permission_denied("create_project")
 
         # 检查项目名称是否已存在
@@ -185,10 +192,15 @@ class ProjectService:
             NotFoundError: 项目不存在
             PermissionError: 无权访问
         """
-        project = self.db.query(Project).options(
-            joinedload(Project.creator),
-            joinedload(Project.members).joinedload(ProjectMember.user),
-        ).filter(Project.id == project_id).first()
+        project = (
+            self.db.query(Project)
+            .options(
+                joinedload(Project.creator),
+                joinedload(Project.members).joinedload(ProjectMember.user),
+            )
+            .filter(Project.id == project_id)
+            .first()
+        )
 
         if not project:
             raise_not_found("Project", project_id)
@@ -203,10 +215,7 @@ class ProjectService:
         return project
 
     def update_project(
-        self,
-        project_id: int,
-        request: ProjectUpdateRequest,
-        current_user: User
+        self, project_id: int, request: ProjectUpdateRequest, current_user: User
     ) -> Project:
         """
         更新项目
@@ -235,9 +244,11 @@ class ProjectService:
 
         # 检查名称冲突
         if request.name and request.name != project.name:
-            existing = self.db.query(Project).filter(
-                and_(Project.name == request.name, Project.id != project_id)
-            ).first()
+            existing = (
+                self.db.query(Project)
+                .filter(and_(Project.name == request.name, Project.id != project_id))
+                .first()
+            )
             if existing:
                 raise_conflict("Project", request.name)
 
@@ -282,9 +293,11 @@ class ProjectService:
         project = self.get_project(project_id, current_user)
 
         # 检查关联数据
-        expense_count = self.db.query(ProjectExpense).filter(
-            ProjectExpense.project_id == project_id
-        ).count()
+        expense_count = (
+            self.db.query(ProjectExpense)
+            .filter(ProjectExpense.project_id == project_id)
+            .count()
+        )
 
         if expense_count > 0:
             raise BusinessError(
@@ -304,10 +317,7 @@ class ProjectService:
         return True
 
     def mark_project_fulfilled(
-        self,
-        project_id: int,
-        request: ProjectMarkFulfilledRequest,
-        current_user: User
+        self, project_id: int, request: ProjectMarkFulfilledRequest, current_user: User
     ) -> Project:
         """
         标记项目履约完成
@@ -339,7 +349,9 @@ class ProjectService:
         if current_user.role in ["admin", "project_owner", "ceo"]:
             can_fulfill = True
         elif current_user.role == "account_manager":
-            can_fulfill = project.account_manager_id == self._user_id_to_int(current_user.id)
+            can_fulfill = project.account_manager_id == self._user_id_to_int(
+                current_user.id
+            )
 
         if not can_fulfill:
             raise_permission_denied("mark_project_fulfilled", str(project_id))
@@ -369,10 +381,7 @@ class ProjectService:
     # ========================================
 
     def assign_member(
-        self,
-        project_id: int,
-        request: ProjectMemberAssignRequest,
-        current_user: User
+        self, project_id: int, request: ProjectMemberAssignRequest, current_user: User
     ) -> ProjectMember:
         """
         分配项目成员
@@ -407,19 +416,20 @@ class ProjectService:
             raise_not_found("User", str(user_id))
 
         # 检查是否已是成员
-        existing = self.db.query(ProjectMember).filter(
-            ProjectMember.project_id == project_id,
-            ProjectMember.user_id == user_id
-        ).first()
+        existing = (
+            self.db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == project_id, ProjectMember.user_id == user_id
+            )
+            .first()
+        )
 
         if existing:
             raise_conflict("ProjectMember", f"{project_id}:{user_id}")
 
         # 创建成员关联
         member = ProjectMember(
-            project_id=project_id,
-            user_id=user_id,
-            role=request.role
+            project_id=project_id, user_id=user_id, role=request.role
         )
 
         self.db.add(member)
@@ -429,26 +439,22 @@ class ProjectService:
         return member
 
     def get_project_members(
-        self,
-        project_id: int,
-        current_user: User
+        self, project_id: int, current_user: User
     ) -> List[ProjectMember]:
         """获取项目成员列表"""
         # 验证项目访问权限
         self.get_project(project_id, current_user)
 
-        members = self.db.query(ProjectMember).options(
-            joinedload(ProjectMember.user)
-        ).filter(ProjectMember.project_id == project_id).all()
+        members = (
+            self.db.query(ProjectMember)
+            .options(joinedload(ProjectMember.user))
+            .filter(ProjectMember.project_id == project_id)
+            .all()
+        )
 
         return members
 
-    def remove_member(
-        self,
-        project_id: int,
-        user_id: str,
-        current_user: User
-    ) -> bool:
+    def remove_member(self, project_id: int, user_id: str, current_user: User) -> bool:
         """
         移除项目成员
 
@@ -475,10 +481,13 @@ class ProjectService:
         # 转换 user_id
         uid = self._to_uuid(user_id)
 
-        member = self.db.query(ProjectMember).filter(
-            ProjectMember.project_id == project_id,
-            ProjectMember.user_id == uid
-        ).first()
+        member = (
+            self.db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == project_id, ProjectMember.user_id == uid
+            )
+            .first()
+        )
 
         if not member:
             raise_not_found("ProjectMember", f"{project_id}:{user_id}")
@@ -497,10 +506,7 @@ class ProjectService:
     # ========================================
 
     def add_expense(
-        self,
-        project_id: int,
-        request: ProjectExpenseRequest,
-        current_user: User
+        self, project_id: int, request: ProjectExpenseRequest, current_user: User
     ) -> ProjectExpense:
         """添加项目费用"""
         project = self.get_project(project_id, current_user)
@@ -514,7 +520,7 @@ class ProjectService:
             amount=request.amount,
             description=request.description,
             expense_date=request.expense_date,
-            created_by=current_user.id
+            created_by=current_user.id,
         )
 
         self.db.add(expense)
@@ -524,10 +530,7 @@ class ProjectService:
         return expense
 
     def get_project_expenses(
-        self,
-        project_id: int,
-        current_user: User,
-        pagination: PaginationParams
+        self, project_id: int, current_user: User, pagination: PaginationParams
     ) -> Tuple[List[ProjectExpense], int]:
         """获取项目费用列表 (分页)"""
         # 验证项目访问权限
@@ -549,11 +552,19 @@ class ProjectService:
         """
         获取项目统计信息
 
-        权限: admin, finance, account_manager, ceo
+        权限: admin, finance, ceo, data_operator
+        注意: account_manager 只能管理账户，不能查看项目统计
 
         SoT Reference: BUSINESS_RULES.md v4.6 BR-PROJ-006
         """
-        if current_user.role not in ["admin", "finance", "account_manager", "ceo"]:
+        # data_operator (主管) 需要统计信息来监督团队
+        # account_manager 不允许查看统计信息 (test_project_permissions.py:122)
+        if current_user.role not in [
+            "admin",
+            "finance",
+            "ceo",
+            "data_operator",
+        ]:
             raise_permission_denied("view_statistics")
 
         query = self.db.query(Project)
@@ -562,7 +573,9 @@ class ProjectService:
         # 基础统计
         total = query.count()
         active = query.filter(Project.status == ProjectStatus.ACTIVE.value).count()
-        suspended = query.filter(Project.status == ProjectStatus.SUSPENDED.value).count()
+        suspended = query.filter(
+            Project.status == ProjectStatus.SUSPENDED.value
+        ).count()
         archived = query.filter(Project.status == ProjectStatus.ARCHIVED.value).count()
         draft = query.filter(Project.status == ProjectStatus.DRAFT.value).count()
 
@@ -571,7 +584,9 @@ class ProjectService:
         running = query.filter(Project.fulfillment_status == "running").count()
 
         # 预算汇总
-        budget_sum = query.with_entities(func.sum(Project.budget)).scalar() or Decimal("0.00")
+        budget_sum = query.with_entities(func.sum(Project.budget)).scalar() or Decimal(
+            "0.00"
+        )
 
         return {
             "total_projects": total,
@@ -597,10 +612,13 @@ class ProjectService:
             return project.account_manager_id == self._user_id_to_int(user.id)
 
         # media_buyer/pitcher: 必须是项目成员
-        member = self.db.query(ProjectMember).filter(
-            ProjectMember.project_id == project.id,
-            ProjectMember.user_id == user.id
-        ).first()
+        member = (
+            self.db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == project.id, ProjectMember.user_id == user.id
+            )
+            .first()
+        )
 
         return member is not None
 
@@ -630,24 +648,27 @@ class ProjectService:
         ).scalar() or Decimal("0.00")
 
         # 获取项目下的广告账户ID列表
-        account_ids = self.db.query(AdAccount.id).filter(
-            AdAccount.project_id == project.id
-        ).all()
+        account_ids = (
+            self.db.query(AdAccount.id).filter(AdAccount.project_id == project.id).all()
+        )
         account_id_list = [a[0] for a in account_ids]
 
         # 统计账户数
         total_accounts = len(account_id_list)
-        active_accounts = self.db.query(AdAccount).filter(
-            AdAccount.project_id == project.id,
-            AdAccount.status == 'active'
-        ).count()
+        active_accounts = (
+            self.db.query(AdAccount)
+            .filter(AdAccount.project_id == project.id, AdAccount.status == "active")
+            .count()
+        )
 
         # 聚合进粉数 (从日报的 follows_count 字段)
         total_follows = 0
         if account_id_list:
-            result = self.db.query(func.sum(DailyReport.follows_count)).filter(
-                DailyReport.ad_account_id.in_(account_id_list)
-            ).scalar()
+            result = (
+                self.db.query(func.sum(DailyReport.follows_count))
+                .filter(DailyReport.ad_account_id.in_(account_id_list))
+                .scalar()
+            )
             total_follows = result or 0
 
         project.total_spent = total_spent
@@ -668,46 +689,41 @@ class ProjectService:
 
         # 批量查询账户数
         account_counts = dict(
-            self.db.query(
-                AdAccount.project_id,
-                func.count(AdAccount.id)
-            ).filter(
-                AdAccount.project_id.in_(project_ids)
-            ).group_by(AdAccount.project_id).all()
+            self.db.query(AdAccount.project_id, func.count(AdAccount.id))
+            .filter(AdAccount.project_id.in_(project_ids))
+            .group_by(AdAccount.project_id)
+            .all()
         )
 
         # 批量查询活跃账户数
         active_counts = dict(
-            self.db.query(
-                AdAccount.project_id,
-                func.count(AdAccount.id)
-            ).filter(
-                AdAccount.project_id.in_(project_ids),
-                AdAccount.status == 'active'
-            ).group_by(AdAccount.project_id).all()
+            self.db.query(AdAccount.project_id, func.count(AdAccount.id))
+            .filter(AdAccount.project_id.in_(project_ids), AdAccount.status == "active")
+            .group_by(AdAccount.project_id)
+            .all()
         )
 
         # 批量查询进粉数 (通过账户关联日报)
         # 子查询: 获取每个项目的账户ID
-        follows_subquery = self.db.query(
-            AdAccount.project_id,
-            func.sum(DailyReport.follows_count).label('total_follows')
-        ).join(
-            DailyReport, DailyReport.ad_account_id == AdAccount.id
-        ).filter(
-            AdAccount.project_id.in_(project_ids)
-        ).group_by(AdAccount.project_id).all()
+        follows_subquery = (
+            self.db.query(
+                AdAccount.project_id,
+                func.sum(DailyReport.follows_count).label("total_follows"),
+            )
+            .join(DailyReport, DailyReport.ad_account_id == AdAccount.id)
+            .filter(AdAccount.project_id.in_(project_ids))
+            .group_by(AdAccount.project_id)
+            .all()
+        )
 
         follows_counts = {r[0]: r[1] or 0 for r in follows_subquery}
 
         # 批量查询费用
         expense_sums = dict(
-            self.db.query(
-                ProjectExpense.project_id,
-                func.sum(ProjectExpense.amount)
-            ).filter(
-                ProjectExpense.project_id.in_(project_ids)
-            ).group_by(ProjectExpense.project_id).all()
+            self.db.query(ProjectExpense.project_id, func.sum(ProjectExpense.amount))
+            .filter(ProjectExpense.project_id.in_(project_ids))
+            .group_by(ProjectExpense.project_id)
+            .all()
         )
 
         # 赋值给每个项目
@@ -726,8 +742,7 @@ class ProjectService:
         if isinstance(value, int):
             # 如果是整数，尝试从数据库查找
             raise ValidationError(
-                message="user_id 必须是 UUID 格式",
-                error=ValidationErrorCodes.INVALID_FORMAT
+                message="user_id 必须是 UUID 格式", error=ValidationErrorCodes.INVALID_FORMAT
             )
         return UUID(str(value))
 
@@ -744,10 +759,9 @@ class ProjectService:
 # 缓存支持 (Phase 3 性能优化)
 # ========================================
 
+
 async def get_project_statistics_cached(
-    db: Session,
-    current_user: User,
-    ttl: int = 120
+    db: Session, current_user: User, ttl: int = 120
 ) -> dict:
     """
     获取项目统计信息 (带缓存)
@@ -769,8 +783,7 @@ async def get_project_statistics_cached(
 
     # 生成缓存键 (包含用户角色，因为不同角色看到的统计不同)
     cache_key = cache_manager.make_key(
-        "projects", "statistics",
-        str(current_user.id), current_user.role
+        "projects", "statistics", str(current_user.id), current_user.role
     )
 
     # 尝试从缓存获取
@@ -786,10 +799,7 @@ async def get_project_statistics_cached(
     stats = service.get_project_statistics(current_user)
 
     # 序列化 Decimal 为字符串
-    cache_data = {
-        k: str(v) if isinstance(v, Decimal) else v
-        for k, v in stats.items()
-    }
+    cache_data = {k: str(v) if isinstance(v, Decimal) else v for k, v in stats.items()}
 
     # 写入缓存
     await cache_manager.set(cache_key, cache_data, ttl)
@@ -798,8 +808,7 @@ async def get_project_statistics_cached(
 
 
 async def invalidate_project_cache(
-    project_id: Optional[int] = None,
-    user_id: Optional[str] = None
+    project_id: Optional[int] = None, user_id: Optional[str] = None
 ) -> int:
     """
     失效项目相关缓存

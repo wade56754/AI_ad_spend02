@@ -27,7 +27,7 @@ from decimal import Decimal
 from datetime import date
 from uuid import uuid4
 
-from backend.models.base import UserRole, DailyReportStatus
+from backend.models.enums import UserRole, DailyReportStatus
 from backend.core.error_codes import AuthErrorCodes
 
 
@@ -39,23 +39,37 @@ class TestRolePermissions:
     """
 
     def test_valid_roles_enum(self):
-        """验证 5 个标准角色存在"""
-        expected_roles = ['admin', 'finance', 'data_operator', 'account_manager', 'media_buyer']
+        """验证 7 个标准角色存在 (MASTER.md v4.4 §2.4)"""
+        expected_roles = [
+            "ceo",  # 老板
+            "admin",  # 系统管理员
+            "project_owner",  # 项目负责人
+            "finance",  # 财务
+            "data_operator",  # 主管(supervisor)
+            "account_manager",  # 户管
+            "media_buyer",  # 投手(pitcher)
+        ]
 
         actual_roles = [role.value for role in UserRole]
 
         for expected in expected_roles:
-            assert expected in actual_roles, \
-                f"角色 '{expected}' 应存在于 UserRole 枚举"
+            assert expected in actual_roles, f"角色 '{expected}' 应存在于 UserRole 枚举"
 
     def test_no_extra_roles(self):
-        """验证没有额外的非标准角色"""
-        valid_roles = {'admin', 'finance', 'data_operator', 'account_manager', 'media_buyer'}
+        """验证没有额外的非标准角色 (MASTER.md v4.4 §2.4: 7个合法角色)"""
+        valid_roles = {
+            "ceo",
+            "admin",
+            "project_owner",
+            "finance",
+            "data_operator",
+            "account_manager",
+            "media_buyer",
+        }
         actual_roles = {role.value for role in UserRole}
 
         extra_roles = actual_roles - valid_roles
-        assert len(extra_roles) == 0, \
-            f"发现非标准角色: {extra_roles}"
+        assert len(extra_roles) == 0, f"发现非标准角色: {extra_roles}"
 
 
 class TestAdminPermissions:
@@ -66,36 +80,23 @@ class TestAdminPermissions:
     - 不可执行 REVERSAL（需要 finance 角色）
     """
 
-    def test_admin_can_access_all_projects(
-        self,
-        client,
-        admin_headers,
-        test_project
-    ):
+    def test_admin_can_access_all_projects(self, client, admin_headers, test_project):
         """admin 可查看所有项目"""
-        response = client.get("/api/v1/projects/", headers=admin_headers)
+        response = client.get("/api/v1/projects", headers=admin_headers)
         assert response.status_code == 200
 
     def test_admin_can_access_all_daily_reports(
-        self,
-        client,
-        admin_headers,
-        test_daily_report
+        self, client, admin_headers, test_daily_report
     ):
         """admin 可查看所有日报"""
-        response = client.get("/api/v1/daily-reports/", headers=admin_headers)
+        response = client.get("/api/v1/daily-reports", headers=admin_headers)
         assert response.status_code == 200
 
-    def test_admin_can_access_ledger(
-        self,
-        client,
-        admin_headers,
-        test_ad_account
-    ):
+    def test_admin_can_access_ledger(self, client, admin_headers, test_ad_account):
         """admin 可查看账本"""
         response = client.get(
             f"/api/v1/ledger/entries?ad_account_id={test_ad_account.id}",
-            headers=admin_headers
+            headers=admin_headers,
         )
         # 200 或 404（无数据）都是可接受的
         assert response.status_code in [200, 404]
@@ -110,33 +111,27 @@ class TestFinancePermissions:
     """
 
     def test_finance_cannot_modify_daily_report_status(
-        self,
-        client,
-        finance_headers,
-        test_daily_report,
-        db_session
+        self, client, finance_headers, test_daily_report, db_session
     ):
         """finance 不可修改日报状态"""
         # 尝试修改日报状态
         response = client.patch(
             f"/api/v1/daily-reports/{test_daily_report.id}",
             headers=finance_headers,
-            json={"status": "trend_ok"}
+            json={"status": "trend_ok"},
         )
         # 应该被拒绝 (403 Forbidden 或 405 Method Not Allowed)
-        assert response.status_code in [403, 405, 422], \
-            f"finance 不应能修改日报状态，但返回 {response.status_code}"
+        assert response.status_code in [
+            403,
+            405,
+            422,
+        ], f"finance 不应能修改日报状态，但返回 {response.status_code}"
 
-    def test_finance_can_access_ledger(
-        self,
-        client,
-        finance_headers,
-        test_ad_account
-    ):
+    def test_finance_can_access_ledger(self, client, finance_headers, test_ad_account):
         """finance 可查看账本"""
         response = client.get(
             f"/api/v1/ledger/entries?ad_account_id={test_ad_account.id}",
-            headers=finance_headers
+            headers=finance_headers,
         )
         assert response.status_code in [200, 404]
 
@@ -150,17 +145,14 @@ class TestDataOperatorPermissions:
     """
 
     def test_data_operator_cannot_modify_raw_data(
-        self,
-        client,
-        data_operator_headers,
-        test_daily_report
+        self, client, data_operator_headers, test_daily_report
     ):
         """data_operator 不可修改 raw 数据"""
         # 尝试修改 conversions_raw
         response = client.patch(
             f"/api/v1/daily-reports/{test_daily_report.id}",
             headers=data_operator_headers,
-            json={"conversions_raw": 999}
+            json={"conversions_raw": 999},
         )
         # 应该被拒绝或忽略该字段
         # 如果返回 200，则需要验证 conversions_raw 未被修改
@@ -170,13 +162,9 @@ class TestDataOperatorPermissions:
                 # 验证 raw 数据未被修改
                 pass  # 具体验证逻辑取决于 API 实现
 
-    def test_data_operator_can_view_daily_reports(
-        self,
-        client,
-        data_operator_headers
-    ):
+    def test_data_operator_can_view_daily_reports(self, client, data_operator_headers):
         """data_operator 可查看日报列表"""
-        response = client.get("/api/v1/daily-reports/", headers=data_operator_headers)
+        response = client.get("/api/v1/daily-reports", headers=data_operator_headers)
         assert response.status_code == 200
 
 
@@ -189,19 +177,14 @@ class TestAccountManagerPermissions:
     """
 
     def test_account_manager_can_view_ad_accounts(
-        self,
-        client,
-        account_manager_headers
+        self, client, account_manager_headers
     ):
         """account_manager 可查看广告账户"""
-        response = client.get("/api/v1/ad-accounts/", headers=account_manager_headers)
+        response = client.get("/api/v1/ad-accounts", headers=account_manager_headers)
         assert response.status_code == 200
 
     def test_account_manager_cannot_create_ledger_entry(
-        self,
-        client,
-        account_manager_headers,
-        test_ad_account
+        self, client, account_manager_headers, test_ad_account
     ):
         """account_manager 不可创建账本记录"""
         response = client.post(
@@ -211,11 +194,15 @@ class TestAccountManagerPermissions:
                 "ad_account_id": test_ad_account.id,
                 "entry_type": "topup",
                 "amount": "1000.00",
-            }
+            },
         )
         # 应该被拒绝 (403, 404, 405)
-        assert response.status_code in [403, 404, 405, 422], \
-            f"account_manager 不应能创建账本记录，但返回 {response.status_code}"
+        assert response.status_code in [
+            403,
+            404,
+            405,
+            422,
+        ], f"account_manager 不应能创建账本记录，但返回 {response.status_code}"
 
 
 class TestMediaBuyerPermissions:
@@ -227,37 +214,34 @@ class TestMediaBuyerPermissions:
     """
 
     def test_media_buyer_can_create_own_daily_report(
-        self,
-        client,
-        media_buyer_headers,
-        test_ad_account
+        self, client, media_buyer_headers, test_ad_account
     ):
         """media_buyer 可创建自己的日报"""
         response = client.post(
-            "/api/v1/daily-reports/",
+            "/api/v1/daily-reports",
             headers=media_buyer_headers,
             json={
                 "ad_account_id": test_ad_account.id,
                 "report_date": date.today().isoformat(),
                 "conversions_raw": 50,
                 "raw_spend": "100.00",
-            }
+            },
         )
         # 201 Created 或 200 OK
-        assert response.status_code in [200, 201, 422], \
-            f"media_buyer 应能创建日报，但返回 {response.status_code}: {response.text}"
+        assert response.status_code in [
+            200,
+            201,
+            422,
+        ], f"media_buyer 应能创建日报，但返回 {response.status_code}: {response.text}"
 
     def test_media_buyer_cannot_modify_final_data(
-        self,
-        client,
-        media_buyer_headers,
-        test_daily_report
+        self, client, media_buyer_headers, test_daily_report
     ):
         """media_buyer 不可修改 final 数据"""
         response = client.patch(
             f"/api/v1/daily-reports/{test_daily_report.id}",
             headers=media_buyer_headers,
-            json={"conversions_final": 999}
+            json={"conversions_final": 999},
         )
         # 应该被拒绝或忽略该字段
         if response.status_code == 200:
@@ -273,16 +257,13 @@ class TestSeparationOfDuties:
     """
 
     def test_sod001_media_buyer_cannot_modify_conversions_final(
-        self,
-        client,
-        media_buyer_headers,
-        test_daily_report
+        self, client, media_buyer_headers, test_daily_report
     ):
         """SOD-001: 投手不可修改 conversions_final"""
         response = client.patch(
             f"/api/v1/daily-reports/{test_daily_report.id}",
             headers=media_buyer_headers,
-            json={"conversions_final": 999}
+            json={"conversions_final": 999},
         )
         # 验证请求被拒绝或字段被忽略
         if response.status_code == 403:
@@ -292,36 +273,33 @@ class TestSeparationOfDuties:
             pass
 
     def test_sod002_data_operator_cannot_modify_conversions_raw(
-        self,
-        client,
-        data_operator_headers,
-        test_daily_report
+        self, client, data_operator_headers, test_daily_report
     ):
         """SOD-002: 运营不可修改 conversions_raw"""
         response = client.patch(
             f"/api/v1/daily-reports/{test_daily_report.id}",
             headers=data_operator_headers,
-            json={"conversions_raw": 999}
+            json={"conversions_raw": 999},
         )
         # 验证请求被拒绝或字段被忽略
         if response.status_code == 403:
             assert True
 
     def test_sod003_finance_cannot_modify_daily_report_state(
-        self,
-        client,
-        finance_headers,
-        test_daily_report
+        self, client, finance_headers, test_daily_report
     ):
         """SOD-003: 财务不可修改 daily_reports.state"""
         response = client.patch(
             f"/api/v1/daily-reports/{test_daily_report.id}",
             headers=finance_headers,
-            json={"status": "final_confirmed"}
+            json={"status": "final_confirmed"},
         )
         # 验证请求被拒绝 (405 如果 PATCH 不支持)
-        assert response.status_code in [403, 405, 422], \
-            f"财务不应能修改日报状态，但返回 {response.status_code}"
+        assert response.status_code in [
+            403,
+            405,
+            422,
+        ], f"财务不应能修改日报状态，但返回 {response.status_code}"
 
     def test_sod004_role_conflict_media_buyer_data_operator(self):
         """SOD-004: 禁止同时拥有 media_buyer 和 data_operator"""
@@ -350,13 +328,13 @@ class TestUnauthorizedAccess:
 
     def test_no_token_returns_401(self, client):
         """无 Token 请求返回 401"""
-        response = client.get("/api/v1/projects/")
+        response = client.get("/api/v1/projects")
         assert response.status_code == 401
 
     def test_invalid_token_returns_401(self, client):
         """无效 Token 返回 401"""
         headers = {"Authorization": "Bearer invalid_token_12345"}
-        response = client.get("/api/v1/projects/", headers=headers)
+        response = client.get("/api/v1/projects", headers=headers)
         assert response.status_code == 401
 
     def test_expired_token_returns_401(self, client):
@@ -364,7 +342,7 @@ class TestUnauthorizedAccess:
         # 使用一个明显过期的 token
         expired_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxfQ.invalid"
         headers = {"Authorization": f"Bearer {expired_token}"}
-        response = client.get("/api/v1/projects/", headers=headers)
+        response = client.get("/api/v1/projects", headers=headers)
         assert response.status_code == 401
 
 
@@ -378,19 +356,19 @@ class TestAuthErrorCodes:
     def test_auth_error_codes_exist(self):
         """验证认证错误码已定义"""
         # AUTH_400: 未提供认证令牌
-        assert hasattr(AuthErrorCodes, 'TOKEN_MISSING')
+        assert hasattr(AuthErrorCodes, "TOKEN_MISSING")
         assert AuthErrorCodes.TOKEN_MISSING.code == "AUTH_400"
 
         # AUTH_401: 无效的认证令牌
-        assert hasattr(AuthErrorCodes, 'TOKEN_INVALID')
+        assert hasattr(AuthErrorCodes, "TOKEN_INVALID")
         assert AuthErrorCodes.TOKEN_INVALID.code == "AUTH_401"
 
         # AUTH_402: 令牌已过期
-        assert hasattr(AuthErrorCodes, 'TOKEN_EXPIRED')
+        assert hasattr(AuthErrorCodes, "TOKEN_EXPIRED")
         assert AuthErrorCodes.TOKEN_EXPIRED.code == "AUTH_402"
 
         # AUTH_500: 权限不足
-        assert hasattr(AuthErrorCodes, 'PERMISSION_DENIED')
+        assert hasattr(AuthErrorCodes, "PERMISSION_DENIED")
         assert AuthErrorCodes.PERMISSION_DENIED.code == "AUTH_500"
 
     def test_auth_error_codes_have_correct_status(self):
