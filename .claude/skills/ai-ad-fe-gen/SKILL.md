@@ -808,7 +808,7 @@ export function TopupsPageShell() {
 | **写入权限检查** | 目标文件在该模块可写范围内 | P0 |
 | 类型完整性 | 无 any 类型 | P0 |
 | 状态枚举一致性 | 对比 STATE_MACHINE.md (8 状态: raw_submitted → ... → final_locked) | P0 |
-| 角色合规 | 对比 5 技术角色 (admin/finance/data_operator/account_manager/media_buyer) | P0 |
+| 角色合规 | 对比 4 技术角色 (admin/finance/account_manager/media_buyer) - MASTER.md v4.6 | P0 |
 | API 对接正确性 | 对比 API_SOT.md | P0 |
 | 禁区检查 | 不生成 node_modules/.next | P0 |
 | UI 组件使用 | 使用 shadcn/ui | P1 |

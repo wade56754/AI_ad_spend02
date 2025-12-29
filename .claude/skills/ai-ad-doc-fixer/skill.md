@@ -375,7 +375,7 @@ AFTER: `new_follows: number`
 3. **最小修改**: 只改必须改的，避免过度"优化"
 4. **不猜测**: 信息不足时用 Missing 标记，不自行填补
 5. **不解释**: 输出结论和证据，不输出思考过程
-6. **角色限制**: 遵循 7 角色标准 (ceo/project_owner/finance/supervisor/pitcher/account_manager/admin)
+6. **角色限制**: 遵循 6 业务层角色 (ceo/project_owner/finance/pitcher/account_manager/admin) + 4 技术层角色 (admin/finance/account_manager/media_buyer) - PRD v2.2, MASTER.md v4.6
 
 ## 12. Version History
 

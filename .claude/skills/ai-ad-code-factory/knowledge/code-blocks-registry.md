@@ -188,22 +188,19 @@ class BusinessError(Exception):
 
 ### CB-BE-004: PermissionFilter (权限过滤)
 
-| 角色 | 数据范围 |
-|------|---------|
-| ceo/finance/admin | 全部数据 |
-| project_owner | 本项目 |
-| supervisor | 本团队 |
-| pitcher/account_manager | 本人 |
+| 角色 | 数据范围 | 技术层判断 |
+|------|---------|-----------|
+| ceo/finance/admin | 全部数据 | role IN (admin, finance) |
+| project_owner | 本项目 | is_project_owner=true |
+| pitcher/account_manager | 本人 | role IN (media_buyer, account_manager) |
 
 ```python
 # backend/core/permissions.py
 def apply_permission_filter(query, model, user, project_field="project_id", user_field="created_by"):
-    if user.role in ["ceo", "finance", "admin"]:
+    if user.role in ["admin", "finance"]:
         return query
-    if user.role == "project_owner":
+    if user.is_project_owner:  # 业务属性判断
         return query.filter(getattr(model, project_field).in_([p.id for p in user.managed_projects]))
-    if user.role == "supervisor":
-        return query.filter(getattr(model, user_field).in_([u.id for u in user.team_members]))
     return query.filter(getattr(model, user_field) == user.id)
 ```
 

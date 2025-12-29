@@ -6,26 +6,41 @@
 # SoT 文档版本映射
 # =============================================================================
 sot_versions:
-  MASTER.md: "v4.4"
-  API_SOT.md: "v9.3"
-  BUSINESS_RULES.md: "v4.1"
-  ERROR_CODES_SOT.md: "v2.1"
-  DATA_SCHEMA.md: "v5.2"
-  STATE_MACHINE.md: "v2.6"
+  MASTER.md: "v4.6"
+  API_SOT.md: "v9.4"
+  BUSINESS_RULES.md: "v4.6"
+  ERROR_CODES_SOT.md: "v2.3"
+  DATA_SCHEMA.md: "v5.6"
+  STATE_MACHINE.md: "v2.8"
   LEDGER_SOT.md: "v1.1"
-  AUTH_SPEC.md: "v2.0"
+  AUTH_SPEC.md: "v2.2"
 
 # =============================================================================
-# 有效角色列表 (来源: MASTER.md v4.4 §2.4)
+# 业务层角色列表 (来源: PRD v2.2)
 # =============================================================================
-valid_roles:
+business_roles:
   - ceo              # 老板 - 资金安全、公司盈亏、最终决策
-  - project_owner    # 项目负责人 - 项目盈亏、资金使用效率
+  - project_owner    # 项目负责人 - 日报审核、项目盈亏、资金使用效率
   - finance          # 财务 - 资金出入准确、数据真实、对账
-  - supervisor       # 主管 - 团队产出、投手管理、日常监督
   - pitcher          # 投手 - CPL 达标、日报准确、执行投放
   - account_manager  # 户管 - 账户分配、账户状态监控
   - admin            # 管理员 - 系统配置（不参与业务）
+
+# =============================================================================
+# 技术层角色列表 (来源: MASTER.md v4.6 §INV-007)
+# =============================================================================
+technical_roles:
+  - admin            # 系统管理权限
+  - finance          # 财务权限
+  - account_manager  # 账户管理权限
+  - media_buyer      # 投放执行权限
+
+# =============================================================================
+# 废弃角色 (PRD v2.2 移除)
+# =============================================================================
+deprecated_roles:
+  - supervisor       # → project_owner
+  - data_operator    # → project_owner/finance
 
 # =============================================================================
 # Forbidden code patterns (regex)
@@ -74,10 +89,10 @@ forbidden_patterns:
   # F-006: Legacy role names forbidden
   old_role_names:
     pattern: >-
-      role\s*[=!]=\s*['"]?(operator|manager|owner|viewer|editor)['"]?
-    message: "Legacy role name detected, only 7 standard roles allowed"
+      role\s*[=!]=\s*['"]?(operator|manager|owner|viewer|editor|supervisor|data_operator)['"]?
+    message: "Legacy role name detected, use 6 business roles (PRD v2.2) or 4 technical roles (MASTER.md v4.6)"
     severity: error
-    rule_ref: "MASTER.md v4.4 S2.4"
+    rule_ref: "MASTER.md v4.6 §INV-007, PRD v2.2"
 
   # F-007: Pydantic v1 syntax forbidden
   pydantic_v1_syntax:

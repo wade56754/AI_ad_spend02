@@ -217,19 +217,28 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 ✅ 正确: 查找 DATA_SCHEMA.md § 3.4.1，使用 `amount`
 ```
 
-### 2. 角色限定为 5 个
-**规则**: 仅允许使用 5 个标准角色，禁止旧角色名
+### 2. 角色限定（PRD v2.2 + MASTER.md v4.6）
+**规则**: 业务层 6 角色 + 技术层 4 角色，禁止废弃角色
 
 ```python
-# ✅ 正确
-VALID_ROLES = ["admin", "finance", "data_operator", "account_manager", "media_buyer"]
+# ✅ 业务层 6 角色 (PRD v2.2)
+BUSINESS_ROLES = ["ceo", "project_owner", "finance", "pitcher", "account_manager", "admin"]
 
-# ❌ 错误（历史兼容，禁止在新代码中使用）
-OLD_ROLES = ["manager", "data_clerk", "trader"]
+# ✅ 技术层 4 角色 (MASTER.md v4.6 §INV-007)
+TECHNICAL_ROLES = ["admin", "finance", "account_manager", "media_buyer"]
+
+# ❌ 废弃角色（禁止在新代码中使用）
+DEPRECATED_ROLES = ["supervisor", "data_operator", "manager", "data_clerk", "trader"]
 ```
 
-**历史映射**（仅用于理解旧代码）:
-- `data_clerk` → `data_operator`
+**角色映射**:
+- `project_owner` → 通过 `users.is_project_owner=true` 判断（业务属性）
+- `pitcher` → 技术层为 `media_buyer`
+- `ceo` → 技术层为 `admin`
+
+**废弃映射**（仅用于理解旧代码）:
+- `supervisor` → `project_owner` (PRD v2.2)
+- `data_operator` → `project_owner`/`finance` (PRD v2.2)
 - `manager` → `account_manager`
 - `recharge_requests` → `topup_requests`
 
@@ -295,23 +304,32 @@ return success_response(
 
 ## 👥 四、角色与权限规则
 
-### 五角色体系
-| 角色 | 职责 | 关键权限 |
-|------|------|----------|
-| `admin` | 系统管理员 | 全部权限 |
-| `finance` | 财务 | 充值终审、对账、报表 |
-| `data_operator` | 数据运营 | 日报审核、数据管理 |
-| `account_manager` | 账户管理员 | 项目管理、账户分配 |
-| `media_buyer` | 广告投手 | 日报提交、充值申请 |
+### 业务层 6 角色体系 (PRD v2.2)
+| 角色 | 业务名称 | 职责 | 技术层映射 |
+|------|----------|------|-----------|
+| `ceo` | 老板 | 资金安全、公司盈亏、最终决策 | `admin` |
+| `project_owner` | 项目负责人 | 日报审核、项目盈亏、资金使用效率 | `is_project_owner=true` |
+| `finance` | 财务 | 充值终审、对账、报表 | `finance` |
+| `pitcher` | 投手 | 日报提交、充值申请、CPL达标 | `media_buyer` |
+| `account_manager` | 户管 | 项目管理、账户分配 | `account_manager` |
+| `admin` | 管理员 | 系统配置（不参与业务） | `admin` |
+
+### 技术层 4 角色 (MASTER.md v4.6 §INV-007)
+| 技术角色 | CHECK 约束 |
+|---------|-----------|
+| `admin` | 系统管理权限 |
+| `finance` | 财务权限 |
+| `account_manager` | 账户管理权限 |
+| `media_buyer` | 投放执行权限 |
 
 ### 核心权限分工
 **日报流程**:
-- 提交: `media_buyer`
-- 审核: `data_operator`（`admin` 兜底）
+- 提交: `pitcher` (技术层: `media_buyer`)
+- 审核: `project_owner` (技术层: `is_project_owner=true`)，`admin` 兜底
 
 **充值流程**:
-- 发起: `media_buyer` / `account_manager`
-- 复核: `data_operator`
+- 发起: `pitcher` / `account_manager`
+- 初审: `project_owner`
 - 终审: `finance`
 - 入账: `finance` / `system`（自动）
 
@@ -515,14 +533,17 @@ raise HTTPException(status_code=400, detail="状态错误")  # 没有使用标�
 
 ### 2. 角色合法性检查
 ```markdown
-□ 我使用的角色是否在以下列表中？
-  [admin, finance, data_operator, account_manager, media_buyer]
+□ 业务层角色是否在以下列表中？
+  [ceo, project_owner, finance, pitcher, account_manager, admin]
+
+□ 技术层角色是否在以下列表中？
+  [admin, finance, account_manager, media_buyer]
 
   我的代码中使用了: ____________
   检查结果: ✅/❌
 
-□ 我是否不小心使用了旧角色名？
-  [data_clerk, manager, trader]
+□ 我是否不小心使用了废弃角色名？
+  [supervisor, data_operator, data_clerk, manager, trader]
   检查结果: ✅ 未使用 / ❌ 使用了
 ```
 
@@ -609,15 +630,27 @@ AI_AD_SYSTEM_MAIN_DOCUMENT.md > API_DEVELOPMENT_FLOW.md >
 
 ## 📚 十一、快速参考
 
-### 合法角色（仅 5 个）
+### 业务层角色（6 个，PRD v2.2）
 ```python
-VALID_ROLES = [
-    "admin",           # 系统管理员
+BUSINESS_ROLES = [
+    "ceo",             # 老板
+    "project_owner",   # 项目负责人
     "finance",         # 财务
-    "data_operator",   # 数据运营
-    "account_manager", # 账户管理员
-    "media_buyer"      # 广告投手
+    "pitcher",         # 投手
+    "account_manager", # 户管
+    "admin"            # 管理员
 ]
+```
+
+### 技术层角色（4 个，MASTER.md v4.6）
+```python
+TECHNICAL_ROLES = [
+    "admin",           # 系统管理员/老板
+    "finance",         # 财务
+    "account_manager", # 户管
+    "media_buyer"      # 投手
+]
+# project_owner 通过 is_project_owner=true 判断
 ```
 
 ### 充值状态（完整）

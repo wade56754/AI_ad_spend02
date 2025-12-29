@@ -214,19 +214,24 @@ REPORT_STATUS = frozenset([
 ])
 ```
 
-### 6.2 用户角色 (7 角色)
+### 6.2 用户角色 (6 业务层 + 4 技术层)
 
 ```python
-# SoT: MASTER.md v4.4 §2.4
-USER_ROLE = frozenset([
+# SoT: PRD v2.2 业务层 6 角色
+BUSINESS_ROLES = frozenset([
     'ceo',              # 老板 - 资金安全、公司盈亏、最终决策
-    'project_owner',    # 项目负责人 - 项目盈亏、资金使用效率
+    'project_owner',    # 项目负责人 - 日报审核、项目盈亏、资金使用效率
     'finance',          # 财务 - 资金出入准确、数据真实、对账
-    'supervisor',       # 主管 - 团队产出、投手管理、日常监督
     'pitcher',          # 投手 - CPL 达标、日报准确、执行投放
     'account_manager',  # 户管 - 账户分配、账户状态监控
     'admin'             # 管理员 - 系统配置（不参与业务）
 ])
+
+# SoT: MASTER.md v4.6 §INV-007 技术层 4 角色
+TECHNICAL_ROLES = frozenset(['admin', 'finance', 'account_manager', 'media_buyer'])
+
+# 废弃角色 (PRD v2.2)
+DEPRECATED_ROLES = frozenset(['supervisor', 'data_operator'])
 ```
 
 ### 6.3 错误码前缀 (16 前缀)

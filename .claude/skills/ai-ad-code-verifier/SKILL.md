@@ -98,7 +98,7 @@ code_sources:
     │  Layer 3: SpecComplianceVerifier (优先级 30)             │
     │  - SoT 合规验证 (状态/角色/字段/错误码)                   │
     │  - 日报 8 状态验证 (raw_submitted...final_locked)       │
-    │  - 5 技术角色验证 (admin/finance/data_operator/account_manager/media_buyer) │
+    │  - 4 技术角色验证 (admin/finance/account_manager/media_buyer) - MASTER.md v4.6 │
     └───────────────────────┬─────────────────────────────────┘
                             │
     ┌───────────────────────▼─────────────────────────────────┐
@@ -495,21 +495,24 @@ code_sources:
     ])
     ```
 
-    合法角色 (7 角色, 来源: MASTER.md v4.4 §2.4):
+    合法角色 (6 业务层 + 4 技术层, 来源: PRD v2.2, MASTER.md v4.6):
     ```python
-    USER_ROLE = frozenset([
+    # 业务层 6 角色 (PRD v2.2)
+    BUSINESS_ROLES = frozenset([
         'ceo',              # 老板 - 资金安全、公司盈亏、最终决策
-        'project_owner',    # 项目负责人 - 项目盈亏、资金使用效率
+        'project_owner',    # 项目负责人 - 日报审核、项目盈亏、资金使用效率
         'finance',          # 财务 - 资金出入准确、数据真实、对账
-        'supervisor',       # 主管 - 团队产出、投手管理、日常监督
         'pitcher',          # 投手 - CPL 达标、日报准确、执行投放
         'account_manager',  # 户管 - 账户分配、账户状态监控
         'admin'             # 管理员 - 系统配置（不参与业务）
     ])
 
+    # 技术层 4 角色 (MASTER.md v4.6 §INV-007)
+    TECHNICAL_ROLES = frozenset(['admin', 'finance', 'account_manager', 'media_buyer'])
+
     # 已废弃角色 (会触发 SOT-004):
-    # media_buyer → pitcher
-    # data_operator → (已移除)
+    # supervisor → project_owner (PRD v2.2)
+    # data_operator → project_owner/finance (PRD v2.2)
     # super_admin → admin
     # accountant → finance
     ```

@@ -95,7 +95,7 @@
                   "});",
                   "",
                   "const json = pm.response.json();",
-                  "pm.environment.set('data_operator_token', json.data.access_token);"
+                  "pm.environment.set('project_owner_token', json.data.access_token);"
                 ],
                 "type": "text/javascript"
               }
@@ -114,7 +114,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{data_operator_email}}\",\n  \"password\": \"{{data_operator_password}}\"\n}"
+              "raw": "{\n  \"email\": \"{{project_owner_email}}\",\n  \"password\": \"{{project_owner_password}}\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/login",
@@ -202,8 +202,8 @@
               "listen": "prerequest",
               "script": {
                 "exec": [
-                  "// Use data operator token for system operations",
-                  "pm.environment.set('access_token', pm.environment.get('data_operator_token'));"
+                  "// Use project owner token for system operations",
+                  "pm.environment.set('access_token', pm.environment.get('project_owner_token'));"
                 ],
                 "type": "text/javascript"
               }
@@ -458,7 +458,7 @@
               "listen": "prerequest",
               "script": {
                 "exec": [
-                  "pm.environment.set('access_token', pm.environment.get('data_operator_token'));"
+                  "pm.environment.set('access_token', pm.environment.get('project_owner_token'));"
                 ],
                 "type": "text/javascript"
               }

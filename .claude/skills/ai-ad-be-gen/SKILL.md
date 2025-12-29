@@ -263,8 +263,9 @@ PRE_ANALYSIS_CONTEXT:
 **Step -1: 常量验证** (AH-01, AH-02)
 - □ 状态值 → STATE_MACHINE.md 8 状态白名单
   (raw_submitted, trend_pending, trend_ok, trend_flagged, trend_resolved, final_pending, final_confirmed, final_locked)
-- □ 角色值 → 7 角色白名单
-  (ceo, project_owner, finance, supervisor, pitcher, account_manager, admin)
+- □ 角色值 → 6 业务层角色 (PRD v2.2) + 4 技术层角色 (MASTER.md v4.6)
+  业务层: (ceo, project_owner, finance, pitcher, account_manager, admin)
+  技术层: (admin, finance, account_manager, media_buyer)
 - □ 错误码前缀 → 16 前缀白名单
   (VAL, AUTH, BIZ, DB, INT, SYS, FIN, RPT, ACC, PRJ, PIT, TOP, IMP, EXP, REC, SET)
 
@@ -417,7 +418,7 @@ POST_REVIEW_RESULT:
 | **模块归属确认** | 任务属于 pitcher/finance/ad_account/project 之一 | P0 |
 | **写入权限检查** | 目标表在该模块可写范围内 | P0 |
 | 状态枚举一致性 | 对比 STATE_MACHINE.md (8 状态: raw_submitted → ... → final_locked) | P0 |
-| 角色合规 | 对比 5 技术角色 (admin/finance/data_operator/account_manager/media_buyer) | P0 |
+| 角色合规 | 对比 4 技术角色 (admin/finance/account_manager/media_buyer) - MASTER.md v4.6 | P0 |
 | 错误码合规 | 查找 ERROR_CODES_SOT.md | P0 |
 | 字段类型匹配 | 对比 DATA_SCHEMA.md | P0 |
 | 禁区检查 | 不生成 models/migrations | P0 |

@@ -81,11 +81,19 @@ except ImportError as e:
 # 内置检查规则（ComplianceChecker 不可用时的回退）
 # =============================================================================
 
-# 合法角色列表
-VALID_ROLES = {
-    "ceo", "project_owner", "finance", "supervisor",
+# 业务层合法角色列表 (PRD v2.2)
+VALID_BUSINESS_ROLES = {
+    "ceo", "project_owner", "finance",
     "pitcher", "account_manager", "admin"
 }
+
+# 技术层合法角色列表 (MASTER.md v4.6 §INV-007)
+VALID_TECHNICAL_ROLES = {
+    "admin", "finance", "account_manager", "media_buyer"
+}
+
+# 废弃角色 (PRD v2.2 移除)
+DEPRECATED_ROLES = {"supervisor", "data_operator"}
 
 # Phase 2 forbidden keywords
 PHASE2_PATTERNS = [
