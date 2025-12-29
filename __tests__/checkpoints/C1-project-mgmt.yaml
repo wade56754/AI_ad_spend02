@@ -1,0 +1,95 @@
+# C1 项目管理 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "C1-project-mgmt"
+spec_file: "docs/10.module-specs/C1-project-mgmt.md"
+page_path: "/projects"
+priority: P0
+
+# 状态机定义 (5 状态)
+state_machine:
+  states:
+    - planning
+    - active
+    - paused
+    - completed
+    - cancelled
+  transitions:
+    - { from: planning, to: active, action: "启动" }
+    - { from: planning, to: cancelled, action: "取消" }
+    - { from: active, to: paused, action: "暂停" }
+    - { from: active, to: completed, action: "完成" }
+    - { from: paused, to: active, action: "恢复" }
+  terminal_states:
+    - completed
+    - cancelled
+
+checkpoints:
+  # ===== CP-C1-001: 权限测试 =====
+  - id: CP-C1-001
+    category: permission
+    description: 项目管理页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, action: "全部CRUD" }
+      - { role: finance, expected: allowed, scope: "只读" }
+      - { role: supervisor, expected: allowed, scope: "团队项目" }
+      - { role: pitcher, expected: allowed, scope: "只读个人" }
+      - { role: project_owner, expected: allowed, action: "创建+编辑自己" }
+      - { role: account_manager, expected: allowed, scope: "只读" }
+      - { role: admin, expected: allowed, action: "全部CRUD" }
+
+  # ===== CP-C1-002: 页面渲染测试 =====
+  - id: CP-C1-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "项目管理" }
+      - { element: 项目表格, selector: "[data-testid='projects-table']", expected: visible }
+      - { element: 新建按钮, selector: "[data-testid='create-project-btn']", expected: visible }
+      - { element: 状态筛选, selector: "[data-testid='status-filter']", expected: visible }
+
+  # ===== CP-C1-003: 数据状态测试 =====
+  - id: CP-C1-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏 }
+      - { scenario: empty, expected: "暂无项目" }
+      - { scenario: error, expected: 错误提示 }
+      - { scenario: success, expected: 项目列表 }
+
+  # ===== CP-C1-004: 功能操作测试 (状态机) =====
+  - id: CP-C1-004
+    category: function
+    description: 状态机操作 (5 状态)
+    spec_ref: "§6.1 状态机"
+    cases:
+      # 合法转换
+      - { transition: "planning→active", action: "启动", expected: success }
+      - { transition: "planning→cancelled", action: "取消", expected: success }
+      - { transition: "active→paused", action: "暂停", expected: success }
+      - { transition: "active→completed", action: "完成", expected: success }
+      - { transition: "paused→active", action: "恢复", expected: success }
+      # 非法转换
+      - { transition: "completed→active", expected: "400 ST-002", illegal: true }
+      - { transition: "cancelled→active", expected: "400 ST-001", illegal: true }
+
+  # ===== CP-C1-005: Phase 1 规则测试 =====
+  - id: CP-C1-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: 预算超支, expected: 红色高亮+可操作 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 4
+  data_cases: 4
+  function_cases: 7
+  phase1_cases: 1
+  total_cases: 23

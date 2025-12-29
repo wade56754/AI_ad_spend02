@@ -1,0 +1,73 @@
+# A3 项目盈亏 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "A3-project-pnl"
+spec_file: "docs/10.module-specs/A3-project-pnl.md"
+page_path: "/projects/pnl"
+priority: P0
+
+checkpoints:
+  # ===== CP-A3-001: 权限测试 =====
+  - id: CP-A3-001
+    category: permission
+    description: 项目盈亏页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, scope: "全公司" }
+      - { role: finance, expected: allowed, scope: "财务视图" }
+      - { role: supervisor, expected: denied }
+      - { role: pitcher, expected: denied }
+      - { role: project_owner, expected: allowed, scope: "自己项目" }
+      - { role: account_manager, expected: denied }
+      - { role: admin, expected: denied }
+
+  # ===== CP-A3-002: 页面渲染测试 =====
+  - id: CP-A3-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "项目盈亏" }
+      - { element: 利润卡片, selector: "[data-testid='pnl-profit']", expected: visible }
+      - { element: 盈亏表格, selector: "[data-testid='pnl-table']", expected: visible }
+      - { element: 趋势图, selector: "[data-testid='pnl-chart']", expected: visible }
+
+  # ===== CP-A3-003: 数据状态测试 =====
+  - id: CP-A3-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏 }
+      - { scenario: empty, expected: "暂无项目数据" }
+      - { scenario: error, expected: 错误提示 }
+      - { scenario: success, expected: 盈亏数据 }
+
+  # ===== CP-A3-004: 功能操作测试 =====
+  - id: CP-A3-004
+    category: function
+    description: 核心功能操作
+    spec_ref: "§5 API 接口"
+    cases:
+      - { action: 维度切换, trigger: "[data-testid='dimension-switch']", expected: 表格视图切换 }
+      - { action: 排序, trigger: "th.sortable", expected: 按列排序 }
+      - { action: 日期筛选, trigger: "[data-testid='date-filter']", expected: 数据更新 }
+      - { action: 点击项目行, trigger: "[data-testid='row-{id}']", expected: 跳转详情 }
+
+  # ===== CP-A3-005: Phase 1 规则测试 =====
+  - id: CP-A3-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: 亏损项目, expected: 红色显示+可操作, verify: "toHaveClass(/text-red|negative/)" }
+      - { scenario: CPL超标, expected: 黄色警告+可操作 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 4
+  data_cases: 4
+  function_cases: 4
+  phase1_cases: 2
+  total_cases: 21

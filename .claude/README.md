@@ -13,16 +13,16 @@
   - Claude/SuperClaude 使用指南
 
 ### SoT 真相源文档（开发时必须参考 - 已 Freeze v1.0）
-1. **[DATA_SCHEMA.md](../docs/2.sot/DATA_SCHEMA.md)** v5.2 - 数据库结构唯一真相
-2. **[STATE_MACHINE.md](../docs/2.sot/STATE_MACHINE.md)** v2.6 - 状态机定义唯一真相 (§8: 8状态机)
-3. **[BUSINESS_RULES.md](../docs/2.sot/BUSINESS_RULES.md)** v3.2 - 业务规则唯一真相 (BR-*)
-4. **[API_SOT.md](../docs/2.sot/API_SOT.md)** v9.0 - API 契约唯一真相
-5. **[ERROR_CODES_SOT.md](../docs/2.sot/ERROR_CODES_SOT.md)** v2.1 - 错误码唯一真相
-6. **[AUTH_SPEC.md](../docs/2.sot/AUTH_SPEC.md)** v2.0 - 认证授权唯一真相
-7. **[LEDGER_SOT.md](../docs/2.sot/LEDGER_SOT.md)** v1.1 - 账本规则唯一真相
-8. **[DAILY_REPORT_SOT.md](../docs/2.sot/DAILY_REPORT_SOT.md)** v1.0 - 日报流程唯一真相
-9. **[RECONCILIATION_SOT.md](../docs/2.sot/RECONCILIATION_SOT.md)** v1.0 - 对账流程唯一真相
-10. **[TRANSFER_SOT.md](../docs/2.sot/TRANSFER_SOT.md)** v1.0 - 调拨规则唯一真相
+1. **[DATA_SCHEMA.md](../docs/sot/DATA_SCHEMA.md)** v5.2 - 数据库结构唯一真相
+2. **[STATE_MACHINE.md](../docs/sot/STATE_MACHINE.md)** v2.6 - 状态机定义唯一真相 (§8: 8状态机)
+3. **[BUSINESS_RULES.md](../docs/sot/BUSINESS_RULES.md)** v3.2 - 业务规则唯一真相 (BR-*)
+4. **[API_SOT.md](../docs/sot/API_SOT.md)** v9.0 - API 契约唯一真相
+5. **[ERROR_CODES_SOT.md](../docs/sot/ERROR_CODES_SOT.md)** v2.1 - 错误码唯一真相
+6. **[AUTH_SPEC.md](../docs/sot/AUTH_SPEC.md)** v2.0 - 认证授权唯一真相
+7. **[LEDGER_SOT.md](../docs/sot/LEDGER_SOT.md)** v1.1 - 账本规则唯一真相
+8. **[DAILY_REPORT_SOT.md](../docs/sot/DAILY_REPORT_SOT.md)** v1.0 - 日报流程唯一真相
+9. **[RECONCILIATION_SOT.md](../docs/sot/RECONCILIATION_SOT.md)** v1.0 - 对账流程唯一真相
+10. **[TRANSFER_SOT.md](../docs/sot/TRANSFER_SOT.md)** v1.0 - 调拨规则唯一真相
 
 ## 🤖 如何让 Claude 使用这些规则
 
@@ -48,7 +48,7 @@
 1. ✅ 符合 PROJECT_RULES.md 中的 5 大不可侵犯原则
 2. ✅ 遵循 SoT 裁判链优先级
 3. ✅ 通过反模式识别检查
-4. ✅ 以 `docs/2.sot/` 下的 SoT 文档为唯一依据
+4. ✅ 以 `docs/sot/` 下的 SoT 文档为唯一依据
 
 如果发现任何代码与规则冲突，**必须以规则为准进行修正**。
 

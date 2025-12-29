@@ -1,14 +1,18 @@
 """
 SoT (Single Source of Truth) 动态加载器
 
-基准文档: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
-版本: v1.0
+基准文档: MASTER.md v4.6, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
+版本: v2.0
 创建日期: 2025-12-22
+更新日期: 2025-12-27
 
 功能:
 - 从 SoT 文档动态加载角色、状态、字段白名单
 - 替代硬编码的 frozenset 定义
 - 确保验证器始终使用最新的 SoT 规范
+
+变更记录:
+- v2.0 (2025-12-27): 对齐 MASTER.md v4.6，角色从 7 个精简为 6 个
 """
 
 import re
@@ -17,10 +21,46 @@ from typing import Dict, Set, Optional, List
 from dataclasses import dataclass
 
 
+# ============================================================
+# 业务角色定义 (MASTER.md v4.6 §2.4)
+# ============================================================
+
+# 6 个业务角色 (PRD v2.2 移除 supervisor)
+BUSINESS_ROLES = frozenset([
+    'ceo',             # 老板：资金安全、公司盈亏、最终决策
+    'project_owner',   # 项目负责人：项目盈亏、资金使用效率、日报审核
+    'finance',         # 财务：资金出入准确、数据真实、对账
+    'pitcher',         # 投手：CPL 达标、日报准确、执行投放
+    'account_manager', # 户管：账户分配、账户状态监控
+    'admin'            # 管理员：系统配置（不参与业务）
+])
+
+# 技术角色映射 (数据库 CHECK 约束)
+# 业务角色 -> 技术角色
+TECH_ROLE_MAPPING = {
+    "ceo": "admin",              # 老板使用 admin 权限
+    "project_owner": None,       # 通过 is_project_owner 或 project_members 判断
+    "finance": "finance",        # 直接映射
+    "pitcher": "media_buyer",    # 投手 = 媒体采买
+    "account_manager": "account_manager",  # 直接映射
+    "admin": "admin",            # 直接映射
+}
+
+# 技术角色 (数据库 CHECK 约束)
+TECH_ROLES = frozenset([
+    'admin',           # 系统管理员
+    'finance',         # 财务
+    'data_operator',   # 数据运营 (兼容旧代码)
+    'account_manager', # 账户管理员
+    'media_buyer'      # 广告投手
+])
+
+
 @dataclass
 class SotDefinitions:
     """SoT 定义数据类"""
-    roles: frozenset[str]
+    roles: frozenset[str]              # 技术角色 (数据库)
+    business_roles: frozenset[str]     # 业务角色 (MASTER.md v4.6)
     daily_report_states: frozenset[str]
     topup_states: frozenset[str]
     ledger_states: frozenset[str]
@@ -47,7 +87,7 @@ class SotLoader:
             project_root: 项目根目录路径
         """
         self.project_root = Path(project_root)
-        self.docs_sot_path = self.project_root / "docs" / "2.sot"
+        self.docs_sot_path = self.project_root / "docs" / "sot"
 
         # 加载所有定义
         self._definitions = self._load_all_definitions()
@@ -60,6 +100,7 @@ class SotLoader:
         """
         return SotDefinitions(
             roles=self._load_roles(),
+            business_roles=BUSINESS_ROLES,  # 使用模块级常量
             daily_report_states=self._load_daily_report_states(),
             topup_states=self._load_topup_states(),
             ledger_states=self._load_ledger_states(),
@@ -211,16 +252,41 @@ class SotLoader:
 
     # === 公共验证方法 ===
 
-    def is_valid_role(self, role: str) -> bool:
+    def is_valid_role(self, role: str, role_type: str = "tech") -> bool:
         """验证角色是否合法
 
         Args:
             role: 角色名称
+            role_type: 角色类型 ("tech" 或 "business")
 
         Returns:
             bool: True 表示合法
         """
+        if role_type == "business":
+            return role in self._definitions.business_roles
         return role in self._definitions.roles
+
+    def is_valid_business_role(self, role: str) -> bool:
+        """验证业务角色是否合法 (MASTER.md v4.6 §2.4)
+
+        Args:
+            role: 业务角色名称
+
+        Returns:
+            bool: True 表示合法
+        """
+        return role in self._definitions.business_roles
+
+    def get_tech_role(self, business_role: str) -> Optional[str]:
+        """业务角色转换为技术角色
+
+        Args:
+            business_role: 业务角色名称
+
+        Returns:
+            Optional[str]: 技术角色名称，None 表示需要通过其他方式判断
+        """
+        return TECH_ROLE_MAPPING.get(business_role)
 
     def is_valid_status(self, status: str, table: Optional[str] = None) -> bool:
         """验证状态是否合法
@@ -261,6 +327,10 @@ class SotLoader:
         """获取所有技术角色"""
         return self._definitions.roles
 
+    def get_all_business_roles(self) -> frozenset[str]:
+        """获取所有业务角色 (MASTER.md v4.6 §2.4)"""
+        return self._definitions.business_roles
+
     def get_all_daily_report_states(self) -> frozenset[str]:
         """获取所有日报状态"""
         return self._definitions.daily_report_states
@@ -282,7 +352,7 @@ class SotLoader:
 
         Args:
             value: 待验证的值
-            category: 类别（"role", "daily_report_status", "topup_status" 等）
+            category: 类别（"role", "business_role", "daily_report_status", "topup_status" 等）
 
         Returns:
             tuple[bool, Optional[str]]: (是否合法, 建议信息)
@@ -292,7 +362,14 @@ class SotLoader:
                 return True, None
             else:
                 valid_roles = ", ".join(sorted(self._definitions.roles))
-                return False, f"无效角色 '{value}'。有效角色: {valid_roles}"
+                return False, f"无效技术角色 '{value}'。有效角色: {valid_roles}"
+
+        elif category == "business_role":
+            if self.is_valid_business_role(value):
+                return True, None
+            else:
+                valid_roles = ", ".join(sorted(self._definitions.business_roles))
+                return False, f"无效业务角色 '{value}'。有效角色 (MASTER.md v4.6): {valid_roles}"
 
         elif category == "daily_report_status":
             if value in self._definitions.daily_report_states:

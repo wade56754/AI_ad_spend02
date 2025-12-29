@@ -322,7 +322,7 @@ class FinanceService:
 
         query = self.db.query(
             DailyReport.ad_account_id,
-            AdAccount.account_name.label('account_name'),
+            AdAccount.name.label('account_name'),  # 使用实际列名 name (account_name 是 property)
             AdAccount.project_id,
             Project.name.label('project_name'),
             func.sum(DailyReport.conversions_final).label('conversions_final'),
@@ -347,7 +347,7 @@ class FinanceService:
 
         query = query.group_by(
             DailyReport.ad_account_id,
-            AdAccount.account_name,
+            AdAccount.name,  # 使用实际列名
             AdAccount.project_id,
             Project.name
         ).order_by(func.sum(DailyReport.real_spend).desc()).limit(limit)

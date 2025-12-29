@@ -7,7 +7,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from backend.core.db import get_db
 from backend.core.response import success_response, error_response
@@ -34,7 +34,7 @@ class BalanceTransferRequest(BaseModel):
     """
     死号余额迁移请求体
 
-    SoT Ref: docs/2.sot/TRANSFER_SOT.md v1.0
+    SoT Ref: docs/sot/TRANSFER_SOT.md v1.0
     """
     target_ad_account_id: int = Field(..., description="目标账户ID（接收余额的活跃账户）")
     transfer_amount: Optional[Decimal] = Field(
@@ -76,9 +76,13 @@ def list_ad_accounts(
     - media_buyer: 仅可见分配给自己的账户 (WHERE assigned_to = :user_id)
     - finance: 仅可见账户列表（只读）
     """
-    from backend.models import Project
+    from backend.models import Project, Channel
 
-    query = db.query(AdAccount)
+    # ===== N+1 优化: 使用 joinedload 预加载关联数据 =====
+    query = db.query(AdAccount).options(
+        joinedload(AdAccount.project),
+        joinedload(AdAccount.channel),
+    )
 
     # ===== RLS: 按角色自动过滤数据范围 =====
     user_role = current_user.role
@@ -157,7 +161,11 @@ def get_ad_account(
     """
     from backend.models import Project
 
-    account = db.query(AdAccount).filter(AdAccount.id == account_id).first()
+    # ===== N+1 优化: 使用 joinedload 预加载关联数据 =====
+    account = db.query(AdAccount).options(
+        joinedload(AdAccount.project),
+        joinedload(AdAccount.channel),
+    ).filter(AdAccount.id == account_id).first()
     if not account:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,

@@ -11,7 +11,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   DollarSign,
@@ -21,6 +21,9 @@ import {
   Plus,
   FileText,
   Wallet,
+  Activity,
+  AlertTriangle,
+  CreditCard,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,6 +32,7 @@ import { Alert as AlertUI, AlertDescription } from '@/components/ui/alert';
 
 import { DashboardHeader } from './DashboardHeader';
 import { StatCard } from './StatCard';
+import { StatusCard } from './StatusCard';
 import { PendingTasksCard } from './PendingTasksCard';
 import { AccountOverviewCard } from './AccountOverviewCard';
 import { SystemStatusCard } from './SystemStatusCard';
@@ -42,51 +46,17 @@ import {
   type DateRangePreset,
   getDateRangeFromPreset,
 } from './GlobalDateFilter';
-import { AlertBanner, generateMockAlerts, type Alert } from './AlertBanner';
+import { AlertBanner, generateAlertsFromData, type Alert } from './AlertBanner';
 import {
   MainTrendChart,
   type MetricType,
   type TrendDataPoint as MainTrendDataPoint,
   generateSummary,
 } from './MainTrendChart';
-import { TopLists, generateMockTopLists } from './TopLists';
 
-import { useDashboardData, useRefreshDashboard } from '../hooks';
+import { useDashboardData, useRefreshDashboard, showAlertToasts, showSuccessToast } from '../hooks';
+import { formatCurrency, formatCurrencyWan } from '../utils/formatters';
 import type { PendingTask } from '../types';
-
-// ============ 工具函数 ============
-
-/**
- * 根据日期预设获取日期范围
- * SoT: A1-dashboard.md §2.4 数据刷新策略
- */
-function getDateRangeFromPresetValue(preset: DateRangePreset): { from: string; to: string } {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const to = today.toISOString().split('T')[0];
-
-  let from: Date;
-  switch (preset) {
-    case 'today':
-      from = today;
-      break;
-    case '7d':
-      from = new Date(today);
-      from.setDate(from.getDate() - 6);
-      break;
-    case '30d':
-      from = new Date(today);
-      from.setDate(from.getDate() - 29);
-      break;
-    case 'custom':
-    default:
-      from = new Date(today);
-      from.setDate(from.getDate() - 6);
-      break;
-  }
-
-  return { from: from.toISOString().split('T')[0], to };
-}
 
 export function DashboardPage() {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -105,10 +75,14 @@ export function DashboardPage() {
   // ============ 数据获取 (TanStack Query) ============
   // SoT: A1-dashboard.md §2.4 数据刷新策略
 
-  const dateRange = useMemo(
-    () => getDateRangeFromPresetValue(globalDateRange),
-    [globalDateRange]
-  );
+  // 使用统一的日期范围工具函数，转换 Date 为 API 需要的字符串格式
+  const dateRange = useMemo(() => {
+    const range = getDateRangeFromPreset(globalDateRange);
+    return {
+      from: range.from.toISOString().split('T')[0],
+      to: range.to.toISOString().split('T')[0],
+    };
+  }, [globalDateRange]);
 
   const {
     overview,
@@ -130,21 +104,36 @@ export function DashboardPage() {
     (queries.topProjects.isFetching && !queries.topProjects.isLoading) ||
     (queries.pendingCounts.isFetching && !queries.pendingCounts.isLoading);
 
-  // 在客户端挂载后生成告警数据
+  // 根据实际数据生成告警
   React.useEffect(() => {
-    setAlerts(generateMockAlerts());
-  }, []);
+    if (isDataLoading) return;
 
-  // ============ 工具函数 ============
+    // 计算 7 日均值消耗
+    const last7Days = (trend?.points ?? []).slice(-7);
+    const avgSpend = last7Days.length > 0
+      ? last7Days.reduce((sum, d) => sum + (d.spend || 0), 0) / last7Days.length
+      : 0;
 
-  // Helper function for currency formatting
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-      minimumFractionDigits: 2,
-    }).format(value);
-  };
+    // 计算待处理总数
+    const totalPending =
+      (pendingCounts?.pending_topups ?? 0) +
+      (pendingCounts?.pending_settlements ?? 0) +
+      (pendingCounts?.pending_reconciliations ?? 0) +
+      (pendingCounts?.pending_imports ?? 0);
+
+    const realAlerts = generateAlertsFromData({
+      abnormal_projects: overview?.abnormal_projects ?? 0,
+      pending_topups: pendingCounts?.pending_topups ?? 0,
+      today_spend: overview?.today_spend ?? 0,
+      average_spend: avgSpend,
+      total_pending: totalPending,
+    });
+
+    setAlerts(realAlerts);
+
+    // 同时用 toast 显示高优先级告警 (critical/warning)
+    showAlertToasts(realAlerts.filter(a => a.severity !== 'info'));
+  }, [isDataLoading, overview, trend, pendingCounts]);
 
   // ============ 派生数据 ============
   // SoT: MASTER.md §6.5 核心页面最小字段集
@@ -207,11 +196,6 @@ export function DashboardPage() {
     };
   }, [mainTrendData]);
 
-  // Top lists data
-  // SoT: A1-dashboard.md §3.2 TopLists 组件
-  // TODO: 后端 API 实现后，使用 topProjects 数据替代 mock
-  // 当前 API 返回简化数据，组件需要完整 CampaignData，暂用 mock
-  const topListsData = useMemo(() => generateMockTopLists(), []);
 
   // Pending tasks data
   const pendingTasks: PendingTask[] = [
@@ -253,14 +237,35 @@ export function DashboardPage() {
    * 刷新所有驾驶舱数据
    * SoT: A1-dashboard.md §2.4 数据刷新策略
    */
-  const handleRefresh = () => {
-    refreshAll();
-  };
+  const handleRefresh = useCallback(async () => {
+    await refreshAll();
+    showSuccessToast('数据刷新成功');
+  }, [refreshAll]);
+
+  // 稳定的指标切换回调 (避免子组件不必要的重渲染)
+  const handleMetricChange = useCallback((metric: MetricType) => {
+    setActiveMetric(metric);
+  }, []);
+
+  // 各指标的独立回调 (用于 StatCard onClick)
+  const handleSpendClick = useCallback(() => setActiveMetric('spend'), []);
+  const handleConversionsClick = useCallback(() => setActiveMetric('conversions'), []);
+  const handleProfitClick = useCallback(() => setActiveMetric('profit'), []);
+
+  // 稳定的日期范围切换回调
+  const handleDateRangeChange = useCallback((preset: DateRangePreset) => {
+    setGlobalDateRange(preset);
+  }, []);
+
+  // 稳定的告警关闭回调
+  const handleDismissAlert = useCallback((id: string) => {
+    setAlerts((prev) => prev.filter((a) => a.id !== id));
+  }, []);
 
   // Show skeleton loading state while auth or data is initializing
   if (isAuthLoading || isDataLoading) {
     return (
-      <div className="space-y-8" data-testid="dashboard-loading">
+      <div className="space-y-8" data-testid="loading-skeleton">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between">
           <div>
@@ -309,15 +314,54 @@ export function DashboardPage() {
   // 显示错误状态
   if (isError) {
     return (
-      <div className="space-y-6" data-testid="dashboard-error">
+      <div className="space-y-6" data-testid="error-state">
         <AlertUI variant="destructive">
           <AlertDescription>
             加载驾驶舱数据失败: {error?.message || '未知错误'}
-            <Button variant="outline" size="sm" className="ml-4" onClick={handleRefresh}>
+            <Button variant="outline" size="sm" className="ml-4" onClick={handleRefresh} data-testid="retry-button">
               重试
             </Button>
           </AlertDescription>
         </AlertUI>
+      </div>
+    );
+  }
+
+  // 检查是否为空数据状态 (所有核心指标都为 0 或 null)
+  const isEmptyData =
+    stats.month_spend === 0 &&
+    stats.month_conversions === 0 &&
+    stats.active_projects === 0 &&
+    mainTrendData.length === 0;
+
+  if (isEmptyData) {
+    return (
+      <div className="space-y-6" data-testid="empty-state">
+        <DashboardHeader
+          userName={user?.full_name || user?.username || '用户'}
+          isRefreshing={isRefreshing}
+          onRefresh={handleRefresh}
+        />
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="rounded-full bg-muted p-6 mb-4">
+            <BarChart3 className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">暂无数据</h2>
+          <p className="text-muted-foreground mb-6">
+            当前筛选条件下没有数据，请尝试调整时间范围或创建新项目
+          </p>
+          <div className="flex gap-3">
+            <Link href="/projects/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                创建新推广计划
+              </Button>
+            </Link>
+            <Button variant="outline" onClick={handleRefresh}>
+              刷新数据
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -333,7 +377,7 @@ export function DashboardPage() {
         />
         <GlobalDateFilter
           value={globalDateRange}
-          onChange={(preset) => setGlobalDateRange(preset)}
+          onChange={handleDateRangeChange}
         />
       </div>
 
@@ -341,7 +385,7 @@ export function DashboardPage() {
       {alerts.length > 0 && (
         <AlertBanner
           alerts={alerts}
-          onDismiss={(id) => setAlerts(alerts.filter((a) => a.id !== id))}
+          onDismiss={handleDismissAlert}
         />
       )}
 
@@ -367,8 +411,8 @@ export function DashboardPage() {
         </Link>
       </div>
 
-      {/* §6.5 核心指标 - 本月概览 (MASTER.md 必须字段) */}
-      <section>
+      {/* SECTION A: 本月概览 (MASTER.md §6.5 必须字段) */}
+      <section data-testid="kpi-cards">
         <h2 className="text-2xl font-semibold text-foreground mb-4">本月概览</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
@@ -379,9 +423,9 @@ export function DashboardPage() {
             target={`今日 ${formatCurrency(stats.today_spend)}`}
             icon={<DollarSign className="h-6 w-6" />}
             color="blue"
-            onClick={() => setActiveMetric('spend')}
+            onClick={handleSpendClick}
             isActive={activeMetric === 'spend'}
-            testId="dashboard-stat-card-spend"
+            testId="kpi-spend"
           />
           <StatCard
             title="本月总进粉"
@@ -391,9 +435,9 @@ export function DashboardPage() {
             target={`今日 ${stats.today_conversions.toLocaleString()}`}
             icon={<Users className="h-6 w-6" />}
             color="purple"
-            onClick={() => setActiveMetric('conversions')}
+            onClick={handleConversionsClick}
             isActive={activeMetric === 'conversions'}
-            testId="dashboard-stat-card-conversions"
+            testId="kpi-conversions"
           />
           <StatCard
             title="整体 CPL"
@@ -402,7 +446,7 @@ export function DashboardPage() {
             target={`目标 ¥${stats.cpl_target}`}
             icon={<BarChart3 className="h-6 w-6" />}
             color={stats.overall_cpl > stats.cpl_target * 1.3 ? 'red' : stats.overall_cpl > stats.cpl_target ? 'orange' : 'green'}
-            testId="dashboard-stat-card-cpl"
+            testId="kpi-cpl"
           />
           <StatCard
             title="预计毛利"
@@ -412,63 +456,64 @@ export function DashboardPage() {
             target={`今日 ${formatCurrency(stats.today_profit)}`}
             icon={<Target className="h-6 w-6" />}
             color={stats.estimated_profit >= 0 ? 'green' : 'red'}
-            onClick={() => setActiveMetric('profit')}
+            onClick={handleProfitClick}
             isActive={activeMetric === 'profit'}
-            testId="dashboard-stat-card-profit"
+            testId="kpi-profit"
           />
         </div>
       </section>
 
-      {/* §6.5 运营状态指标 */}
-      <section>
+      {/* SECTION B: 运营状态 (DASHBOARD_LAYOUT_SPEC.md §2.1) */}
+      <section data-testid="ops-status">
         <h2 className="text-2xl font-semibold text-foreground mb-4">运营状态</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard
-            title="活跃项目数"
-            value={stats.active_projects.toString()}
-            icon={<Target className="h-6 w-6" />}
-            color="blue"
-            testId="dashboard-stat-card-active-projects"
+          <StatusCard
+            title="活跃项目"
+            count={stats.active_projects}
+            status="normal"
+            icon={<Activity className="h-5 w-5" />}
+            actionLabel="查看全部"
+            href="/projects?status=active"
+            testId="active-projects"
           />
-          <StatCard
-            title="异常项目数"
-            value={stats.abnormal_projects.toString()}
-            target="CPL 超标 30%+"
-            icon={<BarChart3 className="h-6 w-6" />}
-            color={stats.abnormal_projects > 0 ? 'red' : 'green'}
-            testId="dashboard-stat-card-abnormal-projects"
+          <StatusCard
+            title="异常项目"
+            count={stats.abnormal_projects}
+            status={stats.abnormal_projects > 0 ? 'critical' : 'normal'}
+            description="CPL 超标 30%+"
+            icon={<AlertTriangle className="h-5 w-5" />}
+            actionLabel="立即处理"
+            href="/projects?filter=abnormal"
+            testId="abnormal-projects"
           />
-          <StatCard
+          <StatusCard
             title="待审批充值"
-            value={stats.pending_topups.toString()}
-            target="需老板审批"
-            icon={<Wallet className="h-6 w-6" />}
-            color={stats.pending_topups > 0 ? 'orange' : 'green'}
-            testId="dashboard-stat-card-pending-topups"
+            count={stats.pending_topups}
+            status={stats.pending_topups > 0 ? 'warning' : 'normal'}
+            description="需老板审批"
+            icon={<CreditCard className="h-5 w-5" />}
+            actionLabel="去审批"
+            href="/topups?status=pending"
+            testId="pending-topups"
           />
         </div>
       </section>
 
-      {/* Main Trend Chart - 主趋势图 */}
+      {/* SECTION C: 趋势分析 */}
       <MainTrendChart
         data={mainTrendData}
         activeMetric={activeMetric}
-        onMetricChange={setActiveMetric}
+        onMetricChange={handleMetricChange}
         summary={trendSummary}
       />
 
-      {/* Top Lists - 归因列表 (新增) */}
-      <TopLists
-        topSpendCampaigns={topListsData.topSpend}
-        worstROASCampaigns={topListsData.worstROAS}
-      />
 
-      {/* Pending Tasks Section - 待处理事项 */}
+      {/* SECTION E: 待处理事项 */}
       <section id="pending-tasks-section">
         <PendingTasksCard tasks={pendingTasks} />
       </section>
 
-      {/* Bottom Section - Account & System Info */}
+      {/* SECTION F: 系统概览 */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AccountOverviewCard
           activeProjects={stats.active_projects}

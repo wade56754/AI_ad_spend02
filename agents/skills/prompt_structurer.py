@@ -436,7 +436,7 @@ class PromptStructurer:
             "repo_root": "D:\\project\\AI_ad_spend02",
             "backend_dir": "backend/",
             "tests_dir": "backend/tests/",
-            "docs_dir": "docs/2.sot/",
+            "docs_dir": "docs/sot/",
             "forbidden": ["migrations/", ".env", "*.lock", "alembic.ini"],
         }
 

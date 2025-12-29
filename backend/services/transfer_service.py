@@ -4,10 +4,10 @@ Version: 1.0
 Author: Claude协作开发
 
 SoT References:
-- docs/2.sot/STATE_MACHINE.md v2.6 第12章 (transfer_requests 状态机)
-- docs/2.sot/DATA_SCHEMA.md v5.2 第3.4.6节 (transfer_requests 表结构)
-- docs/2.sot/ERROR_CODES_SOT.md v2.1 (错误码)
-- docs/2.sot/LEDGER_SOT.md v1.1 (TRANSFER_OUT/TRANSFER_IN)
+- docs/sot/STATE_MACHINE.md v2.6 第12章 (transfer_requests 状态机)
+- docs/sot/DATA_SCHEMA.md v5.2 第3.4.6节 (transfer_requests 表结构)
+- docs/sot/ERROR_CODES_SOT.md v2.1 (错误码)
+- docs/sot/LEDGER_SOT.md v1.1 (TRANSFER_OUT/TRANSFER_IN)
 """
 
 import logging

@@ -66,9 +66,10 @@ from .workflow.ad_spend import AdSpendDaily
 from .workflow.topup_request import TopupRequest
 from .workflow.transfer_request import TransferRequest
 from .workflow.import_job import ImportJob
+from .workflow.weekly_brief import WeeklyBrief
 
-# 导入任务枚举
-from .enums import ImportJobStatus, ImportJobType
+# 导入任务枚举和周报状态
+from .enums import ImportJobStatus, ImportJobType, WeeklyBriefStatus
 
 # 充值相关辅助表（来自 topup_fixed.py）
 from .topup_fixed import (
@@ -90,6 +91,11 @@ from .finance import (
     SettlementStatus,
     SettlementType,
     PaymentStatus,
+    # Company Expenses
+    CompanyExpense,
+    ExpenseType,
+    ExpenseCategory,
+    ExpenseStatus,
 )
 
 # 审计模块
@@ -97,6 +103,19 @@ from .audit import AuditLog
 
 # 日志模块
 from .log import Log
+
+# 对账中控模块 (OpenSpec: add-reconciliation-control-center)
+from .reconciliation import (
+    SettlementRule,
+    RuleType,
+    AdAccountBalanceSnapshot,
+    SnapshotSource,
+    ReconciliationIssue,
+    IssueType,
+    IssueStatus,
+    ResolutionType,
+    ISSUE_STATUS_TRANSITIONS,
+)
 
 
 # =====================================================================
@@ -129,6 +148,7 @@ __all__ = [
     'AccountAlertSeverity',
     'ImportJobStatus',
     'ImportJobType',
+    'WeeklyBriefStatus',
 
     # 模型类
     'User',
@@ -163,7 +183,23 @@ __all__ = [
     'SettlementStatus',
     'SettlementType',
     'PaymentStatus',
+    # Company Expenses
+    'CompanyExpense',
+    'ExpenseType',
+    'ExpenseCategory',
+    'ExpenseStatus',
     'AuditLog',
     'Log',
     'ImportJob',
+    'WeeklyBrief',
+    # 对账中控模块 (OpenSpec: add-reconciliation-control-center)
+    'SettlementRule',
+    'RuleType',
+    'AdAccountBalanceSnapshot',
+    'SnapshotSource',
+    'ReconciliationIssue',
+    'IssueType',
+    'IssueStatus',
+    'ResolutionType',
+    'ISSUE_STATUS_TRANSITIONS',
 ]

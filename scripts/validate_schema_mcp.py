@@ -300,7 +300,7 @@ def main():
     print()
     
     # 读取配置
-    schema_file = project_root / "docs/2.sot/DATA_SCHEMA.md"
+    schema_file = project_root / "docs/sot/DATA_SCHEMA.md"
     project_id = "jzmcoivxhiyidizncyaq"
     
     if not schema_file.exists():

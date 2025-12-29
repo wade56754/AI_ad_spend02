@@ -145,7 +145,7 @@ export function ProjectsPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-6 space-y-6" data-testid="project-page">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -161,7 +161,7 @@ export function ProjectsPage() {
             <Download className="h-4 w-4 mr-2" />
             导出
           </Button>
-          <Button onClick={handleCreate}>
+          <Button onClick={handleCreate} data-testid="create-btn">
             <Plus className="mr-2 h-4 w-4" />
             新建项目
           </Button>
@@ -245,7 +245,7 @@ export function ProjectsPage() {
               value={statusFilter}
               onValueChange={(value) => handleStatusFilter(value as ProjectStatus | 'all')}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px]" data-testid="status-filter">
                 <SelectValue placeholder="选择状态" />
               </SelectTrigger>
               <SelectContent>
@@ -296,7 +296,7 @@ export function ProjectsPage() {
 
         <TabsContent value="list">
           {viewMode === 'table' ? (
-            <Card>
+            <Card data-testid="project-table">
               <CardContent className="p-0">
                 <ProjectsTable
                   onEdit={handleEdit}

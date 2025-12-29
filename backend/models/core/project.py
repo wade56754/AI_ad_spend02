@@ -16,12 +16,13 @@ Aligned with test_project_service.py expectations:
 - created_by
 """
 from decimal import Decimal
-from sqlalchemy import Column, BigInteger, String, Text, Integer, Numeric, Date, Index, CheckConstraint, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from datetime import datetime, timezone
+from sqlalchemy import Column, BigInteger, String, Text, Integer, Numeric, Date, DateTime, Index, CheckConstraint, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import relationship
 
 from backend.models.base import Base, TimestampMixin, UserScopeMixin
-from backend.models.enums import ProjectStatus, UserRole
+from backend.models.enums import ProjectStatus, UserRole, FulfillmentStatus, FulfillmentReason
 from backend.models.mixins.serializable import SerializableMixin
 from backend.models.mixins.rls_aware import RLSAwareMixin
 
@@ -74,6 +75,45 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     start_date = Column(Date, nullable=True, comment="开始日期")
     end_date = Column(Date, nullable=True, comment="结束日期")
 
+    # 业务字段 (v2.1)
+    region = Column(String(50), nullable=True, comment="主要投放地区")
+    unit_price = Column(Numeric(15, 2), nullable=True, comment="单粉价格")
+    # 阶梯定价字段 (v2.2)
+    price_rules = Column(JSONB, nullable=True, comment="阶梯价格规则 JSON")
+    default_currency = Column(String(10), nullable=True, default="USD", comment="项目默认币种")
+
+    # 结算相关字段 (OpenSpec: add-reconciliation-control-center)
+    settlement_type = Column(
+        String(20),
+        nullable=True,
+        default='fixed',
+        comment="结算类型: fixed/tiered/markup"
+    )
+    settlement_rules_id = Column(
+        BigInteger,
+        ForeignKey("settlement_rules.id"),
+        nullable=True,
+        comment="结算规则ID (tiered/markup类型必填)"
+    )
+
+    # 履约状态字段 (BUSINESS_RULES.md v4.6 BR-PROJ-006)
+    fulfillment_status = Column(
+        String(20),
+        nullable=False,
+        default='running',
+        comment="履约状态: running/fulfilled (SoT: BUSINESS_RULES.md v4.6 §4.3.1)"
+    )
+    fulfillment_reason = Column(
+        String(30),
+        nullable=True,
+        comment="履约结束原因: spend_exhausted/client_stopped (SoT: BI-06)"
+    )
+    fulfilled_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="履约完成时间 (UTC)"
+    )
+
     # 账户管理员ID（整数类型，用于测试兼容性）
     # 注意：不使用外键约束以兼容测试中直接传入整数ID的场景
     account_manager_id = Column(
@@ -121,6 +161,14 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         cascade="all, delete-orphan",
         lazy="selectin",
         doc="项目费用记录"
+    )
+
+    # 多对一：项目 -> 结算规则 (OpenSpec: add-reconciliation-control-center)
+    settlement_rule = relationship(
+        "SettlementRule",
+        back_populates="projects",
+        lazy="selectin",
+        doc="关联的结算规则"
     )
 
     # 多对一：项目 -> 账户管理员
@@ -180,6 +228,46 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     def is_cancelled(self) -> bool:
         """是否已取消"""
         return self.status == ProjectStatus.CANCELLED.value
+
+    @property
+    def is_fulfilled(self) -> bool:
+        """是否已履约完成 (BR-PROJ-006)"""
+        return self.fulfillment_status == FulfillmentStatus.FULFILLED.value
+
+    @property
+    def is_running(self) -> bool:
+        """是否正在履约中"""
+        return self.fulfillment_status == FulfillmentStatus.RUNNING.value
+
+    @property
+    def fulfillment_status_enum(self) -> FulfillmentStatus:
+        """返回履约状态枚举对象"""
+        return FulfillmentStatus(self.fulfillment_status)
+
+    @property
+    def fulfillment_reason_enum(self) -> FulfillmentReason | None:
+        """返回履约结束原因枚举对象"""
+        if self.fulfillment_reason:
+            return FulfillmentReason(self.fulfillment_reason)
+        return None
+
+    def mark_fulfilled(self, reason: FulfillmentReason, operator_id=None):
+        """
+        标记项目履约完成 (BI-06)
+
+        Args:
+            reason: 履约结束原因 (spend_exhausted/client_stopped)
+            operator_id: 操作者ID (可选，用于审计)
+
+        Raises:
+            ValueError: 项目已处于终态
+        """
+        if self.is_fulfilled:
+            raise ValueError("项目已履约完成，不可重复操作")
+
+        self.fulfillment_status = FulfillmentStatus.FULFILLED.value
+        self.fulfillment_reason = reason.value
+        self.fulfilled_at = datetime.now(timezone.utc)
 
     @property
     def account_manager(self):

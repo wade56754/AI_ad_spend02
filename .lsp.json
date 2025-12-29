@@ -1,0 +1,8 @@
+{
+  "python": {
+    "command": "C:\\Users\\user\\AppData\\Local\\Python\\pythoncore-3.14-64\\Scripts\\pylsp.exe",
+    "extensionToLanguage": {
+      ".py": "python"
+    }
+  }
+}

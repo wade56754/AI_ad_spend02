@@ -108,6 +108,7 @@ export default function Header({
                 type="button"
                 className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                 aria-label="用户菜单"
+                data-testid="user-menu"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 aria-expanded={isDropdownOpen}
                 aria-haspopup="true"
@@ -154,6 +155,7 @@ export default function Header({
                     localStorage.removeItem('token-expiry');
                     window.location.href = '/login';
                   }}
+                  data-testid="logout-button"
                   className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
                 >
                   <LogOut className="w-4 h-4 mr-3" />

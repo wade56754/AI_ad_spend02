@@ -1,0 +1,105 @@
+# B2 日报审核 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "B2-daily-report-review"
+spec_file: "docs/10.module-specs/B2-daily-report-review.md"
+page_path: "/daily-reports"
+priority: P1
+
+# 状态机定义 (8 状态)
+state_machine:
+  states:
+    - raw_submitted
+    - trend_pending
+    - trend_ok
+    - trend_flagged
+    - trend_resolved
+    - final_pending
+    - final_confirmed
+    - final_locked
+  transitions:
+    - { from: raw_submitted, to: trend_pending, auto: true }
+    - { from: trend_pending, to: trend_ok, actor: supervisor }
+    - { from: trend_pending, to: trend_flagged, actor: supervisor }
+    - { from: trend_flagged, to: trend_resolved, actor: supervisor }
+    - { from: trend_ok, to: final_pending, actor: supervisor }
+    - { from: trend_resolved, to: final_pending, actor: supervisor }
+    - { from: final_pending, to: final_confirmed, actor: finance }
+    - { from: final_confirmed, to: final_locked, auto: true }
+  terminal_states:
+    - final_locked
+
+checkpoints:
+  # ===== CP-B2-001: 权限测试 =====
+  - id: CP-B2-001
+    category: permission
+    description: 日报审核页访问权限
+    spec_ref: "§1.2 用户角色"
+    cases:
+      - { role: ceo, expected: allowed, scope: "全公司" }
+      - { role: finance, expected: allowed, action: "终审" }
+      - { role: supervisor, expected: allowed, action: "趋势审核" }
+      - { role: pitcher, expected: allowed, scope: "个人日报" }
+      - { role: project_owner, expected: allowed, scope: "项目日报" }
+      - { role: account_manager, expected: denied }
+      - { role: admin, expected: denied }
+
+  # ===== CP-B2-002: 页面渲染测试 =====
+  - id: CP-B2-002
+    category: ui
+    description: 页面元素渲染
+    spec_ref: "§3 UI 规范"
+    cases:
+      - { element: 页面标题, selector: "h1", expected: "日报管理" }
+      - { element: 日报表格, selector: "[data-testid='daily-reports-table']", expected: visible }
+      - { element: 状态Tab, selector: "[data-testid='status-tabs']", expected: visible }
+      - { element: 表格列, count: 8, columns: [日期, 项目, 投手, 进粉数, 消耗, CPL, 状态, 操作] }
+
+  # ===== CP-B2-003: 数据状态测试 =====
+  - id: CP-B2-003
+    category: data
+    description: 数据加载状态
+    spec_ref: "§2 数据需求"
+    cases:
+      - { scenario: loading, expected: 骨架屏, selector: "[data-testid='loading-skeleton']" }
+      - { scenario: empty, expected: "暂无日报", selector: "[data-testid='empty-state']" }
+      - { scenario: error, expected: 错误提示, selector: "[data-testid='error-state']" }
+      - { scenario: success, expected: 日报列表 }
+
+  # ===== CP-B2-004: 功能操作测试 (状态机) =====
+  - id: CP-B2-004
+    category: function
+    description: 状态机操作 (8 状态)
+    spec_ref: "STATE_MACHINE.md v2.6"
+    cases:
+      # 合法转换
+      - { transition: "raw_submitted→trend_pending", auto: true, expected: success }
+      - { transition: "trend_pending→trend_ok", actor: supervisor, expected: success }
+      - { transition: "trend_pending→trend_flagged", actor: supervisor, expected: success }
+      - { transition: "trend_flagged→trend_resolved", actor: supervisor, expected: success }
+      - { transition: "trend_ok→final_pending", actor: supervisor, expected: success }
+      - { transition: "trend_resolved→final_pending", actor: supervisor, expected: success }
+      - { transition: "final_pending→final_confirmed", actor: finance, expected: success }
+      - { transition: "final_confirmed→final_locked", auto: true, expected: success }
+      # 非法转换
+      - { transition: "raw_submitted→final_confirmed", expected: "400 ST-001", illegal: true }
+      - { transition: "final_locked→final_confirmed", expected: "400 ST-002", illegal: true }
+      - { transition: "trend_ok→trend_pending", expected: "400 ST-001", illegal: true }
+
+  # ===== CP-B2-005: Phase 1 规则测试 =====
+  - id: CP-B2-005
+    category: phase1
+    description: Phase 1 不阻断规则
+    spec_ref: "MASTER.md §3.1"
+    cases:
+      - { scenario: CPL超标, expected: 红色高亮+审核按钮可用, selector: "[data-testid='cpl-cell-{id}']" }
+      - { scenario: 趋势异常, expected: 黄色警告+可继续审核 }
+
+summary:
+  total_checkpoints: 5
+  permission_cases: 7
+  ui_cases: 4
+  data_cases: 4
+  function_cases: 11
+  phase1_cases: 2
+  total_cases: 28

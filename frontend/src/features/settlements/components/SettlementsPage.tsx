@@ -179,7 +179,7 @@ export function SettlementsPage() {
   const totalPages = Math.ceil(totalCount / (params.page_size || 10));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" data-testid="settlement-page">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -187,13 +187,14 @@ export function SettlementsPage() {
             <div className="flex items-center gap-3">
               <FileText className="h-8 w-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">结算管理</h1>
+                <h1 className="text-2xl font-bold text-gray-900">月度结算</h1>
                 <p className="text-sm text-gray-500">管理供应商和客户结算</p>
               </div>
             </div>
             <button
               onClick={() => { /* TODO: 实现新增结算表单 */ }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              data-testid="create-btn"
             >
               <Plus className="h-4 w-4" />
               新增结算
@@ -204,7 +205,7 @@ export function SettlementsPage() {
 
       {/* Statistics Cards - v3.0 优化版 */}
       {statistics && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" data-testid="settlement-stats">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
@@ -280,9 +281,9 @@ export function SettlementsPage() {
 
       {/* Filters - v3.0 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-6" data-testid="settlement-filters">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-testid="type-filter">
               <Filter className="h-4 w-4 text-gray-400" />
               <select
                 value={filterType}
@@ -298,7 +299,7 @@ export function SettlementsPage() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-testid="status-filter">
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as SettlementStatus | '')}
@@ -340,9 +341,9 @@ export function SettlementsPage() {
 
       {/* Content - v3.0 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden" data-testid="settlement-table">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-12" data-testid="loading-skeleton">
               <LoadingSpinner size="lg" label="加载中..." />
             </div>
           ) : isError ? (

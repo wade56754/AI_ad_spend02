@@ -4,6 +4,10 @@
  * SoT 对齐: LEDGER_SOT.md v1.1, BUSINESS_RULES.md v3.2
  */
 
+// V2 Types (Task Spec Refactor)
+export * from './finance.types';
+
+// Legacy Types (for backwards compatibility)
 // 财务概览统计
 export interface FinanceOverview {
   total_revenue: number;        // 总收入

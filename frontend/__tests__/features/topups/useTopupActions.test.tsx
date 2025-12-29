@@ -397,8 +397,10 @@ describe('useTopupActions Hook', () => {
         result.current.cancelTopup.mutate(topup.id);
       });
 
-      // Loading should be true while pending
-      expect(result.current.isLoading).toBe(true);
+      // Loading should be true while pending (wait for async state update)
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(true);
+      });
 
       // Resolve the promise
       await act(async () => {

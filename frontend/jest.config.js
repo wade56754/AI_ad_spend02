@@ -28,7 +28,14 @@ const customJestConfig = {
   // Test match patterns
   testMatch: [
     '**/__tests__/**/*.(test|spec).[jt]s?(x)',
-    '**/?(*.)+(spec|test).[jt]s?(x)',
+    '**/tests/**/*.(test|spec).[jt]s?(x)',
+  ],
+
+  // Ignore Playwright E2E tests (run separately with @playwright/test)
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/playwright/',
+    '/e2e/',
   ],
 
   // Coverage configuration

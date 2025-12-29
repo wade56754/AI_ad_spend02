@@ -1,4 +1,9 @@
 {
+  "statusLine": {
+    "type": "command",
+    "command": "python .claude/statusline.py",
+    "padding": 0
+  },
   "permissions": {
     "allow": [
       "Bash(python3:*)",
@@ -144,7 +149,8 @@
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "supabase"
+    "supabase",
+    "lark"
   ],
   "hooks": {
     "SessionStart": [
@@ -152,57 +158,58 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python .claude/hooks/inject_timestamp.py",
+            "timeout": 5000,
+            "statusMessage": "📅 加载时间上下文..."
+          },
+          {
+            "type": "command",
             "command": "python .claude/hooks/session_start.py",
-            "statusMessage": "加载 SoT 裁判链和 Phase 1 约束..."
+            "timeout": 5000,
+            "statusMessage": "🎯 加载 SoT 裁判链..."
           },
           {
             "type": "command",
             "command": "python .claude/hooks/load_context.py",
-            "statusMessage": "加载 SoT 文档上下文..."
+            "timeout": 10000,
+            "statusMessage": "📚 加载 SoT 文档上下文..."
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "Write",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
             "command": "python .claude/hooks/pre_tool_use.py",
-            "statusMessage": "检查代码合规性..."
-          },
-          {
-            "type": "command",
-            "command": "python .claude/hooks/phase1_guard.py",
-            "statusMessage": "Phase 1 原则守护..."
+            "timeout": 10000,
+            "statusMessage": "🔍 检查代码合规性..."
           }
         ]
       },
       {
-        "matcher": "Edit",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
             "command": "python .claude/hooks/pre_tool_use.py",
-            "statusMessage": "检查代码合规性..."
-          },
-          {
-            "type": "command",
-            "command": "python .claude/hooks/phase1_guard.py",
-            "statusMessage": "Phase 1 原则守护..."
+            "timeout": 10000,
+            "statusMessage": "🛡️ 检查命令安全性..."
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Write|Edit",
+        "matcher": "Write|Edit|MultiEdit|Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/auto_format.py",
-            "statusMessage": "自动格式化代码..."
+            "command": "python .claude/hooks/post_tool_use.py",
+            "timeout": 5000,
+            "statusMessage": "📝 记录变更..."
           }
         ]
       }
@@ -213,7 +220,8 @@
           {
             "type": "command",
             "command": "python .claude/hooks/stop.py",
-            "statusMessage": "发送会话结束通知..."
+            "timeout": 30000,
+            "statusMessage": "📊 生成会话报告..."
           }
         ]
       }

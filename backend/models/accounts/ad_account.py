@@ -1,12 +1,16 @@
 """
 广告账户模型 - 核心业务实体
 
-对齐 DATA_SCHEMA.md v5.2 和 init_schema.sql §5.1
+对齐 DATA_SCHEMA.md v5.4 和 init_schema.sql §5.1
 字段来源: init_schema.sql 第 315-332 行
+
+OpenSpec Change: add-reconciliation-control-center
+- 新增 deposit, deposit_updated_at 字段
+- 新增 balance_snapshots, reconciliation_issues 关系
 """
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import Column, BigInteger, String, Text, Numeric, Index, CheckConstraint, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Text, Numeric, Index, CheckConstraint, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -110,6 +114,20 @@ class AdAccount(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
     currency = Column(String(10), nullable=False, default='CNY', server_default='CNY', comment="货币")
     timezone = Column(String(50), nullable=False, default='Asia/Shanghai', server_default='Asia/Shanghai', comment="时区")
 
+    # 押款字段 (OpenSpec: add-reconciliation-control-center)
+    deposit = Column(
+        Numeric(15, 2),
+        nullable=False,
+        default=Decimal('0.00'),
+        server_default='0.00',
+        comment="当前押款金额 (SoT: DATA_SCHEMA.md v5.4 §5.1)"
+    )
+    deposit_updated_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="押款最后更新时间"
+    )
+
     # 审计字段 - 对齐 init_schema.sql
     created_by = Column(
         PGUUID(as_uuid=True),
@@ -172,6 +190,24 @@ class AdAccount(Base, TimestampMixin, RLSAwareMixin, SerializableMixin):
         foreign_keys=[buyer_id],
         lazy="joined",
         doc="所属投手"
+    )
+
+    # 一对多：账户 -> 余额快照 (OpenSpec: add-reconciliation-control-center)
+    balance_snapshots = relationship(
+        "AdAccountBalanceSnapshot",
+        back_populates="ad_account",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+        doc="余额/押款快照历史"
+    )
+
+    # 一对多：账户 -> 对账差异单 (OpenSpec: add-reconciliation-control-center)
+    reconciliation_issues = relationship(
+        "ReconciliationIssue",
+        back_populates="ad_account",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+        doc="对账差异单列表"
     )
 
     # 约束与索引 - 对齐 init_schema.sql

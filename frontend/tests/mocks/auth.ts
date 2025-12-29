@@ -97,7 +97,7 @@ export function mockUnauthenticatedState() {
 /**
  * 不同角色的 mock 用户
  */
-export const mockUsers = {
+export const mockUsers: Record<string, typeof mockUser & { role: UserRole }> = {
   admin: {
     ...mockUser,
     role: 'admin' as UserRole,
@@ -129,6 +129,13 @@ export const mockUsers = {
     email: 'buyer@example.com',
     username: 'buyeruser',
     role: 'media_buyer' as UserRole,
+  },
+  project_owner: {
+    ...mockUser,
+    id: 'user-po-id-001',
+    email: 'po@example.com',
+    username: 'pouser',
+    role: 'project_owner' as UserRole,
   },
 }
 

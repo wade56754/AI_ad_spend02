@@ -301,7 +301,7 @@ def main():
     print()
     
     # 读取配置
-    schema_file = Path(__file__).parent.parent / "docs/2.sot/DATA_SCHEMA.md"
+    schema_file = Path(__file__).parent.parent / "docs/sot/DATA_SCHEMA.md"
     
     if not schema_file.exists():
         print(f"❌ 错误: 找不到 DATA_SCHEMA.md 文件: {schema_file}")

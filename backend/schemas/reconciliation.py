@@ -465,3 +465,260 @@ class ReconciliationTrendData(BaseModel):
     total_difference: Decimal
     auto_matched_count: int
     manual_review_count: int
+
+
+# ========== OpenSpec: add-reconciliation-control-center ==========
+# 以下为对账中控模块新增的 Schema 定义
+# SoT Reference: DATA_SCHEMA.md v5.4 §3.5.5, §3.5.6, §3.5.7
+
+class SettlementRuleType(str, Enum):
+    """结算规则类型"""
+    TIERED = "tiered"    # 阶梯计价
+    MARKUP = "markup"    # 加成计价
+
+
+class BalanceSnapshotSource(str, Enum):
+    """余额快照来源"""
+    MANUAL = "manual"   # 手工录入
+    API = "api"         # API 拉取
+    IMPORT = "import"   # 批量导入
+
+
+class ReconciliationIssueType(str, Enum):
+    """对账差异类型"""
+    TOPUP_MISMATCH = "topup_mismatch"           # 充值差异
+    SPEND_MISMATCH = "spend_mismatch"           # 消耗差异
+    DEPOSIT_CHANGE = "deposit_change"           # 押款变化
+    BALANCE_ANOMALY = "balance_anomaly"         # 余额异常
+    SNAPSHOT_MISSING = "snapshot_missing"       # 快照缺失
+    CONSERVATION_FAILED = "conservation_failed" # 守恒校验失败
+    OTHER = "other"                             # 其他
+
+
+class ReconciliationIssueStatus(str, Enum):
+    """
+    对账差异单状态
+
+    状态流转白名单 (STATE_MACHINE.md §11.4):
+    - open -> assigned
+    - assigned -> investigating
+    - investigating -> resolved, assigned
+    - resolved -> closed, investigating
+    - closed (终态)
+    """
+    OPEN = "open"                   # 待处理（初始态）
+    ASSIGNED = "assigned"           # 已分配
+    INVESTIGATING = "investigating" # 调查中
+    RESOLVED = "resolved"           # 已处理
+    CLOSED = "closed"               # 已关闭（终态）
+
+
+class ReconciliationIssueResolutionType(str, Enum):
+    """差异单处理类型"""
+    DATA_CORRECTION = "data_correction"     # 数据修正
+    LEDGER_ADJUSTMENT = "ledger_adjustment" # 账本调整
+    EXTERNAL_CONFIRM = "external_confirm"   # 外部确认（代理商/甲方）
+    WRITE_OFF = "write_off"                 # 核销
+    FALSE_POSITIVE = "false_positive"       # 误报
+
+
+# ========== 结算规则 Schemas ==========
+
+class SettlementRuleBase(BaseModel):
+    """结算规则基础模型"""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str = Field(..., max_length=100, description="规则名称")
+    rule_type: SettlementRuleType = Field(..., description="规则类型: tiered/markup")
+    config: Dict[str, Any] = Field(..., description="规则配置JSON")
+    effective_from: date = Field(..., description="生效开始日")
+    effective_to: Optional[date] = Field(None, description="生效结束日")
+
+
+class SettlementRuleCreate(SettlementRuleBase):
+    """创建结算规则请求"""
+
+    @field_validator('effective_to')
+    @classmethod
+    def validate_effective_period(cls, v, info):
+        """验证生效期间"""
+        if v is not None:
+            effective_from = info.data.get('effective_from')
+            if effective_from and v <= effective_from:
+                raise ValueError('生效结束日必须晚于生效开始日')
+        return v
+
+    @field_validator('config')
+    @classmethod
+    def validate_config(cls, v, info):
+        """验证配置格式"""
+        rule_type = info.data.get('rule_type')
+        if rule_type == SettlementRuleType.TIERED:
+            if 'tiers' not in v or not isinstance(v['tiers'], list):
+                raise ValueError('阶梯规则必须包含 tiers 数组')
+        elif rule_type == SettlementRuleType.MARKUP:
+            if 'markup_type' not in v or 'markup_value' not in v:
+                raise ValueError('加成规则必须包含 markup_type 和 markup_value')
+        return v
+
+
+class SettlementRuleUpdate(BaseModel):
+    """更新结算规则请求"""
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = Field(None, max_length=100, description="规则名称")
+    config: Optional[Dict[str, Any]] = Field(None, description="规则配置JSON")
+    effective_to: Optional[date] = Field(None, description="生效结束日")
+
+
+class SettlementRuleResponse(SettlementRuleBase):
+    """结算规则响应"""
+    id: int
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    # 计算属性
+    is_effective: Optional[bool] = Field(None, description="当前是否生效")
+
+
+class SettlementRuleListResponse(BaseModel):
+    """结算规则列表响应"""
+    items: List[SettlementRuleResponse]
+    meta: dict
+
+
+# ========== 余额快照 Schemas ==========
+
+class BalanceSnapshotBase(BaseModel):
+    """余额快照基础模型"""
+    model_config = ConfigDict(from_attributes=True)
+
+    ad_account_id: int = Field(..., description="广告账户ID")
+    snapshot_date: date = Field(..., description="快照日期")
+    balance: Decimal = Field(..., ge=0, description="当日余额")
+    deposit: Decimal = Field(Decimal("0.00"), ge=0, description="当日押款")
+    source: BalanceSnapshotSource = Field(BalanceSnapshotSource.MANUAL, description="数据来源")
+    notes: Optional[str] = Field(None, max_length=500, description="备注")
+
+
+class BalanceSnapshotCreate(BalanceSnapshotBase):
+    """创建余额快照请求"""
+
+    @field_validator('snapshot_date')
+    @classmethod
+    def validate_snapshot_date(cls, v):
+        """验证快照日期"""
+        if v > date.today():
+            raise ValueError('快照日期不能是未来日期')
+        return v
+
+
+class BalanceSnapshotBatchCreate(BaseModel):
+    """批量创建余额快照请求"""
+    model_config = ConfigDict(from_attributes=True)
+
+    snapshots: List[BalanceSnapshotCreate] = Field(..., min_length=1, description="快照列表")
+
+
+class BalanceSnapshotResponse(BalanceSnapshotBase):
+    """余额快照响应"""
+    id: int
+    remaining_balance: Decimal = Field(..., description="剩余可用 = balance - deposit")
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class BalanceSnapshotListResponse(BaseModel):
+    """余额快照列表响应"""
+    items: List[BalanceSnapshotResponse]
+    meta: dict
+
+
+# ========== 对账差异单 Schemas ==========
+
+class ReconciliationIssueBase(BaseModel):
+    """对账差异单基础模型"""
+    model_config = ConfigDict(from_attributes=True)
+
+    reconciliation_batch_id: Optional[int] = Field(None, description="对账批次ID")
+    ad_account_id: Optional[int] = Field(None, description="广告账户ID")
+    issue_date: date = Field(..., description="差异日期")
+    issue_type: ReconciliationIssueType = Field(..., description="差异类型")
+    expected_amount: Optional[Decimal] = Field(None, description="预期金额")
+    actual_amount: Optional[Decimal] = Field(None, description="实际金额")
+
+
+class ReconciliationIssueCreate(ReconciliationIssueBase):
+    """创建对账差异单请求"""
+    attachments: Optional[List[str]] = Field(None, description="附件URL列表")
+
+    @field_validator('issue_date')
+    @classmethod
+    def validate_issue_date(cls, v):
+        """验证差异日期"""
+        if v > date.today():
+            raise ValueError('差异日期不能是未来日期')
+        return v
+
+
+class ReconciliationIssueAssign(BaseModel):
+    """分配差异单请求"""
+    model_config = ConfigDict(from_attributes=True)
+
+    assigned_to: str = Field(..., description="分配给用户ID (UUID)")
+    sla_deadline: Optional[datetime] = Field(None, description="SLA 截止时间")
+
+
+class ReconciliationIssueResolve(BaseModel):
+    """处理差异单请求"""
+    model_config = ConfigDict(from_attributes=True)
+
+    resolution_type: ReconciliationIssueResolutionType = Field(..., description="处理类型")
+    resolution_note: Optional[str] = Field(None, max_length=1000, description="处理说明")
+    attachments: Optional[List[str]] = Field(None, description="附件URL列表")
+
+
+class ReconciliationIssueResponse(ReconciliationIssueBase):
+    """对账差异单响应"""
+    id: int
+    difference_amount: Optional[Decimal] = Field(None, description="差异金额 (computed)")
+    status: ReconciliationIssueStatus = Field(..., description="状态")
+    assigned_to: Optional[str] = None
+    assigned_at: Optional[datetime] = None
+    resolution_type: Optional[ReconciliationIssueResolutionType] = None
+    resolution_note: Optional[str] = None
+    resolved_at: Optional[datetime] = None
+    resolved_by: Optional[str] = None
+    attachments: Optional[List[str]] = None
+    sla_deadline: Optional[datetime] = None
+    sla_breached: Optional[bool] = Field(False, description="SLA 超时标记")
+    created_at: Optional[datetime] = None
+    created_by: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+    # 关联数据（可选）
+    ad_account_name: Optional[str] = Field(None, description="广告账户名称")
+    assignee_name: Optional[str] = Field(None, description="处理人姓名")
+    resolver_name: Optional[str] = Field(None, description="处理完成人姓名")
+
+
+class ReconciliationIssueListResponse(BaseModel):
+    """对账差异单列表响应"""
+    items: List[ReconciliationIssueResponse]
+    meta: dict
+
+
+class ReconciliationIssueSummary(BaseModel):
+    """对账差异单统计摘要"""
+    model_config = ConfigDict(from_attributes=True)
+
+    total_issues: int = Field(0, description="总差异单数")
+    open_issues: int = Field(0, description="待处理数")
+    assigned_issues: int = Field(0, description="已分配数")
+    investigating_issues: int = Field(0, description="调查中数")
+    resolved_issues: int = Field(0, description="已处理数")
+    closed_issues: int = Field(0, description="已关闭数")
+    sla_breached_issues: int = Field(0, description="SLA 超时数")
+    total_difference_amount: Decimal = Field(Decimal("0.00"), description="总差异金额")
+    issues_by_type: Dict[str, int] = Field(default_factory=dict, description="按类型统计")

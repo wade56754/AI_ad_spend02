@@ -79,7 +79,7 @@ argument-hint: "[change-id]"
 ```
 
 **验证项:**
-- [ ] 引用的 SoT 文档版本与 docs/2.sot/ 中实际版本一致
+- [ ] 引用的 SoT 文档版本与 docs/sot/ 中实际版本一致
 - [ ] 新增的状态枚举在 STATE_MACHINE.md 中有定义或明确标记为 ADDED
 - [ ] 新增的错误码遵循 ERROR_CODES_SOT.md 的命名规范
 - [ ] 新增的 API 端点遵循 API_SOT.md 的响应格式
@@ -114,7 +114,7 @@ argument-hint: "[change-id]"
 触发条件:
 - backend/routers/*
 - backend/services/*
-- docs/2.sot/*
+- docs/sot/*
 - .claude/skills/ai-ad-api-automation-test/*
 ```
 
@@ -180,7 +180,7 @@ openspec validate $ARGUMENTS --strict
 ```
 
 ### 问题: SoT 版本不匹配
-1. 检查 `docs/2.sot/[DOC].md` 顶部的版本号
+1. 检查 `docs/sot/[DOC].md` 顶部的版本号
 2. 更新 proposal.md 中的版本引用
 3. 如果需要修改 SoT，先创建相应的 OpenSpec change
 

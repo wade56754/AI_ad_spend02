@@ -14,6 +14,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 
 export interface CampaignData {
@@ -55,10 +57,13 @@ const STATUS_CONFIG = {
 function CampaignTable({
   campaigns,
   sortBy,
+  tableTestId,
 }: {
   campaigns: CampaignData[];
   sortBy: 'spend' | 'roas';
+  tableTestId?: string;
 }) {
+  const router = useRouter();
   if (campaigns.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -71,73 +76,87 @@ function CampaignTable({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[40px]">#</TableHead>
-          <TableHead>计划名称</TableHead>
-          <TableHead>所属账户</TableHead>
-          <TableHead className="text-right">消耗</TableHead>
-          <TableHead className="text-right">展现</TableHead>
-          <TableHead className="text-right">点击</TableHead>
-          <TableHead className="text-right">转化</TableHead>
-          <TableHead className="text-right">ROAS</TableHead>
-          <TableHead className="text-center">状态</TableHead>
-          <TableHead className="text-right">操作</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {campaigns.map((campaign, index) => {
-          const statusConfig = STATUS_CONFIG[campaign.status];
-          const roasColor =
-            campaign.roas >= 1.8
-              ? 'text-green-600'
-              : campaign.roas >= 1.2
-              ? 'text-yellow-600'
-              : 'text-red-600';
+    <ScrollArea className="w-full">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[40px]">#</TableHead>
+            <TableHead>计划名称</TableHead>
+            <TableHead>所属账户</TableHead>
+            <TableHead className="text-right">消耗</TableHead>
+            <TableHead className="text-right">展现</TableHead>
+            <TableHead className="text-right">点击</TableHead>
+            <TableHead className="text-right">转化</TableHead>
+            <TableHead className="text-right">ROAS</TableHead>
+            <TableHead className="text-center">状态</TableHead>
+            <TableHead className="text-right">操作</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {campaigns.map((campaign, index) => {
+            const statusConfig = STATUS_CONFIG[campaign.status];
+            const roasColor =
+              campaign.roas >= 1.8
+                ? 'text-green-600'
+                : campaign.roas >= 1.2
+                ? 'text-yellow-600'
+                : 'text-red-600';
 
-          return (
-            <TableRow key={campaign.id} className="hover:bg-muted/50">
-              <TableCell className="font-medium text-muted-foreground">
-                {index + 1}
-              </TableCell>
-              <TableCell className="font-medium max-w-[200px] truncate">
-                {campaign.name}
-              </TableCell>
-              <TableCell className="text-muted-foreground">{campaign.accountName}</TableCell>
-              <TableCell className="text-right font-mono">
-                {formatCurrency(campaign.spend, 0)}
-              </TableCell>
-              <TableCell className="text-right text-muted-foreground">
-                {formatNumber(campaign.impressions)}
-              </TableCell>
-              <TableCell className="text-right text-muted-foreground">
-                {formatNumber(campaign.clicks)}
-              </TableCell>
-              <TableCell className="text-right font-medium">
-                {formatNumber(campaign.conversions)}
-              </TableCell>
-              <TableCell className={`text-right font-semibold ${roasColor}`}>
-                {(Number(campaign.roas) || 0).toFixed(2)}
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge variant={statusConfig.variant}>
-                  <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusConfig.color}`} />
-                  {statusConfig.label}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <Link href={`/projects/${campaign.id}`}>
-                  <Button variant="ghost" size="sm">
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
-              </TableCell>
-            </TableRow>
-          );
-        })}
-      </TableBody>
-    </Table>
+            // Phase 1: 异常项目高亮但可点击
+            const isAbnormal = campaign.roas < 1.0;
+            const rowWarningClass = isAbnormal
+              ? 'bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-950/30'
+              : 'hover:bg-muted/50';
+
+            return (
+              <TableRow
+                key={campaign.id}
+                className={`${rowWarningClass} cursor-pointer transition-colors`}
+                data-testid={tableTestId ? `top-item-${index}` : undefined}
+                onClick={() => router.push(`/projects/${campaign.id}`)}
+              >
+                <TableCell className="font-medium text-muted-foreground">
+                  {index + 1}
+                </TableCell>
+                <TableCell className="font-medium max-w-[200px] truncate">
+                  {campaign.name}
+                </TableCell>
+                <TableCell className="text-muted-foreground">{campaign.accountName}</TableCell>
+                <TableCell className="text-right font-mono">
+                  {formatCurrency(campaign.spend, 0)}
+                </TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  {formatNumber(campaign.impressions)}
+                </TableCell>
+                <TableCell className="text-right text-muted-foreground">
+                  {formatNumber(campaign.clicks)}
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                  {formatNumber(campaign.conversions)}
+                </TableCell>
+                <TableCell className={`text-right font-semibold ${roasColor}`}>
+                  {(Number(campaign.roas) || 0).toFixed(2)}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Badge variant={statusConfig.variant}>
+                    <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${statusConfig.color}`} />
+                    {statusConfig.label}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link href={`/projects/${campaign.id}`}>
+                    <Button variant="ghost" size="sm">
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }
 
@@ -147,9 +166,9 @@ export function TopLists({
   className,
 }: TopListsProps) {
   return (
-    <div className={`grid grid-cols-1 gap-6 ${className || ''}`}>
+    <div className={`grid grid-cols-1 gap-6 ${className || ''}`} data-testid="top-lists">
       {/* 今日消耗 Top N */}
-      <Card>
+      <Card data-testid="top-spend">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-blue-600" />
@@ -163,12 +182,12 @@ export function TopLists({
           </Link>
         </CardHeader>
         <CardContent>
-          <CampaignTable campaigns={topSpendCampaigns} sortBy="spend" />
+          <CampaignTable campaigns={topSpendCampaigns} sortBy="spend" tableTestId="top-spend" />
         </CardContent>
       </Card>
 
       {/* ROAS 最差 Top N */}
-      <Card>
+      <Card data-testid="worst-roas">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <TrendingDown className="h-5 w-5 text-red-600" />
@@ -182,7 +201,7 @@ export function TopLists({
           </Link>
         </CardHeader>
         <CardContent>
-          <CampaignTable campaigns={worstROASCampaigns} sortBy="roas" />
+          <CampaignTable campaigns={worstROASCampaigns} sortBy="roas" tableTestId="worst-roas" />
         </CardContent>
       </Card>
     </div>

@@ -61,7 +61,7 @@ enhancement:
 
     白名单根路径（SYSTEM-SCAN 专用，禁止动态扩展）：
     - docs/1.overview/
-    - docs/2.sot/
+    - docs/sot/
     - docs/3.dev-guides/
     - docs/4.architecture/
     - docs/5.infrastructure/
@@ -74,9 +74,9 @@ enhancement:
        - docs/1.overview/MASTER*.md, PROJECT*.md
 
     2) SoT 层 Layer 2（Source of Truth）
-       - docs/2.sot/STATE_MACHINE*.md, DATA_SCHEMA*.md, BUSINESS_RULES*.md
-       - docs/2.sot/*_SOT.md（LEDGER / DAILY_REPORT / TRANSFER / RECONCILIATION / TOPUP / IMPORT_JOB 等）
-       - docs/2.sot/ERROR_CODES*.md, AUTH_SPEC*.md
+       - docs/sot/STATE_MACHINE*.md, DATA_SCHEMA*.md, BUSINESS_RULES*.md
+       - docs/sot/*_SOT.md（LEDGER / DAILY_REPORT / TRANSFER / RECONCILIATION / TOPUP / IMPORT_JOB 等）
+       - docs/sot/ERROR_CODES*.md, AUTH_SPEC*.md
 
     3) 开发指南层 Layer 3（Dev-Guides）
        - docs/3.dev-guides/ 下所有开发指南
@@ -481,7 +481,7 @@ enhancement:
     → 检查 Skill 与 MASTER / SoT 的对齐
 
     示例 4：指定文件集审查
-    /audit-doc-set docs/1.overview/** docs/2.sot/** .claude/skills/**
+    /audit-doc-set docs/1.overview/** docs/sot/** .claude/skills/**
     → 审查指定路径下的文档
 
     错误示例（会被 halt）：

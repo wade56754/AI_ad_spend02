@@ -6,6 +6,8 @@
  * Route: /finance
  * Purpose: Financial dashboard with overview, trends, and quick actions
  * SoT 对齐: LEDGER_SOT.md v1.1, BUSINESS_RULES.md v3.2
+ *
+ * 使用真实后端 API 获取数据
  */
 
 import React, { useState } from 'react';
@@ -28,61 +30,16 @@ import {
   PieChart,
   BarChart3,
   FileText,
-  Plus
+  Plus,
+  Loader2
 } from 'lucide-react';
-
-// Mock data - 财务概览
-const mockOverview = {
-  total_revenue: 2580000,
-  total_cost: 1890000,
-  total_profit: 690000,
-  profit_margin: 26.7,
-  pending_settlements: 156000,
-  pending_topups: 85000,
-};
-
-// Mock data - 趋势数据 (最近7天)
-const mockTrends = [
-  { date: '12-15', revenue: 320000, cost: 245000, profit: 75000 },
-  { date: '12-16', revenue: 380000, cost: 278000, profit: 102000 },
-  { date: '12-17', revenue: 350000, cost: 260000, profit: 90000 },
-  { date: '12-18', revenue: 420000, cost: 310000, profit: 110000 },
-  { date: '12-19', revenue: 390000, cost: 285000, profit: 105000 },
-  { date: '12-20', revenue: 360000, cost: 268000, profit: 92000 },
-  { date: '12-21', revenue: 360000, cost: 244000, profit: 116000 },
-];
-
-// Mock data - 低余额账户
-const mockLowBalanceAccounts = [
-  { id: 1, name: '巨量引擎-主账户', platform: '巨量引擎', balance: 5200, status: 'critical' as const },
-  { id: 2, name: '腾讯广告-品牌号', platform: '腾讯广告', balance: 12800, status: 'low' as const },
-  { id: 3, name: '快手磁力-效果号', platform: '快手', balance: 18500, status: 'low' as const },
-];
-
-// Mock data - 待办事项
-const mockTodos = [
-  { id: 1, type: 'topup' as const, title: '充值申请待审批', amount: 50000, priority: 'high' as const, created_at: '2024-12-21 09:30' },
-  { id: 2, type: 'settlement' as const, title: '供应商结算待处理', amount: 86000, priority: 'high' as const, created_at: '2024-12-21 08:15' },
-  { id: 3, type: 'reconciliation' as const, title: '日报对账待确认', amount: 125000, priority: 'medium' as const, created_at: '2024-12-20 17:00' },
-  { id: 4, type: 'alert' as const, title: '账户余额预警', priority: 'high' as const, created_at: '2024-12-21 10:00' },
-];
-
-// Mock data - 最近交易
-const mockTransactions = [
-  { id: 1, type: 'topup' as const, account_name: '巨量引擎-主账户', amount: 100000, status: '已完成', created_at: '2024-12-21 10:30' },
-  { id: 2, type: 'consume' as const, account_name: '腾讯广告-品牌号', amount: -28500, status: '已扣费', created_at: '2024-12-21 09:45' },
-  { id: 3, type: 'topup' as const, account_name: '快手磁力-效果号', amount: 50000, status: '审批中', created_at: '2024-12-21 09:00' },
-  { id: 4, type: 'settlement' as const, account_name: '供应商A', amount: -45000, status: '已结算', created_at: '2024-12-20 18:00' },
-  { id: 5, type: 'consume' as const, account_name: '巨量引擎-主账户', amount: -32100, status: '已扣费', created_at: '2024-12-20 16:30' },
-];
-
-// Mock data - 平台消耗占比
-const mockPlatformSpend = [
-  { platform: '巨量引擎', spend: 890000, percentage: 47.1, trend: 'up' as const },
-  { platform: '腾讯广告', spend: 560000, percentage: 29.6, trend: 'stable' as const },
-  { platform: '快手磁力', spend: 320000, percentage: 16.9, trend: 'up' as const },
-  { platform: '其他', spend: 120000, percentage: 6.4, trend: 'down' as const },
-];
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  useFundOverview,
+  useProfitTrend,
+  useChannelDistribution,
+  useFundAlerts,
+} from '../hooks/useFinance';
 
 // 格式化金额
 const formatMoney = (amount: number | undefined | null) => {
@@ -109,12 +66,80 @@ const priorityColors = {
 };
 
 export function FinancePage() {
+  const queryClient = useQueryClient();
+
+  // 获取真实数据
+  const { data: fundOverview, isLoading: isLoadingOverview, refetch: refetchOverview } = useFundOverview();
+  const { data: profitTrend, isLoading: isLoadingTrend, refetch: refetchTrend } = useProfitTrend({ granularity: 'day' });
+  const { data: channelDistribution, isLoading: isLoadingChannels, refetch: refetchChannels } = useChannelDistribution();
+  const { data: fundAlerts, isLoading: isLoadingAlerts, refetch: refetchAlerts } = useFundAlerts();
+
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1000);
+    await Promise.all([
+      refetchOverview(),
+      refetchTrend(),
+      refetchChannels(),
+      refetchAlerts(),
+    ]);
+    setIsRefreshing(false);
   };
+
+  // 计算概览数据 (从真实数据或默认值)
+  const overview = {
+    total_topup: fundOverview?.total_topup ?? 0,      // 累计充值
+    total_spend: fundOverview?.total_spend ?? 0,       // 累计消耗
+    current_balance: fundOverview?.current_balance ?? 0, // 当前余额
+    total_receivable: fundOverview?.total_receivable ?? 0, // 应收款
+    total_received: fundOverview?.total_received ?? 0,   // 累计回款
+    fund_occupied: fundOverview?.fund_occupied ?? 0,     // 资金占用
+    occupy_rate: fundOverview?.occupy_rate ?? 0,         // 资金占用率
+    pending_count: fundOverview?.pending_receivable_count ?? 0, // 待收款笔数
+  };
+
+  // 转换趋势数据格式 - 添加防护性检查
+  const trends = (profitTrend ?? []).map(item => ({
+    date: (item.date ?? '').slice(5) || '未知', // 取 MM-DD 部分
+    revenue: item.revenue ?? 0,
+    cost: item.cost ?? 0,
+    profit: item.profit ?? 0,
+  }));
+
+  // 转换渠道数据格式 - 添加防护性检查
+  // 计算总消耗用于百分比
+  const channelData = channelDistribution ?? [];
+  const totalChannelSpend = channelData.reduce((sum, item) => sum + (item.total_spend ?? 0), 0);
+  const platformSpend = channelData.map(item => ({
+    platform: item.channel_name ?? item.channel ?? '未知渠道',
+    spend: item.total_spend ?? 0,
+    percentage: totalChannelSpend > 0 ? ((item.total_spend ?? 0) / totalChannelSpend) * 100 : 0,
+    trend: 'stable' as 'up' | 'down' | 'stable',
+  }));
+
+  // 从预警生成待办
+  const alertsList = fundAlerts?.alerts ?? [];
+  const todos = alertsList.map((alert, index) => ({
+    id: index,
+    type: alert.alert_type === 'negative_balance' ? 'alert' as const :
+          alert.alert_type === 'overdue_receivable' ? 'settlement' as const : 'reconciliation' as const,
+    title: alert.title,
+    amount: alert.value,
+    priority: (alert.severity === 'critical' ? 'high' : alert.severity) as 'high' | 'medium' | 'low',
+    created_at: '',
+  }));
+
+  // 低余额账户 (从预警数据)
+  const lowBalanceAccounts = alertsList
+    .filter(a => a.alert_type === 'negative_balance')
+    .map((alert, index) => ({
+      id: index,
+      name: alert.title,
+      platform: alert.related_type || '未知',
+      balance: alert.value ?? 0,
+      status: alert.severity === 'critical' ? 'critical' as const : 'low' as const,
+    }));
 
   return (
     <div className="space-y-6">
@@ -147,72 +172,96 @@ export function FinancePage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="shadow-sm hover:shadow-md transition-shadow border-0">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">本月收入</p>
-                <p className="text-3xl font-bold text-gray-900 tabular-nums">{formatMoney(mockOverview.total_revenue)}</p>
-                <div className="flex items-center text-green-600 text-sm">
-                  <ArrowUpRight className="h-4 w-4" />
-                  <span>+12.5% 较上月</span>
+            {isLoadingOverview ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">累计充值</p>
+                  <p className="text-3xl font-bold text-gray-900 tabular-nums">{formatMoney(overview.total_topup)}</p>
+                  <div className="flex items-center text-green-600 text-sm">
+                    <TrendingUp className="h-4 w-4" />
+                    <span className="ml-1">总充值</span>
+                  </div>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
                 </div>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow border-0">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">本月成本</p>
-                <p className="text-3xl font-bold text-gray-900 tabular-nums">{formatMoney(mockOverview.total_cost)}</p>
-                <div className="flex items-center text-red-600 text-sm">
-                  <ArrowUpRight className="h-4 w-4" />
-                  <span>+8.2% 较上月</span>
+            {isLoadingOverview ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">累计消耗</p>
+                  <p className="text-3xl font-bold text-gray-900 tabular-nums">{formatMoney(overview.total_spend)}</p>
+                  <div className="flex items-center text-red-600 text-sm">
+                    <TrendingDown className="h-4 w-4" />
+                    <span className="ml-1">总消耗</span>
+                  </div>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50">
+                  <TrendingDown className="h-5 w-5 text-red-600" />
                 </div>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50">
-                <TrendingDown className="h-5 w-5 text-red-600" />
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow border-0">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">本月利润</p>
-                <p className="text-3xl font-bold text-green-600 tabular-nums">{formatMoney(mockOverview.total_profit)}</p>
-                <div className="flex items-center text-gray-500 text-sm">
-                  <span>利润率 {mockOverview.profit_margin}%</span>
+            {isLoadingOverview ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">当前余额</p>
+                  <p className="text-3xl font-bold text-green-600 tabular-nums">{formatMoney(overview.current_balance)}</p>
+                  <div className="flex items-center text-gray-500 text-sm">
+                    <span>占用率 {(overview.occupy_rate ?? 0).toFixed(1)}%</span>
+                  </div>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                  <Wallet className="h-5 w-5 text-blue-600" />
                 </div>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-                <PieChart className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow border-0">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">待结算金额</p>
-                <p className="text-3xl font-bold text-amber-600 tabular-nums">{formatMoney(mockOverview.pending_settlements)}</p>
-                <div className="flex items-center text-amber-600 text-sm">
-                  <Clock className="h-4 w-4 mr-1" />
-                  <span>3 笔待处理</span>
+            {isLoadingOverview ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">应收款</p>
+                  <p className="text-3xl font-bold text-amber-600 tabular-nums">{formatMoney(overview.total_receivable)}</p>
+                  <div className="flex items-center text-amber-600 text-sm">
+                    <Clock className="h-4 w-4 mr-1" />
+                    <span>待收 {overview.pending_count} 笔</span>
+                  </div>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
+                  <CreditCard className="h-5 w-5 text-amber-600" />
                 </div>
               </div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
-                <Wallet className="h-5 w-5 text-amber-600" />
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -238,41 +287,56 @@ export function FinancePage() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Simple trend visualization */}
-              <div className="space-y-4">
-                {mockTrends.map((day, index) => (
-                  <div key={day.date} className="flex items-center gap-4">
-                    <span className="w-12 text-sm text-gray-500">{day.date}</span>
-                    <div className="flex-1 flex items-center gap-2">
-                      <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden relative">
-                        <div
-                          className="absolute left-0 top-0 h-full bg-green-500 rounded-full"
-                          style={{ width: `${(day.revenue / 450000) * 100}%` }}
-                        />
-                        <div
-                          className="absolute left-0 top-0 h-full bg-red-400 rounded-full opacity-60"
-                          style={{ width: `${(day.cost / 450000) * 100}%` }}
-                        />
-                      </div>
-                      <div className="w-24 text-right">
-                        <span className="text-sm font-medium text-green-600">
-                          +{formatMoney(day.profit)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="flex items-center justify-center gap-6 pt-2 border-t">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full" />
-                    <span className="text-sm text-gray-500">收入</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-400 rounded-full" />
-                    <span className="text-sm text-gray-500">成本</span>
+              {isLoadingTrend ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : trends.length === 0 ? (
+                <div className="flex items-center justify-center py-12 text-gray-500">
+                  <div className="text-center">
+                    <BarChart3 className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-sm">暂无趋势数据</p>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  {trends.map((day, index) => {
+                    const maxValue = Math.max(...trends.map(t => Math.max(t.revenue, t.cost))) || 1;
+                    return (
+                      <div key={day.date} className="flex items-center gap-4">
+                        <span className="w-12 text-sm text-gray-500">{day.date}</span>
+                        <div className="flex-1 flex items-center gap-2">
+                          <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden relative">
+                            <div
+                              className="absolute left-0 top-0 h-full bg-green-500 rounded-full"
+                              style={{ width: `${(day.revenue / maxValue) * 100}%` }}
+                            />
+                            <div
+                              className="absolute left-0 top-0 h-full bg-red-400 rounded-full opacity-60"
+                              style={{ width: `${(day.cost / maxValue) * 100}%` }}
+                            />
+                          </div>
+                          <div className="w-24 text-right">
+                            <span className="text-sm font-medium text-green-600">
+                              +{formatMoney(day.profit)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex items-center justify-center gap-6 pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full" />
+                      <span className="text-sm text-gray-500">收入</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-red-400 rounded-full" />
+                      <span className="text-sm text-gray-500">成本</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -288,27 +352,40 @@ export function FinancePage() {
               <CardDescription>本月各平台广告消耗</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {mockPlatformSpend.map((platform) => (
-                  <div key={platform.platform}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium">{platform.platform}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">{formatMoney(platform.spend)}</span>
-                        {platform.trend === 'up' && <ArrowUpRight className="h-4 w-4 text-green-500" />}
-                        {platform.trend === 'down' && <ArrowDownRight className="h-4 w-4 text-red-500" />}
-                      </div>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500 rounded-full"
-                        style={{ width: `${platform.percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">{platform.percentage}%</p>
+              {isLoadingChannels ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : platformSpend.length === 0 ? (
+                <div className="flex items-center justify-center py-12 text-gray-500">
+                  <div className="text-center">
+                    <PieChart className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-sm">暂无平台数据</p>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {platformSpend.map((platform) => (
+                    <div key={platform.platform}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium">{platform.platform}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">{formatMoney(platform.spend)}</span>
+                          {platform.trend === 'up' && <ArrowUpRight className="h-4 w-4 text-green-500" />}
+                          {platform.trend === 'down' && <ArrowDownRight className="h-4 w-4 text-red-500" />}
+                        </div>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full"
+                          style={{ width: `${platform.percentage}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">{(platform.percentage ?? 0).toFixed(1)}%</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -326,41 +403,55 @@ export function FinancePage() {
                   <CardDescription>需要处理的财务事项</CardDescription>
                 </div>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                  {mockTodos.filter(t => t.priority === 'high').length} 个紧急
+                  {todos.filter(t => t.priority === 'high').length} 个紧急
                 </span>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {mockTodos.map((todo) => {
-                  const config = todoConfig[todo.type];
-                  const Icon = config.icon;
-                  return (
-                    <div key={todo.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${config.bg}`}>
-                        <Icon className={`h-5 w-5 ${config.color}`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900">{todo.title}</p>
-                          <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${priorityColors[todo.priority]}`}>
-                            {todo.priority === 'high' ? '紧急' : todo.priority === 'medium' ? '一般' : '低'}
-                          </span>
+              {isLoadingAlerts ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : todos.length === 0 ? (
+                <div className="flex items-center justify-center py-12 text-gray-500">
+                  <div className="text-center">
+                    <CheckCircle className="h-12 w-12 mx-auto text-green-300 mb-3" />
+                    <p className="text-sm">暂无待办事项</p>
+                    <p className="text-xs text-gray-400 mt-1">所有财务事项已处理完毕</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {todos.map((todo) => {
+                    const config = todoConfig[todo.type] || todoConfig.alert;
+                    const Icon = config.icon;
+                    return (
+                      <div key={todo.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50">
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${config.bg}`}>
+                          <Icon className={`h-5 w-5 ${config.color}`} />
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          {todo.amount && (
-                            <span className="text-sm text-gray-600">{formatMoney(todo.amount)}</span>
-                          )}
-                          <span className="text-xs text-gray-400">{todo.created_at}</span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900">{todo.title}</p>
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${priorityColors[todo.priority]}`}>
+                              {todo.priority === 'high' ? '紧急' : todo.priority === 'medium' ? '一般' : '低'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            {todo.amount && (
+                              <span className="text-sm text-gray-600">{formatMoney(todo.amount)}</span>
+                            )}
+                            <span className="text-xs text-gray-400">{todo.created_at}</span>
+                          </div>
                         </div>
+                        <Button variant="ghost" size="sm">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -385,29 +476,43 @@ export function FinancePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {mockLowBalanceAccounts.map((account) => (
-                  <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${account.status === 'critical' ? 'bg-red-500' : 'bg-yellow-500'}`} />
-                      <div>
-                        <p className="font-medium text-gray-900">{account.name}</p>
-                        <p className="text-xs text-gray-500">{account.platform}</p>
+              {isLoadingAlerts ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : lowBalanceAccounts.length === 0 ? (
+                <div className="flex items-center justify-center py-12 text-gray-500">
+                  <div className="text-center">
+                    <CheckCircle className="h-12 w-12 mx-auto text-green-300 mb-3" />
+                    <p className="text-sm">账户余额正常</p>
+                    <p className="text-xs text-gray-400 mt-1">所有账户余额充足</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {lowBalanceAccounts.map((account) => (
+                    <div key={account.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${account.status === 'critical' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                        <div>
+                          <p className="font-medium text-gray-900">{account.name}</p>
+                          <p className="text-xs text-gray-500">{account.platform}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-bold ${account.status === 'critical' ? 'text-red-600' : 'text-yellow-600'}`}>
+                          ¥{(account.balance ?? 0).toLocaleString()}
+                        </p>
+                        <Link href="/topups">
+                          <Button variant="link" size="sm" className="h-auto p-0 text-xs">
+                            立即充值
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-bold ${account.status === 'critical' ? 'text-red-600' : 'text-yellow-600'}`}>
-                        ¥{account.balance.toLocaleString()}
-                      </p>
-                      <Link href="/topups">
-                        <Button variant="link" size="sm" className="h-auto p-0 text-xs">
-                          立即充值
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -432,50 +537,12 @@ export function FinancePage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">时间</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">类型</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">账户/对象</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-600">金额</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">状态</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mockTransactions.map((tx) => (
-                      <tr key={tx.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm text-gray-600">
-                          {tx.created_at}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                            tx.type === 'topup' ? 'bg-green-100 text-green-800' :
-                            tx.type === 'consume' ? 'bg-blue-100 text-blue-800' :
-                            tx.type === 'settlement' ? 'bg-purple-100 text-purple-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {tx.type === 'topup' ? '充值' :
-                             tx.type === 'consume' ? '消耗' :
-                             tx.type === 'settlement' ? '结算' : '退款'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm font-medium text-gray-900">
-                          {tx.account_name}
-                        </td>
-                        <td className={`py-3 px-4 text-sm font-bold text-right ${
-                          tx.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {tx.amount >= 0 ? '+' : ''}{formatMoney(tx.amount)}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
-                          {tx.status}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center justify-center py-12 text-gray-500">
+                <div className="text-center">
+                  <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                  <p className="text-sm">交易记录功能开发中</p>
+                  <p className="text-xs text-gray-400 mt-1">请前往充值管理或对账管理查看详细记录</p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -488,7 +555,19 @@ export function FinancePage() {
           <CardTitle>快捷操作</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Link href="/finance/fund">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2">
+                <Wallet className="h-6 w-6 text-green-600" />
+                <span>资金总览</span>
+              </Button>
+            </Link>
+            <Link href="/finance/profit">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2">
+                <PieChart className="h-6 w-6 text-orange-600" />
+                <span>项目盈亏</span>
+              </Button>
+            </Link>
             <Link href="/topups">
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2">
                 <CreditCard className="h-6 w-6 text-blue-600" />
@@ -507,10 +586,10 @@ export function FinancePage() {
                 <span>对账管理</span>
               </Button>
             </Link>
-            <Link href="/finance/profit">
+            <Link href="/ad-accounts">
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2">
-                <PieChart className="h-6 w-6 text-orange-600" />
-                <span>利润分析</span>
+                <BarChart3 className="h-6 w-6 text-indigo-600" />
+                <span>账户管理</span>
               </Button>
             </Link>
           </div>

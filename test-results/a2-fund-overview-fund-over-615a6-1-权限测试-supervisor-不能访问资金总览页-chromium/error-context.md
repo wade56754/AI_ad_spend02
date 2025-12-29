@@ -1,0 +1,222 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e11]:
+          - generic [ref=e12]: AI广告系统
+          - generic [ref=e13]: 智能代投管理平台
+      - navigation [ref=e14]:
+        - generic [ref=e15]:
+          - heading "业务管理" [level=3] [ref=e16]
+          - button "仪表盘" [ref=e17] [cursor=pointer]:
+            - generic [ref=e18]:
+              - img [ref=e19]
+              - generic [ref=e24]: 仪表盘
+          - button "项目管理" [ref=e25] [cursor=pointer]:
+            - generic [ref=e26]:
+              - img [ref=e27]
+              - generic [ref=e29]: 项目管理
+          - button "广告账户" [ref=e30] [cursor=pointer]:
+            - generic [ref=e31]:
+              - img [ref=e32]
+              - generic [ref=e37]: 广告账户
+          - button "日报管理" [ref=e38] [cursor=pointer]:
+            - generic [ref=e39]:
+              - img [ref=e40]
+              - generic [ref=e43]: 日报管理
+          - button "周度简报" [ref=e44] [cursor=pointer]:
+            - generic [ref=e45]:
+              - img [ref=e46]
+              - generic [ref=e48]: 周度简报
+          - button "财务管理" [ref=e49] [cursor=pointer]:
+            - generic [ref=e50]:
+              - img [ref=e51]
+              - generic [ref=e53]: 财务管理
+        - generic [ref=e54]:
+          - heading "系统管理" [level=3] [ref=e55]
+          - button "用户管理" [ref=e56] [cursor=pointer]:
+            - generic [ref=e57]:
+              - img [ref=e58]
+              - generic [ref=e70]: 用户管理
+          - button "系统设置" [ref=e71] [cursor=pointer]:
+            - generic [ref=e72]:
+              - img [ref=e73]
+              - generic [ref=e76]: 系统设置
+      - generic [ref=e77]:
+        - button "深色模式" [ref=e78] [cursor=pointer]:
+          - img [ref=e79]
+          - generic [ref=e81]: 深色模式
+        - button "退出登录" [ref=e82] [cursor=pointer]:
+          - img [ref=e83]
+          - generic [ref=e86]: 退出登录
+    - generic [ref=e87]:
+      - banner [ref=e88]:
+        - generic [ref=e89]:
+          - navigation "面包屑导航" [ref=e91]:
+            - link "首页" [ref=e92] [cursor=pointer]:
+              - /url: /
+              - img [ref=e93]
+              - generic [ref=e96]: 首页
+            - img [ref=e97]
+            - generic [ref=e99]: Fund
+          - generic [ref=e100]:
+            - button [ref=e101] [cursor=pointer]:
+              - img [ref=e102]
+            - button [ref=e105] [cursor=pointer]:
+              - img [ref=e106]
+            - button "A Anthony 管理员" [ref=e110] [cursor=pointer]:
+              - generic [ref=e112]: A
+              - generic [ref=e113]:
+                - generic [ref=e114]: Anthony
+                - generic [ref=e115]: 管理员
+              - img [ref=e116]
+      - main [ref=e118]:
+        - generic [ref=e119]:
+          - generic [ref=e120]:
+            - generic [ref=e121]:
+              - heading "资金总览" [level=1] [ref=e122]
+              - paragraph [ref=e123]: 一眼看清公司资金全貌，掌握资金流向
+            - button "刷新" [ref=e124] [cursor=pointer]:
+              - img [ref=e125]
+              - text: 刷新
+          - generic [ref=e130]:
+            - heading "核心指标" [level=2] [ref=e131]
+            - generic [ref=e132]:
+              - generic [ref=e134]:
+                - generic [ref=e135]:
+                  - img [ref=e137]
+                  - generic [ref=e139]:
+                    - img [ref=e140]
+                    - text: 15.2%
+                - generic [ref=e143]: ¥856.0 万
+                - generic [ref=e144]: 累计充值
+                - generic [ref=e147]:
+                  - text: 较昨日
+                  - generic [ref=e148]: +15.2%
+              - generic [ref=e150]:
+                - generic [ref=e151]:
+                  - img [ref=e153]
+                  - generic [ref=e156]:
+                    - img [ref=e157]
+                    - text: 12.8%
+                - generic [ref=e160]: ¥720.0 万
+                - generic [ref=e161]: 累计消耗
+                - generic [ref=e164]:
+                  - text: 较昨日
+                  - generic [ref=e165]: +12.8%
+              - generic [ref=e167]:
+                - generic [ref=e168]:
+                  - img [ref=e170]
+                  - generic [ref=e173]:
+                    - img [ref=e174]
+                    - text: 18.8%
+                - generic [ref=e177]: ¥136.0 万
+                - generic [ref=e178]: 当前余额
+                - generic [ref=e181]:
+                  - text: 较昨日
+                  - generic [ref=e182]: +18.8%
+              - generic [ref=e184]:
+                - img [ref=e187]
+                - generic [ref=e190]: ¥280.0 万
+                - generic [ref=e191]: 应收款
+                - generic [ref=e193]: 3 笔待收
+              - generic [ref=e195]:
+                - img [ref=e198]
+                - generic [ref=e201]: ¥576.0 万
+                - generic [ref=e202]: 资金占用
+                - generic [ref=e204]: 占用率 67.3%
+          - generic [ref=e206]:
+            - generic [ref=e208]:
+              - heading "资金分布" [level=3] [ref=e209]
+              - tablist [ref=e211]:
+                - tab "按项目" [selected] [ref=e212] [cursor=pointer]
+                - tab "按渠道" [ref=e213] [cursor=pointer]
+            - table [ref=e216]:
+              - rowgroup [ref=e217]:
+                - row "# 项目名称 负责人 累计充值 累计消耗 余额 应收 已回款 操作" [ref=e218]:
+                  - columnheader "#" [ref=e219]
+                  - columnheader "项目名称" [ref=e220]
+                  - columnheader "负责人" [ref=e221]
+                  - columnheader "累计充值" [ref=e222]
+                  - columnheader "累计消耗" [ref=e223]
+                  - columnheader "余额" [ref=e224]
+                  - columnheader "应收" [ref=e225]
+                  - columnheader "已回款" [ref=e226]
+                  - columnheader "操作" [ref=e227]
+              - rowgroup [ref=e228]:
+                - row "1 618大促项目 张三 ¥200.0万 ¥180.0万 ¥20.0万 ¥50.0万 ¥30.0万" [ref=e229]:
+                  - cell "1" [ref=e230]
+                  - cell "618大促项目" [ref=e231]
+                  - cell "张三" [ref=e232]
+                  - cell "¥200.0万" [ref=e233]
+                  - cell "¥180.0万" [ref=e234]
+                  - cell "¥20.0万" [ref=e235]
+                  - cell "¥50.0万" [ref=e236]
+                  - cell "¥30.0万" [ref=e237]
+                  - cell [ref=e238]:
+                    - link [ref=e239] [cursor=pointer]:
+                      - /url: /projects/1
+                      - button [ref=e240]:
+                        - img [ref=e241]
+                - row "2 品牌推广项目 李四 ¥150.0万 ¥140.0万 ¥10.0万 ¥30.0万 ¥20.0万" [ref=e245]:
+                  - cell "2" [ref=e246]
+                  - cell "品牌推广项目" [ref=e247]
+                  - cell "李四" [ref=e248]
+                  - cell "¥150.0万" [ref=e249]
+                  - cell "¥140.0万" [ref=e250]
+                  - cell "¥10.0万" [ref=e251]
+                  - cell "¥30.0万" [ref=e252]
+                  - cell "¥20.0万" [ref=e253]
+                  - cell [ref=e254]:
+                    - link [ref=e255] [cursor=pointer]:
+                      - /url: /projects/2
+                      - button [ref=e256]:
+                        - img [ref=e257]
+                - row "3 双十一预热 张三 ¥300.0万 ¥250.0万 ¥50.0万 ¥80.0万 ¥60.0万" [ref=e261]:
+                  - cell "3" [ref=e262]
+                  - cell "双十一预热" [ref=e263]
+                  - cell "张三" [ref=e264]
+                  - cell "¥300.0万" [ref=e265]
+                  - cell "¥250.0万" [ref=e266]
+                  - cell "¥50.0万" [ref=e267]
+                  - cell "¥80.0万" [ref=e268]
+                  - cell "¥60.0万" [ref=e269]
+                  - cell [ref=e270]:
+                    - link [ref=e271] [cursor=pointer]:
+                      - /url: /projects/3
+                      - button [ref=e272]:
+                        - img [ref=e273]
+                - row "4 年终大促 王五 ¥206.0万 ¥150.0万 ¥56.0万 ¥120.0万 ¥90.0万" [ref=e277]:
+                  - cell "4" [ref=e278]
+                  - cell "年终大促" [ref=e279]
+                  - cell "王五" [ref=e280]
+                  - cell "¥206.0万" [ref=e281]
+                  - cell "¥150.0万" [ref=e282]
+                  - cell "¥56.0万" [ref=e283]
+                  - cell "¥120.0万" [ref=e284]
+                  - cell "¥90.0万" [ref=e285]
+                  - cell [ref=e286]:
+                    - link [ref=e287] [cursor=pointer]:
+                      - /url: /projects/4
+                      - button [ref=e288]:
+                        - img [ref=e289]
+          - generic [ref=e293]:
+            - generic [ref=e294]:
+              - heading "应收明细" [level=3] [ref=e296]
+              - generic [ref=e298]:
+                - img [ref=e299]
+                - paragraph [ref=e302]: 应收款明细功能即将上线
+            - generic [ref=e303]:
+              - heading "回款记录" [level=3] [ref=e305]
+              - generic [ref=e307]:
+                - img [ref=e308]
+                - paragraph [ref=e311]: 回款记录功能即将上线
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e317] [cursor=pointer]:
+    - img [ref=e318]
+  - alert [ref=e321]
+```

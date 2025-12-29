@@ -21,25 +21,25 @@ if sys.platform == "win32":
 # SoT 文档列表（按裁判链优先级排序）
 SOT_DOCUMENTS = [
     {
-        "path": "docs/1.overview/MASTER.md",
+        "path": "docs/sot/MASTER.md",
         "title": "架构宪法",
         "priority": 1,
         "description": "系统全局规则、角色定义、AI 防幻觉原则",
     },
     {
-        "path": "docs/2.sot/DATA_SCHEMA.md",
-        "title": "数据表",
+        "path": "docs/sot/DATA_SCHEMA.md",
+        "title": "数据模型",
         "priority": 2,
         "description": "数据库模型、字段定义、外键关系",
     },
     {
-        "path": "docs/2.sot/STATE_MACHINE.md",
+        "path": "docs/sot/STATE_MACHINE.md",
         "title": "状态机",
         "priority": 3,
         "description": "日报 8 状态流转、状态转换规则",
     },
     {
-        "path": "docs/2.sot/BUSINESS_RULES.md",
+        "path": "docs/sot/BUSINESS_RULES.md",
         "title": "业务规则",
         "priority": 4,
         "description": "业务逻辑、验证规则、计算公式",
@@ -58,7 +58,7 @@ def get_file_size(file_path: str) -> str:
         size_bytes = Path(file_path).stat().st_size
         size_kb = size_bytes / 1024
         return f"{size_kb:.1f} KB"
-    except:
+    except Exception:
         return "N/A"
 
 
@@ -112,9 +112,9 @@ def main():
     print("  1️⃣  MASTER.md > 2️⃣  DATA_SCHEMA.md > 3️⃣  STATE_MACHINE.md > 4️⃣  BUSINESS_RULES.md")
     print()
     print("  📖 开发前必读:")
-    print("     • 所有开发必须基于 SoT 文档，禁止凭想象实现")
-    print("     • 发现文档缺失或歧义，立即停止并询问")
-    print("     • Phase 1: 仅记录、提示、高亮，禁止自动阻断")
+    print("     → 所有开发必须基于 SoT 文档，禁止凭想象实现")
+    print("     → 发现文档缺失或歧义，立即停止并询问")
+    print("     → Phase 1: 仅记录、提示、高亮，禁止自动阻断")
     print()
 
     # 输出文档路径（供 Claude Code 注入上下文）

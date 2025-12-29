@@ -1,211 +1,281 @@
 # Claude Code Hooks - AI 广告代投系统
 
-本目录包含为 AI 广告代投管理系统配置的 Claude Code Hooks，用于确保开发过程中遵循 SoT 裁判链和 Phase 1 约束。
+> **版本**: v2.0
+> **更新日期**: 2025-12-24
+> **基于**: ENABLE_SUPERVISOR_V2.md 规范
 
-## 📋 Hooks 列表
-
-### 1. SessionStart Hook (`session_start.py`)
-
-**触发时机**: 每次新会话开始时
-
-**功能**:
-- 显示 SoT 文档优先级顺序（10 个核心文档）
-- 提醒 Phase 1 核心约束（禁止自动阻断/惩罚）
-- 列出 7 个合法角色定义
-- 展示 AI 防幻觉原则（AH-01 ~ AH-05）
-
-**目的**: 确保 AI 和开发者在开发前了解核心约束和规则。
+本目录包含 Claude Code Hooks，确保开发遵循 SoT 裁判链和 Phase 1 约束。
 
 ---
 
-### 2. PreToolUse Hook (`pre_tool_use.py`)
+## 目录结构
 
-**触发时机**: 使用 `Write` 或 `Edit` 工具前
+```
+.claude/hooks/
+├── inject_timestamp.py   ← SessionStart: 时间戳注入
+├── session_start.py      ← SessionStart: SoT 裁判链
+├── load_context.py       ← SessionStart: 文档上下文
+├── pre_tool_use.py       ← PreToolUse: 合规检查
+├── post_tool_use.py      ← PostToolUse: 变更记录
+├── stop.py               ← Stop: 会话报告
+├── README.md             ← 本文档
+└── lib/                  ← 支持库
+    ├── __init__.py
+    ├── config.py
+    ├── compliance_checker.py
+    ├── progress_tracker.py
+    ├── risk_detector.py
+    └── report_generator.py
+```
+
+---
+
+## Hook 触发流程
+
+```
+会话开始
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│ SessionStart (3 hooks)                                  │
+│  1. inject_timestamp  → 注入北京时间上下文              │
+│  2. session_start     → 加载 SoT 裁判链                 │
+│  3. load_context      → 加载 SoT 文档上下文             │
+└─────────────────────────────────────────────────────────┘
+    │
+    ▼
+正常对话交互...
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│ PreToolUse (执行前检查)                                 │
+│  • Write|Edit|MultiEdit → 检查代码合规性                │
+│  • Bash                 → 检查命令安全性                │
+└─────────────────────────────────────────────────────────┘
+    │
+    ▼ (通过检查)
+┌─────────────────────────────────────────────────────────┐
+│ PostToolUse (执行后记录)                                │
+│  • Write|Edit|MultiEdit|Bash → 记录变更                 │
+└─────────────────────────────────────────────────────────┘
+    │
+    ▼
+会话结束
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│ Stop (会话结束)                                         │
+│  • 生成会话报告                                         │
+│  • 保存日报数据                                         │
+│  • 发送桌面通知                                         │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Hooks 详细说明
+
+### 1. inject_timestamp.py
+
+**触发**: SessionStart (第一个)
+**超时**: 5000ms
+
+**功能**:
+- 注入北京时间 (UTC+8) 上下文
+- 显示日期、星期、时段
+- 判断工作日/周末/假日
+- 内置 2025 年中国假日表
+
+**输出示例**:
+```
+┌─────────────────────────────────────────────────────────┐
+│  北京时间 (UTC+8)
+│  2025年12月24日 周三 晚上 20:12
+│  工作日 | 冬季
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 2. session_start.py
+
+**触发**: SessionStart (第二个)
+**超时**: 5000ms
+
+**功能**:
+- 显示 SoT 文档优先级 (10 个核心文档)
+- 提醒 Phase 1 约束
+- 列出 7 个合法角色
+- 展示 AI 防幻觉原则 (AH-01 ~ AH-05)
+
+---
+
+### 3. load_context.py
+
+**触发**: SessionStart (第三个)
+**超时**: 10000ms
+
+**功能**:
+- 加载 4 个核心 SoT 文档摘要
+- 显示裁判链优先级规则
+
+---
+
+### 4. pre_tool_use.py
+
+**触发**: PreToolUse
+**超时**: 10000ms
+**Matcher**: `Write|Edit|MultiEdit` 或 `Bash`
 
 **检查项目**:
 
-1. **Phase 2 功能检测** (禁止)
-   - 关键词: `auto_reject`, `auto_suspend`, `auto_freeze`, `forced_approval` 等
-   - 中文关键词: `自动拒绝`, `自动暂停`, `强制审批` 等
+| 检查类型 | 触发工具 | 检查内容 |
+|---------|---------|---------|
+| Phase 2 功能 | Write/Edit | auto_reject, auto_suspend 等 |
+| Balance 修改 | Write/Edit | 禁止 .balance = 直接修改 |
+| 旧状态名 | Write/Edit | 禁止 draft, submitted 等 |
+| 危险命令 | Bash | 禁止删除 SoT、SQL 修改 balance |
 
-2. **外键命名规范**
-   - 检查外键字段是否使用 `_id` 后缀
-   - 例如: `project_id`, `user_id`, `ad_account_id`
+**输入** (stdin):
+```json
+{"tool_name": "Write", "tool_input": {"file_path": "x.py", "content": "..."}}
+```
 
-3. **角色定义合规性**
-   - 仅允许 7 个角色: `ceo`, `project_owner`, `finance`, `supervisor`, `pitcher`, `account_manager`, `admin`
-   - 拒绝任何未定义角色
-
-**行为**: 检测到违规时，**阻止工具执行**并显示详细错误信息。
+**输出**:
+```json
+{"decision": "approve", "reason": null}
+{"decision": "reject", "reason": "禁止直接修改 balance"}
+```
 
 ---
 
-### 3. PostToolUse Hook (`post_tool_use.py`)
+### 5. post_tool_use.py
 
-**触发时机**: 使用 `Write` 或 `Edit` 工具后
+**触发**: PostToolUse
+**超时**: 5000ms
+**Matcher**: `Write|Edit|MultiEdit|Bash`
 
 **功能**:
-- **Python 文件** (`.py`): 使用 `black` 自动格式化
-- **TypeScript 文件** (`.ts`, `.tsx`): 使用 `prettier` 自动格式化
-
-**依赖**:
-- Python: 需要安装 `black`
-  ```bash
-  pip install black
-  ```
-- TypeScript: 需要安装 `prettier` (或通过 `npx` 使用)
-  ```bash
-  npm install -g prettier
-  ```
-
-**行为**: 格式化失败不会阻止流程，只会显示警告。
+- 记录文件修改到会话数据
+- 检测关联模块 (A1-Dashboard, B1-日报 等)
+- 更新任务进度
+- 自动格式化代码 (black/prettier)
 
 ---
 
-### 4. Stop Hook (`stop.py`)
+### 6. stop.py
 
-**触发时机**: 会话停止时
+**触发**: Stop
+**超时**: 30000ms
 
 **功能**:
-- 发送桌面通知（Windows/macOS/Linux）
-- 显示会话结束信息
-
-**目的**: 提醒用户会话已结束，避免忘记保存工作成果。
+- 生成会话摘要 (文件数、工具调用、模块)
+- 保存会话历史 (最近 100 条)
+- 更新日报数据
+- 发送桌面通知
 
 ---
 
-## 🔧 配置
-
-Hooks 已在 `.claude/settings.local.json` 中配置：
+## 配置 (settings.local.json)
 
 ```json
 {
   "hooks": {
-    "SessionStart": [...],
-    "PreToolUse": [...],
-    "PostToolUse": [...],
-    "Stop": [...]
+    "SessionStart": [{
+      "hooks": [
+        {"type": "command", "command": "python .claude/hooks/inject_timestamp.py", "timeout": 5000},
+        {"type": "command", "command": "python .claude/hooks/session_start.py", "timeout": 5000},
+        {"type": "command", "command": "python .claude/hooks/load_context.py", "timeout": 10000}
+      ]
+    }],
+    "PreToolUse": [
+      {"matcher": "Write|Edit|MultiEdit", "hooks": [{"type": "command", "command": "python .claude/hooks/pre_tool_use.py", "timeout": 10000}]},
+      {"matcher": "Bash", "hooks": [{"type": "command", "command": "python .claude/hooks/pre_tool_use.py", "timeout": 10000}]}
+    ],
+    "PostToolUse": [
+      {"matcher": "Write|Edit|MultiEdit|Bash", "hooks": [{"type": "command", "command": "python .claude/hooks/post_tool_use.py", "timeout": 5000}]}
+    ],
+    "Stop": [{
+      "hooks": [{"type": "command", "command": "python .claude/hooks/stop.py", "timeout": 30000}]
+    }]
   }
 }
 ```
 
-## 🚀 使用方法
+---
 
-### 自动触发
-
-这些 hooks 会在相应事件发生时**自动执行**，无需手动调用：
-
-- 启动新会话 → 自动显示 SoT 提醒
-- 写入/编辑代码 → 自动检查合规性 + 自动格式化
-- 停止会话 → 自动发送桌面通知
-
-### 手动测试
-
-可以手动运行各个 hook 脚本进行测试：
+## 手动测试
 
 ```bash
-# 测试 SessionStart Hook
+# SessionStart hooks
+python .claude/hooks/inject_timestamp.py
 python .claude/hooks/session_start.py
+python .claude/hooks/load_context.py
 
-# 测试 PreToolUse Hook (需要设置环境变量)
-export TOOL_NAME="Write"
-export TOOL_PARAMETERS_JSON='{"file_path": "test.py", "content": "print(123)"}'
-python .claude/hooks/pre_tool_use.py
+# PreToolUse - 合规
+echo '{"tool_name":"Write","tool_input":{"file_path":"t.py","content":"x=1"}}' | python .claude/hooks/pre_tool_use.py
 
-# 测试 PostToolUse Hook (需要真实文件)
-export TOOL_NAME="Write"
-export TOOL_PARAMETERS_JSON='{"file_path": "test.py"}'
-python .claude/hooks/post_tool_use.py
+# PreToolUse - 违规
+echo '{"tool_name":"Write","tool_input":{"file_path":"t.py","content":"a.balance-=1"}}' | python .claude/hooks/pre_tool_use.py
 
-# 测试 Stop Hook
-python .claude/hooks/stop.py
+# PostToolUse
+echo '{"tool_name":"Write","tool_input":{"file_path":"t.py"},"success":true}' | python .claude/hooks/post_tool_use.py
+
+# Stop
+echo '{"session_id":"test","start_time":"2025-12-24T20:00:00"}' | python .claude/hooks/stop.py
 ```
 
 ---
 
-## 📖 开发规范提醒
+## 开发规范
 
-### ❌ 禁止事项（Phase 1）
-
-- 自动拒绝/暂停/冻结功能
-- 自动惩罚机制（扣分、禁用账户）
+### 禁止 (Phase 1)
+- 自动拒绝/暂停/冻结
+- 自动惩罚机制
 - 强制审批流程
+- 直接修改 balance
 
-### ✅ 允许事项（Phase 1）
+### 允许 (Phase 1)
+- 记录事实、展示状态
+- 高亮警告、数据统计
 
-- 记录事实、展示状态、提示异常
-- 高亮警告、数据统计、趋势分析
-
-### 🎯 合法角色（7 个）
-
+### 合法角色 (7 个)
 | 角色 | 英文 | 职责 |
 |------|------|------|
-| 老板 | `ceo` | 资金安全、公司盈亏、最终决策 |
-| 项目负责人 | `project_owner` | 项目盈亏、资金使用效率 |
-| 财务 | `finance` | 资金出入准确、数据真实、对账 |
-| 主管 | `supervisor` | 团队产出、投手管理、日常监督 |
-| 投手 | `pitcher` | CPL 达标、日报准确、执行投放 |
-| 户管 | `account_manager` | 账户分配、账户状态监控 |
-| 管理员 | `admin` | 系统配置（不参与业务） |
+| 老板 | ceo | 资金安全、最终决策 |
+| 项目负责人 | project_owner | 项目盈亏 |
+| 财务 | finance | 资金出入、对账 |
+| 主管 | supervisor | 团队产出、日常监督 |
+| 投手 | pitcher | CPL 达标、日报准确 |
+| 户管 | account_manager | 账户分配 |
+| 管理员 | admin | 系统配置 |
 
-### 🛡️ AI 防幻觉原则
-
-- **AH-01**: 禁止假设数据一致 - 遇到缺失标记"待确认"
-- **AH-02**: 禁止自动做管理裁决 - 不生成自动拒绝/暂停代码
-- **AH-03**: 禁止引入 SoT 未定义概念 - 发现缺失→停止→询问
-- **AH-04**: 必须遵循 Phase 1 软性原则 - 提示+高亮+记录
-- **AH-05**: 遇到歧义必须停止并询问 - 停止→列出歧义→询问
-
----
-
-## 🔍 故障排查
-
-### Python 编码问题
-
-如果在 Windows 上遇到编码错误，确保：
-1. 脚本文件包含 `# -*- coding: utf-8 -*-` 头
-2. 脚本中设置了 UTF-8 输出编码
-3. 命令行使用 `chcp 65001` 切换到 UTF-8 模式
-
-### 格式化工具未安装
-
-如果看到 "xxx 未安装" 警告：
-
-```bash
-# 安装 black (Python)
-pip install black
-
-# 安装 prettier (TypeScript)
-npm install -g prettier
-```
-
-### Hook 未执行
-
-1. 检查 `.claude/settings.local.json` 中的 `hooks` 配置
-2. 确保 Python 可执行：`python --version`
-3. 查看 Claude Code 控制台输出
+### AI 防幻觉原则
+- AH-01: 禁止假设数据一致
+- AH-02: 禁止自动做管理裁决
+- AH-03: 禁止引入未定义概念
+- AH-04: 遵循 Phase 1 软性原则
+- AH-05: 遇歧义停止并询问
 
 ---
 
-## 📚 相关文档
+## 数据文件
 
-- **SoT 裁判链**: `docs/1.overview/MASTER.md` v4.4
-- **Phase 设计**: `docs/1.overview/MVP_PHASE_DESIGN.md`
-- **状态机**: `docs/2.sot/STATE_MACHINE.md` v2.6
-- **API 规范**: `docs/2.sot/API_SOT.md` v9.0
-- **错误码**: `docs/2.sot/ERROR_CODES_SOT.md` v2.1
-
----
-
-## 🆘 支持
-
-如有问题，请：
-1. 查看 `.claude/hooks/` 目录下的脚本源码
-2. 手动运行脚本测试
-3. 检查 Claude Code 日志输出
+| 文件 | 说明 |
+|------|------|
+| .claude/data/session_data.json | 当前会话数据 |
+| .claude/data/session_history.json | 会话历史 |
+| .claude/data/daily_reports.json | 日报数据 |
+| .claude/logs/*.log | 日志文件 |
 
 ---
 
-**版本**: v1.0
-**更新日期**: 2025-12-22
+## 相关文档
+
+- docs/sot/MASTER.md v4.4
+- docs/sot/STATE_MACHINE.md v2.6
+- docs/sot/API_SOT.md v9.0
+
+---
+
 **维护**: AI 广告代投系统开发团队

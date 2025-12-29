@@ -35,6 +35,9 @@ export interface Project {
   // 新增: 目标 CPL 和单粉价格
   target_cpl?: number | null;
   unit_price?: number | null;
+  // 新增: 地区和聚合进粉数
+  region?: string | null;
+  total_follows?: number;  // 从日报聚合的总进粉数
   // 兼容旧字段
   account_manager_id?: number;
   account_manager_name?: string;

@@ -1,0 +1,136 @@
+# 跨模块集成测试 - 检查点清单
+# 基于: AI_TEST_GUIDE_v2.1.md
+
+module: "integration"
+spec_file: "docs/10.module-specs/TEST_CASES_v3.md §13"
+priority: P0
+
+checkpoints:
+  # ===== CP-INT-001: 端到端业务流程 =====
+  - id: CP-INT-001
+    category: function
+    description: 充值→消耗→结算完整流程
+    modules: [B1, C3, D1]
+    steps:
+      - step: 1
+        module: B1
+        action: 创建并完成充值
+        expected: 充值状态=completed
+      - step: 2
+        module: C3
+        action: 导入消耗数据
+        expected: 消耗记录创建
+      - step: 3
+        module: D1
+        action: 生成月度结算
+        expected: 结算数据与消耗一致
+    verify:
+      - 充值金额反映在资金总览
+      - 消耗正确汇总
+      - 结算计算正确
+
+  # ===== CP-INT-002: 日报→周报数据联动 =====
+  - id: CP-INT-002
+    category: data
+    description: 日报周报数据联动
+    modules: [B2, B3]
+    steps:
+      - step: 1
+        module: B2
+        action: 创建本周日报
+        expected: 日报创建成功
+      - step: 2
+        module: B3
+        action: 创建周报
+        expected: 周报自动汇总日报数据
+    verify:
+      - 周消耗 = SUM(本周日报.spend)
+      - 周进粉 = SUM(本周日报.conversions)
+      - 周CPL = 周消耗 / 周进粉
+
+  # ===== CP-INT-003: 项目状态影响其他模块 =====
+  - id: CP-INT-003
+    category: function
+    description: 项目状态影响其他模块
+    modules: [C1, B1, B2]
+    steps:
+      - step: 1
+        module: C1
+        action: 将项目状态改为 paused
+        expected: 项目状态=paused
+      - step: 2
+        module: B1
+        action: 尝试创建充值
+        expected: 暂停项目不允许新建充值
+      - step: 3
+        module: B2
+        action: 尝试提交日报
+        expected: 可继续提交日报（Phase 1 软性）
+
+  # ===== CP-INT-004: 驾驶舱数据来源验证 =====
+  - id: CP-INT-004
+    category: data
+    description: 驾驶舱数据来源验证
+    modules: [A1, B2, C3]
+    steps:
+      - step: 1
+        module: B2
+        action: 修改日报数据
+        expected: 日报更新
+      - step: 2
+        module: A1
+        action: 刷新驾驶舱
+        expected: KPI 数据更新
+    verify:
+      - 驾驶舱消耗 = C3 总消耗
+      - 驾驶舱进粉 = B2 总进粉
+      - 驾驶舱 CPL = 消耗 / 进粉
+
+  # ===== CP-INT-005: 跨项目数据隔离 =====
+  - id: CP-INT-005
+    category: permission
+    description: 跨项目数据隔离
+    modules: [C1, B2, A3]
+    role: project_owner
+    steps:
+      - step: 1
+        action: 以 project_owner 登录
+      - step: 2
+        module: C1
+        action: 访问项目管理
+        expected: 只显示自己项目
+      - step: 3
+        module: B2
+        action: 访问日报管理
+        expected: 只显示自己项目日报
+      - step: 4
+        module: A3
+        action: 访问项目盈亏
+        expected: 只显示自己项目盈亏
+    verify:
+      - 无法访问其他项目数据
+      - API 返回正确过滤后的数据
+
+  # ===== CP-INT-006: 角色权限全局一致 =====
+  - id: CP-INT-006
+    category: permission
+    description: 角色权限全局一致
+    modules: [ALL]
+    role: pitcher
+    steps:
+      - step: 1
+        action: 以 pitcher 登录
+      - step: 2
+        action: 遍历所有模块
+        expected: 所有模块权限控制一致
+    verify:
+      - 无越权访问
+      - 权限拒绝返回 403
+      - UI 不显示无权限的操作按钮
+
+summary:
+  total_checkpoints: 6
+  function_cases: 4
+  data_cases: 2
+  permission_cases: 2
+  total_cases: 8

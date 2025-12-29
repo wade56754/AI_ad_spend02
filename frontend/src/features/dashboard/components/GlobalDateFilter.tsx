@@ -5,13 +5,14 @@
  * 支持：今天、近7天、近30天、自定义日期
  *
  * Based on UI_DESIGN_SYSTEM.md v2.0
+ * Refactored: 使用 ToggleGroup 替代 Button 实现更好的选择状态反馈
  */
 
 'use client';
 
 import React from 'react';
 import { Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 
 export type DateRangePreset = 'today' | '7d' | '30d' | 'custom';
@@ -40,24 +41,31 @@ export function GlobalDateFilter({
   className,
 }: GlobalDateFilterProps) {
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <div className={cn('flex items-center gap-2', className)} data-testid="time-filter">
       <Calendar className="h-4 w-4 text-muted-foreground" />
-      <div className="flex gap-1">
+      <ToggleGroup
+        type="single"
+        value={value}
+        onValueChange={(newValue) => {
+          // ToggleGroup 可能返回空字符串(取消选择)，保持当前值
+          if (newValue) {
+            onChange(newValue as DateRangePreset);
+          }
+        }}
+        className="gap-1"
+      >
         {PRESET_OPTIONS.map((option) => (
-          <Button
+          <ToggleGroupItem
             key={option.value}
-            variant={value === option.value ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onChange(option.value)}
-            className={cn(
-              'px-3 py-1.5 h-8 text-xs font-medium transition-all',
-              value === option.value && 'shadow-sm'
-            )}
+            value={option.value}
+            aria-label={option.label}
+            data-testid={`time-option-${option.value}`}
+            className="px-3 py-1.5 h-8 text-xs font-medium data-[state=on]:shadow-sm"
           >
             {option.label}
-          </Button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
     </div>
   );
 }

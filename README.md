@@ -46,13 +46,13 @@ AI广告代投系统是一个专为Facebook广告代理商设计的智能化广�
 
 Complete ASDD 5-layer documentation (all layers frozen ✅):
 - 📖 **[Documentation Index](./docs/README.md)** - Navigation & Freeze Status
-- 📋 **[MASTER.md](./docs/1.overview/MASTER.md)** v3.4 - System Constitution
+- 📋 **[MASTER.md](./docs/sot/MASTER.md)** v3.4 - System Constitution
 - 📊 **[Project Rules](./.claude/PROJECT_RULES.md)** v3.2 - AI Collaboration Rules
 - 📑 **[Project Docs Index](./docs/PROJECT_DOCS_INDEX_v1.0.md)** - Complete Inventory
 
 ### Quick Links by Layer
-- **Overview** (Freeze v1.0): [MASTER.md v3.4](./docs/1.overview/MASTER.md), [PROJECT.md](./docs/1.overview/PROJECT.md)
-- **SoT** (Freeze v2.6): [STATE_MACHINE v2.6](./docs/2.sot/STATE_MACHINE.md), [DATA_SCHEMA v5.2](./docs/2.sot/DATA_SCHEMA.md), [API_SOT v9.0](./docs/2.sot/API_SOT.md)
+- **Overview** (Freeze v1.0): [MASTER.md v3.4](./docs/sot/MASTER.md), [PROJECT.md](./docs/1.overview/PROJECT.md)
+- **SoT** (Freeze v2.6): [STATE_MACHINE v2.6](./docs/sot/STATE_MACHINE.md), [DATA_SCHEMA v5.2](./docs/sot/DATA_SCHEMA.md), [API_SOT v9.0](./docs/sot/API_SOT.md)
 - **Dev-Guides** (Freeze vFinal): [API_DEVELOPMENT_FLOW](./docs/3.dev-guides/API_DEVELOPMENT_FLOW.md), [FRONTEND_DEVELOPMENT_RULES](./docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md), [TESTING_STRATEGY](./docs/3.dev-guides/TESTING_STRATEGY.md)
 - **Architecture** (Freeze v1.0): [SYSTEM_CONTEXT_VIEW](./docs/4.architecture/SYSTEM_CONTEXT_VIEW.md), [DATA_FLOW_VIEW](./docs/4.architecture/DATA_FLOW_VIEW.md), [SERVICE_COMPONENT_VIEW](./docs/4.architecture/SERVICE_COMPONENT_VIEW.md)
 - **Infrastructure** (Freeze v1.0): [CI_PIPELINE_SPEC](./docs/5.infrastructure/CI_PIPELINE_SPEC.md), [DEPLOYMENT_PIPELINE_SPEC](./docs/5.infrastructure/DEPLOYMENT_PIPELINE_SPEC.md), [OBSERVABILITY_GUIDE](./docs/5.infrastructure/OBSERVABILITY_GUIDE.md)
@@ -146,38 +146,47 @@ npm run dev
 ```
 AI_ad_spend02/
 ├── backend/                # 后端服务
-│   ├── app/               # 应用主目录
+│   ├── routers/           # API 路由层
+│   ├── services/          # 业务逻辑层
+│   ├── models/            # SQLAlchemy 模型
+│   ├── schemas/           # Pydantic 模式
+│   ├── core/              # 核心工具
 │   ├── tests/             # 测试文件
 │   └── alembic/           # 数据库迁移
 ├── frontend/              # 前端应用
-│   ├── app/              # Next.js App目录
-│   ├── components/       # React组件
-│   └── lib/              # 工具函数
-├── docs/                  # 文档中心（5层架构）
-│   ├── 1.overview/       # Tier 1: 系统全局视图
-│   ├── 2.sot/            # Tier 2: 真相来源文档（11个SoT）
-│   ├── 3.dev-guides/     # Tier 3: 开发指南
-│   ├── 4.ui-ux/          # Tier 4: UI/UX文档
-│   ├── 5.ops/            # Tier 5: 运维文档
+│   ├── src/app/          # Next.js App Router
+│   ├── src/features/     # 功能模块
+│   ├── src/components/   # 公共组件
+│   └── src/lib/          # 工具函数
+├── docs/                  # 文档中心
+│   ├── sot/              # 真相来源文档 (SoT)
+│   ├── 1.overview/       # 系统全局视图
+│   ├── 3.dev-guides/     # 开发指南
+│   ├── 4.architecture/   # 架构视图
+│   ├── 5.infrastructure/ # 基础设施
+│   ├── adr/              # 架构决策记录
+│   ├── runbooks/         # 运维手册
 │   └── archive/          # 历史文档归档
-├── .claude/              # Claude Code项目规则
-│   └── rule/             # AI开发规则集
-├── MASTER_SPEC.md        # 系统根规范（P0优先级）
-├── DOCS_README.md        # 文档中心完整索引
+├── .ai-rules/            # AI 质量门禁
+├── .claude/              # Claude Code 项目规则
 ├── scripts/              # 脚本工具
-├── tests/                # 集成测试
-└── docker-compose.yml    # Docker编排
+├── tests/                # 集成测试/E2E
+│   ├── e2e/              # 端到端测试
+│   └── integration/      # 集成测试
+└── justfile              # 统一命令入口
 ```
 
-## 🎯 角色权限
+## 🎯 角色权限 (7 角色制)
 
-| 角色 | 权限范围 | 主要功能 |
+| 角色 | 核心职责 | 主要功能 |
 |------|----------|----------|
-| **admin** | 全部权限 | 系统管理、用户管理、全部数据访问 |
-| **finance** | 财务相关 | 查看报表、财务对账、充值审批 |
-| **data_operator** | 数据管理 | 审核日报、数据导入、统计分析 |
-| **account_manager** | 账户管理 | 管理所属项目、查看团队数据 |
-| **media_buyer** | 投手操作 | 创建/编辑日报、查看个人数据 |
+| **ceo** | 资金安全、公司盈亏 | 最终决策、全局视图、资金审批 |
+| **project_owner** | 项目盈亏、资金效率 | 项目管理、预算控制、ROI 分析 |
+| **finance** | 资金准确、数据真实 | 财务对账、充值审批、资金核算 |
+| **supervisor** | 团队产出、日常监督 | 团队管理、日报审核、绩效跟踪 |
+| **pitcher** | CPL 达标、日报准确 | 投放执行、日报提交、账户操作 |
+| **account_manager** | 账户分配、状态监控 | 账户管理、分配调度、异常处理 |
+| **admin** | 系统配置（不参与业务） | 用户管理、权限配置、系统维护 |
 
 ## 🧪 测试
 
@@ -245,9 +254,10 @@ kubectl get pods -n ai-ad-spend
 - 提交前检查: `npm run lint` 和 `npm run type-check` 必须0错误
 
 #### AI协作开发
-- 严格遵循 [PROJECT_RULES.md](./docs/1.overview/PROJECT_RULES.md) 中定义的所有规则
-- 所有代码生成必须基于 [docs/2.sot/](./docs/2.sot/) 下的SoT文档
-- 开发前必读 [MASTER_SPEC.md](./MASTER_SPEC.md) 了解系统架构原则
+- 严格遵循 [CLAUDE.md](./CLAUDE.md) 中定义的项目规则
+- 所有代码生成必须基于 [docs/sot/](./docs/sot/) 下的 SoT 文档
+- 开发前必读 [MASTER.md](./docs/sot/MASTER.md) 了解系统架构原则
+- 遵循 Phase 1 原则：记录、提示、高亮，不强制阻断
 
 ## 📊 项目状态
 
@@ -270,10 +280,18 @@ kubectl get pods -n ai-ad-spend
 
 **更新日志**:
 
+### v4.1.0 (2025-12-27)
+- 🏗️ 重构：文档结构重组 (docs/2.sot → docs/sot)
+- 📁 新增：治理目录 (.ai-rules/, docs/adr/, docs/runbooks/, docs/releases/)
+- 🔧 新增：justfile 统一命令入口
+- 📋 更新：7 角色制权限体系 (MASTER.md v4.4)
+- 🧹 清理：根目录临时文件，保持 <15 个核心文件
+- 📜 新增：ADR 架构决策记录模板
+
 ### v4.0.0 (2025-11-22)
 - 🎯 重构：完成文档体系重构为5层分级架构
 - 📚 新增：MASTER_SPEC.md 系统根规范（P0优先级）
-- 📖 优化：11个SoT文档统一归档至 docs/2.sot/
+- 📖 优化：11个SoT文档统一归档至 docs/sot/
 - 🗂️ 归档：历史文档版本统一归档至 docs/archive/
 - ✨ 新增：DOCS_README.md 完整文档索引
 

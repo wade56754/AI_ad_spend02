@@ -1,6 +1,8 @@
 {
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.3"
+    "@eslint/eslintrc": "^3.3.3",
+    "@playwright/test": "^1.57.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "playwright": "^1.57.0"

@@ -55,7 +55,7 @@ Track these steps as TODOs and complete them one by one.
 5. **Confirm completion** - Ensure every item in `tasks.md` is finished before updating statuses
 6. **Update checklist** - After all work is done, set every task to `- [x]` so the list reflects reality
 7. **Approval gate** - Do not start implementation until the proposal is reviewed and approved
-8. **Regression test gate** - If change affects backend/services/*, backend/routers/*, docs/2.sot/*, or .claude/skills/ai-ad-api-automation-test/*, **MUST** include regression test task in tasks.md and pass regression tests before merge:
+8. **Regression test gate** - If change affects backend/services/*, backend/routers/*, docs/sot/*, or .claude/skills/ai-ad-api-automation-test/*, **MUST** include regression test task in tasks.md and pass regression tests before merge:
    - Add task: "Run `python run_tests.py --type regression` and verify all tests pass (compare with baseline v1.0)"
    - Baseline reference: `docs/4.testing/BACKEND_REGRESSION_FREEZE_REPORT_v1.0.md`
    - See AUTOMATION_TEST_SPEC_v1.4 Section 11 for Backend Regression Gate rules
@@ -76,7 +76,7 @@ After deployment, create separate PR to:
 - [ ] Read `openspec/project.md` for conventions
 - [ ] Run `openspec list` to see active changes
 - [ ] Run `openspec list --specs` to see existing capabilities
-- [ ] If change affects backend/services/*, backend/routers/*, docs/2.sot/*, or .claude/skills/ai-ad-api-automation-test/*, check Backend Regression Gate requirements (see PROJECT_RULES.md §13)
+- [ ] If change affects backend/services/*, backend/routers/*, docs/sot/*, or .claude/skills/ai-ad-api-automation-test/*, check Backend Regression Gate requirements (see PROJECT_RULES.md §13)
 
 **Before Creating Specs:**
 - Always check if capability already exists
@@ -218,7 +218,7 @@ If multiple capabilities are affected, create multiple delta files under `change
 Note: Regression test task is MANDATORY if change affects:
 - backend/routers/* (any router changes)
 - backend/services/* (any service changes)
-- docs/2.sot/* (any SoT document changes, especially API_SOT, STATE_MACHINE)
+- docs/sot/* (any SoT document changes, especially API_SOT, STATE_MACHINE)
 - .claude/skills/ai-ad-api-automation-test/* (test automation skill changes)
 ```
 

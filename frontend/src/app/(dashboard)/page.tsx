@@ -2,15 +2,18 @@
  * Dashboard Home Page
  *
  * Route: / (dashboard root)
+ *
+ * CEO Dashboard V3 - 重构版本
+ * Core Formula: Gross Profit = Revenue - Cost (No handling fee!)
  */
 
-import { DashboardPage } from '@/features/dashboard';
+import { CEODashboardV3 } from '@/features/dashboard/components/CEODashboardV3';
 
 export const metadata = {
-  title: '仪表盘 | AI 广告投放系统',
-  description: '系统数据概览和关键指标',
+  title: 'CEO 驾驶舱 | AI 广告投放系统',
+  description: '公司盈亏概览和关键指标',
 };
 
 export default function DashboardRoute() {
-  return <DashboardPage />;
+  return <CEODashboardV3 />;
 }

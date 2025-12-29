@@ -10,6 +10,9 @@ sqlalchemy==2.0.37
 psycopg2-binary==2.9.10
 alembic==1.14.0
 
+# 缓存 (Phase 3 性能优化)
+redis==5.0.1
+
 # 认证与安全
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4

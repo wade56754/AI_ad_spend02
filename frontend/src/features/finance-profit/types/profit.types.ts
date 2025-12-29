@@ -205,9 +205,8 @@ export interface ProfitOverviewResponse {
 // ========== 请求参数接口 ==========
 
 export interface ProfitSummaryParams {
-  project_id?: number;
-  start_date?: string;
-  end_date?: string;
+  year: number;   // 年份 (2020-2099)
+  month: number;  // 月份 (1-12)
 }
 
 export interface ProfitByDimensionParams {

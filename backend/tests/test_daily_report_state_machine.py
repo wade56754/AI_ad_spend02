@@ -265,8 +265,9 @@ class TestDailyReportTrendRules:
         report.trigger_trend_check()
         report.mark_trend_flagged("TF-001: 粉数骤降")
 
-        # 验证异常原因存储
-        assert "TF-001" in report.notes
+        # 验证异常原因存储 (存储在 trend_flag_reason 字段)
+        assert report.trend_flag_reason == "TF-001: 粉数骤降"
+        assert "TF-001" in report.trend_flag_reason
 
     def test_trend_resolution_note_stored(self, db_session, test_ad_account, test_user):
         """测试趋势复核说明正确存储"""
@@ -285,5 +286,6 @@ class TestDailyReportTrendRules:
         report.mark_trend_flagged("TF-002: 粉数骤增")
         report.resolve_trend(test_user.id, "已确认为正常波动")
 
-        # 验证复核说明存储
-        assert "已确认为正常波动" in report.notes
+        # 验证复核说明存储 (存储在 trend_resolution_note 字段)
+        assert report.trend_resolution_note == "已确认为正常波动"
+        assert "已确认为正常波动" in report.trend_resolution_note

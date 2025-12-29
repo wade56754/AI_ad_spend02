@@ -1,0 +1,239 @@
+# =============================================================================
+# SoT Version Consistency Check Workflow
+# =============================================================================
+#
+# 触发条件:
+#   - PR 中包含 docs/ 目录下的文件变更
+#   - Push 到 main/develop 分支
+#
+# 功能:
+#   - 检查 SoT 版本引用一致性
+#   - 生成检查报告
+#   - 版本不一致时阻止合并
+#
+# =============================================================================
+
+name: SoT Version Check
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**/*.md'
+      - 'docs/SOT_VERSIONS.yaml'
+      - 'scripts/check_sot_versions.py'
+      - '.claude/skills/**/*.md'
+  push:
+    branches:
+      - main
+      - develop
+      - 'sot-*'
+    paths:
+      - 'docs/**/*.md'
+      - 'docs/SOT_VERSIONS.yaml'
+
+concurrency:
+  group: sot-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-sot-versions:
+    name: Check SoT Version Consistency
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # 2. Setup Python
+      # -----------------------------------------------------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      # -----------------------------------------------------------------------
+      # 3. Install dependencies
+      # -----------------------------------------------------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+
+      # -----------------------------------------------------------------------
+      # 4. Run SoT version check
+      # -----------------------------------------------------------------------
+      - name: Run SoT version check
+        id: sot_check
+        run: |
+          # 运行检查脚本
+          python scripts/check_sot_versions.py --ci --format json > sot_report.json 2>&1 || true
+
+          # 提取检查结果
+          if python scripts/check_sot_versions.py --ci --quiet; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "## SoT Version Check: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "## SoT Version Check: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # 添加详细报告到 summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          python scripts/check_sot_versions.py --ci >> $GITHUB_STEP_SUMMARY 2>&1 || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # -----------------------------------------------------------------------
+      # 5. Upload report artifact
+      # -----------------------------------------------------------------------
+      - name: Upload SoT check report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sot-version-report
+          path: sot_report.json
+          retention-days: 7
+
+      # -----------------------------------------------------------------------
+      # 6. Comment on PR (if applicable)
+      # -----------------------------------------------------------------------
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.sot_check.outputs.status == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report = '';
+
+            try {
+              const output = require('child_process').execSync(
+                'python scripts/check_sot_versions.py --ci',
+                { encoding: 'utf-8', timeout: 30000 }
+              );
+              report = output;
+            } catch (error) {
+              report = error.stdout || error.message;
+            }
+
+            const body = `## :warning: SoT Version Check Failed
+
+            发现 SoT 版本引用不一致，请修复后重新提交。
+
+            <details>
+            <summary>查看详细报告</summary>
+
+            \`\`\`
+            ${report}
+            \`\`\`
+
+            </details>
+
+            ### 修复方法
+
+            运行以下命令自动修复版本引用：
+
+            \`\`\`bash
+            # 预览变更
+            python scripts/batch_update_sot_refs.py --dry-run
+
+            # 应用变更
+            python scripts/batch_update_sot_refs.py
+
+            # 提交修复
+            git add docs/
+            git commit -m "fix(docs): 对齐 SoT 版本引用"
+            \`\`\`
+            `;
+
+            // 查找现有评论
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('SoT Version Check Failed')
+            );
+
+            if (botComment) {
+              // 更新现有评论
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // 创建新评论
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      # -----------------------------------------------------------------------
+      # 7. Fail if check failed
+      # -----------------------------------------------------------------------
+      - name: Fail if SoT versions inconsistent
+        if: steps.sot_check.outputs.status == 'failure'
+        run: |
+          echo "::error::SoT 版本引用不一致，请运行 scripts/batch_update_sot_refs.py 修复"
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # Check for SoT gaps (informational)
+  # ---------------------------------------------------------------------------
+  check-sot-gaps:
+    name: Check SoT Documentation Gaps
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Check for open gaps
+        run: |
+          python -c "
+          import yaml
+          import sys
+
+          with open('docs/SOT_VERSIONS.yaml', 'r') as f:
+              config = yaml.safe_load(f)
+
+          gaps = config.get('sot_gaps', {})
+          # 过滤掉非 dict 的条目（如 description 字段）
+          open_gaps = [g for g, info in gaps.items() if isinstance(info, dict) and info.get('status') == 'open']
+
+          if open_gaps:
+              print('## :information_source: Open SoT Gaps')
+              print('')
+              print('| Gap ID | Document | Missing Section |')
+              print('|--------|----------|-----------------|')
+              for gap_id in open_gaps:
+                  info = gaps[gap_id]
+                  print(f\"| {gap_id} | {info['sot_document']} | {info['missing_section']} |\")
+              print('')
+              print('These gaps are tracked but do not block this PR.')
+          else:
+              print('No open SoT gaps found.')
+          " >> $GITHUB_STEP_SUMMARY

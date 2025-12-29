@@ -145,7 +145,7 @@ export function TopupsPage() {
   }, [statsData]);
 
   return (
-    <div className="min-h-screen bg-gray-50 -m-6 p-6">
+    <div className="min-h-screen bg-gray-50 -m-6 p-6" data-testid="topup-page">
       <div className="max-w-7xl mx-auto space-y-6">
       {/* Header - v3.0 白色卡片头部 */}
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -155,7 +155,7 @@ export function TopupsPage() {
               <Plus className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">充值管理</h1>
+              <h1 className="text-2xl font-bold text-gray-900">充值审批</h1>
               <p className="text-sm text-gray-500">
                 管理项目充值申请与双重审核流程
               </p>
@@ -170,7 +170,7 @@ export function TopupsPage() {
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
-            <Button onClick={() => setShowCreateForm(true)}>
+            <Button onClick={() => setShowCreateForm(true)} data-testid="create-topup-btn">
               <Plus className="h-4 w-4 mr-2" />
               新建申请
             </Button>
@@ -210,9 +210,9 @@ export function TopupsPage() {
       )}
 
       {/* Tabs - 白色卡片容器 */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-white rounded-xl shadow-sm p-6" data-testid="topup-table">
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)}>
-        <TabsList>
+        <TabsList data-testid="status-filter">
           <TabsTrigger value="all">
             全部
             {totalCount > 0 ? ` (${totalCount})` : ''}

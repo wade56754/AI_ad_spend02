@@ -101,6 +101,15 @@ class ReconciliationBatch(Base, TimestampMixin, SerializableMixin):
         doc="对账明细"
     )
 
+    # 一对多：批次 -> 对账差异单 (OpenSpec: add-reconciliation-control-center)
+    issues = relationship(
+        "ReconciliationIssue",
+        back_populates="reconciliation_batch",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+        doc="对账差异单列表"
+    )
+
     # 注意：adjustments 关系暂时注释，因为 ReconciliationAdjustment 可能尚未完全实现
     # 一对多：批次 -> 调整记录（如果 ReconciliationAdjustment 存在）
     # adjustments = relationship(

@@ -147,7 +147,7 @@ export function FinanceProfitPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" data-testid="pnl-page">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -155,7 +155,7 @@ export function FinanceProfitPage() {
             <div className="flex items-center gap-3">
               <DollarSign className="h-8 w-8 text-green-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">利润分析</h1>
+                <h1 className="text-2xl font-bold text-gray-900">项目盈亏</h1>
                 <p className="text-sm text-gray-500">
                   利润 = 收入 - 成本 | 收入 = 粉数 × 单价 | 成本 = 消耗 + 服务费
                 </p>
@@ -174,9 +174,9 @@ export function FinanceProfitPage() {
 
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-white rounded-lg shadow p-4" data-testid="pnl-filters">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" data-testid="date-filter">
               <Calendar className="h-4 w-4 text-gray-400" />
               <input
                 type="date"
@@ -210,7 +210,7 @@ export function FinanceProfitPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-6" data-testid="pnl-summary">
         {/* Overview Cards - SoT: A3-project-pnl.md §3.2 组件清单 */}
         {overviewError ? (
           <ErrorDisplay error={overviewErrorObj} onRetry={refreshAll} />
@@ -286,14 +286,16 @@ export function FinanceProfitPage() {
         )}
 
         {/* Profit Table by Dimension */}
-        <ProfitTable
-          data={currentData.items}
-          dimension={dimension}
-          loading={currentData.loading}
-          onDimensionChange={setDimension}
-          totalProfit={currentData.totalProfit}
-          overallMargin={currentData.overallMargin}
-        />
+        <div data-testid="pnl-table">
+          <ProfitTable
+            data={currentData.items}
+            dimension={dimension}
+            loading={currentData.loading}
+            onDimensionChange={setDimension}
+            totalProfit={currentData.totalProfit}
+            overallMargin={currentData.overallMargin}
+          />
+        </div>
       </div>
     </div>
   );

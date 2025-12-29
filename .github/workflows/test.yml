@@ -124,7 +124,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/1
           JWT_SECRET: test_secret_key_for_ci_32_characters
         run: |
-          python run_tests.py --type unit --verbose --coverage
+          python scripts/run_tests.py --type unit --verbose --coverage
 
       - name: 📊 上传覆盖率报告
         uses: codecov/codecov-action@v4
@@ -211,7 +211,7 @@ jobs:
           REDIS_URL: redis://localhost:6379/2
           JWT_SECRET: test_secret_key_for_ci_integration_32_chars
         run: |
-          python run_tests.py --type integration --verbose
+          python scripts/run_tests.py --type integration --verbose
 
   # 安全测试
   test-security:
@@ -253,7 +253,7 @@ jobs:
           TESTING: true
           JWT_SECRET: test_secret_for_security_tests_32_chars
         run: |
-          python run_tests.py --type security --verbose
+          python scripts/run_tests.py --type security --verbose
 
       - name: 📤 上传安全报告
         uses: actions/upload-artifact@v4
@@ -298,7 +298,7 @@ jobs:
           TESTING: true
           JWT_SECRET: test_secret_for_performance_tests_32_chars
         run: |
-          python run_tests.py --type performance --verbose
+          python scripts/run_tests.py --type performance --verbose
 
       - name: 📊 上传性能报告
         uses: actions/upload-artifact@v4
