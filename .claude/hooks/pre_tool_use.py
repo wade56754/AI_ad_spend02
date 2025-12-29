@@ -21,6 +21,7 @@ PreToolUse Hook - 工具使用前的合规检查
     "reason": null          // 拒绝原因
 }
 """
+from __future__ import annotations
 
 import io
 import json

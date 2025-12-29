@@ -5,6 +5,7 @@ Claude Code 状态栏脚本 - AI 广告代投系统
 
 显示：时间 | 模型 | 项目 | Git分支 | 上下文使用率 | 成本 | 监工状态
 """
+from __future__ import annotations
 
 import io
 import json
