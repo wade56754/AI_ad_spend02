@@ -1,5 +1,5 @@
 """
-AI 代码工厂 v4.0 - 主编排器
+AI 代码工厂 v4.5 - 主编排器
 
 整合 Anthropic autonomous-coding 模式与我们的 6 阶段流水线:
 
@@ -31,6 +31,7 @@ AI 代码工厂 v4.0 - 主编排器
 - MASTER.md v4.6 AI 防幻觉原则
 
 版本记录:
+- v4.5 (2025-12-30): 统一版本号，增强搜索和验证功能
 - v4.0 (2025-12-27): 对齐 MASTER.md v4.6，新增 Phase 6 CONFIRM
 - v3.0 (2025-12-18): 集成 Anthropic autonomous-coding 架构
 """
@@ -110,11 +111,12 @@ class CodeFactory:
     5. 进度追踪
 
     版本记录:
+    - v4.5 (2025-12-30): 统一版本号，增强搜索和验证功能
     - v4.0 (2025-12-27): 对齐 MASTER.md v4.6，新增 Phase 6 CONFIRM
     - v3.0 (2025-12-18): 集成 Anthropic autonomous-coding 架构
     """
 
-    VERSION = "4.0"
+    VERSION = "4.5"
 
     def __init__(self, config: FactoryConfig):
         self.config = config
@@ -212,6 +214,10 @@ class CodeFactory:
         print("\n>>> Step 2: 搜索参考代码")
         search_results = self._initial_search(requirement)
         print(f"    找到 {len(search_results)} 个候选参考")
+        if search_results and self.config.verbose:
+            for i, result in enumerate(search_results[:3]):  # 显示前 3 个
+                print(f"      [{i+1}] {result['path']} (相关度: {result['relevance_score']:.0f})")
+                print(f"          来源: {result['source']} | {result['match_reason']}")
 
         # Step 3: 生成任务列表
         print("\n>>> Step 3: 生成任务列表")
@@ -261,12 +267,41 @@ class CodeFactory:
         }
 
     def _initial_search(self, requirement: str) -> List[Dict[str, Any]]:
-        """初始搜索参考代码"""
-        results = []
+        """初始搜索参考代码
 
-        # 这里应该调用 CodeSearcher
-        # 简化版: 返回空列表
-        # TODO: 集成真正的搜索逻辑
+        使用 CodeSearcher 从多个来源搜索相关代码:
+        1. 本项目代码 (最高优先级)
+        2. 代码资料库 (code-library)
+        3. GitHub (可选)
+
+        Returns:
+            List[Dict[str, Any]]: 搜索候选结果列表
+        """
+        # 使用已初始化的 searcher
+        search_result = self.searcher.search(
+            requirement=requirement,
+            sources=self.config.search_sources,
+            max_candidates=10,  # 初始搜索多获取一些候选
+        )
+
+        if not search_result.success:
+            print(f"    ⚠️ 搜索失败: {search_result.error}")
+            return []
+
+        # 转换为字典列表以便兼容
+        results = []
+        for candidate in search_result.candidates:
+            results.append({
+                "id": candidate.id,
+                "source": candidate.source,
+                "path": candidate.path,
+                "relevance_score": candidate.relevance_score,
+                "snippet": candidate.snippet,
+                "match_reason": candidate.match_reason,
+                "tech_stack_match": candidate.tech_stack_match,
+                "adaptation_hint": candidate.adaptation_hint,
+                "language": candidate.language,
+            })
 
         return results
 

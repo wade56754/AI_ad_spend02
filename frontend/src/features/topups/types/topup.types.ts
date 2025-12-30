@@ -238,17 +238,18 @@ export const TOPUP_TRANSITIONS: Record<TopupStatus, TopupStatus[]> = {
 };
 
 // === Role-based Action Permissions ===
+// SoT: MASTER.md v4.6 §2.4 - 合法角色 6 个
 
 export const TOPUP_ACTION_ROLES: Record<TopupAction, string[]> = {
-  create: ['media_buyer', 'account_manager', 'admin'],
-  submit: ['media_buyer', 'account_manager', 'admin'],
-  data_review_approve: ['data_operator', 'admin'],
-  data_review_reject: ['data_operator', 'admin'],
+  create: ['pitcher', 'account_manager', 'admin'],
+  submit: ['pitcher', 'account_manager', 'admin'],
+  data_review_approve: ['project_owner', 'admin'],
+  data_review_reject: ['project_owner', 'admin'],
   finance_approve: ['finance', 'admin'],
   finance_reject: ['finance', 'admin'],
   mark_paid: ['finance', 'admin'],
   complete: ['finance', 'system', 'admin'],
-  cancel: ['media_buyer', 'account_manager', 'admin'],
+  cancel: ['pitcher', 'account_manager', 'admin'],
 };
 
 // === Statistics Types ===

@@ -61,7 +61,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 
 #### 3. 新 SoT 发布后的对齐检查
 ```
-场景：STATE_MACHINE.md v2.7 发布，需检查所有引用文档是否对齐
+场景：STATE_MACHINE.md v2.8 发布，需检查所有引用文档是否对齐
 调用：mode="sot-alignment-check", changed_sot="STATE_MACHINE.md"
 流程：调用 ai-ad-sot-doc-pipeline → 验证下游文档
 ```
@@ -86,7 +86,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 |---------|------|------|
 | **手动调用** | 用户明确请求治理检查 | "请检查 API_DEVELOPMENT_FLOW.md 是否符合规范" |
 | **定期巡检** | 每季度/每月自动触发 | Cron Job: 每季度第一天 |
-| **SoT 变更** | SoT 文档发布新版本后 | STATE_MACHINE.md v2.6 → v2.7 |
+| **SoT 变更** | SoT 文档发布新版本后 | STATE_MACHINE.md v2.8 → v2.7 |
 | **PR 审查** | CI/CD 触发（未来） | PR 修改 dev-guides 文档时 |
 
 ---
@@ -561,8 +561,8 @@ interface SpecGovernorInput {
               "is_sot": false,
               "is_frozen": false,
               "dependencies": [
-                "DATA_SCHEMA.md v5.2",
-                "STATE_MACHINE.md v2.6"
+                "DATA_SCHEMA.md v5.6",
+                "STATE_MACHINE.md v2.8"
               ]
             }
           ],
@@ -955,9 +955,9 @@ interface SpecGovernorInput {
       <description>识别 Freeze 保护的文档</description>
       <logic>
         Freeze 保护文档列表（SoT Freeze v2.6）:
-        - MASTER.md v3.5 (ASDD Freeze v1.0)
-        - STATE_MACHINE.md v2.6
-        - DATA_SCHEMA.md v5.2
+        - MASTER.md v4.6 (ASDD Freeze v1.0)
+        - STATE_MACHINE.md v2.8
+        - DATA_SCHEMA.md v5.6
         - API_SOT.md v9.0
         - ERROR_CODES_SOT.md v2.1
         - BUSINESS_RULES.md v3.1
@@ -987,7 +987,7 @@ interface SpecGovernorInput {
       <description>检查下游文档的 SoT 引用</description>
       <logic>
         对非 Freeze 文档（dev-guides / appendix）：
-        1. 提取所有 SoT 引用（如 "引用: STATE_MACHINE.md v2.6"）
+        1. 提取所有 SoT 引用（如 "引用: STATE_MACHINE.md v2.8"）
         2. 检查引用的版本号是否正确
         3. 如果引用了错误版本，标记为 Freeze 冲突
       </logic>
@@ -1010,8 +1010,8 @@ interface SpecGovernorInput {
 
         ### Freeze 合规文档
 
-        - ✅ [API_DEVELOPMENT_FLOW.md] 引用 STATE_MACHINE.md v2.6 (正确)
-        - ✅ [FRONTEND_SPEC.md] 引用 DATA_SCHEMA.md v5.2 (正确)
+        - ✅ [API_DEVELOPMENT_FLOW.md] 引用 STATE_MACHINE.md v2.8 (正确)
+        - ✅ [FRONTEND_SPEC.md] 引用 DATA_SCHEMA.md v5.6 (正确)
       </output_format>
     </step>
   </steps>
@@ -1160,7 +1160,7 @@ interface SpecGovernorInput {
         ### Phase 1: DISCOVER
         - 发现文档: 1 个
         - 文档层级: dev-guides (Tier 3)
-        - 依赖 SoT: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
+        - 依赖 SoT: STATE_MACHINE.md v2.8, DATA_SCHEMA.md v5.6
 
         ### Phase 2: AUDIT
         - P0 问题: 3 个
@@ -1325,7 +1325,7 @@ interface SpecGovernorInput {
 [Phase 1: DISCOVER] ✅ 完成
 - 发现文档: 1 个
 - 文档层级: dev-guides (Tier 3)
-- 依赖 SoT: STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
+- 依赖 SoT: STATE_MACHINE.md v2.8, DATA_SCHEMA.md v5.6
 
 [Phase 2: AUDIT] ✅ 完成
 - 调用 ai-ad-doc-system-auditor
@@ -1422,9 +1422,9 @@ interface SpecGovernorInput {
 - ✅ 添加 YAML frontmatter 符合 Skill Freeze 标准
 - ✅ 更新 Tier 定义至 ASDD 6-Layer Architecture
 - ✅ 更新 SoT Freeze v1.0 → v2.6
-- ✅ 更新 MASTER.md v3.4 → v3.5
+- ✅ 更新 MASTER.md v4.6 → v3.5
 - ✅ 扩展 Freeze 保护文档列表（新增 DAILY_REPORT_SOT/RECONCILIATION_SOT/TRANSFER_SOT）
-- ✅ 对齐 baseline: MASTER.md v3.5, SoT Freeze v2.6
+- ✅ 对齐 baseline: MASTER.md v4.6, SoT Freeze v2.6
 
 ### v1.0 (2025-11-26)
 - ✅ 初始版本发布

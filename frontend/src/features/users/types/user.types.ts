@@ -1,33 +1,26 @@
 /**
  * User Management Types
  *
- * SoT: docs/10.module-specs/C2-pitcher-mgmt.md §2 数据需求
- * SoT: MASTER.md v4.4 §2.4 (7 角色定义)
- * SoT: AUTH_SPEC.md v2.0
+ * SoT 对齐: MASTER.md v4.6 §2.4（宪法）
+ * 变更记录: 2025-12-30 统一为 6 角色，移除废弃角色
  *
- * 标准角色 (MASTER.md v4.4):
- *   ceo, project_owner, finance, supervisor, pitcher, account_manager, admin
+ * 合法角色（6 角色）:
+ *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
- * 角色映射 (C2-pitcher-mgmt.md §2.4):
- *   pitcher ← media_buyer (历史角色名)
- *   supervisor ← data_operator (历史角色名)
+ * 废弃角色（禁止使用）:
+ *   - supervisor: 已废弃 (PRD v2.2)，合并到 project_owner
+ *   - data_operator: 不在宪法中
+ *   - media_buyer: 非标准术语，使用 pitcher
  */
 
 export enum UserRole {
-  // 标准角色 (MASTER.md v4.4 §2.4)
+  // 合法角色 (MASTER.md v4.6 §2.4)
   CEO = 'ceo',
   PROJECT_OWNER = 'project_owner',
   FINANCE = 'finance',
-  SUPERVISOR = 'supervisor',
   PITCHER = 'pitcher',
   ACCOUNT_MANAGER = 'account_manager',
   ADMIN = 'admin',
-
-  // 历史角色名 (兼容性保留，禁止新代码使用)
-  /** @deprecated Use SUPERVISOR instead */
-  DATA_OPERATOR = 'data_operator',
-  /** @deprecated Use PITCHER instead */
-  MEDIA_BUYER = 'media_buyer',
 }
 
 export enum UserStatus {
@@ -92,14 +85,12 @@ export interface UserListResponse {
 }
 
 /**
- * 标准角色选项 (MASTER.md v4.4 §2.4)
- * SoT: C2-pitcher-mgmt.md §2.4
+ * 角色选项 (MASTER.md v4.6 §2.4)
  */
 export const USER_ROLE_OPTIONS = [
   { value: UserRole.CEO, label: '老板', color: 'purple' },
   { value: UserRole.PROJECT_OWNER, label: '项目负责人', color: 'cyan' },
   { value: UserRole.FINANCE, label: '财务', color: 'green' },
-  { value: UserRole.SUPERVISOR, label: '主管', color: 'blue' },
   { value: UserRole.PITCHER, label: '投手', color: 'orange' },
   { value: UserRole.ACCOUNT_MANAGER, label: '户管', color: 'pink' },
   { value: UserRole.ADMIN, label: '管理员', color: 'red' },

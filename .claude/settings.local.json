@@ -2,7 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(python3:*)",
-      "Bash(PYTHONPATH=/Users/wade/Desktop/AI_Ads python:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
@@ -163,21 +162,21 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/inject_timestamp.py",
+            "command": "python .claude/hooks/inject_timestamp.py",
             "timeout": 5000,
-            "statusMessage": "📅 加载时间上下文..."
+            "statusMessage": "Loading time context..."
           },
           {
             "type": "command",
-            "command": "python3 .claude/hooks/session_start.py",
+            "command": "python .claude/hooks/session_start.py",
             "timeout": 5000,
-            "statusMessage": "🎯 加载 SoT 裁判链..."
+            "statusMessage": "Loading SoT context..."
           },
           {
             "type": "command",
-            "command": "python3 .claude/hooks/load_context.py",
+            "command": "python .claude/hooks/load_context.py",
             "timeout": 10000,
-            "statusMessage": "📚 加载 SoT 文档上下文..."
+            "statusMessage": "Loading document context..."
           }
         ]
       }
@@ -188,9 +187,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/pre_tool_use.py",
+            "command": "python .claude/hooks/pre_tool_use.py",
             "timeout": 10000,
-            "statusMessage": "🔍 检查代码合规性..."
+            "statusMessage": "Checking compliance..."
           }
         ]
       },
@@ -199,9 +198,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/pre_tool_use.py",
+            "command": "python .claude/hooks/pre_tool_use.py",
             "timeout": 10000,
-            "statusMessage": "🛡️ 检查命令安全性..."
+            "statusMessage": "Checking command safety..."
           }
         ]
       }
@@ -212,9 +211,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/post_tool_use.py",
+            "command": "python .claude/hooks/post_tool_use.py",
             "timeout": 5000,
-            "statusMessage": "📝 记录变更..."
+            "statusMessage": "Recording changes..."
           }
         ]
       }
@@ -224,9 +223,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/hooks/stop.py",
+            "command": "python .claude/hooks/stop.py",
             "timeout": 30000,
-            "statusMessage": "📊 生成会话报告..."
+            "statusMessage": "Generating session report..."
           }
         ]
       }
@@ -234,7 +233,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "python3 .claude/statusline.py",
+    "command": "python .claude/statusline.py",
     "padding": 0
   }
 }

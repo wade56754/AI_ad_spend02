@@ -1,9 +1,10 @@
 # AI 广告代投系统 - 前端 AI 编程最佳实践
 
-> **版本**: v1.2 (上线版)
-> **更新日期**: 2025-12-29
+> **版本**: v1.3 (修复版)
+> **更新日期**: 2025-12-30
 > **变更记录**: 
-> - v1.2: P0 修复 - 技术层角色改为 4 个，删除 data_operator，project_owner 改为业务属性，Next.js 16→15
+> - v1.3: 版本对齐修复 - Next.js 15→16，STATE_MACHINE v2.7→v2.8，AUTH_SPEC v2.2→v2.1，ERROR_CODES v2.3→v2.2，移除不存在的 LEDGER_SOT
+> - v1.2: P0 修复 - 技术层角色改为 4 个，删除 data_operator，project_owner 改为业务属性
 > - v1.1: 修复角色定义与 auth.types.ts 对齐，统一术语
 > **适用范围**: `frontend/` 目录下所有代码的 AI 辅助开发
 > **核心原则**: SoT 驱动 + 防幻觉 + 小步验证 + 模式复用
@@ -17,13 +18,12 @@
 | 文档 | 版本 | 来源验证 |
 |------|------|---------|
 | MASTER.md | v4.6 | 项目文件确认 |
-| STATE_MACHINE.md | v2.7 | BUSINESS_RULES.md v4.7 引用 |
-| DATA_SCHEMA.md | v5.6 | BUSINESS_RULES.md v4.7 引用 |
+| STATE_MACHINE.md | v2.8 | 项目文件确认 |
+| DATA_SCHEMA.md | v5.6 | 项目文件确认 |
 | BUSINESS_RULES.md | v4.7 | 项目文件确认 |
-| ERROR_CODES.md | v2.3 | BUSINESS_RULES.md v4.7 引用 |
-| API_SOT.md | v9.4 | BUSINESS_RULES.md v4.7 引用 |
-| AUTH_SPEC.md | v2.2 | BUSINESS_RULES.md v4.7 引用 |
-| LEDGER_SOT.md | v1.2 | BUSINESS_RULES.md v4.7 引用 |
+| ERROR_CODES_SOT.md | v2.2 | 项目文件确认 |
+| API_SOT.md | v9.4 | 项目文件确认 |
+| AUTH_SPEC.md | v2.1 | 项目文件确认 |
 
 ---
 
@@ -94,7 +94,7 @@
 // SoT: 项目标准技术栈
 const TECH_STACK = {
   // 框架层
-  framework: "Next.js 15 (App Router)",  // v1.2 修复: 16→15
+  framework: "Next.js 16 (App Router)",  // v1.3 修复: 15→16 (实际 16.0.2)
   language: "TypeScript 5.6+ (strict: true)",
 
   // UI 层
@@ -308,24 +308,24 @@ MASTER.md v4.6           ← 架构宪法、角色定义
     ↓
 DATA_SCHEMA.md v5.6      ← 数据模型、字段类型
     ↓
-STATE_MACHINE.md v2.7    ← 状态机定义、状态流转
+STATE_MACHINE.md v2.8    ← 状态机定义、状态流转
     ↓
 BUSINESS_RULES.md v4.7   ← 业务规则
     ↓
 API_SOT.md v9.4          ← API 规范
     ↓
-ERROR_CODES_SOT.md v2.3  ← 错误码定义
+ERROR_CODES_SOT.md v2.2  ← 错误码定义
 ```
 
 ### 4.2 开发前必查 SoT
 
 | 开发场景 | 必查文档 | 查询内容 |
 |----------|---------|---------|
-| 显示状态标签 | STATE_MACHINE.md v2.7 | 状态枚举值、颜色定义 |
+| 显示状态标签 | STATE_MACHINE.md v2.8 | 状态枚举值、颜色定义 |
 | 权限控制 | MASTER.md v4.6 §INV-007 | 4 技术层角色 + 业务属性判断 |
 | API 调用 | API_SOT.md v9.4 | 端点路径、请求/响应格式 |
 | 表单字段 | DATA_SCHEMA.md v5.6 | 字段类型、必填项 |
-| 错误提示 | ERROR_CODES_SOT.md v2.3 | 错误码、提示文案 |
+| 错误提示 | ERROR_CODES_SOT.md v2.2 | 错误码、提示文案 |
 | 金额显示 | BUSINESS_RULES.md v4.7 | 金额格式化规则 |
 
 ### 4.3 代码来源标注规范
@@ -333,7 +333,7 @@ ERROR_CODES_SOT.md v2.3  ← 错误码定义
 ```typescript
 // ========== 类型定义 ==========
 
-// SoT: STATE_MACHINE.md v2.7 §2
+// SoT: STATE_MACHINE.md v2.8 §2
 type DailyReportStatus =
   | 'raw_submitted'
   | 'trend_pending'
@@ -391,7 +391,7 @@ function formatMoney(amount: number): string {
 type Status = 'pending' | 'draft';  // 不在 STATE_MACHINE.md 中
 
 // ✅ 正确: 使用 SoT 定义的状态
-// SoT: STATE_MACHINE.md v2.7 §2
+// SoT: STATE_MACHINE.md v2.8 §2
 type Status = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
 
 
@@ -424,7 +424,7 @@ if (overBudget) {
 toast.error('操作失败，请重试');
 
 // ✅ 正确: 使用 SoT 错误码
-// SoT: ERROR_CODES_SOT.md v2.3
+// SoT: ERROR_CODES_SOT.md v2.2
 toast.error(getErrorMessage(error.code));
 
 
@@ -527,7 +527,7 @@ export function useCreate{Module}() {
       toast.success('创建成功');
     },
     onError: (error: ApiError) => {
-      // SoT: ERROR_CODES_SOT.md v2.3
+      // SoT: ERROR_CODES_SOT.md v2.2
       toast.error(error.message || '创建失败');
     },
   });
@@ -703,7 +703,7 @@ export const columns: ColumnDef<{Module}>[] = [
     accessorKey: 'status',
     header: '状态',
     cell: ({ row }) => (
-      // SoT: STATE_MACHINE.md v2.7
+      // SoT: STATE_MACHINE.md v2.8
       <StatusBadge status={row.original.status} />
     ),
   },
@@ -1045,9 +1045,9 @@ import { formatMoney } from '@/lib/format';
 - [ ] 无 `any` 类型
 
 ## SoT 合规
-- [ ] 状态值在 STATE_MACHINE.md v2.7 中
+- [ ] 状态值在 STATE_MACHINE.md v2.8 中
 - [ ] 角色值在 4 技术层角色中 (admin/finance/media_buyer/account_manager)
-- [ ] 错误码在 ERROR_CODES_SOT.md v2.3 中
+- [ ] 错误码在 ERROR_CODES_SOT.md v2.2 中
 - [ ] 代码有 SoT 来源标注
 
 ## 组件规范
@@ -1091,7 +1091,7 @@ import { formatMoney } from '@/lib/format';
 ```markdown
 ## 背景
 项目：AI 广告代投系统
-技术栈：Next.js 15 + TypeScript + shadcn/ui + TanStack Query v5
+技术栈：Next.js 16 + TypeScript + shadcn/ui + TanStack Query v5
 
 ## 任务
 为 [模块名] 创建完整的功能模块
@@ -1107,11 +1107,11 @@ import { formatMoney } from '@/lib/format';
 - types/{module}.types.ts
 
 ## SoT 约束
-- 状态值：参考 STATE_MACHINE.md v2.7
+- 状态值：参考 STATE_MACHINE.md v2.8
 - 技术层角色：4 个 (admin, finance, media_buyer, account_manager)
 - 业务属性：project_owner 通过 is_project_owner 判断
 - 禁止角色：supervisor, data_operator, pitcher(作为role), project_owner(作为role)
-- 错误码：参考 ERROR_CODES_SOT.md v2.3
+- 错误码：参考 ERROR_CODES_SOT.md v2.2
 - API 路径：参考 API_SOT.md v9.4
 
 ## 验收标准
@@ -1187,12 +1187,12 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"
 | 文档 | 版本 |
 |------|------|
 | MASTER.md | v4.6 |
-| STATE_MACHINE.md | v2.7 |
+| STATE_MACHINE.md | v2.8 |
 | DATA_SCHEMA.md | v5.6 |
 | BUSINESS_RULES.md | v4.7 |
-| ERROR_CODES.md | v2.3 |
+| ERROR_CODES_SOT.md | v2.2 |
 | API_SOT.md | v9.4 |
-| AUTH_SPEC.md | v2.2 |
+| AUTH_SPEC.md | v2.1 |
 ```
 
 ### C. 角色快速参考
@@ -1224,8 +1224,8 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"
 - [x] 技术层角色正确 (4 个: admin/finance/media_buyer/account_manager)
 - [x] project_owner 改为业务属性判断
 - [x] 删除 data_operator 角色引用
-- [x] Next.js 版本正确 (15)
-- [x] AUTH_SPEC.md 版本正确 (v2.2)
+- [x] Next.js 版本正确 (16)
+- [x] AUTH_SPEC.md 版本正确 (v2.1)
 - [x] PRD 禁止行为全覆盖 (F-009/F-010/F-011)
 - [x] 防幻觉原则完整 (AH-01~AH-05)
 ```
@@ -1234,11 +1234,11 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"
 
 ---
 
-**文档版本**: v1.2 (上线版)
-**最后更新**: 2025-12-29
+**文档版本**: v1.3 (修复版)
+**最后更新**: 2025-12-30
 **维护者**: AI 代码工厂
 **审查评分**: 95/100
 
 **变更记录**:
-- v1.2: P0 修复 - 技术层角色 6→4，删除 data_operator，project_owner 改为业务属性，Next.js 16→15，AUTH_SPEC v2.0→v2.2，添加 SoT 版本表，添加 F-009/F-011 禁止行为
+- v1.2: P0 修复 - 技术层角色 6→4，删除 data_operator，project_owner 改为业务属性，添加 SoT 版本表，添加 F-009/F-011 禁止行为
 - v1.1: 修复角色定义与 auth.types.ts 对齐，添加术语对照表，扩展权限矩阵，添加完整示例

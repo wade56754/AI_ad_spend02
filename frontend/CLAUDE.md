@@ -364,7 +364,7 @@ export default function Page() {
 ## 状态约束
 
 ### 日报状态 (8 状态机)
-> 来源: STATE_MACHINE.md v2.6 §8
+> 来源: STATE_MACHINE.md v2.8 §4
 
 ```typescript
 type DailyReportStatus =
@@ -378,17 +378,31 @@ type DailyReportStatus =
   | 'final_locked'     // 计费锁定 (终态)
 ```
 
-### 角色白名单 (5 个技术层角色)
-> 来源: PROJECT_RULES.md v3.5 §四
+### 合法角色（6 角色）
+
+> **来源**: MASTER.md v4.6 §2.4（宪法）
+> **PRD v2.2 变更**: 移除 supervisor 角色
 
 ```typescript
-type Role = 'admin' | 'finance' | 'data_operator' | 'account_manager' | 'media_buyer'
-
-// ❌ 禁止使用废弃角色
-// 'data_clerk' | 'manager' | 'trader'
-// ❌ 禁止使用业务层概念作为角色
-// 'ceo' | 'project_owner' | 'pitcher'
+// SoT: MASTER.md v4.6 §2.4
+enum UserRole {
+  CEO = 'ceo',                    // 老板 - 资金安全、公司盈亏、最终决策
+  PROJECT_OWNER = 'project_owner', // 项目负责人 - 项目盈亏、日报审核
+  FINANCE = 'finance',            // 财务 - 资金出入准确、对账
+  PITCHER = 'pitcher',            // 投手 - CPL 达标、日报准确
+  ACCOUNT_MANAGER = 'account_manager', // 户管 - 账户分配、状态监控
+  ADMIN = 'admin',                // 管理员 - 系统配置
+}
 ```
+
+**废弃角色（禁止使用）**:
+| 角色 | 状态 | 替代方案 |
+|------|------|---------|
+| `supervisor` | ❌ 已废弃 (PRD v2.2) | 合并到 project_owner |
+| `data_operator` | ❌ 不在宪法中 | 移除 |
+| `media_buyer` | ❌ 非标准术语 | 使用 pitcher |
+
+> ⚠️ 代码中如存在非标准角色，应修正为宪法定义
 
 ---
 
@@ -513,7 +527,7 @@ const queryClient = new QueryClient({
 ```typescript
 // API 错误
 interface ApiError {
-  code: string       // 来自 ERROR_CODES_SOT.md
+  code: string       // 来自 ERROR_CODES.md v2.2
   message: string
   status: number
 }
@@ -559,5 +573,6 @@ import Image from 'next/image'
 
 ---
 
-**文档版本**: v1.0
-**最后更新**: 2025-12-28
+**文档版本**: v1.1
+**最后更新**: 2025-12-30
+**变更记录**: 修复角色定义（双层系统），更新 SoT 版本引用

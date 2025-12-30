@@ -1,14 +1,14 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
-> **版本**: v5.5
+> **版本**: v5.6
 > **status**: frozen
 > **owner**: wade
-> **last_reviewed**: 2025-12-26
-> **更新日期**: 2025-12-26
+> **last_reviewed**: 2025-12-30
+> **更新日期**: 2025-12-30
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
-> - 实现规范 → `./MASTER.md` v4.4
+> - 实现规范 → `./MASTER.md` v4.6
 > - 状态机 → `STATE_MACHINE.md` v2.6（任何状态字段必须引用对应状态机）
 > - 业务规则 → `BUSINESS_RULES.md` v4.6（履约状态字段来源）
 > - 错误码 → `ERROR_CODES_SOT.md` v2.1
@@ -25,14 +25,15 @@
 - **权限**: 当前版本仅在应用层（Service + `@require_role`）执行 RBAC，数据库 RLS 规划中未启用  
 - **时间字段**: 统一使用 `TIMESTAMPTZ`，默认 `NOW()`，应用层使用 UTC  
 - **金额字段**: 一律 `DECIMAL(15,2)`，默认 `0.00`，借方为正、贷方为负值  
-- **角色枚举**: 仅允许 7 个标准角色（MASTER.md v4.4 §2.4）：
+- **角色枚举**: 仅允许 6 个标准角色（MASTER.md v4.6 §2.4）：
   - `ceo` - 老板
   - `project_owner` - 项目负责人
   - `finance` - 财务
-  - `supervisor` - 主管
   - `pitcher` - 投手
   - `account_manager` - 户管
   - `admin` - 管理员
+
+> ⚠️ **废弃角色** (PRD v2.2)：`supervisor` 已废弃，职责合并到 `project_owner`
 
 **历史角色映射** (仅用于理解旧代码，新代码禁止使用):
 - `media_buyer` → `pitcher` (技术名→业务名)
@@ -119,7 +120,7 @@
 | `username` | VARCHAR(50) | UNIQUE | 用户名 |
 | `full_name` | VARCHAR(100) | | 真实姓名 |
 | `email` | VARCHAR(255) | 可空 | 冗余字段，方便联查 |
-| `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 7 个标准角色：`ceo/project_owner/finance/supervisor/pitcher/account_manager/admin`（MASTER.md v4.4 §2.4） |
+| `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 6 个标准角色：`ceo/project_owner/finance/pitcher/account_manager/admin`（MASTER.md v4.6 §2.4）|
 | `department` / `position` | VARCHAR(100) | | 组织信息 |
 | `account_manager_id` | UUID | FK → `users.id` | 投手关联户管 |
 | `is_active` | BOOLEAN | DEFAULT true | 账号可用性 |
@@ -343,7 +344,7 @@
 | `status` VARCHAR(20) | 参考"粉数确认状态机"(STATE_MACHINE.md 第8章)，合法取值: `raw_submitted/trend_pending/trend_ok/trend_flagged/trend_resolved/final_pending/final_confirmed/final_locked`，终态为 `final_locked` |
 | `trend_flag` VARCHAR(20) | DEFAULT 'normal', 趋势异常标记, 固定枚举: `normal/flagged/resolved` |
 | `trend_flag_reason` TEXT | 可空, 风控规则触发原因(如"TF-001: 粉数骤降50%") |
-| `trend_resolution_note` TEXT | 可空, 运营复核说明(`supervisor`填写) |
+| `trend_resolution_note` TEXT | 可空, 运营复核说明(`project_owner`填写) |
 | `final_locked_at` TIMESTAMPTZ | 可空, 计费锁定时间戳(系统自动设置,`status=final_locked`时) |
 | `notes` TEXT | |
 | `attachments` JSONB | |

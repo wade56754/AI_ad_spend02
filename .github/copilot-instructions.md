@@ -43,7 +43,7 @@ from backend.models import DailyReportStatus  # 使用 models/base.py 中的定�
 ```
 
 **强制规则：**
-- 所有状态枚举必须来自 `STATE_MACHINE.md` v2.6
+- 所有状态枚举必须来自 `STATE_MACHINE.md` v2.8
 - 粉数确认流程使用 **8 状态机**（禁止使用旧的 4 状态机）
 - 禁止在业务代码中重新定义状态值
 
@@ -88,7 +88,7 @@ class DailyReport(Base):
 
 **✅ 正确示例：**
 ```python
-# 1. 先更新 DATA_SCHEMA.md v5.2
+# 1. 先更新 DATA_SCHEMA.md v5.6
 # 2. 生成 Alembic 迁移脚本
 # alembic revision --autogenerate -m "add new_field to daily_reports"
 # 3. 经 DBA 审核后执行
@@ -96,7 +96,7 @@ class DailyReport(Base):
 ```
 
 **强制规则：**
-- 数据库变更必须先更新 `DATA_SCHEMA.md` v5.2
+- 数据库变更必须先更新 `DATA_SCHEMA.md` v5.6
 - 使用 Alembic 生成迁移脚本
 - 禁止直接修改 `backend/models/` 目录（除非明确允许）
 
@@ -168,7 +168,7 @@ service.transition_to(
 
 **强制规则：**
 - 所有状态转换必须通过服务层方法
-- 遵循 `STATE_MACHINE.md` v2.6 定义的合法流转路径
+- 遵循 `STATE_MACHINE.md` v2.8 定义的合法流转路径
 - 记录状态变更审计日志
 
 ---
@@ -179,13 +179,13 @@ service.transition_to(
 
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|------------|
-| **STATE_MACHINE** | v2.6 | `docs/sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
-| **DATA_SCHEMA** | v5.2 | `docs/sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
-| **BUSINESS_RULES** | v3.2 | `docs/sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
-| **API_SOT** | v9.0 | `docs/sot/API_SOT.md` | §9 Daily Reports API |
-| **ERROR_CODES_SOT** | v2.1 | `docs/sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
-| **AUTH_SPEC** | v2.0 | `docs/sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
-| **LEDGER_SOT** | v1.1 | `docs/sot/LEDGER_SOT.md` | §2 双账本体系 |
+| **STATE_MACHINE** | v2.8 | `docs/sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
+| **DATA_SCHEMA** | v5.6 | `docs/sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
+| **BUSINESS_RULES** | v4.7 | `docs/sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
+| **API_SOT** | v9.4 | `docs/sot/API_SOT.md` | §9 Daily Reports API |
+| **ERROR_CODES_SOT** | v2.2 | `docs/sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
+| **AUTH_SPEC** | v2.1 | `docs/sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
+| **LEDGER_SOT** | v1.2 | `docs/sot/LEDGER_SOT.md` | §2 双账本体系 |
 
 ### P1 - 流程 SoT 文档 (按需参考)
 
@@ -203,7 +203,7 @@ service.transition_to(
 
 ### 反模式 1: 硬编码旧状态 (4 状态机)
 ```python
-# ❌ 违反 STATE_MACHINE.md v2.6
+# ❌ 违反 STATE_MACHINE.md v2.8
 class DailyReportStatus(str, Enum):
     DRAFT = "draft"
     PENDING = "pending"
@@ -286,15 +286,23 @@ async def list_projects(
 
 ## 📚 快速参考
 
-### 合法角色（仅 5 个）
+### 合法角色（仅 6 个）
+> 来源: MASTER.md v4.6 §2.4
+
 ```python
 VALID_ROLES = [
-    "admin",           # 系统管理员
-    "finance",         # 财务
-    "data_operator",   # 数据运营 (旧名: data_clerk)
-    "account_manager", # 账户管理员 (旧名: manager)
-    "media_buyer"      # 广告投手 (旧名: trader)
+    "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
+    "project_owner",   # 项目负责人 - 项目盈亏、日报审核
+    "finance",         # 财务 - 资金出入准确、对账
+    "pitcher",         # 投手 - CPL 达标、日报准确
+    "account_manager", # 户管 - 账户分配、状态监控
+    "admin"            # 管理员 - 系统配置（不参与业务）
 ]
+
+# 废弃角色 (禁止使用):
+# - supervisor (PRD v2.2 废弃，合并到 project_owner)
+# - data_operator (不在宪法中)
+# - media_buyer (技术层术语，业务层用 pitcher)
 ```
 
 ### 日报状态 (8 状态机)
@@ -352,9 +360,9 @@ ERROR_CODE_CATEGORIES = {
 
 - [ ] ✅ 状态枚举使用 `backend.models` 中的定义（禁止重复定义）
 - [ ] ✅ 错误码来自 `ERROR_CODES_SOT.md` v2.1
-- [ ] ✅ 数据库字段名称、类型符合 `DATA_SCHEMA.md` v5.2
-- [ ] ✅ 业务规则符合 `BUSINESS_RULES.md` v3.1 (BR-* 编号)
-- [ ] ✅ API 路径、请求/响应格式符合 `API_SOT.md` v2.2
+- [ ] ✅ 数据库字段名称、类型符合 `DATA_SCHEMA.md` v5.6
+- [ ] ✅ 业务规则符合 `BUSINESS_RULES.md` v4.7 (BR-* 编号)
+- [ ] ✅ API 路径、请求/响应格式符合 `API_SOT.md` v9.4
 - [ ] ✅ 资金流动通过 `ledger_entries` 表
 - [ ] ✅ 状态转换通过服务层方法
 - [ ] ✅ 受保护路由使用 `get_current_user` 依赖

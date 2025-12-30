@@ -39,7 +39,7 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 | 层 | 技术 |
 |---|------|
 | 后端 | FastAPI + SQLAlchemy 2.x + Pydantic v2 |
-| 前端 | Next.js 14 + TanStack Query v5 + shadcn/ui |
+| 前端 | Next.js 16 + TanStack Query v5 + shadcn/ui |
 | 认证 | Supabase Auth |
 | 数据库 | PostgreSQL (via Supabase) |
 
@@ -182,12 +182,12 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 
 ```
 MASTER.md v4.6                     → 架构宪法，最高优先级
-STATE_MACHINE.md v2.7              → 状态机定义 (8 状态)
-DATA_SCHEMA.md v5.3                → 数据模型 (23 表)
-API_SOT.md v9.3                    → API 契约 (50+ 端点)
-ERROR_CODES_SOT.md v2.1            → 错误码注册表
-BUSINESS_RULES.md v4.1             → 业务规则
-AUTH_SPEC.md v2.0                  → 认证授权 (7 角色)
+STATE_MACHINE.md v2.8              → 状态机定义 (8 状态)
+DATA_SCHEMA.md v5.6                → 数据模型 (23 表)
+API_SOT.md v9.4                    → API 契约 (50+ 端点)
+ERROR_CODES_SOT.md v2.2            → 错误码注册表
+BUSINESS_RULES.md v4.7             → 业务规则
+AUTH_SPEC.md v2.1                  → 认证授权 (6 角色)
 LEDGER_SOT.md v1.2                 → 双账本规范
 ```
 
@@ -280,7 +280,7 @@ EXPENSE_CATEGORY = frozenset([
 押款 = 代理商未消耗余额 = Σ历史充值 - Σ历史消耗
 ```
 
-### 6.9 日报 8 状态机 (STATE_MACHINE.md v2.7)
+### 6.9 日报 8 状态机 (STATE_MACHINE.md v2.8)
 
 ```
 raw_submitted → trend_pending → trend_ok/trend_flagged
@@ -427,7 +427,7 @@ python scripts/run_tests.py --type regression
 | ID | 禁止行为 | 正确做法 | 来源 |
 |----|---------|---------|------|
 | F-001 | 自定义错误码 | 使用 ERROR_CODES_SOT.md | MASTER §9 |
-| F-002 | 发明新状态 | 使用 STATE_MACHINE.md v2.7 | MASTER §9 |
+| F-002 | 发明新状态 | 使用 STATE_MACHINE.md v2.8 | MASTER §9 |
 | F-003 | 直接修改 balance | 通过 ledger_entries 记录 | MASTER §9 |
 | F-004 | 绕过 BFF 直连数据库 | 使用 apiFetch | 安全规范 |
 | F-005 | 硬编码 API 密钥 | 使用环境变量 | 安全规范 |
@@ -496,11 +496,11 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 | 文档 | 路径 | 版本 |
 |------|------|------|
 | 架构宪法 | `docs/sot/MASTER.md` | v4.6 |
-| 状态机 | `docs/sot/STATE_MACHINE.md` | v2.7 |
-| 数据模型 | `docs/sot/DATA_SCHEMA.md` | v5.3 |
-| API 契约 | `docs/sot/API_SOT.md` | v9.3 |
-| 错误码 | `docs/sot/ERROR_CODES_SOT.md` | v2.1 |
-| 认证授权 | `docs/sot/AUTH_SPEC.md` | v2.0 |
+| 状态机 | `docs/sot/STATE_MACHINE.md` | v2.8 |
+| 数据模型 | `docs/sot/DATA_SCHEMA.md` | v5.6 |
+| API 契约 | `docs/sot/API_SOT.md` | v9.4 |
+| 错误码 | `docs/sot/ERROR_CODES_SOT.md` | v2.2 |
+| 认证授权 | `docs/sot/AUTH_SPEC.md` | v2.1 |
 | 开发指南 | `docs/2.dev-guides/` | - |
 | Claude 规则 | `CLAUDE.md` | - |
 

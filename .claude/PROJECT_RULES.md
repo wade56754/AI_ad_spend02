@@ -62,28 +62,28 @@ techStack:
 # SoT 裁判链 (快速参考)
 sotChain:
   - name: "MASTER.md"
-    version: "v3.4"
+    version: "v4.6"
     role: "系统宪法"
   - name: "STATE_MACHINE.md"
-    version: "v2.6"
+    version: "v2.8"
     role: "状态定义"
   - name: "DATA_SCHEMA.md"
-    version: "v5.2"
+    version: "v5.6"
     role: "数据结构"
   - name: "BUSINESS_RULES.md"
-    version: "v3.1"
+    version: "v4.7"
     role: "业务规则"
   - name: "API_SOT.md"
-    version: "v9.0"
+    version: "v9.4"
     role: "API契约"
   - name: "ERROR_CODES_SOT.md"
-    version: "v2.1"
+    version: "v2.2"
     role: "错误码"
   - name: "AUTH_SPEC.md"
-    version: "v2.0"
+    version: "v2.1"
     role: "认证授权"
   - name: "LEDGER_SOT.md"
-    version: "v1.1"
+    version: "v1.2"
     role: "账本规则"
 ---
 
@@ -95,19 +95,15 @@ sotChain:
 > **规范级别**: 🔴 强制执行 (CI/CD 验证)
 > **生效日期**: 2025-12-02
 > **维护责任**: AI Architecture Team
-> **Freeze 基准**:
->   - FREEZE_MANIFEST_v1.0.md (Overview Layer Freeze v1.0)
->   - SOT_FREEZE_MANIFEST_v2.6.md (SoT Layer Freeze v2.6)
->   - DEV_GUIDES_FREEZE_MANIFEST_v2.1.md (Dev-Guides Layer Freeze v2.1)
->   - ARCHITECTURE_FREEZE_MANIFEST_v1.0.md (Architecture Layer Freeze v1.0)
->   - MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
->   - STATE_MACHINE.md v2.6 (8状态机)
->   - DATA_SCHEMA.md v5.2
->   - API_SOT.md v9.0
->   - BUSINESS_RULES.md v3.2
->   - ERROR_CODES_SOT.md v2.1
->   - AUTH_SPEC.md v2.0
->   - LEDGER_SOT.md v1.1
+> **SoT 版本基准** (MASTER.md v4.6 §2.4):
+>   - MASTER.md v4.6 (系统宪法)
+>   - STATE_MACHINE.md v2.8 (8状态机)
+>   - DATA_SCHEMA.md v5.6
+>   - BUSINESS_RULES.md v4.7
+>   - API_SOT.md v9.4
+>   - ERROR_CODES_SOT.md v2.2
+>   - AUTH_SPEC.md v2.1
+>   - LEDGER_SOT.md v1.2
 
 ---
 
@@ -116,53 +112,49 @@ sotChain:
 **所有技术决策必须遵循以下优先级 (仲裁链)**:
 
 ```
-MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
+MASTER.md v4.6 (系统宪法 - 6 角色白名单)
     ↓ 引用
-STATE_MACHINE.md v2.6 (状态定义) ←─── 🚫 禁止在其他文档重复定义状态
+STATE_MACHINE.md v2.8 (状态定义) ←─── 🚫 禁止在其他文档重复定义状态
     ↓ 引用
-DATA_SCHEMA.md v5.2 (数据结构)   ←─── 📌 所有表结构、字段类型以此为准
+DATA_SCHEMA.md v5.6 (数据结构)   ←─── 📌 所有表结构、字段类型以此为准
     ↓ 引用
-BUSINESS_RULES.md v3.2 (业务规则) ←─── ⚖️ BR-* 规则编号具有法律效力
+BUSINESS_RULES.md v4.7 (业务规则) ←─── ⚖️ BR-* 规则编号具有法律效力
     ↓ 引用
-API_SOT.md v9.0 (API 契约)       ←─── 🌐 所有路径、请求/响应格式以此为准
+API_SOT.md v9.4 (API 契约)       ←─── 🌐 所有路径、请求/响应格式以此为准
     ↓ 引用
-ERROR_CODES_SOT.md v2.1 (错误码) ←─── 🚨 禁止自定义错误码
+ERROR_CODES_SOT.md v2.2 (错误码) ←─── 🚨 禁止自定义错误码
     ↓ 引用
-AUTH_SPEC.md v2.0 (认证授权)     ←─── 🔐 RLS 策略以此为准
+AUTH_SPEC.md v2.1 (认证授权)     ←─── 🔐 RLS 策略以此为准
     ↓ 引用
-LEDGER_SOT.md v1.1 (账本规则)    ←─── 💰 财务逻辑禁止绕过账本
-    ↓ 引用
-DAILY_REPORT_SOT.md v1.0 (日报流程)
-RECONCILIATION_SOT.md v1.0 (对账流程)
-TRANSFER_SOT.md v1.0 (调拨流程)
+LEDGER_SOT.md v1.2 (账本规则)    ←─── 💰 财务逻辑禁止绕过账本
 ```
 
 ### 🔒 不可侵犯原则 (Inviolable Rules)
 
 1. **禁止重复定义状态枚举**
    - ❌ 错误: 在 `models/base.py` 定义 `DailyReportStatus = Enum("DRAFT", "PENDING", "APPROVED", "REJECTED")`
-   - ✅ 正确: 使用 STATE_MACHINE.md v2.6 第8章定义的 **8 状态机**
+   - ✅ 正确: 使用 STATE_MACHINE.md v2.8 第8章定义的 **8 状态机**
    - **强制**: 所有状态必须从 STATE_MACHINE.md 继承
 
 2. **禁止自定义错误码**
    - ❌ 错误: `raise HTTPException(400, "Invalid request")`
    - ✅ 正确: `raise HTTPException(400, detail={"code": "VAL-001", "message": "..."})`
-   - **强制**: 所有错误码必须来自 ERROR_CODES_SOT.md v2.1
+   - **强制**: 所有错误码必须来自 ERROR_CODES_SOT.md v2.2
 
 3. **禁止直接修改数据库 (必须通过 Alembic)**
    - ❌ 错误: 手动执行 `ALTER TABLE` SQL
-   - ✅ 正确: 先更新 DATA_SCHEMA.md v5.2 → 生成 Alembic 迁移 → DBA 审核执行
+   - ✅ 正确: 先更新 DATA_SCHEMA.md v5.6 → 生成 Alembic 迁移 → DBA 审核执行
    - **强制**: 所有 schema 变更必须有对应迁移文件
 
 4. **禁止绕过账本系统**
    - ❌ 错误: 直接修改 `ad_accounts.balance` 字段
    - ✅ 正确: 通过 `ledger_entries` 表记录交易 → 触发余额计算
-   - **强制**: 所有资金流动必须在 LEDGER_SOT.md v1.1 定义的双账本体系中
+   - **强制**: 所有资金流动必须在 LEDGER_SOT.md v1.2 定义的双账本体系中
 
 5. **禁止跳过状态机流转**
    - ❌ 错误: `UPDATE daily_reports SET status = 'final_locked' WHERE id = 123`
    - ✅ 正确: 调用 `DailyReportService.transition_to(status)` 触发状态验证
-   - **强制**: 所有状态变更必须通过 STATE_MACHINE.md v2.6 定义的合法路径
+   - **强制**: 所有状态变更必须通过 STATE_MACHINE.md v2.8 定义的合法路径
 
 ### 📍 文档路径索引 (ASDD 4层架构)
 
@@ -171,7 +163,7 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 #### Layer 1: Overview (系统全局视图)
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|---------|
-| MASTER | v3.4 | `docs/sot/MASTER.md` | 系统宪法 (ASDD Freeze) |
+| MASTER | v4.6 | `docs/sot/MASTER.md` | 系统宪法 (6 角色白名单) |
 | PROJECT | v1.2 | `docs/1.overview/PROJECT.md` | 业务定义与边界 |
 | ARCHITECTURE | v1.0 | `docs/1.overview/ARCHITECTURE.md` | 系统架构总览 |
 | DOMAIN | v1.0 | `docs/1.overview/DOMAIN.md` | 领域模型与业务逻辑 |
@@ -179,16 +171,13 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 #### Layer 2: SoT (单一真相来源)
 | 文档 | 版本 | 路径 | 核心章节 |
 |------|------|------|---------|
-| STATE_MACHINE | v2.6 | `docs/sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
-| DATA_SCHEMA | v5.2 | `docs/sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
-| BUSINESS_RULES | v3.2 | `docs/sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
-| API_SOT | v9.0 | `docs/sot/API_SOT.md` | §9 Daily Reports API |
-| ERROR_CODES_SOT | v2.1 | `docs/sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
-| AUTH_SPEC | v2.0 | `docs/sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
-| LEDGER_SOT | v1.1 | `docs/sot/LEDGER_SOT.md` | §2 双账本体系 |
-| DAILY_REPORT_SOT | v1.0 | `docs/sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
-| RECONCILIATION_SOT | v1.0 | `docs/sot/RECONCILIATION_SOT.md` | §3 对账流程 |
-| TRANSFER_SOT | v1.0 | `docs/sot/TRANSFER_SOT.md` | §2 调拨规则 |
+| STATE_MACHINE | v2.8 | `docs/sot/STATE_MACHINE.md` | §8 粉数确认 8 状态机 |
+| DATA_SCHEMA | v5.6 | `docs/sot/DATA_SCHEMA.md` | §3.3 核心表结构 |
+| BUSINESS_RULES | v4.7 | `docs/sot/BUSINESS_RULES.md` | BR-RPT-*, BR-LED-* |
+| API_SOT | v9.4 | `docs/sot/API_SOT.md` | §9 Daily Reports API |
+| ERROR_CODES_SOT | v2.2 | `docs/sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
+| AUTH_SPEC | v2.1 | `docs/sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
+| LEDGER_SOT | v1.2 | `docs/sot/LEDGER_SOT.md` | §2 双账本体系 |
 
 #### Layer 3: Dev-Guides (开发指南)
 | 文档 | 路径 | 核心内容 |
@@ -217,21 +206,21 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 ✅ 正确: 查找 DATA_SCHEMA.md § 3.4.1，使用 `amount`
 ```
 
-### 2. 角色限定为 5 个
-**规则**: 仅允许使用 5 个标准角色，禁止旧角色名
+### 2. 角色限定为 6 个 (MASTER.md v4.6)
+**规则**: 仅允许使用 6 个标准角色，禁止旧角色名
 
 ```python
-# ✅ 正确
-VALID_ROLES = ["admin", "finance", "data_operator", "account_manager", "media_buyer"]
+# ✅ 正确 (MASTER.md v4.6 §2.4)
+VALID_ROLES = ["ceo", "project_owner", "finance", "pitcher", "account_manager", "admin"]
 
-# ❌ 错误（历史兼容，禁止在新代码中使用）
-OLD_ROLES = ["manager", "data_clerk", "trader"]
+# ❌ 废弃角色（禁止使用）
+DEPRECATED_ROLES = ["supervisor", "data_operator", "media_buyer", "manager", "data_clerk"]
 ```
 
-**历史映射**（仅用于理解旧代码）:
-- `data_clerk` → `data_operator`
-- `manager` → `account_manager`
-- `recharge_requests` → `topup_requests`
+**角色映射** (PRD v2.2):
+- `supervisor` → 已废弃，职责合并到 `project_owner`
+- `data_operator` → 不在宪法中，移除
+- `media_buyer` → 业务层使用 `pitcher`
 
 ### 3. 状态值禁止自创
 **规则**: 所有状态必须符合 `STATE_MACHINE.md` 定义
@@ -293,30 +282,33 @@ return success_response(
 
 ---
 
-## 👥 四、角色与权限规则
+## 👥 四、角色与权限规则 (MASTER.md v4.6 §2.4)
 
-### 五角色体系
-| 角色 | 职责 | 关键权限 |
-|------|------|----------|
-| `admin` | 系统管理员 | 全部权限 |
-| `finance` | 财务 | 充值终审、对账、报表 |
-| `data_operator` | 数据运营 | 日报审核、数据管理 |
-| `account_manager` | 账户管理员 | 项目管理、账户分配 |
-| `media_buyer` | 广告投手 | 日报提交、充值申请 |
+### 六角色体系 (6 角色白名单)
+| 角色 | 中文名 | 职责 | 关键权限 |
+|------|--------|------|----------|
+| `ceo` | 老板 | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
+| `project_owner` | 项目负责人 | 项目盈亏、日报审核 | 申请充值，审核日报，调配投手 |
+| `finance` | 财务 | 资金出入准确、对账 | 审核充值，更新资金表，锁定结算 |
+| `pitcher` | 投手 | CPL 达标、日报准确 | 填报日报，查看自己数据 |
+| `account_manager` | 户管 | 账户分配、状态监控 | 管理账户分配，收集充值需求 |
+| `admin` | 管理员 | 系统配置（不参与业务） | 系统设置 |
+
+> ⚠️ **废弃角色** (PRD v2.2): `supervisor`, `data_operator`, `media_buyer`
 
 ### 核心权限分工
 **日报流程**:
-- 提交: `media_buyer`
-- 审核: `data_operator`（`admin` 兜底）
+- 提交: `pitcher`
+- 审核: `project_owner`（`admin` 兜底）
 
 **充值流程**:
-- 发起: `media_buyer` / `account_manager`
-- 复核: `data_operator`
+- 发起: `pitcher` / `account_manager`
+- 复核: `project_owner`
 - 终审: `finance`
 - 入账: `finance` / `system`（自动）
 
 **项目管理**:
-- 维护: `account_manager`
+- 维护: `project_owner`
 - 干预: `admin`
 
 ---
@@ -361,7 +353,7 @@ class Project(Base):
 
 ### 核心状态流转
 
-**粉数确认 8 状态机** (`daily_reports.status`) - 来源: STATE_MACHINE.md v2.6 §8:
+**粉数确认 8 状态机** (`daily_reports.status`) - 来源: STATE_MACHINE.md v2.8 §8:
 
 ```
 [raw_submitted]       投手提交原始数据 (conversions_raw, raw_spend)
@@ -454,7 +446,7 @@ new → testing → active → suspended → dead
 ```
 
 ### 错误码来源
-**必须来自**: `docs/ERROR_CODES.md`
+**必须来自**: `docs/sot/ERROR_CODES_SOT.md`
 
 ```python
 # ✅ 正确
@@ -513,17 +505,17 @@ raise HTTPException(status_code=400, detail="状态错误")  # 没有使用标�
   - 主键类型与外键一致？ ✅/❌
 ```
 
-### 2. 角色合法性检查
+### 2. 角色合法性检查 (MASTER.md v4.6)
 ```markdown
-□ 我使用的角色是否在以下列表中？
-  [admin, finance, data_operator, account_manager, media_buyer]
+□ 我使用的角色是否在以下 6 角色白名单中？
+  [ceo, project_owner, finance, pitcher, account_manager, admin]
 
   我的代码中使用了: ____________
   检查结果: ✅/❌
 
-□ 我是否不小心使用了旧角色名？
-  [data_clerk, manager, trader]
-  检查结果: ✅ 未使用 / ❌ 使用了
+□ 我是否使用了废弃角色？
+  [supervisor, data_operator, media_buyer, data_clerk, manager]
+  检查结果: ✅ 未使用 / ❌ 使用了（必须修改）
 ```
 
 ### 3. 状态机合规检查
@@ -609,15 +601,17 @@ AI_AD_SYSTEM_MAIN_DOCUMENT.md > API_DEVELOPMENT_FLOW.md >
 
 ## 📚 十一、快速参考
 
-### 合法角色（仅 5 个）
+### 合法角色（6 角色白名单 - MASTER.md v4.6）
 ```python
 VALID_ROLES = [
-    "admin",           # 系统管理员
-    "finance",         # 财务
-    "data_operator",   # 数据运营
-    "account_manager", # 账户管理员
-    "media_buyer"      # 广告投手
+    "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
+    "project_owner",   # 项目负责人 - 项目盈亏、日报审核
+    "finance",         # 财务 - 资金出入准确、对账
+    "pitcher",         # 投手 - CPL达标、日报准确
+    "account_manager", # 户管 - 账户分配、状态监控
+    "admin"            # 管理员 - 系统配置（不参与业务）
 ]
+# 废弃角色: supervisor, data_operator, media_buyer
 ```
 
 ### 充值状态（完整）
@@ -633,7 +627,7 @@ TOPUP_STATES = [
 ]
 ```
 
-### 日报状态 (8 状态机 - STATE_MACHINE.md v2.6 §8)
+### 日报状态 (8 状态机 - STATE_MACHINE.md v2.8 §8)
 ```python
 DAILY_REPORT_STATES = [
     "raw_submitted",    # 投手提交原始数据
@@ -675,12 +669,15 @@ raise PermissionError(
 
 ## 📝 附录：文档索引
 
-### SoT 文档路径
-- `docs/core/DATA_SCHEMA.md` - 数据库定义（v5.0）
-- `docs/core/STATE_MACHINE.md` - 状态机定义（v2.3）
-- `docs/core/AI_AD_SYSTEM_MAIN_DOCUMENT.md` - 实现规范（v3.x）
-- `docs/core/API_DEVELOPMENT_FLOW.md` - API 开发流程（v7.0）
-- `docs/ERROR_CODES.md` - 错误码定义
+### SoT 文档路径 (最新版本)
+- `docs/sot/MASTER.md` - 系统宪法（v4.6）
+- `docs/sot/DATA_SCHEMA.md` - 数据库定义（v5.6）
+- `docs/sot/STATE_MACHINE.md` - 状态机定义（v2.8）
+- `docs/sot/BUSINESS_RULES.md` - 业务规则（v4.7）
+- `docs/sot/API_SOT.md` - API 规范（v9.4）
+- `docs/sot/ERROR_CODES_SOT.md` - 错误码定义（v2.2）
+- `docs/sot/AUTH_SPEC.md` - 认证授权（v2.1）
+- `docs/sot/LEDGER_SOT.md` - 账本规则（v1.2）
 
 ### 模块文档
 - `docs/modules/topup/` - 充值模块
@@ -735,7 +732,7 @@ class DailyReportStatus(str, Enum):
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
-# 违反: STATE_MACHINE.md v2.6 定义的是 8 状态机
+# 违反: STATE_MACHINE.md v2.8 定义的是 8 状态机
 
 # ❌ 反模式 2: 直接修改余额
 ad_account.balance -= 100
@@ -799,8 +796,8 @@ docs/4.architecture/ (架构视图 - Freeze v1.0)
 
 3. **版本对齐验证**
    - 确保引用的 SoT 版本号与 Freeze Manifest 一致
-   - 例: STATE_MACHINE.md 必须引用 v2.6 (SoT Freeze v2.6)
-   - 例: API_SOT.md 必须引用 v9.0 (SoT Freeze v2.6)
+   - 例: STATE_MACHINE.md 必须引用 v2.8 (SoT Freeze v2.6)
+   - 例: API_SOT.md 必须引用 v9.4 (SoT Freeze v2.6)
 
 ### 文档变更合规性检查
 
@@ -832,7 +829,7 @@ DISCOVER → AUDIT → FIX → VERIFY → FREEZE_CHECK → SUMMARY
    ```markdown
    Q: 我要引用 DATA_SCHEMA.md，应该用哪个版本？
    A: 查询 docs/sot/SOT_FREEZE_MANIFEST_v2.6.md
-      → DATA_SCHEMA.md v5.2 (frozen) → 使用 v5.2
+      → DATA_SCHEMA.md v5.6 (frozen) → 使用 v5.6
    ```
 
 3. **Layer 依赖关系检查**

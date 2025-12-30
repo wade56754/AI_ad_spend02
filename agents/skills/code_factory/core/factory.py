@@ -1,20 +1,24 @@
 """
-AI 代码工厂 v4.4 - 上下文增强引擎
+AI 代码工厂 v4.5 - 上下文增强引擎
 
 基准文档: MASTER.md v4.6
-版本: v4.4
+版本: v4.5
 
 核心设计:
-- 工厂增强 Claude 的上下文，而非替代 Claude 的代码生成能力
+- ContextEngine 增强 Claude 的上下文，而非替代 Claude 的代码生成能力
 - 代码生成由 Claude 通过 Prompt 完成
-- 工厂只负责: 上下文构建 + 验证 + 确认
+- ContextEngine 只负责: 上下文构建 + 验证 + 确认
 
-四阶段架构:
-  CONTEXT → (Claude 生成) → VERIFY → CONFIRM
+三阶段职责:
+  build_context() → verify_code() → confirm_code()
 
-v4.4 更新:
-- 新增 Phase 6 CONFIRM (幻觉抑制最终确认)
-- 版本同步 skill.md / constants.py / factory.py
+注意: 此类与 factory.py 中的 CodeFactory 是不同的组件:
+- CodeFactory (factory.py): 主编排器，管理完整的 6 阶段流水线
+- ContextEngine (本文件): 上下文构建器，专注于 SoT 加载、代码地图生成、验证
+
+v4.5 更新:
+- 重命名 CodeFactory 为 ContextEngine 以避免命名混淆
+- 明确职责边界与 factory.py 的 CodeFactory
 """
 
 from dataclasses import dataclass, field
@@ -215,18 +219,22 @@ class FactoryResult:
         }
 
 
-class CodeFactory:
-    """上下文增强引擎 v4.4
+class ContextEngine:
+    """上下文增强引擎 v4.5
 
     核心职责:
-    1. build_context(): 构建代码生成上下文
-    2. verify_code(): 验证生成的代码
-    3. confirm_code(): 幻觉抑制最终确认 (v4.4 新增)
+    1. build_context(): 构建代码生成上下文 (SoT 加载、代码地图、风险评估)
+    2. verify_code(): 验证生成的代码 (Guardrails、SoT 合规)
+    3. confirm_code(): 幻觉抑制最终确认 (角色/状态追溯)
 
-    代码生成由 Claude 完成，工厂不直接生成代码。
+    代码生成由 Claude 完成，本引擎不直接生成代码。
 
-    四阶段架构:
-      CONTEXT → (Claude 生成) → VERIFY → CONFIRM
+    与 factory.py 中的 CodeFactory 区别:
+    - CodeFactory: 完整的 6 阶段流水线编排 (SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM)
+    - ContextEngine: 专注于上下文构建和验证，是 CodeFactory 的辅助组件
+
+    三阶段职责:
+      build_context() → verify_code() → confirm_code()
     """
 
     VERSION = VERSION
@@ -416,18 +424,44 @@ class CodeFactory:
         code_files: Dict[str, str],
         whitelist: DynamicWhitelist,
     ) -> List[str]:
-        """验证 SoT 合规性"""
+        """验证 SoT 合规性 (使用 AST 分析 v4.5)
+
+        使用 AST 分析而非简单正则匹配:
+        1. 避免注释中的误匹配
+        2. 精确识别代码结构
+        3. 支持 Python 和 TypeScript
+        """
+        from ..validation.ast_analyzer import analyze_code, validate_against_whitelist
+
         errors = []
 
-        # 简化实现: 检查常见的值
-        # 完整实现需要 AST 解析
+        # 获取白名单值
+        valid_roles = whitelist.get_all("role")
+        valid_statuses = whitelist.get_all("state") | whitelist.get_all("status")
+        valid_error_prefixes = whitelist.get_all("error_code")
+
+        # 如果白名单为空，使用默认值
+        if not valid_roles:
+            valid_roles = {"admin", "finance", "pitcher", "account_manager", "ceo", "project_owner"}
+        if not valid_statuses:
+            valid_statuses = {
+                "raw_submitted", "trend_pending", "trend_ok", "trend_flagged",
+                "trend_resolved", "final_pending", "final_confirmed", "final_locked"
+            }
+        if not valid_error_prefixes:
+            valid_error_prefixes = {"VAL", "AUTH", "BIZ", "DB", "INT", "SYS", "FIN", "RPT"}
+
         for file_path, content in code_files.items():
-            # 检查角色
-            for role in ["supervisor", "operator", "viewer"]:
-                if f'"{role}"' in content or f"'{role}'" in content:
-                    is_valid, msg = whitelist.validate("role", role)
-                    if not is_valid:
-                        errors.append(f"{file_path}: 非法角色 '{role}' - {msg}")
+            # 使用 AST 分析
+            analysis = analyze_code(content, file_path)
+
+            # 验证分析结果
+            file_errors, file_warnings = validate_against_whitelist(
+                analysis, valid_roles, valid_statuses, valid_error_prefixes
+            )
+
+            for error in file_errors:
+                errors.append(f"{file_path}: {error}")
 
         return errors
 
@@ -540,26 +574,38 @@ class CodeFactory:
         deprecated_roles: set,
         trace_report: Dict,
     ) -> List[str]:
-        """确认角色追溯"""
-        issues = []
-        import re
+        """确认角色追溯 (使用 AST 分析 v4.5)
 
-        # 匹配角色字符串 (支持多种格式)
-        role_patterns = [
-            r'\.role\s*==\s*["\'](\w+)["\']',   # user.role == "xxx"
-            r'role\s*[=:]\s*["\'](\w+)["\']',   # role = "xxx" 或 role: "xxx"
-            r'UserRole\.(\w+)',                  # UserRole.XXX
-            r'"role":\s*["\'](\w+)["\']',        # "role": "xxx"
-        ]
+        使用 AST 分析精确提取角色值，避免注释误匹配
+        """
+        from ..validation.ast_analyzer import analyze_code
+
+        issues = []
+
+        # 使用 AST 分析提取角色
+        analysis = analyze_code(content, file_path)
+
+        # 技术角色映射 (允许使用技术角色名)
+        tech_role_mapping = {
+            "media_buyer": "pitcher",
+            "data_operator": "project_owner",
+            "admin": "admin",
+            "finance": "finance",
+            "account_manager": "account_manager",
+        }
 
         found_roles = set()
-        for pattern in role_patterns:
-            matches = re.findall(pattern, content, re.IGNORECASE)
-            found_roles.update(m.lower() for m in matches)
+        for role_item in analysis.roles:
+            found_roles.add(role_item.value.lower())
 
         for role in found_roles:
+            # 检查是否是有效的业务角色
             if role in valid_roles:
                 trace_report["roles"]["traced"].append(role)
+            # 检查是否是有效的技术角色
+            elif role in tech_role_mapping:
+                trace_report["roles"]["traced"].append(role)
+            # 检查是否是废弃角色
             elif role in deprecated_roles:
                 trace_report["deprecated"].append(role)
                 issues.append(
@@ -567,17 +613,11 @@ class CodeFactory:
                     f"(应替换为 6 角色白名单中的角色)"
                 )
             else:
-                # 检查是否是技术角色名
-                tech_role_mapping = {
-                    "media_buyer": "pitcher",
-                    "data_operator": "project_owner",
-                }
-                if role not in tech_role_mapping:
-                    trace_report["roles"]["untraced"].append(role)
-                    issues.append(
-                        f"BLOCKING: {file_path} 使用了未定义角色 '{role}' "
-                        f"(合法角色: {', '.join(sorted(valid_roles))})"
-                    )
+                trace_report["roles"]["untraced"].append(role)
+                issues.append(
+                    f"BLOCKING: {file_path} 使用了未定义角色 '{role}' "
+                    f"(合法角色: {', '.join(sorted(valid_roles))})"
+                )
 
         return issues
 
@@ -588,18 +628,16 @@ class CodeFactory:
         valid_states: set,
         trace_report: Dict,
     ) -> List[str]:
-        """确认状态追溯 (Phase 1 简化状态)"""
-        issues = []
-        import re
+        """确认状态追溯 (使用 AST 分析 v4.5)
 
-        # 匹配状态字符串
-        state_patterns = [
-            r'return\s*["\'](\w+)["\']',           # return "xxx"
-            r'\.status\s*==\s*["\'](\w+)["\']',    # report.status == "xxx"
-            r'status\s*[=:]\s*["\'](\w+)["\']',    # status = "xxx"
-            r'ReportStatus\.(\w+)',                 # ReportStatus.XXX
-            r'"status":\s*["\'](\w+)["\']',         # "status": "xxx"
-        ]
+        使用 AST 分析精确提取状态值，避免注释误匹配
+        """
+        from ..validation.ast_analyzer import analyze_code
+
+        issues = []
+
+        # 使用 AST 分析提取状态
+        analysis = analyze_code(content, file_path)
 
         # Phase 2 完整状态 (仅用于检测)
         phase2_states = {
@@ -607,10 +645,16 @@ class CodeFactory:
             "final_pending", "final_locked"
         }
 
+        # 通用状态词 (忽略)
+        generic_states = {
+            "draft", "submitted", "confirmed", "locked",
+            "pending", "completed", "active", "inactive",
+            "success", "error", "failed", "loading"
+        }
+
         found_states = set()
-        for pattern in state_patterns:
-            matches = re.findall(pattern, content, re.IGNORECASE)
-            found_states.update(m.lower() for m in matches)
+        for status_item in analysis.statuses:
+            found_states.add(status_item.value.lower())
 
         for state in found_states:
             if state in valid_states:
@@ -620,8 +664,8 @@ class CodeFactory:
                     f"WARNING: {file_path} 使用了 Phase 2 状态 '{state}' "
                     f"(Phase 1 仅允许: {', '.join(sorted(valid_states))})"
                 )
-            elif state not in {"draft", "submitted", "confirmed", "locked"}:
-                # 忽略通用状态词
+            elif state not in generic_states:
+                # 记录未追溯的状态 (非通用状态词)
                 trace_report["states"]["untraced"].append(state)
 
         return issues
@@ -691,19 +735,28 @@ class CodeFactory:
         return None, 0.0
 
     def _get_prompt_injector(self):
-        """获取提示词注入器 (懒加载)"""
+        """获取提示词注入器 (懒加载)
+        
+        v5.0 更新: 现在 prompts 模块已实现，支持:
+        - 内置模板 (prompts/templates/)
+        - 项目级覆盖 (.claude/prompts/)
+        - 动态 SoT 版本注入
+        """
         if self._prompt_injector is None:
             try:
                 from ..prompts.injector import PromptInjector
                 from ..prompts.loader import PromptLoader
 
-                prompts_dir = self.config.project_dir / ".claude" / "prompts"
-                if prompts_dir.exists():
-                    loader = PromptLoader(prompts_dir)
-                    self._prompt_injector = PromptInjector(loader)
-            except Exception:
-                # 提示词系统加载失败不影响主流程
-                pass
+                # 创建加载器 (传入项目目录和 SoT 加载器)
+                loader = PromptLoader(
+                    project_dir=self.config.project_dir,
+                    sot_loader=self.sot_loader  # 动态 SoT 版本注入
+                )
+                self._prompt_injector = PromptInjector(loader)
+            except Exception as e:
+                # 提示词系统加载失败不影响主流程，但记录警告
+                import logging
+                logging.warning(f"提示词系统初始化失败: {e}")
 
         return self._prompt_injector
 
@@ -806,13 +859,13 @@ class CodeFactory:
 # 便捷函数
 # =========================================================================
 
-def run_factory(
+def run_context_engine(
     project_dir: Path,
     requirement: str,
     module_id: Optional[str] = None,
     **kwargs,
 ) -> FactoryResult:
-    """快捷函数
+    """快捷函数 - 运行上下文引擎
 
     Args:
         project_dir: 项目目录
@@ -824,19 +877,25 @@ def run_factory(
         FactoryResult
     """
     config = FactoryConfig(project_dir=project_dir, **kwargs)
-    factory = CodeFactory(config)
-    return factory.run(requirement, module_id)
+    engine = ContextEngine(config)
+    return engine.run(requirement, module_id)
 
 
-def create_factory(project_dir: Path, **kwargs) -> CodeFactory:
-    """创建工厂实例
+def create_context_engine(project_dir: Path, **kwargs) -> ContextEngine:
+    """创建上下文引擎实例
 
     Args:
         project_dir: 项目目录
         **kwargs: 其他配置
 
     Returns:
-        CodeFactory
+        ContextEngine
     """
     config = FactoryConfig(project_dir=project_dir, **kwargs)
-    return CodeFactory(config)
+    return ContextEngine(config)
+
+
+# 保持向后兼容的别名
+run_factory = run_context_engine
+create_factory = create_context_engine
+CodeFactory = ContextEngine  # 向后兼容别名

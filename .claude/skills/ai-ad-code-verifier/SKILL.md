@@ -6,13 +6,13 @@ layer: skill
 owner: wade
 last_reviewed: 2025-12-24
 baseline:
-  - MASTER.md v4.4
-  - STATE_MACHINE.md v2.6
+  - MASTER.md v4.6
+  - STATE_MACHINE.md v2.8
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
 new_features_v2_5:
   - 歧义处理流程 (AH-05) - ambiguity_handling 章节
   - Phase 1 行为约束验证 (AH-04) - phase1_constraints 章节
-  - 7 角色白名单更新 (MASTER.md v4.4 §2.4)
+  - 6 角色白名单更新 (MASTER.md v4.6 §2.4)
   - 禁止模式正则检测
 new_features_v2_4:
   - Phase 1/2 边界检查（PhaseConfig）
@@ -98,7 +98,7 @@ code_sources:
     │  Layer 3: SpecComplianceVerifier (优先级 30)             │
     │  - SoT 合规验证 (状态/角色/字段/错误码)                   │
     │  - 日报 8 状态验证 (raw_submitted...final_locked)       │
-    │  - 5 技术角色验证 (admin/finance/data_operator/account_manager/media_buyer) │
+    │  - 6 角色验证 (ceo/project_owner/finance/pitcher/account_manager/admin) │
     └───────────────────────┬─────────────────────────────────┘
                             │
     ┌───────────────────────▼─────────────────────────────────┐
@@ -209,7 +209,7 @@ code_sources:
     - SOT-008: 直接修改 balance
     - SOT-009: 跨模块写入 (违反模块边界)
 
-    财务规则 (FIN) - LEDGER_SOT.md v1.1 + STATE_MACHINE.md v2.6:
+    财务规则 (FIN) - LEDGER_SOT.md v1.2 + STATE_MACHINE.md v2.8:
     - FIN-001: UPDATE ledger 表 (禁止)
     - FIN-002: DELETE ledger 表 (禁止)
     - FIN-003: CONFIRMED 时缺少 fx_status=LOCKED 检查
@@ -427,9 +427,9 @@ code_sources:
        6. SoT 合规验证详情
   ====================================================== -->
   <sot_compliance_details>
-    <!-- 状态值白名单 (STATE_MACHINE.md v2.6 全局状态表) -->
+    <!-- 状态值白名单 (STATE_MACHINE.md v2.8 全局状态表) -->
 
-    日报状态机 (STATE_MACHINE.md v2.6 + DATA_SCHEMA.md v5.2):
+    日报状态机 (STATE_MACHINE.md v2.8 + DATA_SCHEMA.md v5.6):
     ```python
     # 使用 frozenset 确保不可变 (对齐 backend/models/enums.py)
     REPORT_STATUS = frozenset([
@@ -495,26 +495,26 @@ code_sources:
     ])
     ```
 
-    合法角色 (7 角色, 来源: MASTER.md v4.4 §2.4):
+    合法角色 (6 角色, 来源: MASTER.md v4.6 §2.4):
     ```python
     USER_ROLE = frozenset([
         'ceo',              # 老板 - 资金安全、公司盈亏、最终决策
         'project_owner',    # 项目负责人 - 项目盈亏、资金使用效率
         'finance',          # 财务 - 资金出入准确、数据真实、对账
-        'supervisor',       # 主管 - 团队产出、投手管理、日常监督
         'pitcher',          # 投手 - CPL 达标、日报准确、执行投放
         'account_manager',  # 户管 - 账户分配、账户状态监控
         'admin'             # 管理员 - 系统配置（不参与业务）
     ])
 
     # 已废弃角色 (会触发 SOT-004):
+    # supervisor → project_owner (PRD v2.2 废弃)
     # media_buyer → pitcher
     # data_operator → (已移除)
     # super_admin → admin
     # accountant → finance
     ```
 
-    错误码前缀 (ERROR_CODES_SOT.md v2.1 + P2 补充):
+    错误码前缀 (ERROR_CODES_SOT.md v2.2 + P2 补充):
     ```python
     VALID_ERROR_PREFIXES = frozenset([
         # 通用错误 (General)
@@ -547,7 +547,7 @@ code_sources:
 
   <!-- ======================================================
        6.1 歧义处理流程 (Ambiguity Handling) [v2.5 新增]
-       来源: MASTER.md v4.4 §7 AH-05
+       来源: MASTER.md v4.6 §7 AH-05
   ====================================================== -->
   <ambiguity_handling>
     **歧义处理流程 (AH-05)** - 遇到歧义必须停止并询问
@@ -555,7 +555,7 @@ code_sources:
     **Step 1: 检测到歧义** → 立即 BLOCKING
     歧义类型包括:
     - 状态值不在 8 状态机白名单中
-    - 角色值不在 7 角色白名单中
+    - 角色值不在 6 角色白名单中
     - 字段值不在 DATA_SCHEMA.md 中
     - 规则编号不在 BUSINESS_RULES.md 中
     - API 端点不在 API_SOT.md 中
@@ -576,7 +576,7 @@ code_sources:
         "使用 'final_pending' (最终待确认)",
         "新增状态到 STATE_MACHINE.md (需 RFC)"
       ],
-      "sot_ref": "STATE_MACHINE.md v2.6 §2"
+      "sot_ref": "STATE_MACHINE.md v2.8 §2"
     }
     ```
 
@@ -595,7 +595,7 @@ code_sources:
 
   <!-- ======================================================
        6.2 Phase 1 行为约束验证 (Phase 1 Constraints) [v2.5 新增]
-       来源: MASTER.md v4.4 §7 AH-04
+       来源: MASTER.md v4.6 §7 AH-04
   ====================================================== -->
   <phase1_constraints>
     **Phase 1 行为约束验证 (AH-04)** - 必须遵循 Phase 1 软性原则
@@ -763,7 +763,7 @@ code_sources:
     ### v2.5 (2025-12-24) - 防幻觉规则集成版
     - 新增歧义处理流程 (ambiguity_handling) - AH-05
     - 新增 Phase 1 行为约束验证 (phase1_constraints) - AH-04
-    - 更新角色白名单为 7 角色 (MASTER.md v4.4 §2.4)
+    - 更新角色白名单为 6 角色 (MASTER.md v4.6 §2.4)
     - 新增禁止模式正则检测 (FORBIDDEN_PATTERNS)
     - 新增错误码: AH-05-AMBIGUITY, AH-02-PHASE1-VIOLATION
 

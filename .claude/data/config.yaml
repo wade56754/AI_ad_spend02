@@ -1,28 +1,28 @@
 # AI 广告代投系统 - 监工配置
-# Version: 1.0
-# Last Updated: 2025-12-24
+# Version: 1.1
+# Last Updated: 2025-12-30
 
 # =============================================================================
 # SoT 文档版本映射
 # =============================================================================
 sot_versions:
-  MASTER.md: "v4.4"
-  API_SOT.md: "v9.3"
-  BUSINESS_RULES.md: "v4.1"
-  ERROR_CODES_SOT.md: "v2.1"
-  DATA_SCHEMA.md: "v5.2"
-  STATE_MACHINE.md: "v2.6"
-  LEDGER_SOT.md: "v1.1"
-  AUTH_SPEC.md: "v2.0"
+  MASTER.md: "v4.6"
+  API_SOT.md: "v9.4"
+  BUSINESS_RULES.md: "v4.7"
+  ERROR_CODES_SOT.md: "v2.2"
+  DATA_SCHEMA.md: "v5.6"
+  STATE_MACHINE.md: "v2.8"
+  LEDGER_SOT.md: "v1.2"
+  AUTH_SPEC.md: "v2.1"
 
 # =============================================================================
-# 有效角色列表 (来源: MASTER.md v4.4 §2.4)
+# 有效角色列表 (来源: MASTER.md v4.6 §2.4)
+# 注意: supervisor 已废弃 (PRD v2.2)，职责合并到 project_owner
 # =============================================================================
 valid_roles:
   - ceo              # 老板 - 资金安全、公司盈亏、最终决策
   - project_owner    # 项目负责人 - 项目盈亏、资金使用效率
   - finance          # 财务 - 资金出入准确、数据真实、对账
-  - supervisor       # 主管 - 团队产出、投手管理、日常监督
   - pitcher          # 投手 - CPL 达标、日报准确、执行投放
   - account_manager  # 户管 - 账户分配、账户状态监控
   - admin            # 管理员 - 系统配置（不参与业务）
@@ -74,10 +74,10 @@ forbidden_patterns:
   # F-006: Legacy role names forbidden
   old_role_names:
     pattern: >-
-      role\s*[=!]=\s*['"]?(operator|manager|owner|viewer|editor)['"]?
-    message: "Legacy role name detected, only 7 standard roles allowed"
+      role\s*[=!]=\s*['"]?(operator|manager|owner|viewer|editor|supervisor)['"]?
+    message: "Legacy role name detected, only 6 standard roles allowed (supervisor deprecated)"
     severity: error
-    rule_ref: "MASTER.md v4.4 S2.4"
+    rule_ref: "MASTER.md v4.6 S2.4"
 
   # F-007: Pydantic v1 syntax forbidden
   pydantic_v1_syntax:
@@ -144,7 +144,7 @@ state_transitions:
   final_locked: []  # 终态，不可转换
 
 # =============================================================================
-# AI 防幻觉规则 (来源: MASTER.md v4.4 §7)
+# AI 防幻觉规则 (来源: MASTER.md v4.6 §7)
 # =============================================================================
 anti_hallucination_rules:
   AH-01:

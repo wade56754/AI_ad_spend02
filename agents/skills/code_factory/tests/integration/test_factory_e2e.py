@@ -2,7 +2,7 @@
 工厂端到端集成测试
 
 基准文档: MASTER.md v4.6
-版本: v4.4
+版本: v4.5
 """
 
 import pytest
@@ -32,7 +32,7 @@ class TestCodeFactoryInit:
         factory = CodeFactory(config)
 
         assert factory is not None
-        assert factory.VERSION == "4.4.0"
+        assert factory.VERSION == "4.5.0"
 
     def test_factory_with_custom_flags(self, project_root):
         """测试自定义特性标志"""

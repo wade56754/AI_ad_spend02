@@ -2,13 +2,18 @@
 常量定义
 
 基准文档: MASTER.md v4.6
-版本: v4.3
+版本: v4.5
+
+变更记录:
+- v4.5 (2025-12-30): 重命名 CodeFactory 为 ContextEngine，统一版本号
+- v4.4 (2025-12-27): 新增提示词系统
+- v4.3 (2025-12-24): 新增任务卡匹配
 """
 
 from typing import List, Set, Dict
 
-# 版本号
-VERSION = "4.4.0"
+# 版本号 - 此为代码工厂核心模块的单一版本来源
+VERSION = "4.5.0"
 
 # 10 阶段流水线名称
 PHASE_NAMES: List[str] = [

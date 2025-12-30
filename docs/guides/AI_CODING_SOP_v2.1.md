@@ -1,7 +1,7 @@
 # AI 编程 SOP v2.1 - Claude Opus 4.5 & Cursor 最佳实践
 
 > **版本**: v2.1 | **适用**: Claude Code (Opus 4.5) + Cursor IDE
-> **基准**: PROJECT_RULES.md v3.5 + STATE_MACHINE.md v2.6 + GitHub 社区最佳实践
+> **基准**: PROJECT_RULES.md v3.5 + STATE_MACHINE.md v2.8 + GitHub 社区最佳实践
 > **生效日期**: 2025-12-28
 > **变更说明**: 修复 5 个 P0 + 3 个 P1 缺陷，与 SoT 体系完全对齐
 
@@ -31,21 +31,21 @@ AI 不是代码生成器的替代品，它是一个需要监督的高级助手�
 **所有技术决策的仲裁链** (来源: PROJECT_RULES.md v3.5 §一):
 
 ```
-MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
+MASTER.md v4.6 (系统宪法 - ASDD Freeze v1.0)
     ↓ 引用
-STATE_MACHINE.md v2.6 (状态定义) ←─── 🚫 禁止在其他文档重复定义状态
+STATE_MACHINE.md v2.8 (状态定义) ←─── 🚫 禁止在其他文档重复定义状态
     ↓ 引用
-DATA_SCHEMA.md v5.2 (数据结构)   ←─── 📌 所有表结构、字段类型以此为准
+DATA_SCHEMA.md v5.6 (数据结构)   ←─── 📌 所有表结构、字段类型以此为准
     ↓ 引用
-BUSINESS_RULES.md v3.2 (业务规则) ←─── ⚖️ BR-* 规则编号具有法律效力
+BUSINESS_RULES.md v4.7 (业务规则) ←─── ⚖️ BR-* 规则编号具有法律效力
     ↓ 引用
-API_SOT.md v9.0 (API 契约)       ←─── 🌐 所有路径、请求/响应格式以此为准
+API_SOT.md v9.4 (API 契约)       ←─── 🌐 所有路径、请求/响应格式以此为准
     ↓ 引用
-ERROR_CODES_SOT.md v2.1 (错误码) ←─── 🚨 禁止自定义错误码
+ERROR_CODES_SOT.md v2.2 (错误码) ←─── 🚨 禁止自定义错误码
     ↓ 引用
-AUTH_SPEC.md v2.0 (认证授权)     ←─── 🔐 RLS 策略以此为准
+AUTH_SPEC.md v2.1 (认证授权)     ←─── 🔐 RLS 策略以此为准
     ↓ 引用
-LEDGER_SOT.md v1.1 (账本规则)    ←─── 💰 财务逻辑禁止绕过账本
+LEDGER_SOT.md v1.2 (账本规则)    ←─── 💰 财务逻辑禁止绕过账本
 ```
 
 **裁判规则**: 上游文档优先级高于下游，冲突时以上游为准。
@@ -296,10 +296,12 @@ const data: UserResponse = ...
 // ❌ 禁止使用废弃角色
 if (user.role === 'data_clerk') ...   // 废弃
 if (user.role === 'manager') ...      // 废弃
-if (user.role === 'trader') ...       // 废弃
-// ✅ 使用有效角色 (5 角色体系)
-if (user.role === 'media_buyer') ...
-if (user.role === 'data_operator') ...
+if (user.role === 'supervisor') ...   // 废弃 (PRD v2.2)
+if (user.role === 'data_operator') ... // 废弃
+if (user.role === 'media_buyer') ...  // 废弃，用 pitcher
+// ✅ 使用有效角色 (6 角色白名单 - MASTER.md v4.6)
+if (user.role === 'pitcher') ...
+if (user.role === 'project_owner') ...
 ```
 
 ### 4.4 目录结构规范
@@ -345,10 +347,10 @@ frontend/src/
 
 ```
 1. 查阅 SoT 文档 (按 8 层裁判链优先级)
-   └── API_SOT.md v9.0 确认端点定义
-   └── DATA_SCHEMA.md v5.2 确认数据结构
-   └── STATE_MACHINE.md v2.6 确认状态流转
-   └── BUSINESS_RULES.md v3.2 确认业务规则
+   └── API_SOT.md v9.4 确认端点定义
+   └── DATA_SCHEMA.md v5.6 确认数据结构
+   └── STATE_MACHINE.md v2.8 确认状态流转
+   └── BUSINESS_RULES.md v4.7 确认业务规则
 
 2. 数据库模型 + Alembic 迁移
    └── backend/models/{entity}.py
@@ -381,7 +383,7 @@ async def get_item(id: int):
         message="获取成功"
     )
 
-# ✅ 正确的错误处理 (错误码来自 ERROR_CODES_SOT.md v2.1)
+# ✅ 正确的错误处理 (错误码来自 ERROR_CODES_SOT.md v2.2)
 from core.error_codes import BusinessErrorCodes
 from core.exceptions import BusinessError
 
@@ -439,8 +441,8 @@ docs/4.architecture/ (架构视图 - Freeze v1.0)
 
 □ 版本对齐验证
   - 确保引用的 SoT 版本号与 Freeze Manifest 一致
-  - 例: STATE_MACHINE.md 必须引用 v2.6
-  - 例: API_SOT.md 必须引用 v9.0
+  - 例: STATE_MACHINE.md 必须引用 v2.8
+  - 例: API_SOT.md 必须引用 v9.4
 ```
 
 ### 6.4 Agent 文件操作规范
@@ -453,7 +455,7 @@ A: 查询 docs/sot/SOT_FREEZE_MANIFEST_v2.6.md
 
 Q: 我要引用 DATA_SCHEMA.md，应该用哪个版本？
 A: 查询 docs/sot/SOT_FREEZE_MANIFEST_v2.6.md
-   → DATA_SCHEMA.md v5.2 (frozen) → 使用 v5.2
+   → DATA_SCHEMA.md v5.6 (frozen) → 使用 v5.6
 ```
 
 ---
@@ -836,33 +838,34 @@ asyncio.get_event_loop().set_debug(True)
 
 ## 十三、快速参考卡片
 
-### 13.1 角色白名单 (5 个) ✅ 已修正
+### 13.1 角色白名单 (6 个) ✅ 已修正
 
-> 来源: PROJECT_RULES.md v3.5 §四
+> 来源: MASTER.md v4.6 §2.4 (6 角色白名单)
 
 ```python
 VALID_ROLES = [
-    "admin",           # 系统管理员 - 全部权限
-    "finance",         # 财务 - 充值终审、对账、报表
-    "data_operator",   # 数据运营 - 日报审核、数据管理
-    "account_manager", # 账户管理员 - 项目管理、账户分配
-    "media_buyer"      # 广告投手 - 日报提交、充值申请
+    "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
+    "project_owner",   # 项目负责人 - 项目盈亏、日报审核
+    "finance",         # 财务 - 资金出入准确、对账
+    "pitcher",         # 投手 - CPL达标、日报准确
+    "account_manager", # 户管 - 账户分配、状态监控
+    "admin"            # 管理员 - 系统配置（不参与业务）
 ]
 
 # ❌ 废弃角色 (禁止使用)
-DEPRECATED_ROLES = ["data_clerk", "manager", "trader"]
+DEPRECATED_ROLES = ["supervisor", "data_operator", "media_buyer", "data_clerk", "manager"]
 ```
 
 **核心权限分工**:
 | 流程 | 发起 | 复核 | 终审 |
 |------|------|------|------|
-| 日报 | media_buyer | data_operator | - |
-| 充值 | media_buyer/account_manager | data_operator | finance |
-| 项目 | account_manager | - | admin (干预) |
+| 日报 | pitcher | project_owner | - |
+| 充值 | pitcher/account_manager | project_owner | finance |
+| 项目 | project_owner | - | admin (干预) |
 
 ### 13.2 日报状态 (8 状态机) ✅ 已修正
 
-> 来源: STATE_MACHINE.md v2.6 §8
+> 来源: STATE_MACHINE.md v2.8 §8
 
 ```python
 DAILY_REPORT_STATES = [
@@ -901,7 +904,7 @@ DAILY_REPORT_STATES = [
 
 ### 13.3 充值状态 (7 个) ✅ 已修正
 
-> 来源: STATE_MACHINE.md v2.6
+> 来源: STATE_MACHINE.md v2.8
 
 ```python
 TOPUP_STATES = [
@@ -972,14 +975,14 @@ const mutation = useMutation({
 
 | 文档 | 版本 | 路径 | 核心内容 |
 |------|------|------|---------|
-| 系统宪法 | v3.4 | `docs/sot/MASTER.md` | ASDD Freeze 基准 |
-| 状态机 | v2.6 | `docs/sot/STATE_MACHINE.md` | 8 状态机定义 |
-| 数据结构 | v5.2 | `docs/sot/DATA_SCHEMA.md` | 核心表结构 |
-| 业务规则 | v3.2 | `docs/sot/BUSINESS_RULES.md` | BR-* 规则编号 |
-| API 规范 | v9.0 | `docs/sot/API_SOT.md` | 端点定义 |
-| 错误码 | v2.1 | `docs/sot/ERROR_CODES_SOT.md` | 错误码定义 |
-| 认证授权 | v2.0 | `docs/sot/AUTH_SPEC.md` | RBAC + RLS |
-| 账本规则 | v1.1 | `docs/sot/LEDGER_SOT.md` | 双账本体系 |
+| 系统宪法 | v4.6 | `docs/sot/MASTER.md` | ASDD Freeze 基准 |
+| 状态机 | v2.8 | `docs/sot/STATE_MACHINE.md` | 8 状态机定义 |
+| 数据结构 | v5.6 | `docs/sot/DATA_SCHEMA.md` | 核心表结构 |
+| 业务规则 | v4.7 | `docs/sot/BUSINESS_RULES.md` | BR-* 规则编号 |
+| API 规范 | v9.4 | `docs/sot/API_SOT.md` | 端点定义 |
+| 错误码 | v2.2 | `docs/sot/ERROR_CODES_SOT.md` | 错误码定义 |
+| 认证授权 | v2.1 | `docs/sot/AUTH_SPEC.md` | RBAC + RLS |
+| 账本规则 | v1.2 | `docs/sot/LEDGER_SOT.md` | 双账本体系 |
 
 ---
 
@@ -1008,4 +1011,4 @@ const mutation = useMutation({
 **文档版本**: v2.1
 **最后更新**: 2025-12-28
 **维护者**: AI Architecture Team
-**基准文档**: PROJECT_RULES.md v3.5 + STATE_MACHINE.md v2.6
+**基准文档**: PROJECT_RULES.md v3.5 + STATE_MACHINE.md v2.8

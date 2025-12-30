@@ -1,15 +1,16 @@
 /**
  * Navigation Configuration - 导航菜单配置
  *
- * SoT 对齐: MASTER.md v4.6 §2.4 角色白名单
+ * SoT 对齐: MASTER.md v4.6 §2.4（宪法）
+ * 变更记录: 2025-12-30 统一为 6 角色
  *
- * 角色权限说明:
- * - admin: 系统管理员，拥有全部权限
- * - finance: 财务人员，管理充值、结算、对账
- * - project_owner: 项目负责人，对项目盈亏负责
- * - data_operator: 数据运营，管理日报和数据导入
- * - account_manager: 客户经理，管理项目和账户
- * - media_buyer: 投手，执行投放操作
+ * 合法角色（6 角色）:
+ * - ceo: 老板 - 资金安全、公司盈亏、最终决策
+ * - project_owner: 项目负责人 - 项目盈亏、日报审核
+ * - finance: 财务 - 资金出入准确、对账
+ * - pitcher: 投手 - CPL 达标、日报准确
+ * - account_manager: 户管 - 账户分配、状态监控
+ * - admin: 管理员 - 系统配置
  */
 
 import {
@@ -81,7 +82,7 @@ export const mainNavGroups: NavGroup[] = [
             UserRole.ADMIN,
             UserRole.ACCOUNT_MANAGER,
             UserRole.PROJECT_OWNER,
-            UserRole.MEDIA_BUYER,
+            UserRole.PITCHER,
           ],
         },
       },
@@ -96,8 +97,7 @@ export const mainNavGroups: NavGroup[] = [
           roles: [
             UserRole.ADMIN,
             UserRole.PROJECT_OWNER,
-            UserRole.DATA_OPERATOR,
-            UserRole.MEDIA_BUYER,
+            UserRole.PITCHER,
           ],
         },
       },
@@ -209,22 +209,22 @@ export const bottomNavItems: NavItem[] = [
 // ========== 角色-菜单映射表 (用于文档) ==========
 
 /**
- * 角色权限矩阵
+ * 角色权限矩阵 (MASTER.md v4.6 §2.4)
  *
- * | 菜单项 | admin | finance | project_owner | data_operator | account_manager | media_buyer |
- * |--------|-------|---------|---------------|---------------|-----------------|-------------|
+ * | 菜单项 | ceo | admin | finance | project_owner | account_manager | pitcher |
+ * |--------|-----|-------|---------|---------------|-----------------|---------|
  * | 运营驾驶舱 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
- * | 项目管理 | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
- * | 广告账户 | ✅ | ❌ | ✅ | ❌ | ✅ | ✅(只读) |
- * | 日报管理 | ✅ | ❌ | ✅ | ✅ | ❌ | ✅ |
- * | 周度简报 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
- * | 财务概览 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
- * | 充值管理 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
- * | 对账管理 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
- * | 利润报表 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
- * | 用户管理 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
- * | 渠道管理 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
- * | 系统设置 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+ * | 项目管理 | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+ * | 广告账户 | ✅ | ✅ | ❌ | ✅ | ✅ | ✅(只读) |
+ * | 日报管理 | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ |
+ * | 周度简报 | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+ * | 财务概览 | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+ * | 充值管理 | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+ * | 对账管理 | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+ * | 利润报表 | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+ * | 用户管理 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+ * | 渠道管理 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+ * | 系统设置 | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
  */
 
 // ========== 辅助函数 ==========

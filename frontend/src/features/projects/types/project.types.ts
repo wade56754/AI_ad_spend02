@@ -134,7 +134,7 @@ export interface ProjectUpdateInput {
 
 export interface ProjectMemberAssignInput {
   user_id: string | number;
-  role: 'account_manager' | 'media_buyer' | 'analyst';
+  role: 'account_manager' | 'pitcher' | 'analyst';
 }
 
 // === Status Display Config ===
@@ -152,7 +152,7 @@ export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, {
 };
 
 export const PROJECT_ROLE_CONFIG: Record<string, { label: string }> = {
-  account_manager: { label: '项目经理' },
-  media_buyer: { label: '媒介采购' },
+  account_manager: { label: '户管' },
+  pitcher: { label: '投手' },
   analyst: { label: '数据分析师' },
 };

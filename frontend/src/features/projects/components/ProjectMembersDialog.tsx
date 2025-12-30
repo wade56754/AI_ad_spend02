@@ -72,9 +72,10 @@ export function ProjectMembersDialog({
   const [showAddForm, setShowAddForm] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<ProjectMember | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  // SoT: MASTER.md v4.6 §2.4 - 默认角色为投手 (pitcher)
   const [newMember, setNewMember] = useState<ProjectMemberAssignInput>({
     user_id: '',
-    role: 'media_buyer',
+    role: 'pitcher',
   });
 
   // Fetch project members
@@ -89,7 +90,7 @@ export function ProjectMembersDialog({
     onSuccess: () => {
       toast.success('成员添加成功');
       setShowAddForm(false);
-      setNewMember({ user_id: '', role: 'media_buyer' });
+      setNewMember({ user_id: '', role: 'pitcher' });
     },
     onError: (error) => {
       toast.error(error.message || '添加成员失败');
@@ -146,12 +147,12 @@ export function ProjectMembersDialog({
       .slice(0, 2);
   };
 
-  // Get role badge color
+  // Get role badge color - SoT: MASTER.md v4.6 §2.4
   const getRoleBadgeVariant = (role: string): 'default' | 'secondary' | 'outline' => {
     switch (role) {
       case 'account_manager':
         return 'default';
-      case 'media_buyer':
+      case 'pitcher':
         return 'secondary';
       default:
         return 'outline';
@@ -213,7 +214,7 @@ export function ProjectMembersDialog({
                     <Label htmlFor="role">项目角色 *</Label>
                     <Select
                       value={newMember.role}
-                      onValueChange={(value: 'account_manager' | 'media_buyer' | 'analyst') =>
+                      onValueChange={(value: 'account_manager' | 'pitcher' | 'analyst') =>
                         setNewMember((prev) => ({ ...prev, role: value }))
                       }
                     >

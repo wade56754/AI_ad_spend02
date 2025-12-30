@@ -1,26 +1,26 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2025-12-28 09:30
-> **当前阶段**: Phase 3 性能优化
-> **SoT 基准**: MASTER.md v4.6 / 6 角色白名单
+> **最后更新**: 2025-12-30 08:43
+> **当前阶段**: Phase 3 性能优化 + 文档对齐
+> **SoT 基准**: MASTER.md v4.6 / DATA_SCHEMA.md v5.6 / 6 角色白名单
 
 ---
 
 ## 1. 总体进度
 
 ```
-整体进度: ████████████████████ 100%
+核心功能 (P1+P2): ████████████████████ 100% ✅
 
 Phase 1 (48 任务): ████████████████████ 100% ✅
 Phase 2 (9 任务):  ████████████████████ 100% ✅
-Phase 3 (优化):    ███████████████░░░░░  75%
+Phase 3 (优化):    ███████████████░░░░░  75% (3/4 任务)
 ```
 
 | 指标 | 数值 |
 |------|------|
-| 已完成任务 | 57 / 57 |
+| 核心任务完成 | 57 / 57 (Phase 1+2) |
 | 已完成模块 | 11 / 11 |
-| Phase 3 优化 | 前端优化 + Redis 缓存 + N+1 修复完成 |
+| Phase 3 优化 | 3/4 完成 (PERF-001, 002, 004 ✅) |
 
 ---
 
@@ -102,6 +102,32 @@ Phase 3 (优化):    ███████████████░░░░�
 ---
 
 ## 4. 最近完成
+
+### 2025-12-30
+- [+] `.claude/VERSIONING.md` (docs) @ 05:19
+- [~] `.claude/skills/INDEX.md` (docs) @ 05:18
+- [+] `.claude/INTEGRATION_MAP.md` (docs) @ 05:18
+- [~] `docs/sot/CHANGELOG.md` (docs) @ 08:43
+- [+] `docs/sot/GLOSSARY.md` (docs) @ 05:16
+- [+] `.claude/CAPABILITIES.md` (docs) @ 05:15
+- [~] `docs/sot/VERSION_MANIFEST.md` (docs) @ 08:43
+- [~] `.claude/skills/ai-ad-api-automation-test/SKILL.md` (docs) @ 04:40
+- [~] `.claude/mcp.json` (config) @ 04:09
+- [~] `memory-bank/implementation-plan.md` (docs) @ 04:07
+- [~] `frontend/src/features/projects/components/ProjectMembersDialog.tsx` (other) @ 02:39
+- [~] `frontend/src/features/topups/types/topup.types.ts` (other) @ 02:38
+- [~] `frontend/src/features/audit-logs/components/AuditLogsPage.tsx` (other) @ 02:36
+- [~] `frontend/src/features/projects/types/project.types.ts` (other) @ 02:35
+- [~] `frontend/src/features/topups/components/TopupDetailDialog.tsx` (other) @ 02:35
+- [~] `frontend/src/config/nav-config.ts` (other) @ 02:33
+- [~] `frontend/src/features/users/types/user.types.ts` (other) @ 02:31
+- [~] `frontend/src/features/auth/types/auth.types.ts` (other) @ 02:30
+- [~] `memory-bank/game-design-document.md` (docs) @ 04:11
+- [~] `memory-bank/quick-reference.md` (docs) @ 04:11
+- [~] `frontend/CLAUDE.md` (docs) @ 02:24
+- [+] `C:/Users/Administrator/.claude/plans/fuzzy-soaring-finch.md` (docs) @ 01:37
+- [+] `frontend/eslint.config.mjs` (other) @ 01:03
+- [~] `frontend/package.json` (config) @ 01:03
 
 ### 2025-12-28
 - [~] `frontend/src/components/index.ts` (other) @ 09:30
@@ -220,6 +246,13 @@ Phase 3 (优化):    ███████████████░░░░�
 ---
 
 ## 8. 变更日志
+
+### v0.7.0 (2025-12-30)
+- 文档对齐: 全部文档与 MASTER.md v4.6 对齐
+- 修复: DATA_SCHEMA.md v5.5 → v5.6 (移除 supervisor 角色)
+- 修复: ADR-001 七角色模型 → 六角色模型
+- 修复: .claude/data/config.yaml 角色白名单
+- 更新: memory-bank 版本号对齐
 
 ### v0.6.0 (2025-12-27)
 - 重构: MASTER.md v4.6 角色对齐 (6 角色白名单)

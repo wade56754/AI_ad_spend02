@@ -6,7 +6,7 @@ layer: skill
 owner: wade
 last_reviewed: 2025-12-24
 baseline:
-  - MASTER.md v3.5
+  - MASTER.md v4.6
   - CODE_FACTORY_REFERENCE_PROJECTS.md v1.0
   - AI_CODE_FACTORY_REFACTOR_PROPOSAL.md v1.0
   - code-blocks-registry.md v2.0
@@ -213,7 +213,7 @@ code_sources:
 
   <!-- ======================================================
        2.1 AI 防幻觉原则 (Anti-Hallucination Principles)
-       来源: MASTER.md v4.4 §7
+       来源: MASTER.md v4.6 §7
   ====================================================== -->
   <anti_hallucination_principles>
     **核心原则 (AH-01 ~ AH-05)** - BLOCKING 级别
@@ -230,13 +230,13 @@ code_sources:
 
     **SoT 裁判链优先级** (高 → 低):
     ```
-    MASTER.md v4.4 → DATA_SCHEMA.md v5.2 → STATE_MACHINE.md v2.6
-    → BUSINESS_RULES.md v3.2 → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1
+    MASTER.md v4.6 → DATA_SCHEMA.md v5.6 → STATE_MACHINE.md v2.8
+    → BUSINESS_RULES.md v4.7 → API_SOT.md v9.4 → ERROR_CODES_SOT.md v2.2
     ```
 
     **常量白名单**:
     - 日报状态: 8 个 (raw_submitted...final_locked)
-    - 用户角色: 7 个 (ceo, project_owner, finance, supervisor, pitcher, account_manager, admin)
+    - 用户角色: 6 个 (ceo, project_owner, finance, pitcher, account_manager, admin)
     - 错误码前缀: 16 个 (VAL, AUTH, BIZ, DB, INT, SYS, FIN, RPT, ACC, PRJ, PIT, TOP, IMP, EXP, REC, SET)
 
     **Phase 1 行为约束**:
@@ -325,7 +325,7 @@ code_sources:
       output_mode: "files" | "diff" | "preview"      // 输出模式 (默认 files)
     }
 
-    模块边界定义 (STATE_MACHINE.md v2.6 §2 角色与模块权限):
+    模块边界定义 (STATE_MACHINE.md v2.8 §2 角色与模块权限):
     {
       pitcher: {
         可写表: [daily_reports, pitchers(仅自己)],
@@ -576,7 +576,7 @@ code_sources:
        6. 禁止行为 (Forbidden Actions)
   ====================================================== -->
   <forbidden_actions>
-    <!-- 模块边界规则 (STATE_MACHINE.md v2.6 §2) -->
+    <!-- 模块边界规则 (STATE_MACHINE.md v2.8 §2) -->
     <forbidden id="CF-001">
       <action>不指定 module 参数直接生成代码</action>
       <correct_action>必须指定 module: pitcher | finance | ad_account | project</correct_action>
@@ -737,7 +737,7 @@ code_sources:
 
     ### v3.3 (2025-12-24) - 防幻觉规则集成版
     - 新增 `<anti_hallucination_principles>` 章节
-    - 集成 MASTER.md v4.4 §7 的 AI 防幻觉原则 (AH-01 ~ AH-05)
+    - 集成 MASTER.md v4.6 §7 的 AI 防幻觉原则 (AH-01 ~ AH-05)
     - 添加 SoT 裁判链优先级说明
     - 添加常量白名单快速参考
     - 添加 Phase 1 行为约束

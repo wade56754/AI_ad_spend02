@@ -74,7 +74,7 @@ function CreateUserModal({ isOpen, onClose, onSubmit, isLoading }: CreateUserMod
     password: '',
     username: '',
     full_name: '',
-    role: UserRole.MEDIA_BUYER,
+    role: UserRole.PITCHER,
   });
 
   const handleSubmit = (e: React.FormEvent) => {

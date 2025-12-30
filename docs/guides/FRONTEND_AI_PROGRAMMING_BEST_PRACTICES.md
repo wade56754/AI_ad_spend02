@@ -1,8 +1,8 @@
 # AI 广告代投系统 - 前端 AI 编程最佳实践
 
-> **版本**: v1.1
-> **更新日期**: 2025-12-29
-> **变更记录**: 修复角色定义与 auth.types.ts 对齐，统一术语
+> **版本**: v1.2
+> **更新日期**: 2025-12-30
+> **变更记录**: 双层角色系统、SoT 版本号对齐、ERROR_CODES 文件名修正
 > **适用范围**: `frontend/` 目录下所有代码的 AI 辅助开发
 > **核心原则**: SoT 驱动 + 防幻觉 + 小步验证 + 模式复用
 
@@ -288,13 +288,15 @@ MASTER.md v4.6           ← 架构宪法、角色定义
     ↓
 DATA_SCHEMA.md v5.6      ← 数据模型、字段类型
     ↓
-STATE_MACHINE.md v2.7    ← 状态机定义、状态流转
+STATE_MACHINE.md v2.8    ← 状态机定义、状态流转
     ↓
 BUSINESS_RULES.md v4.7   ← 业务规则
     ↓
 API_SOT.md v9.4          ← API 规范
     ↓
-ERROR_CODES_SOT.md v2.3  ← 错误码定义
+ERROR_CODES_SOT.md v2.2  ← 错误码定义
+    ↓
+AUTH_SPEC.md v2.1        ← 认证授权规范
 ```
 
 ### 4.2 开发前必查 SoT
@@ -302,20 +304,20 @@ ERROR_CODES_SOT.md v2.3  ← 错误码定义
 | 开发场景 | 必查文档 | 查询内容 |
 |----------|---------|---------|
 | 显示状态标签 | STATE_MACHINE.md | 状态枚举值、颜色定义 |
-| 权限控制 | AUTH_SPEC.md + auth.types.ts | 6 角色白名单 |
+| 权限控制 | MASTER.md v4.6 §2.4 | 6 角色（宪法定义） |
 | API 调用 | API_SOT.md | 端点路径、请求/响应格式 |
 | 表单字段 | DATA_SCHEMA.md | 字段类型、必填项 |
-| 错误提示 | ERROR_CODES_SOT.md | 错误码、提示文案 |
+| 错误提示 | ERROR_CODES_SOT.md v2.2 | 错误码、提示文案 |
 | 金额显示 | BUSINESS_RULES.md | 金额格式化规则 |
 
-> ⚠️ 前端角色定义以 `auth.types.ts` 为准，与 AUTH_SPEC.md v2.0 对齐
+> ⚠️ 角色定义以 MASTER.md v4.6 §2.4 为准，共 6 个合法角色
 
 ### 4.3 代码来源标注规范
 
 ```typescript
 // ========== 类型定义 ==========
 
-// SoT: STATE_MACHINE.md v2.7 §2
+// SoT: STATE_MACHINE.md v2.8 §4
 type DailyReportStatus =
   | 'raw_submitted'
   | 'trend_pending'
@@ -326,15 +328,16 @@ type DailyReportStatus =
   | 'final_confirmed'
   | 'final_locked';
 
-// SoT: AUTH_SPEC.md v2.0 + auth.types.ts
+// SoT: MASTER.md v4.6 §2.4 (6 角色)
 enum UserRole {
-  ADMIN = 'admin',
-  FINANCE = 'finance',
-  PROJECT_OWNER = 'project_owner',
-  DATA_OPERATOR = 'data_operator',
-  ACCOUNT_MANAGER = 'account_manager',
-  MEDIA_BUYER = 'media_buyer',
+  CEO = 'ceo',                    // 老板
+  PROJECT_OWNER = 'project_owner', // 项目负责人
+  FINANCE = 'finance',            // 财务
+  PITCHER = 'pitcher',            // 投手
+  ACCOUNT_MANAGER = 'account_manager', // 户管
+  ADMIN = 'admin',                // 管理员
 }
+// 废弃: supervisor, data_operator, media_buyer
 
 // ========== 业务逻辑 ==========
 
@@ -375,7 +378,7 @@ function formatMoney(amount: number): string {
 type Status = 'pending' | 'draft';  // 不在 STATE_MACHINE.md 中
 
 // ✅ 正确: 使用 SoT 定义的状态
-// SoT: STATE_MACHINE.md v2.7 §2
+// SoT: STATE_MACHINE.md v2.8 §2
 type Status = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
 
 
@@ -383,10 +386,10 @@ type Status = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
 if (user.role === 'supervisor') { ... }  // 已废弃
 if (user.role === 'pitcher') { ... }     // 业务术语，应用 media_buyer
 
-// ✅ 正确: 使用 6 角色白名单
-// SoT: AUTH_SPEC.md v2.0 + auth.types.ts
-if (user.role === 'media_buyer') { ... }  // 投手
-if (user.role === 'data_operator') { ... } // 数据运营
+// ✅ 正确: 使用宪法定义的 6 角色
+// SoT: MASTER.md v4.6 §2.4
+if (user.role === 'pitcher') { ... }  // 投手
+if (user.role === 'project_owner') { ... } // 项目负责人
 
 
 // ❌ F-003: 自动阻断
@@ -406,7 +409,7 @@ if (overBudget) {
 toast.error('操作失败，请重试');
 
 // ✅ 正确: 使用 SoT 错误码
-// SoT: ERROR_CODES_SOT.md v2.3
+// SoT: ERROR_CODES_SOT.md v2.2
 toast.error(getErrorMessage(error.code));
 ```
 
@@ -477,7 +480,7 @@ export function useCreate{Module}() {
       toast.success('创建成功');
     },
     onError: (error: ApiError) => {
-      // SoT: ERROR_CODES_SOT.md
+      // SoT: ERROR_CODES_SOT.md v2.2
       toast.error(error.message || '创建失败');
     },
   });
@@ -784,7 +787,7 @@ export const columns: ColumnDef<{Module}>[] = [
     accessorKey: 'status',
     header: '状态',
     cell: ({ row }) => (
-      // SoT: STATE_MACHINE.md v2.7
+      // SoT: STATE_MACHINE.md v2.8
       <StatusBadge status={row.original.status} />
     ),
   },
@@ -834,7 +837,7 @@ export const columns: ColumnDef<{Module}>[] = [
 
 ```typescript
 // ========== features/daily-reports/types/dailyReport.types.ts ==========
-// SoT: STATE_MACHINE.md v2.7 §2
+// SoT: STATE_MACHINE.md v2.8 §4
 export type DailyReportStatus =
   | 'raw_submitted'
   | 'trend_pending'
@@ -915,31 +918,43 @@ export function useDailyReport(id: number | undefined) {
 
 ## 第七章：RBAC 权限系统
 
-### 7.1 角色白名单（6 角色）
+### 7.1 合法角色（6 角色）
+
+> **来源**: MASTER.md v4.6 §2.4（宪法）
+> **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
 ```typescript
-// SoT: AUTH_SPEC.md v2.0 + auth.types.ts
-// 与实际代码 frontend/src/features/auth/types/auth.types.ts 完全一致
+// SoT: MASTER.md v4.6 §2.4
 export enum UserRole {
-  ADMIN = 'admin',              // 管理员 - 系统配置
-  FINANCE = 'finance',          // 财务 - 对账、资金
-  PROJECT_OWNER = 'project_owner', // 项目负责人 - 项目盈亏
-  DATA_OPERATOR = 'data_operator', // 数据运营 - 日报、数据导入
-  ACCOUNT_MANAGER = 'account_manager', // 客户经理 - 账户分配
-  MEDIA_BUYER = 'media_buyer',  // 投手 - 执行投放
+  CEO = 'ceo',                    // 老板 - 资金安全、公司盈亏、最终决策
+  PROJECT_OWNER = 'project_owner', // 项目负责人 - 项目盈亏、日报审核
+  FINANCE = 'finance',            // 财务 - 资金出入准确、对账
+  PITCHER = 'pitcher',            // 投手 - CPL 达标、日报准确
+  ACCOUNT_MANAGER = 'account_manager', // 户管 - 账户分配、状态监控
+  ADMIN = 'admin',                // 管理员 - 系统配置（不参与业务）
 }
-
-// 禁止使用的角色
-// ❌ supervisor (已废弃，合并到 project_owner)
-// ❌ pitcher (业务层术语，代码层用 media_buyer)
-// ❌ ceo (业务层术语，不在技术角色枚举中)
-
-// ⚠️ 术语对照表 (业务层 vs 技术层)
-// | 业务层 | 技术层 |
-// |--------|--------|
-// | 投手   | media_buyer |
-// | 老板   | 无对应角色 (通过 admin 代理) |
 ```
+
+#### 角色权限矩阵
+
+| 角色ID | 中文名 | 职责范围 | 系统权限 |
+|--------|--------|----------|----------|
+| `ceo` | 老板 | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
+| `project_owner` | 项目负责人 | 项目盈亏、资金使用效率、日报审核 | 申请充值，审核日报，调配投手 |
+| `finance` | 财务 | 资金出入准确、数据真实、对账 | 审核充值，更新资金表，锁定结算 |
+| `pitcher` | 投手 | CPL 达标、日报准确、执行投放 | 填报日报，查看自己数据 |
+| `account_manager` | 户管 | 账户分配、账户状态监控 | 管理账户分配，收集充值需求 |
+| `admin` | 管理员 | 系统配置（不参与业务） | 系统设置 |
+
+#### 废弃角色（禁止使用）
+
+| 角色 | 状态 | 替代方案 |
+|------|------|---------|
+| `supervisor` | ❌ 已废弃 (PRD v2.2) | 合并到 project_owner |
+| `data_operator` | ❌ 不在宪法中 | 移除 |
+| `media_buyer` | ❌ 非标准术语 | 使用 pitcher |
+
+> ⚠️ **重要**: 代码中如存在非标准角色（`media_buyer`、`data_operator`、`supervisor`），应修正为宪法定义的 6 角色
 
 ### 7.2 导航权限配置
 
@@ -1047,7 +1062,7 @@ export function useFilteredNavGroups(groups: NavGroup[]) {
 
 ### 7.4 权限矩阵
 
-> 来源: nav-config.ts + AUTH_SPEC.md v2.0
+> 来源: nav-config.ts + AUTH_SPEC.md v2.1
 
 | 菜单 | admin | finance | project_owner | data_operator | account_manager | media_buyer |
 |------|:-----:|:-------:|:-------------:|:-------------:|:---------------:|:-----------:|
@@ -1156,9 +1171,9 @@ import { formatMoney } from '@/lib/format';
 - [ ] 无 `any` 类型
 
 ## SoT 合规
-- [ ] 状态值在 STATE_MACHINE.md 中
-- [ ] 角色值在 6 角色白名单中
-- [ ] 错误码在 ERROR_CODES_SOT.md 中
+- [ ] 状态值在 STATE_MACHINE.md v2.8 中
+- [ ] 角色值在 MASTER.md v4.6 §2.4 的 6 角色中
+- [ ] 错误码在 ERROR_CODES_SOT.md v2.2 中
 - [ ] 代码有 SoT 来源标注
 
 ## 组件规范
@@ -1167,9 +1182,10 @@ import { formatMoney } from '@/lib/format';
 - [ ] 使用 apiFetch 调用 API
 
 ## 权限检查
-- [ ] 无 supervisor 角色 (已废弃)
-- [ ] 无 pitcher 角色 (应用 media_buyer)
-- [ ] 角色值在 6 角色白名单中: admin, finance, project_owner, data_operator, account_manager, media_buyer
+- [ ] 无 supervisor 角色 (已废弃 PRD v2.2)
+- [ ] 无 media_buyer (应使用 pitcher)
+- [ ] 无 data_operator (不在宪法中)
+- [ ] 6 角色: ceo, project_owner, finance, pitcher, account_manager, admin
 ```
 
 ### 9.3 每日检查清单
@@ -1216,11 +1232,12 @@ import { formatMoney } from '@/lib/format';
 - types/{module}.types.ts
 
 ## SoT 约束
-- 状态值：参考 STATE_MACHINE.md
-- 角色：6 角色白名单 (admin, finance, project_owner, data_operator, account_manager, media_buyer)
-- 禁止角色：supervisor (已废弃)、pitcher (业务术语，用 media_buyer)
-- 错误码：参考 ERROR_CODES_SOT.md
-- API 路径：参考 API_SOT.md
+- 状态值：参考 STATE_MACHINE.md v2.8
+- 角色（6 个）：ceo, project_owner, finance, pitcher, account_manager, admin
+- 禁止角色：supervisor, data_operator, media_buyer
+- 错误码：参考 ERROR_CODES_SOT.md v2.2
+- API 路径：参考 API_SOT.md v9.4
+- 角色来源：MASTER.md v4.6 §2.4（宪法）
 
 ## 验收标准
 - [ ] TypeScript 编译通过
@@ -1338,8 +1355,9 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"
 
 ---
 
-**文档版本**: v1.1
-**最后更新**: 2025-12-29
+**文档版本**: v1.2
+**最后更新**: 2025-12-30
 **维护者**: AI 代码工厂
 **变更记录**:
+- v1.2: P0 修复 - 双层角色系统（认证层+用户管理层）、SoT 版本号统一对齐（STATE_MACHINE v2.8, ERROR_CODES.md v2.2, AUTH_SPEC v2.1, API_SOT v9.4）
 - v1.1: 修复角色定义与 auth.types.ts 对齐，添加术语对照表，扩展权限矩阵，添加完整示例

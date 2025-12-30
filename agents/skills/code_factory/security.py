@@ -1,10 +1,11 @@
 """
-安全验证器 - Defense-in-Depth 安全模型
+安全验证器 v4.5 - Defense-in-Depth 安全模型
 
 借鉴 Anthropic autonomous-coding 的安全设计:
 - 白名单命令验证
 - 文件系统隔离
 - 敏感命令额外检查
+- 符号链接逃逸检测 (v4.5 新增)
 
 结合我们的 SoT 合规验证:
 - 状态机合规
@@ -12,10 +13,17 @@
 - 角色权限合规
 
 来源: Anthropic autonomous-coding/security.py
+
+v4.5 更新:
+- 增加符号链接逃逸检测
+- 增加更完整的危险代码模式库
+- 增加路径遍历攻击检测
+- 统一版本号
 """
 
 import shlex
 import re
+import os
 from pathlib import Path
 from typing import Set, Tuple, List, Optional
 from dataclasses import dataclass
@@ -261,26 +269,118 @@ class SecurityValidator:
         )
 
     def _is_in_project_dir(self, command: str) -> bool:
-        """检查命令中的路径是否在项目目录内"""
+        """检查命令中的路径是否在项目目录内 (增强版 v4.5)
+
+        增强检测:
+        1. 符号链接逃逸检测
+        2. 路径遍历攻击检测 (../)
+        3. 绝对路径检测
+        """
         try:
             tokens = shlex.split(command)
             for token in tokens:
                 if token.startswith("-"):
                     continue
+
+                # 检查路径遍历模式
+                if ".." in token:
+                    # 检查是否尝试逃逸项目目录
+                    try:
+                        resolved = (self.project_dir / token).resolve()
+                        if not str(resolved).startswith(str(self.project_dir)):
+                            return False
+                    except Exception:
+                        return False
+
                 # 尝试解析为路径
                 try:
-                    path = Path(token).resolve()
-                    if path.exists() and not str(path).startswith(str(self.project_dir)):
-                        return False
+                    path = Path(token)
+
+                    # 如果是绝对路径，直接检查
+                    if path.is_absolute():
+                        if not str(path).startswith(str(self.project_dir)):
+                            return False
+                        # 检查符号链接
+                        if path.exists() and path.is_symlink():
+                            real_path = path.resolve()
+                            if not str(real_path).startswith(str(self.project_dir)):
+                                return False
+                    else:
+                        # 相对路径，解析后检查
+                        resolved = (self.project_dir / path).resolve()
+                        if not str(resolved).startswith(str(self.project_dir)):
+                            return False
+                        # 检查符号链接逃逸
+                        if resolved.exists() and resolved.is_symlink():
+                            real_path = resolved.resolve()
+                            if not str(real_path).startswith(str(self.project_dir)):
+                                return False
+
                 except Exception:
                     continue
+
         except ValueError:
             return False
         return True
 
+    def _check_symlink_escape(self, path: Path) -> bool:
+        """检查符号链接是否会导致逃逸项目目录 (v4.5 新增)
+
+        Args:
+            path: 要检查的路径
+
+        Returns:
+            bool: True 表示安全，False 表示存在逃逸风险
+        """
+        try:
+            resolved = path.resolve()
+
+            # 检查是否在项目目录内
+            if not str(resolved).startswith(str(self.project_dir)):
+                return False
+
+            # 递归检查路径中的每个组件
+            current = Path(path.parts[0]) if path.is_absolute() else self.project_dir
+            for part in path.parts[1:] if path.is_absolute() else path.parts:
+                current = current / part
+                if current.exists() and current.is_symlink():
+                    link_target = current.resolve()
+                    if not str(link_target).startswith(str(self.project_dir)):
+                        return False
+
+            return True
+        except Exception:
+            return False
+
     def validate_file_path(self, file_path: str) -> SecurityCheckResult:
-        """验证文件路径是否安全"""
+        """验证文件路径是否安全 (增强版 v4.5)
+
+        检测:
+        1. 敏感文件模式
+        2. 项目目录边界
+        3. 符号链接逃逸
+        4. 路径遍历攻击
+        """
         path = Path(file_path)
+
+        # 检查路径遍历攻击
+        if ".." in file_path:
+            try:
+                resolved = (self.project_dir / path).resolve()
+                if not str(resolved).startswith(str(self.project_dir)):
+                    return SecurityCheckResult(
+                        allowed=False,
+                        level=SecurityLevel.BLOCKED,
+                        command=file_path,
+                        reason="检测到路径遍历攻击 (..)",
+                    )
+            except Exception:
+                return SecurityCheckResult(
+                    allowed=False,
+                    level=SecurityLevel.BLOCKED,
+                    command=file_path,
+                    reason="路径遍历检测失败",
+                )
 
         # 检查敏感文件模式
         for pattern in BLOCKED_FILE_PATTERNS:
@@ -294,7 +394,11 @@ class SecurityValidator:
 
         # 检查是否在项目目录内
         try:
-            resolved = path.resolve()
+            if path.is_absolute():
+                resolved = path.resolve()
+            else:
+                resolved = (self.project_dir / path).resolve()
+
             if not str(resolved).startswith(str(self.project_dir)):
                 return SecurityCheckResult(
                     allowed=False,
@@ -302,6 +406,27 @@ class SecurityValidator:
                     command=file_path,
                     reason="文件路径必须在项目目录内",
                 )
+
+            # 符号链接逃逸检测 (v4.5 新增)
+            if resolved.exists() and os.path.islink(str(resolved)):
+                real_target = Path(os.path.realpath(str(resolved)))
+                if not str(real_target).startswith(str(self.project_dir)):
+                    return SecurityCheckResult(
+                        allowed=False,
+                        level=SecurityLevel.BLOCKED,
+                        command=file_path,
+                        reason="符号链接指向项目目录外部 - 逃逸风险",
+                    )
+
+            # 检查路径中是否有符号链接导致逃逸
+            if not self._check_symlink_escape(path if path.is_absolute() else self.project_dir / path):
+                return SecurityCheckResult(
+                    allowed=False,
+                    level=SecurityLevel.BLOCKED,
+                    command=file_path,
+                    reason="路径中存在符号链接逃逸风险",
+                )
+
         except Exception as e:
             return SecurityCheckResult(
                 allowed=False,
@@ -318,26 +443,86 @@ class SecurityValidator:
         )
 
     def validate_code_content(self, content: str) -> SecurityCheckResult:
-        """验证代码内容是否包含危险模式"""
+        """验证代码内容是否包含危险模式 (增强版 v4.5)
+
+        检测类别:
+        1. 命令执行 (os.system, subprocess, etc)
+        2. 代码执行 (eval, exec, compile)
+        3. 文件系统操作 (rm -rf, rmdir, etc)
+        4. 数据库危险操作 (DROP, DELETE, TRUNCATE)
+        5. 网络请求伪造 (SSRF 风险)
+        6. 敏感信息泄露 (密钥、密码硬编码)
+        """
+        # 危险模式分类
         dangerous_patterns = [
-            (r"os\.system\s*\(", "禁止使用 os.system"),
-            (r"subprocess\.call\s*\([^)]*shell\s*=\s*True", "禁止使用 shell=True"),
-            (r"eval\s*\(", "禁止使用 eval"),
-            (r"exec\s*\(", "禁止使用 exec"),
-            (r"__import__\s*\(", "禁止使用 __import__"),
-            (r"rm\s+-rf\s+/", "禁止递归删除根目录"),
-            (r"DROP\s+DATABASE", "禁止删除数据库"),
-            (r"DELETE\s+FROM\s+\w+\s*;?\s*$", "禁止无条件删除"),
+            # === 命令执行 ===
+            (r"os\.system\s*\(", "禁止使用 os.system - 命令注入风险", SecurityLevel.BLOCKED),
+            (r"subprocess\.call\s*\([^)]*shell\s*=\s*True", "禁止使用 shell=True - 命令注入风险", SecurityLevel.BLOCKED),
+            (r"subprocess\.Popen\s*\([^)]*shell\s*=\s*True", "禁止使用 shell=True - 命令注入风险", SecurityLevel.BLOCKED),
+            (r"subprocess\.run\s*\([^)]*shell\s*=\s*True", "禁止使用 shell=True - 命令注入风险", SecurityLevel.BLOCKED),
+            (r"os\.popen\s*\(", "禁止使用 os.popen - 命令注入风险", SecurityLevel.BLOCKED),
+
+            # === 代码执行 ===
+            (r"(?<!def\s)eval\s*\(", "禁止使用 eval - 代码注入风险", SecurityLevel.BLOCKED),
+            (r"(?<!def\s)exec\s*\(", "禁止使用 exec - 代码注入风险", SecurityLevel.BLOCKED),
+            (r"compile\s*\([^)]+,[^)]+['\"]exec['\"]", "禁止使用 compile(exec) - 代码注入风险", SecurityLevel.BLOCKED),
+            (r"__import__\s*\(", "禁止使用 __import__ - 动态导入风险", SecurityLevel.RESTRICTED),
+
+            # === 文件系统 ===
+            (r"rm\s+-rf\s+/", "禁止递归删除根目录", SecurityLevel.BLOCKED),
+            (r"shutil\.rmtree\s*\(\s*['\"]\/", "禁止删除根目录", SecurityLevel.BLOCKED),
+            (r"os\.remove\s*\(\s*['\"]\/", "禁止删除根目录文件", SecurityLevel.BLOCKED),
+            (r"open\s*\([^)]*,\s*['\"]w['\"].*\)\s*\.\s*write\s*\(\s*['\"]", "检测到可能的文件覆写", SecurityLevel.RESTRICTED),
+
+            # === 数据库 ===
+            (r"DROP\s+DATABASE", "禁止删除数据库", SecurityLevel.BLOCKED),
+            (r"DROP\s+TABLE", "禁止删除数据表 - 使用迁移代替", SecurityLevel.RESTRICTED),
+            (r"TRUNCATE\s+TABLE", "禁止清空数据表", SecurityLevel.BLOCKED),
+            (r"DELETE\s+FROM\s+\w+\s*(?:WHERE\s+1\s*=\s*1)?;?\s*$", "禁止无条件删除", SecurityLevel.BLOCKED),
+            (r"UPDATE\s+\w+\s+SET\s+.*(?:WHERE\s+1\s*=\s*1)?;?\s*$", "检测到无条件更新", SecurityLevel.RESTRICTED),
+
+            # === 敏感信息 ===
+            (r"(?:password|passwd|secret|api_key|apikey)\s*=\s*['\"][^'\"]{8,}['\"]", "检测到硬编码敏感信息", SecurityLevel.RESTRICTED),
+            (r"(?:AWS|AZURE|GCP)_(?:ACCESS|SECRET)_KEY\s*=\s*['\"][^'\"]+['\"]", "检测到硬编码云服务密钥", SecurityLevel.BLOCKED),
+
+            # === 网络安全 ===
+            (r"requests\.get\s*\(\s*[^'\"][^)]+\)", "检测到动态 URL 请求 - SSRF 风险", SecurityLevel.RESTRICTED),
+            (r"urllib\.request\.urlopen\s*\(\s*[^'\"][^)]+\)", "检测到动态 URL 请求 - SSRF 风险", SecurityLevel.RESTRICTED),
+
+            # === 直接修改余额 (业务规则) ===
+            (r"\.balance\s*[+\-]=", "禁止直接修改 balance - 使用 ledger 记录", SecurityLevel.BLOCKED),
+            (r"\.balance\s*=\s*[^=]", "禁止直接赋值 balance - 使用 ledger 记录", SecurityLevel.BLOCKED),
+            (r"UPDATE.*SET.*balance\s*=", "禁止 SQL 直接修改 balance", SecurityLevel.BLOCKED),
         ]
 
-        for pattern, reason in dangerous_patterns:
-            if re.search(pattern, content, re.IGNORECASE):
-                return SecurityCheckResult(
-                    allowed=False,
-                    level=SecurityLevel.BLOCKED,
-                    command=pattern,
-                    reason=reason,
-                )
+        blocked_patterns = []
+        warnings = []
+
+        for pattern, reason, level in dangerous_patterns:
+            if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
+                if level == SecurityLevel.BLOCKED:
+                    blocked_patterns.append((pattern, reason))
+                else:
+                    warnings.append((pattern, reason))
+
+        # 如果有阻断级别的模式
+        if blocked_patterns:
+            return SecurityCheckResult(
+                allowed=False,
+                level=SecurityLevel.BLOCKED,
+                command=blocked_patterns[0][0],
+                reason=blocked_patterns[0][1],
+                blocked_parts=[p[0] for p in blocked_patterns],
+            )
+
+        # 如果有警告级别的模式
+        if warnings:
+            return SecurityCheckResult(
+                allowed=True,  # 允许但警告
+                level=SecurityLevel.RESTRICTED,
+                command=warnings[0][0],
+                reason=f"警告: {warnings[0][1]} (共 {len(warnings)} 个警告)",
+            )
 
         return SecurityCheckResult(
             allowed=True,
@@ -348,23 +533,33 @@ class SecurityValidator:
 
 
 # ============================================================
-# SoT 合规验证 (我们的特色)
+# SoT 合规验证 (我们的特色) - v4.5 增强版
 # ============================================================
 
 class SoTComplianceChecker:
-    """SoT 合规检查器"""
+    """SoT 合规检查器 v4.5
 
-    # 日报 8 状态机 (STATE_MACHINE.md v2.6)
-    VALID_DAILY_REPORT_STATES = {
-        "raw_submitted",
-        "trend_pending",
-        "trend_ok",
-        "trend_flagged",
-        "trend_resolved",
-        "final_pending",
-        "final_confirmed",
-        "final_locked",
-    }
+    使用 core.constants 中的定义，确保与项目一致
+    """
+
+    # 从 core.constants 导入常量 (延迟导入避免循环依赖)
+    @property
+    def VALID_DAILY_REPORT_STATES(self):
+        try:
+            from .core.constants import DAILY_REPORT_STATES
+            return DAILY_REPORT_STATES
+        except ImportError:
+            # 兜底硬编码 (STATE_MACHINE.md v2.8)
+            return {
+                "raw_submitted",
+                "trend_pending",
+                "trend_ok",
+                "trend_flagged",
+                "trend_resolved",
+                "final_pending",
+                "final_confirmed",
+                "final_locked",
+            }
 
     # 已废弃状态
     DEPRECATED_STATES = {
@@ -372,24 +567,39 @@ class SoTComplianceChecker:
         "pending", "confirmed", "locked",
     }
 
-    # 合法角色 (仅 5 个)
-    VALID_ROLES = {
-        "admin",
-        "finance",
-        "data_operator",
-        "account_manager",
-        "media_buyer",
-    }
+    @property
+    def VALID_ROLES(self):
+        """合法角色 (从 core.constants 获取)"""
+        try:
+            from .core.constants import TECH_ROLES
+            return TECH_ROLES
+        except ImportError:
+            # 兜底硬编码 (MASTER.md v4.6)
+            return {
+                "admin",
+                "finance",
+                "data_operator",
+                "account_manager",
+                "media_buyer",
+            }
 
     # 已废弃角色
     DEPRECATED_ROLES = {
         "super_admin": "admin",
         "accountant": "finance",
         "operator": "data_operator",
+        "supervisor": "admin",  # v4.5 新增
     }
 
-    # 错误码前缀
-    VALID_ERROR_PREFIXES = {"VAL", "AUTH", "BIZ", "DB", "INT", "SYS"}
+    @property
+    def VALID_ERROR_PREFIXES(self):
+        """合法错误码前缀 (从 core.constants 获取)"""
+        try:
+            from .core.constants import ERROR_CODE_PREFIXES
+            return ERROR_CODE_PREFIXES
+        except ImportError:
+            # 兜底硬编码
+            return {"VAL", "AUTH", "BIZ", "DB", "INT", "SYS", "FIN", "RPT"}
 
     def check_states(self, content: str) -> List[str]:
         """检查代码中的状态是否合规"""

@@ -13,15 +13,15 @@ description: |
 # SoT 依赖声明 (完整 15 个 SoT 文档)
 sot_dependencies:
   required:
-    - docs/sot/MASTER.md           # v4.4 系统宪法
-    - docs/sot/STATE_MACHINE.md         # v2.6 状态机
-    - docs/sot/DATA_SCHEMA.md           # v5.2 数据模型
-    - docs/sot/BUSINESS_RULES.md        # v3.2 业务规则
+    - docs/sot/MASTER.md           # v4.6 系统宪法
+    - docs/sot/STATE_MACHINE.md         # v2.8 状态机
+    - docs/sot/DATA_SCHEMA.md           # v5.6 数据模型
+    - docs/sot/BUSINESS_RULES.md        # v4.7 业务规则
   optional:
-    - docs/sot/API_SOT.md               # v9.0 API 规范
-    - docs/sot/ERROR_CODES_SOT.md       # v2.1 错误码
-    - docs/sot/AUTH_SPEC.md             # v2.0 认证授权
-    - docs/sot/LEDGER_SOT.md            # v1.1 账本规则
+    - docs/sot/API_SOT.md               # v9.4 API 规范
+    - docs/sot/ERROR_CODES_SOT.md       # v2.2 错误码
+    - docs/sot/AUTH_SPEC.md             # v2.1 认证授权
+    - docs/sot/LEDGER_SOT.md            # v1.2 账本规则
     - docs/sot/DAILY_REPORT_SOT.md      # 日报规则
     - docs/sot/TOPUP_SOT.md             # 充值规则
     - docs/sot/TRANSFER_SOT.md          # 划转规则
@@ -65,12 +65,12 @@ enhancement:
     - guardian_final_check
     - conflict_detection
 
-baseline: MASTER.md v4.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
+baseline: MASTER.md v4.6, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2
 ---
 
 # Doc-Fixer Skill - 文档审核与修订
 
-> **版本**: v4.0 | **Baseline**: MASTER.md v4.4 | SoT Freeze v2.6
+> **版本**: v4.0 | **Baseline**: MASTER.md v4.6 | SoT Freeze v2.6
 
 ## 1. Purpose
 
@@ -337,7 +337,7 @@ fix_mode: "suggest_fix"
 
 - [P1-002] 版本引用过时
   - 位置: §1.1 SoT 引用
-  - 问题: 引用 API_SOT.md v9.0 但应为 v9.3
+  - 问题: 引用 API_SOT.md v9.4 但应为 v9.3
   - 建议: 更新版本号
 
 ## P2 问题 (1)
@@ -362,7 +362,7 @@ AFTER: `new_follows: number`
 <conflict>
   概念: 日报状态
   来源 1: A1-dashboard-backend.md §3.2 - 使用 "approved" 状态
-  来源 2: STATE_MACHINE.md v2.6 §2.1 - 标准状态为 "final_confirmed"
+  来源 2: STATE_MACHINE.md v2.8 §2.1 - 标准状态为 "final_confirmed"
   描述: 文档使用非标准状态名，需要 architect 确认是否为文档错误
 </conflict>
 <halt>Conflict detected - requires architect review</halt>
@@ -375,7 +375,7 @@ AFTER: `new_follows: number`
 3. **最小修改**: 只改必须改的，避免过度"优化"
 4. **不猜测**: 信息不足时用 Missing 标记，不自行填补
 5. **不解释**: 输出结论和证据，不输出思考过程
-6. **角色限制**: 遵循 7 角色标准 (ceo/project_owner/finance/supervisor/pitcher/account_manager/admin)
+6. **角色限制**: 遵循 6 角色标准 (ceo/project_owner/finance/pitcher/account_manager/admin)
 
 ## 12. Version History
 
@@ -390,4 +390,4 @@ AFTER: `new_follows: number`
 
 ---
 
-**文档控制**: Owner: wade | Baseline: MASTER.md v4.4, SoT Freeze v2.6
+**文档控制**: Owner: wade | Baseline: MASTER.md v4.6, SoT Freeze v2.6
