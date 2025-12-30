@@ -1,12 +1,16 @@
 """
-AI 代码工厂 v4.4 - 核心模块
+AI 代码工厂 v4.5 - 核心模块
 
 包含:
-- factory.py: 主编排器 (含 Phase 6 CONFIRM)
+- factory.py: 上下文增强引擎 (ContextEngine)
 - config.py: 配置类
 - feature_flags.py: 功能开关
 - exceptions.py: 自定义异常
 - constants.py: 常量定义
+
+注意: ContextEngine 与外层 factory.py 中的 CodeFactory 是不同组件:
+- CodeFactory (外层): 完整的 6 阶段流水线编排
+- ContextEngine (本模块): 上下文构建、验证和确认
 """
 
 from .config import FactoryConfig
@@ -19,16 +23,36 @@ from .exceptions import (
     EditRejectedError,
 )
 from .constants import VERSION, PHASE_NAMES
+from .factory import (
+    ContextEngine,
+    GenerationContext,
+    VerifyResult,
+    ConfirmResult,
+    FactoryResult,
+    run_context_engine,
+    create_context_engine,
+)
 
 __all__ = [
+    # 配置
     "FactoryConfig",
     "FeatureFlags",
     "get_flags",
+    # 异常
     "CodeFactoryError",
     "SotVersionMismatchError",
     "RiskBlockedError",
     "TraceFailedError",
     "EditRejectedError",
+    # 常量
     "VERSION",
     "PHASE_NAMES",
+    # 上下文引擎
+    "ContextEngine",
+    "GenerationContext",
+    "VerifyResult",
+    "ConfirmResult",
+    "FactoryResult",
+    "run_context_engine",
+    "create_context_engine",
 ]

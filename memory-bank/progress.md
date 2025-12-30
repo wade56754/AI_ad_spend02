@@ -1,26 +1,26 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2025-12-29 15:30
-> **当前阶段**: Phase 3 性能优化 + AI 编程工具链升级
-> **SoT 基准**: MASTER.md v4.6 / 6 角色白名单
+> **最后更新**: 2025-12-31 03:54
+> **当前阶段**: Phase 3 性能优化 ✅ 全部完成
+> **SoT 基准**: MASTER.md v4.6 / DATA_SCHEMA.md v5.6 / 6 角色白名单
 
 ---
 
 ## 1. 总体进度
 
 ```
-整体进度: ████████████████████ 100%
+核心功能 (P1+P2): ████████████████████ 100% ✅
 
 Phase 1 (48 任务): ████████████████████ 100% ✅
 Phase 2 (9 任务):  ████████████████████ 100% ✅
-Phase 3 (优化):    ███████████████░░░░░  75%
+Phase 3 (优化):    ████████████████████ 100% ✅
 ```
 
 | 指标 | 数值 |
 |------|------|
-| 已完成任务 | 57 / 57 |
+| 核心任务完成 | 57 / 57 (Phase 1+2) |
 | 已完成模块 | 11 / 11 |
-| Phase 3 优化 | 前端优化 + Redis 缓存 + N+1 修复完成 |
+| Phase 3 优化 | 4/4 完成 ✅ |
 
 ---
 
@@ -48,14 +48,14 @@ Phase 3 (优化):    ███████████████░░░░�
 | M6 日报 P2 | ✅ 完成 | 5/5 | 8 状态完整版, 114 测试 |
 | M9 对账 | ✅ 完成 | 4/4 | 52 测试通过 |
 
-### Phase 3 性能优化 (进行中)
+### Phase 3 性能优化 (全部完成 ✅)
 
 | 优化项 | 状态 | 描述 |
 |--------|------|------|
 | 前端性能优化 | ✅ 完成 | TASK-PERF-004 |
 | 后端 Redis 缓存 | ✅ 完成 | TASK-PERF-001 |
 | N+1 查询修复 | ✅ 完成 | TASK-PERF-002 |
-| 监控告警 | ⏳ 待开始 | APM、日志聚合 |
+| APM 监控集成 | ✅ 完成 | TASK-PERF-003 Sentry + Prometheus |
 
 ---
 
@@ -67,7 +67,7 @@ Phase 3 (优化):    ███████████████░░░░�
 |--------|------|------|------|
 | TASK-PERF-001 | 后端 Redis 缓存 | ✅ 完成 | 模块导入通过 |
 | TASK-PERF-002 | N+1 查询修复 | ✅ 完成 | 模块导入通过 |
-| TASK-PERF-003 | APM 监控集成 | ⏳ 待开始 | - |
+| TASK-PERF-003 | APM 监控集成 | ✅ 完成 | 模块导入通过 |
 | TASK-PERF-004 | 前端性能优化 | ✅ 完成 | TypeScript 编译通过 |
 
 **Phase 3 前端优化清单**:
@@ -76,6 +76,27 @@ Phase 3 (优化):    ███████████████░░░░�
 ✅ recharts 动态导入 - LazyMainTrendChart
 ✅ useCallback - DashboardPage 事件处理器
 ✅ TanStack Query - 缓存/重试策略优化
+```
+
+**Phase 3 APM 监控清单**:
+```
+✅ core/apm.py - APM 核心模块
+   - APMConfig 配置类
+   - Sentry SDK 集成 (错误追踪、性能分析)
+   - Prometheus 指标收集器 (请求计数、响应时间)
+   - BusinessMetrics 业务指标 (日报、充值、对账)
+   - 敏感信息过滤 (密码、token、key)
+✅ requirements.txt - 添加依赖
+   - sentry-sdk[fastapi]==2.19.2
+   - prometheus-client==0.21.1
+   - prometheus-fastapi-instrumentator==7.0.0
+✅ core/config.py - APM 配置项
+   - sentry_dsn, sentry_enabled
+   - sentry_traces_sample_rate, sentry_profiles_sample_rate
+   - prometheus_enabled, prometheus_metrics_path
+✅ main.py - lifespan 集成
+   - 应用启动时初始化 Sentry 和 Prometheus
+   - /metrics 端点自动注册
 ```
 
 **Phase 3 后端 Redis 缓存清单**:
@@ -103,23 +124,49 @@ Phase 3 (优化):    ███████████████░░░░�
 
 ## 4. 最近完成
 
-### 2025-12-29
+### 2025-12-31
+- [~] `.env` (other) @ 03:53
+- [~] `.claude/mcp.json` (config) @ 03:54
+- [~] `memory-bank/architecture.md` (docs) @ 03:05
+- [~] `backend/main.py` (backend) @ 03:02
+- [~] `backend/core/config.py` (backend) @ 03:01
+- [+] `backend/core/apm.py` (backend) @ 03:01
+- [~] `backend/requirements.txt` (backend) @ 02:59
 
-- [x] **AI 编程最佳实践 P0 实施**
-  - `scripts/sot-scan.sh`: SoT 5秒扫描脚本
-    - 废弃角色检查 (supervisor, data_operator, data_clerk)
-    - 直接 fetch 调用检查
-    - axios 使用检查
-    - 手写 HTML 标签检查
-    - 后端 SQL 注入风险检查
-  - `frontend/.husky/pre-commit`: 增强 pre-commit hook
-    - 集成 sot-scan.sh 自动化检查
-    - 保留原有 lint-staged 流程
-  - `docs/guides/TASK_COMPLEXITY.md`: 任务复杂度分级指南
-    - L1-L4 四级分类系统
-    - 快速评估流程图
-    - 与 SoT/OpenSpec/回归测试的关系
-  - `CLAUDE.md`: 添加复杂度分级速查表
+### 2025-12-30
+- [+] `.claude/README.md` (docs) @ 11:31
+- [+] `.claude/commands/INDEX.md` (docs) @ 11:31
+- [+] `.claude/commands/flow.md` (docs) @ 11:30
+- [+] `.claude/commands/spec.md` (docs) @ 11:29
+- [+] `.claude/commands/doc-v2.md` (docs) @ 11:28
+- [+] `.claude/commands/review-v2.md` (docs) @ 11:27
+- [+] `.claude/QUICK_START.md` (docs) @ 11:25
+- [+] `.claude/commands/help.md` (docs) @ 11:25
+- [+] `.claude/commands/gen-v2.md` (docs) @ 11:24
+- [+] `.claude/VERSIONING.md` (docs) @ 05:19
+- [~] `.claude/skills/INDEX.md` (docs) @ 05:18
+- [+] `.claude/INTEGRATION_MAP.md` (docs) @ 05:18
+- [~] `docs/sot/CHANGELOG.md` (docs) @ 08:43
+- [+] `docs/sot/GLOSSARY.md` (docs) @ 05:16
+- [+] `.claude/CAPABILITIES.md` (docs) @ 05:15
+- [~] `docs/sot/VERSION_MANIFEST.md` (docs) @ 08:43
+- [~] `.claude/skills/ai-ad-api-automation-test/SKILL.md` (docs) @ 04:40
+- [~] `.claude/mcp.json` (config) @ 04:09
+- [~] `memory-bank/implementation-plan.md` (docs) @ 04:07
+- [~] `frontend/src/features/projects/components/ProjectMembersDialog.tsx` (other) @ 02:39
+- [~] `frontend/src/features/topups/types/topup.types.ts` (other) @ 02:38
+- [~] `frontend/src/features/audit-logs/components/AuditLogsPage.tsx` (other) @ 02:36
+- [~] `frontend/src/features/projects/types/project.types.ts` (other) @ 02:35
+- [~] `frontend/src/features/topups/components/TopupDetailDialog.tsx` (other) @ 02:35
+- [~] `frontend/src/config/nav-config.ts` (other) @ 02:33
+- [~] `frontend/src/features/users/types/user.types.ts` (other) @ 02:31
+- [~] `frontend/src/features/auth/types/auth.types.ts` (other) @ 02:30
+- [~] `memory-bank/game-design-document.md` (docs) @ 04:11
+- [~] `memory-bank/quick-reference.md` (docs) @ 04:11
+- [~] `frontend/CLAUDE.md` (docs) @ 02:24
+- [+] `C:/Users/Administrator/.claude/plans/fuzzy-soaring-finch.md` (docs) @ 01:37
+- [+] `frontend/eslint.config.mjs` (other) @ 01:03
+- [~] `frontend/package.json` (config) @ 01:03
 
 ### 2025-12-28
 - [~] `frontend/src/components/index.ts` (other) @ 09:30
@@ -238,6 +285,13 @@ Phase 3 (优化):    ███████████████░░░░�
 ---
 
 ## 8. 变更日志
+
+### v0.7.0 (2025-12-30)
+- 文档对齐: 全部文档与 MASTER.md v4.6 对齐
+- 修复: DATA_SCHEMA.md v5.5 → v5.6 (移除 supervisor 角色)
+- 修复: ADR-001 七角色模型 → 六角色模型
+- 修复: .claude/data/config.yaml 角色白名单
+- 更新: memory-bank 版本号对齐
 
 ### v0.6.0 (2025-12-27)
 - 重构: MASTER.md v4.6 角色对齐 (6 角色白名单)

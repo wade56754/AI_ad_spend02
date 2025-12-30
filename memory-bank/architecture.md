@@ -235,7 +235,27 @@ M1 认证 ──► M2 用户 ──► M3 项目 ──► M4 渠道
 
 | 扩展点 | 当前状态 | 未来计划 |
 |--------|----------|----------|
-| 缓存层 | 无 | Redis |
+| 缓存层 | ✅ Redis (TASK-PERF-001) | 已完成 |
 | 消息队列 | 无 | RabbitMQ/Celery |
-| 监控 | 基础日志 | Sentry + Prometheus |
+| 监控 | ✅ Sentry + Prometheus (TASK-PERF-003) | 已完成 |
 | 搜索 | PostgreSQL | Elasticsearch |
+
+### 7.1 APM 监控 (Phase 3)
+
+**Sentry 集成**:
+- 错误追踪和异常捕获
+- 性能分析 (traces, profiles)
+- 敏感信息过滤
+
+**Prometheus 指标**:
+- HTTP 请求计数和响应时间
+- 业务指标 (日报、充值、对账)
+- 缓存命中率
+
+**配置**:
+```bash
+# .env
+SENTRY_DSN=https://xxx@sentry.io/xxx
+SENTRY_ENABLED=true
+PROMETHEUS_ENABLED=true
+```

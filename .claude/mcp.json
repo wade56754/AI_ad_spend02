@@ -14,15 +14,23 @@
         "@modelcontextprotocol/server-puppeteer"
       ]
     },
-    "magic": {
+    "supabase": {
       "command": "npx",
       "args": [
         "-y",
-        "@21st-dev/magic@latest"
-      ],
-      "env": {
-        "API_KEY": ""
-      }
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6bWNvaXZ4aGl5aWRpem5jeWFxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjMxNzgxMSwiZXhwIjoyMDc3ODkzODExfQ.IP2Gu-KIYDJvd2ahKLc60dca5KWV90uNHN7GtE5Sx8s",
+        "--project-ref",
+        "jzmcoivxhiyidizncyq"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
     }
   }
 }

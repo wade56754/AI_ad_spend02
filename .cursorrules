@@ -1,6 +1,6 @@
 # ===========================
-# AI_ad_spend02 Cursor Rules v2.1
-# 基于 PROJECT_RULES.md v3.5 + STATE_MACHINE.md v2.6
+# AI_ad_spend02 Cursor Rules v2.2
+# 基于 MASTER.md v4.6 + STATE_MACHINE.md v2.8 + PRD v2.2
 # 兼容 Claude Code + Cursor IDE
 # ===========================
 
@@ -15,14 +15,14 @@ RULE: When editing code or docs, preserve existing intent unless task is explici
 
 RULE: Apply this SoT precedence for any conflict:
 ```
-1) MASTER.md v3.4 (系统宪法 - ASDD Freeze v1.0)
-2) STATE_MACHINE.md v2.6 (状态定义 - 8 状态机)
-3) DATA_SCHEMA.md v5.2 (数据结构)
-4) BUSINESS_RULES.md v3.2 (业务规则 - BR-* 编号)
-5) API_SOT.md v9.0 (API 契约)
-6) ERROR_CODES_SOT.md v2.1 (错误码)
-7) AUTH_SPEC.md v2.0 (认证授权)
-8) LEDGER_SOT.md v1.1 (账本规则)
+1) MASTER.md v4.6 (系统宪法 - PRD v2.2 对齐)
+2) STATE_MACHINE.md v2.8 (状态定义 - 8 状态机 + 月度结算 + 周报)
+3) DATA_SCHEMA.md v5.6 (数据结构 - 23 表)
+4) BUSINESS_RULES.md v4.7 (业务规则 - BR-* 编号)
+5) API_SOT.md v9.4 (API 契约 - 50+ 端点)
+6) ERROR_CODES_SOT.md v2.2 (错误码注册表)
+7) AUTH_SPEC.md v2.1 (认证授权 - 6 角色)
+8) LEDGER_SOT.md v1.2 (双账本规范)
 ```
 
 RULE: Before generating code, read relevant SoT docs in docs/sot/ directory.
@@ -45,28 +45,38 @@ RULE: Frontend stack (immutable):
 - State: TanStack Query v5
 - Form: react-hook-form + zod
 
-# ---------- 角色约束 (5 角色白名单) ----------
+# ---------- 角色约束 (4 技术层角色 + 业务属性) ----------
 
-RULE: Only use these 5 roles (来源: PROJECT_RULES.md v3.5 §四):
+RULE: Only use these 4 technical roles (来源: MASTER.md v4.6 §2.4, PRD v2.2):
 ```
 admin          # 系统管理员 - 全部权限
 finance        # 财务 - 充值终审、对账、报表
-data_operator  # 数据运营 - 日报审核、数据管理
 account_manager # 账户管理员 - 项目管理、账户分配
 media_buyer    # 广告投手 - 日报提交、充值申请
 ```
 
+RULE: Business role mapping (业务层 → 技术层):
+```
+ceo            → admin (系统最高权限)
+project_owner  → users.is_project_owner=true (业务属性，日报审核)
+finance        → finance (直接映射)
+pitcher        → media_buyer (直接映射)
+account_manager → account_manager (直接映射)
+admin          → admin (直接映射)
+```
+
 RULE: NEVER use deprecated roles:
 ```
-❌ data_clerk (已废弃 → data_operator)
+❌ supervisor (已废弃 → project_owner, PRD v2.2)
+❌ data_operator (已废弃 → project_owner/finance, PRD v2.2)
+❌ data_clerk (已废弃 → finance)
 ❌ manager (已废弃 → account_manager)
 ❌ trader (已废弃 → media_buyer)
-❌ ceo, project_owner, pitcher (业务层概念，非技术角色)
 ```
 
 # ---------- 日报状态约束 (8 状态机) ----------
 
-RULE: Daily report status (来源: STATE_MACHINE.md v2.6 §8):
+RULE: Daily report status (来源: STATE_MACHINE.md v2.8 §8):
 ```
 raw_submitted    # 投手提交原始数据
     ↓
@@ -143,7 +153,7 @@ from core.responses import success_response
 return success_response(data={"id": 1, "name": "..."})
 ```
 
-RULE: Error codes must come from ERROR_CODES_SOT.md v2.1:
+RULE: Error codes must come from ERROR_CODES_SOT.md v2.2:
 ```python
 # ❌ Wrong
 raise HTTPException(400, "Invalid request")
@@ -266,8 +276,12 @@ RULE: If change could break CLI, API, or SoT invariants:
 
 # ---------- 快速参考 ----------
 
-# 5 角色 (技术层)
-# admin | finance | data_operator | account_manager | media_buyer
+# 4 技术层角色
+# admin | finance | account_manager | media_buyer
+# 
+# 6 业务层角色 (映射到技术层)
+# ceo → admin | project_owner → is_project_owner=true | finance → finance
+# pitcher → media_buyer | account_manager → account_manager | admin → admin
 
 # 8 日报状态
 # raw_submitted → trend_pending → trend_ok/trend_flagged
@@ -284,8 +298,12 @@ RULE: If change could break CLI, API, or SoT invariants:
 # 关键文件路径
 # API 客户端: frontend/src/lib/api.ts
 # 全局类型: frontend/src/types/common.ts
-# 项目规则: .claude/PROJECT_RULES.md
+# AI Agent 规则: AGENTS.md (v1.1)
 # SoT 文档: docs/sot/*.md
 # AI 编程 SOP: docs/guides/AI_CODING_SOP_v2.1.md
 
-# End of Cursor Rules v2.1
+# MCP 配置
+# Supabase MCP: .claude/mcp.json, .mcp.json
+# Playwright MCP: .claude/mcp.json, .mcp.json
+
+# End of Cursor Rules v2.2

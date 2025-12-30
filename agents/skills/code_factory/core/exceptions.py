@@ -85,3 +85,14 @@ class SessionRecoveryError(CodeFactoryError):
         self.session_id = session_id
         self.reason = reason
         super().__init__(f"无法恢复会话 {session_id}: {reason}")
+
+
+class ValidationError(CodeFactoryError):
+    """验证错误
+
+    当代码验证失败时抛出
+    """
+
+    def __init__(self, message: str, errors: Optional[List[str]] = None):
+        self.errors = errors or []
+        super().__init__(message)

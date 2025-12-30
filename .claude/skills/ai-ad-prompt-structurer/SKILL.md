@@ -252,8 +252,8 @@ baseline:
       # 项目上下文
 
       ## SoT 裁判链
-      1. STATE_MACHINE.md v2.6
-      2. DATA_SCHEMA.md v5.2
+      1. STATE_MACHINE.md v2.8
+      2. DATA_SCHEMA.md v5.6
       ...
 
       ## 项目路径

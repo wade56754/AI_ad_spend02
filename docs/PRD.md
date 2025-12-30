@@ -1,7 +1,7 @@
 # PRD: AI 广告代投管理系统（AI 编程规格版）
 
 > **文档版本**: v2.2 (AI Programming Spec)
-> **技术基准**: MASTER.md v4.4 + STATE_MACHINE.md v2.6 + DATA_SCHEMA.md v5.2
+> **技术基准**: MASTER.md v4.6 + STATE_MACHINE.md v2.8 + DATA_SCHEMA.md v5.6
 > **用途**: Claude/AI 编程参考，减少幻觉，约束边界
 > **日期**: 2025-12-27
 > **状态**: Frozen
@@ -38,14 +38,14 @@
 ```python
 # ===== SoT 版本锁定 =====
 SOT_VERSIONS = {
-    "MASTER.md": "v4.4",
-    "STATE_MACHINE.md": "v2.6",
-    "DATA_SCHEMA.md": "v5.2",
-    "LEDGER_SOT.md": "v1.1",
-    "ERROR_CODES_SOT.md": "v2.1",
-    "AUTH_SPEC.md": "v2.0",
-    "BUSINESS_RULES.md": "v4.1",
-    "API_SOT.md": "v9.0"
+    "MASTER.md": "v4.6",
+    "STATE_MACHINE.md": "v2.8",
+    "DATA_SCHEMA.md": "v5.6",
+    "LEDGER_SOT.md": "v1.2",
+    "ERROR_CODES_SOT.md": "v2.2",
+    "AUTH_SPEC.md": "v2.1",
+    "BUSINESS_RULES.md": "v4.7",
+    "API_SOT.md": "v9.4"
 }
 ```
 
@@ -53,8 +53,8 @@ SOT_VERSIONS = {
 ```
 □ 步骤 0：确认当前是 Phase 1 还是 Phase 2（默认 Phase 1）
 □ 步骤 1：查询相关 SoT 文档版本号是否与上述一致
-□ 步骤 2：确认使用的表名/字段名在 DATA_SCHEMA.md v5.2 中存在
-□ 步骤 3：确认状态流转在 STATE_MACHINE.md v2.6 白名单中
+□ 步骤 2：确认使用的表名/字段名在 DATA_SCHEMA.md v5.6 中存在
+□ 步骤 3：确认状态流转在 STATE_MACHINE.md v2.8 白名单中
 □ 步骤 4：确认角色在本文档 §1 的 6 角色中
 ```
 
@@ -837,7 +837,7 @@ def calc_deposit(total_topup, total_spend):
 ---
 
 **文档版本**: v2.2 (AI Programming Spec)
-**基准文档**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2
+**基准文档**: MASTER.md v4.6, STATE_MACHINE.md v2.8, DATA_SCHEMA.md v5.6
 **用途**: Claude/AI 编程参考
 **最后更新**: 2025-12-27
 **变更说明**: 基于确认的业务事实更新角色(6个)、数据SoT(三层)、成本结构(3类)、利润公式(收入-支出)

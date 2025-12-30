@@ -1,8 +1,9 @@
 # AI 广告代投管理系统 - 需求文档 (PRD)
 
-> **版本**: v2.2
-> **更新日期**: 2025-12-27
+> **版本**: v2.3
+> **更新日期**: 2025-12-30
 > **基准文档**: docs/sot/MASTER.md v4.6
+> **变更记录**: 修复 SoT 版本号对齐
 
 ---
 
@@ -13,11 +14,11 @@
 | 文档 | 版本 | 路径 | 状态 |
 |------|------|------|------|
 | MASTER.md | v4.6 | docs/sot/MASTER.md | Frozen |
-| STATE_MACHINE.md | v2.7 | docs/sot/STATE_MACHINE.md | Frozen |
+| STATE_MACHINE.md | v2.8 | docs/sot/STATE_MACHINE.md | Frozen |
 | DATA_SCHEMA.md | v5.6 | docs/sot/DATA_SCHEMA.md | Frozen |
 | BUSINESS_RULES.md | v4.7 | docs/sot/BUSINESS_RULES.md | Frozen |
-| ERROR_CODES.md | v2.3 | docs/sot/ERROR_CODES_SOT.md | Frozen |
-| AUTH_SPEC.md | v2.2 | docs/sot/AUTH_SPEC.md | Frozen |
+| ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md | Frozen |
+| AUTH_SPEC.md | v2.1 | docs/sot/AUTH_SPEC.md | Frozen |
 | LEDGER_SOT.md | v1.2 | docs/sot/LEDGER_SOT.md | Frozen |
 | API_SOT.md | v9.4 | docs/sot/API_SOT.md | Frozen |
 

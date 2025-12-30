@@ -1,6 +1,6 @@
 # AI广告代投管理系统
 
-> **SoT 版本**: MASTER.md v4.6 | BUSINESS_RULES.md v4.6 | DATA_SCHEMA.md v5.6 | STATE_MACHINE.md v2.7
+> **SoT 版本**: MASTER.md v4.6 | BUSINESS_RULES.md v4.7 | DATA_SCHEMA.md v5.6 | STATE_MACHINE.md v2.8
 > **AI 模型**: Claude Opus 4.5 优化 | Cursor 兼容
 
 ---
@@ -88,16 +88,27 @@
 
 ## 合法角色（仅 6 个）
 
-| 角色 | 业务名称 | 核心职责 |
-|------|----------|----------|
-| `ceo` | 老板 | 资金安全、公司盈亏、最终决策 |
-| `project_owner` | 项目负责人 | 项目盈亏、日报审核、资金使用效率 |
-| `finance` | 财务 | 资金出入准确、数据真实、对账 |
-| `pitcher` | 投手 | CPL 达标、日报准确、执行投放 |
-| `account_manager` | 户管 | 账户分配、账户状态监控 |
-| `admin` | 管理员 | 系统配置（不参与业务） |
+> **来源**: MASTER.md v4.6 §2.4
+> **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
-> ⚠️ `supervisor` 角色已废弃（PRD v2.2）
+| 角色ID | 中文名 | 职责范围 | 系统权限 |
+|--------|--------|----------|----------|
+| `ceo` | 老板 | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
+| `project_owner` | 项目负责人 | 项目盈亏、资金使用效率、日报审核 | 申请充值，审核日报，调配投手 |
+| `finance` | 财务 | 资金出入准确、数据真实、对账 | 审核充值，更新资金表，锁定结算 |
+| `pitcher` | 投手 | CPL 达标、日报准确、执行投放 | 填报日报，查看自己数据 |
+| `account_manager` | 户管 | 账户分配、账户状态监控 | 管理账户分配，收集充值需求 |
+| `admin` | 管理员 | 系统配置（不参与业务） | 系统设置 |
+
+### 废弃角色（禁止使用）
+
+| 角色 | 状态 | 替代方案 |
+|------|------|---------|
+| `supervisor` | ❌ 已废弃 (PRD v2.2) | 合并到 project_owner |
+| `data_operator` | ❌ 已废弃 | 不在宪法中 |
+| `media_buyer` | ❌ 非标准 | 使用 pitcher |
+
+> ⚠️ **重要**: 代码中如存在 `media_buyer`、`data_operator`、`supervisor`，应修正为宪法定义的角色
 
 ---
 
@@ -179,7 +190,7 @@ just release-check    # 上线门禁
 | 4 | `docs/sot/BUSINESS_RULES.md` | 业务规则索引 |
 | 5 | `docs/sot/API_SOT.md` | API 规范 |
 | 6 | `docs/sot/AUTH_SPEC.md` | 认证授权规范 |
-| 7 | `docs/sot/ERROR_CODES_SOT.md` | 错误码定义 |
+| 7 | `docs/sot/ERROR_CODES.md` | 错误码定义 |
 
 ### 业务规则子模块
 | 文件 | 规则数 | 说明 |

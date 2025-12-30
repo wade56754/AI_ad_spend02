@@ -1,18 +1,31 @@
-# AI 代码工厂 v4.0
+# AI 代码工厂 v5.0 - AI 编程助手
 
-> **基准文档**: MASTER.md v4.6 | **最后更新**: 2025-12-27
+> **基准文档**: MASTER.md v4.6 | **最后更新**: 2025-12-30
 
 ## 概述
 
-AI 代码工厂是一个基于"搜索优先、组装为主"理念的代码生成系统。它不是从零生成代码，而是通过搜索现有代码、选择最佳参考、适配到项目规范、组装成完整功能的流水线方式工作。
+AI 代码工厂是一个基于"搜索优先、组装为主"理念的代码生成系统。v5.0 升级为完整的 AI 编程助手，借鉴 gpt-engineer、Dify、cursorrules 等开源项目最佳实践。
 
 ### 核心理念
 
 ```
+需求澄清 → 精准理解
+知识增强 → RAG 检索
 搜索优先 → 减少幻觉
 来源追溯 → 可信可查
 SoT 驱动 → 规范一致
 ```
+
+### v5.0 新增能力
+
+| 能力 | 说明 | 借鉴 |
+|------|------|------|
+| Preprompts 系统 | 可配置的提示词模板 | gpt-engineer |
+| CLARIFY 阶段 | 需求澄清，减少歧义 | gpt-engineer |
+| RAG 知识库 | 文档索引与语义检索 | Dify |
+| 项目配置 | .codefactory.yaml | cursorrules |
+| Agent 工具 | 可扩展的工具框架 | Dify |
+| CLI 命令行 | 交互模式与一次性生成 | gpt-engineer |
 
 ### 预期收益
 
@@ -28,7 +41,7 @@ SoT 驱动 → 规范一致
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    AI 代码工厂 v4.0 (幻觉抑制版)                  │
+│                    AI 代码工厂 v4.5 (幻觉抑制版)                  │
 │                 对齐 MASTER.md v4.6 + 6 阶段流水线                │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
@@ -462,6 +475,8 @@ async def create_daily_report(...):
 
 | 版本 | 日期 | 说明 |
 |------|------|------|
+| v5.0 | 2025-12-30 | AI 编程助手升级：Preprompts、CLARIFY、RAG、CLI |
+| v4.5 | 2025-12-30 | 统一版本号，AST 级别验证，增强搜索功能 |
 | v4.0 | 2025-12-27 | 对齐 MASTER.md v4.6，6 角色，Phase 6 CONFIRM |
 | v3.4 | 2025-12-24 | 代码块优先原则 |
 | v3.3 | 2025-12-24 | 集成防幻觉规则 |
@@ -477,6 +492,9 @@ async def create_daily_report(...):
 
 | 项目 | License | 借鉴内容 |
 |------|---------|----------|
+| [gpt-engineer](https://github.com/AntonOsika/gpt-engineer) | MIT | Preprompts 系统、增量改进模式 |
+| [Dify](https://github.com/langgenius/dify) | Apache 2.0 | RAG 知识库、工作流编排、Agent 工具 |
+| [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) | MIT | 规则配置化、多项目模板 |
 | [Anthropic autonomous-coding](https://github.com/anthropics/claude-quickstarts) | Internal | 双 Agent 模式, task_list 持久化, 安全模型 |
 | [MetaGPT](https://github.com/geekan/MetaGPT) | MIT | 多角色协作, 标准化 SOP |
 | [OpenHands](https://github.com/All-Hands-AI/OpenHands) | MIT | ACI 设计, 事件驱动 |
@@ -486,4 +504,4 @@ async def create_daily_report(...):
 
 ---
 
-*文档版本: v1.0 | 生成时间: 2025-12-27*
+*文档版本: v2.0 | 生成时间: 2025-12-30*

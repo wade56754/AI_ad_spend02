@@ -1,5 +1,5 @@
 """
-代码搜索器 - SEARCH 阶段实现
+代码搜索器 - SEARCH 阶段实现 v4.5
 
 职责: 从多个来源搜索与需求相关的参考代码
 
@@ -8,15 +8,26 @@
 2. 代码资料库 (code-library)
 3. GitHub (可选，需网络)
 
+搜索策略:
+1. 关键词匹配 (中英文映射)
+2. AST 分析 (函数/类名匹配)
+3. 代码结构匹配 (装饰器、导入)
+
 来源:
 - code-graph-rag: 语义搜索架构
 - Aider: Repo Map 概念
+
+v4.5 更新:
+- 增加 AST 级别的函数/类名搜索
+- 增加装饰器模式匹配 (@router.*, @pytest.*)
+- 改进相关度计算算法
 """
 
 import re
 import os
+import ast
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -248,10 +259,10 @@ class CodeSearcher:
                 except Exception:
                     continue
 
-                # 计算相关度
-                score, matches = self._calculate_relevance(content, keywords)
+                # 计算相关度 (传入文件路径以启用 AST 分析)
+                score, matches = self._calculate_relevance(content, keywords, file_path)
 
-                if score > 30:  # 相关度阈值
+                if score > 25:  # 相关度阈值 (v4.5 降低以捕获更多候选)
                     rel_path = file_path.relative_to(self.project_root)
                     snippet = self._extract_snippet(content, matches)
 
@@ -355,23 +366,125 @@ class CodeSearcher:
 
         return candidates
 
-    def _calculate_relevance(self, content: str, keywords: List[str]) -> tuple:
-        """计算相关度分数"""
+    def _calculate_relevance(self, content: str, keywords: List[str], file_path: Path = None) -> Tuple[float, List[str]]:
+        """计算相关度分数 (增强版 v4.5)
+
+        使用多维度计算:
+        1. 关键词频率匹配 (40%)
+        2. 函数/类名匹配 (30%)
+        3. 装饰器匹配 (15%)
+        4. 导入匹配 (15%)
+
+        Args:
+            content: 文件内容
+            keywords: 关键词列表
+            file_path: 可选的文件路径 (用于 AST 分析)
+
+        Returns:
+            Tuple[float, List[str]]: (分数, 匹配的关键词列表)
+        """
         content_lower = content.lower()
         matches = []
         score = 0
 
+        # 1. 关键词频率匹配 (最高 40 分)
+        keyword_score = 0
         for keyword in keywords:
             count = content_lower.count(keyword.lower())
             if count > 0:
                 matches.append(keyword)
-                # 基础分 + 频率加成
-                score += 20 + min(count * 5, 30)
+                keyword_score += 10 + min(count * 3, 15)
+        keyword_score = min(40, keyword_score)
 
-        # 归一化到 0-100
-        score = min(100, score)
+        # 2. 函数/类名匹配 (最高 30 分)
+        ast_score = 0
+        if file_path and file_path.suffix == ".py":
+            ast_matches = self._extract_ast_matches(content, keywords)
+            if ast_matches:
+                matches.extend([f"def:{m}" for m in ast_matches[:3]])
+                ast_score = min(30, len(ast_matches) * 10)
+
+        # 3. 装饰器匹配 (最高 15 分)
+        decorator_score = 0
+        decorator_patterns = [
+            (r'@router\.(get|post|put|delete|patch)', 15),  # FastAPI router
+            (r'@app\.(get|post|put|delete|patch)', 15),     # FastAPI app
+            (r'@pytest\.\w+', 10),                          # pytest
+            (r'@dataclass', 8),                             # dataclass
+            (r'@property', 5),                              # property
+        ]
+        for pattern, weight in decorator_patterns:
+            if re.search(pattern, content, re.IGNORECASE):
+                decorator_score = max(decorator_score, weight)
+                matches.append(f"decorator:{pattern}")
+                break
+        decorator_score = min(15, decorator_score)
+
+        # 4. 导入匹配 (最高 15 分)
+        import_score = 0
+        import_patterns = [
+            (r'from fastapi import', 10),
+            (r'from sqlalchemy', 10),
+            (r'from pydantic import', 8),
+            (r'import React', 10),
+            (r'from.*tanstack.*query', 10),
+        ]
+        for pattern, weight in import_patterns:
+            if re.search(pattern, content, re.IGNORECASE):
+                import_score += weight
+        import_score = min(15, import_score)
+
+        # 总分
+        score = keyword_score + ast_score + decorator_score + import_score
 
         return score, matches
+
+    def _extract_ast_matches(self, content: str, keywords: List[str]) -> List[str]:
+        """使用 AST 提取匹配的函数/类名
+
+        Args:
+            content: Python 源代码
+            keywords: 关键词列表
+
+        Returns:
+            List[str]: 匹配的函数/类名
+        """
+        matches = []
+        try:
+            tree = ast.parse(content)
+
+            for node in ast.walk(tree):
+                name = None
+                if isinstance(node, ast.FunctionDef):
+                    name = node.name
+                elif isinstance(node, ast.AsyncFunctionDef):
+                    name = node.name
+                elif isinstance(node, ast.ClassDef):
+                    name = node.name
+
+                if name:
+                    name_lower = name.lower()
+                    # 检查函数/类名是否包含关键词
+                    for keyword in keywords:
+                        if keyword.lower() in name_lower:
+                            matches.append(name)
+                            break
+                    # 检查函数/类名中的单词
+                    name_parts = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)', name)
+                    for part in name_parts:
+                        if part.lower() in [k.lower() for k in keywords]:
+                            if name not in matches:
+                                matches.append(name)
+                            break
+
+        except SyntaxError:
+            # 文件语法错误，跳过 AST 分析
+            pass
+        except Exception:
+            # 其他错误，跳过
+            pass
+
+        return matches
 
     def _extract_snippet(self, content: str, keywords: List[str], max_lines: int = 10) -> str:
         """提取代码片段"""

@@ -1,8 +1,9 @@
 # 速查参考表
 
-> **版本**: v1.0
-> **更新日期**: 2025-12-27
+> **版本**: v1.2
+> **更新日期**: 2025-12-30
 > **用途**: 开发时快速查阅，避免 AI 幻觉
+> **变更记录**: 按 MASTER.md v4.6 §2.4 统一角色定义（移除双层系统）
 
 ---
 
@@ -13,33 +14,39 @@
 | 文档 | 版本 | 路径 | 用途 |
 |------|------|------|------|
 | MASTER.md | v4.6 | docs/sot/MASTER.md | 架构宪法、角色定义 |
-| STATE_MACHINE.md | v2.7 | docs/sot/STATE_MACHINE.md | 状态机定义 |
+| STATE_MACHINE.md | v2.8 | docs/sot/STATE_MACHINE.md | 状态机定义 |
 | DATA_SCHEMA.md | v5.6 | docs/sot/DATA_SCHEMA.md | 数据库表结构 |
 | BUSINESS_RULES.md | v4.7 | docs/sot/BUSINESS_RULES.md | 业务规则 |
-| ERROR_CODES.md | v2.3 | docs/sot/ERROR_CODES_SOT.md | 错误码定义 |
-| AUTH_SPEC.md | v2.2 | docs/sot/AUTH_SPEC.md | 认证授权 |
+| ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md | 错误码定义 |
+| AUTH_SPEC.md | v2.1 | docs/sot/AUTH_SPEC.md | 认证授权 |
 | LEDGER_SOT.md | v1.2 | docs/sot/LEDGER_SOT.md | 账本规则 |
 | API_SOT.md | v9.4 | docs/sot/API_SOT.md | API 规范 |
 
 ---
 
-## 2. 角色白名单 (6 角色)
+## 2. 合法角色（6 角色）
 
-> 来源: MASTER.md v4.6 §2.4
+> **来源**: MASTER.md v4.6 §2.4（宪法）
+> **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
-| 角色ID | 中文名 | 核心职责 |
-|--------|--------|----------|
-| `ceo` | 老板 | 资金安全、公司盈亏、最终决策 |
-| `project_owner` | 项目负责人 | 项目盈亏、日报审核、确认有效粉 |
-| `finance` | 财务 | 资金出入准确、数据真实、对账 |
-| `pitcher` | 投手 | CPL 达标、日报准确、执行投放 |
-| `account_manager` | 户管 | 账户分配、账户状态监控 |
-| `admin` | 管理员 | 系统配置（不参与业务） |
+| 角色ID | 中文名 | 职责范围 | 系统权限 |
+|--------|--------|----------|----------|
+| `ceo` | 老板 | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
+| `project_owner` | 项目负责人 | 项目盈亏、资金使用效率、日报审核 | 申请充值，审核日报，调配投手 |
+| `finance` | 财务 | 资金出入准确、数据真实、对账 | 审核充值，更新资金表，锁定结算 |
+| `pitcher` | 投手 | CPL 达标、日报准确、执行投放 | 填报日报，查看自己数据 |
+| `account_manager` | 户管 | 账户分配、账户状态监控 | 管理账户分配，收集充值需求 |
+| `admin` | 管理员 | 系统配置（不参与业务） | 系统设置 |
 
-**禁止使用的角色**:
-- `supervisor` (已合并到 project_owner)
-- `data_operator` (已移除)
-- `media_buyer` (技术层角色，业务层用 pitcher)
+### 废弃角色（禁止使用）
+
+| 角色 | 状态 | 替代方案 |
+|------|------|---------|
+| `supervisor` | ❌ 已废弃 (PRD v2.2) | 合并到 project_owner |
+| `data_operator` | ❌ 不在宪法中 | 移除 |
+| `media_buyer` | ❌ 非标准术语 | 使用 pitcher |
+
+> ⚠️ 代码中如存在非标准角色，应修正为宪法定义
 
 ---
 
@@ -63,7 +70,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ## 4. 错误码速查表
 
-> 来源: ERROR_CODES.md v2.3
+> 来源: ERROR_CODES_SOT.md v2.2
 
 | 错误码 | HTTP | 含义 | 使用场景 |
 |--------|------|------|----------|

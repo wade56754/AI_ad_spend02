@@ -40,7 +40,7 @@ export function CreateUserDialog({ isOpen, onClose, onSubmit, isLoading }: Creat
     password: '',
     username: '',
     full_name: '',
-    role: UserRole.MEDIA_BUYER,
+    role: UserRole.PITCHER,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,7 +57,7 @@ export function CreateUserDialog({ isOpen, onClose, onSubmit, isLoading }: Creat
         password: '',
         username: '',
         full_name: '',
-        role: UserRole.MEDIA_BUYER,
+        role: UserRole.PITCHER,
       });
     }
   };

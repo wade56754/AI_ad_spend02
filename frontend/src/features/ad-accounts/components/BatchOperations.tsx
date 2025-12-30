@@ -153,7 +153,8 @@ export function BatchOperations({
   // 获取用户列表
   const fetchUsers = async () => {
     try {
-      const response = await apiGet<{ data: User[] }>("/api/v1/users", { role: "media_buyer,account_manager" });
+      // SoT: MASTER.md v4.6 §2.4 - 投手 (pitcher) 和户管 (account_manager)
+      const response = await apiGet<{ data: User[] }>("/api/v1/users", { role: "pitcher,account_manager" });
       if (response.data) {
         setUsers(response.data);
       }

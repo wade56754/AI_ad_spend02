@@ -6,7 +6,7 @@ layer: skill
 owner: wade
 last_reviewed: 2025-12-01
 last_updated: 2025-12-01
-baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2, AUTOMATION_TEST_SPEC_v1.4.md
+baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.8, SUPERCLAUDE_INTEGRATION_GUIDE_v2.2, AUTOMATION_TEST_SPEC_v1.4.md
 ---
 
 <skill>
@@ -39,14 +39,14 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
   <sot_documents>
     | Priority | Document | Version | Purpose |
     |----------|----------|---------|---------|
-    | P0 | STATE_MACHINE.md | v2.6 | State enums, transitions, terminal states |
-    | P0 | DATA_SCHEMA.md | v5.2 | Data structures, field constraints |
-    | P1 | API_SOT.md | v9.0 | API endpoints, request/response contracts |
-    | P1 | ERROR_CODES_SOT.md | v2.1 | Error code definitions |
-    | P1 | LEDGER_SOT.md | v1.1 | Ledger entry types, balance rules |
+    | P0 | STATE_MACHINE.md | v2.8 | State enums, transitions, terminal states |
+    | P0 | DATA_SCHEMA.md | v5.6 | Data structures, field constraints |
+    | P1 | API_SOT.md | v9.4 | API endpoints, request/response contracts |
+    | P1 | ERROR_CODES_SOT.md | v2.2 | Error code definitions |
+    | P1 | LEDGER_SOT.md | v1.2 | Ledger entry types, balance rules |
     | P2 | DAILY_REPORT_SOT.md | v1.0 | Daily report 8-state machine |
-    | P2 | BUSINESS_RULES.md | v3.1 | Business constraints |
-    | P3 | AUTH_SPEC.md | v2.0 | Role permission matrix |
+    | P2 | BUSINESS_RULES.md | v4.7 | Business constraints |
+    | P3 | AUTH_SPEC.md | v2.1 | Role permission matrix |
   </sot_documents>
 
   <external_references>
@@ -230,9 +230,9 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
     <Brief description>
 
     SoT References:
-    - docs/sot/STATE_MACHINE.md v2.6 Section X.X (specific rule)
-    - docs/sot/ERROR_CODES_SOT.md v2.1 (error code prefix)
-    - docs/sot/API_SOT.md v9.0 (API endpoint)
+    - docs/sot/STATE_MACHINE.md v2.8 Section X.X (specific rule)
+    - docs/sot/ERROR_CODES_SOT.md v2.2 (error code prefix)
+    - docs/sot/API_SOT.md v9.4 (API endpoint)
     """
     ```
   </docstring_template>
@@ -244,10 +244,10 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
     <Module> API Flow Tests
 
     SoT References:
-    - docs/sot/STATE_MACHINE.md v2.6 Section X (state machine)
-    - docs/sot/ERROR_CODES_SOT.md v2.1 (error codes)
-    - docs/sot/API_SOT.md v9.0 (API contracts)
-    - docs/sot/AUTH_SPEC.md v2.0 (permissions)
+    - docs/sot/STATE_MACHINE.md v2.8 Section X (state machine)
+    - docs/sot/ERROR_CODES_SOT.md v2.2 (error codes)
+    - docs/sot/API_SOT.md v9.4 (API contracts)
+    - docs/sot/AUTH_SPEC.md v2.1 (permissions)
     """
 
     import pytest
@@ -272,7 +272,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
         """
         Happy Path: Complete successful flow
 
-        SoT Reference: STATE_MACHINE.md v2.6 Section X.X
+        SoT Reference: STATE_MACHINE.md v2.8 Section X.X
         """
 
         def test_full_flow__start_to_terminal(self, client, db_session, *_tokens):
@@ -288,7 +288,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
         """
         Permission boundary tests
 
-        SoT Reference: AUTH_SPEC.md v2.0 Section 3
+        SoT Reference: AUTH_SPEC.md v2.1 Section 3
         """
 
         def test_unauthorized_role__returns_403(self, client, db_session, token):
@@ -301,7 +301,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
         """
         Illegal state transition tests
 
-        SoT Reference: STATE_MACHINE.md v2.6 Section X.X (whitelist)
+        SoT Reference: STATE_MACHINE.md v2.8 Section X.X (whitelist)
         """
 
         def test_illegal_transition__returns_STATE_001(self, client, db_session):
@@ -314,7 +314,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
         """
         Error code validation tests
 
-        SoT Reference: ERROR_CODES_SOT.md v2.1
+        SoT Reference: ERROR_CODES_SOT.md v2.2
         """
 
         def test_invalid_input__returns_VALIDATION_001(self, client):
@@ -462,7 +462,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
      * Newman API Test Runner
      *
      * Reference: sanbercode-api-automation-boilerplate
-     * SoT: API_SOT.md v9.0
+     * SoT: API_SOT.md v9.4
      */
 
     const newman = require("newman");
@@ -543,7 +543,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
     {
       "info": {
         "name": "AI Ad Spend API Tests",
-        "description": "API contract tests - SoT: API_SOT.md v9.0",
+        "description": "API contract tests - SoT: API_SOT.md v9.4",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
       },
       "variable": [
@@ -555,7 +555,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       "item": [
         {
           "name": "Daily Reports",
-          "description": "Daily Report API tests - STATE_MACHINE.md v2.6 Section 8",
+          "description": "Daily Report API tests - STATE_MACHINE.md v2.8 Section 8",
           "item": [
             {
               "name": "Create Daily Report",
@@ -586,7 +586,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
                   "listen": "test",
                   "script": {
                     "exec": [
-                      "// Contract test: API_SOT.md v9.0",
+                      "// Contract test: API_SOT.md v9.4",
                       "pm.test('Status code is 201', function() {",
                       "    pm.response.to.have.status(201);",
                       "});",
@@ -719,15 +719,15 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
   <supported_modules>
     | Module | Router Path | Service Path | SoT Documents | State Machine | Test Output Path |
     |--------|------------|--------------|---------------|---------------|------------------|
-    | daily_report | backend/routers/daily_reports.py | backend/services/daily_report_service.py | docs/sot/DAILY_REPORT_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.6 Section 8 | STATE_MACHINE.md v2.6 Section 8 (8-state machine) | backend/tests/api/test_daily_report_flow_generated.py |
-    | topup_request | backend/routers/topup.py | backend/services/topup_service.py | docs/sot/TOPUP_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.6 Section 9 | STATE_MACHINE.md v2.6 Section 9 (7-state machine) | backend/tests/api/test_topup_request_flow_generated.py |
-    | reconciliation | backend/routers/reconciliation.py | backend/services/reconciliation_service.py | docs/sot/RECONCILIATION_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.6 Section 11 | STATE_MACHINE.md v2.6 Section 11 (5-state machine) | backend/tests/api/test_reconciliation_flow_generated.py |
-    | ledger | backend/routers/ledger.py | backend/services/ledger_service.py | docs/sot/LEDGER_SOT.md v1.1, docs/sot/DATA_SCHEMA.md v5.2 | N/A (no state machine) | backend/tests/api/test_ledger_flow_generated.py |
-    | ad_accounts | backend/routers/ad_accounts.py | backend/services/ad_account_service.py | docs/sot/API_SOT.md v9.0 Section 7, docs/sot/STATE_MACHINE.md v2.6 Section 7.1 | STATE_MACHINE.md v2.6 Section 7.1 (ad_accounts.status) | backend/tests/api/test_ad_accounts_flow_generated.py |
-    | suppliers | backend/routers/suppliers.py | backend/services/supplier_service.py | docs/sot/API_SOT.md v9.0, docs/sot/DATA_SCHEMA.md v5.2 | N/A (no state machine) | backend/tests/api/test_suppliers_flow_generated.py |
-    | settlements | backend/routers/settlements.py | backend/services/settlement_service.py | docs/sot/API_SOT.md v9.0, docs/sot/LEDGER_SOT.md v1.1 | N/A (no state machine) | backend/tests/api/test_settlements_flow_generated.py |
-    | projects | backend/routers/projects.py | backend/services/project_service.py | docs/sot/API_SOT.md v9.0 Section 6, docs/sot/STATE_MACHINE.md v2.6 Section 5 | STATE_MACHINE.md v2.6 Section 5 (projects.status) | backend/tests/api/test_projects_flow_generated.py |
-    | auth | backend/routers/authentication.py | backend/services/supabase_auth_service.py | docs/sot/AUTH_SPEC.md v2.0, docs/sot/API_SOT.md v9.0 | N/A (no state machine) | backend/tests/api/test_auth_flow_generated.py |
+    | daily_report | backend/routers/daily_reports.py | backend/services/daily_report_service.py | docs/sot/DAILY_REPORT_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.8 Section 8 | STATE_MACHINE.md v2.8 Section 8 (8-state machine) | backend/tests/api/test_daily_report_flow_generated.py |
+    | topup_request | backend/routers/topup.py | backend/services/topup_service.py | docs/sot/TOPUP_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.8 Section 9 | STATE_MACHINE.md v2.8 Section 9 (7-state machine) | backend/tests/api/test_topup_request_flow_generated.py |
+    | reconciliation | backend/routers/reconciliation.py | backend/services/reconciliation_service.py | docs/sot/RECONCILIATION_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.8 Section 11 | STATE_MACHINE.md v2.8 Section 11 (5-state machine) | backend/tests/api/test_reconciliation_flow_generated.py |
+    | ledger | backend/routers/ledger.py | backend/services/ledger_service.py | docs/sot/LEDGER_SOT.md v1.2, docs/sot/DATA_SCHEMA.md v5.6 | N/A (no state machine) | backend/tests/api/test_ledger_flow_generated.py |
+    | ad_accounts | backend/routers/ad_accounts.py | backend/services/ad_account_service.py | docs/sot/API_SOT.md v9.4 Section 7, docs/sot/STATE_MACHINE.md v2.8 Section 7.1 | STATE_MACHINE.md v2.8 Section 7.1 (ad_accounts.status) | backend/tests/api/test_ad_accounts_flow_generated.py |
+    | suppliers | backend/routers/suppliers.py | backend/services/supplier_service.py | docs/sot/API_SOT.md v9.4, docs/sot/DATA_SCHEMA.md v5.6 | N/A (no state machine) | backend/tests/api/test_suppliers_flow_generated.py |
+    | settlements | backend/routers/settlements.py | backend/services/settlement_service.py | docs/sot/API_SOT.md v9.4, docs/sot/LEDGER_SOT.md v1.2 | N/A (no state machine) | backend/tests/api/test_settlements_flow_generated.py |
+    | projects | backend/routers/projects.py | backend/services/project_service.py | docs/sot/API_SOT.md v9.4 Section 6, docs/sot/STATE_MACHINE.md v2.8 Section 5 | STATE_MACHINE.md v2.8 Section 5 (projects.status) | backend/tests/api/test_projects_flow_generated.py |
+    | auth | backend/routers/authentication.py | backend/services/supabase_auth_service.py | docs/sot/AUTH_SPEC.md v2.1, docs/sot/API_SOT.md v9.4 | N/A (no state machine) | backend/tests/api/test_auth_flow_generated.py |
   </supported_modules>
 
   <module_details>
@@ -736,11 +736,11 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <service>backend/services/daily_report_service.py</service>
       <sot_documents>
         - docs/sot/DAILY_REPORT_SOT.md v1.0
-        - docs/sot/STATE_MACHINE.md v2.6 Section 8
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/API_SOT.md v9.0
+        - docs/sot/STATE_MACHINE.md v2.8 Section 8
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/API_SOT.md v9.4
       </sot_documents>
-      <state_machine>STATE_MACHINE.md v2.6 Section 8 (8-state: raw_submitted → trend_pending → trend_ok/trend_flagged → final_pending → final_confirmed → final_locked)</state_machine>
+      <state_machine>STATE_MACHINE.md v2.8 Section 8 (8-state: raw_submitted → trend_pending → trend_ok/trend_flagged → final_pending → final_confirmed → final_locked)</state_machine>
       <test_path>backend/tests/api/test_daily_report_flow_generated.py</test_path>
     </module>
 
@@ -749,11 +749,11 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <service>backend/services/topup_service.py</service>
       <sot_documents>
         - docs/sot/TOPUP_SOT.md v1.0
-        - docs/sot/STATE_MACHINE.md v2.6 Section 9
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/API_SOT.md v9.0
+        - docs/sot/STATE_MACHINE.md v2.8 Section 9
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/API_SOT.md v9.4
       </sot_documents>
-      <state_machine>STATE_MACHINE.md v2.6 Section 9 (7-state: draft → pending_review → finance_approve → paid → completed)</state_machine>
+      <state_machine>STATE_MACHINE.md v2.8 Section 9 (7-state: draft → pending_review → finance_approve → paid → completed)</state_machine>
       <test_path>backend/tests/api/test_topup_request_flow_generated.py</test_path>
     </module>
 
@@ -762,11 +762,11 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <service>backend/services/reconciliation_service.py</service>
       <sot_documents>
         - docs/sot/RECONCILIATION_SOT.md v1.0
-        - docs/sot/STATE_MACHINE.md v2.6 Section 11
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/API_SOT.md v9.0
+        - docs/sot/STATE_MACHINE.md v2.8 Section 11
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/API_SOT.md v9.4
       </sot_documents>
-      <state_machine>STATE_MACHINE.md v2.6 Section 11 (5-state: draft → pending_review → approved/needs_adjustment → completed)</state_machine>
+      <state_machine>STATE_MACHINE.md v2.8 Section 11 (5-state: draft → pending_review → approved/needs_adjustment → completed)</state_machine>
       <test_path>backend/tests/api/test_reconciliation_flow_generated.py</test_path>
     </module>
 
@@ -774,10 +774,10 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <router>backend/routers/ledger.py</router>
       <service>backend/services/ledger_service.py</service>
       <sot_documents>
-        - docs/sot/LEDGER_SOT.md v1.1
-        - docs/sot/DATA_SCHEMA.md v5.2
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/API_SOT.md v9.0
+        - docs/sot/LEDGER_SOT.md v1.2
+        - docs/sot/DATA_SCHEMA.md v5.6
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/API_SOT.md v9.4
       </sot_documents>
       <state_machine>N/A (no state machine, ledger entries are immutable records)</state_machine>
       <test_path>backend/tests/api/test_ledger_flow_generated.py</test_path>
@@ -787,13 +787,13 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <router>backend/routers/ad_accounts.py</router>
       <service>backend/services/ad_account_service.py</service>
       <sot_documents>
-        - docs/sot/API_SOT.md v9.0 Section 7
-        - docs/sot/STATE_MACHINE.md v2.6 Section 7.1
-        - docs/sot/DATA_SCHEMA.md v5.2
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/AUTH_SPEC.md v2.0
+        - docs/sot/API_SOT.md v9.4 Section 7
+        - docs/sot/STATE_MACHINE.md v2.8 Section 7.1
+        - docs/sot/DATA_SCHEMA.md v5.6
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/AUTH_SPEC.md v2.1
       </sot_documents>
-      <state_machine>STATE_MACHINE.md v2.6 Section 7.1 (ad_accounts.status: new → testing → active → suspended → dead → archived)</state_machine>
+      <state_machine>STATE_MACHINE.md v2.8 Section 7.1 (ad_accounts.status: new → testing → active → suspended → dead → archived)</state_machine>
       <test_path>backend/tests/api/test_ad_accounts_flow_generated.py</test_path>
     </module>
 
@@ -801,11 +801,11 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <router>backend/routers/suppliers.py</router>
       <service>backend/services/supplier_service.py</service>
       <sot_documents>
-        - docs/sot/API_SOT.md v9.0
-        - docs/sot/DATA_SCHEMA.md v5.2
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/AUTH_SPEC.md v2.0
-        - docs/sot/LEDGER_SOT.md v1.1 (SUPPLIER ledger)
+        - docs/sot/API_SOT.md v9.4
+        - docs/sot/DATA_SCHEMA.md v5.6
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/AUTH_SPEC.md v2.1
+        - docs/sot/LEDGER_SOT.md v1.2 (SUPPLIER ledger)
       </sot_documents>
       <state_machine>N/A (no state machine, suppliers.status is simple active/inactive)</state_machine>
       <test_path>backend/tests/api/test_suppliers_flow_generated.py</test_path>
@@ -815,11 +815,11 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <router>backend/routers/settlements.py</router>
       <service>backend/services/settlement_service.py</service>
       <sot_documents>
-        - docs/sot/API_SOT.md v9.0
-        - docs/sot/LEDGER_SOT.md v1.1 (ledger integration)
-        - docs/sot/DATA_SCHEMA.md v5.2
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/AUTH_SPEC.md v2.0
+        - docs/sot/API_SOT.md v9.4
+        - docs/sot/LEDGER_SOT.md v1.2 (ledger integration)
+        - docs/sot/DATA_SCHEMA.md v5.6
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/AUTH_SPEC.md v2.1
       </sot_documents>
       <state_machine>N/A (no state machine, settlements may have approval workflow but not defined in STATE_MACHINE.md)</state_machine>
       <test_path>backend/tests/api/test_settlements_flow_generated.py</test_path>
@@ -829,13 +829,13 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <router>backend/routers/projects.py</router>
       <service>backend/services/project_service.py</service>
       <sot_documents>
-        - docs/sot/API_SOT.md v9.0 Section 6
-        - docs/sot/STATE_MACHINE.md v2.6 Section 5
-        - docs/sot/DATA_SCHEMA.md v5.2
-        - docs/sot/ERROR_CODES_SOT.md v2.1
-        - docs/sot/AUTH_SPEC.md v2.0
+        - docs/sot/API_SOT.md v9.4 Section 6
+        - docs/sot/STATE_MACHINE.md v2.8 Section 5
+        - docs/sot/DATA_SCHEMA.md v5.6
+        - docs/sot/ERROR_CODES_SOT.md v2.2
+        - docs/sot/AUTH_SPEC.md v2.1
       </sot_documents>
-      <state_machine>STATE_MACHINE.md v2.6 Section 5 (projects.status: draft → active → suspended → archived)</state_machine>
+      <state_machine>STATE_MACHINE.md v2.8 Section 5 (projects.status: draft → active → suspended → archived)</state_machine>
       <test_path>backend/tests/api/test_projects_flow_generated.py</test_path>
     </module>
 
@@ -843,9 +843,9 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
       <router>backend/routers/authentication.py</router>
       <service>backend/services/supabase_auth_service.py</service>
       <sot_documents>
-        - docs/sot/AUTH_SPEC.md v2.0
-        - docs/sot/API_SOT.md v9.0
-        - docs/sot/ERROR_CODES_SOT.md v2.1
+        - docs/sot/AUTH_SPEC.md v2.1
+        - docs/sot/API_SOT.md v9.4
+        - docs/sot/ERROR_CODES_SOT.md v2.2
       </sot_documents>
       <state_machine>N/A (no state machine, authentication is stateless)</state_machine>
       <test_path>backend/tests/api/test_auth_flow_generated.py</test_path>
@@ -860,7 +860,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 <common_utilities>
   <factories>
     Location: backend/tests/common/factories.py
-    SoT Ref: DATA_SCHEMA.md v5.2, STATE_MACHINE.md v2.6
+    SoT Ref: DATA_SCHEMA.md v5.6, STATE_MACHINE.md v2.6
 
     Available factories (all use keyword-only arguments):
     - create_test_project(*, name, owner_id, status, **kwargs) → Dict
@@ -907,7 +907,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
 
   <error_helpers>
     Location: backend/tests/common/error_helpers.py
-    SoT Ref: ERROR_CODES_SOT.md v2.1
+    SoT Ref: ERROR_CODES_SOT.md v2.2
 
     Available helpers:
     - assert_error_code(response, expected_code, msg=None) - 断言特定错误码
@@ -1199,8 +1199,8 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6, SUPERCLAUDE_INTEGRATI
   - newman-reporter-htmlextra v1.22.11+
 
   **Alignment**
-  - MASTER.md v3.5
-  - SoT Freeze v2.6
+  - MASTER.md v4.6
+  - SoT Freeze v2.8
   - AUTOMATION_TEST_SPEC_v1.4.md
 
 </VERSION_NOTES>

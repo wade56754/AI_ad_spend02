@@ -1,8 +1,18 @@
+---
+name: skills-index
+version: "1.1"
+status: active
+layer: index
+owner: 架构组
+last_reviewed: 2025-12-30
+description: Skills 技能库索引文档
+---
+
 # Skills 索引
 
-> **版本**: v1.0
-> **更新日期**: 2025-12-17
-> **技能总数**: 19
+> **版本**: v1.1
+> **更新日期**: 2025-12-30
+> **技能总数**: 23
 
 ---
 
