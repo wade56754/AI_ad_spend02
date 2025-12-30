@@ -1,72 +1,121 @@
 # Claude Code 项目配置说明
 
-## 📚 项目规则文档
-
-本项目的所有开发规范已整理在以下文档中：
-
-### 核心规则文档（必读）
-- **[PROJECT_RULES.md](PROJECT_RULES.md)** v3.0 - 项目规则总纲（Meta-SoT）
-  - SoT 裁判链完整版
-  - 5 大不可侵犯原则
-  - 8 状态机定义
-  - 反模式识别库
-  - Claude/SuperClaude 使用指南
-
-### SoT 真相源文档（开发时必须参考 - 已 Freeze v1.0）
-1. **[DATA_SCHEMA.md](../docs/sot/DATA_SCHEMA.md)** v5.2 - 数据库结构唯一真相
-2. **[STATE_MACHINE.md](../docs/sot/STATE_MACHINE.md)** v2.6 - 状态机定义唯一真相 (§8: 8状态机)
-3. **[BUSINESS_RULES.md](../docs/sot/BUSINESS_RULES.md)** v3.2 - 业务规则唯一真相 (BR-*)
-4. **[API_SOT.md](../docs/sot/API_SOT.md)** v9.0 - API 契约唯一真相
-5. **[ERROR_CODES_SOT.md](../docs/sot/ERROR_CODES_SOT.md)** v2.1 - 错误码唯一真相
-6. **[AUTH_SPEC.md](../docs/sot/AUTH_SPEC.md)** v2.0 - 认证授权唯一真相
-7. **[LEDGER_SOT.md](../docs/sot/LEDGER_SOT.md)** v1.1 - 账本规则唯一真相
-8. **[DAILY_REPORT_SOT.md](../docs/sot/DAILY_REPORT_SOT.md)** v1.0 - 日报流程唯一真相
-9. **[RECONCILIATION_SOT.md](../docs/sot/RECONCILIATION_SOT.md)** v1.0 - 对账流程唯一真相
-10. **[TRANSFER_SOT.md](../docs/sot/TRANSFER_SOT.md)** v1.0 - 调拨规则唯一真相
-
-## 🤖 如何让 Claude 使用这些规则
-
-### 方法1：在对话开始时引用（推荐）
-```
-请严格遵循 .claude/PROJECT_RULES.md 中定义的所有规则进行开发。
-```
-
-### 方法2：在每次任务中明确引用
-```
-基于以下规范实现 XXX 功能：
-1. 数据结构：参考 docs/core/DATA_SCHEMA.md
-2. 状态流转：参考 docs/core/STATE_MACHINE.md
-3. API规范：参考 docs/core/API_DEVELOPMENT_FLOW.md
-```
-
-### 方法3：使用项目记忆功能
-在 Claude 对话中使用 `/project` 命令，将 PROJECT_RULES.md 的内容添加到项目记忆中。
-
-## ⚠️ 重要提醒
-
-所有代码生成和修改都必须：
-1. ✅ 符合 PROJECT_RULES.md 中的 5 大不可侵犯原则
-2. ✅ 遵循 SoT 裁判链优先级
-3. ✅ 通过反模式识别检查
-4. ✅ 以 `docs/sot/` 下的 SoT 文档为唯一依据
-
-如果发现任何代码与规则冲突，**必须以规则为准进行修正**。
-
-## 🎯 快速决策流程
-
-```
-收到需求 → 识别业务域 → 查询对应 SoT 文档（按裁判链优先级）
-→ 找到规则编号（如 BR-RPT-001）→ 检查代码是否符合
-→ 符合 → 继续开发 | 不符合 → 先修复或提 RFC
-```
-
-## 📦 文档体系版本
-
-**当前基准**: SoT Freeze v1.0 (2025-11-24)
-- **规则总纲**: PROJECT_RULES.md v3.0
-- **项目指令**: CLAUDE.md v3.0
-- **SoT 文档**: 10 个核心文档已冻结（详见上方列表）
+> **版本**: v2.0 | **更新日期**: 2025-12-30
 
 ---
 
-**最后更新**: 2025-11-24 | **基准**: SoT Freeze v1.0
+## 🚀 快速开始
+
+**新手必读**: [QUICK_START.md](./QUICK_START.md) - 5 分钟上手指南
+
+---
+
+## 📋 核心命令 (6 个)
+
+| 命令 | 说明 | 示例 |
+|------|------|------|
+| `/gen` | 代码生成 | `/gen be 创建日报接口` |
+| `/review` | 代码审查 | `/review backend/services/*.py --sot` |
+| `/doc` | 文档生成 | `/doc api` |
+| `/spec` | 规范管理 | `/spec proposal add-status` |
+| `/flow` | 工作流 | `/flow be-dev 新功能` |
+| `/help` | 帮助 | `/help` |
+
+**完整命令索引**: [commands/INDEX.md](./commands/INDEX.md)
+
+---
+
+## 📚 SoT 文档体系
+
+### 裁判链优先级
+
+```
+1. MASTER.md v4.6      → 系统全局规则
+2. DATA_SCHEMA.md v5.6 → 数据库结构
+3. STATE_MACHINE.md v2.8 → 状态机定义
+4. BUSINESS_RULES.md v4.7 → 业务规则
+5. API_SOT.md v9.4     → API 契约
+6. ERROR_CODES_SOT.md v2.2 → 错误码
+```
+
+### 白名单速查
+
+**8 状态**:
+```
+draft, pending_review, trend_pending, trend_ok,
+real_pending, real_filled, final_pending, final_confirmed
+```
+
+**6 角色**:
+```
+ceo, admin, project_owner, finance, pitcher, account_manager
+```
+
+**错误码前缀** (16 个):
+```
+AUTH_, BIZ_, FIN_, LEDGER_, STATE_, VALIDATION_,
+DB_, SYS_, API_, PERM_, RES_, DATA_, RECON_, REPORT_, RPT_, IMPORT_
+```
+
+---
+
+## 🛡️ 防幻觉原则 (BLOCKING)
+
+| 原则 | 规则 |
+|------|------|
+| AH-01 | 禁止假设数据一致，遇到缺失标记"待确认" |
+| AH-02 | 禁止自动做管理裁决，不生成拒绝/暂停代码 |
+| AH-03 | 禁止引入 SoT 未定义概念 |
+| AH-04 | 必须遵循 Phase 1 软性原则（只提示不阻断） |
+| AH-05 | 遇到歧义必须停止并询问 |
+
+---
+
+## 📂 目录结构
+
+```
+.claude/
+├── QUICK_START.md       # 🚀 快速入门（新手必读）
+├── README.md            # 本文件
+├── PROJECT_RULES.md     # 完整项目规则
+├── commands/            # 命令定义
+│   ├── INDEX.md         # 命令索引
+│   ├── gen-v2.md        # 代码生成
+│   ├── review-v2.md     # 代码审查
+│   ├── doc-v2.md        # 文档生成
+│   ├── spec.md          # 规范管理
+│   ├── flow.md          # 工作流
+│   └── help.md          # 帮助系统
+├── skills/              # 技能库（内部实现）
+│   └── INDEX.md         # 技能索引
+└── data/                # 运行时数据
+```
+
+---
+
+## 🔗 相关文档
+
+| 文档 | 说明 |
+|------|------|
+| [CLAUDE.md](../CLAUDE.md) | 根目录项目指令 |
+| [docs/sot/MASTER.md](../docs/sot/MASTER.md) | SoT 总纲 |
+| [memory-bank/](../memory-bank/) | 项目记忆库 |
+
+---
+
+## ⚡ 常用操作
+
+```bash
+# 生成后端代码
+/gen be 创建日报接口
+
+# 审查代码
+/review backend/services/daily_report_service.py --sot
+
+# 查看帮助
+/help
+```
+
+---
+
+**最后更新**: 2025-12-30 | **版本**: v2.0

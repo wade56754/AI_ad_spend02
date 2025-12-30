@@ -12,6 +12,7 @@ from contextlib import asynccontextmanager
 from backend.core.config import get_settings
 from backend.core.db import get_engine
 from backend.core.cache import init_cache, close_cache
+from backend.core.apm import APMConfig, setup_apm, set_user_context
 from backend.core.response import (
     fail,
     ok,
@@ -67,11 +68,32 @@ async def lifespan(app: FastAPI):
     """
     应用生命周期管理
 
-    Phase 3 性能优化: 初始化/关闭 Redis 缓存
+    Phase 3 性能优化:
+    - 初始化/关闭 Redis 缓存 (TASK-PERF-001)
+    - 初始化 APM 监控 (TASK-PERF-003)
     """
     # 启动时初始化
     await init_cache()
+
+    # 初始化 APM 监控 (Sentry + Prometheus)
+    apm_config = APMConfig(
+        sentry_dsn=settings.sentry_dsn,
+        sentry_enabled=settings.sentry_enabled,
+        sentry_environment=settings.env_name,
+        sentry_traces_sample_rate=settings.sentry_traces_sample_rate,
+        sentry_profiles_sample_rate=settings.sentry_profiles_sample_rate,
+        prometheus_enabled=settings.prometheus_enabled,
+        prometheus_metrics_path=settings.prometheus_metrics_path,
+        app_name=settings.app_name,
+        app_version="1.0.0",
+    )
+    apm_status = setup_apm(app, apm_config)
+    print(
+        f"INFO: APM 初始化状态 - Sentry: {apm_status['sentry']}, Prometheus: {apm_status['prometheus']}"
+    )
+
     yield
+
     # 关闭时清理
     await close_cache()
 
@@ -101,39 +123,27 @@ app.include_router(
     project_members.router, prefix=API_V1_PREFIX
 )  # 项目成员管理 ✅ MASTER.md v4.4
 app.include_router(authentication.router, prefix=API_V1_PREFIX)  # 用户认证
-app.include_router(
-    users.router, prefix=API_V1_PREFIX
-)  # 用户管理 ✅ 新增 (API_SOT v9.0 §5)
+app.include_router(users.router, prefix=API_V1_PREFIX)  # 用户管理 ✅ 新增 (API_SOT v9.0 §5)
 app.include_router(ad_spend.router, prefix=API_V1_PREFIX)  # 广告消耗
 app.include_router(ad_accounts.router, prefix=API_V1_PREFIX)  # 广告账户
 app.include_router(channels.router, prefix=API_V1_PREFIX)  # 渠道管理
 app.include_router(topup.router, prefix=API_V1_PREFIX)  # 充值管理
 app.include_router(daily_reports.router, prefix=API_V1_PREFIX)  # 日报管理 ✅ 新启用
-app.include_router(
-    suppliers.router, prefix=API_V1_PREFIX
-)  # 供应商管理 ✅ full_pipeline v2
-app.include_router(
-    settlements.router, prefix=API_V1_PREFIX
-)  # 结算管理 ✅ full_pipeline v2
+app.include_router(suppliers.router, prefix=API_V1_PREFIX)  # 供应商管理 ✅ full_pipeline v2
+app.include_router(settlements.router, prefix=API_V1_PREFIX)  # 结算管理 ✅ full_pipeline v2
 app.include_router(transfers.router, prefix=API_V1_PREFIX)  # 死号余额迁移 ✅ 新增
 app.include_router(
     ledger.router, prefix=API_V1_PREFIX
 )  # 财务总账 ✅ 启用 (finance_profit bugfix)
-app.include_router(
-    finance_profit.router, prefix=API_V1_PREFIX
-)  # 财务利润 ✅ 从 ledger 迁出
-app.include_router(
-    import_jobs.router, prefix=API_V1_PREFIX
-)  # 数据导入 ✅ 已实现ImportJob模型
+app.include_router(finance_profit.router, prefix=API_V1_PREFIX)  # 财务利润 ✅ 从 ledger 迁出
+app.include_router(import_jobs.router, prefix=API_V1_PREFIX)  # 数据导入 ✅ 已实现ImportJob模型
 app.include_router(reconciliation.router, prefix=API_V1_PREFIX)  # 对账管理 ✅ 新启用
 app.include_router(
     reconciliation_control.router, prefix=API_V1_PREFIX
 )  # 对账中控 ✅ OpenSpec: add-reconciliation-control-center
 app.include_router(reports.router, prefix=API_V1_PREFIX)  # 报表管理 ✅ v2.0 完整重构
 app.include_router(agents.router, prefix=API_V1_PREFIX)  # Agent Platform ✅ 新增
-app.include_router(
-    spend.router, prefix=API_V1_PREFIX
-)  # 消耗导入 ✅ Financial SoT Phase 2
+app.include_router(spend.router, prefix=API_V1_PREFIX)  # 消耗导入 ✅ Financial SoT Phase 2
 app.include_router(
     dashboard.router, prefix=API_V1_PREFIX
 )  # CEO驾驶舱 ✅ Phase C - MASTER.md v4.4 §6.5
@@ -144,9 +154,7 @@ app.include_router(
     weekly_reports.router, prefix=API_V1_PREFIX
 )  # 周报管理 ✅ TASK-WEEKLY-002
 app.include_router(fund.router, prefix=API_V1_PREFIX)  # 资金总览 ✅ A2-fund-overview.md
-app.include_router(
-    finance_v2.router
-)  # 财务管理V2 ✅ 资金总览+项目盈亏重构 (已包含 /api/v1 前缀)
+app.include_router(finance_v2.router)  # 财务管理V2 ✅ 资金总览+项目盈亏重构 (已包含 /api/v1 前缀)
 app.include_router(profit.router, prefix=API_V1_PREFIX)  # 利润模块 ✅ TASK-PROFIT-001
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
@@ -265,7 +273,9 @@ async def handle_validation_exception(
         field_name = (
             ".".join(str(x) for x in loc[1:])
             if len(loc) > 1
-            else str(loc[0]) if loc else "unknown"
+            else str(loc[0])
+            if loc
+            else "unknown"
         )
 
         if "missing" in error_type or "required" in error_type:

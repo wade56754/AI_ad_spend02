@@ -28,6 +28,11 @@ supabase==2.12.2
 # 工具库
 python-dotenv==1.0.1
 
+# APM 监控 (Phase 3 - TASK-PERF-003)
+sentry-sdk[fastapi]==2.19.2
+prometheus-client==0.21.1
+prometheus-fastapi-instrumentator==7.0.0
+
 # 测试工具
 pytest==8.3.4
 pytest-cov==6.0.0
