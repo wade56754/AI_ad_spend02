@@ -12,7 +12,7 @@
  * - project_owner: 全部功能，自己负责的项目
  * - finance: 只读，全公司数据
  * - admin: 只读，全公司数据
- * - supervisor/pitcher/account_manager: 禁止访问
+ * - pitcher/account_manager: 禁止访问
  */
 
 import { ProfitAnalysisPage } from '@/features/finance';

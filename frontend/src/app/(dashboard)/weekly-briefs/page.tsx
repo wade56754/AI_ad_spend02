@@ -2,7 +2,7 @@
  * Weekly Briefs List Page
  *
  * @sot docs/10.module-specs/B3-weekly-brief.md §3
- * @permission project_owner, ceo, supervisor, finance, admin
+ * @permission ceo, project_owner, finance, admin
  */
 
 import { WeeklyBriefsPage } from '@/features/weekly-briefs';

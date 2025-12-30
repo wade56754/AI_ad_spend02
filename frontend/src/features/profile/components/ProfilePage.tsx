@@ -37,7 +37,9 @@ const mockActivities = [
   { id: 5, action: '修改设置', resource: '通知设置', created_at: '2024-12-21 10:10:00', ip_address: '192.168.1.100' },
 ];
 
-// 角色标签 (来源: MASTER.md v4.6 §2.4)
+/**
+ * 角色标签 (MASTER.md v4.6 §2.4)
+ */
 const roleLabels: Record<string, string> = {
   ceo: '老板',
   project_owner: '项目负责人',
@@ -45,6 +47,8 @@ const roleLabels: Record<string, string> = {
   pitcher: '投手',
   account_manager: '户管',
   admin: '管理员',
+  // 技术层别名
+  media_buyer: '投手',
 };
 
 export function ProfilePage() {

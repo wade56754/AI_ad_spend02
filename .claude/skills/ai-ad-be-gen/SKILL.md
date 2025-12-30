@@ -96,7 +96,7 @@ interface BEGenOutput {
 | `backend/models/**` | ❌ 禁止 | 数据库模型 |
 | `migrations/**` | ❌ 禁止 | 数据库迁移 |
 
-### 4.2 模块表边界 (STATE_MACHINE.md v2.8 §2 角色与模块权限)
+### 4.2 模块表边界 (STATE_MACHINE.md v2.6 §2 角色与模块权限)
 
 按模块划分的数据表写入边界:
 
@@ -237,7 +237,7 @@ PRE_ANALYSIS_CONTEXT:
 {{TASK}}
 </TASK>
 
-<!-- ========== Anti-Hallucination Pre-Check (MASTER.md v4.6 §7) ========== -->
+<!-- ========== Anti-Hallucination Pre-Check (MASTER.md v4.4 §7) ========== -->
 <PRE_CHECK>
 **开发前 4 步检查 (AH-01~05)** - 每次代码生成前必须执行
 
@@ -248,10 +248,10 @@ PRE_ANALYSIS_CONTEXT:
 
 **Step -3: SoT 查询** (AH-03)
 - □ 按裁判链顺序查询相关文档:
-  MASTER.md v4.6 → DATA_SCHEMA.md v5.6 → STATE_MACHINE.md v2.8
-  → BUSINESS_RULES.md v4.7 → API_SOT.md v9.4 → ERROR_CODES_SOT.md v2.2
+  MASTER.md v4.4 → DATA_SCHEMA.md v5.2 → STATE_MACHINE.md v2.6
+  → BUSINESS_RULES.md v3.2 → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1
 - □ 确认状态值在 STATE_MACHINE.md 的 8 状态机中存在
-- □ 确认角色值在 6 角色白名单中
+- □ 确认角色值在 7 角色白名单中
 - □ 确认错误码在 ERROR_CODES_SOT.md 中
 - □ 如发现缺失 → **STOP** → 询问用户
 
@@ -263,8 +263,9 @@ PRE_ANALYSIS_CONTEXT:
 **Step -1: 常量验证** (AH-01, AH-02)
 - □ 状态值 → STATE_MACHINE.md 8 状态白名单
   (raw_submitted, trend_pending, trend_ok, trend_flagged, trend_resolved, final_pending, final_confirmed, final_locked)
-- □ 角色值 → 6 角色白名单
-  (ceo, project_owner, finance, pitcher, account_manager, admin)
+- □ 角色值 → 6 业务层角色 (PRD v2.2) + 4 技术层角色 (MASTER.md v4.6)
+  业务层: (ceo, project_owner, finance, pitcher, account_manager, admin)
+  技术层: (admin, finance, account_manager, media_buyer)
 - □ 错误码前缀 → 16 前缀白名单
   (VAL, AUTH, BIZ, DB, INT, SYS, FIN, RPT, ACC, PRJ, PIT, TOP, IMP, EXP, REC, SET)
 
@@ -279,7 +280,7 @@ PRE_ANALYSIS_CONTEXT:
 <THINKING_CHAIN>
 请按以下步骤思考：
 
-0. **模块归属判定** (STATE_MACHINE.md v2.8 §2 - 必填)
+0. **模块归属判定** (STATE_MACHINE.md v2.6 §2 - 必填)
    - 确认任务属于哪个核心模块:
      □ pitcher (投手管理) - 日报填报、投手信息、投手看板
      □ finance (财务管理) - 流水、冲正、对账、期间锁
@@ -410,14 +411,14 @@ POST_REVIEW_RESULT:
 
 ## 6. Self-Check Checklist
 
-生成代码后，必须进行以下自检 (STATE_MACHINE.md v2.8 §2 合规检查)：
+生成代码后，必须进行以下自检 (STATE_MACHINE.md v2.6 §2 合规检查)：
 
 | 检查项 | 验证方法 | P0/P1 |
 |--------|---------|-------|
 | **模块归属确认** | 任务属于 pitcher/finance/ad_account/project 之一 | P0 |
 | **写入权限检查** | 目标表在该模块可写范围内 | P0 |
 | 状态枚举一致性 | 对比 STATE_MACHINE.md (8 状态: raw_submitted → ... → final_locked) | P0 |
-| 角色合规 | 对比 5 技术角色 (admin/finance/data_operator/account_manager/media_buyer) | P0 |
+| 角色合规 | 对比 4 技术角色 (admin/finance/account_manager/media_buyer) - MASTER.md v4.6 | P0 |
 | 错误码合规 | 查找 ERROR_CODES_SOT.md | P0 |
 | 字段类型匹配 | 对比 DATA_SCHEMA.md | P0 |
 | 禁区检查 | 不生成 models/migrations | P0 |

@@ -50,22 +50,22 @@ export function TopupDetailDialog({
 }: TopupDetailDialogProps) {
   if (!topup) return null;
 
-  // 权限检查 (角色来源: MASTER.md v4.6 §2.4)
+  // 权限检查 (SoT: MASTER.md v4.6, backend/routers/topup.py)
   const canDataReview =
     topup.status === 'pending_review' &&
-    ['project_owner', 'admin'].includes(userRole);
+    ['project_owner', 'finance', 'admin'].includes(userRole);
   const canFinanceApprove =
     topup.status === 'finance_approve' &&
     ['finance', 'admin'].includes(userRole);
   const canComplete =
     topup.status === 'paid' &&
-    ['finance', 'admin'].includes(userRole);
+    ['finance', 'system', 'admin'].includes(userRole);
   const canCancel =
     ['draft', 'pending_review', 'finance_approve'].includes(topup.status) &&
-    ['pitcher', 'account_manager', 'admin'].includes(userRole);
+    ['pitcher', 'media_buyer', 'account_manager', 'admin'].includes(userRole);
   const canSubmit =
     topup.status === 'draft' &&
-    ['pitcher', 'account_manager', 'admin'].includes(userRole);
+    ['pitcher', 'media_buyer', 'account_manager', 'admin'].includes(userRole);
 
   // Handle Money type - could be number or object
   const amountValue = typeof topup.amount === 'number'

@@ -1,26 +1,32 @@
 /**
  * User Management Types
  *
- * SoT 对齐: MASTER.md v4.6 §2.4（宪法）
- * 变更记录: 2025-12-30 统一为 6 角色，移除废弃角色
+ * SoT: MASTER.md v4.6 §2.4 (6 角色定义)
+ * SoT: AUTH_SPEC.md v2.0
  *
- * 合法角色（6 角色）:
+ * 6 角色白名单 (MASTER.md v4.6 / PRD v2.2):
  *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
- * 废弃角色（禁止使用）:
- *   - supervisor: 已废弃 (PRD v2.2)，合并到 project_owner
- *   - data_operator: 不在宪法中
- *   - media_buyer: 非标准术语，使用 pitcher
+ * 技术层别名 (兼容性保留):
+ *   pitcher ← media_buyer
+ *
+ * 废弃角色 (禁止使用):
+ *   supervisor → project_owner
+ *   data_operator → finance
  */
 
 export enum UserRole {
-  // 合法角色 (MASTER.md v4.6 §2.4)
+  // 6 角色白名单 (MASTER.md v4.6 §2.4 / PRD v2.2)
   CEO = 'ceo',
   PROJECT_OWNER = 'project_owner',
   FINANCE = 'finance',
   PITCHER = 'pitcher',
   ACCOUNT_MANAGER = 'account_manager',
   ADMIN = 'admin',
+
+  // 技术层别名 (兼容性保留)
+  /** @deprecated Use PITCHER instead */
+  MEDIA_BUYER = 'media_buyer',
 }
 
 export enum UserStatus {
@@ -42,13 +48,13 @@ export interface User {
   last_login?: string;
   // 关联字段
   account_manager_id?: string;
-  /** 主管姓名 (JOIN) - SoT: C2-pitcher-mgmt.md §2.2 */
-  supervisor_name?: string;
-  /** 团队名称 - SoT: C2-pitcher-mgmt.md §2.2 */
+  /** 管理者姓名 (JOIN from account_manager_id) - 投手的直属管理人 */
+  manager_name?: string;
+  /** 团队名称 */
   team_name?: string;
-  /** 负责账户数 (COUNT) - SoT: C2-pitcher-mgmt.md §2.2 */
+  /** 负责账户数 (COUNT) */
   account_count?: number;
-  /** 关联项目数 (COUNT) - SoT: C2-pitcher-mgmt.md §2.2 */
+  /** 关联项目数 (COUNT) */
   project_count?: number;
 }
 
@@ -85,7 +91,7 @@ export interface UserListResponse {
 }
 
 /**
- * 角色选项 (MASTER.md v4.6 §2.4)
+ * 6 角色选项 (MASTER.md v4.6 §2.4 / PRD v2.2)
  */
 export const USER_ROLE_OPTIONS = [
   { value: UserRole.CEO, label: '老板', color: 'purple' },

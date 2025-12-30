@@ -1,6 +1,6 @@
 # AI 防幻觉规则 (Anti-Hallucination Rules)
 
-> **来源**: MASTER.md v4.6 §7
+> **来源**: MASTER.md v4.4 §7
 > **版本**: v1.0
 > **最后更新**: 2025-12-24
 > **级别**: BLOCKING - 所有代码生成必须遵循
@@ -89,17 +89,17 @@ if cpl > target_cpl * 1.3:
 ```
 优先级顺序 (高 → 低):
 
-MASTER.md v4.6
+MASTER.md v4.4
     ↓
-DATA_SCHEMA.md v5.6
+DATA_SCHEMA.md v5.2
     ↓
-STATE_MACHINE.md v2.8
+STATE_MACHINE.md v2.6
     ↓
-BUSINESS_RULES.md v4.7
+BUSINESS_RULES.md v3.2
     ↓
-API_SOT.md v9.4
+API_SOT.md v9.0
     ↓
-ERROR_CODES_SOT.md v2.2
+ERROR_CODES_SOT.md v2.1
 ```
 
 **冲突解决规则**:
@@ -121,7 +121,7 @@ ERROR_CODES_SOT.md v2.2
 ### Step 2: SoT 查询
 - [ ] 按裁判链顺序查询相关文档
 - [ ] 确认状态值在 STATE_MACHINE.md 中存在
-- [ ] 确认角色值在 6 角色白名单中
+- [ ] 确认角色值在 7 角色白名单中
 - [ ] 确认错误码在 ERROR_CODES_SOT.md 中
 - [ ] 如发现缺失 → 停止 → 询问 (AH-03)
 
@@ -132,7 +132,7 @@ ERROR_CODES_SOT.md v2.2
 
 ### Step 4: 常量验证
 - [ ] 状态值 → STATE_MACHINE.md 白名单
-- [ ] 角色值 → 6 角色白名单
+- [ ] 角色值 → 7 角色白名单
 - [ ] 错误码 → ERROR_CODES_SOT.md 白名单
 
 ---
@@ -141,11 +141,11 @@ ERROR_CODES_SOT.md v2.2
 
 | ID | 禁止行为 | 正确做法 | SoT 来源 |
 |----|---------|---------|---------|
-| F-001 | 自定义错误码 | 使用 ERROR_CODES_SOT.md 中定义的错误码 | ERROR_CODES_SOT.md v2.2 |
-| F-002 | 发明新状态 | 使用 STATE_MACHINE.md 中定义的状态 | STATE_MACHINE.md v2.8 |
-| F-003 | 直接修改 balance | 通过 ledger_entries 记录余额变更 | LEDGER_SOT.md v1.2 |
-| F-004 | 绕过 BFF 直连数据库 | 前端只能通过 API 访问数据 | API_SOT.md v9.4 |
-| F-005 | 使用非标准角色 | 仅使用 6 个标准角色 | MASTER.md v4.6 §2.4 |
+| F-001 | 自定义错误码 | 使用 ERROR_CODES_SOT.md 中定义的错误码 | ERROR_CODES_SOT.md v2.1 |
+| F-002 | 发明新状态 | 使用 STATE_MACHINE.md 中定义的状态 | STATE_MACHINE.md v2.6 |
+| F-003 | 直接修改 balance | 通过 ledger_entries 记录余额变更 | LEDGER_SOT.md v1.1 |
+| F-004 | 绕过 BFF 直连数据库 | 前端只能通过 API 访问数据 | API_SOT.md v9.0 |
+| F-005 | 使用非标准角色 | 仅使用 7 个标准角色 | MASTER.md v4.4 §2.4 |
 
 ### 代码反模式检测
 
@@ -201,7 +201,7 @@ Schema → Service → Router → Test
 ### 6.1 日报状态机 (8 状态)
 
 ```python
-# SoT: STATE_MACHINE.md v2.8 §2
+# SoT: STATE_MACHINE.md v2.6 §2
 REPORT_STATUS = frozenset([
     'raw_submitted',    # 投手提交原始粉数
     'trend_pending',    # 等待趋势风控检查
@@ -214,25 +214,30 @@ REPORT_STATUS = frozenset([
 ])
 ```
 
-### 6.2 用户角色 (6 角色)
+### 6.2 用户角色 (6 业务层 + 4 技术层)
 
 ```python
-# SoT: MASTER.md v4.6 §2.4
-USER_ROLE = frozenset([
+# SoT: PRD v2.2 业务层 6 角色
+BUSINESS_ROLES = frozenset([
     'ceo',              # 老板 - 资金安全、公司盈亏、最终决策
-    'project_owner',    # 项目负责人 - 项目盈亏、资金使用效率
+    'project_owner',    # 项目负责人 - 日报审核、项目盈亏、资金使用效率
     'finance',          # 财务 - 资金出入准确、数据真实、对账
     'pitcher',          # 投手 - CPL 达标、日报准确、执行投放
     'account_manager',  # 户管 - 账户分配、账户状态监控
     'admin'             # 管理员 - 系统配置（不参与业务）
 ])
-# 已废弃: supervisor (PRD v2.2 废弃，合并到 project_owner)
+
+# SoT: MASTER.md v4.6 §INV-007 技术层 4 角色
+TECHNICAL_ROLES = frozenset(['admin', 'finance', 'account_manager', 'media_buyer'])
+
+# 废弃角色 (PRD v2.2)
+DEPRECATED_ROLES = frozenset(['supervisor', 'data_operator'])
 ```
 
 ### 6.3 错误码前缀 (16 前缀)
 
 ```python
-# SoT: ERROR_CODES_SOT.md v2.2
+# SoT: ERROR_CODES_SOT.md v2.1
 ERROR_PREFIXES = frozenset([
     # 通用错误 (6 个)
     'VAL',   # 验证错误
@@ -304,7 +309,7 @@ FORBIDDEN_PATTERNS = [
 ### 8.1 来源追溯检查
 
 - [ ] 每个状态值可追溯到 STATE_MACHINE.md
-- [ ] 每个角色值可追溯到 6 角色白名单
+- [ ] 每个角色值可追溯到 7 角色白名单
 - [ ] 每个字段值可追溯到 DATA_SCHEMA.md
 - [ ] 每个错误码可追溯到 ERROR_CODES_SOT.md
 - [ ] 每个 API 调用在项目中存在
@@ -340,7 +345,7 @@ FORBIDDEN_PATTERNS = [
 │                                                             │
 │  Step 1: 检测到歧义                                          │
 │  ├── 状态值不在白名单中                                       │
-│  ├── 角色值不在 6 角色中                                      │
+│  ├── 角色值不在 7 角色中                                      │
 │  ├── 字段值不在 DATA_SCHEMA 中                               │
 │  ├── 规则编号不在 BUSINESS_RULES 中                          │
 │  └── API 端点不在 API_SOT 中                                 │
@@ -374,9 +379,9 @@ FORBIDDEN_PATTERNS = [
 
 | 版本 | 日期 | 变更内容 |
 |------|------|---------|
-| v1.0 | 2025-12-24 | 初始版本，基于 MASTER.md v4.6 §7 创建 |
+| v1.0 | 2025-12-24 | 初始版本，基于 MASTER.md v4.4 §7 创建 |
 
 ---
 
 **维护者**: AI 代码工厂
-**关联文档**: MASTER.md v4.6, STATE_MACHINE.md v2.8, DATA_SCHEMA.md v5.6
+**关联文档**: MASTER.md v4.4, STATE_MACHINE.md v2.6, DATA_SCHEMA.md v5.2

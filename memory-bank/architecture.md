@@ -1,7 +1,7 @@
 # AI 广告代投管理系统 - 架构说明
 
-> **版本**: v1.0
-> **更新日期**: 2025-12-27
+> **版本**: v1.1
+> **更新日期**: 2025-12-29
 > **基准文档**: docs/sot/MASTER.md v4.6
 
 ---
@@ -74,6 +74,9 @@ AI_ad_spend02/
 │           ├── guardrails/      # 编辑防护
 │           └── event_stream/    # 事件流
 │
+├── scripts/                     # 工具脚本
+│   └── sot-scan.sh              # SoT 5秒扫描 (AI防幻觉检查)
+│
 ├── docs/                        # 文档
 │   ├── sot/                     # 真相源文档 (SoT)
 │   │   ├── MASTER.md            # 架构宪法
@@ -82,7 +85,9 @@ AI_ad_spend02/
 │   │   ├── BUSINESS_RULES.md    # 业务规则
 │   │   └── ...
 │   └── guides/                  # 开发指南
-│       └── TASK_CARDS_v2.md     # 任务卡文档
+│       ├── TASK_CARDS_v2.md     # 任务卡文档
+│       ├── TASK_COMPLEXITY.md   # 任务复杂度分级指南 (NEW)
+│       └── AI_PROGRAMMING_BEST_PRACTICES_v3.1.md  # AI编程最佳实践
 │
 ├── memory-bank/                 # 项目记忆库 (本目录)
 │   ├── game-design-document.md  # 需求/PRD

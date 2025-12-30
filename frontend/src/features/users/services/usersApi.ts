@@ -3,15 +3,14 @@
  *
  * TanStack Query v5 API 服务层
  *
- * SoT: docs/10.module-specs/C2-pitcher-mgmt.md §4 API 接口
- * SoT: MASTER.md v4.4 §2.4 (7 角色定义)
+ * SoT: MASTER.md v4.6 §2.4 (6 角色定义)
  * SoT: API_SOT.md v9.0 §5 Users API
  * SoT: ERROR_CODES_SOT.md v2.1
  *
  * 一句话定义: 用户/投手数据获取和管理服务
  *
- * 标准角色 (MASTER.md v4.4):
- *   ceo, project_owner, finance, supervisor, pitcher, account_manager, admin
+ * 6 角色白名单 (MASTER.md v4.6 / PRD v2.2):
+ *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
  * Author: AI 代码工厂 v2.4
  */
@@ -48,8 +47,8 @@ function generateMockPitchers(): User[] {
       role: 'pitcher' as unknown as UserRole,
       status: 'active' as unknown as UserStatus,
       is_active: true,
-      account_manager_id: 'uuid-supervisor-001',
-      supervisor_name: '李主管',
+      account_manager_id: 'uuid-manager-001',
+      manager_name: '李经理',
       team_name: 'A组',
       account_count: 5,
       project_count: 2,
@@ -64,8 +63,8 @@ function generateMockPitchers(): User[] {
       role: 'pitcher' as unknown as UserRole,
       status: 'active' as unknown as UserStatus,
       is_active: true,
-      account_manager_id: 'uuid-supervisor-001',
-      supervisor_name: '李主管',
+      account_manager_id: 'uuid-manager-001',
+      manager_name: '李经理',
       team_name: 'A组',
       account_count: 3,
       project_count: 1,
@@ -80,8 +79,8 @@ function generateMockPitchers(): User[] {
       role: 'pitcher' as unknown as UserRole,
       status: 'inactive' as unknown as UserStatus,
       is_active: false,
-      account_manager_id: 'uuid-supervisor-002',
-      supervisor_name: '王主管',
+      account_manager_id: 'uuid-manager-002',
+      manager_name: '王经理',
       team_name: 'B组',
       account_count: 4,
       project_count: 1,
@@ -96,8 +95,8 @@ function generateMockPitchers(): User[] {
       role: 'pitcher' as unknown as UserRole,
       status: 'active' as unknown as UserStatus,
       is_active: true,
-      account_manager_id: 'uuid-supervisor-002',
-      supervisor_name: '王主管',
+      account_manager_id: 'uuid-manager-002',
+      manager_name: '王经理',
       team_name: 'B组',
       account_count: 6,
       project_count: 3,
@@ -118,8 +117,9 @@ function generateMockUserStats() {
     inactive: 3,
     by_role: {
       pitcher: 18,
-      supervisor: 4,
+      project_owner: 3,
       finance: 2,
+      account_manager: 1,
       admin: 1,
     },
   };
@@ -215,8 +215,7 @@ export async function getUser(id: string): Promise<User> {
 /**
  * Get user statistics
  * GET /api/v1/users/statistics/summary
- * SoT: C2-pitcher-mgmt.md §3.1 KPI 卡片
- * 权限: admin, finance, supervisor
+ * 权限: admin, finance, project_owner
  */
 export async function getUserStatistics(): Promise<{
   total: number;

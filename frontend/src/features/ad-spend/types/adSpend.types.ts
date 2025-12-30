@@ -9,7 +9,7 @@
  *
  * 消耗 SoT 约束 (C3-spend-detail.md §1.4):
  *   Phase 1: ad_spend_daily.spend (Excel 导入)
- *   Phase 2: daily_report.real_spend (supervisor/finance 确认)
+ *   Phase 2: daily_report.real_spend (project_owner/finance 确认)
  *
  * 计算公式 (C3-spend-detail.md §2.3):
  *   CPL/CPA = spend / conversions

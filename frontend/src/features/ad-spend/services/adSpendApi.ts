@@ -11,12 +11,12 @@
  *
  * 消耗 SoT 约束 (C3-spend-detail.md §1.4):
  *   Phase 1: ad_spend_daily.spend (Excel 导入)
- *   Phase 2: daily_report.real_spend (supervisor/finance 确认)
+ *   Phase 2: daily_report.real_spend (project_owner/finance 确认)
  *
  * Author: AI 代码工厂 v2.4
  */
 
-import { apiFetch } from '@/lib/api';
+import { apiFetch, apiDownload, apiUpload } from '@/lib/api';
 import type {
   AdSpendRecord,
   AdSpendSummary,
@@ -439,18 +439,7 @@ export async function exportAdSpend(params: AdSpendListParams = {}): Promise<Blo
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/export?${query}` : `${BASE_PATH}/export`;
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('导出失败');
-  }
-
-  return response.blob();
+  return apiDownload(url);
 }
 
 /**
@@ -465,23 +454,7 @@ export async function importAdSpend(
   error_count: number;
   import_job_id: string;
 }> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('source_platform', sourcePlatform);
-
-  const response = await fetch(`${BASE_PATH}/import`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('token')}`,
-    },
-    body: formData,
+  return apiUpload(`${BASE_PATH}/import`, file, {
+    additionalData: { source_platform: sourcePlatform },
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '导入失败');
-  }
-
-  const result = await response.json();
-  return result.data;
 }
