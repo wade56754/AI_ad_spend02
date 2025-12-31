@@ -1,6 +1,6 @@
 # AI广告代投管理系统
 
-> **SoT 版本**: MASTER.md v4.6 | BUSINESS_RULES.md v4.7 | DATA_SCHEMA.md v5.6 | STATE_MACHINE.md v2.8
+> **SoT 版本**: MASTER.md v4.7 | BUSINESS_RULES.md v4.8 | DATA_SCHEMA.md v5.7 | STATE_MACHINE.md v2.8
 > **AI 模型**: Claude Opus 4.5 优化 | Cursor 兼容
 
 ---
@@ -88,7 +88,7 @@
 
 ## 合法角色（仅 6 个）
 
-> **来源**: MASTER.md v4.6 §2.4
+> **来源**: MASTER.md v4.7 §2.4
 > **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |

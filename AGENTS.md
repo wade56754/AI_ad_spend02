@@ -2,7 +2,7 @@
 
 > AI 广告代投系统 - AI Coding Agent 专属指南
 >
-> 版本: v1.1 | 基准: MASTER.md v4.6, PRD v2.2 | 基于 [agents.md](https://agents.md) 开放格式
+> 版本: v1.2 | 基准: MASTER.md v4.7, PRD v2.2 | 基于 [agents.md](https://agents.md) 开放格式
 
 <!-- OPENSPEC:START -->
 ## OpenSpec Instructions
@@ -108,8 +108,7 @@ AI_ad_spend02/
 │   │   ├── API_SOT.md
 │   │   ├── AUTH_SPEC.md
 │   │   ├── ERROR_CODES_SOT.md
-│   │   ├── BUSINESS_RULES.md
-│   │   └── LEDGER_SOT.md
+│   │   └── BUSINESS_RULES.md
 │   ├── 1.overview/        # 项目概览
 │   ├── 2.dev-guides/      # 开发指南
 │   └── 3.architecture/    # 架构视图
@@ -181,14 +180,13 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 ### 6.1 SoT 裁判链 (优先级从高到低)
 
 ```
-MASTER.md v4.6                     → 架构宪法，最高优先级
+MASTER.md v4.7                     → 架构宪法，最高优先级
 STATE_MACHINE.md v2.8              → 状态机定义 (8 状态)
-DATA_SCHEMA.md v5.6                → 数据模型 (23 表)
+DATA_SCHEMA.md v5.7                → 数据模型 (23 表) + 账本规则 §3.4.4
 API_SOT.md v9.4                    → API 契约 (50+ 端点)
 ERROR_CODES_SOT.md v2.2            → 错误码注册表
-BUSINESS_RULES.md v4.7             → 业务规则
+BUSINESS_RULES.md v4.8             → 业务规则
 AUTH_SPEC.md v2.1                  → 认证授权 (6 角色)
-LEDGER_SOT.md v1.2                 → 双账本规范
 ```
 
 **规则**: 高层文档覆盖低层文档。遇到冲突时，先查 MASTER.md。
@@ -495,9 +493,9 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 
 | 文档 | 路径 | 版本 |
 |------|------|------|
-| 架构宪法 | `docs/sot/MASTER.md` | v4.6 |
+| 架构宪法 | `docs/sot/MASTER.md` | v4.7 |
 | 状态机 | `docs/sot/STATE_MACHINE.md` | v2.8 |
-| 数据模型 | `docs/sot/DATA_SCHEMA.md` | v5.6 |
+| 数据模型 | `docs/sot/DATA_SCHEMA.md` | v5.7 |
 | API 契约 | `docs/sot/API_SOT.md` | v9.4 |
 | 错误码 | `docs/sot/ERROR_CODES_SOT.md` | v2.2 |
 | 认证授权 | `docs/sot/AUTH_SPEC.md` | v2.1 |
@@ -509,7 +507,7 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 ## 版本同步
 
 本文档基于：
-- **MASTER.md v4.6**
+- **MASTER.md v4.7**
 - **PRD v2.2**
 
 当上游文档更新时，需同步更新：
@@ -533,4 +531,4 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 
 ---
 
-*最后更新: 2025-12-27 | 版本: v1.1 | 兼容 agents.md 开放格式*
+*最后更新: 2025-12-31 | 版本: v1.2 | 兼容 agents.md 开放格式*

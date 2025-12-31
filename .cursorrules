@@ -1,6 +1,6 @@
 # ===========================
-# AI_ad_spend02 Cursor Rules v2.2
-# 基于 MASTER.md v4.6 + STATE_MACHINE.md v2.8 + PRD v2.2
+# AI_ad_spend02 Cursor Rules v2.3
+# 基于 MASTER.md v4.7 + STATE_MACHINE.md v2.8 + PRD v2.2
 # 兼容 Claude Code + Cursor IDE
 # ===========================
 
@@ -15,14 +15,13 @@ RULE: When editing code or docs, preserve existing intent unless task is explici
 
 RULE: Apply this SoT precedence for any conflict:
 ```
-1) MASTER.md v4.6 (系统宪法 - PRD v2.2 对齐)
+1) MASTER.md v4.7 (系统宪法 - PRD v2.2 对齐)
 2) STATE_MACHINE.md v2.8 (状态定义 - 8 状态机 + 月度结算 + 周报)
-3) DATA_SCHEMA.md v5.6 (数据结构 - 23 表)
-4) BUSINESS_RULES.md v4.7 (业务规则 - BR-* 编号)
+3) DATA_SCHEMA.md v5.7 (数据结构 - 23 表 + 账本规则 §3.4.4)
+4) BUSINESS_RULES.md v4.8 (业务规则 - BR-* 编号)
 5) API_SOT.md v9.4 (API 契约 - 50+ 端点)
 6) ERROR_CODES_SOT.md v2.2 (错误码注册表)
 7) AUTH_SPEC.md v2.1 (认证授权 - 6 角色)
-8) LEDGER_SOT.md v1.2 (双账本规范)
 ```
 
 RULE: Before generating code, read relevant SoT docs in docs/sot/ directory.
@@ -306,4 +305,4 @@ RULE: If change could break CLI, API, or SoT invariants:
 # Supabase MCP: .claude/mcp.json, .mcp.json
 # Playwright MCP: .claude/mcp.json, .mcp.json
 
-# End of Cursor Rules v2.2
+# End of Cursor Rules v2.3
