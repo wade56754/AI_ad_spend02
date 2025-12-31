@@ -11,28 +11,34 @@ class UserRole(str, Enum):
     """
     用户角色枚举
 
-    必须与 MASTER.md v4.4 §2.4 和 AUTH_SPEC.md v2.1 §2.2 保持严格一致。
-    7 个业务角色对应 7 个技术角色:
+    必须与 MASTER.md v4.6 §2.4 和 AUTH_SPEC.md v2.1 §2.2 保持严格一致。
+    6 个业务角色（PRD v2.2 移除了 supervisor）:
 
     | 业务角色 | 技术枚举 | 权限级别 |
     |---------|----------|---------|
-    | ceo | CEO | L7 (最高) |
-    | admin | ADMIN | L6 |
-    | project_owner | PROJECT_OWNER | L5 |
-    | finance | FINANCE | L4 |
-    | supervisor | DATA_OPERATOR | L3 |
+    | ceo | CEO | L6 (最高) |
+    | admin | ADMIN | L5 |
+    | project_owner | PROJECT_OWNER | L4 |
+    | finance | FINANCE | L3 |
     | account_manager | ACCOUNT_MANAGER | L2 |
     | pitcher | MEDIA_BUYER | L1 (最低) |
 
-    SoT Reference: MASTER.md v4.4 §2.4, AUTH_SPEC.md v2.1 §2.2
+    废弃说明 (PRD v2.2):
+    - supervisor → 职责合并到 project_owner
+    - data_operator → 职责合并到 project_owner/finance
+
+    SoT Reference: MASTER.md v4.6 §2.4, AUTH_SPEC.md v2.1 §2.2
     """
     CEO = "ceo"                          # 老板 - 资金安全、公司盈亏、最终决策
     ADMIN = "admin"                      # 系统管理员 - 系统配置、全局审计
-    PROJECT_OWNER = "project_owner"      # 项目负责人 - 项目盈亏、资金使用效率
+    PROJECT_OWNER = "project_owner"      # 项目负责人 - 项目盈亏、资金使用效率、日报审核
     FINANCE = "finance"                  # 财务 - 资金出入准确、数据真实
-    DATA_OPERATOR = "data_operator"      # 主管(supervisor) - 团队产出、投手管理
     ACCOUNT_MANAGER = "account_manager"  # 户管 - 账户分配、账户状态监控
     MEDIA_BUYER = "media_buyer"          # 投手(pitcher) - CPL达标、日报准确
+
+    # 废弃角色 - 仅用于向后兼容，新代码禁止使用
+    # @deprecated PRD v2.2: 使用 PROJECT_OWNER 替代
+    DATA_OPERATOR = "data_operator"      # [废弃] 原主管角色，已合并到 project_owner
 
 
 class ChannelStatus(str, Enum):

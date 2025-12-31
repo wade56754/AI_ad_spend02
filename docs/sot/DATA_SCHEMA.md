@@ -1,10 +1,10 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
-> **版本**: v5.6
-> **status**: frozen
+> **版本**: v5.7
+> **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-30
-> **更新日期**: 2025-12-30
+> **last_reviewed**: 2025-12-31
+> **更新日期**: 2025-12-31
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
@@ -26,24 +26,26 @@
 - **权限**: 当前版本仅在应用层（Service + `@require_role`）执行 RBAC，数据库 RLS 规划中未启用  
 - **时间字段**: 统一使用 `TIMESTAMPTZ`，默认 `NOW()`，应用层使用 UTC  
 - **金额字段**: 一律 `DECIMAL(15,2)`，默认 `0.00`，借方为正、贷方为负值  
-- **角色枚举**: 
+- **角色枚举**:
   - **业务层角色**（6个，存储在 `users.role` 字段）：`ceo`, `project_owner`, `finance`, `pitcher`, `account_manager`, `admin`（MASTER.md v4.6 §2.4）
-  - **技术层角色**（4个，用于应用层 RBAC）：`admin`, `finance`, `account_manager`, `media_buyer`
-  - **映射关系**：
+  - **技术层角色**（4个，用于应用层 RBAC CHECK 约束）：`admin`, `finance`, `account_manager`, `media_buyer`
+  - **业务层 → 技术层映射**：
     - `ceo` → `admin`（系统最高权限）
     - `project_owner` → 通过 `users.is_project_owner=true` 业务属性判断（日报审核等）
     - `finance` → `finance`（直接映射）
-    - `pitcher` → `media_buyer`（直接映射）
+    - `pitcher` → `media_buyer`（业务名→技术名，同一角色的两种称呼）
     - `account_manager` → `account_manager`（直接映射）
     - `admin` → `admin`（直接映射）
   - 详细映射规则见 AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.6 §INV-007
 
-> ⚠️ **废弃角色** (PRD v2.2)：`supervisor` 已废弃，职责合并到 `project_owner`
+> ⚠️ **废弃角色** (PRD v2.2)：以下角色已废弃，新代码禁止使用
+> - `supervisor` → 职责合并到 `project_owner`
+> - `data_operator` → 按场景分配到 `project_owner`（日报审核）或 `finance`（充值/对账）
 
-**历史角色映射** (仅用于理解旧代码，新代码禁止使用):
-- `media_buyer` → `pitcher` (技术名→业务名)
-- `supervisor` → `project_owner` (PRD v2.2 废弃)
-- `data_operator` → `project_owner`/`finance` (PRD v2.2 废弃，按场景分配)  
+> 📝 **说明**：`pitcher` 和 `media_buyer` 是**同一角色的两种称呼**：
+> - `pitcher`（投手）：业务文档和用户界面使用
+> - `media_buyer`：代码层 RBAC CHECK 约束使用
+> - 这不是废弃关系，而是命名映射关系  
 - **状态字段**: 仅引用 `STATE_MACHINE.md` 中的定义，禁止在本文件重复列举或扩展新枚举  
 - **主键/外键**:  
   - 用户、渠道等跨系统实体：主键使用 UUID（对齐 Supabase/外部系统 ID）  
@@ -57,7 +59,22 @@
 3. 日志/审计类表必须包含 `created_at`，需要表示最近更新时间的表应包含 `updated_at`。  
 4. 布尔字段使用 `is_*` / `has_*` 前缀（如 `is_active`, `has_pending_risk`）。  
 5. JSONB 字段若用于扩展信息需以 `_data`、`_settings`、`_metadata` 等结尾。  
-6. 状态相关字段在说明中需指出“枚举值以 STATE_MACHINE.md 为准”。
+6. 状态相关字段在说明中需指出"枚举值以 STATE_MACHINE.md 为准"。
+
+### 1.3 索引命名规范
+
+| 前缀 | 用途 | 命名格式 | 示例 |
+|------|------|---------|------|
+| `idx_` | 普通索引 | `idx_<表名>_<列名>` | `idx_users_role` |
+| `uq_` | 唯一索引 | `uq_<表名>_<列1>_<列2>` | `uq_project_members_project_user` |
+| `pk_` | 主键索引 | `pk_<表名>` | `pk_users`（PostgreSQL 默认） |
+| `fk_` | 外键约束 | `fk_<表名>_<列名>` | `fk_daily_reports_ad_account_id` |
+
+**命名原则**:
+1. 表名使用**单数缩写**，如 `users` → `user`，`daily_reports` → `daily_reports`（复合词保留）
+2. 组合索引列名按**查询优先级**排序，如 `idx_daily_reports_date_status`
+3. 部分索引添加 `_partial` 后缀或 WHERE 条件说明，如 `idx_users_is_project_owner`（WHERE is_project_owner = true）
+4. 所有索引定义需同时更新到**迁移文件**和**本文档**
 
 ---
 
@@ -66,6 +83,7 @@
 | 表名 | 说明 | 主键 | 状态 |
 | --- | --- | --- | --- |
 | `users` | 业务用户表（与 Supabase Auth 同步） | UUID | implemented |
+| `teams` | 团队表（投手归属） | UUID | implemented |
 | `roles` | 历史角色表/兼容视图 | UUID | legacy |
 | `user_sessions` | 登录会话与安全审计 | BIGSERIAL | implemented |
 | `audit_logs` | 系统级审计日志 | BIGSERIAL | implemented |
@@ -101,6 +119,7 @@
 | `settlement_rules` | 结算规则配置 | BIGSERIAL | implemented |
 | `profit_aggregates` | 利润聚合（L2汇总层） | BIGSERIAL | planned |
 | `profit_report_snapshots` | 利润报表快照 | BIGSERIAL | planned |
+| `monthly_settlements` | 月度结算表 | BIGSERIAL | implemented |
 | `receivable` | 回款记录表（SoT：已回款） | BIGSERIAL | planned |
 | `company_expenses` | 公司运营支出（不进账本） | BIGSERIAL | implemented |
 
@@ -124,27 +143,61 @@
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | `id` | UUID | PK, FK → `auth.users(id)` ON DELETE CASCADE | 与 Supabase Auth 同步 |
-| `username` | VARCHAR(50) | UNIQUE | 用户名 |
-| `full_name` | VARCHAR(100) | | 真实姓名 |
-| `email` | VARCHAR(255) | 可空 | 冗余字段，方便联查 |
+| `username` | VARCHAR(50) | UNIQUE, NOT NULL | 用户名 |
+| `full_name` | VARCHAR(100) | 可空 | 真实姓名 |
+| `email` | VARCHAR(255) | UNIQUE, NOT NULL | 邮箱地址 |
+| `password_hash` | VARCHAR(255) | 可空 | 密码哈希(bcrypt)，本地 JWT 认证使用 |
 | `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 6 个标准角色：`ceo/project_owner/finance/pitcher/account_manager/admin`（MASTER.md v4.6 §2.4）|
-| `department` / `position` | VARCHAR(100) | | 组织信息 |
-| `account_manager_id` | UUID | FK → `users.id` | 投手关联户管 |
+| `is_project_owner` | BOOLEAN | DEFAULT false | 是否为项目负责人，用于 project_owner 身份判断（MASTER.md v4.6 §2.4, STATE_MACHINE.md §2.1）|
+| `department` | VARCHAR(100) | 可空 | 部门 |
+| `position` | VARCHAR(100) | 可空 | 职位 |
+| `team_id` | UUID | FK → `teams.id` ON DELETE SET NULL, 可空 | 所属团队ID，投手直接归属团队 |
+| `account_manager_id` | UUID | FK → `users.id`, 可空 | 投手关联户管 |
 | `is_active` | BOOLEAN | DEFAULT true | 账号可用性 |
 | `is_verified` | BOOLEAN | DEFAULT false | 资料验证状态 |
-| `last_login_at` / `last_login_ip` | TIMESTAMPTZ / VARCHAR(45) | | |
-| `preferences`, `notification_settings`, `profile_metadata` | JSONB | DEFAULT `{}` | 扩展配置 |
-| `timezone`, `language` | VARCHAR | DEFAULT `'UTC'` / `'zh-CN'` | |
+| `last_login_at` | TIMESTAMPTZ | 可空 | 最后登录时间 |
+| `last_login_ip` | VARCHAR(45) | 可空 | 最后登录IP |
+| `preferences` | JSONB | DEFAULT `{}` | 用户偏好设置 |
+| `notification_settings` | JSONB | DEFAULT `{}` | 通知设置 |
+| `profile_metadata` | JSONB | DEFAULT `{}` | 扩展元数据 |
+| `timezone` | VARCHAR(50) | DEFAULT `'UTC'` | 时区 |
+| `language` | VARCHAR(10) | DEFAULT `'zh-CN'` | 语言 |
 | `created_at` / `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | |
 | `created_by` / `updated_by` | UUID | FK → `users.id`, 可空 | |
 
-索引：`idx_users_username`, `idx_users_role`, `idx_users_account_manager`, `idx_users_created_at`, `idx_users_last_login`.
+索引：`idx_users_username`, `idx_users_role`, `idx_users_account_manager`, `idx_users_created_at`, `idx_users_last_login`, `idx_users_team`, `idx_users_is_project_owner`（部分索引，WHERE is_project_owner = true）.
 
-#### 3.1.2 `roles`（legacy）
+#### 3.1.2 `teams`（implemented）
 
-字段：`id`, `name`, `description`, `created_at`。仅用于旧系统兼容，新功能禁止引用。
+**说明**：团队表，用于投手归属管理。投手通过 `users.team_id` 关联到团队。
 
-#### 3.1.3 `user_sessions`（implemented）
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | UUID | PK | 团队唯一标识 |
+| `name` | VARCHAR(100) | NOT NULL, UNIQUE | 团队名称 |
+| `description` | TEXT | 可空 | 团队描述 |
+| `leader_id` | UUID | FK → `users.id`, 可空 | 团队负责人 |
+| `is_active` | BOOLEAN | DEFAULT true | 是否激活 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+| `created_by` | UUID | FK → `users.id`, 可空 | 创建人 |
+
+索引：`idx_teams_name`, `idx_teams_leader`, `idx_teams_is_active`.
+
+#### 3.1.3 `roles`（legacy）
+
+**说明**：历史角色表，用于旧系统兼容。**新功能禁止引用此表**，应直接使用 `users.role` 字段。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | UUID | PK | 角色ID |
+| `name` | VARCHAR(50) | UNIQUE, NOT NULL | 角色名称 |
+| `description` | TEXT | 可空 | 角色描述 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+
+> ⚠️ **废弃警告**：此表为 legacy 状态，仅用于迁移兼容。当前系统的角色定义直接存储在 `users.role` 字段中，遵循 MASTER.md v4.6 §2.4 的 6 角色模型。
+
+#### 3.1.4 `user_sessions`（implemented）
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -159,7 +212,7 @@
 
 索引：`idx_user_sessions_user_id`, `idx_user_sessions_session_id`.
 
-#### 3.1.4 `audit_logs`（implemented）
+#### 3.1.5 `audit_logs`（implemented）
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
@@ -217,7 +270,21 @@
 
 #### 3.2.3 `project_expenses`（implemented）
 
-字段：`id`, `project_id`, `expense_type`, `amount DECIMAL(15,2)`, `currency`, `occurred_at`, `description`, `created_by`, `created_at`。`project_id` FK → `projects.id`.
+**说明**：项目级别费用记录，用于跟踪项目产生的非广告消耗支出。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 费用记录ID |
+| `project_id` | BIGINT | FK → `projects.id` ON DELETE CASCADE, NOT NULL | 所属项目 |
+| `expense_type` | VARCHAR(50) | NOT NULL | 费用类型（如 setup_fee/service_fee/other） |
+| `amount` | DECIMAL(15,2) | NOT NULL, CHECK >= 0 | 费用金额 |
+| `currency` | VARCHAR(10) | DEFAULT 'CNY' | 币种 |
+| `occurred_at` | DATE | NOT NULL | 费用发生日期 |
+| `description` | TEXT | 可空 | 费用描述 |
+| `created_by` | UUID | FK → `users.id`, NOT NULL | 创建人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+
+索引：`idx_project_expenses_project`, `idx_project_expenses_type`, `idx_project_expenses_occurred_at`.
 
 #### 3.2.4 `channels`（implemented）
 
@@ -358,7 +425,7 @@
 | `real_spend` DECIMAL(15,2) | DEFAULT 0.00, 运营录入的真实消耗(T+1 12:00前),成本核算基准,公式: `cost = real_spend + fee`（实际数据层，成本 SoT） |
 | `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 单粉价格,从项目继承(`projects.unit_price`),用于计算收入 |
 | `cpc`, `cpa`, `ctr`, `roi` DECIMAL(12,4) | 可空 |
-| `status` VARCHAR(20) | 参考"粉数确认状态机"(STATE_MACHINE.md 第8章)，合法取值: `raw_submitted/trend_pending/trend_ok/trend_flagged/trend_resolved/final_pending/final_confirmed/final_locked`，终态为 `final_locked` |
+| `status` VARCHAR(20) | 参考"粉数确认状态机"(STATE_MACHINE.md 第8章)。**Phase 1（当前）**: 使用简化 3 状态 `raw_submitted → trend_ok → final_confirmed`。**Phase 2（规划）**: 完整 8 状态 `raw_submitted/trend_pending/trend_ok/trend_flagged/trend_resolved/final_pending/final_confirmed/final_locked`，终态为 `final_locked` |
 | `trend_flag` VARCHAR(20) | DEFAULT 'normal', 趋势异常标记, 固定枚举: `normal/flagged/resolved` |
 | `trend_flag_reason` TEXT | 可空, 风控规则触发原因(如"TF-001: 粉数骤降50%") |
 | `trend_resolution_note` TEXT | 可空, 运营复核说明(`project_owner`填写) |
@@ -446,51 +513,98 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.8 §4（周报状�
 
 #### 3.4.4 `ledger_entries`（implemented）
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| `id` BIGSERIAL PK | |
-| `ledger_type` VARCHAR(20) | 账本类型, 固定枚举 `PROJECT/SUPPLIER`, PROJECT账本记录项目收入(粉数计费), SUPPLIER账本记录供应商成本(真实消耗) |
-| `project_id` BIGINT FK → `projects.id` | PROJECT账本必填, SUPPLIER账本可空 |
-| `supplier_id` UUID FK → `suppliers.id` | SUPPLIER账本必填, PROJECT账本可空, 所属供应商ID |
-| `ad_account_id` BIGINT FK → `ad_accounts.id`, 可空 | |
-| `entry_type` VARCHAR(20) | 固定枚举(6种): `REVENUE`(粉数计费收入,PROJECT账本), `COST`(真实消耗成本,SUPPLIER账本), `TOPUP`(充值入账,两账本均可), `TRANSFER_OUT`(死号余额迁出,SUPPLIER账本), `TRANSFER_IN`(死号余额迁入,SUPPLIER账本), `REVERSAL`(红冲修正,final_locked后修正); PROJECT账本允许: REVENUE/TOPUP/REVERSAL; SUPPLIER账本允许: COST/TOPUP/TRANSFER_OUT/TRANSFER_IN/REVERSAL |
-| `amount` DECIMAL(15,2) | 金额，借方为正，贷方直接记录负数, 红冲时为负数 |
-| `currency` VARCHAR(10) | |
-| `reference_id` BIGINT | 关联 `topup_transactions` 或 `daily_reports` 或原Ledger记录ID(红冲时) |
-| `occurred_at` TIMESTAMPTZ | |
-| `created_by` UUID FK → `users.id` | |
-| `notes` TEXT | |
+**说明**：双账本模型核心表，记录所有资金流水。PROJECT 账本记录项目收入，SUPPLIER 账本记录供应商成本。
 
-**约束**: `ledger_type=PROJECT`时`project_id`必填, `ledger_type=SUPPLIER`时`supplier_id`必填
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 账目ID |
+| `ledger_type` | VARCHAR(20) | NOT NULL, CHECK | 账本类型：`PROJECT`（项目收入）/ `SUPPLIER`（供应商成本） |
+| `project_id` | BIGINT | FK → `projects.id`, 条件必填 | 项目ID（PROJECT 账本必填） |
+| `supplier_id` | UUID | FK → `suppliers.id`, 条件必填 | 供应商ID（SUPPLIER 账本必填） |
+| `ad_account_id` | BIGINT | FK → `ad_accounts.id`, 可空 | 关联广告账户 |
+| `entry_type` | VARCHAR(20) | NOT NULL, CHECK | 条目类型（见下方枚举） |
+| `amount` | DECIMAL(15,2) | NOT NULL | 金额：借方为正，贷方为负，红冲为负 |
+| `currency` | VARCHAR(10) | DEFAULT 'CNY' | 币种 |
+| `reference_id` | BIGINT | 可空 | 关联ID（充值/日报/原账目） |
+| `occurred_at` | TIMESTAMPTZ | NOT NULL | 发生时间 |
+| `created_by` | UUID | FK → `users.id`, NOT NULL | 创建人 |
+| `notes` | TEXT | 可空 | 备注 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
 
-**计费公式** (BRD v3.1第7-8章):
-- PROJECT账本收入: `revenue = conversions_final × unit_price`
-- SUPPLIER账本成本: `cost = real_spend + fee`
+**entry_type 枚举**（6种）：
+
+| 类型 | 说明 | 允许账本 |
+|------|------|----------|
+| `REVENUE` | 粉数计费收入 | PROJECT |
+| `COST` | 真实消耗成本 | SUPPLIER |
+| `TOPUP` | 充值入账 | PROJECT, SUPPLIER |
+| `TRANSFER_OUT` | 死号余额迁出 | SUPPLIER |
+| `TRANSFER_IN` | 死号余额迁入 | SUPPLIER |
+| `REVERSAL` | 红冲修正（final_locked 后） | PROJECT, SUPPLIER |
+
+**CHECK 约束**（SQL）：
+```sql
+-- 账本类型约束
+CHECK (ledger_type IN ('PROJECT', 'SUPPLIER'))
+
+-- 条目类型约束
+CHECK (entry_type IN ('REVENUE', 'COST', 'TOPUP', 'TRANSFER_OUT', 'TRANSFER_IN', 'REVERSAL'))
+
+-- 账本与必填字段关联约束
+CHECK (
+  (ledger_type = 'PROJECT' AND project_id IS NOT NULL) OR
+  (ledger_type = 'SUPPLIER' AND supplier_id IS NOT NULL)
+)
+
+-- 账本与条目类型匹配约束
+CHECK (
+  (ledger_type = 'PROJECT' AND entry_type IN ('REVENUE', 'TOPUP', 'REVERSAL')) OR
+  (ledger_type = 'SUPPLIER' AND entry_type IN ('COST', 'TOPUP', 'TRANSFER_OUT', 'TRANSFER_IN', 'REVERSAL'))
+)
+```
+
+**计费公式** (BRD v3.1 第7-8章):
+- PROJECT 账本收入: `revenue = conversions_final × unit_price`
+- SUPPLIER 账本成本: `cost = real_spend + fee`
 - 项目毛利: `profit = revenue - cost`
 
-索引：`idx_ledger_project`, `idx_ledger_supplier`, `idx_ledger_entry_type`, `idx_ledger_type`.
+**索引**：`idx_ledger_project`, `idx_ledger_supplier`, `idx_ledger_entry_type`, `idx_ledger_type`, `idx_ledger_occurred_at`.
 
-#### 3.4.5 `receivable`（planned）
+#### 3.4.5 `receivable`（planned - 高优先级）
 
-> **引用**: MASTER.md v4.4 §4.5.5 —— `receivable.amount WHERE status='received'` 为「已回款」的唯一事实源
+> **引用**: MASTER.md v4.6 §4.5.5 —— `receivable.amount WHERE status='received'` 为「已回款」的唯一事实源
+>
+> ⚠️ **高优先级实现**：此表被 MASTER.md 明确引用为"已回款"的唯一事实源，需尽快创建迁移并标记为 implemented。
+> 当前项目盈亏计算依赖此表数据，缺失会导致回款统计功能不可用。
+
+**说明**：回款记录表，记录项目的客户回款信息。是"已回款"数据的唯一事实源。
 
 | 字段 | 类型 | 约束 | 说明 |
 | --- | --- | --- | --- |
 | `id` | BIGSERIAL | PK | 回款记录唯一标识 |
-| `project_id` | BIGINT | FK → `projects.id` NOT NULL | 所属项目 |
-| `amount` | DECIMAL(15,2) | NOT NULL | 回款金额 |
-| `status` | VARCHAR(20) | NOT NULL DEFAULT 'pending' | 回款状态：`pending`（待确认）/ `received`（已到账）/ `cancelled`（已取消） |
-| `received_at` | TIMESTAMPTZ | | 实际到账时间 |
-| `source` | VARCHAR(50) | | 回款来源（客户名/渠道等） |
-| `recorded_by` | UUID | FK → `users.id` NOT NULL | 记录人 |
+| `project_id` | BIGINT | FK → `projects.id` ON DELETE RESTRICT, NOT NULL | 所属项目 |
+| `amount` | DECIMAL(15,2) | NOT NULL, CHECK > 0 | 回款金额（必须为正数） |
+| `status` | VARCHAR(20) | NOT NULL DEFAULT 'pending', CHECK | 回款状态：`pending`（待确认）/ `received`（已到账）/ `cancelled`（已取消） |
+| `received_at` | TIMESTAMPTZ | 可空 | 实际到账时间（status='received'时必填） |
+| `source` | VARCHAR(50) | 可空 | 回款来源（客户名/渠道等） |
+| `invoice_no` | VARCHAR(100) | 可空 | 发票编号 |
+| `notes` | TEXT | 可空 | 备注说明 |
+| `recorded_by` | UUID | FK → `users.id`, NOT NULL | 记录人 |
+| `confirmed_by` | UUID | FK → `users.id`, 可空 | 确认人（status='received'时填充） |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
 | `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
 
 **约束**:
-- `status` CHECK 约束：`pending/received/cancelled`
-- 已回款 SoT 计算公式：`SUM(receivable.amount WHERE status='received')`
+- `status` CHECK 约束：`status IN ('pending', 'received', 'cancelled')`
+- `amount` CHECK 约束：`amount > 0`
+- 业务约束：`status='received'` 时 `received_at` 不能为空
 
-索引：`idx_receivable_project`, `idx_receivable_status`, `idx_receivable_received_at`.
+**已回款 SoT 计算公式**:
+```sql
+SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
+```
+
+索引：`idx_receivable_project`, `idx_receivable_status`, `idx_receivable_received_at`, `idx_receivable_created_at`.
 
 #### 3.4.6 `suppliers`（implemented）
 
@@ -780,12 +894,14 @@ SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.8 §4（周报状�
 
 **状态机引用**：STATE_MACHINE.md v2.8 §13.1 月度结算状态机
 
-**计算公式**（引用 BUSINESS_RULES.md）：
-- `total_spend`: SUM(daily_reports.raw_spend) WHERE status = 'final_locked' AND 月份匹配
-- `total_conversions`: SUM(daily_reports.conversions_raw) WHERE status = 'final_locked' AND 月份匹配
+**计算公式**（引用 BUSINESS_RULES.md，遵循三层数据架构）：
+- `total_spend`: SUM(daily_reports.real_spend) WHERE status = 'final_locked' AND 月份匹配（**成本 SoT**，使用实际数据层）
+- `total_conversions`: SUM(daily_reports.conversions_final) WHERE status = 'final_locked' AND 月份匹配（**收入 SoT**，使用结算数据层）
 - `total_revenue`: total_conversions × projects.unit_price
 - `gross_profit`: total_revenue - total_spend
 - `average_cpl`: total_spend / total_conversions (若 total_conversions > 0)
+
+> ⚠️ **重要**：禁止使用 `raw_spend` 或 `conversions_raw` 进行结算计算，这些字段仅用于趋势风控（行为记录层）。
 
 ---
 

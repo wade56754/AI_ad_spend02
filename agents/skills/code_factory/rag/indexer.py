@@ -535,3 +535,4 @@ class DocumentIndexer:
         """清空索引"""
         self._documents.clear()
 
+

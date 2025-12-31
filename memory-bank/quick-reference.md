@@ -3,7 +3,7 @@
 > **版本**: v1.2
 > **更新日期**: 2025-12-30
 > **用途**: 开发时快速查阅，避免 AI 幻觉
-> **变更记录**: 按 MASTER.md v4.6 §2.4 统一角色定义（移除双层系统）
+> **变更记录**: 按 MASTER.md v4.7 §2.4 统一角色定义（移除双层系统）
 
 ---
 
@@ -13,10 +13,10 @@
 
 | 文档 | 版本 | 路径 | 用途 |
 |------|------|------|------|
-| MASTER.md | v4.6 | docs/sot/MASTER.md | 架构宪法、角色定义 |
+| MASTER.md | v4.7 | docs/sot/MASTER.md | 架构宪法、角色定义 |
 | STATE_MACHINE.md | v2.8 | docs/sot/STATE_MACHINE.md | 状态机定义 |
-| DATA_SCHEMA.md | v5.6 | docs/sot/DATA_SCHEMA.md | 数据库表结构 |
-| BUSINESS_RULES.md | v4.7 | docs/sot/BUSINESS_RULES.md | 业务规则 |
+| DATA_SCHEMA.md | v5.7 | docs/sot/DATA_SCHEMA.md | 数据库表结构 |
+| BUSINESS_RULES.md | v4.8 | docs/sot/BUSINESS_RULES.md | 业务规则 |
 | ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md | 错误码定义 |
 | AUTH_SPEC.md | v2.1 | docs/sot/AUTH_SPEC.md | 认证授权 |
 | LEDGER_SOT.md | v1.2 | docs/sot/LEDGER_SOT.md | 账本规则 |
@@ -26,7 +26,7 @@
 
 ## 2. 合法角色（6 角色）
 
-> **来源**: MASTER.md v4.6 §2.4（宪法）
+> **来源**: MASTER.md v4.7 §2.4（宪法）
 > **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |
@@ -92,7 +92,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ## 5. 权限矩阵
 
-> 来源: MASTER.md v4.6 §2.4
+> 来源: MASTER.md v4.7 §2.4
 
 | 操作 | ceo | project_owner | finance | pitcher | account_manager | admin |
 |------|-----|---------------|---------|---------|-----------------|-------|

@@ -442,3 +442,4 @@ if __name__ == "__main__":
         print(f"    来源: {result.chunk.metadata.get('path', 'unknown')}")
         print(f"    内容: {result.chunk.content[:100]}...")
 
+

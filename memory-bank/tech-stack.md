@@ -9,7 +9,7 @@
 
 | 类别 | 技术 | 版本 | 说明 |
 |------|------|------|------|
-| 框架 | Next.js | 14.x | App Router 模式 |
+| 框架 | Next.js | 16 | App Router 模式 |
 | 语言 | TypeScript | 5.x | 严格模式 |
 | UI 组件 | shadcn/ui | latest | 基于 Radix UI |
 | 样式 | Tailwind CSS | 3.x | 原子化 CSS |

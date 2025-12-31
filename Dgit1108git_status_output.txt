@@ -1,0 +1,64 @@
+On branch sot-fix-20251123
+Your branch is up to date with 'origin/sot-fix-20251123'.
+
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+	modified:   .claude/commands/ai-help.md
+	modified:   .claude/commands/check-code.md
+	modified:   .claude/commands/clarify.md
+	modified:   .claude/commands/gen-feature.md
+	modified:   .claude/commands/kb-build.md
+	modified:   .claude/commands/kb-search.md
+	modified:   .claude/commands/preprompt.md
+	modified:   .claude/commands/project-config.md
+	modified:   .claude/commands/sot-context.md
+	modified:   .claude/data/daily_reports.json
+	modified:   .claude/data/session_history.json
+	modified:   agents/skills/code_factory/cli.py
+	modified:   agents/skills/code_factory/config/__init__.py
+	modified:   agents/skills/code_factory/config/project_config.py
+	modified:   agents/skills/code_factory/docs/CLAUDE_CLI_USAGE.md
+	modified:   agents/skills/code_factory/docs/QUICK_START.md
+	modified:   agents/skills/code_factory/docs/USER_GUIDE.md
+	modified:   agents/skills/code_factory/prompts/preprompts.py
+	modified:   agents/skills/code_factory/prompts/templates/clarify.md
+	modified:   agents/skills/code_factory/prompts/templates/generate.md
+	modified:   agents/skills/code_factory/prompts/templates/improve.md
+	modified:   agents/skills/code_factory/prompts/templates/project_templates/fastapi.md
+	modified:   agents/skills/code_factory/prompts/templates/project_templates/fullstack.md
+	modified:   agents/skills/code_factory/prompts/templates/project_templates/nextjs.md
+	modified:   agents/skills/code_factory/prompts/templates/review.md
+	modified:   agents/skills/code_factory/rag/__init__.py
+	modified:   agents/skills/code_factory/rag/indexer.py
+	modified:   agents/skills/code_factory/rag/knowledge_base.py
+	modified:   agents/skills/code_factory/rag/retriever.py
+	modified:   agents/skills/code_factory/tools/__init__.py
+	modified:   agents/skills/code_factory/tools/base.py
+	modified:   agents/skills/code_factory/tools/builtin.py
+	modified:   agents/skills/code_factory/validation/ast_analyzer.py
+	modified:   backend/models/core/user.py
+	modified:   backend/models/enums.py
+	modified:   backend/schemas/user.py
+	new file:   check_after_add.txt
+	new file:   commit_result.txt
+	new file:   commit_result2.txt
+	deleted:    docs/PRD.md
+	new file:   docs/PRD_AI_v1.0.md
+	new file:   docs/PRD_v5.1.md
+	modified:   "docs/adr/001-\344\270\203\350\247\222\350\211\262\346\250\241\345\236\213.md"
+	modified:   docs/sot/BUSINESS_RULES.md
+	modified:   docs/sot/DATA_SCHEMA.md
+	modified:   docs/sot/MASTER.md
+	modified:   frontend/playwright/pages.spec.ts
+	modified:   frontend/src/app/forgot-password/page.tsx
+	modified:   frontend/src/app/reset-password/page.tsx
+	modified:   frontend/src/features/auth/components/ForgotPasswordPage.tsx
+	deleted:    memory-bank/decisions.md
+	modified:   memory-bank/quick-reference.md
+	modified:   memory-bank/tech-stack.md
+	new file:   push_result.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	"D\357\200\272git1108git_status_output.txt"
+

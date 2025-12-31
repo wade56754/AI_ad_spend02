@@ -1,9 +1,9 @@
 # BUSINESS_RULES.md - 业务规则索引（SoT Index）
 
-> **文档版本**: v4.7
+> **文档版本**: v4.8
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
+> **last_reviewed**: 2025-12-31
 > **文档类型**: 业务规则唯一真相源索引（SoT Index）
 > **规范级别**: 强制执行
 > **基准**: PRD v2.2, MASTER.md v4.6
@@ -18,11 +18,10 @@
 | SoT 文档 | 版本 | 职责 | 引用关系 |
 |----------|------|------|----------|
 | MASTER.md | v4.6 | 架构宪法 | 本文档的上游约束 |
-| STATE_MACHINE.md | v2.7 | 状态机规范 | BR-RPT/BR-FIN/BR-RECON 依赖 |
-| DATA_SCHEMA.md | v5.6 | 数据模型 | 所有 BR-* 字段定义依赖 |
-| ERROR_CODES.md | v2.3 | 错误码规范 | 规则违反时的错误码映射 |
-| LEDGER_SOT.md | v1.2 | 账本规则 | BR-FIN/BR-RECON 依赖 |
-| AUTH_SPEC.md | v2.2 | 权限规范 | BR-AUTH/BR-USER 依赖 |
+| STATE_MACHINE.md | v2.8 | 状态机规范 | BR-RPT/BR-FIN/BR-RECON 依赖 |
+| DATA_SCHEMA.md | v5.7 | 数据模型 | 所有 BR-* 字段定义依赖，账本规则见 §3.4.4 |
+| ERROR_CODES_SOT.md | v2.2 | 错误码规范 | 规则违反时的错误码映射 |
+| AUTH_SPEC.md | v2.1 | 权限规范 | BR-AUTH/BR-USER 依赖 |
 | API_SOT.md | v9.4 | API 规范 | 规则的 API 层实现 |
 
 ---
@@ -38,19 +37,16 @@ upstream:
     relation: "constrained_by"
 downstream:
   - path: "docs/sot/STATE_MACHINE.md"
-    version: "v2.7"
+    version: "v2.8"
     relation: "implements"
   - path: "docs/sot/DATA_SCHEMA.md"
-    version: "v5.6"
+    version: "v5.7"
     relation: "implements"
-  - path: "docs/sot/ERROR_CODES.md"
-    version: "v2.3"
-    relation: "implements"
-  - path: "docs/sot/AUTH_SPEC.md"
+  - path: "docs/sot/ERROR_CODES_SOT.md"
     version: "v2.2"
     relation: "implements"
-  - path: "docs/sot/LEDGER_SOT.md"
-    version: "v1.2"
+  - path: "docs/sot/AUTH_SPEC.md"
+    version: "v2.1"
     relation: "implements"
 modules:
   - id: "BR-AUTH"
@@ -151,19 +147,19 @@ modules:
 
 | 模块ID | 模块名称 | 规则数量 | 子模块文档 | 关联 SoT | 状态 |
 |--------|----------|----------|------------|----------|------|
-| BR-AUTH | 认证授权 | 6 | [BR-AUTH.md](BR-AUTH.md) | AUTH_SPEC.md v2.2 | active |
+| BR-AUTH | 认证授权 | 6 | [BR-AUTH.md](BR-AUTH.md) | AUTH_SPEC.md v2.1 | active |
 | BR-USER | 用户角色 | 5 | [BR-USER.md](BR-USER.md) | MASTER.md v4.6 §2.4 | active |
-| BR-PROJ | 项目管理 | 8 | [BR-PROJ.md](BR-PROJ.md) | STATE_MACHINE.md v2.7 §5 | active |
-| BR-ACCT | 广告账户 | 6 | [BR-ACCT.md](BR-ACCT.md) | DATA_SCHEMA.md v5.6 | active |
-| BR-FIN | 财务流程 | 10 | [BR-FIN.md](BR-FIN.md) | LEDGER_SOT.md v1.2 | active |
-| BR-RPT | 日报管理 | 9 | [BR-RPT.md](BR-RPT.md) | STATE_MACHINE.md v2.7 §8 | active |
-| BR-RECON | 对账流程 | 7 | [BR-RECON.md](BR-RECON.md) | STATE_MACHINE.md v2.7 §10 | active |
-| BR-DATA | 数据完整性 | 5 | [BR-DATA.md](BR-DATA.md) | DATA_SCHEMA.md v5.6 | active |
-| BR-PROFIT | 利润统计 | 6 | [BR-PROFIT.md](BR-PROFIT.md) | LEDGER_SOT.md v1.2 | active |
+| BR-PROJ | 项目管理 | 8 | [BR-PROJ.md](BR-PROJ.md) | STATE_MACHINE.md v2.8 §5 | active |
+| BR-ACCT | 广告账户 | 6 | [BR-ACCT.md](BR-ACCT.md) | DATA_SCHEMA.md v5.7 | active |
+| BR-FIN | 财务流程 | 10 | [BR-FIN.md](BR-FIN.md) | DATA_SCHEMA.md v5.7 §3.4.4 | active |
+| BR-RPT | 日报管理 | 9 | [BR-RPT.md](BR-RPT.md) | STATE_MACHINE.md v2.8 §8 | active |
+| BR-RECON | 对账流程 | 7 | [BR-RECON.md](BR-RECON.md) | STATE_MACHINE.md v2.8 §10 | active |
+| BR-DATA | 数据完整性 | 5 | [BR-DATA.md](BR-DATA.md) | DATA_SCHEMA.md v5.7 | active |
+| BR-PROFIT | 利润统计 | 6 | [BR-PROFIT.md](BR-PROFIT.md) | DATA_SCHEMA.md v5.7 §3.4.4, §3.6 | active |
 
 > **子模块文档说明**: 每个 BR-*.md 子模块包含该模块的完整规则定义，包括：
 > - 业务场景、详细约束、前置条件
-> - 错误码映射（对齐 ERROR_CODES.md v2.3）
+> - 错误码映射（对齐 ERROR_CODES_SOT.md v2.2）
 > - Test Intent（测试意图）
 > - 规则依赖关系
 
@@ -173,7 +169,7 @@ modules:
 
 ### 4.1 BR-AUTH（认证授权） → [详细规则](BR-AUTH.md)
 
-> **关联 SoT**: AUTH_SPEC.md v2.2
+> **关联 SoT**: AUTH_SPEC.md v2.1
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
@@ -198,14 +194,14 @@ modules:
 
 ### 4.3 BR-PROJ（项目管理） → [详细规则](BR-PROJ.md)
 
-> **关联 SoT**: STATE_MACHINE.md v2.7 §5
+> **关联 SoT**: STATE_MACHINE.md v2.8 §5
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
 | BR-PROJ-001 | 项目必须有负责人 | 每个项目必须关联一个 project_owner | `BIZ_002` |
-| BR-PROJ-002 | 结算模式不可变 | 项目创建后结算模式（per_lead/fee_rate）不得修改 | `BIZ_101` |
-| BR-PROJ-003 | 状态流转合法性 | 项目状态流转必须符合 STATE_MACHINE.md v2.7 §5 | `STATE_001` |
-| BR-PROJ-004 | 归档不可逆 | 项目状态为 archived 后不得变更 | `STATE_002` |
+| BR-PROJ-002 | 结算模式不可变 | 项目创建后结算模式（per_lead/fee_rate）不得修改 | `BIZ_001` |
+| BR-PROJ-003 | 状态流转合法性 | 项目状态流转必须符合 STATE_MACHINE.md v2.8 §5 | `BIZ_301` |
+| BR-PROJ-004 | 归档不可逆 | 项目状态为 archived 后不得变更 | `BIZ_302` |
 | BR-PROJ-005 | 冷启动期定义 | 新项目上线前 7 天为冷启动期 | - |
 | BR-PROJ-006 | 预算必须大于零 | 项目预算字段必须为正数 | `BIZ_001` |
 | BR-PROJ-007 | 单粉价格必须大于零 | per_lead 模式下单粉价格必须为正数 | `BIZ_001` |
@@ -213,20 +209,20 @@ modules:
 
 ### 4.4 BR-ACCT（广告账户） → [详细规则](BR-ACCT.md)
 
-> **关联 SoT**: DATA_SCHEMA.md v5.6
+> **关联 SoT**: DATA_SCHEMA.md v5.7
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
 | BR-ACCT-001 | 账户必须归属渠道 | 每个广告账户必须关联一个渠道 | `BIZ_002` |
-| BR-ACCT-002 | 账户分配唯一性 | 同一时间点，一个账户仅能分配给一个投手 | `BIZ_101` |
+| BR-ACCT-002 | 账户分配唯一性 | 同一时间点，一个账户仅能分配给一个投手 | `BIZ_003` |
 | BR-ACCT-003 | 账户状态同步 | 账户状态必须与平台实际状态保持同步 | `SYS_500` |
-| BR-ACCT-004 | 余额不可为负 | 账户余额不得为负数 | `BIZ_001` |
+| BR-ACCT-004 | 余额不可为负 | 账户余额不得为负数 | `BIZ_100` |
 | BR-ACCT-005 | 分配记录审计 | 账户分配变更必须记录操作人和时间戳 | `SYS_500` |
-| BR-ACCT-006 | 停用账户禁止操作 | 状态为 disabled 的账户不得进行消耗操作 | `STATE_002` |
+| BR-ACCT-006 | 停用账户禁止操作 | 状态为 disabled 的账户不得进行消耗操作 | `BIZ_301` |
 
 ### 4.5 BR-FIN（财务流程） → [详细规则](BR-FIN.md)
 
-> **关联 SoT**: LEDGER_SOT.md v1.2, STATE_MACHINE.md v2.7 §9
+> **关联 SoT**: DATA_SCHEMA.md v5.7 §3.4.4（账本规则）, STATE_MACHINE.md v2.8 §9
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
@@ -243,37 +239,37 @@ modules:
 
 ### 4.6 BR-RPT（日报管理） → [详细规则](BR-RPT.md)
 
-> **关联 SoT**: STATE_MACHINE.md v2.7 §8
+> **关联 SoT**: STATE_MACHINE.md v2.8 §8
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
 | BR-RPT-001 | 日报提交人 | 日报必须由 pitcher 提交 | `AUTH_500` |
 | BR-RPT-002 | 日报审核人 | 日报必须由 project_owner 审核 | `AUTH_500` |
 | BR-RPT-003 | 提交审核分离 | 日报提交者不得同时是审核者 | `BIZ_001` |
-| BR-RPT-004 | 状态流转合法性 | 日报状态流转必须符合 STATE_MACHINE.md v2.7 §8 | `STATE_001` |
-| BR-RPT-005 | 三数据流定义 | 日报必须区分 raw/real/final 三数据流 | `BIZ_501` |
+| BR-RPT-004 | 状态流转合法性 | 日报状态流转必须符合 STATE_MACHINE.md v2.8 §8 | `BIZ_301` |
+| BR-RPT-005 | 三数据流定义 | 日报必须区分 raw/real/final 三数据流 | `BIZ_001` |
 | BR-RPT-006 | raw 数据提交者 | raw 数据（conversions_raw）由 pitcher 填报 | `AUTH_500` |
 | BR-RPT-007 | real 数据提交者 | real 数据（real_spend）由 project_owner 录入 | `AUTH_500` |
 | BR-RPT-008 | final 数据提交者 | final 数据（conversions_final）由 project_owner 录入 | `AUTH_500` |
-| BR-RPT-009 | final 数据不可改 | conversions_final 锁定后不得修改 | `BIZ_401` |
+| BR-RPT-009 | final 数据不可改 | conversions_final 锁定后不得修改 | `BIZ_301` |
 
 ### 4.7 BR-RECON（对账流程） → [详细规则](BR-RECON.md)
 
-> **关联 SoT**: STATE_MACHINE.md v2.7 §10
+> **关联 SoT**: STATE_MACHINE.md v2.8 §10
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
 | BR-RECON-001 | 对账周期 | 对账必须按月执行 | `BIZ_601` |
 | BR-RECON-002 | 对账发起人 | 对账必须由 finance 发起 | `AUTH_500` |
 | BR-RECON-003 | 差异阈值 | 差异超过阈值必须人工确认 | `BIZ_602` |
-| BR-RECON-004 | 对账状态流转 | 对账状态流转必须符合 STATE_MACHINE.md v2.7 §10 | `STATE_001` |
-| BR-RECON-005 | 完成后不可逆 | 对账状态为 completed 后不得变更 | `STATE_002` |
+| BR-RECON-004 | 对账状态流转 | 对账状态流转必须符合 STATE_MACHINE.md v2.8 §10 | `BIZ_301` |
+| BR-RECON-005 | 完成后不可逆 | 对账状态为 completed 后不得变更 | `BIZ_301` |
 | BR-RECON-006 | 差异必须记录 | 对账差异必须记录明细和原因 | `SYS_500` |
 | BR-RECON-007 | 调整必须审批 | 对账调整必须由 finance 审批 | `AUTH_500` |
 
 ### 4.8 BR-DATA（数据完整性） → [详细规则](BR-DATA.md)
 
-> **关联 SoT**: DATA_SCHEMA.md v5.6
+> **关联 SoT**: DATA_SCHEMA.md v5.7
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
@@ -285,7 +281,7 @@ modules:
 
 ### 4.9 BR-PROFIT（利润统计） → [详细规则](BR-PROFIT.md)
 
-> **关联 SoT**: LEDGER_SOT.md v1.2, DATA_SCHEMA.md v5.6 §3.6
+> **关联 SoT**: DATA_SCHEMA.md v5.7 §3.4.4（账本规则）, §3.6（利润统计表）
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
@@ -341,6 +337,21 @@ modules:
 
 ## 第七章 变更历史
 
+### v4.8 (2025-12-31)
+
+- **SoT 版本对齐**: 修复所有互锁引用版本不一致问题
+  - STATE_MACHINE.md v2.7 → v2.8
+  - DATA_SCHEMA.md v5.6 → v5.7
+  - AUTH_SPEC.md v2.2 → v2.1
+  - ERROR_CODES_SOT.md v2.3 → v2.2（并统一文件名）
+- **移除 LEDGER_SOT.md 引用**: 账本规则已整合到 DATA_SCHEMA.md v5.7 §3.4.4
+- **错误码对齐 ERROR_CODES_SOT.md v2.2**:
+  - `STATE_001`/`STATE_002` → `BIZ_301`/`BIZ_302`（状态转换错误）
+  - `BIZ_101`（语义冲突）→ `BIZ_001`/`BIZ_003`/`BIZ_100`（按场景区分）
+  - `BIZ_501` → `BIZ_001`（三数据流定义）
+  - `BIZ_401` → `BIZ_301`（锁定后不可改）
+- ASDD 元数据同步更新
+
 ### v4.7 (2025-12-27)
 
 - **新增子模块文档链接**: 所有 9 个 BR-*.md 子模块已生成并链接
@@ -390,5 +401,5 @@ modules:
 **文档性质**: 项目强制规范
 **执行级别**: 强制执行
 **违规处理**: PR 拒绝 / 代码回滚
-**最后更新**: 2025-12-27
-**版本**: v4.7 (新增子模块链接，对齐 MASTER.md v4.6, PRD v2.2)
+**最后更新**: 2025-12-31
+**版本**: v4.8 (SoT 版本对齐，错误码规范化，移除 LEDGER_SOT.md 断链)

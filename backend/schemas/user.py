@@ -3,8 +3,8 @@
 
 SoT References:
 - API_SOT.md v9.3 §5 Users API
-- DATA_SCHEMA.md v5.4 §3.1.1 users 表
-- MASTER.md v4.4 §2.4 (7角色模型)
+- DATA_SCHEMA.md v5.6 §3.1.1 users 表
+- MASTER.md v4.6 §2.4 (6角色模型)
 - BUSINESS_RULES.md BR-USER-001, BR-USER-002
 - ERROR_CODES_SOT.md v2.1 (错误码)
 
@@ -12,8 +12,12 @@ SoT References:
 - pagination: PaginationMeta
 - response-envelope: 标准响应格式
 
-Version: 2.1
+Version: 2.2
 Author: Claude Code
+
+v2.2 更新 (2025-12):
+- 移除 supervisor 角色 (PRD v2.2 废弃，职责合并到 project_owner)
+- 更新 SoT 引用到 MASTER.md v4.6
 
 v2.1 更新 (2025-12):
 - 新增 team_id 字段：投手直接归属团队
@@ -25,19 +29,20 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 
-# 角色枚举 - 严格对应 MASTER.md v4.4 §2.4 (7角色模型)
+# 角色枚举 - 严格对应 MASTER.md v4.6 §2.4 (6角色模型)
+# PRD v2.2: supervisor 已废弃，职责合并到 project_owner
 RoleType = Literal[
     "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
-    "project_owner",   # 项目负责人 - 项目盈亏、资金使用效率
+    "project_owner",   # 项目负责人 - 项目盈亏、资金使用效率、日报审核
     "finance",         # 财务 - 资金出入准确、数据真实、对账
-    "supervisor",      # 主管 - 团队产出、投手管理、日常监督
     "pitcher",         # 投手 - CPL 达标、日报准确、执行投放
     "account_manager", # 户管 - 账户分配、账户状态监控
     "admin"            # 管理员 - 系统配置（不参与业务）
 ]
 
-# 合法角色列表 (MASTER.md v4.4 §2.4)
-VALID_ROLES = ["ceo", "project_owner", "finance", "supervisor", "pitcher", "account_manager", "admin"]
+# 合法角色列表 (MASTER.md v4.6 §2.4) - 6角色模型
+# 注意: supervisor 已废弃 (PRD v2.2)，请勿添加
+VALID_ROLES = ["ceo", "project_owner", "finance", "pitcher", "account_manager", "admin"]
 
 
 class UserBase(BaseModel):

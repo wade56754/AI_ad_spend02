@@ -1,0 +1,9 @@
+﻿git : To https://github.com/wade56754/AI_ad_spend02
+所在位置 行:1 字符: 29
++ ... Location 'D:\git\1108'; git push origin sot-fix-20251123 2>&1 | Out-F ...
++                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (To https://gith...4/AI_ad_spend02 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   2a4a5e2..bb52ca3  sot-fix-20251123 -> sot-fix-20251123

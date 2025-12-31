@@ -424,3 +424,4 @@ class DocumentRetriever:
         """查找相似内容"""
         return self.search(content, mode=RetrievalMode.KEYWORD, top_k=top_k)
 
+

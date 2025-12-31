@@ -3,11 +3,11 @@
 > **文档性质**: 系统唯一入口，所有代码实现的最高裁决依据
 > **核心目标**: 支撑老板决策，而不是替代人做判断
 > **约束级别**: 强制执行，违反本文档定义的不变量视为 P0 缺陷
-> **版本**: v4.6
+> **版本**: v4.7
 > **status**: active
 > **基准**: PRD v2.2, BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
+> **last_reviewed**: 2025-12-31
 
 ---
 
@@ -976,33 +976,31 @@ EXPENSE_CATEGORY = frozenset([
 当多份文档对同一概念有不同定义时，按以下优先级解决冲突：
 
 ```
-0. MASTER.md (本文档)                    → 架构宪法，最高优先级
+0. MASTER.md (本文档) v4.7              → 架构宪法，最高优先级
 1. BUSINESS_FLOW_MANAGEMENT.md          → 业务流程与责任模型
 2. MVP_PHASE_DESIGN.md                  → Phase 边界与页面定义
-3. STATE_MACHINE.md                     → 状态定义与转换
-4. DATA_SCHEMA.md                       → 表结构与字段
-5. LEDGER_SOT.md                        → 账本规则（Phase 2）
-6. BUSINESS_RULES.md                    → 业务规则
-7. API_SOT.md                           → API 定义
-8. ERROR_CODES_SOT.md                   → 错误码
-9. AUTH_SPEC.md                         → 认证授权
+3. STATE_MACHINE.md v2.8                → 状态定义与转换
+4. DATA_SCHEMA.md v5.7                  → 表结构与字段，含账本规则（§3.4.4）
+5. BUSINESS_RULES.md v4.8               → 业务规则
+6. API_SOT.md v9.4                      → API 定义
+7. ERROR_CODES_SOT.md v2.2              → 错误码
+8. AUTH_SPEC.md v2.1                    → 认证授权
 ```
 
 ### 8.2 文档索引
 
 **Tier 1: 架构宪法**
-- **docs/sot/MASTER.md** v4.0 - 系统唯一入口（本文档）
+- **docs/sot/MASTER.md** v4.7 - 系统唯一入口（本文档）
 - **dataset/out/BUSINESS_FLOW_MANAGEMENT.md** - 业务流程优化方案
 - **dataset/out/MVP_PHASE_DESIGN.md** - MVP 分阶段执行方案
 
 **Tier 2: 单源真相 (docs/sot/)**
-- **STATE_MACHINE.md** - 状态定义与转换规则
-- **DATA_SCHEMA.md** - 数据库表结构与字段定义
-- **LEDGER_SOT.md** - 双账本规则与计费公式（Phase 2）
-- **BUSINESS_RULES.md** - 业务规则与约束
-- **API_SOT.md** - API 端点定义与规范
-- **ERROR_CODES_SOT.md** - 错误码定义
-- **AUTH_SPEC.md** - 认证授权规范
+- **STATE_MACHINE.md** v2.8 - 状态定义与转换规则
+- **DATA_SCHEMA.md** v5.7 - 数据库表结构与字段定义，含账本规则（§3.4.4 ledger_entries）
+- **BUSINESS_RULES.md** v4.8 - 业务规则与约束
+- **API_SOT.md** v9.4 - API 端点定义与规范
+- **ERROR_CODES_SOT.md** v2.2 - 错误码定义
+- **AUTH_SPEC.md** v2.1 - 认证授权规范
 
 **Tier 3: 实施指南 (docs/2.dev-guides/)**
 - **BACKEND_DEV_GUIDE.md** - 后端开发指南
@@ -1212,6 +1210,15 @@ ROLE_MAPPING = {
 | v4.4 | 2025-12-22 | P0 最终修复：Phase 1 隐性问责消除、日报消耗与平台消耗 SoT 消歧、已回款 SoT 明确 | Master Architect |
 | v4.5 | 2025-12-25 | 业务模型完善：新增双结算模式、进粉数据流、甲方核对机制 | Master Architect |
 | v4.6 | 2025-12-27 | PRD v2.2 对齐：角色精简 7→6、数据 SoT 三层架构、成本分类、充值审批链 | Master Architect |
+| v4.7 | 2025-12-31 | SoT 审计修复：移除 LEDGER_SOT.md 引用（账本规则已整合到 DATA_SCHEMA.md §3.4.4）、裁判链版本号对齐 | Claude Opus 4.5 |
+
+**v4.7 SoT 审计修复**：
+- §8.1 裁判链优先级：移除 LEDGER_SOT.md（不存在），账本规则见 DATA_SCHEMA.md v5.7 §3.4.4
+- §8.1 裁判链：添加所有 SoT 文档版本号（STATE_MACHINE v2.8, DATA_SCHEMA v5.7, BUSINESS_RULES v4.8, API_SOT v9.4, ERROR_CODES_SOT v2.2, AUTH_SPEC v2.1）
+- §8.2 文档索引 Tier 1：MASTER.md v4.0 → v4.7
+- §8.2 文档索引 Tier 2：移除 LEDGER_SOT.md，添加账本规则引用说明
+- 修复 P0 问题：LEDGER_SOT.md 引用断裂
+- 修复 P1 问题：4 处版本号缺失/过时
 
 **v4.6 PRD v2.2 对齐**：
 - 角色从 7 个精简为 6 个，移除 supervisor 角色
@@ -1304,8 +1311,8 @@ ROLE_MAPPING = {
 
 ---
 
-**文档版本**: v4.6
-**最后更新**: 2025-12-27
+**文档版本**: v4.7
+**最后更新**: 2025-12-31
 **基准文档**: BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
 **维护者**: 系统架构师
 **变更审批**: 重大修改需经老板确认
