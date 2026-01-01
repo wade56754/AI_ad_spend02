@@ -1,12 +1,40 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2026-01-02
-> **当前阶段**: 代码工厂方案 C 实施 ✅ 完成
+> **最后更新**: 2026-01-02 00:48
+> **当前阶段**: Skills 审计完成 ✅
 > **SoT 基准**: MASTER.md v4.8 / DATA_SCHEMA.md v5.7 / 6 角色白名单
 
 ---
 
 ## 0. 最新变更 (2026-01-02)
+
+### Skills 全面审计 ✅
+
+**目标**: 识别缺失、重复、冗余功能
+
+**审计结果**:
+| 指标 | 数值 | 说明 |
+|------|------|------|
+| 总 Skill 数 | 31 | 跨 5 个类别 |
+| 完全冗余 | 12 | 可立即删除 |
+| 部分冗余 | 8 | 需要合并 |
+| 功能缺失 | 6 | 需要新建 |
+| 文件冗余 | 27 对 | SKILL.md + skill.md 重复 |
+
+**关键发现**:
+1. 🔴 **文件冗余**: 27 个 skill 目录同时有 SKILL.md 和 skill.md (100% 相同)
+2. 🔴 **v1/v2 重复**: gen/review/doc 各有 v1 和 v2 两个版本
+3. 🔴 **OpenSpec 三重设计**: 3 套功能重叠的实现
+4. 🔴 **Code Factory 冗余**: 9 个模块已被 Hook 系统替代
+
+**清理计划**:
+- P0: 删除 27 个冗余 skill.md 文件
+- P1: 合并 v1/v2 命令，统一 OpenSpec
+- P2: 新建 6 个缺失功能 (test-gen, auto-fix 等)
+
+**报告位置**: `docs/analysis/SKILLS_AUDIT_REPORT.md`
+
+---
 
 ### AI 代码工厂方案 C 实施 ✅
 
@@ -152,6 +180,12 @@ Phase 3 (优化):    ███████████████████�
 ## 4. 最近完成
 
 ### 2026-01-02
+- [~] `agents/skills/code_factory/core/factory.py` (backend) @ 00:48
+- [~] `agents/skills/code_factory/verifier.py` (other) @ 00:46
+- [~] `agents/skills/code_factory/factory.py` (other) @ 00:46
+- [~] `agents/skills/code_factory/stubs.py` (other) @ 00:47
+- [+] `agents/skills/code_factory/__init__.py` (other) @ 00:45
+- [+] `docs/analysis/SKILLS_AUDIT_REPORT.md` (docs) @ 00:41
 - [+] `.claude/hooks/tests/test_sot_validator.py` (hooks) @ 00:07
 - [+] `agents/skills/code_factory/MIGRATION_TO_HOOKS.md` (docs) @ 00:06
 - [~] `.claude/hooks/pre_tool_use.py` (hooks) @ 00:05

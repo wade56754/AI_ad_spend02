@@ -31,20 +31,23 @@ from agents.skills.verifiers import (
     quick_verify,
 )
 
-from .adapter import AdaptedFile
+# v6.0: 使用 stub 实现
+from .stubs import AdaptedFile
 
 
 class VerifyDecision(Enum):
     """验证决策"""
-    APPROVED = "approved"      # 通过
+
+    APPROVED = "approved"  # 通过
     FIX_APPLIED = "fix_applied"  # 已自动修复
-    REJECTED = "rejected"      # 拒绝
+    REJECTED = "rejected"  # 拒绝
     MANUAL_REVIEW = "manual_review"  # 需人工审查
 
 
 @dataclass
 class VerifyIssue:
     """验证问题 (简化版)"""
+
     code: str
     line: int
     message: str
@@ -56,6 +59,7 @@ class VerifyIssue:
 @dataclass
 class FileVerifyResult:
     """单文件验证结果"""
+
     file_path: str
     decision: VerifyDecision
     issues: List[VerifyIssue] = field(default_factory=list)
@@ -66,6 +70,7 @@ class FileVerifyResult:
 @dataclass
 class VerifyResult:
     """整体验证结果"""
+
     success: bool
     decision: VerifyDecision
     file_results: List[FileVerifyResult] = field(default_factory=list)
@@ -169,10 +174,7 @@ class CodeVerifier:
             )
 
         # 准备文件列表
-        files_to_verify = [
-            (af.file_path, af.content)
-            for af in adapted_files
-        ]
+        files_to_verify = [(af.file_path, af.content) for af in adapted_files]
 
         # 执行验证
         verified_files = self._verifier.verify_files(files_to_verify)
@@ -190,7 +192,9 @@ class CodeVerifier:
                     code=vi.code,
                     line=vi.line,
                     message=vi.message,
-                    severity="error" if vi.severity == IssueSeverity.ERROR else "warning",
+                    severity="error"
+                    if vi.severity == IssueSeverity.ERROR
+                    else "warning",
                     auto_fixable=vi.auto_fixable,
                     fixed=vi.fix_applied,
                 )
@@ -217,21 +221,31 @@ class CodeVerifier:
             else:  # SKIPPED
                 decision = VerifyDecision.APPROVED
 
-            file_results.append(FileVerifyResult(
-                file_path=vf.path,
-                decision=decision,
-                issues=issues,
-                fixed_content=vf.verified_content if vf.status == VerifyStatus.FIXED else None,
-                original_content=vf.original_content,
-            ))
+            file_results.append(
+                FileVerifyResult(
+                    file_path=vf.path,
+                    decision=decision,
+                    issues=issues,
+                    fixed_content=vf.verified_content
+                    if vf.status == VerifyStatus.FIXED
+                    else None,
+                    original_content=vf.original_content,
+                )
+            )
 
         # 生成报告
         report = self._verifier.generate_report(verified_files, format="text")
 
         # 确定整体决策
-        rejected_count = len([fr for fr in file_results if fr.decision == VerifyDecision.REJECTED])
-        fixed_count = len([fr for fr in file_results if fr.decision == VerifyDecision.FIX_APPLIED])
-        review_count = len([fr for fr in file_results if fr.decision == VerifyDecision.MANUAL_REVIEW])
+        rejected_count = len(
+            [fr for fr in file_results if fr.decision == VerifyDecision.REJECTED]
+        )
+        fixed_count = len(
+            [fr for fr in file_results if fr.decision == VerifyDecision.FIX_APPLIED]
+        )
+        review_count = len(
+            [fr for fr in file_results if fr.decision == VerifyDecision.MANUAL_REVIEW]
+        )
 
         if rejected_count > 0:
             overall_decision = VerifyDecision.REJECTED
@@ -249,7 +263,9 @@ class CodeVerifier:
         # 汇总
         summary = {
             "total_files": len(file_results),
-            "approved": len([fr for fr in file_results if fr.decision == VerifyDecision.APPROVED]),
+            "approved": len(
+                [fr for fr in file_results if fr.decision == VerifyDecision.APPROVED]
+            ),
             "fixed": fixed_count,
             "rejected": rejected_count,
             "manual_review": review_count,
@@ -316,7 +332,9 @@ class CodeVerifier:
             file_path=file_path,
             decision=decision,
             issues=issues,
-            fixed_content=result["verified_content"] if result["fixes_applied"] > 0 else None,
+            fixed_content=result["verified_content"]
+            if result["fixes_applied"] > 0
+            else None,
             original_content=content,
         )
 
@@ -334,19 +352,23 @@ class CodeVerifier:
 
         for fr in verify_result.file_results:
             if fr.decision == VerifyDecision.FIX_APPLIED and fr.fixed_content:
-                fixed_files.append(AdaptedFile(
-                    file_path=fr.file_path,
-                    content=fr.fixed_content,
-                    adaptations=[],  # 验证修复不记录适配历史
-                    source_attribution=None,
-                ))
+                fixed_files.append(
+                    AdaptedFile(
+                        file_path=fr.file_path,
+                        content=fr.fixed_content,
+                        adaptations=[],  # 验证修复不记录适配历史
+                        source_attribution=None,
+                    )
+                )
             elif fr.decision == VerifyDecision.APPROVED:
                 # 原样保留
-                fixed_files.append(AdaptedFile(
-                    file_path=fr.file_path,
-                    content=fr.original_content or "",
-                    adaptations=[],
-                    source_attribution=None,
-                ))
+                fixed_files.append(
+                    AdaptedFile(
+                        file_path=fr.file_path,
+                        content=fr.original_content or "",
+                        adaptations=[],
+                        source_attribution=None,
+                    )
+                )
 
         return fixed_files
