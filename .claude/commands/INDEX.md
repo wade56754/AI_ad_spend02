@@ -1,8 +1,8 @@
 # 命令索引
 
-> **版本**: v3.0
+> **版本**: v3.1
 > **更新日期**: 2026-01-02
-> **命令总数**: 6 个核心命令
+> **命令总数**: 11 个命令 (6 核心 + 5 辅助)
 
 ---
 
@@ -16,6 +16,16 @@
 | `/openspec:proposal` | 规范变更提案 | `/openspec:proposal add-status` |
 | `/flow` | 工作流编排 | `/flow be-dev 新功能` |
 | `/help` | 快速帮助 | `/help gen` |
+
+## 辅助命令 (v3.1 新增)
+
+| 命令 | 说明 | 使用示例 |
+|------|------|----------|
+| `/test-gen` | 测试自动生成 | `/test-gen backend/services/daily_report.py` |
+| `/auto-fix` | 自动修复 | `/auto-fix backend/routers/*.py --sot` |
+| `/security-scan` | 安全扫描 | `/security-scan --backend` |
+| `/perf-analyze` | 性能分析 | `/perf-analyze --api /api/v1/daily-reports` |
+| `/migration` | 数据库迁移 | `/migration generate add_status_field` |
 
 ---
 
@@ -96,6 +106,74 @@
 
 ---
 
+### /test-gen - 测试自动生成
+
+```bash
+/test-gen <file>              # 为指定文件生成测试
+/test-gen <file> --unit       # 仅单元测试
+/test-gen <file> --integration # 集成测试
+/test-gen <module>            # 为整个模块生成测试
+```
+
+**文件**: [test-gen.md](./test-gen.md)
+
+---
+
+### /auto-fix - 自动修复
+
+```bash
+/auto-fix <file>              # 自动修复指定文件
+/auto-fix <dir>               # 自动修复目录下所有文件
+/auto-fix <file> --dry-run    # 仅预览，不实际修改
+/auto-fix <file> --sot        # 仅修复 SoT 相关问题
+```
+
+**文件**: [auto-fix.md](./auto-fix.md)
+
+---
+
+### /security-scan - 安全扫描
+
+```bash
+/security-scan                    # 扫描整个项目
+/security-scan --backend          # 仅后端
+/security-scan --frontend         # 仅前端
+/security-scan --deps             # 仅依赖检查
+/security-scan --severity high    # 仅高危漏洞
+```
+
+**文件**: [security-scan.md](./security-scan.md)
+
+---
+
+### /perf-analyze - 性能分析
+
+```bash
+/perf-analyze                     # 分析整个项目
+/perf-analyze --backend           # 仅后端
+/perf-analyze --frontend          # 仅前端
+/perf-analyze --db                # 仅数据库查询
+/perf-analyze --api <endpoint>    # 分析特定 API
+```
+
+**文件**: [perf-analyze.md](./perf-analyze.md)
+
+---
+
+### /migration - 数据库迁移
+
+```bash
+/migration generate <name>        # 生成迁移脚本
+/migration validate               # 验证迁移安全性
+/migration apply                  # 应用迁移
+/migration rollback               # 回滚上一次迁移
+/migration history                # 查看迁移历史
+```
+
+**文件**: [migration.md](./migration.md)
+
+---
+
 ## 迁移说明
 
 ### 从 v2.x 迁移到 v3.0
@@ -119,16 +197,18 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   命令速查表 v3.0                        │
+│                   命令速查表 v3.1                        │
 ├─────────────────────────────────────────────────────────┤
 │  代码生成                                               │
 │    /gen be <task>     后端代码                          │
 │    /gen fe <task>     前端代码                          │
-│    /gen test <task>   测试代码                          │
+│    /test-gen <file>   自动生成测试                      │
 ├─────────────────────────────────────────────────────────┤
 │  质量检查                                               │
 │    /review <file>     代码审查                          │
-│    /review --sot      SoT 合规                          │
+│    /auto-fix <file>   自动修复                          │
+│    /security-scan     安全扫描                          │
+│    /perf-analyze      性能分析                          │
 ├─────────────────────────────────────────────────────────┤
 │  文档操作                                               │
 │    /doc api           API 文档                          │
@@ -138,6 +218,11 @@
 │    /openspec:proposal 创建提案                          │
 │    /openspec:apply    应用变更                          │
 │    /openspec:archive  归档变更                          │
+├─────────────────────────────────────────────────────────┤
+│  数据库                                                 │
+│    /migration generate 生成迁移                         │
+│    /migration apply    应用迁移                         │
+│    /migration rollback 回滚迁移                         │
 ├─────────────────────────────────────────────────────────┤
 │  工作流                                                 │
 │    /flow be-dev       后端开发                          │

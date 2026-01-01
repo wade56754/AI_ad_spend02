@@ -1,8 +1,8 @@
 # Claude Commands 索引
 
-> **版本**: v3.0
+> **版本**: v3.1
 > **更新日期**: 2026-01-02
-> **命令总数**: 20
+> **命令总数**: 25
 
 ---
 
@@ -16,6 +16,16 @@
 | `/flow` | `flow.md` | 工作流编排 |
 | `/help` | `help.md` | 快速帮助 |
 | `/sot-check` | `sot-check.md` | SoT 合规检查 |
+
+## 质量工具命令 (v3.1 新增)
+
+| 命令 | 文件 | 用途 |
+|------|------|------|
+| `/test-gen` | `test-gen.md` | 测试自动生成 (pytest/vitest) |
+| `/auto-fix` | `auto-fix.md` | 自动修复 (SoT/风格/类型) |
+| `/security-scan` | `security-scan.md` | 安全扫描 (OWASP/依赖) |
+| `/perf-analyze` | `perf-analyze.md` | 性能分析 (N+1/慢查询/渲染) |
+| `/migration` | `migration.md` | 数据库迁移 (Alembic) |
 
 ---
 
@@ -58,6 +68,11 @@ commands/
 ├── flow.md            # 工作流编排
 ├── help.md            # 快速帮助
 ├── sot-check.md       # SoT 检查
+├── test-gen.md        # 测试自动生成 (v3.1)
+├── auto-fix.md        # 自动修复 (v3.1)
+├── security-scan.md   # 安全扫描 (v3.1)
+├── perf-analyze.md    # 性能分析 (v3.1)
+├── migration.md       # 数据库迁移 (v3.1)
 ├── INDEX.md           # 命令索引
 ├── README.md          # 本文件
 └── openspec/          # OpenSpec 命令组
@@ -94,11 +109,20 @@ commands/
 # 代码生成
 /gen be <task>           # 后端代码
 /gen fe <task>           # 前端代码
-/gen test <task>         # 测试代码
+/test-gen <file>         # 自动生成测试
 
 # 代码审查
 /review <file>           # 完整审查
-/review <file> --sot     # SoT 合规检查
+/auto-fix <file>         # 自动修复
+
+# 质量检查
+/security-scan           # 安全扫描
+/perf-analyze            # 性能分析
+
+# 数据库
+/migration generate <n>  # 生成迁移
+/migration apply         # 应用迁移
+/migration rollback      # 回滚迁移
 
 # 文档生成
 /doc api                 # API 文档
