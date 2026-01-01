@@ -1,19 +1,19 @@
 # 命令索引
 
-> **版本**: v2.0
-> **更新日期**: 2025-12-30
+> **版本**: v3.0
+> **更新日期**: 2026-01-02
 > **命令总数**: 6 个核心命令
 
 ---
 
-## 核心命令 (v2.0)
+## 核心命令 (v3.0)
 
 | 命令 | 说明 | 使用示例 |
 |------|------|----------|
 | `/gen` | 代码生成 | `/gen be 创建日报接口` |
 | `/review` | 代码审查 + SoT 检查 | `/review backend/services/*.py` |
 | `/doc` | 文档生成 | `/doc api` |
-| `/spec` | 规范管理 | `/spec proposal add-status` |
+| `/openspec:proposal` | 规范变更提案 | `/openspec:proposal add-status` |
 | `/flow` | 工作流编排 | `/flow be-dev 新功能` |
 | `/help` | 快速帮助 | `/help gen` |
 
@@ -29,7 +29,7 @@
 /gen test <task>    # 测试代码 (pytest 用例)
 ```
 
-**文件**: [gen-v2.md](./gen-v2.md)
+**文件**: [gen.md](./gen.md)
 
 ---
 
@@ -41,7 +41,7 @@
 /review <file> --fix     # 审查并自动修复
 ```
 
-**文件**: [review-v2.md](./review-v2.md)
+**文件**: [review.md](./review.md)
 
 ---
 
@@ -54,20 +54,19 @@
 /doc sot <module>    # SoT 规范文档
 ```
 
-**文件**: [doc-v2.md](./doc-v2.md)
+**文件**: [doc.md](./doc.md)
 
 ---
 
-### /spec - 规范管理
+### /openspec:* - 规范管理
 
 ```bash
-/spec proposal <name>   # 创建变更提案
-/spec validate <name>   # 验证提案
-/spec apply <name>      # 应用变更
-/spec archive <name>    # 归档变更
+/openspec:proposal <name>   # 创建变更提案
+/openspec:apply <name>      # 应用变更
+/openspec:archive <name>    # 归档变更
 ```
 
-**文件**: [spec.md](./spec.md)
+**文件**: [openspec/](./openspec/)
 
 ---
 
@@ -99,24 +98,20 @@
 
 ## 迁移说明
 
-### 从 v1.x 迁移到 v2.0
+### 从 v2.x 迁移到 v3.0
 
 | 旧命令 | 新命令 |
 |--------|--------|
-| `/gen be <task>` | `/gen be <task>` (不变) |
-| `/gen fe <task>` | `/gen fe <task>` (不变) |
-| `/sot-check <file>` | `/review <file> --sot` |
-| `/openspec-proposal` | `/spec proposal` |
-| `/openspec-validate` | `/spec validate` |
-| `/openspec-apply` | `/spec apply` |
-| `/openspec-archive` | `/spec archive` |
-| `/dev-flow be` | `/flow be-dev` |
-| `/restart` | `/flow restart` (待实现) |
-| `/pc <prompt>` | 已移除 (集成到 /gen) |
-
-### 旧版命令 (仍可用，但建议迁移)
-
-旧版命令文件保留在 `.claude/commands/` 目录，但建议使用新版 `-v2` 命令。
+| `/gen-v2 be <task>` | `/gen be <task>` |
+| `/review-v2 <file>` | `/review <file>` |
+| `/doc-v2 api` | `/doc api` |
+| `/spec proposal` | `/openspec:proposal` |
+| `/spec validate` | (已移除，集成到 proposal) |
+| `/spec apply` | `/openspec:apply` |
+| `/spec archive` | `/openspec:archive` |
+| `/openspec-proposal` | `/openspec:proposal` |
+| `/openspec-apply` | `/openspec:apply` |
+| `/openspec-archive` | `/openspec:archive` |
 
 ---
 
@@ -124,7 +119,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   命令速查表                             │
+│                   命令速查表 v3.0                        │
 ├─────────────────────────────────────────────────────────┤
 │  代码生成                                               │
 │    /gen be <task>     后端代码                          │
@@ -140,8 +135,9 @@
 │    /doc changelog     变更日志                          │
 ├─────────────────────────────────────────────────────────┤
 │  规范管理                                               │
-│    /spec proposal     创建提案                          │
-│    /spec apply        应用变更                          │
+│    /openspec:proposal 创建提案                          │
+│    /openspec:apply    应用变更                          │
+│    /openspec:archive  归档变更                          │
 ├─────────────────────────────────────────────────────────┤
 │  工作流                                                 │
 │    /flow be-dev       后端开发                          │
