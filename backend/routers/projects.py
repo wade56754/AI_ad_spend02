@@ -268,6 +268,39 @@ async def get_project_statistics(
         return error_response(code="SYS-500", message="获取统计信息失败", status_code=500)
 
 
+@router.get(
+    "/{project_id}/dashboard",
+    summary="获取项目仪表盘",
+    description="获取项目仪表盘数据，包含 KPI 汇总、每日趋势、账户表现。TASK-PRJ-004",
+)
+@log_requests("projects")
+async def get_project_dashboard(
+    project_id: int = Path(..., gt=0, description="项目ID"),
+    days: int = Query(30, ge=1, le=90, description="趋势数据天数 (1-90)"),
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    获取项目仪表盘数据
+
+    返回:
+    - KPI 汇总: 总消耗、总进粉、总转化、平均 CPL、预算使用率
+    - 每日趋势: 近 N 天的消耗/进粉/转化趋势
+    - 账户表现: 按消耗排序的账户表现列表
+    """
+    try:
+        dashboard = service.get_project_dashboard(project_id, current_user, days)
+        return success_response(data=dashboard, message="获取仪表盘成功")
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+    except Exception as e:
+        logger.error("get_project_dashboard_error", project_id=project_id, error=str(e))
+        return error_response(code="SYS-500", message="获取项目仪表盘失败", status_code=500)
+
+
 @router.get("/{project_id}", summary="获取项目详情")
 @log_requests("projects")
 async def get_project(

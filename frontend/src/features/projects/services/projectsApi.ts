@@ -19,6 +19,8 @@ import type {
   ProjectCreateInput,
   ProjectUpdateInput,
   ProjectMemberAssignInput,
+  ProjectDashboard,
+  ProjectDashboardParams,
 } from '../types';
 
 const BASE_PATH = '/api/v1/projects';
@@ -83,6 +85,26 @@ export async function getProjectMembers(projectId: number): Promise<{ data: Proj
   // apiFetch 自动解包 envelope，返回 data 部分
   const response = await apiFetch<ProjectMember[]>(`${BASE_PATH}/${projectId}/members`);
   return { data: response ?? [] };
+}
+
+/**
+ * 获取项目仪表盘数据
+ * GET /api/v1/projects/{id}/dashboard
+ * TASK-PRJ-004
+ */
+export async function getProjectDashboard(
+  projectId: number,
+  params: ProjectDashboardParams = {}
+): Promise<{ data: ProjectDashboard }> {
+  const searchParams = new URLSearchParams();
+  if (params.days) searchParams.set('days', String(params.days));
+  const query = searchParams.toString();
+  const url = query
+    ? `${BASE_PATH}/${projectId}/dashboard?${query}`
+    : `${BASE_PATH}/${projectId}/dashboard`;
+
+  const response = await apiFetch<ProjectDashboard>(url);
+  return { data: response };
 }
 
 // ========== Mutation Functions ==========

@@ -2,19 +2,35 @@
  * Project Types
  *
  * SoT 对齐:
- * - STATE_MACHINE.md v2.6 Section 5
- * - DATA_SCHEMA.md v5.2 (projects entity)
+ * - STATE_MACHINE.md v2.8 Section 5
+ * - DATA_SCHEMA.md v5.6 (projects entity)
+ * - BR-PROJ.md v1.0 (定价规则)
  */
 
 // === Status Enum ===
 
-// SoT 对齐: STATE_MACHINE.md v2.6 Section 5 - 项目状态机
+// SoT 对齐: STATE_MACHINE.md v2.8 Section 5 - 项目状态机
 export type ProjectStatus =
-  | 'planning'    // 规划中 (初始状态)
-  | 'active'      // 进行中
-  | 'paused'      // 已暂停
-  | 'completed'   // 已完成 (终态)
-  | 'cancelled';  // 已取消 (终态)
+  | 'planning' // 规划中 (初始状态)
+  | 'active' // 进行中
+  | 'paused' // 已暂停
+  | 'completed' // 已完成 (终态)
+  | 'cancelled'; // 已取消 (终态)
+
+// SoT: BR-PROJ.md v1.0 §BR-PROJ-002 - 结算类型
+export type SettlementType = 'fixed' | 'tiered' | 'markup';
+
+export const SETTLEMENT_TYPE_CONFIG: Record<
+  SettlementType,
+  {
+    label: string;
+    description: string;
+  }
+> = {
+  fixed: { label: '按粉计费', description: '收入 = 进粉数 × 单粉价格' },
+  tiered: { label: '阶梯计价', description: '根据进粉数量分段计价' },
+  markup: { label: '加成计价', description: '收入 = 消耗 × (1 + 加成比例)' },
+};
 
 // === Entity Types ===
 
@@ -35,9 +51,14 @@ export interface Project {
   // 新增: 目标 CPL 和单粉价格
   target_cpl?: number | null;
   unit_price?: number | null;
+  // 新增: 结算配置 (BR-PROJ.md v1.0)
+  settlement_type?: SettlementType;
+  settlement_rules_id?: number | null;
+  // 新增: 提成配置 (TASK-PRJ-003)
+  commission_rules_id?: number | null;
   // 新增: 地区和聚合进粉数
   region?: string | null;
-  total_follows?: number;  // 从日报聚合的总进粉数
+  total_follows?: number; // 从日报聚合的总进粉数
   // 兼容旧字段
   account_manager_id?: number;
   account_manager_name?: string;
@@ -111,6 +132,11 @@ export interface ProjectCreateInput {
   owner_id?: number;
   target_cpl?: number;
   unit_price?: number;
+  // 新增: 结算配置 (BR-PROJ.md v1.0)
+  settlement_type?: SettlementType;
+  settlement_rules_id?: number | null;
+  // 新增: 提成配置 (TASK-PRJ-003)
+  commission_rules_id?: number | null;
   // 兼容旧字段
   account_manager_id?: number;
 }
@@ -128,6 +154,10 @@ export interface ProjectUpdateInput {
   owner_id?: number;
   target_cpl?: number;
   unit_price?: number;
+  // 新增: 结算规则 (BR-PROJ.md v1.0) - 注意: settlement_type 不可修改
+  settlement_rules_id?: number | null;
+  // 新增: 提成规则 (TASK-PRJ-003)
+  commission_rules_id?: number | null;
   // 兼容旧字段
   account_manager_id?: number;
 }
@@ -139,11 +169,14 @@ export interface ProjectMemberAssignInput {
 
 // === Status Display Config ===
 
-export const PROJECT_STATUS_CONFIG: Record<ProjectStatus, {
-  label: string;
-  variant: 'default' | 'success' | 'warning' | 'error';
-  description: string;
-}> = {
+export const PROJECT_STATUS_CONFIG: Record<
+  ProjectStatus,
+  {
+    label: string;
+    variant: 'default' | 'success' | 'warning' | 'error';
+    description: string;
+  }
+> = {
   planning: { label: '规划中', variant: 'default', description: '项目准备阶段' },
   active: { label: '进行中', variant: 'success', description: '正常投放' },
   paused: { label: '已暂停', variant: 'warning', description: '暂停投放' },
@@ -156,3 +189,40 @@ export const PROJECT_ROLE_CONFIG: Record<string, { label: string }> = {
   pitcher: { label: '投手' },
   analyst: { label: '数据分析师' },
 };
+
+// === Dashboard Types (TASK-PRJ-004) ===
+
+export interface DailyTrendItem {
+  date: string;
+  spend: number;
+  follows: number;
+  conversions: number;
+  cpl: number | null;
+}
+
+export interface AccountPerformance {
+  account_id: number;
+  account_name: string;
+  platform: string | null;
+  status: string;
+  spend: number;
+  follows: number;
+  conversions: number;
+  cpl: number | null;
+}
+
+export interface ProjectDashboard {
+  total_spend: number;
+  total_follows: number;
+  total_conversions: number;
+  avg_cpl: number | null;
+  budget_usage_percent: number;
+  daily_trend: DailyTrendItem[];
+  account_performance: AccountPerformance[];
+  period_start: string | null;
+  period_end: string | null;
+}
+
+export interface ProjectDashboardParams {
+  days?: number;
+}

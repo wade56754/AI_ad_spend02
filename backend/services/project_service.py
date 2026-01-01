@@ -754,6 +754,185 @@ class ProjectService:
             return abs(user_id.int) % (2**63)
         return None
 
+    # ========================================
+    # 项目仪表盘 (TASK-PRJ-004)
+    # ========================================
+
+    def get_project_dashboard(
+        self,
+        project_id: int,
+        current_user: User,
+        days: int = 30,
+    ) -> dict:
+        """
+        获取项目仪表盘数据
+
+        SoT Reference: API_SOT.md v9.3 §6.8 项目仪表盘
+
+        Args:
+            project_id: 项目ID
+            current_user: 当前用户
+            days: 趋势数据天数 (默认30天)
+
+        Returns:
+            dict: 包含 KPI、趋势、账户表现的仪表盘数据
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权限访问
+        """
+        # 1. 获取项目并检查权限
+        project = self.get_project(project_id, current_user)
+
+        # 2. 获取项目关联的账户ID列表
+        account_ids = [
+            acc.id
+            for acc in self.db.query(AdAccount.id)
+            .filter(AdAccount.project_id == project_id)
+            .all()
+        ]
+
+        # 3. 计算日期范围
+        from datetime import timedelta
+
+        today = date.today()
+        start_date = today - timedelta(days=days - 1)
+
+        # 4. 基础 KPI 汇总
+        kpi_result = {
+            "total_spend": Decimal("0.00"),
+            "total_follows": 0,
+            "total_conversions": 0,
+        }
+
+        if account_ids:
+            kpi_query = (
+                self.db.query(
+                    func.sum(DailyReport.real_spend).label("total_spend"),
+                    func.sum(DailyReport.follows_count).label("total_follows"),
+                    func.sum(DailyReport.conversions_final).label("total_conversions"),
+                )
+                .filter(
+                    DailyReport.ad_account_id.in_(account_ids),
+                    DailyReport.report_date >= start_date,
+                    DailyReport.report_date <= today,
+                )
+                .first()
+            )
+
+            if kpi_query:
+                kpi_result["total_spend"] = kpi_query.total_spend or Decimal("0.00")
+                kpi_result["total_follows"] = kpi_query.total_follows or 0
+                kpi_result["total_conversions"] = kpi_query.total_conversions or 0
+
+        # 5. 计算平均 CPL
+        avg_cpl = None
+        if kpi_result["total_follows"] > 0:
+            avg_cpl = kpi_result["total_spend"] / Decimal(kpi_result["total_follows"])
+
+        # 6. 计算预算使用率
+        budget_usage_percent = Decimal("0.00")
+        if project.budget and project.budget > 0:
+            budget_usage_percent = (kpi_result["total_spend"] / project.budget) * 100
+
+        # 7. 每日趋势数据
+        daily_trend = []
+        if account_ids:
+            trend_query = (
+                self.db.query(
+                    DailyReport.report_date,
+                    func.sum(DailyReport.real_spend).label("spend"),
+                    func.sum(DailyReport.follows_count).label("follows"),
+                    func.sum(DailyReport.conversions_final).label("conversions"),
+                )
+                .filter(
+                    DailyReport.ad_account_id.in_(account_ids),
+                    DailyReport.report_date >= start_date,
+                    DailyReport.report_date <= today,
+                )
+                .group_by(DailyReport.report_date)
+                .order_by(DailyReport.report_date)
+                .all()
+            )
+
+            for row in trend_query:
+                spend = row.spend or Decimal("0.00")
+                follows = row.follows or 0
+                cpl = None
+                if follows > 0:
+                    cpl = spend / Decimal(follows)
+
+                daily_trend.append(
+                    {
+                        "date": row.report_date.isoformat(),
+                        "spend": spend,
+                        "follows": follows,
+                        "conversions": row.conversions or 0,
+                        "cpl": cpl,
+                    }
+                )
+
+        # 8. 账户表现排行
+        account_performance = []
+        if account_ids:
+            perf_query = (
+                self.db.query(
+                    AdAccount.id.label("account_id"),
+                    AdAccount.name.label("account_name"),
+                    AdAccount.platform,
+                    AdAccount.status,
+                    func.sum(DailyReport.real_spend).label("spend"),
+                    func.sum(DailyReport.follows_count).label("follows"),
+                    func.sum(DailyReport.conversions_final).label("conversions"),
+                )
+                .outerjoin(
+                    DailyReport,
+                    and_(
+                        DailyReport.ad_account_id == AdAccount.id,
+                        DailyReport.report_date >= start_date,
+                        DailyReport.report_date <= today,
+                    ),
+                )
+                .filter(AdAccount.project_id == project_id)
+                .group_by(
+                    AdAccount.id, AdAccount.name, AdAccount.platform, AdAccount.status
+                )
+                .order_by(desc(func.sum(DailyReport.real_spend)))
+                .all()
+            )
+
+            for row in perf_query:
+                spend = row.spend or Decimal("0.00")
+                follows = row.follows or 0
+                cpl = None
+                if follows > 0:
+                    cpl = spend / Decimal(follows)
+
+                account_performance.append(
+                    {
+                        "account_id": row.account_id,
+                        "account_name": row.account_name,
+                        "platform": row.platform,
+                        "status": row.status,
+                        "spend": spend,
+                        "follows": follows,
+                        "conversions": row.conversions or 0,
+                        "cpl": cpl,
+                    }
+                )
+
+        return {
+            "total_spend": kpi_result["total_spend"],
+            "total_follows": kpi_result["total_follows"],
+            "total_conversions": kpi_result["total_conversions"],
+            "avg_cpl": avg_cpl,
+            "budget_usage_percent": budget_usage_percent,
+            "daily_trend": daily_trend,
+            "account_performance": account_performance,
+            "period_start": start_date.isoformat(),
+            "period_end": today.isoformat(),
+        }
+
 
 # ========================================
 # 缓存支持 (Phase 3 性能优化)

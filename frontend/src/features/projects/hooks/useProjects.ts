@@ -23,6 +23,7 @@ import {
   getProject,
   getProjectStatistics,
   getProjectMembers,
+  getProjectDashboard,
   createProject,
   updateProject,
   deleteProject,
@@ -33,17 +34,25 @@ import type {
   Project,
   ProjectMember,
   ProjectStatistics,
+  ProjectDashboard,
   ProjectListParams,
   ProjectCreateInput,
   ProjectUpdateInput,
   ProjectMemberAssignInput,
+  ProjectDashboardParams,
 } from '../types';
 
 // ========== Query Hooks ==========
 
 export function useProjects(
   params: ProjectListParams = {},
-  options?: Omit<UseQueryOptions<{ data: Project[]; meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } } }>, 'queryKey' | 'queryFn'>
+  options?: Omit<
+    UseQueryOptions<{
+      data: Project[];
+      meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
+    }>,
+    'queryKey' | 'queryFn'
+  >
 ) {
   return useQuery({
     queryKey: queryKeys.projects.list(params),
@@ -86,6 +95,24 @@ export function useProjectMembers(
   });
 }
 
+/**
+ * 获取项目仪表盘数据
+ * TASK-PRJ-004
+ */
+export function useProjectDashboard(
+  projectId: number,
+  params: ProjectDashboardParams = {},
+  options?: Omit<UseQueryOptions<{ data: ProjectDashboard }>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: [...queryKeys.projects.detail(projectId), 'dashboard', params],
+    queryFn: () => getProjectDashboard(projectId, params),
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000, // 2 分钟
+    ...options,
+  });
+}
+
 // ========== Mutation Hooks ==========
 
 export function useCreateProject(
@@ -117,9 +144,7 @@ export function useUpdateProject(
   });
 }
 
-export function useDeleteProject(
-  options?: UseMutationOptions<void, Error, number>
-) {
+export function useDeleteProject(options?: UseMutationOptions<void, Error, number>) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -132,7 +157,11 @@ export function useDeleteProject(
 }
 
 export function useAssignMember(
-  options?: UseMutationOptions<{ data: ProjectMember }, Error, { projectId: number; input: ProjectMemberAssignInput }>
+  options?: UseMutationOptions<
+    { data: ProjectMember },
+    Error,
+    { projectId: number; input: ProjectMemberAssignInput }
+  >
 ) {
   const queryClient = useQueryClient();
 

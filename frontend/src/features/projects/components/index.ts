@@ -5,3 +5,4 @@ export * from './ProjectKanban';
 export * from './ProjectDetail';
 export * from './ProjectStatusBadge';
 export * from './ProjectMembersDialog';
+export * from './ProjectDashboard';
