@@ -147,7 +147,7 @@ class ProjectService:
         权限过滤规则:
         - admin/ceo: 全部项目
         - account_manager: 自己负责的项目
-        - media_buyer/pitcher: 参与的项目
+        - pitcher: 参与的项目
 
         Args:
             current_user: 当前用户
@@ -552,18 +552,18 @@ class ProjectService:
         """
         获取项目统计信息
 
-        权限: admin, finance, ceo, data_operator
+        权限: admin, finance, ceo, project_owner
         注意: account_manager 只能管理账户，不能查看项目统计
 
         SoT Reference: BUSINESS_RULES.md v4.6 BR-PROJ-006
         """
-        # data_operator (主管) 需要统计信息来监督团队
+        # project_owner 需要统计信息来监督项目
         # account_manager 不允许查看统计信息 (test_project_permissions.py:122)
         if current_user.role not in [
             "admin",
             "finance",
             "ceo",
-            "data_operator",
+            "project_owner",
         ]:
             raise_permission_denied("view_statistics")
 
@@ -611,7 +611,7 @@ class ProjectService:
         if user.role == "account_manager":
             return project.account_manager_id == self._user_id_to_int(user.id)
 
-        # media_buyer/pitcher: 必须是项目成员
+        # pitcher: 必须是项目成员
         member = (
             self.db.query(ProjectMember)
             .filter(

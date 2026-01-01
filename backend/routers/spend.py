@@ -25,7 +25,7 @@ SoT 对齐:
 
 权限要求:
 - finance: 所有操作
-- data_operator: 导入、验证
+- project_owner: 导入、验证
 - admin: 所有操作
 """
 
@@ -38,17 +38,13 @@ from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user, check_user_role
-from backend.core.response import (
-    success_response,
-    error_response,
-    StandardResponse
-)
+from backend.core.response import success_response, error_response, StandardResponse
 from backend.core.error_codes import SystemErrorCodes, BusinessErrorCodes
 from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 from backend.models import User
 from backend.models.finance.financial_event import EventStatus, SourceType
@@ -123,6 +119,7 @@ def _build_event_response(event) -> SpendEventResponse:
 
 # ========== 导入端点 ==========
 
+
 @router.post(
     "/import",
     response_model=StandardResponse[SpendImportResultResponse],
@@ -143,8 +140,8 @@ def _build_event_response(event) -> SpendEventResponse:
     - 消耗 / spend (可选，默认 = today_max - yesterday_max)
     - 日期 / event_date (可选，从文件名推断)
 
-    权限要求: finance, data_operator, admin
-    """
+    权限要求: finance, project_owner, admin
+    """,
 )
 async def import_spend_from_excel(
     file: UploadFile = File(..., description="Excel 文件 (.xlsx, .xls)"),
@@ -153,18 +150,15 @@ async def import_spend_from_excel(
     dry_run: bool = Query(False, description="试运行 (仅验证不导入)"),
     skip_duplicates: bool = Query(True, description="跳过重复记录"),
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """导入消耗 Excel"""
     # 权限检查
-    check_user_role(current_user, ["finance", "data_operator", "admin"])
+    check_user_role(current_user, ["finance", "project_owner", "admin"])
 
     # 验证文件类型
-    if not file.filename.endswith(('.xlsx', '.xls')):
-        raise BusinessLogicError(
-            "仅支持 Excel 文件 (.xlsx, .xls)",
-            error_code="BIZ-500"
-        )
+    if not file.filename.endswith((".xlsx", ".xls")):
+        raise BusinessLogicError("仅支持 Excel 文件 (.xlsx, .xls)", error_code="BIZ-500")
 
     try:
         # 读取文件内容
@@ -187,20 +181,17 @@ async def import_spend_from_excel(
         )
 
         return success_response(
-            data=result,
-            message=f"导入完成: {result.imported_rows}/{result.total_rows} 行"
+            data=result, message=f"导入完成: {result.imported_rows}/{result.total_rows} 行"
         )
 
     except BusinessLogicError:
         raise
     except Exception as e:
-        raise BusinessLogicError(
-            f"导入失败: {str(e)}",
-            error_code="BIZ-501"
-        )
+        raise BusinessLogicError(f"导入失败: {str(e)}", error_code="BIZ-501")
 
 
 # ========== CRUD 端点 ==========
+
 
 @router.post(
     "/events",
@@ -210,12 +201,12 @@ async def import_spend_from_excel(
     手动创建单个消耗事件。
 
     权限要求: finance, admin
-    """
+    """,
 )
 async def create_spend_event(
     request: SpendEventCreate,
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """手动创建消耗事件"""
     check_user_role(current_user, ["finance", "admin"])
@@ -225,19 +216,22 @@ async def create_spend_event(
             request=request,
             user_id=current_user.id,
         )
-        return success_response(
-            data=_build_event_response(event),
-            message="消耗事件创建成功"
-        )
+        return success_response(data=_build_event_response(event), message="消耗事件创建成功")
     except ResourceNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code, "message": str(e)}
+            detail={
+                "code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+                "message": str(e),
+            },
         )
     except ResourceConflictError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"code": BusinessErrorCodes.RESOURCE_ALREADY_EXISTS.code, "message": str(e)}
+            detail={
+                "code": BusinessErrorCodes.RESOURCE_ALREADY_EXISTS.code,
+                "message": str(e),
+            },
         )
 
 
@@ -248,8 +242,8 @@ async def create_spend_event(
     description="""
     查询消耗事件列表，支持多种筛选条件。
 
-    权限要求: finance, data_operator, admin
-    """
+    权限要求: finance, project_owner, admin
+    """,
 )
 async def list_spend_events(
     event_status: Optional[str] = Query(None, description="事件状态"),
@@ -262,10 +256,10 @@ async def list_spend_events(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """查询消耗事件列表"""
-    check_user_role(current_user, ["finance", "data_operator", "admin"])
+    check_user_role(current_user, ["finance", "project_owner", "admin"])
 
     events, total = service.get_events(
         event_status=event_status,
@@ -290,9 +284,9 @@ async def list_spend_events(
                 "page": page,
                 "page_size": page_size,
                 "total_pages": total_pages,
-            }
+            },
         ),
-        message="查询成功"
+        message="查询成功",
     )
 
 
@@ -303,31 +297,32 @@ async def list_spend_events(
     description="""
     获取单个消耗事件的详细信息。
 
-    权限要求: finance, data_operator, admin
-    """
+    权限要求: finance, project_owner, admin
+    """,
 )
 async def get_spend_event(
     event_id: UUID,
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """获取消耗事件详情"""
-    check_user_role(current_user, ["finance", "data_operator", "admin"])
+    check_user_role(current_user, ["finance", "project_owner", "admin"])
 
     event = service.get_event_by_id(event_id)
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code, "message": f"消耗事件不存在: {event_id}"}
+            detail={
+                "code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+                "message": f"消耗事件不存在: {event_id}",
+            },
         )
 
-    return success_response(
-        data=_build_event_response(event),
-        message="获取成功"
-    )
+    return success_response(data=_build_event_response(event), message="获取成功")
 
 
 # ========== 状态流转端点 ==========
+
 
 @router.post(
     "/events/validate",
@@ -342,16 +337,16 @@ async def get_spend_event(
     - 金额有效性
     - 日期合理性
 
-    权限要求: finance, data_operator, admin
-    """
+    权限要求: finance, project_owner, admin
+    """,
 )
 async def validate_spend_events(
     request: SpendEventValidateRequest,
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """验证消耗事件 (raw → pending)"""
-    check_user_role(current_user, ["finance", "data_operator", "admin"])
+    check_user_role(current_user, ["finance", "project_owner", "admin"])
 
     result = service.validate_events(
         event_ids=request.event_ids,
@@ -359,10 +354,7 @@ async def validate_spend_events(
         user_id=current_user.id,
     )
 
-    return success_response(
-        data=result,
-        message=result.message
-    )
+    return success_response(data=result, message=result.message)
 
 
 @router.post(
@@ -375,12 +367,12 @@ async def validate_spend_events(
     只有 finance 和 admin 角色可以执行确认操作。
 
     权限要求: finance, admin
-    """
+    """,
 )
 async def confirm_spend_events(
     request: SpendEventConfirmRequest,
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """确认消耗事件 (pending → confirmed)"""
     check_user_role(current_user, ["finance", "admin"])
@@ -391,10 +383,7 @@ async def confirm_spend_events(
         notes=request.notes,
     )
 
-    return success_response(
-        data=result,
-        message=result.message
-    )
+    return success_response(data=result, message=result.message)
 
 
 @router.post(
@@ -412,12 +401,12 @@ async def confirm_spend_events(
     只有 finance 和 admin 角色可以执行入账操作。
 
     权限要求: finance, admin
-    """
+    """,
 )
 async def post_spend_events(
     request: SpendEventPostRequest,
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """入账消耗事件 (confirmed → posted)"""
     check_user_role(current_user, ["finance", "admin"])
@@ -428,10 +417,7 @@ async def post_spend_events(
         post_date=request.post_date,
     )
 
-    return success_response(
-        data=result,
-        message=result.message
-    )
+    return success_response(data=result, message=result.message)
 
 
 @router.post(
@@ -448,12 +434,12 @@ async def post_spend_events(
     只有 admin 角色可以执行冲正操作。
 
     权限要求: admin
-    """
+    """,
 )
 async def reverse_spend_event(
     request: SpendEventReverseRequest,
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """冲正消耗事件 (posted → reversed)"""
     check_user_role(current_user, ["admin"])
@@ -464,23 +450,24 @@ async def reverse_spend_event(
             reason=request.reason,
             user_id=current_user.id,
         )
-        return success_response(
-            data=result,
-            message=result.message
-        )
+        return success_response(data=result, message=result.message)
     except ResourceNotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code, "message": str(e)}
+            detail={
+                "code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+                "message": str(e),
+            },
         )
     except BusinessLogicError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
+            detail={"code": e.error_code, "message": str(e)},
         )
 
 
 # ========== 统计端点 ==========
+
 
 @router.get(
     "/statistics",
@@ -489,18 +476,18 @@ async def reverse_spend_event(
     description="""
     获取消耗事件的统计数据。
 
-    权限要求: finance, data_operator, admin
-    """
+    权限要求: finance, project_owner, admin
+    """,
 )
 async def get_spend_statistics(
     team_id: Optional[UUID] = Query(None, description="团队ID筛选"),
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """获取消耗统计"""
-    check_user_role(current_user, ["finance", "data_operator", "admin"])
+    check_user_role(current_user, ["finance", "project_owner", "admin"])
 
     stats = service.get_statistics(
         team_id=team_id,
@@ -508,13 +495,11 @@ async def get_spend_statistics(
         end_date=end_date,
     )
 
-    return success_response(
-        data=SpendStatisticsResponse(**stats),
-        message="统计成功"
-    )
+    return success_response(data=SpendStatisticsResponse(**stats), message="统计成功")
 
 
 # ========== 批量冲正端点 ==========
+
 
 @router.post(
     "/events/batch-reverse",
@@ -531,12 +516,12 @@ async def get_spend_statistics(
     限制: 单次最多冲正 100 条记录
 
     权限要求: admin
-    """
+    """,
 )
 async def batch_reverse_spend_events(
     request: SpendEventBatchReverseRequest,
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """批量冲正消耗事件 (posted → reversed)"""
     check_user_role(current_user, ["admin"])
@@ -547,18 +532,16 @@ async def batch_reverse_spend_events(
             reason=request.reason,
             user_id=current_user.id,
         )
-        return success_response(
-            data=result,
-            message=result.message
-        )
+        return success_response(data=result, message=result.message)
     except BusinessLogicError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)}
+            detail={"code": e.error_code, "message": str(e)},
         )
 
 
 # ========== 导出端点 ==========
+
 
 @router.get(
     "/export",
@@ -568,8 +551,8 @@ async def batch_reverse_spend_events(
 
     支持多种筛选条件，最多导出 10000 条记录。
 
-    权限要求: finance, data_operator, admin
-    """
+    权限要求: finance, project_owner, admin
+    """,
 )
 async def export_spend_events(
     event_status: Optional[str] = Query(None, description="事件状态"),
@@ -579,12 +562,12 @@ async def export_spend_events(
     end_date: Optional[date] = Query(None, description="结束日期"),
     format: str = Query("xlsx", description="导出格式 (xlsx/csv)"),
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """导出消耗事件为 Excel/CSV"""
     from fastapi.responses import Response
 
-    check_user_role(current_user, ["finance", "data_operator", "admin"])
+    check_user_role(current_user, ["finance", "project_owner", "admin"])
 
     file_content, file_name = service.export_events(
         event_status=event_status,
@@ -596,18 +579,21 @@ async def export_spend_events(
     )
 
     # 设置响应头
-    content_type = "text/csv" if format == "csv" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    content_type = (
+        "text/csv"
+        if format == "csv"
+        else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
     return Response(
         content=file_content,
         media_type=content_type,
-        headers={
-            "Content-Disposition": f'attachment; filename="{file_name}"'
-        }
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
     )
 
 
 # ========== 模板生成端点 ==========
+
 
 @router.get(
     "/template",
@@ -620,24 +606,22 @@ async def export_spend_events(
     - 示例数据
     - 填写说明
 
-    权限要求: finance, data_operator, admin
-    """
+    权限要求: finance, project_owner, admin
+    """,
 )
 async def get_spend_template(
     service: SpendImportService = Depends(get_spend_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """获取消耗导入模板"""
     from fastapi.responses import Response
 
-    check_user_role(current_user, ["finance", "data_operator", "admin"])
+    check_user_role(current_user, ["finance", "project_owner", "admin"])
 
     file_content, file_name, columns = service.generate_template()
 
     return Response(
         content=file_content,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={
-            "Content-Disposition": f'attachment; filename="{file_name}"'
-        }
+        headers={"Content-Disposition": f'attachment; filename="{file_name}"'},
     )

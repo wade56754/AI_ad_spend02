@@ -4,7 +4,7 @@
 SoT References:
 - B3-weekly-brief.md §4.1 API 接口
 - API_SOT.md v9.3 标准响应格式
-- MASTER.md v4.4 §2.4 (7角色模型)
+- MASTER.md v4.8 §2.4 (6角色模型)
 - ERROR_CODES_SOT.md v2.1 (错误码)
 
 端点列表:
@@ -16,11 +16,10 @@ SoT References:
 - POST /weekly-briefs/{id}/submit                  - 提交周报
 - GET  /weekly-briefs/projects/{id}/weekly-summary - 获取项目周汇总
 
-权限矩阵 (MASTER.md v4.4 §2.4 - 7角色模型):
+权限矩阵 (MASTER.md v4.8 §2.4 - 6角色模型):
 - ceo, admin: 全部周报
 - finance: 全部周报 (只读)
 - project_owner: 自己负责的项目周报
-- supervisor: 团队项目周报
 - pitcher: 无权访问
 - account_manager: 无权访问
 
@@ -68,38 +67,21 @@ logger = logging.getLogger(__name__)
 # 错误响应辅助函数
 # ========================================
 
+
 def _handle_service_exception(e: Exception, context: str = "操作"):
     """处理服务层异常，转换为标准响应"""
     if isinstance(e, PermissionDeniedError):
-        return error_response(
-            code="PERM-001",
-            message=str(e),
-            status_code=403
-        )
+        return error_response(code="PERM-001", message=str(e), status_code=403)
     elif isinstance(e, ResourceNotFoundError):
-        return error_response(
-            code="RES-001",
-            message=str(e),
-            status_code=404
-        )
+        return error_response(code="RES-001", message=str(e), status_code=404)
     elif isinstance(e, ResourceConflictError):
-        return error_response(
-            code="BIZ-002",
-            message=str(e),
-            status_code=409
-        )
+        return error_response(code="BIZ-002", message=str(e), status_code=409)
     elif isinstance(e, BusinessLogicError):
-        return error_response(
-            code="BIZ-001",
-            message=str(e),
-            status_code=400
-        )
+        return error_response(code="BIZ-001", message=str(e), status_code=400)
     else:
         logger.exception(f"服务异常 - {context}: {e}")
         return error_response(
-            code="SYS-500",
-            message=f"系统内部错误: {str(e)}",
-            status_code=500
+            code="SYS-500", message=f"系统内部错误: {str(e)}", status_code=500
         )
 
 
@@ -141,7 +123,7 @@ async def get_weekly_briefs(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取周报列表
@@ -149,7 +131,6 @@ async def get_weekly_briefs(
     权限:
     - ceo, admin: 全部
     - project_owner: 仅自己项目
-    - supervisor: 团队项目
     - finance: 全部 (只读)
     """
     try:
@@ -160,7 +141,7 @@ async def get_weekly_briefs(
         if week and not week_start:
             # 解析 "2025-W51" 格式
             try:
-                parts = week.split('-W')
+                parts = week.split("-W")
                 if len(parts) == 2:
                     year = int(parts[0])
                     week_num = int(parts[1])
@@ -177,7 +158,7 @@ async def get_weekly_briefs(
             project_id=project_id,
             status=status,
             page=page,
-            page_size=page_size
+            page_size=page_size,
         )
 
         # 获取统计
@@ -191,9 +172,9 @@ async def get_weekly_briefs(
                 "total": total,
                 "page": page,
                 "page_size": page_size,
-                "stats": stats.model_dump()
+                "stats": stats.model_dump(),
             },
-            message="获取成功"
+            message="获取成功",
         )
     except Exception as e:
         return _handle_service_exception(e, "获取周报列表")
@@ -204,12 +185,12 @@ async def get_weekly_brief_stats(
     week: Optional[str] = Query(None, description="周次 (如 2025-W51)"),
     week_start: Optional[date] = Query(None, description="周开始日期"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取周报统计
 
-    权限 (MASTER.md v4.4 §2.4): ceo, supervisor, finance, admin
+    权限 (MASTER.md v4.8 §2.4): ceo, project_owner, finance, admin
     """
     try:
         service = WeeklyBriefService(db)
@@ -218,7 +199,7 @@ async def get_weekly_brief_stats(
         parsed_week_start = week_start
         if week and not week_start:
             try:
-                parts = week.split('-W')
+                parts = week.split("-W")
                 if len(parts) == 2:
                     year = int(parts[0])
                     week_num = int(parts[1])
@@ -230,10 +211,7 @@ async def get_weekly_brief_stats(
 
         stats = service.get_weekly_brief_stats(current_user, parsed_week_start)
 
-        return success_response(
-            data=stats.model_dump(),
-            message="获取成功"
-        )
+        return success_response(data=stats.model_dump(), message="获取成功")
     except Exception as e:
         return _handle_service_exception(e, "获取周报统计")
 
@@ -242,20 +220,19 @@ async def get_weekly_brief_stats(
 async def get_weekly_brief(
     brief_id: int = Path(..., gt=0, description="周报ID"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取周报详情
 
-    权限 (MASTER.md v4.4 §2.4): project_owner (自己项目), ceo, supervisor, finance, admin
+    权限 (MASTER.md v4.8 §2.4): project_owner (自己项目), ceo, finance, admin
     """
     try:
         service = WeeklyBriefService(db)
         brief = service.get_weekly_brief(brief_id, current_user)
 
         return success_response(
-            data=_brief_to_response(brief).model_dump(),
-            message="获取成功"
+            data=_brief_to_response(brief).model_dump(), message="获取成功"
         )
     except Exception as e:
         return _handle_service_exception(e, "获取周报详情")
@@ -265,12 +242,12 @@ async def get_weekly_brief(
 async def create_weekly_brief(
     request: WeeklyBriefCreateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     创建周报
 
-    权限 (MASTER.md v4.4 §2.4): project_owner (自己项目), admin
+    权限 (MASTER.md v4.8 §2.4): project_owner (自己项目), admin
 
     业务规则 (B3-weekly-brief.md §7.1):
     - BR-BRIEF-001: 每项目每周只能有一份周报
@@ -282,8 +259,7 @@ async def create_weekly_brief(
         brief = service.create_weekly_brief(request, current_user)
 
         return success_response(
-            data=_brief_to_response(brief).model_dump(),
-            message="周报创建成功"
+            data=_brief_to_response(brief).model_dump(), message="周报创建成功"
         )
     except Exception as e:
         return _handle_service_exception(e, "创建周报")
@@ -294,12 +270,12 @@ async def update_weekly_brief(
     brief_id: int = Path(..., gt=0, description="周报ID"),
     request: WeeklyBriefUpdateRequest = ...,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     更新周报
 
-    权限 (MASTER.md v4.4 §2.4): project_owner (草稿, 自己项目), admin
+    权限 (MASTER.md v4.8 §2.4): project_owner (草稿, 自己项目), admin
 
     业务规则:
     - 只能更新草稿状态的周报
@@ -309,8 +285,7 @@ async def update_weekly_brief(
         brief = service.update_weekly_brief(brief_id, request, current_user)
 
         return success_response(
-            data=_brief_to_response(brief).model_dump(),
-            message="周报更新成功"
+            data=_brief_to_response(brief).model_dump(), message="周报更新成功"
         )
     except Exception as e:
         return _handle_service_exception(e, "更新周报")
@@ -320,12 +295,12 @@ async def update_weekly_brief(
 async def submit_weekly_brief(
     brief_id: int = Path(..., gt=0, description="周报ID"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     提交周报
 
-    权限 (MASTER.md v4.4 §2.4): project_owner (自己项目), admin
+    权限 (MASTER.md v4.8 §2.4): project_owner (自己项目), admin
 
     业务规则 (B3-weekly-brief.md §7.2):
     - BR-BRIEF-010: Phase 1 无强制必填项
@@ -337,11 +312,9 @@ async def submit_weekly_brief(
 
         return success_response(
             data=WeeklyBriefSubmitResponse(
-                id=brief.id,
-                status=brief.status,
-                submitted_at=brief.submitted_at
+                id=brief.id, status=brief.status, submitted_at=brief.submitted_at
             ).model_dump(),
-            message="周报提交成功"
+            message="周报提交成功",
         )
     except Exception as e:
         return _handle_service_exception(e, "提交周报")
@@ -353,46 +326,43 @@ async def export_weekly_briefs(
     project_id: Optional[int] = Query(None, gt=0, description="项目ID"),
     format: Literal["pdf", "excel"] = Query("excel", description="导出格式"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     导出周报
 
-    权限 (MASTER.md v4.4 §2.4): project_owner (自己项目), ceo, admin
+    权限 (MASTER.md v4.8 §2.4): project_owner (自己项目), ceo, admin
 
     TODO: 实现实际的导出逻辑
     """
     try:
         # TODO: 实现导出逻辑
-        return success_response(
-            data={"message": "导出功能开发中"},
-            message="导出功能开发中"
-        )
+        return success_response(data={"message": "导出功能开发中"}, message="导出功能开发中")
     except Exception as e:
         return _handle_service_exception(e, "导出周报")
 
 
 # ========== 项目周数据汇总 ==========
 
+
 @router.get("/projects/{project_id}/weekly-summary", response_model=dict)
 async def get_project_weekly_summary(
     project_id: int = Path(..., gt=0, description="项目ID"),
     week_start: date = Query(..., description="周开始日期"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取项目周数据汇总
 
-    权限 (MASTER.md v4.4 §2.4): project_owner (自己项目), ceo, supervisor, admin
+    权限 (MASTER.md v4.8 §2.4): project_owner (自己项目), ceo, admin
     """
     try:
         service = WeeklyBriefService(db)
-        summary = service.get_project_weekly_summary(project_id, week_start, current_user)
-
-        return success_response(
-            data=summary.model_dump(),
-            message="获取成功"
+        summary = service.get_project_weekly_summary(
+            project_id, week_start, current_user
         )
+
+        return success_response(data=summary.model_dump(), message="获取成功")
     except Exception as e:
         return _handle_service_exception(e, "获取项目周数据汇总")

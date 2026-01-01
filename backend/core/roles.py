@@ -1,9 +1,10 @@
 """
-角色定义集中管理 (MASTER.md v4.6 §2.4)
+角色定义集中管理 (MASTER.md v4.8 §2.4)
 
-版本: v1.0
+版本: v2.0
 创建日期: 2025-12-27
-基准文档: MASTER.md v4.6 §2.4
+更新日期: 2026-01-01
+基准文档: MASTER.md v4.8 §2.4
 
 功能:
 - 6 角色白名单定义
@@ -13,7 +14,11 @@
 
 注意:
 - 本模块是角色定义的唯一权威来源
-- role_mapping.py 将逐步迁移到本模块
+- role_mapping.py 已对齐到 v5.0
+
+变更记录:
+- v2.0 (2026-01-01): 对齐 MASTER.md v4.8，更新技术角色映射
+- v1.0 (2025-12-27): 初始版本
 """
 
 from typing import FrozenSet, Dict, Optional, TYPE_CHECKING
@@ -26,65 +31,74 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# 6 角色白名单 (MASTER.md v4.6 §2.4)
+# 6 角色白名单 (MASTER.md v4.8 §2.4)
 # ============================================================================
 
-BUSINESS_ROLES: FrozenSet[str] = frozenset([
-    'ceo',             # 老板：资金安全、公司盈亏、最终决策
-    'project_owner',   # 项目负责人：项目盈亏、日报审核、确认有效粉
-    'finance',         # 财务：资金出入准确、数据真实、对账
-    'pitcher',         # 投手：CPL 达标、日报准确、执行投放
-    'account_manager', # 户管：账户分配、账户状态监控
-    'admin'            # 管理员：系统配置（不参与业务）
-])
+BUSINESS_ROLES: FrozenSet[str] = frozenset(
+    [
+        "ceo",  # 老板：资金安全、公司盈亏、最终决策
+        "project_owner",  # 项目负责人：项目盈亏、日报审核、确认有效粉
+        "finance",  # 财务：资金出入准确、数据真实、对账
+        "pitcher",  # 投手：CPL 达标、日报准确、执行投放
+        "account_manager",  # 户管：账户分配、账户状态监控
+        "admin",  # 管理员：系统配置（不参与业务）
+    ]
+)
 
-# 角色中文名映射
-ROLE_DISPLAY_NAMES_V46: Dict[str, str] = {
-    'ceo': '老板',
-    'project_owner': '项目负责人',
-    'finance': '财务',
-    'pitcher': '投手',
-    'account_manager': '户管',
-    'admin': '管理员',
+# 角色中文名映射 (v4.8)
+ROLE_DISPLAY_NAMES: Dict[str, str] = {
+    "ceo": "老板",
+    "project_owner": "项目负责人",
+    "finance": "财务",
+    "pitcher": "投手",
+    "account_manager": "户管",
+    "admin": "管理员",
 }
 
-
-# ============================================================================
-# 禁止使用的旧角色
-# ============================================================================
-
-FORBIDDEN_ROLES: FrozenSet[str] = frozenset([
-    'supervisor',      # 已合并到 project_owner (MASTER.md v4.6)
-    'data_operator',   # 已移除
-    'media_buyer'      # 技术层角色，业务层用 pitcher
-])
+# 兼容别名
+ROLE_DISPLAY_NAMES_V46 = ROLE_DISPLAY_NAMES
 
 
 # ============================================================================
-# 技术层角色映射 (数据库 CHECK 约束)
+# 禁止使用的旧角色 (PRD v2.2)
+# ============================================================================
+
+FORBIDDEN_ROLES: FrozenSet[str] = frozenset(
+    [
+        "supervisor",  # 已合并到 project_owner (MASTER.md v4.8)
+        "data_operator",  # 已移除
+        "media_buyer",  # 技术层角色，业务层用 pitcher
+    ]
+)
+
+
+# ============================================================================
+# 技术层角色映射 (v5.0: pitcher 直接使用)
 # ============================================================================
 
 TECH_ROLE_MAPPING: Dict[str, Optional[str]] = {
-    'ceo': 'admin',              # ceo 复用 admin 技术角色
-    'project_owner': None,       # 通过 is_project_owner() 判断
-    'finance': 'finance',
-    'pitcher': 'media_buyer',    # 业务层 pitcher -> 技术层 media_buyer
-    'account_manager': 'account_manager',
-    'admin': 'admin',
+    "ceo": "admin",  # ceo 复用 admin 技术角色
+    "project_owner": None,  # 通过 is_project_owner() 判断
+    "finance": "finance",
+    "pitcher": "pitcher",  # v5.0: 直接使用 pitcher
+    "account_manager": "account_manager",
+    "admin": "admin",
 }
 
 # 技术角色 -> 业务角色 (用于 API 响应)
 CODE_TO_BUSINESS: Dict[str, str] = {
-    'admin': 'admin',
-    'finance': 'finance',
-    'media_buyer': 'pitcher',
-    'account_manager': 'account_manager',
+    "admin": "admin",
+    "finance": "finance",
+    "pitcher": "pitcher",
+    "media_buyer": "pitcher",  # 向后兼容
+    "account_manager": "account_manager",
 }
 
 
 # ============================================================================
 # 核心校验函数
 # ============================================================================
+
 
 def is_valid_role(role: str) -> bool:
     """
@@ -194,15 +208,13 @@ def validate_role(role: str) -> None:
 
     if role_lower not in BUSINESS_ROLES:
         valid_roles = ", ".join(sorted(BUSINESS_ROLES))
-        raise ValueError(
-            f"角色 '{role}' 不在白名单中。"
-            f"合法角色: {valid_roles}"
-        )
+        raise ValueError(f"角色 '{role}' 不在白名单中。" f"合法角色: {valid_roles}")
 
 
 # ============================================================================
 # project_owner 身份验证 (MASTER.md v4.6 §2.4)
 # ============================================================================
+
 
 def is_project_owner(user_id: int, db: "Session") -> bool:
     """
@@ -225,14 +237,15 @@ def is_project_owner(user_id: int, db: "Session") -> bool:
 
     # 方式 1: 检查 users.is_project_owner 字段
     user = db.query(User).filter(User.id == user_id).first()
-    if user and getattr(user, 'is_project_owner', False):
+    if user and getattr(user, "is_project_owner", False):
         return True
 
     # 方式 2: 检查 project_members 表
-    member = db.query(ProjectMember).filter(
-        ProjectMember.user_id == user_id,
-        ProjectMember.role == 'owner'
-    ).first()
+    member = (
+        db.query(ProjectMember)
+        .filter(ProjectMember.user_id == user_id, ProjectMember.role == "owner")
+        .first()
+    )
 
     return member is not None
 
@@ -253,19 +266,24 @@ def is_project_owner_of(user_id: int, project_id: int, db: "Session") -> bool:
     from backend.models.project import Project, ProjectMember
 
     # 检查 projects.owner_id
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.owner_id == user_id
-    ).first()
+    project = (
+        db.query(Project)
+        .filter(Project.id == project_id, Project.owner_id == user_id)
+        .first()
+    )
     if project:
         return True
 
     # 检查 project_members
-    member = db.query(ProjectMember).filter(
-        ProjectMember.project_id == project_id,
-        ProjectMember.user_id == user_id,
-        ProjectMember.role == 'owner'
-    ).first()
+    member = (
+        db.query(ProjectMember)
+        .filter(
+            ProjectMember.project_id == project_id,
+            ProjectMember.user_id == user_id,
+            ProjectMember.role == "owner",
+        )
+        .first()
+    )
 
     return member is not None
 
@@ -273,6 +291,7 @@ def is_project_owner_of(user_id: int, project_id: int, db: "Session") -> bool:
 # ============================================================================
 # 权限检查辅助函数
 # ============================================================================
+
 
 def can_approve_topup(role: str) -> bool:
     """
@@ -290,7 +309,7 @@ def can_approve_topup(role: str) -> bool:
     Returns:
         bool: 是否可以审批
     """
-    return role.lower().strip() in {'account_manager', 'finance'}
+    return role.lower().strip() in {"account_manager", "finance"}
 
 
 def can_review_daily_report(role: str) -> bool:
@@ -307,7 +326,7 @@ def can_review_daily_report(role: str) -> bool:
     Returns:
         bool: 是否可以审核
     """
-    return role.lower().strip() in {'project_owner', 'admin'}
+    return role.lower().strip() in {"project_owner", "admin"}
 
 
 def can_view_profit(role: str) -> bool:
@@ -325,12 +344,13 @@ def can_view_profit(role: str) -> bool:
     Returns:
         bool: 是否可以查看
     """
-    return role.lower().strip() in {'ceo', 'finance', 'admin'}
+    return role.lower().strip() in {"ceo", "finance", "admin"}
 
 
 # ============================================================================
 # 迁移辅助函数
 # ============================================================================
+
 
 def migrate_role(old_role: str) -> str:
     """
@@ -355,15 +375,13 @@ def migrate_role(old_role: str) -> str:
     old_role_lower = old_role.lower().strip()
 
     migration_map = {
-        'supervisor': 'project_owner',
-        'data_operator': 'finance',  # 默认迁移到 finance，需业务确认
+        "supervisor": "project_owner",
+        "data_operator": "finance",  # 默认迁移到 finance，需业务确认
     }
 
     if old_role_lower in migration_map:
         new_role = migration_map[old_role_lower]
-        logger.warning(
-            f"角色迁移: {old_role} -> {new_role} (MASTER.md v4.6)"
-        )
+        logger.warning(f"角色迁移: {old_role} -> {new_role} (MASTER.md v4.6)")
         return new_role
 
     return old_role

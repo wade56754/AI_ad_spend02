@@ -11,8 +11,12 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, select, desc
 
 from backend.models import (
-    AdAccount, AccountStatusHistory, AccountPerformance,
-    AccountAlert, AccountDocument, AccountNote
+    AdAccount,
+    AccountStatusHistory,
+    AccountPerformance,
+    AccountAlert,
+    AccountDocument,
+    AccountNote,
 )
 from backend.models import Project
 from backend.models import Channel
@@ -27,7 +31,7 @@ from backend.schemas.ad_account import (
     AccountNoteCreateRequest,
     AccountDocumentCreateRequest,
     AdAccountResponse,
-    AdAccountStatisticsResponse
+    AdAccountStatisticsResponse,
 )
 from backend.core.response import success_response, error_response
 from backend.exceptions import ValidationError, NotFoundError, PermissionError
@@ -35,7 +39,7 @@ from backend.services.audit_log_service import AuditLogService
 from backend.core.state_machine import (
     AD_ACCOUNT_STATE_MACHINE,
     StateTransitionError,
-    AdAccountStatus as SMAdAccountStatus
+    AdAccountStatus as SMAdAccountStatus,
 )
 
 
@@ -51,7 +55,7 @@ class AdAccountService:
         account: AdAccount,
         target_status: str,
         user_role: str,
-        action_name: str = "状态转换"
+        action_name: str = "状态转换",
     ) -> None:
         """
         验证广告账户状态转换是否合法
@@ -89,25 +93,29 @@ class AdAccountService:
             )
 
     async def create_account(
-        self,
-        request: AdAccountCreateRequest,
-        current_user_id: int
+        self, request: AdAccountCreateRequest, current_user_id: int
     ) -> AdAccount:
         """创建广告账户"""
         # 验证项目是否存在
-        project = self.db.query(Project).filter(Project.id == request.project_id).first()
+        project = (
+            self.db.query(Project).filter(Project.id == request.project_id).first()
+        )
         if not project:
             raise ValidationError("项目不存在")
 
         # 验证渠道是否存在
-        channel = self.db.query(Channel).filter(Channel.id == request.channel_id).first()
+        channel = (
+            self.db.query(Channel).filter(Channel.id == request.channel_id).first()
+        )
         if not channel:
             raise ValidationError("渠道不存在")
 
         # 检查平台账户ID是否已存在
-        existing = self.db.query(AdAccount).filter(
-            AdAccount.account_code == request.account_id
-        ).first()
+        existing = (
+            self.db.query(AdAccount)
+            .filter(AdAccount.account_code == request.account_id)
+            .first()
+        )
         if existing:
             raise ValidationError("平台账户ID已存在")
 
@@ -146,12 +154,7 @@ class AdAccountService:
 
         # 创建初始状态历史
         await self._create_status_history(
-            account.id,
-            None,
-            "new",
-            "账户创建",
-            "system",
-            current_user_id
+            account.id, None, "new", "账户创建", "system", current_user_id
         )
 
         # 记录审计日志
@@ -160,7 +163,7 @@ class AdAccountService:
             action="create",
             resource_type="ad_account",
             resource_id=account.id,
-            details=f"创建广告账户: {account.account_name}"
+            details=f"创建广告账户: {account.account_name}",
         )
 
         return account
@@ -175,13 +178,13 @@ class AdAccountService:
         channel_id: Optional[int] = None,
         assigned_user_id: Optional[int] = None,
         current_user_id: int = None,
-        user_role: str = None
+        user_role: str = None,
     ) -> Tuple[List[AdAccount], int]:
         """获取广告账户列表"""
         query = self.db.query(AdAccount)
 
         # 根据角色过滤数据
-        if user_role == "media_buyer":
+        if user_role == "pitcher":
             query = query.filter(AdAccount.assigned_to == current_user_id)
         elif user_role == "account_manager":
             # 账户管理员只能看到自己项目的账户
@@ -206,17 +209,17 @@ class AdAccountService:
         total = query.count()
 
         # 分页
-        accounts = query.order_by(
-            AdAccount.created_at.desc()
-        ).offset((page - 1) * page_size).limit(page_size).all()
+        accounts = (
+            query.order_by(AdAccount.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
 
         return accounts, total
 
     async def get_account_by_id(
-        self,
-        account_id: int,
-        current_user_id: int = None,
-        user_role: str = None
+        self, account_id: int, current_user_id: int = None, user_role: str = None
     ) -> AdAccount:
         """获取广告账户详情"""
         query = self.db.query(AdAccount).filter(AdAccount.id == account_id)
@@ -226,21 +229,20 @@ class AdAccountService:
             raise NotFoundError("广告账户不存在")
 
         # 权限检查
-        if user_role == "media_buyer" and account.assigned_to != current_user_id:
+        if user_role == "pitcher" and account.assigned_to != current_user_id:
             raise PermissionError("无权限访问此账户")
         elif user_role == "account_manager":
             # 检查是否是账户管理员的项目
-            project = self.db.query(Project).filter(Project.id == account.project_id).first()
+            project = (
+                self.db.query(Project).filter(Project.id == account.project_id).first()
+            )
             if not project or project.account_manager_id != current_user_id:
                 raise PermissionError("无权限访问此账户")
 
         return account
 
     async def update_account(
-        self,
-        account_id: int,
-        request: AdAccountUpdateRequest,
-        current_user_id: int
+        self, account_id: int, request: AdAccountUpdateRequest, current_user_id: int
     ) -> AdAccount:
         """更新广告账户"""
         account = await self.get_account_by_id(account_id, current_user_id)
@@ -248,13 +250,10 @@ class AdAccountService:
         # 记录变更前的值
         old_values = {}
         update_data = request.dict(exclude_unset=True)
-        
+
         # 字段名映射：schema 字段 -> 模型字段
-        field_mapping = {
-            'name': 'account_name',
-            'assigned_user_id': 'assigned_to'
-        }
-        
+        field_mapping = {"name": "account_name", "assigned_user_id": "assigned_to"}
+
         for field, value in update_data.items():
             # 映射字段名
             model_field = field_mapping.get(field, field)
@@ -273,7 +272,7 @@ class AdAccountService:
                 action="update",
                 resource_type="ad_account",
                 resource_id=account_id,
-                details=f"更新账户信息: {', '.join(old_values.keys())}"
+                details=f"更新账户信息: {', '.join(old_values.keys())}",
             )
 
         return account
@@ -283,7 +282,7 @@ class AdAccountService:
         account_id: int,
         request: AdAccountStatusUpdateRequest,
         current_user_id: int,
-        user_role: str = "account_manager"
+        user_role: str = "account_manager",
     ) -> AdAccount:
         """
         更新账户状态
@@ -293,12 +292,7 @@ class AdAccountService:
         old_status = account.status
 
         # 使用统一状态机验证并执行转换
-        self._validate_transition(
-            account,
-            request.status,
-            user_role,
-            "账户状态更新"
-        )
+        self._validate_transition(account, request.status, user_role, "账户状态更新")
 
         # 更新附加信息
         account.status_reason = request.status_reason
@@ -324,7 +318,7 @@ class AdAccountService:
             request.status,
             request.status_reason or request.notes,
             request.change_source,
-            current_user_id
+            current_user_id,
         )
 
         # 记录审计日志
@@ -333,7 +327,7 @@ class AdAccountService:
             action="update_status",
             resource_type="ad_account",
             resource_id=account_id,
-            details=f"状态变更: {old_status} -> {request.status}"
+            details=f"状态变更: {old_status} -> {request.status}",
         )
 
         return account
@@ -342,7 +336,7 @@ class AdAccountService:
         self,
         account_id: int,
         request: AdAccountBudgetUpdateRequest,
-        current_user_id: int
+        current_user_id: int,
     ) -> AdAccount:
         """更新账户预算"""
         account = await self.get_account_by_id(account_id, current_user_id)
@@ -365,7 +359,7 @@ class AdAccountService:
             action="update_budget",
             resource_type="ad_account",
             resource_id=account_id,
-            details=f"预算调整: {request.reason}"
+            details=f"预算调整: {request.reason}",
         )
 
         return account
@@ -378,13 +372,13 @@ class AdAccountService:
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
         current_user_id: int = None,
-        user_role: str = None
+        user_role: str = None,
     ) -> AdAccountStatisticsResponse:
         """获取账户统计数据"""
         query = self.db.query(AdAccount)
 
         # 根据角色过滤
-        if user_role == "media_buyer":
+        if user_role == "pitcher":
             query = query.filter(AdAccount.assigned_to == current_user_id)
         elif user_role == "account_manager":
             query = query.join(Project).filter(
@@ -409,12 +403,12 @@ class AdAccountService:
 
         # 性能统计 - 注意：这些字段在模型中不存在，需要从 AccountPerformance 获取
         # 暂时返回默认值，后续需要从 AccountPerformance 表聚合
-        total_spend = Decimal('0')
+        total_spend = Decimal("0")
         total_leads = 0
-        avg_cpl = Decimal('0')
-        best_cpl = Decimal('0')
-        total_budget = Decimal('0')
-        total_daily_budget = Decimal('0')
+        avg_cpl = Decimal("0")
+        best_cpl = Decimal("0")
+        total_budget = Decimal("0")
+        total_daily_budget = Decimal("0")
 
         # 预算使用率
         budget_utilization = 0.0
@@ -424,15 +418,13 @@ class AdAccountService:
         platform_distribution = []
 
         # 状态分布
-        status_dist = query.with_entities(
-            AdAccount.status,
-            func.count().label('count')
-        ).group_by(AdAccount.status).all()
+        status_dist = (
+            query.with_entities(AdAccount.status, func.count().label("count"))
+            .group_by(AdAccount.status)
+            .all()
+        )
 
-        status_distribution = [
-            {"status": s[0], "count": s[1]}
-            for s in status_dist
-        ]
+        status_distribution = [{"status": s[0], "count": s[1]} for s in status_dist]
 
         # TOP表现账户 - 注意：这些字段在模型中不存在，暂时返回空列表
         # 后续需要从 AccountPerformance 表聚合
@@ -441,21 +433,20 @@ class AdAccountService:
 
         # 预警统计
         alerts_query = self.db.query(AccountAlert)
-        if user_role == "media_buyer":
+        if user_role == "pitcher":
             alerts_query = alerts_query.join(AdAccount).filter(
                 AdAccount.assigned_to == current_user_id
             )
         elif user_role == "account_manager":
-            alerts_query = alerts_query.join(AdAccount).join(Project).filter(
-                Project.account_manager_id == current_user_id
+            alerts_query = (
+                alerts_query.join(AdAccount)
+                .join(Project)
+                .filter(Project.account_manager_id == current_user_id)
             )
 
-        active_alerts = alerts_query.filter(
-            AccountAlert.status == "active"
-        ).count()
+        active_alerts = alerts_query.filter(AccountAlert.status == "active").count()
         critical_alerts = alerts_query.filter(
-            AccountAlert.status == "active",
-            AccountAlert.severity == "critical"
+            AccountAlert.status == "active", AccountAlert.severity == "critical"
         ).count()
 
         return AdAccountStatisticsResponse(
@@ -493,7 +484,7 @@ class AdAccountService:
                 for a in low_performers
             ],
             active_alerts=active_alerts,
-            critical_alerts=critical_alerts
+            critical_alerts=critical_alerts,
         )
 
     async def get_account_alerts(
@@ -502,7 +493,7 @@ class AdAccountService:
         status: Optional[str] = None,
         severity: Optional[str] = None,
         current_user_id: int = None,
-        user_role: str = None
+        user_role: str = None,
     ) -> List[AccountAlert]:
         """获取账户预警列表"""
         # 权限检查
@@ -517,15 +508,10 @@ class AdAccountService:
         if severity:
             query = query.filter(AccountAlert.severity == severity)
 
-        return query.order_by(
-            AccountAlert.created_at.desc()
-        ).all()
+        return query.order_by(AccountAlert.created_at.desc()).all()
 
     async def create_account_alert(
-        self,
-        account_id: int,
-        request: AccountAlertCreateRequest,
-        current_user_id: int
+        self, account_id: int, request: AccountAlertCreateRequest, current_user_id: int
     ) -> AccountAlert:
         """创建账户预警"""
         # 权限检查
@@ -540,8 +526,8 @@ class AdAccountService:
             alert_metadata={
                 "title": request.title,
                 "trigger_condition": request.trigger_condition,
-                "notify_users": request.notify_users
-            }
+                "notify_users": request.notify_users,
+            },
         )
 
         self.db.add(alert)
@@ -554,21 +540,16 @@ class AdAccountService:
             action="create",
             resource_type="account_alert",
             resource_id=alert.id,
-            details=f"创建账户预警: {request.title}"
+            details=f"创建账户预警: {request.title}",
         )
 
         return alert
 
     async def update_account_alert(
-        self,
-        alert_id: int,
-        request: AccountAlertUpdateRequest,
-        current_user_id: int
+        self, alert_id: int, request: AccountAlertUpdateRequest, current_user_id: int
     ) -> AccountAlert:
         """更新账户预警"""
-        alert = self.db.query(AccountAlert).filter(
-            AccountAlert.id == alert_id
-        ).first()
+        alert = self.db.query(AccountAlert).filter(AccountAlert.id == alert_id).first()
 
         if not alert:
             raise NotFoundError("预警不存在")
@@ -594,7 +575,7 @@ class AdAccountService:
             action="update",
             resource_type="account_alert",
             resource_id=alert_id,
-            details=f"更新预警状态: {request.status}"
+            details=f"更新预警状态: {request.status}",
         )
 
         return alert
@@ -605,7 +586,7 @@ class AdAccountService:
         note_type: Optional[str] = None,
         is_resolved: Optional[bool] = None,
         current_user_id: int = None,
-        user_role: str = None
+        user_role: str = None,
     ) -> List[AccountNote]:
         """获取账户备注列表"""
         # 权限检查
@@ -621,15 +602,11 @@ class AdAccountService:
             query = query.filter(AccountNote.is_resolved == is_resolved)
 
         return query.order_by(
-            AccountNote.priority.desc(),
-            AccountNote.created_at.desc()
+            AccountNote.priority.desc(), AccountNote.created_at.desc()
         ).all()
 
     async def create_account_note(
-        self,
-        account_id: int,
-        request: AccountNoteCreateRequest,
-        current_user_id: int
+        self, account_id: int, request: AccountNoteCreateRequest, current_user_id: int
     ) -> AccountNote:
         """创建账户备注"""
         # 权限检查
@@ -641,7 +618,7 @@ class AdAccountService:
             content=request.content,
             note_type=request.note_type.value,
             priority=request.priority,
-            created_by=current_user_id
+            created_by=current_user_id,
         )
 
         self.db.add(note)
@@ -654,16 +631,12 @@ class AdAccountService:
             action="create",
             resource_type="account_note",
             resource_id=note.id,
-            details=f"创建账户备注: {request.title}"
+            details=f"创建账户备注: {request.title}",
         )
 
         return note
 
-    async def delete_account(
-        self,
-        account_id: int,
-        current_user_id: int
-    ) -> bool:
+    async def delete_account(self, account_id: int, current_user_id: int) -> bool:
         """删除广告账户（软删除）"""
         account = await self.get_account_by_id(account_id, current_user_id)
 
@@ -683,7 +656,7 @@ class AdAccountService:
             action="delete",
             resource_type="ad_account",
             resource_id=account_id,
-            details=f"删除广告账户: {account.account_name}"
+            details=f"删除广告账户: {account.account_name}",
         )
 
         return True
@@ -695,7 +668,7 @@ class AdAccountService:
         new_status: str,
         reason: str,
         source: str,
-        user_id: int
+        user_id: int,
     ):
         """创建状态历史记录"""
         history = AccountStatusHistory(
@@ -703,7 +676,7 @@ class AdAccountService:
             old_status=old_status,
             new_status=new_status,
             reason=f"{reason} (source: {source})",  # 合并 reason 和 source
-            changed_by=user_id
+            changed_by=user_id,
         )
 
         self.db.add(history)
@@ -714,13 +687,14 @@ class AdAccountService:
 # 缓存支持 (Phase 3 性能优化)
 # ========================================
 
+
 async def get_account_statistics_cached(
     db: Session,
     project_id: Optional[int] = None,
     channel_id: Optional[int] = None,
     current_user_id: int = None,
     user_role: str = None,
-    ttl: int = 120
+    ttl: int = 120,
 ) -> AdAccountStatisticsResponse:
     """
     获取账户统计 (带缓存)
@@ -745,18 +719,25 @@ async def get_account_statistics_cached(
 
     # 生成缓存键
     cache_key = cache_manager.make_key(
-        "accounts", "statistics",
+        "accounts",
+        "statistics",
         str(current_user_id or "all"),
         user_role or "any",
         str(project_id or "all"),
-        str(channel_id or "all")
+        str(channel_id or "all"),
     )
 
     # 尝试从缓存获取
     cached = await cache_manager.get(cache_key)
     if cached is not None:
         # 反序列化 Decimal 字段
-        for field in ["total_spend", "avg_cpl", "best_cpl", "total_budget", "total_daily_budget"]:
+        for field in [
+            "total_spend",
+            "avg_cpl",
+            "best_cpl",
+            "total_budget",
+            "total_daily_budget",
+        ]:
             if field in cached and cached[field] is not None:
                 cached[field] = Decimal(str(cached[field]))
         return AdAccountStatisticsResponse(**cached)
@@ -767,12 +748,18 @@ async def get_account_statistics_cached(
         project_id=project_id,
         channel_id=channel_id,
         current_user_id=current_user_id,
-        user_role=user_role
+        user_role=user_role,
     )
 
     # 序列化为可缓存格式
     cache_data = stats.model_dump()
-    for field in ["total_spend", "avg_cpl", "best_cpl", "total_budget", "total_daily_budget"]:
+    for field in [
+        "total_spend",
+        "avg_cpl",
+        "best_cpl",
+        "total_budget",
+        "total_daily_budget",
+    ]:
         if field in cache_data and cache_data[field] is not None:
             cache_data[field] = str(cache_data[field])
 
@@ -785,7 +772,7 @@ async def get_account_statistics_cached(
 async def invalidate_account_cache(
     account_id: Optional[int] = None,
     project_id: Optional[int] = None,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> int:
     """
     失效广告账户相关缓存

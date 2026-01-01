@@ -37,10 +37,10 @@ class SupabaseAuthService:
         password: str,
         username: Optional[str] = None,
         full_name: Optional[str] = None,
-        role: str = "media_buyer",
+        role: str = "pitcher",
         account_manager_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        auto_confirm: bool = False
+        auto_confirm: bool = False,
     ) -> Dict[str, Any]:
         """
         用户注册
@@ -64,32 +64,30 @@ class SupabaseAuthService:
                 "username": username,
                 "full_name": full_name or email.split("@")[0],
                 "role": role,
-                "account_manager_id": account_manager_id
+                "account_manager_id": account_manager_id,
             }
 
             if metadata:
                 user_metadata.update(metadata)
 
             # 通过Supabase注册
-            response = self.admin_client.auth.admin.create_user({
-                "email": email,
-                "password": password,
-                "email_confirm": auto_confirm,
-                "user_metadata": user_metadata
-            })
+            response = self.admin_client.auth.admin.create_user(
+                {
+                    "email": email,
+                    "password": password,
+                    "email_confirm": auto_confirm,
+                    "user_metadata": user_metadata,
+                }
+            )
 
             if not response.user:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="注册失败"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="注册失败"
                 )
 
             # 记录注册日志
             await self._record_login(
-                response.user.id,
-                "registration",
-                "success",
-                email=email
+                response.user.id, "registration", "success", email=email
             )
 
             return {
@@ -97,26 +95,22 @@ class SupabaseAuthService:
                 "email": response.user.email,
                 "role": role,
                 "auto_confirm": auto_confirm,
-                "message": "注册成功" + ("，请查收验证邮件" if not auto_confirm else "")
+                "message": "注册成功" + ("，请查收验证邮件" if not auto_confirm else ""),
             }
 
         except Exception as e:
             if "duplicate" in str(e).lower():
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="该邮箱已被注册"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱已被注册"
                 )
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     async def login_user(
         self,
         email: str,
         password: str,
         remember_me: bool = False,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> Dict[str, Any]:
         """
         用户登录
@@ -131,24 +125,25 @@ class SupabaseAuthService:
             登录结果
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         try:
             logger.info(f"[LOGIN] Starting login for: {email}")
 
             # 通过Supabase登录
-            response = self.client.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
+            response = self.client.auth.sign_in_with_password(
+                {"email": email, "password": password}
+            )
 
             if not response.user or not response.session:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="登录失败"
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="登录失败"
                 )
 
-            logger.info(f"[LOGIN] Supabase auth successful for user: {response.user.id}")
+            logger.info(
+                f"[LOGIN] Supabase auth successful for user: {response.user.id}"
+            )
 
             # 获取用户资料（可选，失败不阻塞登录）
             profile = None
@@ -156,7 +151,9 @@ class SupabaseAuthService:
                 profile = await self._get_user_profile(response.user.id)
                 logger.info(f"[LOGIN] Profile lookup result: {profile is not None}")
             except Exception as profile_error:
-                logger.warning(f"[LOGIN] Profile lookup failed (non-blocking): {profile_error}")
+                logger.warning(
+                    f"[LOGIN] Profile lookup failed (non-blocking): {profile_error}"
+                )
                 profile = None
 
             # 如果没有 profile，从 user_metadata 构建默认 profile
@@ -167,15 +164,14 @@ class SupabaseAuthService:
                     "id": response.user.id,
                     "username": user_metadata.get("username", email.split("@")[0]),
                     "full_name": user_metadata.get("full_name", ""),
-                    "role": user_metadata.get("role", "media_buyer"),
-                    "is_active": True
+                    "role": user_metadata.get("role", "pitcher"),
+                    "is_active": True,
                 }
 
             # 检查账户是否激活
             if not profile.get("is_active", True):
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="账户已被禁用"
+                    status_code=status.HTTP_403_FORBIDDEN, detail="账户已被禁用"
                 )
 
             # 记录登录历史（失败不阻塞）
@@ -185,10 +181,12 @@ class SupabaseAuthService:
                     "password",
                     "success",
                     ip_address=self._get_client_ip(request),
-                    user_agent=request.headers.get("user-agent") if request else None
+                    user_agent=request.headers.get("user-agent") if request else None,
                 )
             except Exception as record_error:
-                logger.warning(f"[LOGIN] Failed to record login (non-blocking): {record_error}")
+                logger.warning(
+                    f"[LOGIN] Failed to record login (non-blocking): {record_error}"
+                )
 
             # 创建会话记录（失败不阻塞）
             try:
@@ -196,10 +194,12 @@ class SupabaseAuthService:
                     response.user.id,
                     response.session.access_token,
                     device_info=self._extract_device_info(request) if request else None,
-                    expires_at=response.session.expires_at
+                    expires_at=response.session.expires_at,
                 )
             except Exception as session_error:
-                logger.warning(f"[LOGIN] Failed to create session (non-blocking): {session_error}")
+                logger.warning(
+                    f"[LOGIN] Failed to create session (non-blocking): {session_error}"
+                )
 
             logger.info(f"[LOGIN] Login successful for: {email}")
 
@@ -210,21 +210,23 @@ class SupabaseAuthService:
                     "email_confirmed_at": response.user.email_confirmed_at,
                     "phone": response.user.phone,
                     "phone_confirmed_at": response.user.phone_confirmed_at,
-                    "profile": profile
+                    "profile": profile,
                 },
                 "session": {
                     "access_token": response.session.access_token,
                     "refresh_token": response.session.refresh_token,
                     "expires_at": response.session.expires_at,
-                    "expires_in": response.session.expires_in
-                }
+                    "expires_in": response.session.expires_in,
+                },
             }
 
         except HTTPException:
             # 重新抛出 HTTPException，不做处理
             raise
         except Exception as e:
-            logger.error(f"[LOGIN] Login failed with exception: {type(e).__name__}: {e}")
+            logger.error(
+                f"[LOGIN] Login failed with exception: {type(e).__name__}: {e}"
+            )
 
             # 记录失败登录（不阻塞）
             try:
@@ -233,21 +235,19 @@ class SupabaseAuthService:
                     "password",
                     "failed",
                     ip_address=self._get_client_ip(request),
-                    user_agent=request.headers.get("user-agent") if request else None
+                    user_agent=request.headers.get("user-agent") if request else None,
                 )
             except Exception:
                 pass
 
             if "Invalid login credentials" in str(e):
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="邮箱或密码错误"
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="邮箱或密码错误"
                 )
 
             # 返回通用登录失败，不暴露内部错误
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="登录失败，请稍后重试"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="登录失败，请稍后重试"
             )
 
     async def logout_user(self, access_token: str, user_id: str) -> None:
@@ -287,21 +287,19 @@ class SupabaseAuthService:
 
             if not response.session:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="刷新失败"
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="刷新失败"
                 )
 
             return {
                 "access_token": response.session.access_token,
                 "refresh_token": response.session.refresh_token,
                 "expires_at": response.session.expires_at,
-                "expires_in": response.session.expires_in
+                "expires_in": response.session.expires_in,
             }
 
         except Exception as e:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="令牌已过期或无效"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="令牌已过期或无效"
             )
 
     async def reset_password(self, email: str) -> None:
@@ -312,6 +310,7 @@ class SupabaseAuthService:
             email: 邮箱地址
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         try:
@@ -323,10 +322,7 @@ class SupabaseAuthService:
             logger.info(f"Redirect URL: {redirect_url}")
 
             response = self.client.auth.reset_password_email(
-                email,
-                options={
-                    "redirect_to": redirect_url
-                }
+                email, options={"redirect_to": redirect_url}
             )
 
             logger.info(f"Supabase response: {response}")
@@ -337,13 +333,10 @@ class SupabaseAuthService:
             logger.error(f"Password reset email error: {type(e).__name__}: {e}")
             print(f"[ERROR] Password reset failed: {type(e).__name__}: {e}")
             import traceback
+
             traceback.print_exc()
 
-    async def update_password(
-        self,
-        new_password: str,
-        access_token: str
-    ) -> None:
+    async def update_password(self, new_password: str, access_token: str) -> None:
         """
         更新密码
 
@@ -352,27 +345,18 @@ class SupabaseAuthService:
             access_token: 访问令牌
         """
         try:
-            response = self.client.auth.update_user({
-                "password": new_password
-            })
+            response = self.client.auth.update_user({"password": new_password})
 
             if not response.user:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="密码更新失败"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="密码更新失败"
                 )
 
         except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     async def reset_password_confirm(
-        self,
-        reset_token: str,
-        new_password: str,
-        refresh_token: Optional[str] = None
+        self, reset_token: str, new_password: str, refresh_token: Optional[str] = None
     ) -> bool:
         """
         使用重置令牌确认密码重置
@@ -386,10 +370,13 @@ class SupabaseAuthService:
             是否成功
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         try:
-            logger.info(f"Attempting password reset with token length: {len(reset_token)}")
+            logger.info(
+                f"Attempting password reset with token length: {len(reset_token)}"
+            )
             logger.info(f"Refresh token provided: {refresh_token is not None}")
 
             # 使用 recovery token 设置会话
@@ -403,22 +390,18 @@ class SupabaseAuthService:
             if not response or not response.user:
                 logger.error("Failed to set session with recovery token")
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="无效或已过期的重置令牌"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="无效或已过期的重置令牌"
                 )
 
             logger.info(f"Session set successfully for user: {response.user.id}")
 
             # 使用会话更新密码
-            update_response = self.client.auth.update_user({
-                "password": new_password
-            })
+            update_response = self.client.auth.update_user({"password": new_password})
 
             if not update_response.user:
                 logger.error("Failed to update password")
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="密码更新失败"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="密码更新失败"
                 )
 
             logger.info("Password updated successfully")
@@ -428,10 +411,10 @@ class SupabaseAuthService:
             raise
         except Exception as e:
             import logging
+
             logging.error(f"Password reset confirm error: {type(e).__name__}: {e}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"密码重置失败: {str(e)}"
+                status_code=status.HTTP_400_BAD_REQUEST, detail=f"密码重置失败: {str(e)}"
             )
 
     async def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
@@ -453,10 +436,7 @@ class SupabaseAuthService:
             # 获取用户资料
             profile = await self._get_user_profile(response.user.id)
 
-            return {
-                "user": response.user,
-                "profile": profile
-            }
+            return {"user": response.user, "profile": profile}
 
         except Exception:
             return None
@@ -469,22 +449,15 @@ class SupabaseAuthService:
             token: 验证令牌
         """
         try:
-            response = self.client.auth.verify_otp({
-                "token": token,
-                "type": "email"
-            })
+            response = self.client.auth.verify_otp({"token": token, "type": "email"})
 
             if not response.user:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="邮箱验证失败"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="邮箱验证失败"
                 )
 
         except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     async def resend_verification_email(self, email: str) -> None:
         """
@@ -500,10 +473,7 @@ class SupabaseAuthService:
 
             if user and not user.email_confirmed_at:
                 self.admin_client.auth.admin.invite_user_by_email(
-                    email,
-                    options={
-                        "data": user.user_metadata
-                    }
+                    email, options={"data": user.user_metadata}
                 )
 
         except Exception:
@@ -521,11 +491,13 @@ class SupabaseAuthService:
             会话列表
         """
         try:
-            response = self.admin_client.table("user_sessions")\
-                .select("*")\
-                .eq("user_id", user_id)\
-                .eq("is_active", True)\
+            response = (
+                self.admin_client.table("user_sessions")
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("is_active", True)
                 .execute()
+            )
 
             return response.data or []
 
@@ -541,11 +513,9 @@ class SupabaseAuthService:
             user_id: 用户ID
         """
         try:
-            self.admin_client.table("user_sessions")\
-                .update({"is_active": False})\
-                .eq("id", session_id)\
-                .eq("user_id", user_id)\
-                .execute()
+            self.admin_client.table("user_sessions").update({"is_active": False}).eq(
+                "id", session_id
+            ).eq("user_id", user_id).execute()
 
         except Exception:
             pass
@@ -555,11 +525,13 @@ class SupabaseAuthService:
     async def _get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
         """获取用户资料"""
         try:
-            response = self.admin_client.table("user_profiles")\
-                .select("*")\
-                .eq("id", user_id)\
-                .single()\
+            response = (
+                self.admin_client.table("user_profiles")
+                .select("*")
+                .eq("id", user_id)
+                .single()
                 .execute()
+            )
 
             return response.data if response.data else None
 
@@ -573,21 +545,21 @@ class SupabaseAuthService:
         status: str,
         email: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> None:
         """记录登录历史"""
         try:
-            self.admin_client.table("user_login_history")\
-                .insert({
+            self.admin_client.table("user_login_history").insert(
+                {
                     "user_id": user_id,
                     "email": email,
                     "login_type": login_type,
                     "status": status,
                     "login_time": datetime.now(timezone.utc).isoformat(),
                     "ip_address": ip_address,
-                    "user_agent": user_agent
-                })\
-                .execute()
+                    "user_agent": user_agent,
+                }
+            ).execute()
         except Exception:
             pass  # 忽略记录错误
 
@@ -597,7 +569,7 @@ class SupabaseAuthService:
         login_type: str,
         status: str,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> None:
         """通过邮箱记录登录尝试"""
         try:
@@ -612,7 +584,7 @@ class SupabaseAuthService:
                     status,
                     email=email,
                     ip_address=ip_address,
-                    user_agent=user_agent
+                    user_agent=user_agent,
                 )
         except Exception:
             pass
@@ -620,13 +592,9 @@ class SupabaseAuthService:
     async def _update_login_logout(self, user_id: str) -> None:
         """更新登出时间"""
         try:
-            self.admin_client.table("user_login_history")\
-                .update({
-                    "logout_time": datetime.now(timezone.utc).isoformat()
-                })\
-                .eq("user_id", user_id)\
-                .is_("logout_time", "null")\
-                .execute()
+            self.admin_client.table("user_login_history").update(
+                {"logout_time": datetime.now(timezone.utc).isoformat()}
+            ).eq("user_id", user_id).is_("logout_time", "null").execute()
         except Exception:
             pass
 
@@ -635,29 +603,28 @@ class SupabaseAuthService:
         user_id: str,
         session_token: str,
         device_info: Optional[Dict[str, Any]] = None,
-        expires_at: Optional[str] = None
+        expires_at: Optional[str] = None,
     ) -> None:
         """创建会话记录"""
         try:
-            self.admin_client.table("user_sessions")\
-                .insert({
+            self.admin_client.table("user_sessions").insert(
+                {
                     "user_id": user_id,
                     "session_token": session_token,
                     "device_info": device_info,
                     "is_active": True,
-                    "expires_at": expires_at
-                })\
-                .execute()
+                    "expires_at": expires_at,
+                }
+            ).execute()
         except Exception:
             pass
 
     async def _invalidate_sessions(self, user_id: str) -> None:
         """使用户的所有会话失效"""
         try:
-            self.admin_client.table("user_sessions")\
-                .update({"is_active": False})\
-                .eq("user_id", user_id)\
-                .execute()
+            self.admin_client.table("user_sessions").update({"is_active": False}).eq(
+                "user_id", user_id
+            ).execute()
         except Exception:
             pass
 
@@ -681,10 +648,7 @@ class SupabaseAuthService:
         """提取设备信息"""
         user_agent = request.headers.get("user-agent", "")
 
-        device_info = {
-            "user_agent": user_agent,
-            "ip": self._get_client_ip(request)
-        }
+        device_info = {"user_agent": user_agent, "ip": self._get_client_ip(request)}
 
         # 简单的设备检测
         if "Mobile" in user_agent or "Android" in user_agent or "iPhone" in user_agent:

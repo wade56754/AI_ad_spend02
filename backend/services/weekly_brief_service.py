@@ -10,11 +10,10 @@ SoT References:
 - permission-filter: 权限过滤
 - kpi-calculator: CPL 计算
 
-权限矩阵 (MASTER.md v4.4 §2.4 - 7角色模型):
+权限矩阵 (MASTER.md v4.8 §2.4 - 6角色模型):
 - ceo, admin: 全部周报
 - finance: 全部周报 (只读)
 - project_owner: 自己负责的项目周报
-- supervisor: 团队项目周报
 - pitcher: 无权访问
 - account_manager: 无权访问
 
@@ -35,12 +34,17 @@ from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 from backend.models import (
-    WeeklyBrief, WeeklyBriefStatus,
-    Project, User, DailyReport, AdSpendDaily, AdAccount,
-    UserRole
+    WeeklyBrief,
+    WeeklyBriefStatus,
+    Project,
+    User,
+    DailyReport,
+    AdSpendDaily,
+    AdAccount,
+    UserRole,
 )
 from backend.schemas.weekly_brief import (
     WeeklyBriefCreateRequest,
@@ -74,9 +78,7 @@ class WeeklyBriefService:
     # ========== 创建周报 ==========
 
     def create_weekly_brief(
-        self,
-        request: WeeklyBriefCreateRequest,
-        current_user: User
+        self, request: WeeklyBriefCreateRequest, current_user: User
     ) -> WeeklyBrief:
         """
         创建周报
@@ -88,11 +90,16 @@ class WeeklyBriefService:
         - BR-BRIEF-004: 创建时自动汇总周消耗/进粉
         """
         # 验证权限
-        if current_user.role not in [UserRole.ADMIN.value, UserRole.PROJECT_OWNER.value]:
+        if current_user.role not in [
+            UserRole.ADMIN.value,
+            UserRole.PROJECT_OWNER.value,
+        ]:
             raise PermissionDeniedError("权限不足：只有项目负责人可以创建周报")
 
         # 验证项目存在
-        project = self.db.query(Project).filter(Project.id == request.project_id).first()
+        project = (
+            self.db.query(Project).filter(Project.id == request.project_id).first()
+        )
         if not project:
             raise ResourceNotFoundError(f"项目 {request.project_id} 不存在")
 
@@ -102,10 +109,14 @@ class WeeklyBriefService:
                 raise PermissionDeniedError("权限不足：只能创建自己负责的项目周报")
 
         # 检查唯一性
-        existing = self.db.query(WeeklyBrief).filter(
-            WeeklyBrief.project_id == request.project_id,
-            WeeklyBrief.week_start == request.week_start
-        ).first()
+        existing = (
+            self.db.query(WeeklyBrief)
+            .filter(
+                WeeklyBrief.project_id == request.project_id,
+                WeeklyBrief.week_start == request.week_start,
+            )
+            .first()
+        )
         if existing:
             raise ResourceConflictError(
                 f"项目 {request.project_id} 在 {request.week_start} 周已有周报"
@@ -115,7 +126,9 @@ class WeeklyBriefService:
         week_end = get_week_end(request.week_start)
 
         # 获取周数据汇总
-        summary = self._aggregate_weekly_data(request.project_id, request.week_start, week_end)
+        summary = self._aggregate_weekly_data(
+            request.project_id, request.week_start, week_end
+        )
 
         # 创建周报
         brief = WeeklyBrief(
@@ -124,9 +137,9 @@ class WeeklyBriefService:
             week_end=week_end,
             submitter_id=current_user.id,
             status=WeeklyBriefStatus.DRAFT.value,
-            weekly_spend=summary['spend'],
-            weekly_conversions=summary['conversions'],
-            weekly_cpl=summary['cpl'],
+            weekly_spend=summary["spend"],
+            weekly_conversions=summary["conversions"],
+            weekly_cpl=summary["cpl"],
             achievements=request.achievements,
             issues=request.issues,
             solutions=request.solutions,
@@ -142,10 +155,7 @@ class WeeklyBriefService:
     # ========== 更新周报 ==========
 
     def update_weekly_brief(
-        self,
-        brief_id: int,
-        request: WeeklyBriefUpdateRequest,
-        current_user: User
+        self, brief_id: int, request: WeeklyBriefUpdateRequest, current_user: User
     ) -> WeeklyBrief:
         """
         更新周报
@@ -176,10 +186,12 @@ class WeeklyBriefService:
             brief.next_week_plan = request.next_week_plan
 
         # 刷新汇总数据
-        summary = self._aggregate_weekly_data(brief.project_id, brief.week_start, brief.week_end)
-        brief.weekly_spend = summary['spend']
-        brief.weekly_conversions = summary['conversions']
-        brief.weekly_cpl = summary['cpl']
+        summary = self._aggregate_weekly_data(
+            brief.project_id, brief.week_start, brief.week_end
+        )
+        brief.weekly_spend = summary["spend"]
+        brief.weekly_conversions = summary["conversions"]
+        brief.weekly_cpl = summary["cpl"]
 
         self.db.commit()
         self.db.refresh(brief)
@@ -188,11 +200,7 @@ class WeeklyBriefService:
 
     # ========== 提交周报 ==========
 
-    def submit_weekly_brief(
-        self,
-        brief_id: int,
-        current_user: User
-    ) -> WeeklyBrief:
+    def submit_weekly_brief(self, brief_id: int, current_user: User) -> WeeklyBrief:
         """
         提交周报
 
@@ -213,10 +221,12 @@ class WeeklyBriefService:
                 raise PermissionDeniedError("权限不足：只能提交自己负责的项目周报")
 
         # 刷新汇总数据
-        summary = self._aggregate_weekly_data(brief.project_id, brief.week_start, brief.week_end)
-        brief.weekly_spend = summary['spend']
-        brief.weekly_conversions = summary['conversions']
-        brief.weekly_cpl = summary['cpl']
+        summary = self._aggregate_weekly_data(
+            brief.project_id, brief.week_start, brief.week_end
+        )
+        brief.weekly_spend = summary["spend"]
+        brief.weekly_conversions = summary["conversions"]
+        brief.weekly_cpl = summary["cpl"]
 
         # 提交
         brief.submit(current_user.id)
@@ -228,16 +238,14 @@ class WeeklyBriefService:
 
     # ========== 获取周报 ==========
 
-    def get_weekly_brief(
-        self,
-        brief_id: int,
-        current_user: User
-    ) -> WeeklyBrief:
+    def get_weekly_brief(self, brief_id: int, current_user: User) -> WeeklyBrief:
         """获取周报详情"""
-        brief = self.db.query(WeeklyBrief).options(
-            joinedload(WeeklyBrief.project),
-            joinedload(WeeklyBrief.submitter)
-        ).filter(WeeklyBrief.id == brief_id).first()
+        brief = (
+            self.db.query(WeeklyBrief)
+            .options(joinedload(WeeklyBrief.project), joinedload(WeeklyBrief.submitter))
+            .filter(WeeklyBrief.id == brief_id)
+            .first()
+        )
 
         if not brief:
             raise ResourceNotFoundError(f"周报 {brief_id} 不存在")
@@ -255,20 +263,18 @@ class WeeklyBriefService:
         project_id: Optional[int] = None,
         status: Optional[str] = None,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
     ) -> Tuple[List[WeeklyBrief], int]:
         """
         获取周报列表
 
         权限过滤:
         - ceo/admin: 全部
-        - project_owner: 仅自己项目
-        - supervisor: 团队项目
+        - project_owner: 自己项目或全部
         - finance: 全部 (只读)
         """
         query = self.db.query(WeeklyBrief).options(
-            joinedload(WeeklyBrief.project),
-            joinedload(WeeklyBrief.submitter)
+            joinedload(WeeklyBrief.project), joinedload(WeeklyBrief.submitter)
         )
 
         # 权限过滤
@@ -286,19 +292,19 @@ class WeeklyBriefService:
         total = query.count()
 
         # 分页
-        briefs = query.order_by(
-            desc(WeeklyBrief.week_start),
-            WeeklyBrief.project_id
-        ).offset((page - 1) * page_size).limit(page_size).all()
+        briefs = (
+            query.order_by(desc(WeeklyBrief.week_start), WeeklyBrief.project_id)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
 
         return briefs, total
 
     # ========== 统计 ==========
 
     def get_weekly_brief_stats(
-        self,
-        current_user: User,
-        week_start: Optional[date] = None
+        self, current_user: User, week_start: Optional[date] = None
     ) -> WeeklyBriefStatsResponse:
         """
         获取周报统计
@@ -314,7 +320,7 @@ class WeeklyBriefService:
 
         # 获取活跃项目数
         project_query = self.db.query(func.count(Project.id)).filter(
-            Project.status == 'active'
+            Project.status == "active"
         )
         # 应用权限过滤
         if current_user.role == UserRole.PROJECT_OWNER.value:
@@ -339,30 +345,27 @@ class WeeklyBriefService:
         ).count()
 
         # 计算提交率
-        submission_rate = Decimal('0')
+        submission_rate = Decimal("0")
         if total_projects > 0:
             submission_rate = Decimal(submitted_count) / Decimal(total_projects) * 100
 
         # 计算总消耗
         total_spend = brief_query.with_entities(
             func.coalesce(func.sum(WeeklyBrief.weekly_spend), 0)
-        ).scalar() or Decimal('0')
+        ).scalar() or Decimal("0")
 
         return WeeklyBriefStatsResponse(
             total_projects=total_projects,
             submitted_count=submitted_count,
             draft_count=draft_count,
             submission_rate=submission_rate,
-            total_weekly_spend=total_spend
+            total_weekly_spend=total_spend,
         )
 
     # ========== 周数据汇总 ==========
 
     def get_project_weekly_summary(
-        self,
-        project_id: int,
-        week_start: date,
-        current_user: User
+        self, project_id: int, week_start: date, current_user: User
     ) -> WeeklySummaryResponse:
         """
         获取项目周数据汇总
@@ -392,52 +395,46 @@ class WeeklyBriefService:
         # 计算趋势
         trends = None
         last_week_data = None
-        if last['spend'] > 0 or last['conversions'] > 0:
+        if last["spend"] > 0 or last["conversions"] > 0:
             last_week_data = LastWeekData(
-                spend=last['spend'],
-                conversions=last['conversions'],
-                cpl=last['cpl']
+                spend=last["spend"], conversions=last["conversions"], cpl=last["cpl"]
             )
             trends = WeeklyTrendData(
-                spend_change=self._calc_change(current['spend'], last['spend']),
+                spend_change=self._calc_change(current["spend"], last["spend"]),
                 conversions_change=self._calc_change(
-                    Decimal(current['conversions']),
-                    Decimal(last['conversions'])
+                    Decimal(current["conversions"]), Decimal(last["conversions"])
                 ),
-                cpl_change=self._calc_change(current['cpl'], last['cpl'])
+                cpl_change=self._calc_change(current["cpl"], last["cpl"]),
             )
 
         # 获取每日明细
         daily_breakdown = self._get_daily_breakdown(project_id, week_start, week_end)
 
         # 目标 CPL
-        target_cpl = getattr(project, 'target_cpl', None)
+        target_cpl = getattr(project, "target_cpl", None)
         cpl_vs_target = None
-        if target_cpl and target_cpl > 0 and current['cpl'] > 0:
-            cpl_vs_target = (current['cpl'] - target_cpl) / target_cpl * 100
+        if target_cpl and target_cpl > 0 and current["cpl"] > 0:
+            cpl_vs_target = (current["cpl"] - target_cpl) / target_cpl * 100
 
         return WeeklySummaryResponse(
             project_id=project_id,
             project_name=project.name,
             week_start=week_start,
             week_end=week_end,
-            weekly_spend=current['spend'],
-            weekly_conversions=current['conversions'],
-            weekly_cpl=current['cpl'],
+            weekly_spend=current["spend"],
+            weekly_conversions=current["conversions"],
+            weekly_cpl=current["cpl"],
             target_cpl=target_cpl,
             cpl_vs_target=cpl_vs_target,
             last_week=last_week_data,
             trends=trends,
-            daily_breakdown=daily_breakdown
+            daily_breakdown=daily_breakdown,
         )
 
     # ========== 私有方法 ==========
 
     def _aggregate_weekly_data(
-        self,
-        project_id: int,
-        week_start: date,
-        week_end: date
+        self, project_id: int, week_start: date, week_end: date
     ) -> dict:
         """
         汇总项目周数据
@@ -448,77 +445,89 @@ class WeeklyBriefService:
         - 周 CPL: 周消耗 / 周进粉
         """
         # 获取项目下的账户
-        account_ids = self.db.query(AdAccount.id).filter(
-            AdAccount.project_id == project_id
-        ).subquery()
+        account_ids = (
+            self.db.query(AdAccount.id)
+            .filter(AdAccount.project_id == project_id)
+            .subquery()
+        )
 
         # 汇总消耗
-        spend_result = self.db.query(
-            func.coalesce(func.sum(AdSpendDaily.spend), 0)
-        ).filter(
-            AdSpendDaily.ad_account_id.in_(account_ids),
-            AdSpendDaily.spend_date >= week_start,
-            AdSpendDaily.spend_date <= week_end
-        ).scalar()
+        spend_result = (
+            self.db.query(func.coalesce(func.sum(AdSpendDaily.spend), 0))
+            .filter(
+                AdSpendDaily.ad_account_id.in_(account_ids),
+                AdSpendDaily.spend_date >= week_start,
+                AdSpendDaily.spend_date <= week_end,
+            )
+            .scalar()
+        )
         spend = Decimal(str(spend_result or 0))
 
         # 汇总进粉
-        conversions_result = self.db.query(
-            func.coalesce(func.sum(DailyReport.conversions_final), 0)
-        ).filter(
-            DailyReport.ad_account_id.in_(account_ids),
-            DailyReport.report_date >= week_start,
-            DailyReport.report_date <= week_end
-        ).scalar()
+        conversions_result = (
+            self.db.query(func.coalesce(func.sum(DailyReport.conversions_final), 0))
+            .filter(
+                DailyReport.ad_account_id.in_(account_ids),
+                DailyReport.report_date >= week_start,
+                DailyReport.report_date <= week_end,
+            )
+            .scalar()
+        )
         conversions = int(conversions_result or 0)
 
         # 计算 CPL
-        cpl = Decimal('0')
+        cpl = Decimal("0")
         if conversions > 0:
             cpl = spend / Decimal(conversions)
 
         return {
-            'spend': spend,
-            'conversions': conversions,
-            'cpl': cpl.quantize(Decimal('0.01'))
+            "spend": spend,
+            "conversions": conversions,
+            "cpl": cpl.quantize(Decimal("0.01")),
         }
 
     def _get_daily_breakdown(
-        self,
-        project_id: int,
-        week_start: date,
-        week_end: date
+        self, project_id: int, week_start: date, week_end: date
     ) -> List[DailyBreakdown]:
         """获取每日明细"""
-        account_ids = self.db.query(AdAccount.id).filter(
-            AdAccount.project_id == project_id
-        ).subquery()
+        account_ids = (
+            self.db.query(AdAccount.id)
+            .filter(AdAccount.project_id == project_id)
+            .subquery()
+        )
 
-        results = self.db.query(
-            AdSpendDaily.spend_date,
-            func.coalesce(func.sum(AdSpendDaily.spend), 0).label('spend'),
-        ).filter(
-            AdSpendDaily.ad_account_id.in_(account_ids),
-            AdSpendDaily.spend_date >= week_start,
-            AdSpendDaily.spend_date <= week_end
-        ).group_by(
-            AdSpendDaily.spend_date
-        ).order_by(
-            AdSpendDaily.spend_date
-        ).all()
+        results = (
+            self.db.query(
+                AdSpendDaily.spend_date,
+                func.coalesce(func.sum(AdSpendDaily.spend), 0).label("spend"),
+            )
+            .filter(
+                AdSpendDaily.ad_account_id.in_(account_ids),
+                AdSpendDaily.spend_date >= week_start,
+                AdSpendDaily.spend_date <= week_end,
+            )
+            .group_by(AdSpendDaily.spend_date)
+            .order_by(AdSpendDaily.spend_date)
+            .all()
+        )
 
         # 获取进粉数据
         conversions_data = {}
-        conv_results = self.db.query(
-            DailyReport.report_date,
-            func.coalesce(func.sum(DailyReport.conversions_final), 0).label('conversions')
-        ).filter(
-            DailyReport.ad_account_id.in_(account_ids),
-            DailyReport.report_date >= week_start,
-            DailyReport.report_date <= week_end
-        ).group_by(
-            DailyReport.report_date
-        ).all()
+        conv_results = (
+            self.db.query(
+                DailyReport.report_date,
+                func.coalesce(func.sum(DailyReport.conversions_final), 0).label(
+                    "conversions"
+                ),
+            )
+            .filter(
+                DailyReport.ad_account_id.in_(account_ids),
+                DailyReport.report_date >= week_start,
+                DailyReport.report_date <= week_end,
+            )
+            .group_by(DailyReport.report_date)
+            .all()
+        )
         for row in conv_results:
             conversions_data[row.report_date] = row.conversions
 
@@ -526,7 +535,7 @@ class WeeklyBriefService:
             DailyBreakdown(
                 date=row.spend_date,
                 spend=Decimal(str(row.spend)),
-                conversions=conversions_data.get(row.spend_date, 0)
+                conversions=conversions_data.get(row.spend_date, 0),
             )
             for row in results
         ]
@@ -534,28 +543,35 @@ class WeeklyBriefService:
     def _calc_change(self, current: Decimal, previous: Decimal) -> Decimal:
         """计算环比变化百分比"""
         if previous == 0:
-            return Decimal('0')
-        return ((current - previous) / previous * 100).quantize(Decimal('0.1'))
+            return Decimal("0")
+        return ((current - previous) / previous * 100).quantize(Decimal("0.1"))
 
     def _is_project_owner(self, user_id: UUID, project_id: int) -> bool:
         """检查用户是否是项目负责人"""
         # 这里需要根据实际的项目成员表来判断
         # 简化实现：检查 Project.owner_id 或 ProjectMember
         from backend.models import ProjectMember
-        member = self.db.query(ProjectMember).filter(
-            ProjectMember.project_id == project_id,
-            ProjectMember.user_id == user_id,
-            ProjectMember.role == 'owner'
-        ).first()
+
+        member = (
+            self.db.query(ProjectMember)
+            .filter(
+                ProjectMember.project_id == project_id,
+                ProjectMember.user_id == user_id,
+                ProjectMember.role == "owner",
+            )
+            .first()
+        )
         return member is not None
 
     def _get_user_project_ids(self, user_id: UUID) -> List[int]:
         """获取用户负责的项目 ID 列表"""
         from backend.models import ProjectMember
-        results = self.db.query(ProjectMember.project_id).filter(
-            ProjectMember.user_id == user_id,
-            ProjectMember.role == 'owner'
-        ).all()
+
+        results = (
+            self.db.query(ProjectMember.project_id)
+            .filter(ProjectMember.user_id == user_id, ProjectMember.role == "owner")
+            .all()
+        )
         return [r.project_id for r in results]
 
     def _can_access_brief(self, user: User, brief: WeeklyBrief) -> bool:
@@ -572,22 +588,21 @@ class WeeklyBriefService:
         if user.role == UserRole.PROJECT_OWNER.value:
             return self._is_project_owner(user.id, brief.project_id)
 
-        # 主管/ceo 可以访问团队项目 (MASTER.md v4.4 §2.4)
-        if user.role in ["supervisor", "ceo"]:
+        # project_owner/ceo 可以访问项目 (MASTER.md v4.8 §2.4)
+        if user.role in ["project_owner", "ceo"]:
             return True
 
         return False
 
     def _apply_permission_filter(self, query, user: User):
         """
-        应用权限过滤 (MASTER.md v4.4 §2.4)
+        应用权限过滤 (MASTER.md v4.8 §2.4)
 
-        - ceo, admin, finance, supervisor: 全部周报
-        - project_owner: 仅自己项目
+        - ceo, admin, finance, project_owner: 全部周报
         - pitcher, account_manager: 无权访问
         """
-        # 管理员、财务、主管、ceo 可以访问所有
-        if user.role in ["admin", "finance", "supervisor", "ceo"]:
+        # 管理员、财务、项目负责人、ceo 可以访问所有
+        if user.role in ["admin", "finance", "project_owner", "ceo"]:
             return query
 
         # 项目负责人只能访问自己项目的

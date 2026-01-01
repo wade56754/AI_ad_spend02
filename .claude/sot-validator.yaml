@@ -1,0 +1,232 @@
+# SoT Validator Configuration
+# Version: 1.0.0
+# Purpose: Claude Code Hook 集成的 SoT 合规性验证配置
+#
+# 借鉴自: MetaGPT SOP 配置化思想
+# 参考文档: docs/sot/MASTER.md v4.8
+
+version: "1.0.0"
+last_updated: "2026-01-01"
+
+# ========================================
+# SoT 文档源定义
+# ========================================
+sot_sources:
+  master:
+    path: docs/sot/MASTER.md
+    version: "v4.8"
+    extract:
+      - roles: "§2.4 业务角色"
+      - phases: "§3 阶段定义"
+      - anti_hallucination: "§7 AI防幻觉原则"
+
+  state_machine:
+    path: docs/sot/STATE_MACHINE.md
+    version: "v2.8"
+    extract:
+      - daily_report_states: "日报状态机"
+      - topup_states: "充值状态机"
+
+  data_schema:
+    path: docs/sot/DATA_SCHEMA.md
+    version: "v5.7"
+    extract:
+      - models: "数据模型定义"
+      - enums: "枚举类型"
+
+  business_rules:
+    path: docs/sot/BUSINESS_RULES.md
+    version: "v4.8"
+    extract:
+      - formulas: "计算公式"
+      - constraints: "业务约束"
+
+# ========================================
+# 验证规则定义
+# ========================================
+validation_rules:
+
+  # ------ 角色验证 ------
+  roles:
+    # 合法角色白名单 (MASTER.md v4.8 §2.4)
+    whitelist:
+      - ceo           # 老板
+      - project_owner # 项目负责人
+      - finance       # 财务
+      - pitcher       # 投手
+      - account_manager # 户管
+      - admin         # 管理员
+
+    # 废弃角色映射
+    deprecated_mapping:
+      supervisor: project_owner    # PRD v2.2 废弃
+      data_operator: null          # 完全移除
+      media_buyer: pitcher         # 重命名
+
+    # 检测模式 (正则表达式)
+    detection_patterns:
+      - 'role\s*[=:]\s*["\']supervisor["\']'
+      - 'role\s*[=:]\s*["\']data_operator["\']'
+      - 'role\s*[=:]\s*["\']media_buyer["\']'
+      - 'UserRole\.SUPERVISOR'
+      - 'UserRole\.DATA_OPERATOR'
+      - 'UserRole\.MEDIA_BUYER'
+      - '["\'](supervisor|data_operator|media_buyer)["\']'
+
+  # ------ Phase 1/2 边界控制 ------
+  phases:
+    current_phase: 1  # 当前处于 Phase 1
+
+    phase_1:
+      description: "照亮阶段 - 只提示、不阻断"
+      allow:
+        - record      # 记录事实
+        - display     # 展示状态
+        - highlight   # 高亮警告
+        - warn        # 提示异常
+        - log         # 日志记录
+        - notify      # 通知用户
+      block:
+        - reject      # 拒绝
+        - suspend     # 暂停
+        - freeze      # 冻结
+        - auto_approve # 自动批准
+        - auto_reject  # 自动拒绝
+        - block       # 阻断
+        - disable     # 禁用
+        - penalty     # 惩罚
+      detection_patterns:
+        - 'raise\s+HTTPException.*403'
+        - 'raise\s+HTTPException.*status\.HTTP_403'
+        - 'auto_reject|auto_approve|auto_suspend'
+        - 'is_blocked\s*=\s*True'
+        - 'status\s*=\s*["\']rejected["\']'
+        - 'status\s*=\s*["\']suspended["\']'
+        - 'status\s*=\s*["\']frozen["\']'
+
+    phase_2:
+      description: "自动化阶段 - 可启用自动规则"
+      allow: ["*"]  # 解除限制
+
+  # ------ 状态机验证 ------
+  state_machines:
+    daily_report:
+      # Phase 1 简化状态 (3 个)
+      phase_1_states:
+        - raw_submitted      # 原始提交
+        - trend_ok           # 趋势确认
+        - final_confirmed    # 最终确认
+      # Phase 2 完整状态 (8 个)
+      phase_2_states:
+        - draft
+        - raw_submitted
+        - trend_pending
+        - trend_ok
+        - review_pending
+        - review_approved
+        - final_pending
+        - final_confirmed
+      # Phase 1 禁用状态检测
+      detection_patterns:
+        - 'status\s*[=:]\s*["\']trend_pending["\']'
+        - 'status\s*[=:]\s*["\']review_pending["\']'
+        - 'status\s*[=:]\s*["\']review_approved["\']'
+        - 'status\s*[=:]\s*["\']final_pending["\']'
+
+    topup:
+      states:
+        - draft
+        - pending_review
+        - finance_approve
+        - paid
+        - completed
+        - rejected
+        - cancelled
+
+  # ------ 高风险模块识别 ------
+  high_risk_modules:
+    - id: M8-LEDGER
+      pattern: 'ledger|账本|LedgerEntry|ledger_entries'
+      action: require_openspec
+      reason: "账本模块涉及资金安全，修改需 OpenSpec 提案"
+
+    - id: M9-RECON
+      pattern: 'recon|对账|reconciliation|Reconciliation'
+      action: require_openspec
+      reason: "对账模块涉及财务核对，修改需 OpenSpec 提案"
+
+    - id: M10-PROFIT
+      pattern: 'profit|利润|gross_profit|net_profit'
+      action: require_openspec
+      reason: "利润模块涉及核心财务计算，修改需 OpenSpec 提案"
+
+    - id: M11-AUTH
+      pattern: 'auth|认证|password|token|jwt|session'
+      action: warn
+      reason: "认证模块涉及安全，请谨慎修改"
+
+# ========================================
+# AI 防幻觉规则 (MASTER.md §7)
+# ========================================
+anti_hallucination:
+  AH-01:
+    name: "禁止假设数据一致"
+    description: "遇到缺失标记'待确认'，不假设数据存在"
+    action: mark_uncertain
+
+  AH-02:
+    name: "禁止自动做管理裁决"
+    description: "不生成自动拒绝/暂停代码"
+    action: block
+    detection_patterns:
+      - 'auto_reject|auto_suspend|auto_freeze'
+      - 'if.*then.*reject'
+
+  AH-03:
+    name: "禁止引入 SoT 未定义概念"
+    description: "发现缺失→停止→询问"
+    action: stop_and_ask
+
+  AH-04:
+    name: "必须遵循 Phase 1 软性原则"
+    description: "提示+高亮+记录，禁止阻断"
+    action: enforce_phase_1
+
+  AH-05:
+    name: "遇到歧义必须停止并询问"
+    description: "停止→列出歧义→询问用户"
+    action: stop_and_ask
+
+# ========================================
+# 文件路径过滤
+# ========================================
+file_filters:
+  # 需要验证的文件模式
+  include:
+    - 'backend/**/*.py'
+    - 'frontend/**/*.ts'
+    - 'frontend/**/*.tsx'
+
+  # 排除的文件模式
+  exclude:
+    - '**/__pycache__/**'
+    - '**/node_modules/**'
+    - '**/*.test.py'
+    - '**/*.spec.ts'
+    - '**/migrations/**'
+
+# ========================================
+# 验证器行为配置
+# ========================================
+behavior:
+  # 严格模式: true = 发现问题阻断, false = 仅警告
+  strict_mode: false
+
+  # 日志级别: debug, info, warn, error
+  log_level: info
+
+  # 最大问题数后停止
+  max_issues: 10
+
+  # 输出格式: text, json, markdown
+  output_format: text

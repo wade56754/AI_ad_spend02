@@ -1,8 +1,35 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2025-12-31 03:54
-> **当前阶段**: Phase 3 性能优化 ✅ 全部完成
-> **SoT 基准**: MASTER.md v4.6 / DATA_SCHEMA.md v5.6 / 6 角色白名单
+> **最后更新**: 2026-01-02
+> **当前阶段**: 代码工厂方案 C 实施 ✅ 完成
+> **SoT 基准**: MASTER.md v4.8 / DATA_SCHEMA.md v5.7 / 6 角色白名单
+
+---
+
+## 0. 最新变更 (2026-01-02)
+
+### AI 代码工厂方案 C 实施 ✅
+
+**目标**: 将 code_factory (19K 行) 精简为轻量级 Hook 集成 (~2K 行)
+
+**完成内容**:
+1. ✅ 创建 `.claude/sot-validator.yaml` - SoT 验证配置
+2. ✅ 创建 `.claude/hooks/lib/sot_validator.py` - 核心验证器
+3. ✅ 更新 `.claude/hooks/lib/config.py` - 增强配置 v2.0
+4. ✅ 更新 `.claude/hooks/lib/compliance_checker.py` - 添加新规则
+5. ✅ 创建迁移指南 `agents/skills/code_factory/MIGRATION_TO_HOOKS.md`
+6. ✅ 测试验证通过
+
+**核心能力**:
+- 角色白名单验证 (检测 supervisor/media_buyer/data_operator)
+- Phase 1/2 边界控制 (禁止 auto_reject/auto_suspend 等)
+- 高风险模块检测 (M8-LEDGER/M9-RECON/M10-PROFIT)
+- SoT 版本管理
+
+**借鉴开源最佳实践**:
+- OpenHands: 事件驱动架构 (`ValidationEvent`)
+- MetaGPT: SOP 配置化 (YAML)
+- Cline: Plan Mode 用户确认
 
 ---
 
@@ -123,6 +150,55 @@ Phase 3 (优化):    ███████████████████�
 ---
 
 ## 4. 最近完成
+
+### 2026-01-02
+- [+] `.claude/hooks/tests/test_sot_validator.py` (hooks) @ 00:07
+- [+] `agents/skills/code_factory/MIGRATION_TO_HOOKS.md` (docs) @ 00:06
+- [~] `.claude/hooks/pre_tool_use.py` (hooks) @ 00:05
+- [+] `.claude/hooks/lib/sot_validator.py` (hooks) @ 00:02
+- [~] `.claude/hooks/lib/compliance_checker.py` (hooks) @ 00:01
+- [~] `.claude/hooks/lib/config.py` (hooks) @ 00:00
+
+### 2026-01-01
+- [~] `.claude/hooks/lib/config.py` (hooks) @ 23:59
+- [+] `.claude/sot-validator.yaml` (config) @ 23:58
+- [~] `backend/services/daily_report_service.py` (backend) @ 23:49
+- [~] `backend/services/supabase_auth_service.py` (backend) @ 23:48
+- [~] `backend/services/local_auth_service.py` (backend) @ 23:48
+- [~] `backend/services/ad_account_service.py` (backend) @ 23:48
+- [~] `backend/services/weekly_brief_service.py` (backend) @ 23:47
+- [~] `backend/services/user_service.py` (backend) @ 23:46
+- [~] `backend/services/ad_spend_service.py` (backend) @ 23:46
+- [~] `backend/services/project_template_service.py` (backend) @ 23:46
+- [~] `backend/services/project_service.py` (backend) @ 23:45
+- [~] `backend/services/fund_service.py` (backend) @ 23:43
+- [~] `backend/services/reconciliation_service.py` (backend) @ 23:42
+- [~] `backend/routers/ai_analytics.py` (backend) @ 23:40
+- [~] `backend/routers/spend.py` (backend) @ 23:39
+- [~] `backend/routers/reconciliation.py` (backend) @ 23:37
+- [~] `backend/routers/ledger.py` (backend) @ 23:36
+- [~] `backend/routers/ad_accounts.py` (backend) @ 23:35
+- [~] `backend/routers/import_jobs.py` (backend) @ 23:34
+- [~] `backend/routers/daily_reports.py` (backend) @ 23:32
+- [~] `backend/routers/topup.py` (backend) @ 23:28
+- [~] `backend/routers/ad_spend.py` (backend) @ 23:33
+- [~] `backend/routers/users.py` (backend) @ 23:26
+- [~] `backend/routers/fund.py` (backend) @ 23:23
+- [~] `backend/routers/weekly_briefs.py` (backend) @ 23:33
+- [~] `backend/routers/finance_profit.py` (backend) @ 23:21
+- [+] `docs/guides/TASK_CARD_SUPERVISOR_CLEANUP.md` (docs) @ 23:15
+- [~] `backend/routers/topups.py` (backend) @ 23:08
+- [~] `backend/core/roles.py` (backend) @ 23:08
+- [~] `backend/core/role_mapping.py` (backend) @ 23:07
+- [~] `agents/skills/code_factory/sot_loader.py` (other) @ 23:04
+- [~] `agents/skills/code_factory/sot/loader.py` (other) @ 23:02
+- [~] `agents/skills/code_factory/core/constants.py` (backend) @ 23:01
+- [~] `/Users/wade/.claude/plans/wondrous-dreaming-robin.md` (docs) @ 22:58
+- [~] `agents/skills/code_factory/cli.py` (other) @ 11:45
+- [+] `agents/skills/code_factory/llm_client.py` (other) @ 11:40
+- [~] `memory-bank/decisions.md` (docs) @ 11:45
+- [+] `.codefactory.yaml` (config) @ 11:34
+- [+] `/Users/wade/.claude/plans/fizzy-shimmying-spark.md` (docs) @ 11:31
 
 ### 2025-12-31
 - [~] `.env` (other) @ 03:53

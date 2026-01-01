@@ -1,46 +1,54 @@
 """
 角色映射模块
 
-MASTER.md v4.4 定义的 7 个业务角色 与 代码技术角色 的双向映射。
-策略：兼容映射，不破坏现有代码。
+MASTER.md v4.8 定义的 6 个业务角色 与 代码技术角色 的双向映射。
+策略：兼容映射 + 废弃角色自动迁移。
 
-业务角色（MASTER.md）    技术角色（UserRole 枚举）
+业务角色（MASTER.md v4.8）  技术角色（UserRole 枚举）
 ────────────────────────────────────────────────
 ceo                  →  admin (复用，ceo 是业务概念)
 project_owner        →  project_owner
 finance              →  finance
-supervisor           →  data_operator
-pitcher              →  media_buyer
+pitcher              →  pitcher (v5.0: 废弃 media_buyer)
 account_manager      →  account_manager
 admin                →  admin
 
-SoT Reference: MASTER.md v4.4 §2.4
+废弃角色（PRD v2.2）：
+- supervisor → 自动迁移到 project_owner
+- data_operator → 自动迁移到 finance
+- media_buyer → 使用 pitcher
+
+SoT Reference: MASTER.md v4.8 §2.4
+更新日期: 2026-01-01
 """
 
 from typing import Optional, List, Set
 
 
 # ============================================================================
-# 映射表
+# 映射表 (v5.0 更新)
 # ============================================================================
 
 # MASTER.md 业务角色 → 代码技术角色
+# v5.0: pitcher 直接使用，废弃 media_buyer
 MASTER_TO_CODE: dict[str, str] = {
-    "ceo": "admin",                    # ceo 映射到 admin（同权限）
-    "supervisor": "data_operator",     # 主管 → 数据运营
-    "pitcher": "media_buyer",          # 投手 → 广告投手
-    # 以下角色名称一致，无需映射
+    "ceo": "admin",  # ceo 映射到 admin（同权限）
+    "pitcher": "pitcher",  # v5.0: 直接使用 pitcher
+    # 以下角色名称一致
     "project_owner": "project_owner",
     "finance": "finance",
     "account_manager": "account_manager",
     "admin": "admin",
+    # 废弃角色自动迁移（向后兼容）
+    "supervisor": "project_owner",  # PRD v2.2: 合并到 project_owner
 }
 
 # 代码技术角色 → MASTER.md 业务角色（用于前端展示）
+# v5.0: 废弃角色迁移到新角色
 CODE_TO_MASTER: dict[str, str] = {
-    "data_operator": "supervisor",     # 数据运营 → 主管
-    "media_buyer": "pitcher",          # 广告投手 → 投手
-    # 以下角色名称一致，无需映射
+    "data_operator": "project_owner",  # v5.0: 迁移到 project_owner
+    "media_buyer": "pitcher",  # 向后兼容
+    "pitcher": "pitcher",
     "admin": "admin",
     "project_owner": "project_owner",
     "finance": "finance",
@@ -52,32 +60,44 @@ ROLE_DISPLAY_NAMES: dict[str, str] = {
     "ceo": "老板",
     "project_owner": "项目负责人",
     "finance": "财务",
-    "supervisor": "主管",
     "pitcher": "投手",
     "account_manager": "户管",
     "admin": "管理员",
-    # 技术角色也需要中文名（向后兼容）
-    "data_operator": "主管",
+    # 废弃角色显示名（向后兼容）
+    "supervisor": "项目负责人",  # v5.0: 显示为迁移后的角色
+    "data_operator": "项目负责人",
     "media_buyer": "投手",
 }
 
-# 合法的业务角色集合（MASTER.md v4.4 §2.4）
+# 合法的业务角色集合（MASTER.md v4.8 §2.4）
+# v5.0: 6 个角色，移除 supervisor
 VALID_MASTER_ROLES: Set[str] = {
-    "ceo", "project_owner", "finance", "supervisor",
-    "pitcher", "account_manager", "admin"
+    "ceo",
+    "project_owner",
+    "finance",
+    "pitcher",
+    "account_manager",
+    "admin",
 }
 
 # 合法的技术角色集合（UserRole 枚举）
+# v5.0: 使用 pitcher，保留废弃角色向后兼容
 VALID_CODE_ROLES: Set[str] = {
-    "admin", "project_owner", "finance", "data_operator",
-    "media_buyer", "account_manager"
+    "admin",
+    "project_owner",
+    "finance",
+    "pitcher",
+    "account_manager",
+    # 废弃但保留兼容
+    "data_operator",
+    "media_buyer",
 }
 
 # 等价角色组（用于状态机权限检查）
-# 同一组内的角色视为等价，任一匹配即可
+# v5.0: 更新等价映射
 EQUIVALENT_ROLE_GROUPS: List[Set[str]] = [
-    {"supervisor", "data_operator"},
-    {"pitcher", "media_buyer"},
+    {"supervisor", "project_owner", "data_operator"},  # 废弃角色映射到 project_owner
+    {"pitcher", "media_buyer"},  # pitcher 等价
     {"ceo", "admin"},
 ]
 
@@ -85,6 +105,7 @@ EQUIVALENT_ROLE_GROUPS: List[Set[str]] = [
 # ============================================================================
 # 核心函数
 # ============================================================================
+
 
 def normalize_role(role: Optional[str]) -> Optional[str]:
     """
@@ -277,6 +298,7 @@ def expand_role_list(roles: List[str]) -> List[str]:
 # ============================================================================
 # 校验函数
 # ============================================================================
+
 
 def is_valid_master_role(role: str) -> bool:
     """检查是否是合法的业务角色（MASTER.md 定义）"""

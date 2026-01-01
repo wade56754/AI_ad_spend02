@@ -12,9 +12,9 @@ SoT References:
 - pagination: 分页查询
 - permission-filter: 权限过滤
 
-权限矩阵 (MASTER.md v4.4 §2.4):
+权限矩阵 (MASTER.md v4.8 §2.4):
 - admin: 用户 CRUD
-- ceo, finance, supervisor: 查看用户列表和统计
+- ceo, finance, project_owner: 查看用户列表和统计
 - 其他角色: 仅查看自己
 
 Version: 2.0
@@ -33,14 +33,14 @@ from backend.schemas.user import (
     UserUpdate,
     UserResponse,
     UserListResponse,
-    VALID_ROLES
+    VALID_ROLES,
 )
 from backend.utils import hash_password
 from backend.exceptions.custom_exceptions import (
     ResourceNotFoundError,
     PermissionDeniedError,
     ValidationError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 
 
@@ -64,7 +64,7 @@ class UserService:
         page_size: int = 20,
         role: Optional[str] = None,
         is_active: Optional[bool] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> Tuple[List[User], int, dict]:
         """
         获取用户列表
@@ -88,16 +88,12 @@ class UserService:
         """
         # 权限检查 - 仅 admin 可查看用户列表
         if current_user.role != "admin":
-            raise PermissionDeniedError(
-                message="权限不足：仅管理员可查看用户列表",
-                code="AUTH_500"
-            )
+            raise PermissionDeniedError(message="权限不足：仅管理员可查看用户列表", code="AUTH_500")
 
         # 验证 role 参数
         if role is not None and role not in VALID_ROLES:
             raise ValidationError(
-                message=f"无效的角色参数: {role}，合法角色: {VALID_ROLES}",
-                code="VALIDATION_002"
+                message=f"无效的角色参数: {role}，合法角色: {VALID_ROLES}", code="VALIDATION_002"
             )
 
         # 构建查询
@@ -115,7 +111,7 @@ class UserService:
             query = query.filter(
                 or_(
                     User.username.ilike(search_pattern),
-                    User.email.ilike(search_pattern)
+                    User.email.ilike(search_pattern),
                 )
             )
 
@@ -127,7 +123,9 @@ class UserService:
         offset = (page - 1) * page_size
 
         # 获取分页数据
-        users = query.order_by(User.created_at.desc()).offset(offset).limit(page_size).all()
+        users = (
+            query.order_by(User.created_at.desc()).offset(offset).limit(page_size).all()
+        )
 
         # 构建分页元数据
         pagination_meta = {
@@ -137,17 +135,13 @@ class UserService:
                 "total": total,
                 "total_pages": total_pages,
                 "has_next": page < total_pages,
-                "has_prev": page > 1
+                "has_prev": page > 1,
             }
         }
 
         return users, total, pagination_meta
 
-    def get_user_by_id(
-        self,
-        user_id: UUID,
-        current_user: User
-    ) -> User:
+    def get_user_by_id(self, user_id: UUID, current_user: User) -> User:
         """
         根据 ID 获取用户详情
 
@@ -168,25 +162,15 @@ class UserService:
         user = self.db.query(User).filter(User.id == user_id).first()
 
         if not user:
-            raise ResourceNotFoundError(
-                message=f"用户不存在: {user_id}",
-                code="BIZ_002"
-            )
+            raise ResourceNotFoundError(message=f"用户不存在: {user_id}", code="BIZ_002")
 
         # 权限检查：admin 可查看任意用户，其他用户只能查看自己
         if current_user.role != "admin" and current_user.id != user_id:
-            raise PermissionDeniedError(
-                message="权限不足：无法查看其他用户信息",
-                code="AUTH_500"
-            )
+            raise PermissionDeniedError(message="权限不足：无法查看其他用户信息", code="AUTH_500")
 
         return user
 
-    def create_user(
-        self,
-        user_data: UserCreate,
-        current_user: User
-    ) -> User:
+    def create_user(self, user_data: UserCreate, current_user: User) -> User:
         """
         创建用户
 
@@ -208,29 +192,24 @@ class UserService:
         """
         # 权限检查
         if current_user.role != "admin":
-            raise PermissionDeniedError(
-                message="权限不足：仅管理员可创建用户",
-                code="AUTH_500"
-            )
+            raise PermissionDeniedError(message="权限不足：仅管理员可创建用户", code="AUTH_500")
 
         # BR-USER-001: 检查用户名唯一性
-        existing_username = self.db.query(User).filter(
-            User.username == user_data.username
-        ).first()
+        existing_username = (
+            self.db.query(User).filter(User.username == user_data.username).first()
+        )
         if existing_username:
             raise ResourceConflictError(
-                message=f"用户名已存在: {user_data.username}",
-                code="DB_004"
+                message=f"用户名已存在: {user_data.username}", code="DB_004"
             )
 
         # BR-USER-002: 检查邮箱唯一性
-        existing_email = self.db.query(User).filter(
-            User.email == user_data.email
-        ).first()
+        existing_email = (
+            self.db.query(User).filter(User.email == user_data.email).first()
+        )
         if existing_email:
             raise ResourceConflictError(
-                message=f"邮箱已存在: {user_data.email}",
-                code="DB_004"
+                message=f"邮箱已存在: {user_data.email}", code="DB_004"
             )
 
         # 创建用户
@@ -239,17 +218,17 @@ class UserService:
             email=user_data.email,
             hashed_password=hash_password(user_data.password),
             role=user_data.role,
-            is_active=user_data.is_active
+            is_active=user_data.is_active,
         )
 
         # 可选字段
         if user_data.full_name:
             # User 模型可能没有 full_name 字段，需要检查
-            if hasattr(new_user, 'full_name'):
+            if hasattr(new_user, "full_name"):
                 new_user.full_name = user_data.full_name
 
         if user_data.department:
-            if hasattr(new_user, 'department'):
+            if hasattr(new_user, "department"):
                 new_user.department = user_data.department
 
         self.db.add(new_user)
@@ -259,10 +238,7 @@ class UserService:
         return new_user
 
     def update_user(
-        self,
-        user_id: UUID,
-        user_data: UserUpdate,
-        current_user: User
+        self, user_id: UUID, user_data: UserUpdate, current_user: User
     ) -> User:
         """
         更新用户信息
@@ -288,45 +264,39 @@ class UserService:
         """
         # 权限检查
         if current_user.role != "admin":
-            raise PermissionDeniedError(
-                message="权限不足：仅管理员可更新用户信息",
-                code="AUTH_500"
-            )
+            raise PermissionDeniedError(message="权限不足：仅管理员可更新用户信息", code="AUTH_500")
 
         # 查询用户
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
-            raise ResourceNotFoundError(
-                message=f"用户不存在: {user_id}",
-                code="BIZ_002"
-            )
+            raise ResourceNotFoundError(message=f"用户不存在: {user_id}", code="BIZ_002")
 
         # 更新字段
         update_data = user_data.model_dump(exclude_unset=True)
 
         # BR-USER-001: 检查用户名唯一性
         if "username" in update_data and update_data["username"] != user.username:
-            existing = self.db.query(User).filter(
-                User.username == update_data["username"],
-                User.id != user_id
-            ).first()
+            existing = (
+                self.db.query(User)
+                .filter(User.username == update_data["username"], User.id != user_id)
+                .first()
+            )
             if existing:
                 raise ResourceConflictError(
-                    message=f"用户名已存在: {update_data['username']}",
-                    code="DB_004"
+                    message=f"用户名已存在: {update_data['username']}", code="DB_004"
                 )
             user.username = update_data["username"]
 
         # BR-USER-002: 检查邮箱唯一性
         if "email" in update_data and update_data["email"] != user.email:
-            existing = self.db.query(User).filter(
-                User.email == update_data["email"],
-                User.id != user_id
-            ).first()
+            existing = (
+                self.db.query(User)
+                .filter(User.email == update_data["email"], User.id != user_id)
+                .first()
+            )
             if existing:
                 raise ResourceConflictError(
-                    message=f"邮箱已存在: {update_data['email']}",
-                    code="DB_004"
+                    message=f"邮箱已存在: {update_data['email']}", code="DB_004"
                 )
             user.email = update_data["email"]
 
@@ -337,10 +307,10 @@ class UserService:
         if "is_active" in update_data:
             user.is_active = update_data["is_active"]
 
-        if "full_name" in update_data and hasattr(user, 'full_name'):
+        if "full_name" in update_data and hasattr(user, "full_name"):
             user.full_name = update_data["full_name"]
 
-        if "department" in update_data and hasattr(user, 'department'):
+        if "department" in update_data and hasattr(user, "department"):
             user.department = update_data["department"]
 
         # 密码更新
@@ -352,11 +322,7 @@ class UserService:
 
         return user
 
-    def delete_user(
-        self,
-        user_id: UUID,
-        current_user: User
-    ) -> bool:
+    def delete_user(self, user_id: UUID, current_user: User) -> bool:
         """
         删除用户（软删除 - 设置 is_active=False）
 
@@ -376,25 +342,16 @@ class UserService:
         """
         # 权限检查
         if current_user.role != "admin":
-            raise PermissionDeniedError(
-                message="权限不足：仅管理员可删除用户",
-                code="AUTH_500"
-            )
+            raise PermissionDeniedError(message="权限不足：仅管理员可删除用户", code="AUTH_500")
 
         # 不能删除自己
         if current_user.id == user_id:
-            raise PermissionDeniedError(
-                message="不能删除当前登录用户",
-                code="AUTH_500"
-            )
+            raise PermissionDeniedError(message="不能删除当前登录用户", code="AUTH_500")
 
         # 查询用户
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
-            raise ResourceNotFoundError(
-                message=f"用户不存在: {user_id}",
-                code="BIZ_002"
-            )
+            raise ResourceNotFoundError(message=f"用户不存在: {user_id}", code="BIZ_002")
 
         # 软删除：设置 is_active=False
         user.is_active = False
@@ -402,42 +359,40 @@ class UserService:
 
         return True
 
-    def get_user_statistics(
-        self,
-        current_user: User
-    ) -> dict:
+    def get_user_statistics(self, current_user: User) -> dict:
         """
         获取用户统计信息
 
-        权限 (MASTER.md v4.4 §2.4): admin, ceo, finance, supervisor
+        权限 (MASTER.md v4.8 §2.4): admin, ceo, finance, project_owner
 
         Returns:
             统计数据字典
         """
-        allowed_roles = ["admin", "ceo", "finance", "supervisor"]
+        allowed_roles = ["admin", "ceo", "finance", "project_owner"]
         if current_user.role not in allowed_roles:
-            raise PermissionDeniedError(
-                message="权限不足：无法查看用户统计",
-                code="AUTH_500"
-            )
+            raise PermissionDeniedError(message="权限不足：无法查看用户统计", code="AUTH_500")
 
         # 总用户数
         total = self.db.query(func.count(User.id)).scalar()
 
         # 活跃用户数
-        active = self.db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+        active = (
+            self.db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+        )
 
         # 各角色用户数
         role_counts = {}
         for role in VALID_ROLES:
-            count = self.db.query(func.count(User.id)).filter(User.role == role).scalar()
+            count = (
+                self.db.query(func.count(User.id)).filter(User.role == role).scalar()
+            )
             role_counts[role] = count
 
         return {
             "total": total,
             "active": active,
             "inactive": total - active,
-            "by_role": role_counts
+            "by_role": role_counts,
         }
 
 

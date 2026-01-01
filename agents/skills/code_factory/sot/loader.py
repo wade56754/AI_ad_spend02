@@ -1,13 +1,17 @@
 """
 SoT 动态加载器
 
-基准文档: MASTER.md v4.6
-版本: v4.2
+基准文档: MASTER.md v4.8
+版本: v5.0
 
 功能:
 - 从 SoT 文档动态加载角色、状态、字段白名单
 - 支持版本校验
 - 支持废弃角色映射
+
+变更记录:
+- v5.0 (2026-01-01): 同步 SoT 版本，扩展废弃角色映射
+- v4.2 (2025-12-27): 初始版本
 """
 
 from dataclasses import dataclass, field
@@ -63,11 +67,11 @@ class LoadedSotData:
 class SotLoader:
     """SoT 动态加载器"""
 
-    # 期望的 SoT 文档版本
+    # 期望的 SoT 文档版本 (2026-01-01 更新)
     EXPECTED_VERSIONS: Dict[str, str] = {
-        "MASTER.md": "v4.6",
-        "STATE_MACHINE.md": "v2.7",
-        "DATA_SCHEMA.md": "v5.6",
+        "MASTER.md": "v4.8",
+        "STATE_MACHINE.md": "v2.8",
+        "DATA_SCHEMA.md": "v5.7",
     }
 
     def __init__(self, sot_dir: Path):
@@ -104,7 +108,12 @@ class SotLoader:
         master_path = self.sot_dir / "MASTER.md"
         if master_path.exists():
             data.roles = self._extract_roles(master_path)
-            data.legacy_mapping = {"supervisor": "project_owner"}
+            # 废弃角色映射 (PRD v2.2)
+            data.legacy_mapping = {
+                "supervisor": "project_owner",  # PRD v2.2 合并
+                "data_operator": None,  # 已删除
+                "media_buyer": "pitcher",  # 使用标准角色
+            }
 
         # 3. 从 STATE_MACHINE.md 加载状态
         sm_path = self.sot_dir / "STATE_MACHINE.md"
@@ -153,14 +162,14 @@ class SotLoader:
             roles = set()
 
             # 匹配表格中的角色: | `ceo` | 或 | ceo |
-            for m in re.finditer(r'\|\s*`?(\w+)`?\s*\|', content):
+            for m in re.finditer(r"\|\s*`?(\w+)`?\s*\|", content):
                 name = m.group(1).lower()
                 # 排除表头
                 if name not in ("角色", "role", "说明", "description", "权限", "permission"):
                     roles.add(name)
 
             # 匹配列表中的角色: - `ceo` 或 - ceo:
-            for m in re.finditer(r'^\s*[-*]\s*`?(\w+)`?[：:]', content, re.MULTILINE):
+            for m in re.finditer(r"^\s*[-*]\s*`?(\w+)`?[：:]", content, re.MULTILINE):
                 name = m.group(1).lower()
                 roles.add(name)
 
@@ -179,7 +188,7 @@ class SotLoader:
                 states.add(m.group(2))
 
             # 匹配状态表格: | raw_submitted |
-            for m in re.finditer(r'\|\s*`?(\w+_\w+)`?\s*\|', content):
+            for m in re.finditer(r"\|\s*`?(\w+_\w+)`?\s*\|", content):
                 state = m.group(1).lower()
                 states.add(state)
 
@@ -194,7 +203,7 @@ class SotLoader:
             prefixes = set()
 
             # 匹配错误码: VAL-001, AUTH-002
-            for m in re.finditer(r'([A-Z]+)-\d{3}', content):
+            for m in re.finditer(r"([A-Z]+)-\d{3}", content):
                 prefixes.add(m.group(1))
 
             return prefixes
@@ -211,14 +220,14 @@ class SotLoader:
 
             for line in content.split("\n"):
                 # 匹配表名: ## daily_reports 或 ### `daily_reports`
-                if m := re.match(r'^#{2,3}\s*`?(\w+)`?', line):
+                if m := re.match(r"^#{2,3}\s*`?(\w+)`?", line):
                     current_table = m.group(1).lower()
                     if current_table not in fields:
                         fields[current_table] = set()
 
                 # 匹配字段: | id | 或 - `field_name`
                 elif current_table:
-                    if m := re.match(r'\|\s*`?(\w+)`?\s*\|', line):
+                    if m := re.match(r"\|\s*`?(\w+)`?\s*\|", line):
                         field_name = m.group(1).lower()
                         if field_name not in ("字段", "field", "类型", "type", "说明"):
                             fields[current_table].add(field_name)

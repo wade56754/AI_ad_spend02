@@ -10,11 +10,10 @@ SoT References:
 - pagination: 分页查询
 - permission-filter: 权限过滤
 
-权限矩阵 (MASTER.md v4.4 §2.4):
+权限矩阵 (MASTER.md v4.8 §2.4):
 - ceo, finance, admin: 全部数据
 - project_owner: 自己项目的消耗
 - pitcher: 自己导入的消耗
-- supervisor: 团队相关消耗
 - account_manager: 管理账户的消耗
 
 Version: 2.0
@@ -32,11 +31,15 @@ from sqlalchemy.orm import Session
 from backend.models.workflow.ad_spend import AdSpendDaily
 from backend.models import User
 from backend.schemas.ad_spend import (
-    AdSpendCreateRequest, AdSpendBatchImportRequest,
-    AdSpendQueryParams, AdSpendStatisticsResponse,
+    AdSpendCreateRequest,
+    AdSpendBatchImportRequest,
+    AdSpendQueryParams,
+    AdSpendStatisticsResponse,
 )
 from backend.exceptions.custom_exceptions import (
-    ResourceNotFoundError, BusinessLogicError, PermissionDeniedError,
+    ResourceNotFoundError,
+    BusinessLogicError,
+    PermissionDeniedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,14 +77,18 @@ class AdSpendService:
         # pitcher 和其他角色只能看自己导入的数据
         return query.filter(AdSpendDaily.imported_by == user.id)
 
-    def create_ad_spend(self, request: AdSpendCreateRequest, user: User) -> AdSpendDaily:
+    def create_ad_spend(
+        self, request: AdSpendCreateRequest, user: User
+    ) -> AdSpendDaily:
         """创建或更新消耗记录 (upsert)"""
         existing = self.db.scalar(
-            select(AdSpendDaily).where(and_(
-                AdSpendDaily.spend_date == request.spend_date,
-                AdSpendDaily.ad_account_code == request.ad_account_code,
-                AdSpendDaily.source_platform == request.source_platform
-            ))
+            select(AdSpendDaily).where(
+                and_(
+                    AdSpendDaily.spend_date == request.spend_date,
+                    AdSpendDaily.ad_account_code == request.ad_account_code,
+                    AdSpendDaily.source_platform == request.source_platform,
+                )
+            )
         )
         if existing:
             existing.spend_amount = request.spend_amount
@@ -93,7 +100,7 @@ class AdSpendService:
             self.db.commit()
             self.db.refresh(existing)
             return existing
-        
+
         record = AdSpendDaily(
             source_platform=request.source_platform,
             ad_account_code=request.ad_account_code,
@@ -105,14 +112,16 @@ class AdSpendService:
             clicks=request.clicks,
             conversions=request.conversions,
             raw_payload=request.raw_payload,
-            imported_by=user.id
+            imported_by=user.id,
         )
         self.db.add(record)
         self.db.commit()
         self.db.refresh(record)
         return record
 
-    def batch_import(self, request: AdSpendBatchImportRequest, user: User) -> Tuple[int, int, List[Dict], List[str]]:
+    def batch_import(
+        self, request: AdSpendBatchImportRequest, user: User
+    ) -> Tuple[int, int, List[Dict], List[str]]:
         """批量导入"""
         success, errors_list, imported_ids = 0, [], []
         for idx, rec in enumerate(request.records):
@@ -121,7 +130,7 @@ class AdSpendService:
                 success += 1
                 imported_ids.append(str(r.id))
             except Exception as e:
-                errors_list.append({"row": idx+1, "error": str(e)})
+                errors_list.append({"row": idx + 1, "error": str(e)})
                 if not request.skip_errors:
                     raise
         return success, len(errors_list), errors_list, imported_ids
@@ -136,7 +145,9 @@ class AdSpendService:
             raise ResourceNotFoundError(f"记录不存在: {spend_id}")
         return record
 
-    def list_ad_spend(self, params: AdSpendQueryParams, user: User, page: int = 1, page_size: int = 20) -> Tuple[List[AdSpendDaily], int]:
+    def list_ad_spend(
+        self, params: AdSpendQueryParams, user: User, page: int = 1, page_size: int = 20
+    ) -> Tuple[List[AdSpendDaily], int]:
         """CodeBlock: CB-BE-001 - 分页查询"""
         query = select(AdSpendDaily)
         if params.spend_date_start:
@@ -146,15 +157,21 @@ class AdSpendService:
         if params.source_platform:
             query = query.where(AdSpendDaily.source_platform == params.source_platform)
         if params.ad_account_code:
-            query = query.where(AdSpendDaily.ad_account_code.ilike(f"%{params.ad_account_code}%"))
-        
+            query = query.where(
+                AdSpendDaily.ad_account_code.ilike(f"%{params.ad_account_code}%")
+            )
+
         query = self._apply_permission_filter(query, user)
         total = self.db.scalar(select(func.count()).select_from(query.subquery())) or 0
         query = query.order_by(AdSpendDaily.spend_date.desc())
-        records = self.db.scalars(query.offset((page-1)*page_size).limit(page_size)).all()
+        records = self.db.scalars(
+            query.offset((page - 1) * page_size).limit(page_size)
+        ).all()
         return list(records), total
 
-    def get_statistics(self, params: AdSpendQueryParams, user: User) -> AdSpendStatisticsResponse:
+    def get_statistics(
+        self, params: AdSpendQueryParams, user: User
+    ) -> AdSpendStatisticsResponse:
         """获取统计"""
         query = select(
             func.sum(AdSpendDaily.spend_amount).label("total_spend"),
@@ -167,14 +184,16 @@ class AdSpendService:
             query = query.where(AdSpendDaily.spend_date >= params.spend_date_start)
         if params.spend_date_end:
             query = query.where(AdSpendDaily.spend_date <= params.spend_date_end)
-        
+
         r = self.db.execute(query).first()
         spend = r.total_spend or Decimal("0")
         clicks = r.total_clicks or 0
         return AdSpendStatisticsResponse(
-            total_spend=spend, total_impressions=r.total_impressions or 0,
-            total_clicks=clicks, total_conversions=r.total_conversions or 0,
-            avg_cpc=(spend/clicks).quantize(Decimal("0.01")) if clicks > 0 else None,
+            total_spend=spend,
+            total_impressions=r.total_impressions or 0,
+            total_clicks=clicks,
+            total_conversions=r.total_conversions or 0,
+            avg_cpc=(spend / clicks).quantize(Decimal("0.01")) if clicks > 0 else None,
             record_count=r.record_count or 0,
         )
 
@@ -188,7 +207,9 @@ class AdSpendService:
         return True
 
     def get_platforms(self) -> List[str]:
-        return list(self.db.scalars(select(AdSpendDaily.source_platform).distinct()).all())
+        return list(
+            self.db.scalars(select(AdSpendDaily.source_platform).distinct()).all()
+        )
 
     def get_currencies(self) -> List[str]:
         return list(self.db.scalars(select(AdSpendDaily.currency).distinct()).all())
