@@ -25,6 +25,33 @@
     ↑ Explore Agent    ↑ Plan Agent    ↑ AskUserQuestion
 ```
 
+### MCP 服务器集成
+
+| MCP 服务器 | 用途 | 工具数 |
+|-----------|------|--------|
+| `taskmaster-ai` | PRD→任务管理 | 7 (core) |
+| `sequential-thinking` | 结构化思考 | 1 |
+| `context7` | 文档检索 | 2 |
+| `playwright` | 浏览器自动化 | 20+ |
+| `chrome-devtools` | 调试工具 | 15+ |
+
+#### Task Master 工作流
+```
+PRD 文档 → [Task Master] parse_prd → 任务列表
+    ↓
+[Claude Code] TodoWrite → 任务同步
+    ↓
+[AI 代码工厂] /gen → 代码生成 + SoT 验证
+    ↓
+[Task Master] set_task_status → 状态更新
+```
+
+**核心命令**:
+- `parse_prd` - 从 PRD 生成任务
+- `next_task` - 获取下一个待办任务
+- `expand_task` - 拆解复杂任务
+- `get_tasks` - 列出所有任务
+
 ---
 
 ## 强制规则 (MANDATORY)
