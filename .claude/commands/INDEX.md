@@ -1,8 +1,8 @@
 # 命令索引
 
-> **版本**: v3.1
+> **版本**: v3.2
 > **更新日期**: 2026-01-02
-> **命令总数**: 11 个命令 (6 核心 + 5 辅助)
+> **命令总数**: 12 个命令 (6 核心 + 6 辅助)
 
 ---
 
@@ -17,7 +17,7 @@
 | `/flow` | 工作流编排 | `/flow be-dev 新功能` |
 | `/help` | 快速帮助 | `/help gen` |
 
-## 辅助命令 (v3.1 新增)
+## 辅助命令 (v3.1+)
 
 | 命令 | 说明 | 使用示例 |
 |------|------|----------|
@@ -26,6 +26,7 @@
 | `/security-scan` | 安全扫描 | `/security-scan --backend` |
 | `/perf-analyze` | 性能分析 | `/perf-analyze --api /api/v1/daily-reports` |
 | `/migration` | 数据库迁移 | `/migration generate add_status_field` |
+| `/sync-progress` | 同步进度 | `/sync-progress` (Task Master → progress.md) |
 
 ---
 
@@ -174,6 +175,21 @@
 
 ---
 
+### /sync-progress - 进度同步
+
+```bash
+/sync-progress                    # 同步 Task Master → progress.md
+```
+
+**自动触发场景**:
+- 完成任务卡 (`set_task_status` → done)
+- 启动任务 (`set_task_status` → in-progress)
+- 解析 PRD (`parse_prd`)
+
+**文件**: [sync-progress.md](./sync-progress.md)
+
+---
+
 ## 迁移说明
 
 ### 从 v2.x 迁移到 v3.0
@@ -197,7 +213,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   命令速查表 v3.1                        │
+│                   命令速查表 v3.2                        │
 ├─────────────────────────────────────────────────────────┤
 │  代码生成                                               │
 │    /gen be <task>     后端代码                          │
@@ -224,9 +240,10 @@
 │    /migration apply    应用迁移                         │
 │    /migration rollback 回滚迁移                         │
 ├─────────────────────────────────────────────────────────┤
-│  工作流                                                 │
+│  工作流 & 进度                                          │
 │    /flow be-dev       后端开发                          │
 │    /flow fullstack    全栈开发                          │
+│    /sync-progress     同步 Task Master 进度             │
 ├─────────────────────────────────────────────────────────┤
 │  帮助                                                   │
 │    /help              查看帮助                          │

@@ -54,6 +54,12 @@ description: Skills 技能库索引文档
 | [ai-master-architect](./ai-master-architect/SKILL.md) | 4.1 | ready | 系统架构裁判官 - 宪法级校验 |
 | [prompt-engineer-skill](./prompt-engineer-skill/SKILL.md) | 2.1 | ready | 提示词工程 - Claude 最佳实践 |
 
+### 前端设计 (Frontend Design)
+
+| 技能 | 版本 | 状态 | 说明 |
+|------|------|------|------|
+| [frontend-design](./frontend-design/SKILL.md) | 1.0 | ready | 前端设计指导 - UI/UX 设计、组件规划、可访问性 |
+
 ### 测试自动化 (Testing)
 
 | 技能 | 版本 | 状态 | 说明 |
@@ -77,6 +83,7 @@ description: Skills 技能库索引文档
 - [ai-ad-code-verifier](./ai-ad-code-verifier/SKILL.md) - 代码验证器
 - [ai-ad-doc-architect](./ai-ad-doc-architect/SKILL.md) - 文档架构师
 - [ai-ad-doc-fixer](./ai-ad-doc-fixer/SKILL.md) - 文档修复器
+- [frontend-design](./frontend-design/SKILL.md) - 前端设计指导
 - [ai-ad-doc-orchestrator](./ai-ad-doc-orchestrator/SKILL.md) - 文档编排器
 - [ai-ad-sot-doc-pipeline](./ai-ad-sot-doc-pipeline/SKILL.md) - SoT 文档管道
 - [ai-ad-spec-governor](./ai-ad-spec-governor/SKILL.md) - 规范治理调度器
@@ -96,8 +103,9 @@ description: Skills 技能库索引文档
 | 文档处理 | 6 | ready |
 | 规范驱动 | 2 | ready |
 | 架构与工程 | 2 | ready |
+| 前端设计 | 1 | ready |
 | 测试自动化 | 3 | 2 ready, 1 beta |
-| **总计** | **19** | **18 ready, 1 beta** |
+| **总计** | **20** | **19 ready, 1 beta** |
 
 ---
 
