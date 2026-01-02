@@ -1,6 +1,6 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
-> **版本**: v5.9
+> **版本**: v5.10
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
@@ -125,8 +125,8 @@
 | `balance_snapshots` | 余额/押款快照 | BIGSERIAL | implemented |
 | `reconciliation_issues` | 对账差异单 | BIGSERIAL | implemented |
 | `settlement_rules` | 结算规则配置 | BIGSERIAL | implemented |
-| `profit_aggregates` | 利润聚合（L2汇总层） | BIGSERIAL | planned |
-| `profit_report_snapshots` | 利润报表快照 | BIGSERIAL | planned |
+| `profit_aggregates` | 利润聚合（L2汇总层） | BIGSERIAL | implemented |
+| `profit_report_snapshots` | 利润报表快照 | BIGSERIAL | implemented |
 | `monthly_settlements` | 月度结算表 | BIGSERIAL | implemented |
 | `receivable` | 回款记录表（SoT：已回款） | BIGSERIAL | implemented |
 | `company_expenses` | 公司运营支出（不进账本） | BIGSERIAL | implemented |
@@ -830,7 +830,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 > **OpenSpec Change**: `finance-profit-v1`
 > **依赖 SoT**: DATA_SCHEMA.md v5.6 §3.4.4（账本规则，双账本模型）, STATE_MACHINE.md v2.8（粉数确认状态机）
 
-#### 3.6.1 `profit_aggregates`（planned）
+#### 3.6.1 `profit_aggregates`（implemented）
 
 **说明**：L2 汇总层核心表，存储按周期/维度聚合的利润数据。聚合来源为 `daily_reports`（仅 `final_locked` 状态）和 `ledger_entries`。
 
@@ -868,7 +868,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 - BR-PROFIT-003: 仅聚合 `daily_reports.status = 'final_locked'` 的数据
 - BR-PROFIT-005: `is_locked = TRUE` 时禁止重新生成
 
-#### 3.6.2 `profit_report_snapshots`（planned）
+#### 3.6.2 `profit_report_snapshots`（implemented）
 
 **说明**：报表快照层，存储生成的利润报表 JSON 数据，支持 draft/confirmed/locked 三态管理。
 
@@ -1016,6 +1016,15 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 ---
 
 ## 7. 变更历史
+
+### v5.10 (2026-01-02)
+
+- **实现 profit 表（利润聚合层）**:
+  - 新增迁移文件：`20260102_add_profit_tables.py`
+  - 表状态：planned → implemented
+  - `profit_aggregates`：L2 汇总层，存储按周期/维度聚合的利润数据
+  - `profit_report_snapshots`：报表快照层，支持 draft/confirmed/locked 三态
+  - 引用：PROFIT_SOT.md v1.1, BR-PROFIT-001~006
 
 ### v5.9 (2026-01-02)
 
