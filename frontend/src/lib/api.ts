@@ -107,12 +107,7 @@ export class ApiRequestError extends Error {
   public readonly status: number;
   public readonly details?: Record<string, unknown>;
 
-  constructor(
-    message: string,
-    code: string,
-    status: number,
-    details?: Record<string, unknown>
-  ) {
+  constructor(message: string, code: string, status: number, details?: Record<string, unknown>) {
     super(message);
     this.name = 'ApiRequestError';
     this.code = code;
@@ -159,7 +154,8 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
       const path = window.location.pathname;
       const isAuthPage = path.includes('/login') || path.includes('/register');
       // Check if this is a login/register POST request
-      const isLoginRequest = requestUrl?.includes('/auth/login') || requestUrl?.includes('/auth/register');
+      const isLoginRequest =
+        requestUrl?.includes('/auth/login') || requestUrl?.includes('/auth/register');
 
       // For login/register failures (wrong password), let the error pass through
       if (isLoginRequest) {
@@ -176,11 +172,7 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
 
         // On auth pages, silently fail
         if (isAuthPage) {
-          const silentError = new ApiRequestError(
-            'Session expired',
-            'AUTH_401',
-            401
-          );
+          const silentError = new ApiRequestError('Session expired', 'AUTH_401', 401);
           (silentError as ApiRequestError & { silent?: boolean }).silent = true;
           throw silentError;
         }
@@ -191,12 +183,7 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
     }
   }
 
-  throw new ApiRequestError(
-    error.message,
-    error.code,
-    response.status,
-    error.details
-  );
+  throw new ApiRequestError(error.message, error.code, response.status, error.details);
 }
 
 // ============================================================================
@@ -216,10 +203,7 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
  *   body: { name: 'John' }
  * });
  */
-export async function apiFetch<T>(
-  url: string,
-  options: ApiFetchOptions = {}
-): Promise<T> {
+export async function apiFetch<T>(url: string, options: ApiFetchOptions = {}): Promise<T> {
   const { body, headers: customHeaders, ...restOptions } = options;
 
   // Build headers
@@ -326,15 +310,16 @@ export async function apiFetchPaginated<T>(
   }
 
   // Extract items from envelope.data (which is an array)
-  const items = Array.isArray(envelope.data) ? envelope.data : (envelope.data?.items || []);
+  const items = Array.isArray(envelope.data) ? envelope.data : envelope.data?.items || [];
 
   // Extract meta from envelope.meta
-  const meta = envelope.meta?.pagination || envelope.meta || {
-    total: envelope.total || items.length,
-    page: envelope.page || 1,
-    page_size: envelope.page_size || 20,
-    total_pages: envelope.total_pages || 1,
-  };
+  const meta = envelope.meta?.pagination ||
+    envelope.meta || {
+      total: envelope.total || items.length,
+      page: envelope.page || 1,
+      page_size: envelope.page_size || 20,
+      total_pages: envelope.total_pages || 1,
+    };
 
   return {
     // New format
@@ -528,20 +513,16 @@ export const queryKeys = {
   // Users
   users: {
     all: ['users'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.users.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.users.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.users.all, 'detail', id] as const,
   },
 
   // Projects
   projects: {
     all: ['projects'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.projects.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.projects.all, 'list', params] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.projects.all, 'detail', String(id)] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.projects.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.projects.all, 'list', params] as const,
+    detail: (id: string | number) => [...queryKeys.projects.all, 'detail', String(id)] as const,
     members: (projectId: string | number) =>
       [...queryKeys.projects.all, 'members', String(projectId)] as const,
   },
@@ -549,20 +530,16 @@ export const queryKeys = {
   // Channels
   channels: {
     all: ['channels'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.channels.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.channels.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.channels.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.channels.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.channels.all, 'detail', id] as const,
   },
 
   // Ad Accounts
   adAccounts: {
     all: ['adAccounts'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.adAccounts.all, 'list', params] as const,
-    detail: (id: string) =>
-      [...queryKeys.adAccounts.all, 'detail', id] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.adAccounts.all, 'list', params] as const,
+    detail: (id: string) => [...queryKeys.adAccounts.all, 'detail', id] as const,
   },
 
   // Daily Reports
@@ -572,8 +549,7 @@ export const queryKeys = {
       [...queryKeys.dailyReports.all, 'list', params] as const,
     lists: (params?: Record<string, any>) =>
       [...queryKeys.dailyReports.all, 'list', params] as const,
-    detail: (id: string) =>
-      [...queryKeys.dailyReports.all, 'detail', id] as const,
+    detail: (id: string) => [...queryKeys.dailyReports.all, 'detail', id] as const,
     stats: (params?: Record<string, any>) =>
       [...queryKeys.dailyReports.all, 'stats', params] as const,
     byProject: (projectId: string | number, params?: Record<string, any>) =>
@@ -583,14 +559,10 @@ export const queryKeys = {
   // Topups
   topups: {
     all: ['topups'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.topups.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.topups.all, 'list', params] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.topups.all, 'detail', String(id)] as const,
-    stats: (params?: Record<string, any>) =>
-      [...queryKeys.topups.all, 'stats', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.topups.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.topups.all, 'list', params] as const,
+    detail: (id: string | number) => [...queryKeys.topups.all, 'detail', String(id)] as const,
+    stats: (params?: Record<string, any>) => [...queryKeys.topups.all, 'stats', params] as const,
     byProject: (projectId: string | number, params?: Record<string, any>) =>
       [...queryKeys.topups.all, 'byProject', String(projectId), params] as const,
   },
@@ -598,23 +570,18 @@ export const queryKeys = {
   // Transfers
   transfers: {
     all: ['transfers'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.transfers.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.transfers.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.transfers.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.transfers.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.transfers.all, 'detail', id] as const,
   },
 
   // Ledger
   ledger: {
     all: ['ledger'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.ledger.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.ledger.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.ledger.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.ledger.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.ledger.all, 'detail', id] as const,
-    balance: (accountId: string) =>
-      [...queryKeys.ledger.all, 'balance', accountId] as const,
+    balance: (accountId: string) => [...queryKeys.ledger.all, 'balance', accountId] as const,
     tenantBalance: (tenantId?: string) =>
       [...queryKeys.ledger.all, 'tenantBalance', tenantId] as const,
     projectBalance: (projectId?: string) =>
@@ -628,8 +595,7 @@ export const queryKeys = {
       [...queryKeys.reconciliation.all, 'list', params] as const,
     lists: (params?: Record<string, any>) =>
       [...queryKeys.reconciliation.all, 'list', params] as const,
-    detail: (id: string) =>
-      [...queryKeys.reconciliation.all, 'detail', id] as const,
+    detail: (id: string) => [...queryKeys.reconciliation.all, 'detail', id] as const,
     batches: (params?: Record<string, any>) =>
       [...queryKeys.reconciliation.all, 'batches', params] as const,
     byProject: (projectId: string | number, params?: Record<string, any>) =>
@@ -639,12 +605,10 @@ export const queryKeys = {
   // Settlements
   settlements: {
     all: ['settlements'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.settlements.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.settlements.all, 'list', params] as const,
     lists: (params?: Record<string, any>) =>
       [...queryKeys.settlements.all, 'list', params] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.settlements.all, 'detail', String(id)] as const,
+    detail: (id: string | number) => [...queryKeys.settlements.all, 'detail', String(id)] as const,
     statistics: (params?: Record<string, any>) =>
       [...queryKeys.settlements.all, 'statistics', params] as const,
     overdue: (params?: Record<string, any>) =>
@@ -656,12 +620,9 @@ export const queryKeys = {
   // Suppliers
   suppliers: {
     all: ['suppliers'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.suppliers.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.suppliers.all, 'list', params] as const,
-    detail: (id: string | number) =>
-      [...queryKeys.suppliers.all, 'detail', String(id)] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.suppliers.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.suppliers.all, 'list', params] as const,
+    detail: (id: string | number) => [...queryKeys.suppliers.all, 'detail', String(id)] as const,
     statistics: (params?: Record<string, any>) =>
       [...queryKeys.suppliers.all, 'statistics', params] as const,
     accounts: (supplierId: string | number) =>
@@ -673,47 +634,36 @@ export const queryKeys = {
   // Reports
   reports: {
     all: ['reports'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.reports.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.reports.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.reports.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.reports.all, 'list', params] as const,
     detail: (id: string) => [...queryKeys.reports.all, 'detail', id] as const,
     dashboard: (params?: Record<string, any>) =>
       [...queryKeys.reports.all, 'dashboard', params] as const,
     performance: (params?: Record<string, any>) =>
       [...queryKeys.reports.all, 'performance', params] as const,
-    profit: (params?: Record<string, any>) =>
-      [...queryKeys.reports.all, 'profit', params] as const,
+    profit: (params?: Record<string, any>) => [...queryKeys.reports.all, 'profit', params] as const,
     reconciliation: (params?: Record<string, any>) =>
       [...queryKeys.reports.all, 'reconciliation', params] as const,
     financial: (params?: Record<string, any>) =>
       [...queryKeys.reports.all, 'financial', params] as const,
-    trends: (params?: Record<string, any>) =>
-      [...queryKeys.reports.all, 'trends', params] as const,
+    trends: (params?: Record<string, any>) => [...queryKeys.reports.all, 'trends', params] as const,
   },
 
   // Import Jobs
   importJobs: {
     all: ['importJobs'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.importJobs.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.importJobs.all, 'list', params] as const,
-    detail: (id: string) =>
-      [...queryKeys.importJobs.all, 'detail', id] as const,
-    progress: (id: string) =>
-      [...queryKeys.importJobs.all, 'progress', id] as const,
-    statistics: () =>
-      [...queryKeys.importJobs.all, 'statistics'] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.importJobs.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.importJobs.all, 'list', params] as const,
+    detail: (id: string) => [...queryKeys.importJobs.all, 'detail', id] as const,
+    progress: (id: string) => [...queryKeys.importJobs.all, 'progress', id] as const,
+    statistics: () => [...queryKeys.importJobs.all, 'statistics'] as const,
   },
 
   // Finance Profit
   profit: {
     all: ['profit'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.profit.all, 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      [...queryKeys.profit.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.profit.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) => [...queryKeys.profit.all, 'list', params] as const,
     summary: (params?: Record<string, any>) =>
       [...queryKeys.profit.all, 'summary', params] as const,
   },
@@ -721,23 +671,18 @@ export const queryKeys = {
   // Finance Profit (alias for backward compatibility)
   financeProfit: {
     all: ['financeProfit'] as const,
-    list: (params?: Record<string, any>) =>
-      ['financeProfit', 'list', params] as const,
-    lists: (params?: Record<string, any>) =>
-      ['financeProfit', 'list', params] as const,
+    list: (params?: Record<string, any>) => ['financeProfit', 'list', params] as const,
+    lists: (params?: Record<string, any>) => ['financeProfit', 'list', params] as const,
     detail: (id: string) => ['financeProfit', 'detail', id] as const,
-    summary: (params?: Record<string, any>) =>
-      ['financeProfit', 'summary', params] as const,
-    overview: (params?: Record<string, any>) =>
-      ['financeProfit', 'overview', params] as const,
+    summary: (params?: Record<string, any>) => ['financeProfit', 'summary', params] as const,
+    overview: (params?: Record<string, any>) => ['financeProfit', 'overview', params] as const,
     byProject: (params?: string | number | Record<string, unknown>) =>
       ['financeProfit', 'byProject', params] as const,
     byAccount: (params?: string | number | Record<string, unknown>) =>
       ['financeProfit', 'byAccount', params] as const,
     byChannel: (params?: string | number | Record<string, unknown>) =>
       ['financeProfit', 'byChannel', params] as const,
-    trend: (params?: Record<string, any>) =>
-      ['financeProfit', 'trend', params] as const,
+    trend: (params?: Record<string, any>) => ['financeProfit', 'trend', params] as const,
   },
 
   // Dashboard
@@ -764,12 +709,10 @@ export const queryKeys = {
   // Ad Spend (消耗明细) - C3-spend-detail.md
   adSpend: {
     all: ['adSpend'] as const,
-    list: (params?: Record<string, any>) =>
-      [...queryKeys.adSpend.all, 'list', params] as const,
+    list: (params?: Record<string, any>) => [...queryKeys.adSpend.all, 'list', params] as const,
     summary: (params?: Record<string, any>) =>
       [...queryKeys.adSpend.all, 'summary', params] as const,
-    trend: (params?: Record<string, any>) =>
-      [...queryKeys.adSpend.all, 'trend', params] as const,
+    trend: (params?: Record<string, any>) => [...queryKeys.adSpend.all, 'trend', params] as const,
     byProject: (params?: Record<string, any>) =>
       [...queryKeys.adSpend.all, 'byProject', params] as const,
     byAccount: (params?: Record<string, any>) =>
@@ -781,11 +724,21 @@ export const queryKeys = {
     all: ['weeklyBriefs'] as const,
     list: (params?: Record<string, any>) =>
       [...queryKeys.weeklyBriefs.all, 'list', params] as const,
-    detail: (id: number) =>
-      [...queryKeys.weeklyBriefs.all, 'detail', id] as const,
+    detail: (id: number) => [...queryKeys.weeklyBriefs.all, 'detail', id] as const,
     stats: (params?: Record<string, any>) =>
       [...queryKeys.weeklyBriefs.all, 'stats', params] as const,
     projectSummary: (projectId: number, weekStart: string) =>
       [...queryKeys.weeklyBriefs.all, 'projectSummary', projectId, weekStart] as const,
+  },
+
+  // Settlement Rules (结算规则/定价配置) - BR-PROJ.md
+  settlementRules: {
+    all: ['settlementRules'] as const,
+    list: (params?: Record<string, any>) =>
+      [...queryKeys.settlementRules.all, 'list', params] as const,
+    lists: (params?: Record<string, any>) =>
+      [...queryKeys.settlementRules.all, 'list', params] as const,
+    detail: (id: number) => [...queryKeys.settlementRules.all, 'detail', id] as const,
+    effective: () => [...queryKeys.settlementRules.all, 'effective'] as const,
   },
 };

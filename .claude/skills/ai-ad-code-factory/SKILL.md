@@ -1,6 +1,6 @@
 ---
 name: ai-ad-code-factory
-version: "3.4"
+version: "3.5"
 status: ready_for_production
 layer: skill
 owner: wade
@@ -42,13 +42,13 @@ code_sources:
 
 <skill>
 ══════════════════════════════════════════════════════════════════
-  AI 代码工厂 v3.0 - 自主编码集成版
+  AI 代码工厂 v3.5 - 前端设计集成版
 ══════════════════════════════════════════════════════════════════
 
   <name>ai-ad-code-factory</name>
-  <version>3.0</version>
+  <version>3.5</version>
   <domain>AI_AD_SYSTEM / 代码工厂 / 自主编码</domain>
-  <profile>Autonomous-Coding / Search-First / Session-Persistent</profile>
+  <profile>Autonomous-Coding / Search-First / Session-Persistent / Design-Aware</profile>
 
 
   <!-- ======================================================
@@ -207,6 +207,17 @@ code_sources:
     <skill name="ai-ad-code-verifier" priority="5">
       职责: 验证代码质量并自动修复
       来源: mypy, ruff
+    </skill>
+
+    <skill name="frontend-design" priority="3.5">
+      职责: 前端 UI/UX 设计指导，确保设计系统一致性
+      来源: shadcn/ui, Tailwind CSS, WCAG 2.1
+      触发条件: scope="frontend" 或 scope="fullstack"
+      核心功能:
+        - 设计系统一致性检查 (颜色、间距、字体)
+        - 组件复用性审查 (使用 COMPONENT_REGISTRY.md)
+        - 响应式设计验证 (断点策略)
+        - 可访问性检查 (a11y, WCAG 2.1 AA)
     </skill>
   </sub_skills>
 
@@ -464,16 +475,21 @@ code_sources:
     │                              ▼                                  │
     │  ┌─────────────────────────────────────────────────────────┐   │
     │  │ Phase 4: ASSEMBLE (组装)                                 │   │
-    │  │ Skill: ai-ad-code-assembler                              │   │
-    │  │ 来源: Aider, Copier                                      │   │
+    │  │ Skill: ai-ad-code-assembler + frontend-design            │   │
+    │  │ 来源: Aider, Copier, shadcn/ui                           │   │
     │  │                                                         │   │
     │  │ 动作:                                                    │   │
     │  │ 1. 生成 Repo Map (项目结构图)                            │   │
     │  │ 2. 后端组装: Schema → Service → Router                   │   │
     │  │ 3. 前端组装: Types → API → Hooks → Components → Page     │   │
-    │  │ 4. 生成集成指南                                          │   │
+    │  │ 4. [前端] 调用 frontend-design 进行设计审查              │   │
+    │  │    - 设计系统一致性 (颜色/间距/字体)                     │   │
+    │  │    - 组件复用性验证                                      │   │
+    │  │    - 响应式布局检查                                      │   │
+    │  │    - 可访问性 (a11y) 验证                                │   │
+    │  │ 5. 生成集成指南                                          │   │
     │  │                                                         │   │
-    │  │ 输出: 完整功能模块                                       │   │
+    │  │ 输出: 完整功能模块 + 设计审查报告                        │   │
     │  └─────────────────────────────────────────────────────────┘   │
     │                              │                                  │
     │                              ▼                                  │
@@ -728,6 +744,17 @@ code_sources:
        8. 版本记录 (Version Notes)
   ====================================================== -->
   <VERSION_NOTES>
+    ### v3.5 (2026-01-02) - 前端设计集成版
+    - 新增 `frontend-design` 子技能 (priority="3.5")
+    - 触发条件: scope="frontend" 或 scope="fullstack"
+    - Phase 4 ASSEMBLE 阶段新增前端设计审查:
+      - 设计系统一致性检查 (颜色/间距/字体)
+      - 组件复用性验证 (使用 COMPONENT_REGISTRY.md)
+      - 响应式设计验证 (断点策略)
+      - 可访问性检查 (a11y, WCAG 2.1 AA)
+    - Profile 更新: 新增 Design-Aware 标签
+    - 输出新增: 设计审查报告
+
     ### v3.4 (2025-12-24) - 代码块优先版
     - 新增 `<code_blocks_first>` 章节
     - 新增 Phase 0: CODE BLOCKS CHECK (代码块检查)

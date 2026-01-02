@@ -28,11 +28,16 @@ class User(Base, TimestampMixin, SerializableMixin):
     - full_name: 真实姓名 (v2.1)
     - department: 部门 (v2.1)
     - team_id: 所属团队ID (v2.1) - 投手直接归属团队
-    - role: 角色（7角色：ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）
+    - role: 角色（6角色：ceo/project_owner/finance/pitcher/account_manager/admin）
+    - is_project_owner: 是否为项目负责人（MASTER.md v4.6 §2.4）
     - is_active: 是否激活
     - created_at/updated_at: 时间戳（自动管理）
 
-    NOTE: 密码管理由 Supabase Auth 处理，本地不存储密码
+    NOTE:
+    - 密码管理可使用本地 JWT 认证（password_hash）或 Supabase Auth
+    - supervisor 角色已废弃 (PRD v2.2)，职责合并到 project_owner
+
+    SoT Reference: DATA_SCHEMA.md v5.6 §3.1.1, MASTER.md v4.6 §2.4
     """
     __tablename__ = 'users'
 

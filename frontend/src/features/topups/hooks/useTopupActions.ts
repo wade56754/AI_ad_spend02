@@ -2,25 +2,21 @@
  * Topup Actions Aggregated Hook
  *
  * Centralized hook for all topup actions and state transitions
- * SoT: STATE_MACHINE.md v2.6 Section 9
+ * SoT: STATE_MACHINE.md v2.9 Section 9
+ * SoT: API_SOT.md v9.7 Section 10
  */
 
 import { useCallback } from 'react';
 import {
   useCreateTopup,
+  useSubmitTopup,
+  useReviewTopup,
   useApproveTopup,
   useRejectTopup,
-  useCompleteTopup,
+  useConfirmPaidTopup,
   useCancelTopup,
 } from './useTopups';
-import type {
-  TopupStatus,
-  TopupAction,
-  TopupCreateInput,
-  TopupDataReviewInput,
-  TopupFinanceApproveInput,
-  TopupRejectInput,
-} from '../types';
+import type { TopupStatus, TopupAction, TopupRejectInput } from '../types';
 import { TOPUP_TRANSITIONS, TOPUP_ACTION_ROLES } from '../types';
 
 // === State Transition Helpers ===
@@ -179,27 +175,37 @@ export function useTopupActions(options: UseTopupActionsOptions = {}) {
   const { onSuccess, onError } = options;
 
   // Mutations
-  const createTopup = useCreateTopup({
+  const createTopupMutation = useCreateTopup({
     onSuccess: () => onSuccess?.('create'),
     onError: (error) => onError?.('create', error),
   });
 
-  const approveTopup = useApproveTopup({
+  const submitTopupMutation = useSubmitTopup({
+    onSuccess: () => onSuccess?.('submit'),
+    onError: (error) => onError?.('submit', error),
+  });
+
+  const reviewTopupMutation = useReviewTopup({
     onSuccess: () => onSuccess?.('data_review_approve'),
     onError: (error) => onError?.('data_review_approve', error),
   });
 
-  const rejectTopup = useRejectTopup({
+  const approveTopupMutation = useApproveTopup({
+    onSuccess: () => onSuccess?.('finance_approve'),
+    onError: (error) => onError?.('finance_approve', error),
+  });
+
+  const rejectTopupMutation = useRejectTopup({
     onSuccess: () => onSuccess?.('data_review_reject'),
     onError: (error) => onError?.('data_review_reject', error),
   });
 
-  const completeTopup = useCompleteTopup({
+  const confirmPaidMutation = useConfirmPaidTopup({
     onSuccess: () => onSuccess?.('complete'),
     onError: (error) => onError?.('complete', error),
   });
 
-  const cancelTopup = useCancelTopup({
+  const cancelTopupMutation = useCancelTopup({
     onSuccess: () => onSuccess?.('cancel'),
     onError: (error) => onError?.('cancel', error),
   });
@@ -207,61 +213,68 @@ export function useTopupActions(options: UseTopupActionsOptions = {}) {
   // Action handlers
   const submitForReview = useCallback(
     (id: string) => {
-      // Submit uses approve endpoint with empty input
-      return approveTopup.mutateAsync({ id });
+      return submitTopupMutation.mutateAsync({ id });
     },
-    [approveTopup]
+    [submitTopupMutation]
   );
 
   const dataReviewApprove = useCallback(
     (id: string, input?: { notes?: string }) => {
-      return approveTopup.mutateAsync({ id, input: { approval_notes: input?.notes } });
+      return reviewTopupMutation.mutateAsync({
+        id,
+        input: { approved: true, version: 1, notes: input?.notes },
+      });
     },
-    [approveTopup]
+    [reviewTopupMutation]
   );
 
   const dataReviewReject = useCallback(
     (id: string, input: TopupRejectInput) => {
-      return rejectTopup.mutateAsync({ id, input });
+      return rejectTopupMutation.mutateAsync({ id, input });
     },
-    [rejectTopup]
+    [rejectTopupMutation]
   );
 
   const financeApprove = useCallback(
     (id: string, input?: { notes?: string }) => {
-      return approveTopup.mutateAsync({ id, input: { approval_notes: input?.notes } });
+      return approveTopupMutation.mutateAsync({
+        id,
+        input: { approved: true, version: 1, notes: input?.notes },
+      });
     },
-    [approveTopup]
+    [approveTopupMutation]
   );
 
   const financeReject = useCallback(
     (id: string, input: TopupRejectInput) => {
-      return rejectTopup.mutateAsync({ id, input });
+      return rejectTopupMutation.mutateAsync({ id, input });
     },
-    [rejectTopup]
+    [rejectTopupMutation]
   );
 
   const markCompleted = useCallback(
     (id: string) => {
-      return completeTopup.mutateAsync(id);
+      return confirmPaidMutation.mutateAsync({ id });
     },
-    [completeTopup]
+    [confirmPaidMutation]
   );
 
   const cancel = useCallback(
     (id: string) => {
-      return cancelTopup.mutateAsync(id);
+      return cancelTopupMutation.mutateAsync(id);
     },
-    [cancelTopup]
+    [cancelTopupMutation]
   );
 
   // Combined loading state
   const isLoading =
-    createTopup.isPending ||
-    approveTopup.isPending ||
-    rejectTopup.isPending ||
-    completeTopup.isPending ||
-    cancelTopup.isPending;
+    createTopupMutation.isPending ||
+    submitTopupMutation.isPending ||
+    reviewTopupMutation.isPending ||
+    approveTopupMutation.isPending ||
+    rejectTopupMutation.isPending ||
+    confirmPaidMutation.isPending ||
+    cancelTopupMutation.isPending;
 
   // Execute action by name
   const executeAction = useCallback(
@@ -325,11 +338,13 @@ export function useTopupActions(options: UseTopupActionsOptions = {}) {
 
   return {
     // Mutations
-    createTopup,
-    approveTopup,
-    rejectTopup,
-    completeTopup,
-    cancelTopup,
+    createTopup: createTopupMutation,
+    submitTopup: submitTopupMutation,
+    reviewTopup: reviewTopupMutation,
+    approveTopup: approveTopupMutation,
+    rejectTopup: rejectTopupMutation,
+    confirmPaid: confirmPaidMutation,
+    cancelTopup: cancelTopupMutation,
 
     // Action helpers
     submitForReview,

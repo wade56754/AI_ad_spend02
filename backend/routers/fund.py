@@ -5,7 +5,7 @@ SoT References:
 - A2-fund-overview.md §5 API 接口
 - API_SOT.md v9.3 标准响应格式
 - AUTH_SPEC.md v2.0 角色权限控制
-- MASTER.md v4.4 §2.4 (7角色模型)
+- MASTER.md v4.8 §2.4 (6角色模型)
 - ERROR_CODES_SOT.md v2.1 (错误码)
 
 端点列表:
@@ -16,12 +16,11 @@ SoT References:
 - GET /fund/payments              - 回款记录
 - GET /fund/alerts                - 资金预警
 
-权限矩阵 (MASTER.md v4.4 §2.4 - 7角色模型):
+权限矩阵 (MASTER.md v4.8 §2.4 - 6角色模型):
 - ceo, finance: 全公司数据
 - admin: 全公司数据 (只读)
 - project_owner: 自己负责的项目
 - account_manager: 账户余额部分
-- supervisor: 团队相关数据概览
 - pitcher: 无访问权限
 
 依赖代码块:
@@ -42,7 +41,11 @@ from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user
-from backend.core.pagination import PaginationParams, get_pagination, create_paginated_response
+from backend.core.pagination import (
+    PaginationParams,
+    get_pagination,
+    create_paginated_response,
+)
 from backend.core.response import success_response, error_response
 from backend.core.security import require_roles
 from backend.exceptions.custom_exceptions import (
@@ -66,31 +69,18 @@ from backend.services.fund_service import FundService, get_fund_service
 # 错误响应辅助函数
 # ========================================
 
+
 def _handle_service_exception(e: Exception):
     """处理服务层异常，转换为标准响应"""
     if isinstance(e, PermissionDeniedError):
-        return error_response(
-            code="PERM-001",
-            message=str(e),
-            status_code=403
-        )
+        return error_response(code="PERM-001", message=str(e), status_code=403)
     elif isinstance(e, ResourceNotFoundError):
-        return error_response(
-            code="RES-001",
-            message=str(e),
-            status_code=404
-        )
+        return error_response(code="RES-001", message=str(e), status_code=404)
     elif isinstance(e, BusinessLogicError):
-        return error_response(
-            code="BIZ-001",
-            message=str(e),
-            status_code=400
-        )
+        return error_response(code="BIZ-001", message=str(e), status_code=400)
     else:
         return error_response(
-            code="SYS-500",
-            message=f"系统内部错误: {str(e)}",
-            status_code=500
+            code="SYS-500", message=f"系统内部错误: {str(e)}", status_code=500
         )
 
 
@@ -114,11 +104,10 @@ async def get_fund_overview(
     - total_receivable: 应收款
     - fund_occupied: 资金占用
 
-    权限 (MASTER.md v4.4 §2.4):
+    权限 (MASTER.md v4.8 §2.4):
     - ceo, finance, admin: 全公司数据
     - project_owner: 自己负责的项目
     - account_manager: 账户余额部分
-    - supervisor: 团队相关数据
     """
     try:
         service = FundService(db)
@@ -127,10 +116,7 @@ async def get_fund_overview(
             date_from=date_from,
             date_to=date_to,
         )
-        return success_response(
-            data=result.model_dump(),
-            message="获取资金概览成功"
-        )
+        return success_response(data=result.model_dump(), message="获取资金概览成功")
     except Exception as e:
         return _handle_service_exception(e)
 
@@ -151,10 +137,9 @@ async def get_fund_distribution_by_projects(
 
     返回每个项目的充值、消耗、余额等数据
 
-    权限 (MASTER.md v4.4 §2.4):
+    权限 (MASTER.md v4.8 §2.4):
     - ceo, finance, admin: 全公司项目
     - project_owner: 自己负责的项目
-    - supervisor: 团队相关项目
     """
     try:
         service = FundService(db)
@@ -167,10 +152,7 @@ async def get_fund_distribution_by_projects(
             date_from=date_from,
             date_to=date_to,
         )
-        return success_response(
-            data=result.model_dump(),
-            message="获取项目资金分布成功"
-        )
+        return success_response(data=result.model_dump(), message="获取项目资金分布成功")
     except Exception as e:
         return _handle_service_exception(e)
 
@@ -191,10 +173,9 @@ async def get_fund_distribution_by_channels(
 
     返回每个渠道/供应商的充值、消耗、余额等数据
 
-    权限 (MASTER.md v4.4 §2.4):
+    权限 (MASTER.md v4.8 §2.4):
     - ceo, finance, admin: 全部渠道
     - project_owner: 自己项目关联的渠道
-    - supervisor: 团队相关渠道
     """
     try:
         service = FundService(db)
@@ -207,10 +188,7 @@ async def get_fund_distribution_by_channels(
             date_from=date_from,
             date_to=date_to,
         )
-        return success_response(
-            data=result.model_dump(),
-            message="获取渠道资金分布成功"
-        )
+        return success_response(data=result.model_dump(), message="获取渠道资金分布成功")
     except Exception as e:
         return _handle_service_exception(e)
 
@@ -221,8 +199,7 @@ async def get_receivables(
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     project_id: Optional[int] = Query(None, gt=0, description="项目ID筛选"),
     status: Optional[Literal["pending", "partial", "received"]] = Query(
-        None,
-        description="状态筛选"
+        None, description="状态筛选"
     ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -232,7 +209,7 @@ async def get_receivables(
 
     返回待收款项目列表，包括金额、状态、待收天数等
 
-    权限 (MASTER.md v4.4 §2.4):
+    权限 (MASTER.md v4.8 §2.4):
     - ceo, finance: 全部应收
     - project_owner: 自己项目的应收
     """
@@ -245,10 +222,7 @@ async def get_receivables(
             project_id=project_id,
             status=status,
         )
-        return success_response(
-            data=result.model_dump(),
-            message="获取应收明细成功"
-        )
+        return success_response(data=result.model_dump(), message="获取应收明细成功")
     except Exception as e:
         return _handle_service_exception(e)
 
@@ -268,7 +242,7 @@ async def get_payments(
 
     返回已回款记录列表
 
-    权限 (MASTER.md v4.4 §2.4):
+    权限 (MASTER.md v4.8 §2.4):
     - ceo, finance: 全部回款记录
     - project_owner: 自己项目的回款记录
     """
@@ -282,10 +256,7 @@ async def get_payments(
             date_from=date_from,
             date_to=date_to,
         )
-        return success_response(
-            data=result.model_dump(),
-            message="获取回款记录成功"
-        )
+        return success_response(data=result.model_dump(), message="获取回款记录成功")
     except Exception as e:
         return _handle_service_exception(e)
 
@@ -303,15 +274,12 @@ async def get_fund_alerts(
     - negative_balance: 余额为负
     - overdue_receivable: 应收逾期
 
-    权限 (MASTER.md v4.4 §2.4):
+    权限 (MASTER.md v4.8 §2.4):
     - ceo, finance, admin: 全部预警
     """
     try:
         service = FundService(db)
         result = service.get_fund_alerts(current_user=current_user)
-        return success_response(
-            data=result.model_dump(),
-            message="获取资金预警成功"
-        )
+        return success_response(data=result.model_dump(), message="获取资金预警成功")
     except Exception as e:
         return _handle_service_exception(e)

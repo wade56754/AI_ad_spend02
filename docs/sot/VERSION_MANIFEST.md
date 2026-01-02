@@ -1,7 +1,7 @@
 # SoT 版本清单
 
 > **版本**: v1.0
-> **最后更新**: 2025-12-30
+> **最后更新**: 2025-12-31
 > **维护者**: 架构组
 
 ---
@@ -10,10 +10,10 @@
 
 | 文件 | 当前版本 | 最后审查 | 负责人 | 状态 |
 |------|----------|----------|--------|------|
-| MASTER.md | v4.6 | 2025-12-27 | 架构组 | active |
-| DATA_SCHEMA.md | v5.6 | 2025-12-27 | 架构组 | active |
-| STATE_MACHINE.md | v2.8 | 2025-12-27 | 架构组 | active |
-| BUSINESS_RULES.md | v4.7 | 2025-12-27 | 业务组 | active |
+| MASTER.md | v4.8 | 2026-01-01 | 架构组 | active |
+| DATA_SCHEMA.md | v5.6 | 2025-12-31 | 架构组 | active |
+| STATE_MACHINE.md | v2.8 | 2025-12-29 | 架构组 | active |
+| BUSINESS_RULES.md | v4.8 | 2025-12-31 | 业务组 | active |
 | API_SOT.md | v9.4 | 2025-12-27 | 后端组 | active |
 | AUTH_SPEC.md | v2.1 | 2025-12-27 | 后端组 | active |
 | ERROR_CODES_SOT.md | v2.2 | 2025-12-27 | 后端组 | active |
@@ -97,10 +97,10 @@ AUTH_SPEC.md v2.0
 当前冻结版本：
 
 ```
-MASTER.md v4.6
+MASTER.md v4.8
 DATA_SCHEMA.md v5.6
 STATE_MACHINE.md v2.8
-BUSINESS_RULES.md v4.7
+BUSINESS_RULES.md v4.8
 API_SOT.md v9.4
 ERROR_CODES_SOT.md v2.2
 AUTH_SPEC.md v2.1
@@ -114,7 +114,7 @@ AUTH_SPEC.md v2.1
 
 ```python
 # 正确
-# SoT: MASTER.md v4.6 §2.4
+# SoT: MASTER.md v4.8 §2.4
 
 # 错误
 # SoT: MASTER.md §2.4

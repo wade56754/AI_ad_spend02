@@ -33,8 +33,8 @@ from typing import Any
 
 # Windows UTF-8 编码设置
 if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # 设置日志
 LOG_DIR = Path(__file__).parent.parent / "logs"
@@ -46,7 +46,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler(LOG_FILE, encoding="utf-8"),
-    ]
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,7 @@ try:
         TaskStatus,
         get_tracker,
     )
+
     TRACKER_AVAILABLE = True
     logger.info("ProgressTracker loaded successfully")
 except ImportError as e:
@@ -78,20 +79,16 @@ MODULE_PATH_PATTERNS: dict[str, list[str]] = {
     "A1": ["dashboard", "驾驶舱", "kpi", "stat_card"],
     "A2": ["fund", "资金", "balance", "ledger"],
     "A3": ["pnl", "盈亏", "profit", "loss"],
-
     # B 组: 日常操作
     "B1": ["daily_report", "日报", "report_submit", "daily-report"],
     "B2": ["review", "审核", "trend_", "approval"],
     "B3": ["weekly", "周报", "brief"],
-
     # C 组: 管理功能
     "C1": ["topup", "充值", "recharge"],
     "C2": ["pitcher", "投手", "pitcher_mgmt"],
     "C3": ["spend", "消耗", "spend_detail"],
-
     # D 组: 项目管理
     "D1": ["project", "项目", "project_mgmt"],
-
     # E 组: 结算
     "E1": ["settlement", "结算", "monthly"],
 }
@@ -116,6 +113,7 @@ FILE_CATEGORIES = {
 # =============================================================================
 # Progress.md Update Functions
 # =============================================================================
+
 
 def categorize_file(file_path: str) -> str:
     """Categorize file by path"""
@@ -261,6 +259,7 @@ def update_progress_file(file_path: str, action: str = "edit") -> bool:
 # Helper Functions
 # =============================================================================
 
+
 def load_session_data() -> dict:
     """加载会话数据"""
     if SESSION_DATA_FILE.exists():
@@ -340,6 +339,7 @@ def update_task_progress(task_id: str, increment: int = 10) -> bool:
 # 格式化函数（保留原有功能）
 # =============================================================================
 
+
 def format_python_file(file_path: str) -> bool:
     """使用 black 格式化 Python 文件"""
     if not shutil.which("black"):
@@ -391,6 +391,7 @@ def format_typescript_file(file_path: str) -> bool:
 # =============================================================================
 # 工具处理函数
 # =============================================================================
+
 
 def handle_write_tool(tool_input: dict, success: bool) -> None:
     """Handle Write tool - create new file"""
@@ -490,9 +491,88 @@ def handle_bash_tool(tool_input: dict, success: bool) -> None:
         save_session_data(session_data)
 
 
+def sync_progress_from_taskmaster() -> bool:
+    """
+    调用 sync_progress.py 同步 Task Master → progress.md
+
+    Returns:
+        True if sync was successful
+    """
+    sync_script = Path(__file__).parent.parent.parent / "scripts" / "sync_progress.py"
+
+    if not sync_script.exists():
+        logger.warning(f"Sync script not found: {sync_script}")
+        return False
+
+    try:
+        result = subprocess.run(
+            ["python3", str(sync_script)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=str(sync_script.parent.parent),
+        )
+
+        if result.returncode == 0:
+            logger.info("Task Master → progress.md sync completed")
+            return True
+        else:
+            logger.warning(f"Sync failed: {result.stderr}")
+            return False
+
+    except subprocess.TimeoutExpired:
+        logger.error("Sync script timeout")
+        return False
+    except Exception as e:
+        logger.error(f"Sync error: {e}")
+        return False
+
+
+def handle_taskmaster_tool(tool_name: str, tool_input: dict, success: bool) -> None:
+    """
+    处理 Task Master MCP 工具调用
+
+    当任务状态变更时自动同步 progress.md
+    """
+    if not success:
+        return
+
+    logger.info(f"Task Master tool: {tool_name}")
+
+    # 需要触发同步的操作
+    sync_triggers = [
+        "mcp__taskmaster-ai__set_task_status",
+        "mcp__taskmaster-ai__parse_prd",
+        "mcp__taskmaster-ai__expand_task",
+    ]
+
+    if tool_name in sync_triggers:
+        task_id = tool_input.get("id", "")
+        new_status = tool_input.get("status", "")
+
+        logger.info(f"Task status change: {task_id} → {new_status}")
+
+        # 触发同步
+        sync_progress_from_taskmaster()
+
+        # 更新会话数据
+        session_data = load_session_data()
+        task_changes = session_data.get("task_changes", [])
+        task_changes.append(
+            {
+                "task_id": task_id,
+                "status": new_status,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+        session_data["task_changes"] = task_changes[-20:]  # 保留最近 20 条
+        save_session_data(session_data)
+
+
 # =============================================================================
 # 主函数
 # =============================================================================
+
 
 def main() -> int:
     """主函数"""
@@ -540,6 +620,8 @@ def main() -> int:
             handle_edit_tool(tool_input, success)
         elif tool_name in ["Bash", "bash_tool", "execute_command"]:
             handle_bash_tool(tool_input, success)
+        elif tool_name.startswith("mcp__taskmaster-ai__"):
+            handle_taskmaster_tool(tool_name, tool_input, success)
 
         return 0
 

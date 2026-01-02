@@ -1,32 +1,31 @@
 # 速查参考表
 
-> **版本**: v1.2
-> **更新日期**: 2025-12-30
+> **版本**: v1.3
+> **更新日期**: 2026-01-02
 > **用途**: 开发时快速查阅，避免 AI 幻觉
-> **变更记录**: 按 MASTER.md v4.6 §2.4 统一角色定义（移除双层系统）
+> **变更记录**: 统一 SoT 版本引用至最新版本
 
 ---
 
 ## 1. SoT 文档版本对齐表
 
-> 每次开发前必须确认版本一致
+> 每次开发前必须确认版本一致 (更新于 2026-01-02)
 
 | 文档 | 版本 | 路径 | 用途 |
 |------|------|------|------|
-| MASTER.md | v4.6 | docs/sot/MASTER.md | 架构宪法、角色定义 |
-| STATE_MACHINE.md | v2.8 | docs/sot/STATE_MACHINE.md | 状态机定义 |
-| DATA_SCHEMA.md | v5.6 | docs/sot/DATA_SCHEMA.md | 数据库表结构 |
-| BUSINESS_RULES.md | v4.7 | docs/sot/BUSINESS_RULES.md | 业务规则 |
+| MASTER.md | v4.9 | docs/sot/MASTER.md | 架构宪法、角色定义 |
+| DATA_SCHEMA.md | v5.10 | docs/sot/DATA_SCHEMA.md | 数据库表结构 |
+| STATE_MACHINE.md | v2.9 | docs/sot/STATE_MACHINE.md | 状态机定义 |
+| BUSINESS_RULES.md | v5.1 | docs/sot/BUSINESS_RULES.md | 业务规则 |
+| API_SOT.md | v9.7 | docs/sot/API_SOT.md | API 规范 |
+| AUTH_SPEC.md | v2.2 | docs/sot/AUTH_SPEC.md | 认证授权 |
 | ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md | 错误码定义 |
-| AUTH_SPEC.md | v2.1 | docs/sot/AUTH_SPEC.md | 认证授权 |
-| LEDGER_SOT.md | v1.2 | docs/sot/LEDGER_SOT.md | 账本规则 |
-| API_SOT.md | v9.4 | docs/sot/API_SOT.md | API 规范 |
 
 ---
 
 ## 2. 合法角色（6 角色）
 
-> **来源**: MASTER.md v4.6 §2.4（宪法）
+> **来源**: MASTER.md v4.9 §2.4（宪法）
 > **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |
@@ -92,7 +91,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ## 5. 权限矩阵
 
-> 来源: MASTER.md v4.6 §2.4
+> 来源: MASTER.md v4.9 §2.4
 
 | 操作 | ceo | project_owner | finance | pitcher | account_manager | admin |
 |------|-----|---------------|---------|---------|-----------------|-------|

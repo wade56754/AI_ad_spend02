@@ -49,6 +49,12 @@ from backend.schemas.project import (
     ProjectStatisticsResponse,
     ProjectMemberAssignRequest,
     ProjectMarkFulfilledRequest,
+    # TASK-PRJ-005: 预付款管理
+    PrepaymentCreateRequest,
+    PrepaymentReversalRequest,
+    PrepaymentResponse,
+    PrepaymentListResponse,
+    PrepaymentBalanceResponse,
 )
 from backend.services.project_service import ProjectService
 
@@ -266,6 +272,39 @@ async def get_project_statistics(
     except Exception as e:
         logger.error("get_statistics_error", error=str(e))
         return error_response(code="SYS-500", message="获取统计信息失败", status_code=500)
+
+
+@router.get(
+    "/{project_id}/dashboard",
+    summary="获取项目仪表盘",
+    description="获取项目仪表盘数据，包含 KPI 汇总、每日趋势、账户表现。TASK-PRJ-004",
+)
+@log_requests("projects")
+async def get_project_dashboard(
+    project_id: int = Path(..., gt=0, description="项目ID"),
+    days: int = Query(30, ge=1, le=90, description="趋势数据天数 (1-90)"),
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    获取项目仪表盘数据
+
+    返回:
+    - KPI 汇总: 总消耗、总进粉、总转化、平均 CPL、预算使用率
+    - 每日趋势: 近 N 天的消耗/进粉/转化趋势
+    - 账户表现: 按消耗排序的账户表现列表
+    """
+    try:
+        dashboard = service.get_project_dashboard(project_id, current_user, days)
+        return success_response(data=dashboard, message="获取仪表盘成功")
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+    except Exception as e:
+        logger.error("get_project_dashboard_error", project_id=project_id, error=str(e))
+        return error_response(code="SYS-500", message="获取项目仪表盘失败", status_code=500)
 
 
 @router.get("/{project_id}", summary="获取项目详情")
@@ -505,6 +544,195 @@ async def get_project_expenses(
             total=total,
             pagination=pagination,
             message="获取费用列表成功",
+        )
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+# ========================================
+# 预付款管理 (TASK-PRJ-005)
+# ========================================
+
+
+def build_prepayment_response(prepayment) -> PrepaymentResponse:
+    """构建预付款响应"""
+    # 获取操作人名称
+    operator_name = None
+    if hasattr(prepayment, "operator") and prepayment.operator:
+        operator_name = getattr(prepayment.operator, "email", None) or getattr(
+            prepayment.operator, "username", None
+        )
+
+    # 获取项目名称
+    project_name = None
+    if hasattr(prepayment, "project") and prepayment.project:
+        project_name = prepayment.project.name
+    elif hasattr(prepayment, "project_name"):
+        project_name = prepayment.project_name
+
+    return PrepaymentResponse(
+        id=prepayment.id,
+        project_id=prepayment.project_id,
+        project_name=project_name,
+        entry_type=prepayment.entry_type,
+        amount=prepayment.amount,
+        balance_after=prepayment.balance_after,
+        entry_date=prepayment.entry_date,
+        reference_id=prepayment.reference_id,
+        notes=prepayment.notes,
+        created_by=prepayment.created_by,
+        operator_name=operator_name,
+        created_at=prepayment.created_at,
+    )
+
+
+@router.post(
+    "/{project_id}/prepayments",
+    status_code=status.HTTP_201_CREATED,
+    summary="添加预付款入账",
+    description="""
+添加客户预付款入账记录。
+
+**TASK-PRJ-005: 预付款管理**
+**SoT Reference**: DATA_SCHEMA.md v5.7 §3.4 (三本账体系 - 预付款账本)
+**SoT Reference**: BUSINESS_RULES.md v4.8 BR-FIN-004 (预收款≠收入)
+
+**权限**: admin, finance, project_owner, ceo
+
+**业务规则**:
+- 预收款在履约完成前是负债，不是收入
+- 入账金额必须为正数
+- 入账日期不能是未来日期
+""",
+)
+@log_requests("projects")
+async def add_prepayment(
+    project_id: int = Path(..., gt=0),
+    request: PrepaymentCreateRequest = None,
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_user),
+):
+    """添加预付款入账"""
+    try:
+        prepayment = service.add_prepayment(project_id, request, current_user)
+        return success_response(
+            data=build_prepayment_response(prepayment),
+            message="预付款入账成功",
+            status_code=201,
+        )
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except ValidationError as e:
+        return error_response(code="VAL-001", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+@router.post(
+    "/{project_id}/prepayments/reversal",
+    status_code=status.HTTP_201_CREATED,
+    summary="添加预付款红冲",
+    description="""
+添加预付款红冲记录，用于冲销错误的入账。
+
+**权限**: admin, finance
+
+**业务规则**:
+- 红冲金额必须为负数
+- 必须关联原入账记录ID
+- 只能红冲 TOPUP 类型的记录
+- 红冲金额不能超过原入账金额
+""",
+)
+@log_requests("projects")
+async def add_prepayment_reversal(
+    project_id: int = Path(..., gt=0),
+    request: PrepaymentReversalRequest = None,
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_user),
+):
+    """添加预付款红冲"""
+    try:
+        reversal = service.add_prepayment_reversal(project_id, request, current_user)
+        return success_response(
+            data=build_prepayment_response(reversal),
+            message="预付款红冲成功",
+            status_code=201,
+        )
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except BusinessError as e:
+        return error_response(code="BIZ-001", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+@router.get(
+    "/{project_id}/prepayments/balance",
+    summary="获取项目预付款余额",
+    description="""
+获取项目的预付款余额信息。
+
+**TASK-PRJ-005: 预付款管理**
+**SoT Reference**: DATA_SCHEMA.md v5.7 §3.4.4 (三本账体系)
+
+返回:
+- balance: 当前预付款余额
+- total_topup: 累计入账总额
+- total_reversal: 累计红冲总额
+- entry_count: 流水记录数
+""",
+)
+@log_requests("projects")
+async def get_prepayment_balance(
+    project_id: int = Path(..., gt=0),
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_user),
+):
+    """获取项目预付款余额"""
+    try:
+        balance_data = service.get_prepayment_balance(project_id, current_user)
+        return success_response(data=balance_data, message="获取预付款余额成功")
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
+@router.get(
+    "/{project_id}/prepayments",
+    summary="获取项目预付款流水列表",
+    description="获取项目的预付款流水记录列表，支持分页和类型筛选。",
+)
+@log_requests("projects")
+async def get_prepayment_entries(
+    project_id: int = Path(..., gt=0),
+    entry_type: Optional[str] = Query(
+        None, description="分录类型筛选: TOPUP(入账)/REVERSAL(红冲)"
+    ),
+    pagination: PaginationParams = Depends(get_pagination),
+    service: ProjectService = Depends(get_project_service),
+    current_user: User = Depends(get_current_user),
+):
+    """获取项目预付款流水列表 (分页)"""
+    try:
+        entries, total = service.get_prepayment_entries(
+            project_id, current_user, pagination, entry_type
+        )
+
+        entry_responses = [build_prepayment_response(e) for e in entries]
+
+        return create_paginated_response(
+            items=entry_responses,
+            total=total,
+            pagination=pagination,
+            message="获取预付款流水成功",
         )
 
     except NotFoundError as e:

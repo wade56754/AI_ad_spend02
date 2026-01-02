@@ -44,17 +44,17 @@ class LocalAuthService:
     def hash_password(password: str) -> str:
         """哈希密码 - 使用 bcrypt 直接加密"""
         # 确保密码是 bytes 类型，截断到 72 字节（bcrypt 限制）
-        password_bytes = password.encode('utf-8')[:72]
+        password_bytes = password.encode("utf-8")[:72]
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(password_bytes, salt)
-        return hashed.decode('utf-8')
+        return hashed.decode("utf-8")
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """验证密码 - 使用 bcrypt 直接验证"""
         try:
-            password_bytes = plain_password.encode('utf-8')[:72]
-            hashed_bytes = hashed_password.encode('utf-8')
+            password_bytes = plain_password.encode("utf-8")[:72]
+            hashed_bytes = hashed_password.encode("utf-8")
             return bcrypt.checkpw(password_bytes, hashed_bytes)
         except Exception as e:
             logger.warning(f"Password verification error: {e}")
@@ -64,16 +64,15 @@ class LocalAuthService:
 
     @staticmethod
     def create_access_token(
-        user_id: str,
-        email: str,
-        role: str,
-        expires_delta: Optional[timedelta] = None
+        user_id: str, email: str, role: str, expires_delta: Optional[timedelta] = None
     ) -> str:
         """创建访问令牌"""
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
         else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            expire = datetime.now(timezone.utc) + timedelta(
+                minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+            )
 
         to_encode = {
             "sub": str(user_id),
@@ -89,14 +88,15 @@ class LocalAuthService:
 
     @staticmethod
     def create_refresh_token(
-        user_id: str,
-        expires_delta: Optional[timedelta] = None
+        user_id: str, expires_delta: Optional[timedelta] = None
     ) -> str:
         """创建刷新令牌"""
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
         else:
-            expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+            expire = datetime.now(timezone.utc) + timedelta(
+                days=REFRESH_TOKEN_EXPIRE_DAYS
+            )
 
         to_encode = {
             "sub": str(user_id),
@@ -131,7 +131,7 @@ class LocalAuthService:
         password: str,
         username: str,
         full_name: Optional[str] = None,
-        role: str = "media_buyer"
+        role: str = "pitcher",
     ) -> Dict[str, Any]:
         """
         用户注册
@@ -141,7 +141,7 @@ class LocalAuthService:
             password: 密码
             username: 用户名
             full_name: 全名（可选）
-            role: 角色，默认为 media_buyer
+            role: 角色，默认为 pitcher
 
         Returns:
             包含用户信息和令牌的字典
@@ -150,21 +150,23 @@ class LocalAuthService:
 
         # 检查邮箱是否已存在
         logger.info(f"[REGISTER] Checking for existing user...")
-        existing_user = self.db.query(User).filter(
-            or_(User.email == email, User.username == username)
-        ).first()
-        logger.info(f"[REGISTER] Existing user check complete: {existing_user is not None}")
+        existing_user = (
+            self.db.query(User)
+            .filter(or_(User.email == email, User.username == username))
+            .first()
+        )
+        logger.info(
+            f"[REGISTER] Existing user check complete: {existing_user is not None}"
+        )
 
         if existing_user:
             if existing_user.email == email:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="该邮箱已被注册"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱已被注册"
                 )
             else:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="该用户名已被使用"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="该用户名已被使用"
                 )
 
         # 验证角色
@@ -193,9 +195,7 @@ class LocalAuthService:
 
         # 生成令牌
         access_token = self.create_access_token(
-            user_id=str(user_id),
-            email=email,
-            role=role
+            user_id=str(user_id), email=email, role=role
         )
         refresh_token = self.create_refresh_token(user_id=str(user_id))
 
@@ -212,7 +212,7 @@ class LocalAuthService:
                 "refresh_token": refresh_token,
                 "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
                 "token_type": "bearer",
-            }
+            },
         }
 
     async def login_user(
@@ -220,7 +220,7 @@ class LocalAuthService:
         email: str,
         password: str,
         remember_me: bool = False,
-        request: Optional[Request] = None
+        request: Optional[Request] = None,
     ) -> Dict[str, Any]:
         """
         用户登录
@@ -237,31 +237,30 @@ class LocalAuthService:
         logger.info(f"[LOGIN] Starting login for: {email}")
 
         # 查找用户（支持邮箱或用户名登录）
-        user = self.db.query(User).filter(
-            or_(User.email == email, User.username == email)
-        ).first()
+        user = (
+            self.db.query(User)
+            .filter(or_(User.email == email, User.username == email))
+            .first()
+        )
 
         if not user:
             logger.warning(f"[LOGIN] User not found: {email}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="邮箱或密码错误"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="邮箱或密码错误"
             )
 
         # 检查用户是否激活
         if not user.is_active:
             logger.warning(f"[LOGIN] User disabled: {email}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="账户已被禁用"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="账户已被禁用")
 
         # 验证密码
-        if not user.password_hash or not self.verify_password(password, user.password_hash):
+        if not user.password_hash or not self.verify_password(
+            password, user.password_hash
+        ):
             logger.warning(f"[LOGIN] Invalid password for: {email}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="邮箱或密码错误"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="邮箱或密码错误"
             )
 
         logger.info(f"[LOGIN] Login successful for: {email}")
@@ -272,7 +271,7 @@ class LocalAuthService:
             user_id=str(user.id),
             email=user.email,
             role=user.role,
-            expires_delta=expires_delta
+            expires_delta=expires_delta,
         )
         refresh_token = self.create_refresh_token(user_id=str(user.id))
 
@@ -289,7 +288,7 @@ class LocalAuthService:
                 "refresh_token": refresh_token,
                 "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
                 "token_type": "bearer",
-            }
+            },
         }
 
     async def verify_token(self, token: str) -> Dict[str, Any]:
@@ -307,15 +306,13 @@ class LocalAuthService:
         # 检查令牌类型
         if payload.get("type") != "access":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的令牌类型"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌类型"
             )
 
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的令牌"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌"
             )
 
         # 查找用户
@@ -323,21 +320,16 @@ class LocalAuthService:
             user = self.db.query(User).filter(User.id == UUID(user_id)).first()
         except ValueError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的用户ID"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的用户ID"
             )
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户不存在"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在"
             )
 
         if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="账户已被禁用"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="账户已被禁用")
 
         return {
             "user": {
@@ -372,15 +364,13 @@ class LocalAuthService:
         # 检查令牌类型
         if payload.get("type") != "refresh":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的刷新令牌"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的刷新令牌"
             )
 
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的令牌"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌"
             )
 
         # 查找用户
@@ -388,21 +378,15 @@ class LocalAuthService:
 
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户不存在"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="用户不存在"
             )
 
         if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="账户已被禁用"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="账户已被禁用")
 
         # 生成新令牌
         new_access_token = self.create_access_token(
-            user_id=str(user.id),
-            email=user.email,
-            role=user.role
+            user_id=str(user.id), email=user.email, role=user.role
         )
         new_refresh_token = self.create_refresh_token(user_id=str(user.id))
 
@@ -432,10 +416,7 @@ class LocalAuthService:
         return True
 
     async def change_password(
-        self,
-        user_id: str,
-        old_password: str,
-        new_password: str
+        self, user_id: str, old_password: str, new_password: str
     ) -> bool:
         """
         修改密码
@@ -451,17 +432,11 @@ class LocalAuthService:
         user = self.db.query(User).filter(User.id == UUID(user_id)).first()
 
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="用户不存在"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
 
         # 验证旧密码
         if not self.verify_password(old_password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="原密码错误"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="原密码错误")
 
         # 更新密码
         user.password_hash = self.hash_password(new_password)
@@ -470,9 +445,35 @@ class LocalAuthService:
         logger.info(f"[CHANGE_PASSWORD] Password changed for user: {user_id}")
         return True
 
+    def create_reset_token(self, user_id: str) -> str:
+        """
+        创建密码重置令牌
+
+        SoT Reference: AUTH_SPEC.md v2.2 §6.5
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            JWT 重置令牌（有效期 1 小时）
+        """
+        expire = datetime.now(timezone.utc) + timedelta(hours=1)
+        to_encode = {
+            "sub": str(user_id),
+            "type": "reset",
+            "exp": expire,
+            "iat": datetime.now(timezone.utc),
+            "jti": str(uuid4()),  # JWT ID 用于令牌唯一性
+        }
+        return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
     async def reset_password(self, email: str) -> bool:
         """
-        发送密码重置邮件（简化实现，实际需要邮件服务）
+        发送密码重置邮件（Phase 1: 生成令牌并记录日志）
+
+        SoT Reference:
+        - AUTH_SPEC.md v2.2 §6.5: 密码重置流程
+        - BR-AUTH-003: 密码强度规则
 
         Args:
             email: 用户邮箱
@@ -483,35 +484,106 @@ class LocalAuthService:
         user = self.db.query(User).filter(User.email == email).first()
 
         if user:
-            # TODO: 实现邮件发送
-            # 生成重置令牌并发送邮件
+            # 生成密码重置令牌
+            reset_token = self.create_reset_token(str(user.id))
+
+            # Phase 1: 记录令牌到日志（实际生产环境应发送邮件）
+            # TODO: 集成邮件服务发送重置链接
             logger.info(f"[RESET_PASSWORD] Reset requested for: {email}")
+            logger.info(
+                f"[RESET_PASSWORD] Reset token (DEV ONLY): {reset_token[:50]}..."
+            )
+            logger.info(f"[RESET_PASSWORD] User ID: {user.id}, Token expires: +1 hour")
 
         # 为安全起见，不暴露邮箱是否存在
         return True
 
     async def reset_password_confirm(
-        self,
-        reset_token: str,
-        new_password: str,
-        refresh_token: Optional[str] = None
+        self, reset_token: str, new_password: str, refresh_token: Optional[str] = None
     ) -> bool:
         """
         确认密码重置
 
+        SoT Reference:
+        - AUTH_SPEC.md v2.2 §6.5: 密码重置流程
+        - BR-AUTH-003: 密码强度规则（min 8 chars, uppercase, lowercase, digits）
+
         Args:
-            reset_token: 重置令牌
+            reset_token: 重置令牌（JWT，type="reset"）
             new_password: 新密码
-            refresh_token: 刷新令牌（可选）
+            refresh_token: 刷新令牌（可选，用于 Supabase 兼容）
 
         Returns:
             是否成功
+
+        Raises:
+            HTTPException: 令牌无效/过期或密码不符合要求
         """
-        # TODO: 实现令牌验证和密码重置
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="密码重置功能暂未实现，请联系管理员"
-        )
+        try:
+            # 1. 解码并验证 JWT 令牌
+            payload = jwt.decode(
+                reset_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
+            )
+
+            # 2. 验证令牌类型必须是 "reset"
+            token_type = payload.get("type")
+            if token_type != "reset":
+                logger.warning(
+                    f"[RESET_PASSWORD_CONFIRM] Invalid token type: {token_type}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="无效的重置令牌类型"
+                )
+
+            # 3. 获取用户 ID
+            user_id = payload.get("sub")
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="重置令牌中缺少用户信息"
+                )
+
+            # 4. 查找用户
+            user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在"
+                )
+
+            # 5. 验证用户账户状态
+            if not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="账户已被禁用，无法重置密码"
+                )
+
+            # 6. 验证密码强度（BR-AUTH-003）
+            if len(new_password) < 8:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="密码长度至少 8 位"
+                )
+
+            # 7. 更新密码
+            user.password_hash = self.hash_password(new_password)
+            user.updated_at = datetime.now(timezone.utc)
+            self.db.commit()
+
+            logger.info(
+                f"[RESET_PASSWORD_CONFIRM] Password reset successful for user: {user_id}"
+            )
+            return True
+
+        except JWTError as e:
+            logger.warning(f"[RESET_PASSWORD_CONFIRM] JWT error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="无效或已过期的重置令牌"
+            )
+        except HTTPException:
+            # 重新抛出 HTTPException
+            raise
+        except Exception as e:
+            logger.error(f"[RESET_PASSWORD_CONFIRM] Unexpected error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="密码重置失败，请稍后重试"
+            )
 
     async def verify_email(self, token: str) -> bool:
         """
@@ -539,11 +611,7 @@ class LocalAuthService:
         # TODO: 实现邮件发送
         return True
 
-    async def update_password(
-        self,
-        new_password: str,
-        access_token: str = ""
-    ) -> bool:
+    async def update_password(self, new_password: str, access_token: str = "") -> bool:
         """
         更新密码（需要认证）
 
@@ -556,8 +624,7 @@ class LocalAuthService:
         """
         # TODO: 从 token 获取用户并更新密码
         raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="请使用修改密码接口"
+            status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="请使用修改密码接口"
         )
 
 

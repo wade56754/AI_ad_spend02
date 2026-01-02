@@ -13,11 +13,7 @@ from pydantic import BaseModel, Field
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user, require_role
-from backend.core.response import (
-    success_response,
-    error_response,
-    StandardResponse
-)
+from backend.core.response import success_response, error_response, StandardResponse
 from backend.core.error_codes import ErrorCode, BusinessErrorCodes
 from backend.models import User
 from backend.models.ledger import TransactionType, TransactionStatus
@@ -27,6 +23,7 @@ from backend.services.ledger_service import get_ledger_service, LedgerService
 # 定义分页响应类型
 class PaginatedResponse(BaseModel):
     """分页响应"""
+
     items: List[Any]
     total: int
     page: int
@@ -39,6 +36,7 @@ router = APIRouter(prefix="/ledger", tags=["ledger"])
 # Pydantic模型定义
 class TransactionCreateRequest(BaseModel):
     """创建交易请求"""
+
     transaction_type: TransactionType
     amount: Decimal = Field(..., gt=0, description="交易金额必须大于0")
     currency: str = Field(default="USD", pattern="^[A-Z]{3}$", description="货币代码")
@@ -52,12 +50,14 @@ class TransactionCreateRequest(BaseModel):
 
 class TransactionUpdateRequest(BaseModel):
     """更新交易请求"""
+
     status: TransactionStatus
     note: Optional[str] = Field(None, description="备注信息")
 
 
 class BudgetAllocationCreateRequest(BaseModel):
     """创建预算分配请求"""
+
     project_id: UUID
     category: str = Field(..., description="预算类别")
     allocated_amount: Decimal = Field(..., gt=0, description="分配金额")
@@ -65,6 +65,7 @@ class BudgetAllocationCreateRequest(BaseModel):
 
 class TransactionResponse(BaseModel):
     """交易响应"""
+
     id: str
     transaction_number: str
     transaction_type: str
@@ -83,6 +84,7 @@ class TransactionResponse(BaseModel):
 
 class AccountBalanceResponse(BaseModel):
     """账户余额响应"""
+
     account_id: Optional[str]
     project_id: Optional[str]
     currency: str
@@ -96,6 +98,7 @@ class AccountBalanceResponse(BaseModel):
 
 class BudgetAllocationResponse(BaseModel):
     """预算分配响应"""
+
     id: str
     category: str
     allocated_amount: float
@@ -112,7 +115,7 @@ class BudgetAllocationResponse(BaseModel):
 async def create_transaction(
     request: TransactionCreateRequest,
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance"]))
+    current_user: User = Depends(require_role(["admin", "finance"])),
 ):
     """
     创建财务交易记录
@@ -129,19 +132,21 @@ async def create_transaction(
             reference_id=request.reference_id,
             description=request.description,
             metadata=request.metadata,
-            user_id=current_user.id
+            user_id=current_user.id,
         )
 
         return success_response(
-            data=TransactionResponse(**ledger_service._transaction_to_dict(transaction)),
-            message="交易记录创建成功"
+            data=TransactionResponse(
+                **ledger_service._transaction_to_dict(transaction)
+            ),
+            message="交易记录创建成功",
         )
 
     except Exception as e:
         return error_response(
             code=BusinessErrorCodes.LEDGER_CREATE_ERROR.code,
             message=f"创建交易失败: {str(e)}",
-            status_code=BusinessErrorCodes.LEDGER_CREATE_ERROR.status_code
+            status_code=BusinessErrorCodes.LEDGER_CREATE_ERROR.status_code,
         )
 
 
@@ -156,7 +161,7 @@ async def get_transactions(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页大小"),
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
+    current_user: User = Depends(require_role(["admin", "finance", "project_owner"])),
 ):
     """
     获取交易记录列表
@@ -171,7 +176,7 @@ async def get_transactions(
             start_date=start_date,
             end_date=end_date,
             page=page,
-            size=size
+            size=size,
         )
 
         return success_response(data=result, message="获取交易记录成功")
@@ -180,16 +185,19 @@ async def get_transactions(
         return error_response(
             code=BusinessErrorCodes.LEDGER_QUERY_ERROR.code,
             message=f"获取交易记录失败: {str(e)}",
-            status_code=BusinessErrorCodes.LEDGER_QUERY_ERROR.status_code
+            status_code=BusinessErrorCodes.LEDGER_QUERY_ERROR.status_code,
         )
 
 
-@router.put("/transactions/{transaction_id}/status", response_model=StandardResponse[TransactionResponse])
+@router.put(
+    "/transactions/{transaction_id}/status",
+    response_model=StandardResponse[TransactionResponse],
+)
 async def update_transaction_status(
     transaction_id: UUID,
     request: TransactionUpdateRequest,
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance"]))
+    current_user: User = Depends(require_role(["admin", "finance"])),
 ):
     """
     更新交易状态
@@ -200,35 +208,39 @@ async def update_transaction_status(
             transaction_id=transaction_id,
             status=request.status,
             user_id=current_user.id,
-            note=request.note
+            note=request.note,
         )
 
         if not transaction:
             return error_response(
                 code=BusinessErrorCodes.TRANSACTION_NOT_FOUND.code,
                 message="交易记录不存在",
-                status_code=BusinessErrorCodes.TRANSACTION_NOT_FOUND.status_code
+                status_code=BusinessErrorCodes.TRANSACTION_NOT_FOUND.status_code,
             )
 
         return success_response(
-            data=TransactionResponse(**ledger_service._transaction_to_dict(transaction)),
-            message="交易状态更新成功"
+            data=TransactionResponse(
+                **ledger_service._transaction_to_dict(transaction)
+            ),
+            message="交易状态更新成功",
         )
 
     except Exception as e:
         return error_response(
             code=BusinessErrorCodes.LEDGER_UPDATE_ERROR.code,
             message=f"更新交易状态失败: {str(e)}",
-            status_code=BusinessErrorCodes.LEDGER_UPDATE_ERROR.status_code
+            status_code=BusinessErrorCodes.LEDGER_UPDATE_ERROR.status_code,
         )
 
 
-@router.get("/balance", response_model=StandardResponse[Optional[AccountBalanceResponse]])
+@router.get(
+    "/balance", response_model=StandardResponse[Optional[AccountBalanceResponse]]
+)
 async def get_account_balance(
     account_id: Optional[UUID] = Query(None, description="账户ID"),
     project_id: Optional[UUID] = Query(None, description="项目ID"),
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
+    current_user: User = Depends(require_role(["admin", "finance", "project_owner"])),
 ):
     """
     获取账户余额
@@ -236,28 +248,30 @@ async def get_account_balance(
     """
     try:
         balance_data = ledger_service.get_account_balance(
-            account_id=account_id,
-            project_id=project_id
+            account_id=account_id, project_id=project_id
         )
 
         return success_response(
             data=AccountBalanceResponse(**balance_data) if balance_data else None,
-            message="获取账户余额成功"
+            message="获取账户余额成功",
         )
 
     except Exception as e:
         return error_response(
             code=BusinessErrorCodes.BALANCE_QUERY_ERROR.code,
             message=f"获取账户余额失败: {str(e)}",
-            status_code=BusinessErrorCodes.BALANCE_QUERY_ERROR.status_code
+            status_code=BusinessErrorCodes.BALANCE_QUERY_ERROR.status_code,
         )
 
 
-@router.get("/projects/{project_id}/budget", response_model=StandardResponse[List[BudgetAllocationResponse]])
+@router.get(
+    "/projects/{project_id}/budget",
+    response_model=StandardResponse[List[BudgetAllocationResponse]],
+)
 async def get_project_budget_allocation(
     project_id: UUID,
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
+    current_user: User = Depends(require_role(["admin", "finance", "project_owner"])),
 ):
     """
     获取项目预算分配
@@ -268,14 +282,14 @@ async def get_project_budget_allocation(
 
         return success_response(
             data=[BudgetAllocationResponse(**allocation) for allocation in allocations],
-            message="获取项目预算分配成功"
+            message="获取项目预算分配成功",
         )
 
     except Exception as e:
         return error_response(
             code=BusinessErrorCodes.BUDGET_QUERY_ERROR.code,
             message=f"获取项目预算分配失败: {str(e)}",
-            status_code=BusinessErrorCodes.BUDGET_QUERY_ERROR.status_code
+            status_code=BusinessErrorCodes.BUDGET_QUERY_ERROR.status_code,
         )
 
 
@@ -283,7 +297,7 @@ async def get_project_budget_allocation(
 async def create_budget_allocation(
     request: BudgetAllocationCreateRequest,
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance"]))
+    current_user: User = Depends(require_role(["admin", "finance"])),
 ):
     """
     创建预算分配
@@ -294,7 +308,7 @@ async def create_budget_allocation(
             project_id=request.project_id,
             category=request.category,
             allocated_amount=request.allocated_amount,
-            user_id=current_user.id
+            user_id=current_user.id,
         )
 
         response_data = {
@@ -306,19 +320,20 @@ async def create_budget_allocation(
             "percentage_used": float(allocation.percentage_used),
             "is_active": allocation.is_active,
             "created_at": allocation.created_at.isoformat(),
-            "updated_at": allocation.updated_at.isoformat() if allocation.updated_at else None
+            "updated_at": allocation.updated_at.isoformat()
+            if allocation.updated_at
+            else None,
         }
 
         return success_response(
-            data=BudgetAllocationResponse(**response_data),
-            message="预算分配创建成功"
+            data=BudgetAllocationResponse(**response_data), message="预算分配创建成功"
         )
 
     except Exception as e:
         return error_response(
             code=BusinessErrorCodes.BUDGET_CREATE_ERROR.code,
             message=f"创建预算分配失败: {str(e)}",
-            status_code=BusinessErrorCodes.BUDGET_CREATE_ERROR.status_code
+            status_code=BusinessErrorCodes.BUDGET_CREATE_ERROR.status_code,
         )
 
 
@@ -329,7 +344,7 @@ async def get_transaction_statistics(
     start_date: Optional[date] = Query(None, description="开始日期"),
     end_date: Optional[date] = Query(None, description="结束日期"),
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance", "data_operator"]))
+    current_user: User = Depends(require_role(["admin", "finance", "project_owner"])),
 ):
     """
     获取交易统计信息
@@ -340,7 +355,7 @@ async def get_transaction_statistics(
             project_id=project_id,
             account_id=account_id,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
         )
 
         return success_response(data=statistics, message="获取交易统计成功")
@@ -349,7 +364,7 @@ async def get_transaction_statistics(
         return error_response(
             code=BusinessErrorCodes.STATISTICS_QUERY_ERROR.code,
             message=f"获取交易统计失败: {str(e)}",
-            status_code=BusinessErrorCodes.STATISTICS_QUERY_ERROR.status_code
+            status_code=BusinessErrorCodes.STATISTICS_QUERY_ERROR.status_code,
         )
 
 
@@ -364,7 +379,7 @@ async def export_transactions(
     format: str = Query("csv", pattern="^(csv|excel)$", description="导出格式"),
     request: Request = None,
     ledger_service: LedgerService = Depends(get_ledger_service),
-    current_user: User = Depends(require_role(["admin", "finance"]))
+    current_user: User = Depends(require_role(["admin", "finance"])),
 ):
     """
     导出交易记录
@@ -380,11 +395,12 @@ async def export_transactions(
             start_date=start_date,
             end_date=end_date,
             page=1,
-            size=10000  # 导出时使用较大的页面大小
+            size=10000,  # 导出时使用较大的页面大小
         )
 
         # 记录导出操作到审计日志
         from backend.services.audit_service import get_audit_service
+
         audit_service = get_audit_service()
         audit_service.log_data_export(
             user_id=current_user.id,
@@ -393,12 +409,14 @@ async def export_transactions(
             filters={
                 "project_id": str(project_id) if project_id else None,
                 "account_id": str(account_id) if account_id else None,
-                "transaction_type": transaction_type.value if transaction_type else None,
+                "transaction_type": transaction_type.value
+                if transaction_type
+                else None,
                 "status": status.value if status else None,
                 "start_date": start_date.isoformat() if start_date else None,
-                "end_date": end_date.isoformat() if end_date else None
+                "end_date": end_date.isoformat() if end_date else None,
             },
-            request=request
+            request=request,
         )
 
         return success_response(
@@ -406,16 +424,14 @@ async def export_transactions(
                 "download_url": f"/api/v1/ledger/download/transactions/{datetime.now().strftime('%Y%m%d_%H%M%S')}.{format}",
                 "total_records": result.total,
                 "format": format,
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.now().isoformat(),
             },
-            message="交易记录导出任务已创建"
+            message="交易记录导出任务已创建",
         )
 
     except Exception as e:
         return error_response(
             code=BusinessErrorCodes.EXPORT_ERROR.code,
             message=f"导出交易记录失败: {str(e)}",
-            status_code=BusinessErrorCodes.EXPORT_ERROR.status_code
+            status_code=BusinessErrorCodes.EXPORT_ERROR.status_code,
         )
-
-

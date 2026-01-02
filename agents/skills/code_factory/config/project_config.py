@@ -542,3 +542,4 @@ class MyModel(BaseModel):
     for v in violations:
         print(f"  ❌ {v['pattern']}: {v['reason']}")
 
+

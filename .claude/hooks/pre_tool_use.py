@@ -35,8 +35,8 @@ from typing import Any
 
 # Windows UTF-8 编码设置
 if sys.platform == "win32":
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # 设置日志
 LOG_DIR = Path(__file__).parent.parent / "logs"
@@ -48,7 +48,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler(LOG_FILE, encoding="utf-8"),
-    ]
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -66,11 +66,22 @@ try:
         check_code,
         is_compliant,
     )
+
     CHECKER_AVAILABLE = True
     logger.info("ComplianceChecker loaded successfully")
 except ImportError as e:
     CHECKER_AVAILABLE = False
     logger.warning(f"ComplianceChecker not available: {e}")
+
+# 导入 SoT 验证器 (v2.0 - 方案 C 轻量化)
+try:
+    from lib.sot_validator import SoTValidator, validate_code, is_sot_compliant
+
+    SOT_VALIDATOR_AVAILABLE = True
+    logger.info("SoTValidator loaded successfully (方案 C)")
+except ImportError as e:
+    SOT_VALIDATOR_AVAILABLE = False
+    logger.warning(f"SoTValidator not available: {e}")
 
     # 回退到内置检查
     class Severity:
@@ -84,14 +95,16 @@ except ImportError as e:
 
 # 业务层合法角色列表 (PRD v2.2)
 VALID_BUSINESS_ROLES = {
-    "ceo", "project_owner", "finance",
-    "pitcher", "account_manager", "admin"
+    "ceo",
+    "project_owner",
+    "finance",
+    "pitcher",
+    "account_manager",
+    "admin",
 }
 
 # 技术层合法角色列表 (MASTER.md v4.6 §INV-007)
-VALID_TECHNICAL_ROLES = {
-    "admin", "finance", "account_manager", "media_buyer"
-}
+VALID_TECHNICAL_ROLES = {"admin", "finance", "account_manager", "media_buyer"}
 
 # 废弃角色 (PRD v2.2 移除)
 DEPRECATED_ROLES = {"supervisor", "data_operator"}
@@ -108,8 +121,14 @@ PHASE2_PATTERNS = [
 
 # Forbidden patterns
 FORBIDDEN_PATTERNS = [
-    (r"\.(balance|current_balance)\s*[+\-*/]?=", "Direct balance modification forbidden"),
-    (r"status\s*[=!]=\s*['\"]?(draft|submitted|approved|rejected)['\"]?", "Legacy status name detected"),
+    (
+        r"\.(balance|current_balance)\s*[+\-*/]?=",
+        "Direct balance modification forbidden",
+    ),
+    (
+        r"status\s*[=!]=\s*['\"]?(draft|submitted|approved|rejected)['\"]?",
+        "Legacy status name detected",
+    ),
 ]
 
 # Bash dangerous commands
@@ -124,6 +143,7 @@ BASH_DANGEROUS_PATTERNS = [
 # 检查函数
 # =============================================================================
 
+
 def builtin_check_content(content: str, filepath: str) -> list[dict]:
     """内置检查（回退方案）"""
     violations = []
@@ -132,24 +152,32 @@ def builtin_check_content(content: str, filepath: str) -> list[dict]:
     # Phase 2 检查
     for pattern, message in PHASE2_PATTERNS:
         for match in re.finditer(pattern, content, re.IGNORECASE):
-            line_num = content[:match.start()].count("\n") + 1
-            violations.append({
-                "severity": Severity.CRITICAL,
-                "message": message,
-                "line": line_num,
-                "snippet": lines[line_num - 1].strip() if line_num <= len(lines) else "",
-            })
+            line_num = content[: match.start()].count("\n") + 1
+            violations.append(
+                {
+                    "severity": Severity.CRITICAL,
+                    "message": message,
+                    "line": line_num,
+                    "snippet": lines[line_num - 1].strip()
+                    if line_num <= len(lines)
+                    else "",
+                }
+            )
 
     # 禁止模式检查
     for pattern, message in FORBIDDEN_PATTERNS:
         for match in re.finditer(pattern, content, re.IGNORECASE):
-            line_num = content[:match.start()].count("\n") + 1
-            violations.append({
-                "severity": Severity.CRITICAL,
-                "message": message,
-                "line": line_num,
-                "snippet": lines[line_num - 1].strip() if line_num <= len(lines) else "",
-            })
+            line_num = content[: match.start()].count("\n") + 1
+            violations.append(
+                {
+                    "severity": Severity.CRITICAL,
+                    "message": message,
+                    "line": line_num,
+                    "snippet": lines[line_num - 1].strip()
+                    if line_num <= len(lines)
+                    else "",
+                }
+            )
 
     return violations
 
@@ -168,7 +196,9 @@ def check_write_tool(tool_input: dict) -> tuple[str, str | None]:
         return "approve", None
 
     # 只检查代码文件
-    if not any(file_path.endswith(ext) for ext in [".py", ".ts", ".tsx", ".js", ".jsx"]):
+    if not any(
+        file_path.endswith(ext) for ext in [".py", ".ts", ".tsx", ".js", ".jsx"]
+    ):
         return "approve", None
 
     # 使用 ComplianceChecker 或内置检查
@@ -178,9 +208,15 @@ def check_write_tool(tool_input: dict) -> tuple[str, str | None]:
         critical_violations = checker.get_critical_violations()
 
         if critical_violations:
-            reasons = [f"{v.file}:{v.line} - {v.message}" for v in critical_violations[:3]]
-            reason = f"Critical violations ({len(critical_violations)}): " + "; ".join(reasons)
-            logger.warning(f"Write rejected: {file_path} - {len(critical_violations)} critical violations")
+            reasons = [
+                f"{v.file}:{v.line} - {v.message}" for v in critical_violations[:3]
+            ]
+            reason = f"Critical violations ({len(critical_violations)}): " + "; ".join(
+                reasons
+            )
+            logger.warning(
+                f"Write rejected: {file_path} - {len(critical_violations)} critical violations"
+            )
             return "reject", reason
     else:
         violations = builtin_check_content(content, file_path)
@@ -189,7 +225,9 @@ def check_write_tool(tool_input: dict) -> tuple[str, str | None]:
         if critical:
             reasons = [f"Line {v['line']}: {v['message']}" for v in critical[:3]]
             reason = f"Critical violations ({len(critical)}): " + "; ".join(reasons)
-            logger.warning(f"Write rejected: {file_path} - {len(critical)} critical violations")
+            logger.warning(
+                f"Write rejected: {file_path} - {len(critical)} critical violations"
+            )
             return "reject", reason
 
     logger.info(f"Write approved: {file_path}")
@@ -210,7 +248,9 @@ def check_edit_tool(tool_input: dict) -> tuple[str, str | None]:
         return "approve", None
 
     # 只检查代码文件
-    if not any(file_path.endswith(ext) for ext in [".py", ".ts", ".tsx", ".js", ".jsx"]):
+    if not any(
+        file_path.endswith(ext) for ext in [".py", ".ts", ".tsx", ".js", ".jsx"]
+    ):
         return "approve", None
 
     # 使用 ComplianceChecker 或内置检查
@@ -222,7 +262,9 @@ def check_edit_tool(tool_input: dict) -> tuple[str, str | None]:
         if critical_violations:
             reasons = [f"{v.message}" for v in critical_violations[:3]]
             reason = f"Critical violations in edit: " + "; ".join(reasons)
-            logger.warning(f"Edit rejected: {file_path} - {len(critical_violations)} critical violations")
+            logger.warning(
+                f"Edit rejected: {file_path} - {len(critical_violations)} critical violations"
+            )
             return "reject", reason
     else:
         violations = builtin_check_content(new_string, file_path)
@@ -231,7 +273,9 @@ def check_edit_tool(tool_input: dict) -> tuple[str, str | None]:
         if critical:
             reasons = [f"{v['message']}" for v in critical[:3]]
             reason = f"Critical violations in edit: " + "; ".join(reasons)
-            logger.warning(f"Edit rejected: {file_path} - {len(critical)} critical violations")
+            logger.warning(
+                f"Edit rejected: {file_path} - {len(critical)} critical violations"
+            )
             return "reject", reason
 
     logger.info(f"Edit approved: {file_path}")
@@ -263,6 +307,7 @@ def check_bash_tool(tool_input: dict) -> tuple[str, str | None]:
 # =============================================================================
 # 主函数
 # =============================================================================
+
 
 def output_decision(decision: str, reason: str | None = None) -> None:
     """输出决策到 stdout"""

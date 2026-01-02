@@ -157,8 +157,8 @@ describe('Topup Types', () => {
     });
 
     describe('create action', () => {
-      it('should be allowed for media_buyer', () => {
-        expect(TOPUP_ACTION_ROLES['create']).toContain('media_buyer');
+      it('should be allowed for pitcher', () => {
+        expect(TOPUP_ACTION_ROLES['create']).toContain('pitcher');
       });
 
       it('should be allowed for account_manager', () => {
@@ -171,12 +171,12 @@ describe('Topup Types', () => {
     });
 
     describe('data_review actions', () => {
-      it('data_review_approve should be allowed for data_operator', () => {
-        expect(TOPUP_ACTION_ROLES['data_review_approve']).toContain('data_operator');
+      it('data_review_approve should be allowed for project_owner', () => {
+        expect(TOPUP_ACTION_ROLES['data_review_approve']).toContain('project_owner');
       });
 
-      it('data_review_reject should be allowed for data_operator', () => {
-        expect(TOPUP_ACTION_ROLES['data_review_reject']).toContain('data_operator');
+      it('data_review_reject should be allowed for project_owner', () => {
+        expect(TOPUP_ACTION_ROLES['data_review_reject']).toContain('project_owner');
       });
 
       it('data_review_approve should be allowed for admin', () => {
@@ -217,8 +217,8 @@ describe('Topup Types', () => {
     });
 
     describe('cancel action', () => {
-      it('should be allowed for media_buyer', () => {
-        expect(TOPUP_ACTION_ROLES['cancel']).toContain('media_buyer');
+      it('should be allowed for pitcher', () => {
+        expect(TOPUP_ACTION_ROLES['cancel']).toContain('pitcher');
       });
 
       it('should be allowed for account_manager', () => {
@@ -259,8 +259,8 @@ describe('Topup Types', () => {
   });
 
   describe('canPerformAction helper', () => {
-    describe('media_buyer role', () => {
-      const role = 'media_buyer';
+    describe('pitcher role', () => {
+      const role = 'pitcher';
 
       it('can create topup', () => {
         expect(canPerformAction('create', role)).toBe(true);
@@ -285,8 +285,8 @@ describe('Topup Types', () => {
       });
     });
 
-    describe('data_operator role', () => {
-      const role = 'data_operator';
+    describe('project_owner role', () => {
+      const role = 'project_owner';
 
       it('can data review approve', () => {
         expect(canPerformAction('data_review_approve', role)).toBe(true);
@@ -324,8 +324,8 @@ describe('Topup Types', () => {
         expect(canPerformAction('complete', role)).toBe(true);
       });
 
-      it('cannot data review', () => {
-        expect(canPerformAction('data_review_approve', role)).toBe(false);
+      it('can data review (finance has data_review permission)', () => {
+        expect(canPerformAction('data_review_approve', role)).toBe(true);
       });
     });
 
@@ -348,33 +348,33 @@ describe('Topup Types', () => {
 
   describe('getAvailableActions helper', () => {
     describe('draft status', () => {
-      it('media_buyer can submit and cancel', () => {
-        const actions = getAvailableActions('draft', 'media_buyer');
+      it('pitcher can submit and cancel', () => {
+        const actions = getAvailableActions('draft', 'pitcher');
         expect(actions.map((a) => a.action)).toContain('submit');
         expect(actions.map((a) => a.action)).toContain('cancel');
       });
 
-      it('data_operator has no actions', () => {
-        const actions = getAvailableActions('draft', 'data_operator');
+      it('project_owner has no actions on draft', () => {
+        const actions = getAvailableActions('draft', 'project_owner');
         expect(actions).toHaveLength(0);
       });
 
       it('submit targets pending_review', () => {
-        const actions = getAvailableActions('draft', 'media_buyer');
+        const actions = getAvailableActions('draft', 'pitcher');
         const submitAction = actions.find((a) => a.action === 'submit');
         expect(submitAction?.targetStatus).toBe('pending_review');
       });
     });
 
     describe('pending_review status', () => {
-      it('data_operator can approve and reject', () => {
-        const actions = getAvailableActions('pending_review', 'data_operator');
+      it('project_owner can approve and reject', () => {
+        const actions = getAvailableActions('pending_review', 'project_owner');
         expect(actions.map((a) => a.action)).toContain('data_review_approve');
         expect(actions.map((a) => a.action)).toContain('data_review_reject');
       });
 
-      it('media_buyer can only cancel', () => {
-        const actions = getAvailableActions('pending_review', 'media_buyer');
+      it('pitcher can only cancel', () => {
+        const actions = getAvailableActions('pending_review', 'pitcher');
         expect(actions).toHaveLength(1);
         expect(actions[0].action).toBe('cancel');
       });
@@ -394,8 +394,8 @@ describe('Topup Types', () => {
         expect(actions.map((a) => a.action)).toContain('complete');
       });
 
-      it('media_buyer cannot complete', () => {
-        const actions = getAvailableActions('paid', 'media_buyer');
+      it('pitcher cannot complete', () => {
+        const actions = getAvailableActions('paid', 'pitcher');
         expect(actions).toHaveLength(0);
       });
     });

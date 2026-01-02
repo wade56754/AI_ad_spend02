@@ -3,9 +3,8 @@
  *
  * TanStack Query v5 hooks for topup request management
  *
- * SoT: docs/10.module-specs/B1-topup-approval.md §5 API 接口
- * SoT: STATE_MACHINE.md v2.6 Section 3 (充值 7 状态机)
- * SoT: API_SOT.md v9.0 Section 5.6 (Topup endpoints)
+ * SoT: API_SOT.md v9.7 Section 10 (Topup Requests API)
+ * SoT: STATE_MACHINE.md v2.9 Section 9 (充值 7 状态机)
  *
  * 一句话定义: 管理充值申请的数据获取和状态变更
  *
@@ -25,20 +24,33 @@ import {
   getTopups,
   getTopup,
   getTopupsByProject,
+  getTopupLogs,
   createTopup,
+  submitTopup,
   reviewTopup,
   approveTopup,
+  payTopup,
+  confirmPaidTopup,
   rejectTopup,
   completeTopup,
   cancelTopup,
+  uploadReceipt,
   getTopupStats,
+  getTopupDashboard,
+  getAccountBalance,
 } from '../services';
 import type {
   TopupRequest,
   TopupListParams,
   TopupCreateInput,
-  TopupApproveInput,
+  TopupSubmitInput,
+  TopupDataReviewInput,
+  TopupFinanceApproveInput,
+  TopupCompleteInput,
   TopupRejectInput,
+  TopupCancelInput,
+  TopupApprovalLog,
+  TopupStatistics,
   TopupStatus,
 } from '../types';
 
@@ -94,11 +106,74 @@ export function useTopupsByProject(
  */
 export function useTopupStats(
   params: { project_id?: string; start_date?: string; end_date?: string } = {},
-  options?: Omit<UseQueryOptions<{ by_status: Record<TopupStatus, number>; total_amount: number; pending_count: number }>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<TopupStatistics>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
     queryKey: [...queryKeys.topups.all, 'stats', params],
     queryFn: () => getTopupStats(params),
+    ...options,
+  });
+}
+
+/**
+ * Fetch topup approval logs
+ */
+export function useTopupLogs(
+  id: string,
+  options?: Omit<UseQueryOptions<TopupApprovalLog[]>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: [...queryKeys.topups.detail(id), 'logs'],
+    queryFn: () => getTopupLogs(id),
+    enabled: !!id,
+    ...options,
+  });
+}
+
+/**
+ * Fetch topup dashboard data
+ */
+export function useTopupDashboard(
+  params: { project_id?: string; start_date?: string; end_date?: string } = {},
+  options?: Omit<
+    UseQueryOptions<{
+      pending_count: number;
+      today_amount: number;
+      week_amount: number;
+      month_amount: number;
+      by_status: Record<TopupStatus, number>;
+      recent_requests: TopupRequest[];
+    }>,
+    'queryKey' | 'queryFn'
+  >
+) {
+  return useQuery({
+    queryKey: [...queryKeys.topups.all, 'dashboard', params],
+    queryFn: () => getTopupDashboard(params),
+    ...options,
+  });
+}
+
+/**
+ * Fetch account balance
+ */
+export function useAccountBalance(
+  accountId: string,
+  options?: Omit<
+    UseQueryOptions<{
+      account_id: string;
+      available_balance: number;
+      pending_topups: number;
+      total_topups: number;
+      last_topup_at?: string;
+    }>,
+    'queryKey' | 'queryFn'
+  >
+) {
+  return useQuery({
+    queryKey: [...queryKeys.topups.all, 'accounts', accountId, 'balance'],
+    queryFn: () => getAccountBalance(accountId),
+    enabled: !!accountId,
     ...options,
   });
 }
@@ -123,10 +198,16 @@ export function useCreateTopup(
 }
 
 /**
- * Approve topup mutation
+ * Approve topup mutation (财务终审通过)
+ * finance_approve → paid
+ * SoT: STATE_MACHINE.md v2.9 Section 9
  */
 export function useApproveTopup(
-  options?: UseMutationOptions<TopupRequest, Error, { id: string; input?: TopupApproveInput }>
+  options?: UseMutationOptions<
+    TopupRequest,
+    Error,
+    { id: string; input?: TopupFinanceApproveInput }
+  >
 ) {
   const queryClient = useQueryClient();
 
@@ -161,13 +242,11 @@ export function useRejectTopup(
 /**
  * Complete topup mutation
  */
-export function useCompleteTopup(
-  options?: UseMutationOptions<TopupRequest, Error, string>
-) {
+export function useCompleteTopup(options?: UseMutationOptions<TopupRequest, Error, string>) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: completeTopup,
+    mutationFn: (id: string) => completeTopup(id),
     onSuccess: (data, id) => {
       queryClient.setQueryData(queryKeys.topups.detail(id), data);
       queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
@@ -183,13 +262,11 @@ export function useCompleteTopup(
  * draft | pending_review | finance_approve → cancelled
  * SoT: STATE_MACHINE.md v2.6 Section 3
  */
-export function useCancelTopup(
-  options?: UseMutationOptions<TopupRequest, Error, string>
-) {
+export function useCancelTopup(options?: UseMutationOptions<TopupRequest, Error, string>) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: cancelTopup,
+    mutationFn: (id: string) => cancelTopup(id),
     onSuccess: (data, id) => {
       queryClient.setQueryData(queryKeys.topups.detail(id), data);
       queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
@@ -201,10 +278,10 @@ export function useCancelTopup(
 /**
  * 数据复核通过
  * pending_review → finance_approve
- * SoT: STATE_MACHINE.md v2.6 Section 3
+ * SoT: STATE_MACHINE.md v2.9 Section 9
  */
 export function useReviewTopup(
-  options?: UseMutationOptions<TopupRequest, Error, { id: string; input?: TopupApproveInput }>
+  options?: UseMutationOptions<TopupRequest, Error, { id: string; input?: TopupDataReviewInput }>
 ) {
   const queryClient = useQueryClient();
 
@@ -213,6 +290,89 @@ export function useReviewTopup(
     onSuccess: (data, { id }) => {
       queryClient.setQueryData(queryKeys.topups.detail(id), data);
       queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 提交审批
+ * draft → pending_review
+ * SoT: STATE_MACHINE.md v2.9 Section 9
+ */
+export function useSubmitTopup(
+  options?: UseMutationOptions<TopupRequest, Error, { id: string; input?: TopupSubmitInput }>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }) => submitTopup(id, input),
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(queryKeys.topups.detail(id), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 记录付款信息
+ * SoT: API_SOT.md v9.7 §10.1
+ */
+export function usePayTopup(
+  options?: UseMutationOptions<
+    TopupRequest,
+    Error,
+    { id: string; input: { payment_reference: string; paid_at?: string } }
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }) => payTopup(id, input),
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(queryKeys.topups.detail(id), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 确认到账完成
+ * paid → completed
+ * SoT: STATE_MACHINE.md v2.9 Section 9
+ */
+export function useConfirmPaidTopup(
+  options?: UseMutationOptions<TopupRequest, Error, { id: string; input?: TopupCompleteInput }>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }) => confirmPaidTopup(id, input),
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(queryKeys.topups.detail(id), data);
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.lists() });
+      // Also invalidate ledger queries since completion creates an entry
+      queryClient.invalidateQueries({ queryKey: queryKeys.ledger.all });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 上传付款凭证
+ * SoT: API_SOT.md v9.7 §10.1
+ */
+export function useUploadReceipt(
+  options?: UseMutationOptions<{ url: string }, Error, { id: string; file: File }>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, file }) => uploadReceipt(id, file),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.topups.detail(id) });
     },
     ...options,
   });

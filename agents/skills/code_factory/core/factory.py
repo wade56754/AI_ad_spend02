@@ -37,12 +37,16 @@ from ..sot.loader import SotLoader, LoadedSotData
 from ..sot.whitelist import DynamicWhitelist
 from ..guardrails.recovery_loop import EditGuardrails
 from ..event_stream.stream import EventStream
-from ..repo_map.map_generator import RepoMapGenerator, RepoMap
+
+# v6.0: 使用 stub 实现
+from ..stubs import RepoMapGenerator, RepoMap
 from ..risk.classifier import RiskClassifier, RiskLevel
 
 if TYPE_CHECKING:
     from ..task_cards.models import TaskCard, TaskCardIndex
-    from ..prompts.injector import InjectedContext
+
+    # v6.0: 使用 stub 实现
+    from ..stubs import InjectedContext
 
 
 @dataclass
@@ -89,11 +93,13 @@ class GenerationContext:
             lines.append(self.prompt_context.system_constraints)
             lines.append("")
 
-        lines.extend([
-            f"## 需求: {self.requirement}",
-            f"## 模块: {self.module_id or '未指定'}",
-            "",
-        ])
+        lines.extend(
+            [
+                f"## 需求: {self.requirement}",
+                f"## 模块: {self.module_id or '未指定'}",
+                "",
+            ]
+        )
 
         # 任务指引 (v4.4 提示词系统)
         if self.prompt_context and self.prompt_context.task_guidance:
@@ -103,7 +109,9 @@ class GenerationContext:
 
         # 任务卡上下文
         if self.task_card:
-            lines.append(f"## 匹配任务卡: {self.task_card.task_id} (匹配度: {self.matched_task_score:.0%})")
+            lines.append(
+                f"## 匹配任务卡: {self.task_card.task_id} (匹配度: {self.matched_task_score:.0%})"
+            )
             lines.append(self.task_card.to_prompt_context())
             lines.append("")
 
@@ -442,14 +450,36 @@ class ContextEngine:
 
         # 如果白名单为空，使用默认值
         if not valid_roles:
-            valid_roles = {"admin", "finance", "pitcher", "account_manager", "ceo", "project_owner"}
+            valid_roles = {
+                "admin",
+                "finance",
+                "pitcher",
+                "account_manager",
+                "ceo",
+                "project_owner",
+            }
         if not valid_statuses:
             valid_statuses = {
-                "raw_submitted", "trend_pending", "trend_ok", "trend_flagged",
-                "trend_resolved", "final_pending", "final_confirmed", "final_locked"
+                "raw_submitted",
+                "trend_pending",
+                "trend_ok",
+                "trend_flagged",
+                "trend_resolved",
+                "final_pending",
+                "final_confirmed",
+                "final_locked",
             }
         if not valid_error_prefixes:
-            valid_error_prefixes = {"VAL", "AUTH", "BIZ", "DB", "INT", "SYS", "FIN", "RPT"}
+            valid_error_prefixes = {
+                "VAL",
+                "AUTH",
+                "BIZ",
+                "DB",
+                "INT",
+                "SYS",
+                "FIN",
+                "RPT",
+            }
 
         for file_path, content in code_files.items():
             # 使用 AST 分析
@@ -519,7 +549,14 @@ class ContextEngine:
                 whitelist = DynamicWhitelist.from_sot_data(self._sot_data)
 
         # 6 角色白名单 (MASTER.md v4.6 §2.4)
-        valid_roles = {"ceo", "project_owner", "finance", "pitcher", "account_manager", "admin"}
+        valid_roles = {
+            "ceo",
+            "project_owner",
+            "finance",
+            "pitcher",
+            "account_manager",
+            "admin",
+        }
         deprecated_roles = {"supervisor", "data_operator", "operator", "viewer"}
 
         # Phase 1 简化状态 (3 状态)
@@ -609,8 +646,7 @@ class ContextEngine:
             elif role in deprecated_roles:
                 trace_report["deprecated"].append(role)
                 issues.append(
-                    f"BLOCKING: {file_path} 使用了废弃角色 '{role}' "
-                    f"(应替换为 6 角色白名单中的角色)"
+                    f"BLOCKING: {file_path} 使用了废弃角色 '{role}' " f"(应替换为 6 角色白名单中的角色)"
                 )
             else:
                 trace_report["roles"]["untraced"].append(role)
@@ -641,15 +677,27 @@ class ContextEngine:
 
         # Phase 2 完整状态 (仅用于检测)
         phase2_states = {
-            "trend_pending", "trend_flagged", "trend_resolved",
-            "final_pending", "final_locked"
+            "trend_pending",
+            "trend_flagged",
+            "trend_resolved",
+            "final_pending",
+            "final_locked",
         }
 
         # 通用状态词 (忽略)
         generic_states = {
-            "draft", "submitted", "confirmed", "locked",
-            "pending", "completed", "active", "inactive",
-            "success", "error", "failed", "loading"
+            "draft",
+            "submitted",
+            "confirmed",
+            "locked",
+            "pending",
+            "completed",
+            "active",
+            "inactive",
+            "success",
+            "error",
+            "failed",
+            "loading",
         }
 
         found_states = set()
@@ -685,9 +733,7 @@ class ContextEngine:
             if f'"{role}"' in content or f"'{role}'" in content:
                 if role not in trace_report["deprecated"]:
                     trace_report["deprecated"].append(role)
-                    issues.append(
-                        f"BLOCKING: {file_path} 使用了废弃角色 '{role}'"
-                    )
+                    issues.append(f"BLOCKING: {file_path} 使用了废弃角色 '{role}'")
 
         return issues
 
@@ -697,7 +743,9 @@ class ContextEngine:
             try:
                 from ..task_cards.loader import TaskCardLoader
 
-                task_cards_path = self.config.project_dir / "docs" / "guides" / "TASK_CARDS_v2.md"
+                task_cards_path = (
+                    self.config.project_dir / "docs" / "guides" / "TASK_CARDS_v2.md"
+                )
                 if task_cards_path.exists():
                     loader = TaskCardLoader(task_cards_path)
                     self._task_card_index = loader.load()
@@ -736,26 +784,21 @@ class ContextEngine:
 
     def _get_prompt_injector(self):
         """获取提示词注入器 (懒加载)
-        
-        v5.0 更新: 现在 prompts 模块已实现，支持:
-        - 内置模板 (prompts/templates/)
-        - 项目级覆盖 (.claude/prompts/)
-        - 动态 SoT 版本注入
+
+        v6.0 更新: prompts 模块已废弃，使用 stub 实现
+        实际功能由 Claude Code 直接对话替代
         """
         if self._prompt_injector is None:
             try:
-                from ..prompts.injector import PromptInjector
-                from ..prompts.loader import PromptLoader
+                # v6.0: 使用 stub 实现
+                from ..stubs import PromptInjector, PromptLoader
 
-                # 创建加载器 (传入项目目录和 SoT 加载器)
-                loader = PromptLoader(
-                    project_dir=self.config.project_dir,
-                    sot_loader=self.sot_loader  # 动态 SoT 版本注入
-                )
-                self._prompt_injector = PromptInjector(loader)
+                loader = PromptLoader()
+                self._prompt_injector = PromptInjector()
             except Exception as e:
-                # 提示词系统加载失败不影响主流程，但记录警告
+                # 提示词系统加载失败不影响主流程
                 import logging
+
                 logging.warning(f"提示词系统初始化失败: {e}")
 
         return self._prompt_injector
@@ -858,6 +901,7 @@ class ContextEngine:
 # =========================================================================
 # 便捷函数
 # =========================================================================
+
 
 def run_context_engine(
     project_dir: Path,

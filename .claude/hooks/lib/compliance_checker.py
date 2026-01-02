@@ -32,20 +32,24 @@ from .config import (
 # 严重级别
 # =============================================================================
 
+
 class Severity(str, Enum):
     """违规严重级别"""
+
     CRITICAL = "critical"  # 必须修复，阻止提交
-    WARNING = "warning"    # 建议修复，不阻止
-    INFO = "info"          # 提示信息
+    WARNING = "warning"  # 建议修复，不阻止
+    INFO = "info"  # 提示信息
 
 
 # =============================================================================
 # 违规记录
 # =============================================================================
 
+
 @dataclass
 class Violation:
     """单条违规记录"""
+
     severity: Severity
     message: str
     file: str
@@ -59,9 +63,11 @@ class Violation:
 # 检查规则
 # =============================================================================
 
+
 @dataclass
 class Rule:
     """检查规则定义"""
+
     id: str
     pattern: str | Pattern
     message: str
@@ -176,13 +182,71 @@ SOT_RULES = [
     ),
 ]
 
+# 废弃角色检测规则 (补充)
+DEPRECATED_ROLE_RULES = [
+    Rule(
+        id="ROLE-004",
+        pattern=r"['\"]media_buyer['\"]",
+        message="Non-standard role 'media_buyer' detected",
+        severity=Severity.WARNING,
+        suggestion="Use 'pitcher' instead (MASTER.md v4.8 §2.4)",
+    ),
+    Rule(
+        id="ROLE-005",
+        pattern=r"UserRole\.MEDIA_BUYER",
+        message="Deprecated enum 'UserRole.MEDIA_BUYER' detected",
+        severity=Severity.WARNING,
+        suggestion="Use 'UserRole.PITCHER' instead (requires DB migration)",
+    ),
+    Rule(
+        id="ROLE-006",
+        pattern=r"UserRole\.DATA_OPERATOR",
+        message="Deprecated enum 'UserRole.DATA_OPERATOR' detected",
+        severity=Severity.WARNING,
+        suggestion="This role should be removed (requires DB migration)",
+    ),
+]
+
+# 高风险模块检测规则
+HIGH_RISK_RULES = [
+    Rule(
+        id="RISK-001",
+        pattern=r"class\s+\w*[Ll]edger|ledger_entries|LedgerEntry",
+        message="High-risk module: Ledger (M8-LEDGER)",
+        severity=Severity.WARNING,
+        suggestion="Ledger modifications require OpenSpec proposal",
+    ),
+    Rule(
+        id="RISK-002",
+        pattern=r"class\s+\w*[Rr]econciliation|recon_|_recon",
+        message="High-risk module: Reconciliation (M9-RECON)",
+        severity=Severity.WARNING,
+        suggestion="Reconciliation modifications require OpenSpec proposal",
+    ),
+    Rule(
+        id="RISK-003",
+        pattern=r"gross_profit|net_profit|calculate_profit",
+        message="High-risk module: Profit calculation (M10-PROFIT)",
+        severity=Severity.WARNING,
+        suggestion="Profit calculation modifications require OpenSpec proposal",
+    ),
+]
+
 # 所有规则
-ALL_RULES = PHASE2_RULES + FINANCE_RULES + ROLE_RULES + SOT_RULES
+ALL_RULES = (
+    PHASE2_RULES
+    + FINANCE_RULES
+    + ROLE_RULES
+    + DEPRECATED_ROLE_RULES
+    + SOT_RULES
+    + HIGH_RISK_RULES
+)
 
 
 # =============================================================================
 # 合规检查器
 # =============================================================================
+
 
 class ComplianceChecker:
     """SoT 合规检查器"""
@@ -221,7 +285,7 @@ class ComplianceChecker:
             # 查找所有匹配
             for match in rule.compiled.finditer(content):
                 found_violations = True
-                line_num = content[:match.start()].count("\n") + 1
+                line_num = content[: match.start()].count("\n") + 1
                 snippet = lines[line_num - 1].strip() if line_num <= len(lines) else ""
 
                 violation = Violation(
@@ -310,6 +374,7 @@ class ComplianceChecker:
 # =============================================================================
 # 便捷函数
 # =============================================================================
+
 
 def check_code(filepath: str, content: str) -> List[Violation]:
     """

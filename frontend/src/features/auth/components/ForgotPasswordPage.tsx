@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { forgotPassword } from '../services/authApi';
 
 export function ForgotPasswordPage() {
@@ -49,12 +52,13 @@ export function ForgotPasswordPage() {
             </p>
             <p className="mt-4 text-sm text-gray-500">
               没有收到邮件？请检查垃圾邮件文件夹，或
-              <button
+              <Button
+                variant="link"
                 onClick={() => setIsSubmitted(false)}
-                className="text-blue-600 hover:text-blue-500 ml-1"
+                className="text-blue-600 hover:text-blue-500 ml-1 p-0 h-auto"
               >
                 重新发送
-              </button>
+              </Button>
             </p>
             <div className="mt-6">
               <Link
@@ -84,15 +88,15 @@ export function ForgotPasswordPage() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
               邮箱地址
-            </label>
-            <input
+            </Label>
+            <Input
               id="email"
               name="email"
               type="email"
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isSubmitting}
@@ -101,13 +105,13 @@ export function ForgotPasswordPage() {
           </div>
 
           <div>
-            <button
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full"
             >
               {isSubmitting ? '发送中...' : '发送重置链接'}
-            </button>
+            </Button>
           </div>
 
           <div className="text-center text-sm">
@@ -123,5 +127,6 @@ export function ForgotPasswordPage() {
     </div>
   );
 }
+
 
 

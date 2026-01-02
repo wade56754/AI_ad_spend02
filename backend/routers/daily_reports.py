@@ -37,7 +37,7 @@ from backend.config.excel_column_mapping import (
     MAX_FILE_SIZE_BYTES,
     MAX_FILE_SIZE_MB,
     MAX_EXPORT_ROWS,
-    EXCEL_COLUMN_DEFINITIONS
+    EXCEL_COLUMN_DEFINITIONS,
 )
 
 from backend.core.db import get_db
@@ -46,19 +46,19 @@ from backend.core.response import (
     success_response,
     error_response,
     paginated_response,
-    StandardResponse
+    StandardResponse,
 )
 from backend.core.error_codes import (
     SystemErrorCodes,
     BusinessErrorCodes,
     ValidationErrorCodes,
-    AuthErrorCodes
+    AuthErrorCodes,
 )
 from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 from backend.models import User
 from backend.schemas.daily_report import (
@@ -91,10 +91,9 @@ def get_daily_report_service(db: Session = Depends(get_db)) -> DailyReportServic
 
 # ============ 辅助函数：Excel数据解析 ============
 
+
 def parse_excel_row_to_report(
-    row: pd.Series,
-    row_number: int,
-    df_columns: List[str]
+    row: pd.Series, row_number: int, df_columns: List[str]
 ) -> Tuple[Optional[DailyReportCreateRequest], Optional[DailyReportImportError]]:
     """
     解析Excel单行数据为DailyReportCreateRequest对象
@@ -128,7 +127,7 @@ def parse_excel_row_to_report(
                         error_code="MISSING_REQUIRED_COLUMN",
                         error_message=f"缺少必需列：{col_def.cn_name}",
                         field_name=col_def.field_name,
-                        suggestion=f"请确保Excel中包含'{col_def.cn_name}'或'{col_def.en_name}'列"
+                        suggestion=f"请确保Excel中包含'{col_def.cn_name}'或'{col_def.en_name}'列",
                     )
                 # 可选列，使用默认值
                 report_data[col_def.field_name] = col_def.default
@@ -138,7 +137,7 @@ def parse_excel_row_to_report(
             cell_value = row[matched_column]
 
             # 处理空值
-            if pd.isna(cell_value) or cell_value == '':
+            if pd.isna(cell_value) or cell_value == "":
                 if col_def.required:
                     return None, DailyReportImportError(
                         row_number=row_number,
@@ -146,7 +145,7 @@ def parse_excel_row_to_report(
                         error_message=f"必需字段为空",
                         field_name=col_def.field_name,
                         invalid_value="(空)",
-                        suggestion=f"请填写'{col_def.cn_name}'"
+                        suggestion=f"请填写'{col_def.cn_name}'",
                     )
                 report_data[col_def.field_name] = col_def.default
                 continue
@@ -170,23 +169,29 @@ def parse_excel_row_to_report(
                     converted_value = int(float(cell_value))  # 处理"123.0"这种情况
 
                     # 范围验证
-                    if col_def.min_value is not None and converted_value < col_def.min_value:
+                    if (
+                        col_def.min_value is not None
+                        and converted_value < col_def.min_value
+                    ):
                         return None, DailyReportImportError(
                             row_number=row_number,
                             error_code="VALUE_OUT_OF_RANGE",
                             error_message=f"值{converted_value}小于最小值{col_def.min_value}",
                             field_name=col_def.field_name,
                             invalid_value=str(cell_value),
-                            suggestion=f"'{col_def.cn_name}'必须≥{col_def.min_value}"
+                            suggestion=f"'{col_def.cn_name}'必须≥{col_def.min_value}",
                         )
-                    if col_def.max_value is not None and converted_value > col_def.max_value:
+                    if (
+                        col_def.max_value is not None
+                        and converted_value > col_def.max_value
+                    ):
                         return None, DailyReportImportError(
                             row_number=row_number,
                             error_code="VALUE_OUT_OF_RANGE",
                             error_message=f"值{converted_value}超过最大值{col_def.max_value}",
                             field_name=col_def.field_name,
                             invalid_value=str(cell_value),
-                            suggestion=f"'{col_def.cn_name}'必须≤{col_def.max_value}"
+                            suggestion=f"'{col_def.cn_name}'必须≤{col_def.max_value}",
                         )
 
                 elif col_def.data_type == "decimal":
@@ -194,14 +199,16 @@ def parse_excel_row_to_report(
                     converted_value = Decimal(str(cell_value))
 
                     # 范围验证
-                    if col_def.min_value is not None and converted_value < Decimal(str(col_def.min_value)):
+                    if col_def.min_value is not None and converted_value < Decimal(
+                        str(col_def.min_value)
+                    ):
                         return None, DailyReportImportError(
                             row_number=row_number,
                             error_code="VALUE_OUT_OF_RANGE",
                             error_message=f"值{converted_value}小于最小值{col_def.min_value}",
                             field_name=col_def.field_name,
                             invalid_value=str(cell_value),
-                            suggestion=f"'{col_def.cn_name}'必须≥{col_def.min_value}"
+                            suggestion=f"'{col_def.cn_name}'必须≥{col_def.min_value}",
                         )
 
                 elif col_def.data_type == "str":
@@ -216,7 +223,7 @@ def parse_excel_row_to_report(
                             error_message=f"字符串长度{len(converted_value)}超过最大限制{col_def.max_length}",
                             field_name=col_def.field_name,
                             invalid_value=converted_value[:50] + "...",
-                            suggestion=f"'{col_def.cn_name}'长度不能超过{col_def.max_length}字符"
+                            suggestion=f"'{col_def.cn_name}'长度不能超过{col_def.max_length}字符",
                         )
 
                 else:
@@ -231,7 +238,7 @@ def parse_excel_row_to_report(
                     error_message=f"数据类型转换失败：{str(e)}",
                     field_name=col_def.field_name,
                     invalid_value=str(cell_value),
-                    suggestion=f"'{col_def.cn_name}'应为{col_def.data_type}类型"
+                    suggestion=f"'{col_def.cn_name}'应为{col_def.data_type}类型",
                 )
 
         # 创建请求对象（Pydantic会进行二次验证）
@@ -243,7 +250,7 @@ def parse_excel_row_to_report(
                 row_number=row_number,
                 error_code="VALIDATION_ERROR",
                 error_message=f"数据验证失败：{str(e)}",
-                invalid_data=report_data
+                invalid_data=report_data,
             )
 
     except Exception as e:
@@ -252,7 +259,7 @@ def parse_excel_row_to_report(
             row_number=row_number,
             error_code="PARSE_ERROR",
             error_message=f"解析行数据失败：{str(e)}",
-            invalid_data=row.to_dict() if hasattr(row, 'to_dict') else {}
+            invalid_data=row.to_dict() if hasattr(row, "to_dict") else {},
         )
 
 
@@ -260,7 +267,7 @@ def parse_excel_row_to_report(
     "",
     response_model=StandardResponse[DailyReportListResponse],
     summary="获取日报列表",
-    description="获取日报列表，支持分页和筛选"
+    description="获取日报列表，支持分页和筛选",
 )
 async def list_daily_reports(
     page: int = Query(1, ge=1, description="页码"),
@@ -268,7 +275,11 @@ async def list_daily_reports(
     report_date_start: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     report_date_end: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
-    status: Optional[str] = Query(None, pattern="^(raw_submitted|trend_pending|trend_ok|trend_flagged|trend_resolved|final_pending|final_confirmed|final_locked)$", description="日报状态（8状态机）"),
+    status: Optional[str] = Query(
+        None,
+        pattern="^(raw_submitted|trend_pending|trend_ok|trend_flagged|trend_resolved|final_pending|final_confirmed|final_locked)$",
+        description="日报状态（8状态机）",
+    ),
     media_buyer_id: Optional[int] = Query(None, description="投手ID"),
     project_id: Optional[int] = Query(None, description="项目ID"),
     region: Optional[str] = Query(None, description="投放地区"),
@@ -276,7 +287,7 @@ async def list_daily_reports(
     team_id: Optional[str] = Query(None, description="团队ID (UUID)"),
     submitter_name: Optional[str] = Query(None, description="投手名称（模糊匹配）"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取日报列表API
@@ -293,11 +304,13 @@ async def list_daily_reports(
             region=region,
             platform=platform,
             team_id=team_id,
-            submitter_name=submitter_name
+            submitter_name=submitter_name,
         )
 
         # 获取日报列表
-        reports, total = service.get_daily_reports(params, current_user, page, page_size)
+        reports, total = service.get_daily_reports(
+            params, current_user, page, page_size
+        )
 
         # 转换为响应格式，填充投手和团队信息
         report_responses = []
@@ -308,10 +321,12 @@ async def list_daily_reports(
 
             # 填充投手名称
             if report.submitter:
-                report_submitter_name = report.submitter.username or report.submitter.email
+                report_submitter_name = (
+                    report.submitter.username or report.submitter.email
+                )
             elif report.ad_account and report.ad_account.name:
                 # 从账户名提取投手名（格式: "投手名_平台_地区"）
-                account_parts = report.ad_account.name.split('_')
+                account_parts = report.ad_account.name.split("_")
                 if len(account_parts) >= 1:
                     report_submitter_name = account_parts[0]
 
@@ -321,32 +336,31 @@ async def list_daily_reports(
 
             # 创建响应对象，使用 model_copy 更新额外字段
             resp = DailyReportResponse.model_validate(report)
-            resp = resp.model_copy(update={
-                'submitter_name': report_submitter_name,
-                'team_name': report_team_name
-            })
+            resp = resp.model_copy(
+                update={
+                    "submitter_name": report_submitter_name,
+                    "team_name": report_team_name,
+                }
+            )
             report_responses.append(resp)
 
         # 返回分页响应
         return paginated_response(
-            items=report_responses,
-            page=page,
-            page_size=page_size,
-            total=total
+            items=report_responses, page=page, page_size=page_size, total=total
         )
 
     except (BusinessLogicError, ResourceNotFoundError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         logger.exception(f"Unexpected error in list_daily_reports: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -355,13 +369,13 @@ async def list_daily_reports(
     response_model=StandardResponse[DailyReportResponse],
     status_code=status.HTTP_201_CREATED,
     summary="创建日报",
-    description="创建新的日报记录"
+    description="创建新的日报记录",
 )
 async def create_daily_report(
     request: DailyReportCreateRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    # AUTH_SPEC.md v2.0: 仅 media_buyer 和 admin 可创建日报，data_operator 禁止创建
-    current_user: User = Depends(require_role(["media_buyer", "admin"]))
+    # AUTH_SPEC.md v2.0: 仅 pitcher 和 admin 可创建日报
+    current_user: User = Depends(require_role(["pitcher", "admin"])),
 ):
     """
     创建日报API
@@ -380,44 +394,42 @@ async def create_daily_report(
         report_response = DailyReportResponse.model_validate(report)
 
         return success_response(
-            data=report_response,
-            message="日报创建成功",
-            status_code=status.HTTP_201_CREATED
+            data=report_response, message="日报创建成功", status_code=status.HTTP_201_CREATED
         )
 
     except ResourceConflictError as e:
         # BIZ_003: 日报已存在 → 409
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_003",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_003",
             message=str(e),
-            status_code=status.HTTP_409_CONFLICT
+            status_code=status.HTTP_409_CONFLICT,
         )
     except ResourceNotFoundError as e:
         # BIZ_002: 广告账户不存在 → 404
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_002",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_002",
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND,
         )
     except BusinessLogicError as e:
         # BIZ_201: 报表日期为未来日期 → 400
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except PermissionDeniedError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
+            code=str(e.error_code) if hasattr(e, "error_code") else "PERMISSION_DENIED",
             message=str(e),
-            status_code=status.HTTP_403_FORBIDDEN
+            status_code=status.HTTP_403_FORBIDDEN,
         )
     except Exception as e:
         logger.exception(f"Unexpected error in create_daily_report: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -425,14 +437,14 @@ async def create_daily_report(
     "/stats",
     response_model=StandardResponse[dict],
     summary="获取日报状态统计",
-    description="获取各状态的日报数量统计"
+    description="获取各状态的日报数量统计",
 )
 async def get_daily_report_stats(
     project_id: Optional[int] = Query(None, description="项目ID"),
     start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取日报状态统计API - 返回各状态的日报数量
@@ -452,7 +464,7 @@ async def get_daily_report_stats(
             current_user=current_user,
             project_id=project_id,
             start_date=start_date,
-            end_date=end_date
+            end_date=end_date,
         )
         return success_response(data=stats)
     except Exception as e:
@@ -460,7 +472,7 @@ async def get_daily_report_stats(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -474,11 +486,10 @@ from backend.models.accounts.ad_account import AdAccount
     "/filter-options/teams",
     response_model=StandardResponse[List[Dict[str, Any]]],
     summary="获取团队筛选选项",
-    description="获取可用的团队列表，用于筛选下拉"
+    description="获取可用的团队列表，用于筛选下拉",
 )
 async def get_team_options(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """
     获取团队筛选选项 API (v2.1)
@@ -493,7 +504,7 @@ async def get_team_options(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取团队选项失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -501,11 +512,10 @@ async def get_team_options(
     "/filter-options/submitters",
     response_model=StandardResponse[List[str]],
     summary="获取投手筛选选项",
-    description="从账户名提取的投手列表，用于筛选下拉"
+    description="从账户名提取的投手列表，用于筛选下拉",
 )
 async def get_submitter_options(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """
     获取投手筛选选项 API (v2.1)
@@ -518,8 +528,8 @@ async def get_submitter_options(
         # 提取投手名（账户名的第一段）
         submitters = set()
         for (name,) in accounts:
-            if name and '_' in name:
-                submitter = name.split('_')[0]
+            if name and "_" in name:
+                submitter = name.split("_")[0]
                 if submitter:
                     submitters.add(submitter)
 
@@ -531,7 +541,7 @@ async def get_submitter_options(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取投手选项失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -539,12 +549,12 @@ async def get_submitter_options(
     "/{report_id}",
     response_model=StandardResponse[DailyReportResponse],
     summary="获取日报详情",
-    description="根据ID获取日报详情"
+    description="根据ID获取日报详情",
 )
 async def get_daily_report(
     report_id: int,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取日报详情API
@@ -561,22 +571,22 @@ async def get_daily_report(
     except ResourceNotFoundError as e:
         # BIZ_002: 日报不存在 → 404
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_002",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_002",
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND,
         )
     except PermissionDeniedError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
+            code=str(e.error_code) if hasattr(e, "error_code") else "PERMISSION_DENIED",
             message=str(e),
-            status_code=status.HTTP_403_FORBIDDEN
+            status_code=status.HTTP_403_FORBIDDEN,
         )
     except Exception as e:
         logger.exception(f"Unexpected error in get_daily_report: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -584,13 +594,13 @@ async def get_daily_report(
     "/{report_id}",
     response_model=StandardResponse[DailyReportResponse],
     summary="更新日报",
-    description="更新日报信息（仅未审核的日报可更新）"
+    description="更新日报信息（仅未审核的日报可更新）",
 )
 async def update_daily_report(
     report_id: int,
     request: DailyReportUpdateRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["media_buyer", "admin"]))
+    current_user: User = Depends(require_role(["pitcher", "admin"])),
 ):
     """
     更新日报API
@@ -602,28 +612,25 @@ async def update_daily_report(
         # 转换为响应格式
         report_response = DailyReportResponse.model_validate(report)
 
-        return success_response(
-            data=report_response,
-            message="日报更新成功"
-        )
+        return success_response(data=report_response, message="日报更新成功")
 
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -631,12 +638,12 @@ async def update_daily_report(
     "/{report_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="删除日报",
-    description="删除日报记录（仅管理员可操作）"
+    description="删除日报记录（仅管理员可操作）",
 )
 async def delete_daily_report(
     report_id: int,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["admin"]))
+    current_user: User = Depends(require_role(["admin"])),
 ):
     """
     删除日报API
@@ -651,19 +658,19 @@ async def delete_daily_report(
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except PermissionDeniedError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
+            code=str(e.error_code) if hasattr(e, "error_code") else "PERMISSION_DENIED",
             message=str(e),
-            status_code=status.HTTP_403_FORBIDDEN
+            status_code=status.HTTP_403_FORBIDDEN,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -674,19 +681,22 @@ from enum import Enum as PyEnum
 
 class ReviewAction(str, PyEnum):
     """审核动作枚举"""
-    APPROVE = "approve"           # 通过（流转到下一状态）
-    REJECT = "reject"             # 驳回（退回原始状态或标记异常）
+
+    APPROVE = "approve"  # 通过（流转到下一状态）
+    REJECT = "reject"  # 驳回（退回原始状态或标记异常）
     REQUEST_REVISION = "request_revision"  # 要求修改（退回投手修改）
 
 
 class DailyReportReviewRequest(BaseModel):
     """统一审核请求"""
+
     action: str = Field(..., description="审核动作: approve/reject/request_revision")
     audit_notes: Optional[str] = Field(None, max_length=500, description="审核说明")
 
 
 class DailyReportReviewResponse(BaseModel):
     """统一审核响应"""
+
     report_id: int
     old_status: str
     new_status: str
@@ -714,14 +724,14 @@ class DailyReportReviewResponse(BaseModel):
     - trend_flagged + request_revision → raw_submitted
     - final_pending + approve → final_confirmed
 
-    **权限:** supervisor/data_operator/admin
-    """
+    **权限:** project_owner/admin
+    """,
 )
 async def review_daily_report(
     report_id: int,
     request: DailyReportReviewRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin", "supervisor"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     统一审核日报 API
@@ -748,7 +758,7 @@ async def review_daily_report(
             return error_response(
                 code="VAL_001",
                 message=f"无效的审核动作: {action}，允许的值: approve/reject/request_revision",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         # 根据当前状态和动作确定目标状态
@@ -769,7 +779,7 @@ async def review_daily_report(
             return error_response(
                 code="STATE_400",
                 message=f"当前状态 '{old_status}' 不支持 '{action}' 操作",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         target_status = transition_map[transition_key]
@@ -783,13 +793,15 @@ async def review_daily_report(
                 report_id=report_id,
                 target_status=DailyReportStatus.TREND_OK,
                 audit_request=audit_request,
-                current_user=current_user
+                current_user=current_user,
             )
         elif target_status == "trend_flagged":
             report = service.flag_trend_anomaly(report_id, audit_request, current_user)
             warnings.append("日报已标记为趋势异常，需人工复核")
         elif target_status == "trend_resolved":
-            report = service.resolve_trend_anomaly(report_id, audit_request, current_user)
+            report = service.resolve_trend_anomaly(
+                report_id, audit_request, current_user
+            )
         elif target_status == "raw_submitted":
             # 退回投手修改
             report.status = "raw_submitted"
@@ -803,10 +815,12 @@ async def review_daily_report(
                 report_id=report_id,
                 target_status=DailyReportStatus.FINAL_PENDING,
                 audit_request=audit_request,
-                current_user=current_user
+                current_user=current_user,
             )
         elif target_status == "final_confirmed":
-            report = service.confirm_final_report(report_id, audit_request, current_user)
+            report = service.confirm_final_report(
+                report_id, audit_request, current_user
+            )
 
         # Phase 1 警告
         phase_config = get_phase_config()
@@ -820,7 +834,7 @@ async def review_daily_report(
         action_messages = {
             "approve": "审核通过",
             "reject": "审核驳回",
-            "request_revision": "已要求修改"
+            "request_revision": "已要求修改",
         }
 
         response = DailyReportReviewResponse(
@@ -829,7 +843,7 @@ async def review_daily_report(
             new_status=new_status,
             action=action,
             message=f"{action_messages.get(action, action)}: {old_status} → {new_status}",
-            warnings=warnings
+            warnings=warnings,
         )
 
         logger.info(
@@ -843,20 +857,20 @@ async def review_daily_report(
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         logger.exception(f"Error in review_daily_report: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="审核失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -867,13 +881,13 @@ async def review_daily_report(
     "/{report_id}/trend-flag",
     response_model=StandardResponse[DailyReportResponse],
     summary="标记趋势异常",
-    description="将日报标记为趋势异常，需人工复核 (trend_pending → trend_flagged)"
+    description="将日报标记为趋势异常，需人工复核 (trend_pending → trend_flagged)",
 )
 async def flag_trend_anomaly(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     标记趋势异常API (STATE_MACHINE.md v2.6 第8章)
@@ -882,27 +896,24 @@ async def flag_trend_anomaly(
     try:
         report = service.flag_trend_anomaly(report_id, request, current_user)
         report_response = DailyReportResponse.model_validate(report)
-        return success_response(
-            data=report_response,
-            message="日报已标记为趋势异常"
-        )
+        return success_response(data=report_response, message="日报已标记为趋势异常")
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -910,13 +921,13 @@ async def flag_trend_anomaly(
     "/{report_id}/trend-resolve",
     response_model=StandardResponse[DailyReportResponse],
     summary="解决趋势异常",
-    description="运营确认趋势异常已解决 (trend_flagged → trend_resolved)"
+    description="运营确认趋势异常已解决 (trend_flagged → trend_resolved)",
 )
 async def resolve_trend_anomaly(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     解决趋势异常API (STATE_MACHINE.md v2.6 第8章)
@@ -925,27 +936,24 @@ async def resolve_trend_anomaly(
     try:
         report = service.resolve_trend_anomaly(report_id, request, current_user)
         report_response = DailyReportResponse.model_validate(report)
-        return success_response(
-            data=report_response,
-            message="趋势异常已解决"
-        )
+        return success_response(data=report_response, message="趋势异常已解决")
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -953,13 +961,13 @@ async def resolve_trend_anomaly(
     "/{report_id}/real-spend",
     response_model=StandardResponse[DailyReportResponse],
     summary="录入 real 消耗",
-    description="运营录入真实消耗数据 (trend_ok/trend_resolved → final_pending)"
+    description="运营录入真实消耗数据 (trend_ok/trend_resolved → final_pending)",
 )
 async def update_real_spend(
     report_id: int,
     request: RealSpendRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     录入 real 消耗 API (API_SOT.md v9.0 第 9.5 节)
@@ -968,70 +976,69 @@ async def update_real_spend(
     try:
         report = service.update_real_spend(report_id, request, current_user)
         report_response = DailyReportResponse.model_validate(report)
-        return success_response(
-            data=report_response,
-            message="真实消耗已录入，等待确认final粉数"
-        )
+        return success_response(data=report_response, message="真实消耗已录入，等待确认final粉数")
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
-@router.post(
+@router.put(
     "/{report_id}/final-confirm",
     response_model=StandardResponse[DailyReportResponse],
     summary="确认最终粉数",
-    description="运营确认最终粉数 (final_pending → final_confirmed)"
+    description="确认有效粉数 (TASK-RPT-007)。Phase 1: trend_ok → final_confirmed; Phase 2: final_pending → final_confirmed",
 )
 async def confirm_final_report(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
-    确认最终粉数API (STATE_MACHINE.md v2.6 第8章)
-    final_pending → final_confirmed
+    确认最终粉数API (TASK-RPT-007, STATE_MACHINE.md v2.8 §4)
+
+    支持两种流转路径:
+    - Phase 1 简化流程: trend_ok → final_confirmed (直接确认)
+    - Phase 2 完整流程: final_pending → final_confirmed
+
+    权限: project_owner, admin (BR-RPT-008)
     """
     try:
         report = service.confirm_final_report(report_id, request, current_user)
         report_response = DailyReportResponse.model_validate(report)
-        return success_response(
-            data=report_response,
-            message="最终粉数已确认"
-        )
+        return success_response(data=report_response, message="最终粉数已确认")
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1039,13 +1046,13 @@ async def confirm_final_report(
     "/{report_id}/final-lock",
     response_model=StandardResponse[DailyReportResponse],
     summary="锁定日报",
-    description="锁定日报进入计费，终态 (final_confirmed → final_locked)"
+    description="锁定日报进入计费，终态 (final_confirmed → final_locked)",
 )
 async def lock_final_report(
     report_id: int,
     request: DailyReportAuditRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     锁定日报API (STATE_MACHINE.md v2.6 第8章)
@@ -1054,27 +1061,24 @@ async def lock_final_report(
     try:
         report = service.lock_final_report(report_id, request, current_user)
         report_response = DailyReportResponse.model_validate(report)
-        return success_response(
-            data=report_response,
-            message="日报已锁定，进入计费"
-        )
+        return success_response(data=report_response, message="日报已锁定，进入计费")
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1082,13 +1086,13 @@ async def lock_final_report(
     "/batch-import",
     response_model=StandardResponse[DailyReportBatchImportResponse],
     summary="批量导入日报",
-    description="批量导入日报记录"
+    description="批量导入日报记录",
 )
 async def batch_import_daily_reports(
     request: DailyReportBatchImportRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"])),
-    parse_errors: List[DailyReportImportError] = []
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
+    parse_errors: List[DailyReportImportError] = [],
 ):
     """
     批量导入日报API
@@ -1109,17 +1113,19 @@ async def batch_import_daily_reports(
         )
 
         # 批量导入
-        success_count, error_count, errors, imported_ids = service.batch_import_daily_reports(
-            request, current_user
-        )
+        (
+            success_count,
+            error_count,
+            errors,
+            imported_ids,
+        ) = service.batch_import_daily_reports(request, current_user)
 
         # 计算处理时间
         processing_time = (datetime.utcnow() - start_time).total_seconds()
 
         # 转换错误格式
         error_responses = [
-            DailyReportImportError.model_validate(error)
-            for error in errors
+            DailyReportImportError.model_validate(error) for error in errors
         ]
 
         # 合并解析阶段的错误
@@ -1133,7 +1139,7 @@ async def batch_import_daily_reports(
             error_count=total_error_count,
             errors=all_errors,
             imported_ids=imported_ids,
-            processing_time_seconds=processing_time
+            processing_time_seconds=processing_time,
         )
 
         logger.info(
@@ -1142,21 +1148,20 @@ async def batch_import_daily_reports(
         )
 
         return success_response(
-            data=response,
-            message=f"批量导入完成，成功{success_count}条，失败{total_error_count}条"
+            data=response, message=f"批量导入完成，成功{success_count}条，失败{total_error_count}条"
         )
 
     except BusinessLogicError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ_001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ_001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1164,13 +1169,13 @@ async def batch_import_daily_reports(
     "/import-file",
     response_model=StandardResponse[DailyReportBatchImportResponse],
     summary="文件导入日报",
-    description="通过Excel文件导入日报"
+    description="通过Excel文件导入日报",
 )
 async def import_daily_reports_from_file(
     file: UploadFile = File(..., description="Excel文件"),
     skip_errors: bool = Query(True, description="是否跳过错误继续导入（默认True）"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     文件导入日报API
@@ -1188,12 +1193,12 @@ async def import_daily_reports_from_file(
         )
 
         # 1. 验证文件类型
-        if not file.filename.endswith(('.xlsx', '.xls')):
+        if not file.filename.endswith((".xlsx", ".xls")):
             logger.warning(f"Invalid file type: {file.filename}")
             return error_response(
                 code=BusinessErrorCodes.INVALID_FILE_TYPE.code,
                 message="只支持Excel文件格式（.xlsx, .xls）",
-                status_code=BusinessErrorCodes.INVALID_FILE_TYPE.status_code
+                status_code=BusinessErrorCodes.INVALID_FILE_TYPE.status_code,
             )
 
         # 2. 读取文件内容并验证大小
@@ -1207,7 +1212,7 @@ async def import_daily_reports_from_file(
             return error_response(
                 code=BusinessErrorCodes.FILE_TOO_LARGE.code,
                 message=f"文件大小{file_size / 1024 / 1024:.2f}MB超过限制{MAX_FILE_SIZE_MB}MB",
-                status_code=BusinessErrorCodes.FILE_TOO_LARGE.status_code
+                status_code=BusinessErrorCodes.FILE_TOO_LARGE.status_code,
             )
 
         logger.info(f"File size: {file_size / 1024:.2f}KB")
@@ -1220,7 +1225,7 @@ async def import_daily_reports_from_file(
             return error_response(
                 code=BusinessErrorCodes.EXCEL_PARSE_ERROR.code,
                 message=f"Excel文件解析失败：{str(e)}",
-                status_code=BusinessErrorCodes.EXCEL_PARSE_ERROR.status_code
+                status_code=BusinessErrorCodes.EXCEL_PARSE_ERROR.status_code,
             )
 
         if df.empty:
@@ -1228,10 +1233,12 @@ async def import_daily_reports_from_file(
             return error_response(
                 code=BusinessErrorCodes.EMPTY_FILE.code,
                 message="Excel文件为空，没有数据可导入",
-                status_code=BusinessErrorCodes.EMPTY_FILE.status_code
+                status_code=BusinessErrorCodes.EMPTY_FILE.status_code,
             )
 
-        logger.info(f"Excel parsed successfully: {len(df)} rows, columns={list(df.columns)}")
+        logger.info(
+            f"Excel parsed successfully: {len(df)} rows, columns={list(df.columns)}"
+        )
 
         # 4. 验证列是否完整
         valid, missing_columns = validate_column_exists(list(df.columns))
@@ -1240,7 +1247,7 @@ async def import_daily_reports_from_file(
             return error_response(
                 code=BusinessErrorCodes.MISSING_COLUMNS.code,
                 message=f"缺少必需列：{', '.join(missing_columns)}",
-                status_code=BusinessErrorCodes.MISSING_COLUMNS.status_code
+                status_code=BusinessErrorCodes.MISSING_COLUMNS.status_code,
             )
 
         # 5. 逐行解析数据
@@ -1250,7 +1257,9 @@ async def import_daily_reports_from_file(
         for index, row in df.iterrows():
             row_number = index + 2  # +2因为Excel从1开始且第1行是表头
 
-            request, error = parse_excel_row_to_report(row, row_number, list(df.columns))
+            request, error = parse_excel_row_to_report(
+                row, row_number, list(df.columns)
+            )
 
             if error:
                 parse_errors.append(error)
@@ -1275,9 +1284,9 @@ async def import_daily_reports_from_file(
                     error_count=len(parse_errors),
                     errors=parse_errors,
                     imported_ids=[],
-                    processing_time_seconds=0
+                    processing_time_seconds=0,
                 ),
-                message=f"文件解析失败，共{len(parse_errors)}个错误。请修复后重新导入，或设置skip_errors=true跳过错误行"
+                message=f"文件解析失败，共{len(parse_errors)}个错误。请修复后重新导入，或设置skip_errors=true跳过错误行",
             )
 
         # 7. 如果没有有效数据，返回错误
@@ -1290,22 +1299,18 @@ async def import_daily_reports_from_file(
                     error_count=len(parse_errors),
                     errors=parse_errors,
                     imported_ids=[],
-                    processing_time_seconds=0
+                    processing_time_seconds=0,
                 ),
-                message="没有有效数据可导入"
+                message="没有有效数据可导入",
             )
 
         # 8. 批量导入（调用现有的批量导入API）
         batch_request = DailyReportBatchImportRequest(
-            reports=reports,
-            skip_errors=skip_errors
+            reports=reports, skip_errors=skip_errors
         )
 
         return await batch_import_daily_reports(
-            batch_request,
-            service,
-            current_user,
-            parse_errors  # 传递解析阶段的错误
+            batch_request, service, current_user, parse_errors  # 传递解析阶段的错误
         )
 
     except Exception as e:
@@ -1313,22 +1318,20 @@ async def import_daily_reports_from_file(
         return error_response(
             code="SYS-500",
             message=f"文件处理失败：{str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
-@router.get(
-    "/export",
-    summary="导出日报",
-    description="导出日报数据为Excel文件"
-)
+@router.get("/export", summary="导出日报", description="导出日报数据为Excel文件")
 async def export_daily_reports(
     report_date_start: Optional[str] = Query(None, description="开始日期"),
     report_date_end: Optional[str] = Query(None, description="结束日期"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
     status: Optional[str] = Query(None, description="审核状态"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["finance", "admin", "data_operator", "account_manager"]))
+    current_user: User = Depends(
+        require_role(["finance", "admin", "project_owner", "account_manager"])
+    ),
 ):
     """
     导出日报API
@@ -1351,7 +1354,7 @@ async def export_daily_reports(
             report_date_start=report_date_start,
             report_date_end=report_date_end,
             ad_account_id=ad_account_id,
-            status=status
+            status=status,
         )
 
         # 先统计总数（检查是否超限）
@@ -1367,7 +1370,7 @@ async def export_daily_reports(
                     f"导出数据量({total}条)超过限制({MAX_EXPORT_ROWS}条)。"
                     f"请缩小筛选范围（如缩短日期范围、指定账户等）或分批导出"
                 ),
-                status_code=BusinessErrorCodes.EXPORT_LIMIT_EXCEEDED.status_code
+                status_code=BusinessErrorCodes.EXPORT_LIMIT_EXCEEDED.status_code,
             )
 
         # 获取所有符合条件的日报
@@ -1380,7 +1383,7 @@ async def export_daily_reports(
             return error_response(
                 code=BusinessErrorCodes.NO_DATA.code,
                 message="没有符合条件的数据可导出",
-                status_code=BusinessErrorCodes.NO_DATA.status_code
+                status_code=BusinessErrorCodes.NO_DATA.status_code,
             )
 
         logger.info(f"Exporting {len(reports)} records")
@@ -1388,39 +1391,51 @@ async def export_daily_reports(
         # 转换为DataFrame（使用安全的属性访问）
         data = []
         for report in reports:
-            data.append({
-                'ID': report.id,
-                '报表日期': report.report_date,
-                '广告账户ID': report.ad_account_id,
-                '广告账户': getattr(report.ad_account, 'name', '') if report.ad_account else '',
-                '广告系列': report.campaign_name or '',
-                '广告组': report.ad_group_name or '',
-                '广告创意': report.ad_creative_name or '',
-                '展示次数': report.impressions,
-                '点击次数': report.clicks,
-                '消耗金额': float(report.spend),
-                '转化次数': report.conversions,
-                '新增粉丝': report.new_follows,
-                'CPA': float(report.cpa) if report.cpa else '',
-                'ROAS': float(report.roas) if report.roas else '',
-                '状态': report.status,
-                '创建人': getattr(report.creator, 'name', '') if report.creator else '',
-                '创建时间': report.created_at.strftime('%Y-%m-%d %H:%M:%S') if report.created_at else '',
-                '审核人': getattr(report.auditor, 'name', '') if report.auditor else '',
-                '审核时间': report.audit_time.strftime('%Y-%m-%d %H:%M:%S') if report.audit_time else '',
-                '备注': report.notes or '',
-                '审核说明': report.audit_notes or ''
-            })
+            data.append(
+                {
+                    "ID": report.id,
+                    "报表日期": report.report_date,
+                    "广告账户ID": report.ad_account_id,
+                    "广告账户": getattr(report.ad_account, "name", "")
+                    if report.ad_account
+                    else "",
+                    "广告系列": report.campaign_name or "",
+                    "广告组": report.ad_group_name or "",
+                    "广告创意": report.ad_creative_name or "",
+                    "展示次数": report.impressions,
+                    "点击次数": report.clicks,
+                    "消耗金额": float(report.spend),
+                    "转化次数": report.conversions,
+                    "新增粉丝": report.new_follows,
+                    "CPA": float(report.cpa) if report.cpa else "",
+                    "ROAS": float(report.roas) if report.roas else "",
+                    "状态": report.status,
+                    "创建人": getattr(report.creator, "name", "")
+                    if report.creator
+                    else "",
+                    "创建时间": report.created_at.strftime("%Y-%m-%d %H:%M:%S")
+                    if report.created_at
+                    else "",
+                    "审核人": getattr(report.auditor, "name", "")
+                    if report.auditor
+                    else "",
+                    "审核时间": report.audit_time.strftime("%Y-%m-%d %H:%M:%S")
+                    if report.audit_time
+                    else "",
+                    "备注": report.notes or "",
+                    "审核说明": report.audit_notes or "",
+                }
+            )
 
         df = pd.DataFrame(data)
 
         # 创建Excel文件
         output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='日报数据')
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="日报数据")
 
             # 调整列宽
-            worksheet = writer.sheets['日报数据']
+            worksheet = writer.sheets["日报数据"]
             for column in worksheet.columns:
                 max_length = 0
                 column_letter = column[0].column_letter
@@ -1438,15 +1453,13 @@ async def export_daily_reports(
         # 生成文件名
         file_name = f"daily_reports_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
 
-        logger.info(
-            f"Export completed: {len(reports)} records, filename={file_name}"
-        )
+        logger.info(f"Export completed: {len(reports)} records, filename={file_name}")
 
         # 返回文件流
         return StreamingResponse(
             BytesIO(output.read()),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": f"attachment; filename={file_name}"}
+            headers={"Content-Disposition": f"attachment; filename={file_name}"},
         )
 
     except Exception as e:
@@ -1454,7 +1467,7 @@ async def export_daily_reports(
         return error_response(
             code="SYS-500",
             message=f"导出失败：{str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -1462,7 +1475,7 @@ async def export_daily_reports(
     "/statistics",
     response_model=StandardResponse[DailyReportStatisticsResponse],
     summary="获取日报统计",
-    description="获取日报统计数据"
+    description="获取日报统计数据",
 )
 async def get_daily_report_statistics(
     report_date_start: Optional[str] = Query(None, description="开始日期"),
@@ -1472,7 +1485,9 @@ async def get_daily_report_statistics(
     media_buyer_id: Optional[int] = Query(None, description="投手ID"),
     project_id: Optional[int] = Query(None, description="项目ID"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "admin", "finance", "account_manager"]))
+    current_user: User = Depends(
+        require_role(["project_owner", "admin", "finance", "account_manager"])
+    ),
 ):
     """
     获取日报统计API
@@ -1485,7 +1500,7 @@ async def get_daily_report_statistics(
             ad_account_id=ad_account_id,
             status=status,
             media_buyer_id=media_buyer_id,
-            project_id=project_id
+            project_id=project_id,
         )
 
         # 获取统计数据
@@ -1500,7 +1515,7 @@ async def get_daily_report_statistics(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1508,12 +1523,12 @@ async def get_daily_report_statistics(
     "/{report_id}/audit-logs",
     response_model=StandardResponse[List[DailyReportAuditLogResponse]],
     summary="获取日报审核日志",
-    description="获取日报的操作日志记录"
+    description="获取日报的操作日志记录",
 )
 async def get_daily_report_audit_logs(
     report_id: int,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取日报审核日志API
@@ -1527,19 +1542,25 @@ async def get_daily_report_audit_logs(
         # 转换 AuditLog 为 DailyReportAuditLogResponse 格式
         log_responses = []
         for log in logs:
-            log_responses.append(DailyReportAuditLogResponse(
-                id=log.id,
-                daily_report_id=int(log.resource_id) if log.resource_id else report_id,
-                action=log.action,
-                old_status=log.old_values.get("status") if log.old_values else None,
-                new_status=log.new_values.get("status") if log.new_values else None,
-                audit_user_id=log.user_id,
-                audit_user_name=log.user.name if log.user else "Unknown",
-                audit_time=log.created_at,
-                audit_notes=log.new_values.get("audit_notes") if log.new_values else None,
-                ip_address=log.ip_address,
-                user_agent=log.user_agent
-            ))
+            log_responses.append(
+                DailyReportAuditLogResponse(
+                    id=log.id,
+                    daily_report_id=int(log.resource_id)
+                    if log.resource_id
+                    else report_id,
+                    action=log.action,
+                    old_status=log.old_values.get("status") if log.old_values else None,
+                    new_status=log.new_values.get("status") if log.new_values else None,
+                    audit_user_id=log.user_id,
+                    audit_user_name=log.user.name if log.user else "Unknown",
+                    audit_time=log.created_at,
+                    audit_notes=log.new_values.get("audit_notes")
+                    if log.new_values
+                    else None,
+                    ip_address=log.ip_address,
+                    user_agent=log.user_agent,
+                )
+            )
 
         return success_response(data=log_responses)
 
@@ -1547,32 +1568,36 @@ async def get_daily_report_audit_logs(
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except PermissionDeniedError as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "PERMISSION_DENIED",
+            code=str(e.error_code) if hasattr(e, "error_code") else "PERMISSION_DENIED",
             message=str(e),
-            status_code=status.HTTP_403_FORBIDDEN
+            status_code=status.HTTP_403_FORBIDDEN,
         )
     except Exception as e:
         logger.exception(f"Unexpected error in get_daily_report_audit_logs: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="系统内部错误",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
 # ============ 趋势风控自动化端点 (STATE_MACHINE.md v2.6 第8.3节) ============
 
-from backend.services.trend_risk_control_service import TrendRiskControlService, TrendRiskCheckResult
+from backend.services.trend_risk_control_service import (
+    TrendRiskControlService,
+    TrendRiskCheckResult,
+)
 from pydantic import BaseModel
 from typing import Dict, Any
 
 
 class TrendCheckResponse(BaseModel):
     """趋势风控检查响应"""
+
     report_id: int
     passed: bool
     new_status: str
@@ -1583,6 +1608,7 @@ class TrendCheckResponse(BaseModel):
 
 class BatchTrendCheckResponse(BaseModel):
     """批量趋势风控检查响应"""
+
     total_checked: int
     passed_count: int
     flagged_count: int
@@ -1599,12 +1625,12 @@ def get_trend_risk_service(db: Session = Depends(get_db)) -> TrendRiskControlSer
     "/{report_id}/trend-check",
     response_model=StandardResponse[TrendCheckResponse],
     summary="执行趋势风控检查",
-    description="对指定日报执行 TF-001/002/003 风控规则检查 (trend_pending → trend_ok/trend_flagged)"
+    description="对指定日报执行 TF-001/002/003 风控规则检查 (trend_pending → trend_ok/trend_flagged)",
 )
 async def execute_trend_check(
     report_id: int,
     trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     执行趋势风控检查 API (STATE_MACHINE.md v2.6 第8.3节)
@@ -1627,24 +1653,26 @@ async def execute_trend_check(
             new_status=report.status,
             triggered_rules=[r.value for r in check_result.triggered_rules],
             trend_flag_reason=check_result.trend_flag_reason,
-            details=check_result.details
+            details=check_result.details,
         )
 
-        message = "风控检查通过" if check_result.passed else f"风控异常: {check_result.trend_flag_reason}"
+        message = (
+            "风控检查通过"
+            if check_result.passed
+            else f"风控异常: {check_result.trend_flag_reason}"
+        )
         return success_response(data=response, message=message)
 
     except ValueError as e:
         return error_response(
-            code="STATE_400",
-            message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            code="STATE_400", message=str(e), status_code=status.HTTP_400_BAD_REQUEST
         )
     except Exception as e:
         logger.exception(f"Error in trend check for report {report_id}: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="风控检查失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1652,13 +1680,13 @@ async def execute_trend_check(
     "/{report_id}/trigger-trend-check",
     response_model=StandardResponse[DailyReportResponse],
     summary="触发趋势风控检查",
-    description="将日报状态从 raw_submitted 流转到 trend_pending，准备进行风控检查"
+    description="将日报状态从 raw_submitted 流转到 trend_pending，准备进行风控检查",
 )
 async def trigger_trend_check(
     report_id: int,
     trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
     daily_report_service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["media_buyer", "data_operator", "admin"]))
+    current_user: User = Depends(require_role(["pitcher", "project_owner", "admin"])),
 ):
     """
     触发趋势风控检查 API (STATE_MACHINE.md v2.6 第8章)
@@ -1674,28 +1702,25 @@ async def trigger_trend_check(
 
         report_response = DailyReportResponse.model_validate(updated_report)
         return success_response(
-            data=report_response,
-            message="已触发趋势风控检查，状态已更新为 trend_pending"
+            data=report_response, message="已触发趋势风控检查，状态已更新为 trend_pending"
         )
 
     except ValueError as e:
         return error_response(
-            code="STATE_400",
-            message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            code="STATE_400", message=str(e), status_code=status.HTTP_400_BAD_REQUEST
         )
     except ResourceNotFoundError as e:
         return error_response(
             code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
             message=str(e),
-            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code,
         )
     except Exception as e:
         logger.exception(f"Error triggering trend check for report {report_id}: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="触发风控检查失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1703,13 +1728,13 @@ async def trigger_trend_check(
     "/batch-trend-check",
     response_model=StandardResponse[BatchTrendCheckResponse],
     summary="批量执行趋势风控检查",
-    description="对所有 trend_pending 状态的日报执行风控检查"
+    description="对所有 trend_pending 状态的日报执行风控检查",
 )
 async def batch_execute_trend_check(
     ad_account_id: Optional[int] = Query(None, description="广告账户ID筛选"),
     report_date: Optional[str] = Query(None, description="报告日期筛选 (YYYY-MM-DD)"),
     trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
-    current_user: User = Depends(require_role(["data_operator", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
     批量执行趋势风控检查 API (STATE_MACHINE.md v2.6 第8.3节)
@@ -1726,12 +1751,12 @@ async def batch_execute_trend_check(
         parsed_date = None
         if report_date:
             from datetime import datetime as dt
+
             parsed_date = dt.strptime(report_date, "%Y-%m-%d").date()
 
         # 执行批量检查
         results = trend_service.batch_execute_trend_check(
-            ad_account_id=ad_account_id,
-            report_date=parsed_date
+            ad_account_id=ad_account_id, report_date=parsed_date
         )
 
         # 统计结果
@@ -1742,23 +1767,21 @@ async def batch_execute_trend_check(
         # 构建详细结果
         result_details = []
         for report_id, passed, error in results:
-            result_details.append({
-                "report_id": report_id,
-                "passed": passed,
-                "error": error
-            })
+            result_details.append(
+                {"report_id": report_id, "passed": passed, "error": error}
+            )
 
         response = BatchTrendCheckResponse(
             total_checked=len(results),
             passed_count=passed_count,
             flagged_count=flagged_count,
             error_count=error_count,
-            results=result_details
+            results=result_details,
         )
 
         return success_response(
             data=response,
-            message=f"批量风控检查完成: 通过 {passed_count}, 异常 {flagged_count}, 错误 {error_count}"
+            message=f"批量风控检查完成: 通过 {passed_count}, 异常 {flagged_count}, 错误 {error_count}",
         )
 
     except Exception as e:
@@ -1766,7 +1789,7 @@ async def batch_execute_trend_check(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="批量风控检查失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1774,7 +1797,7 @@ async def batch_execute_trend_check(
     "/trend-flagged",
     response_model=StandardResponse[DailyReportListResponse],
     summary="获取趋势异常日报列表",
-    description="获取所有被标记为 trend_flagged 状态的日报"
+    description="获取所有被标记为 trend_flagged 状态的日报",
 )
 async def get_trend_flagged_reports(
     page: int = Query(1, ge=1, description="页码"),
@@ -1783,7 +1806,7 @@ async def get_trend_flagged_reports(
     report_date_start: Optional[str] = Query(None, description="开始日期"),
     report_date_end: Optional[str] = Query(None, description="结束日期"),
     trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
-    current_user: User = Depends(require_role(["data_operator", "admin", "finance"]))
+    current_user: User = Depends(require_role(["project_owner", "admin", "finance"])),
 ):
     """
     获取趋势异常日报列表 API
@@ -1796,9 +1819,11 @@ async def get_trend_flagged_reports(
         parsed_end = None
         if report_date_start:
             from datetime import datetime as dt
+
             parsed_start = dt.strptime(report_date_start, "%Y-%m-%d").date()
         if report_date_end:
             from datetime import datetime as dt
+
             parsed_end = dt.strptime(report_date_end, "%Y-%m-%d").date()
 
         # 获取异常日报
@@ -1806,7 +1831,7 @@ async def get_trend_flagged_reports(
             ad_account_id=ad_account_id,
             report_date_start=parsed_start,
             report_date_end=parsed_end,
-            limit=page_size * page  # 获取足够的数据进行分页
+            limit=page_size * page,  # 获取足够的数据进行分页
         )
 
         # 手动分页
@@ -1817,15 +1842,11 @@ async def get_trend_flagged_reports(
 
         # 转换为响应格式
         report_responses = [
-            DailyReportResponse.model_validate(report)
-            for report in paginated_reports
+            DailyReportResponse.model_validate(report) for report in paginated_reports
         ]
 
         return paginated_response(
-            items=report_responses,
-            page=page,
-            page_size=page_size,
-            total=total
+            items=report_responses, page=page, page_size=page_size, total=total
         )
 
     except Exception as e:
@@ -1833,7 +1854,7 @@ async def get_trend_flagged_reports(
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取异常日报列表失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1841,11 +1862,11 @@ async def get_trend_flagged_reports(
     "/trend-pending-count",
     response_model=StandardResponse[Dict[str, int]],
     summary="获取待风控检查日报数量",
-    description="获取当前 trend_pending 状态的日报数量"
+    description="获取当前 trend_pending 状态的日报数量",
 )
 async def get_trend_pending_count(
     trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
-    current_user: User = Depends(require_role(["data_operator", "admin", "finance"]))
+    current_user: User = Depends(require_role(["project_owner", "admin", "finance"])),
 ):
     """
     获取待风控检查日报数量 API
@@ -1853,15 +1874,14 @@ async def get_trend_pending_count(
     try:
         count = trend_service.get_pending_trend_check_count()
         return success_response(
-            data={"pending_count": count},
-            message=f"当前有 {count} 个日报待风控检查"
+            data={"pending_count": count}, message=f"当前有 {count} 个日报待风控检查"
         )
     except Exception as e:
         logger.exception(f"Error getting pending count: {e}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
             message="获取待检查数量失败",
-            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code
+            status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 
 
@@ -1870,6 +1890,7 @@ async def get_trend_pending_count(
 
 class FinalCheckResponse(BaseModel):
     """终审检查响应"""
+
     report_id: int
     passed: bool
     old_status: str
@@ -1880,6 +1901,7 @@ class FinalCheckResponse(BaseModel):
 
 class BatchApproveRequest(BaseModel):
     """批量审批请求"""
+
     report_ids: List[int] = Field(..., min_items=1, max_items=100, description="日报ID列表")
     action: str = Field("approve", description="审批动作: approve/confirm/lock")
     notes: Optional[str] = Field(None, max_length=500, description="审批备注")
@@ -1887,6 +1909,7 @@ class BatchApproveRequest(BaseModel):
 
 class BatchApproveResult(BaseModel):
     """单个审批结果"""
+
     report_id: int
     success: bool
     old_status: Optional[str] = None
@@ -1896,6 +1919,7 @@ class BatchApproveResult(BaseModel):
 
 class BatchApproveResponse(BaseModel):
     """批量审批响应"""
+
     total: int
     success_count: int
     failed_count: int
@@ -1917,13 +1941,13 @@ class BatchApproveResponse(BaseModel):
 
     状态流转 (STATE_MACHINE.md v2.6 §8):
     - final_pending → final_confirmed (检查通过)
-    """
+    """,
 )
 async def execute_final_check(
     report_id: int,
     notes: Optional[str] = Query(None, description="审核备注"),
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "supervisor", "admin", "finance"]))
+    current_user: User = Depends(require_role(["project_owner", "admin", "finance"])),
 ):
     """
     执行终审检查 API (STATE_MACHINE.md v2.6 §8)
@@ -1940,7 +1964,7 @@ async def execute_final_check(
             return error_response(
                 code="STATE-400",
                 message=f"当前状态 '{report.status}' 不支持终审检查，需要 'final_pending' 状态",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         # 执行检查
@@ -1966,10 +1990,13 @@ async def execute_final_check(
 
         # Phase 1: 仅警告，不阻断
         from backend.core.phase_config import get_phase_config
+
         phase_config = get_phase_config()
 
         check_details["warnings"] = warnings
-        check_details["phase"] = "phase1" if phase_config.is_phase1_enabled() else "phase2"
+        check_details["phase"] = (
+            "phase1" if phase_config.is_phase1_enabled() else "phase2"
+        )
 
         # 执行状态转换
         audit_request = DailyReportAuditRequest(audit_notes=notes or "终审检查自动通过")
@@ -1981,29 +2008,27 @@ async def execute_final_check(
             old_status=old_status,
             new_status=report.status,
             message="终审检查通过" + (f"，警告: {', '.join(warnings)}" if warnings else ""),
-            details=check_details
+            details=check_details,
         )
 
         return success_response(data=response, message=response.message)
 
     except ResourceNotFoundError as e:
         return error_response(
-            code="RES-001",
-            message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            code="RES-001", message=str(e), status_code=status.HTTP_404_NOT_FOUND
         )
     except (BusinessLogicError, PermissionDeniedError) as e:
         return error_response(
-            code=str(e.error_code) if hasattr(e, 'error_code') else "BIZ-001",
+            code=str(e.error_code) if hasattr(e, "error_code") else "BIZ-001",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         logger.exception(f"Error in final check for report {report_id}: {e}")
         return error_response(
             code="SYS-500",
             message="终审检查失败",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -2025,13 +2050,13 @@ async def execute_final_check(
     - final_pending → final_confirmed
     - final_confirmed → final_locked
 
-    权限: supervisor/data_operator/finance/admin
-    """
+    权限: project_owner/finance/admin
+    """,
 )
 async def batch_approve_reports(
     request: BatchApproveRequest,
     service: DailyReportService = Depends(get_daily_report_service),
-    current_user: User = Depends(require_role(["data_operator", "supervisor", "finance", "admin"]))
+    current_user: User = Depends(require_role(["project_owner", "finance", "admin"])),
 ):
     """
     批量审批日报 API (STATE_MACHINE.md v2.6 §8)
@@ -2055,7 +2080,7 @@ async def batch_approve_reports(
         },
         "lock": {
             "final_confirmed": "final_locked",
-        }
+        },
     }
 
     action = request.action.lower()
@@ -2063,7 +2088,7 @@ async def batch_approve_reports(
         return error_response(
             code="VAL-001",
             message=f"无效的审批动作: {action}，允许值: approve/confirm/lock",
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
 
     transition_map = action_transitions[action]
@@ -2077,12 +2102,14 @@ async def batch_approve_reports(
 
             # 检查是否支持当前状态的转换
             if old_status not in transition_map:
-                results.append(BatchApproveResult(
-                    report_id=report_id,
-                    success=False,
-                    old_status=old_status,
-                    error=f"当前状态 '{old_status}' 不支持 '{action}' 操作"
-                ))
+                results.append(
+                    BatchApproveResult(
+                        report_id=report_id,
+                        success=False,
+                        old_status=old_status,
+                        error=f"当前状态 '{old_status}' 不支持 '{action}' 操作",
+                    )
+                )
                 failed_count += 1
                 continue
 
@@ -2094,61 +2121,63 @@ async def batch_approve_reports(
                     report_id=report_id,
                     target_status=DailyReportStatus.TREND_OK,
                     audit_request=audit_request,
-                    current_user=current_user
+                    current_user=current_user,
                 )
             elif target_status == "final_pending":
                 report = service._transition_daily_report(
                     report_id=report_id,
                     target_status=DailyReportStatus.FINAL_PENDING,
                     audit_request=audit_request,
-                    current_user=current_user
+                    current_user=current_user,
                 )
             elif target_status == "final_confirmed":
-                report = service.confirm_final_report(report_id, audit_request, current_user)
+                report = service.confirm_final_report(
+                    report_id, audit_request, current_user
+                )
             elif target_status == "final_locked":
-                report = service.lock_final_report(report_id, audit_request, current_user)
+                report = service.lock_final_report(
+                    report_id, audit_request, current_user
+                )
 
-            results.append(BatchApproveResult(
-                report_id=report_id,
-                success=True,
-                old_status=old_status,
-                new_status=report.status
-            ))
+            results.append(
+                BatchApproveResult(
+                    report_id=report_id,
+                    success=True,
+                    old_status=old_status,
+                    new_status=report.status,
+                )
+            )
             success_count += 1
 
         except ResourceNotFoundError as e:
-            results.append(BatchApproveResult(
-                report_id=report_id,
-                success=False,
-                error=f"日报不存在: {str(e)}"
-            ))
+            results.append(
+                BatchApproveResult(
+                    report_id=report_id, success=False, error=f"日报不存在: {str(e)}"
+                )
+            )
             failed_count += 1
         except (BusinessLogicError, PermissionDeniedError) as e:
-            results.append(BatchApproveResult(
-                report_id=report_id,
-                success=False,
-                error=str(e)
-            ))
+            results.append(
+                BatchApproveResult(report_id=report_id, success=False, error=str(e))
+            )
             failed_count += 1
         except Exception as e:
             logger.exception(f"Error approving report {report_id}: {e}")
-            results.append(BatchApproveResult(
-                report_id=report_id,
-                success=False,
-                error=f"处理失败: {str(e)}"
-            ))
+            results.append(
+                BatchApproveResult(
+                    report_id=report_id, success=False, error=f"处理失败: {str(e)}"
+                )
+            )
             failed_count += 1
 
     response = BatchApproveResponse(
         total=len(request.report_ids),
         success_count=success_count,
         failed_count=failed_count,
-        results=results
+        results=results,
     )
 
     message = f"批量审批完成: 成功 {success_count}, 失败 {failed_count}"
     logger.info(f"Batch approve completed: {message}, user={current_user.id}")
 
     return success_response(data=response, message=message)
-
-

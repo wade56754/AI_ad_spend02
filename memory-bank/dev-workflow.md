@@ -1,9 +1,9 @@
-# AI 开发工作流 v2.0
+# AI 开发工作流 v2.1
 
-> **版本**: v2.0
-> **基准文档**: docs/guides/AI_PROGRAMMING_SOP.md v1.0
+> **版本**: v2.1
+> **更新日期**: 2026-01-02
 > **适用场景**: 每个功能开发任务
-> **关键依赖**: CLAUDE.md + memory-bank + AI 代码工厂
+> **关键依赖**: CLAUDE.md + memory-bank
 
 ---
 
@@ -18,7 +18,7 @@
 │   │                    Step 0: 自动加载 (Claude 自动执行)                 │  │
 │   │                                                                     │  │
 │   │   CLAUDE.md (自动注入)                                              │  │
-│   │   ├── SoT 版本: MASTER.md v4.6 | DATA_SCHEMA.md v5.6 | ...         │  │
+│   │   ├── SoT 版本: MASTER.md v4.9 | DATA_SCHEMA.md v5.10 | ...        │  │
 │   │   ├── 6 角色白名单 (无 supervisor)                                  │  │
 │   │   ├── Phase 1 约束 (只提示不阻断)                                   │  │
 │   │   ├── 5 个不变量                                                    │  │
@@ -35,7 +35,7 @@
 │   │    然后继续实施计划第 3 步"                                         │  │
 │   │                                                                     │  │
 │   │   AI 读取:                                                          │  │
-│   │   ├── game-design-document.md  → 理解需求                           │  │
+│   │   ├── prd.md                   → 理解需求                           │  │
 │   │   ├── tech-stack.md           → 知道技术栈                          │  │
 │   │   ├── architecture.md         → 知道每个文件的作用                  │  │
 │   │   ├── implementation-plan.md  → 知道第 N 步要做什么                 │  │
@@ -132,11 +132,11 @@
 
 | 约束类型 | 内容 | 来源 |
 |----------|------|------|
-| SoT 版本 | MASTER.md v4.6, DATA_SCHEMA.md v5.6, ... | CLAUDE.md |
-| 角色白名单 | 6 个角色，无 supervisor | MASTER.md v4.6 §2.4 |
+| SoT 版本 | MASTER.md v4.9, DATA_SCHEMA.md v5.10, ... | CLAUDE.md |
+| 角色白名单 | 6 个角色，无 supervisor | MASTER.md v4.9 §2.4 |
 | Phase 1 原则 | 只提示、不阻断、不自动问责 | CLAUDE.md |
 | 不变量 | 5 个绝对不能违反的规则 | CLAUDE.md |
-| 防幻觉原则 | AH-01 ~ AH-05 | MASTER.md v4.6 §7 |
+| 防幻觉原则 | AH-01 ~ AH-05 | MASTER.md v4.9 §7 |
 
 ### CLAUDE.md 关键内容
 
@@ -145,7 +145,7 @@
 
 ### 写任何代码前必须
 1. **完整阅读** `memory-bank/architecture.md` - 了解项目结构
-2. **完整阅读** `memory-bank/game-design-document.md` - 了解需求
+2. **完整阅读** `memory-bank/prd.md` - 了解需求
 3. **查阅对应 SoT** - 不允许凭想象实现任何功能
 
 ### 每完成一个功能后必须
@@ -159,7 +159,7 @@
 
 | 文档 | 用途 | 每次必读? |
 |------|------|-----------|
-| `game-design-document.md` | 需求/PRD - 做什么 | ✅ |
+| `prd.md` | 需求/PRD - 做什么 | ✅ |
 | `tech-stack.md` | 技术栈 - 用什么 | 首次 |
 | `architecture.md` | 架构说明 - 每个文件干什么 | ✅ |
 | `implementation-plan.md` | 实施计划 - 怎么做 | ✅ |
@@ -177,41 +177,9 @@
 
 ---
 
-## 3. AI 代码工厂集成
+## 3. 代码来源标注规范
 
-### 调用方式
-
-```
-「
-使用 ai-ad-code-factory，
-requirement = "{{需求描述}}"，
-module = "pitcher" | "finance" | "ad_account" | "project"
-」
-```
-
-### 6 阶段流水线
-
-| 阶段 | 名称 | Skill | 输出 |
-|------|------|-------|------|
-| 1 | SEARCH | ai-ad-code-searcher | 候选代码列表 |
-| 2 | SELECT | ai-ad-code-selector | 最佳参考 + 适配方案 |
-| 3 | ADAPT | ai-ad-code-adapter | 适配后的代码 |
-| 4 | ASSEMBLE | ai-ad-code-assembler | 完整功能模块 |
-| 5 | VERIFY | ai-ad-code-verifier | 验证报告 |
-| 6 | CONFIRM | (内置) | 来源追溯报告 |
-
-### 代码块优先原则
-
-> 生成代码前先查询代码块注册表
-
-| 规则 | 描述 |
-|------|------|
-| CB-001 | 生成代码前，必须先查询代码块注册表 |
-| CB-002 | 如果存在匹配的代码块，必须使用 |
-| CB-003 | 代码块只能扩展，不能修改核心逻辑 |
-| CB-004 | 使用代码块时必须标注 `# CodeBlock: {block_id}` |
-
-### 代码来源标注规范
+> 所有生成的代码必须标注 SoT 来源
 
 ```python
 # SoT: STATE_MACHINE.md#daily_report
@@ -344,8 +312,6 @@ grep -r "media_buyer" backend/     # 必须无结果 (用 pitcher)
 | 文档 | 路径 | 用途 |
 |------|------|------|
 | CLAUDE.md | 项目根目录 | Claude 自动加载的约束 |
-| AI 代码工厂 | .claude/skills/ai-ad-code-factory/skill.md | 6 阶段流水线 |
-| 代码块注册表 | .claude/skills/ai-ad-code-factory/knowledge/code-blocks-registry.md | 16 个代码块 |
-| 防幻觉规则 | .claude/skills/ai-ad-code-factory/knowledge/anti-hallucination-rules.md | AH-01 ~ AH-05 |
-| 任务卡 | docs/guides/TASK_CARDS_v2.md | 57 个任务卡 |
-| AI SOP | docs/guides/AI_PROGRAMMING_SOP.md | AI 编程规范 |
+| 架构说明 | memory-bank/architecture.md | 系统架构和代码模式 |
+| 速查表 | memory-bank/quick-reference.md | 角色/状态/错误码 |
+| SoT 文档 | docs/sot/ | 真相源文档 |

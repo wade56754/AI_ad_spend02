@@ -118,10 +118,18 @@ fi
 
 # 5. 后端废弃角色检查 (BLOCKING)
 echo -n "检查后端废弃角色 'supervisor'... "
-if grep -rq "'supervisor'" backend/ 2>/dev/null | grep -v "test" | grep -v "#"; then
+# 修复: grep -rq 会抑制输出，导致管道无效。改用变量捕获模式
+# 排除: 测试文件、注释、docstring 示例 (>>>)、迁移映射定义 (:)
+BACKEND_SUPERVISOR_VIOLATIONS=$(grep -rn "'supervisor'" backend/ --include="*.py" 2>/dev/null \
+    | grep -v "test" \
+    | grep -v "#" \
+    | grep -v ">>>" \
+    | grep -v "roles.py" \
+    || true)
+if [ -n "$BACKEND_SUPERVISOR_VIOLATIONS" ]; then
     echo -e "${RED}FAIL${NC}"
     echo "  后端发现废弃角色 'supervisor'"
-    grep -rn "'supervisor'" backend/ --include="*.py" 2>/dev/null | grep -v "test" | head -5
+    echo "$BACKEND_SUPERVISOR_VIOLATIONS" | head -5
     ERRORS=$((ERRORS + 1))
 else
     echo -e "${GREEN}PASS${NC}"

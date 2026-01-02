@@ -14,7 +14,7 @@
 
 ## [SoT Freeze v2.0] - 2025-12-27
 
-### MASTER.md v4.6
+### MASTER.md v4.7
 
 **变更类型**: Breaking Change
 

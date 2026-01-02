@@ -15,13 +15,13 @@ from sqlalchemy.orm import Session
 from backend.exceptions.custom_exceptions import (
     ResourceNotFoundError,
     PermissionDeniedError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 from backend.models import ProjectTemplate
 from backend.models import User
 from backend.schemas.project_template import (
     ProjectTemplateCreateRequest,
-    ProjectTemplateUpdateRequest
+    ProjectTemplateUpdateRequest,
 )
 from backend.services.project_service import ProjectService
 
@@ -39,7 +39,7 @@ class ProjectTemplateService:
         {"value": "tool", "label": "工具应用"},
         {"value": "brand", "label": "品牌推广"},
         {"value": "performance", "label": "效果营销"},
-        {"value": "custom", "label": "自定义"}
+        {"value": "custom", "label": "自定义"},
     ]
 
     def __init__(self, db: Session):
@@ -47,9 +47,7 @@ class ProjectTemplateService:
         self.project_service = ProjectService(db)
 
     def create_template(
-        self,
-        request: ProjectTemplateCreateRequest,
-        current_user: User
+        self, request: ProjectTemplateCreateRequest, current_user: User
     ) -> ProjectTemplate:
         """创建项目模板"""
         # 检查权限
@@ -57,9 +55,11 @@ class ProjectTemplateService:
             raise PermissionDeniedError("无权限创建项目模板")
 
         # 检查模板名称是否已存在
-        if self.db.query(ProjectTemplate).filter(
-            ProjectTemplate.name == request.name
-        ).first():
+        if (
+            self.db.query(ProjectTemplate)
+            .filter(ProjectTemplate.name == request.name)
+            .first()
+        ):
             raise ResourceConflictError(f"模板名称 '{request.name}' 已存在")
 
         # 创建模板
@@ -70,14 +70,17 @@ class ProjectTemplateService:
             default_budget=request.default_budget,
             default_currency=request.default_currency,
             default_duration_days=request.default_duration_days,
-            config=json.dumps({
-                "account_types": request.account_types or [],
-                "default_roles": request.default_roles or [],
-                "checklist": request.checklist or [],
-                "notes": request.notes or ""
-            }, ensure_ascii=False),
+            config=json.dumps(
+                {
+                    "account_types": request.account_types or [],
+                    "default_roles": request.default_roles or [],
+                    "checklist": request.checklist or [],
+                    "notes": request.notes or "",
+                },
+                ensure_ascii=False,
+            ),
             is_active=request.is_active,
-            created_by=current_user.id
+            created_by=current_user.id,
         )
 
         try:
@@ -87,13 +90,17 @@ class ProjectTemplateService:
 
             # 记录日志
             import logging
+
             logger = logging.getLogger(__name__)
-            logger.info(f"项目模板创建成功: {template.id}", extra={
-                "template_id": template.id,
-                "template_name": template.name,
-                "user_id": current_user.id,
-                "action": "create_template"
-            })
+            logger.info(
+                f"项目模板创建成功: {template.id}",
+                extra={
+                    "template_id": template.id,
+                    "template_name": template.name,
+                    "user_id": current_user.id,
+                    "action": "create_template",
+                },
+            )
 
         except Exception as e:
             self.db.rollback()
@@ -107,7 +114,7 @@ class ProjectTemplateService:
         page: int = 1,
         page_size: int = 20,
         category: Optional[str] = None,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
     ) -> tuple[List[ProjectTemplate], int]:
         """获取项目模板列表"""
         query = self.db.query(ProjectTemplate)
@@ -122,28 +129,30 @@ class ProjectTemplateService:
         total = query.count()
 
         # 分页查询
-        templates = query.order_by(
-            desc(ProjectTemplate.is_active),
-            desc(ProjectTemplate.created_at)
-        ).offset((page - 1) * page_size).limit(page_size).all()
+        templates = (
+            query.order_by(
+                desc(ProjectTemplate.is_active), desc(ProjectTemplate.created_at)
+            )
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
 
         return templates, total
 
-    def get_template(
-        self,
-        template_id: int,
-        current_user: User
-    ) -> ProjectTemplate:
+    def get_template(self, template_id: int, current_user: User) -> ProjectTemplate:
         """获取项目模板详情"""
-        template = self.db.query(ProjectTemplate).filter(
-            ProjectTemplate.id == template_id
-        ).first()
+        template = (
+            self.db.query(ProjectTemplate)
+            .filter(ProjectTemplate.id == template_id)
+            .first()
+        )
 
         if not template:
             raise ResourceNotFoundError(f"项目模板 {template_id} 不存在")
 
         # 检查权限（模板对投手可见）
-        if current_user.role not in ["admin", "account_manager", "media_buyer"]:
+        if current_user.role not in ["admin", "account_manager", "pitcher"]:
             raise PermissionDeniedError("无权限查看项目模板")
 
         return template
@@ -152,7 +161,7 @@ class ProjectTemplateService:
         self,
         template_id: int,
         request: ProjectTemplateUpdateRequest,
-        current_user: User
+        current_user: User,
     ) -> ProjectTemplate:
         """更新项目模板"""
         template = self.get_template(template_id, current_user)
@@ -163,12 +172,16 @@ class ProjectTemplateService:
 
         # 检查模板名称是否重复
         if request.name and request.name != template.name:
-            if self.db.query(ProjectTemplate).filter(
-                and_(
-                    ProjectTemplate.name == request.name,
-                    ProjectTemplate.id != template_id
+            if (
+                self.db.query(ProjectTemplate)
+                .filter(
+                    and_(
+                        ProjectTemplate.name == request.name,
+                        ProjectTemplate.id != template_id,
+                    )
                 )
-            ).first():
+                .first()
+            ):
                 raise ResourceConflictError(f"模板名称 '{request.name}' 已存在")
 
         # 更新字段
@@ -183,11 +196,7 @@ class ProjectTemplateService:
         self.db.commit()
         return template
 
-    def delete_template(
-        self,
-        template_id: int,
-        current_user: User
-    ) -> bool:
+    def delete_template(self, template_id: int, current_user: User) -> bool:
         """删除项目模板"""
         if current_user.role != "admin":
             raise PermissionDeniedError("只有管理员可以删除项目模板")
@@ -202,11 +211,7 @@ class ProjectTemplateService:
         return True
 
     def apply_template(
-        self,
-        template_id: int,
-        project_name: str,
-        client_name: str,
-        current_user: User
+        self, template_id: int, project_name: str, client_name: str, current_user: User
     ) -> Any:
         """应用项目模板创建项目"""
         template = self.get_template(template_id, current_user)
@@ -220,11 +225,13 @@ class ProjectTemplateService:
 
         # 计算项目日期
         from datetime import timedelta
+
         start_date = date.today()
         end_date = start_date + timedelta(days=template.default_duration_days or 30)
 
         # 创建项目数据
         from backend.schemas.project import ProjectCreateRequest
+
         project_request = ProjectCreateRequest(
             name=project_name,
             client_name=client_name,
@@ -234,7 +241,9 @@ class ProjectTemplateService:
             currency=template.default_currency,
             start_date=start_date,
             end_date=end_date,
-            account_manager_id=current_user.id if current_user.role == "account_manager" else None
+            account_manager_id=current_user.id
+            if current_user.role == "account_manager"
+            else None,
         )
 
         # 使用项目服务创建项目
@@ -258,44 +267,56 @@ class ProjectTemplateService:
 
     def get_popular_templates(self, limit: int = 5) -> List[ProjectTemplate]:
         """获取热门模板"""
-        templates = self.db.query(ProjectTemplate).filter(
-            ProjectTemplate.is_active == True
-        ).order_by(
-            desc(ProjectTemplate.use_count),
-            desc(ProjectTemplate.created_at)
-        ).limit(limit).all()
+        templates = (
+            self.db.query(ProjectTemplate)
+            .filter(ProjectTemplate.is_active == True)
+            .order_by(desc(ProjectTemplate.use_count), desc(ProjectTemplate.created_at))
+            .limit(limit)
+            .all()
+        )
 
         return templates
 
     def get_template_statistics(self) -> Dict[str, Any]:
         """获取模板使用统计"""
-        stats = self.db.query(ProjectTemplate).with_entities(
-            func.count(ProjectTemplate.id).label('total_templates'),
-            func.count(func.distinct(ProjectTemplate.category)).label('total_categories'),
-            func.sum(ProjectTemplate.use_count).label('total_uses'),
-            func.count(ProjectTemplate.id).filter(ProjectTemplate.is_active == True).label('active_templates')
-        ).first()
+        stats = (
+            self.db.query(ProjectTemplate)
+            .with_entities(
+                func.count(ProjectTemplate.id).label("total_templates"),
+                func.count(func.distinct(ProjectTemplate.category)).label(
+                    "total_categories"
+                ),
+                func.sum(ProjectTemplate.use_count).label("total_uses"),
+                func.count(ProjectTemplate.id)
+                .filter(ProjectTemplate.is_active == True)
+                .label("active_templates"),
+            )
+            .first()
+        )
 
         # 按分类统计
-        category_stats = self.db.query(
-            ProjectTemplate.category,
-            func.count(ProjectTemplate.id).label('count'),
-            func.sum(ProjectTemplate.use_count).label('uses')
-        ).filter(
-            ProjectTemplate.is_active == True
-        ).group_by(ProjectTemplate.category).all()
+        category_stats = (
+            self.db.query(
+                ProjectTemplate.category,
+                func.count(ProjectTemplate.id).label("count"),
+                func.sum(ProjectTemplate.use_count).label("uses"),
+            )
+            .filter(ProjectTemplate.is_active == True)
+            .group_by(ProjectTemplate.category)
+            .all()
+        )
 
         return {
-            'total_templates': stats.total_templates or 0,
-            'total_categories': stats.total_categories or 0,
-            'total_uses': stats.total_uses or 0,
-            'active_templates': stats.active_templates or 0,
-            'category_distribution': [
+            "total_templates": stats.total_templates or 0,
+            "total_categories": stats.total_categories or 0,
+            "total_uses": stats.total_uses or 0,
+            "active_templates": stats.active_templates or 0,
+            "category_distribution": [
                 {
-                    'category': stat.category,
-                    'template_count': stat.count,
-                    'total_uses': stat.uses or 0
+                    "category": stat.category,
+                    "template_count": stat.count,
+                    "total_uses": stat.uses or 0,
                 }
                 for stat in category_stats
-            ]
+            ],
         }

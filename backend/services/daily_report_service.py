@@ -24,7 +24,7 @@ from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 from backend.core.state_machine import (
     DAILY_REPORT_STATE_MACHINE,
@@ -51,7 +51,7 @@ from backend.core.phase_config import (
     get_phase_config,
     should_enforce_daily_report,
     should_lock_settlement,
-    log_phase_warning
+    log_phase_warning,
 )
 
 # 创建logger实例
@@ -77,9 +77,7 @@ class DailyReportService:
             raise
 
     def check_daily_report_compliance(
-        self,
-        user_id: int,
-        days_threshold: int = 3
+        self, user_id: int, days_threshold: int = 3
     ) -> tuple[bool, Optional[str]]:
         """
         检查用户日报填报合规性
@@ -102,10 +100,15 @@ class DailyReportService:
         cutoff_date = today - timedelta(days=days_threshold)
 
         # 查询最近的日报
-        latest_report = self.db.query(DailyReport).filter(
-            DailyReport.created_by == user_id,
-            DailyReport.report_date >= cutoff_date
-        ).order_by(desc(DailyReport.report_date)).first()
+        latest_report = (
+            self.db.query(DailyReport)
+            .filter(
+                DailyReport.created_by == user_id,
+                DailyReport.report_date >= cutoff_date,
+            )
+            .order_by(desc(DailyReport.report_date))
+            .first()
+        )
 
         if latest_report:
             return True, None
@@ -123,14 +126,12 @@ class DailyReportService:
                 feature="daily_report_required",
                 message=message,
                 user_id=user_id,
-                days_threshold=days_threshold
+                days_threshold=days_threshold,
             )
             return True, f"[警告] {message}"
 
     def create_daily_report(
-        self,
-        request: DailyReportCreateRequest,
-        current_user: User
+        self, request: DailyReportCreateRequest, current_user: User
     ) -> DailyReport:
         """
         创建日报
@@ -158,20 +159,21 @@ class DailyReportService:
             )
             raise BusinessLogicError(
                 f"报表日期 {request.report_date} 不能大于今天 {date.today()}",
-                error_code="BIZ-201"
+                error_code="BIZ-201",
             )
 
         # 验证用户是否有权限操作该广告账户
-        ad_account = self.db.query(AdAccount).filter(
-            AdAccount.id == request.ad_account_id
-        ).first()
+        ad_account = (
+            self.db.query(AdAccount)
+            .filter(AdAccount.id == request.ad_account_id)
+            .first()
+        )
 
         if not ad_account:
             # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
             logger.error(f"Ad account {request.ad_account_id} not found")
             raise ResourceNotFoundError(
-                f"广告账户 {request.ad_account_id} 不存在",
-                error_code="BIZ-002"
+                f"广告账户 {request.ad_account_id} 不存在", error_code="BIZ-002"
             )
 
         # 账户权限检查
@@ -181,10 +183,14 @@ class DailyReportService:
             )
 
         # BIZ_003: 检查日报是否已存在（ad_account_id + report_date 唯一约束）
-        existing_report = self.db.query(DailyReport).filter(
-            DailyReport.ad_account_id == request.ad_account_id,
-            DailyReport.report_date == request.report_date
-        ).first()
+        existing_report = (
+            self.db.query(DailyReport)
+            .filter(
+                DailyReport.ad_account_id == request.ad_account_id,
+                DailyReport.report_date == request.report_date,
+            )
+            .first()
+        )
 
         if existing_report:
             logger.warning(
@@ -193,7 +199,7 @@ class DailyReportService:
             )
             raise ResourceConflictError(
                 f"账户 {request.ad_account_id} 在 {request.report_date} 的日报已存在",
-                error_code="BIZ-003"
+                error_code="BIZ-003",
             )
 
         with self.transaction():
@@ -217,7 +223,7 @@ class DailyReportService:
                     status=DailyReportStatus.RAW_SUBMITTED.value,
                     # 其他字段
                     notes=request.notes,
-                    submitted_by=current_user.id
+                    submitted_by=current_user.id,
                 )
 
                 self.db.add(daily_report)
@@ -228,8 +234,8 @@ class DailyReportService:
                     daily_report_id=daily_report.id,
                     action="created",
                     audit_user_id=current_user.id,
-                    ip_address=getattr(current_user, 'ip_address', None),
-                    user_agent=getattr(current_user, 'user_agent', None)
+                    ip_address=getattr(current_user, "ip_address", None),
+                    user_agent=getattr(current_user, "user_agent", None),
                 )
 
                 logger.info(
@@ -254,7 +260,7 @@ class DailyReportService:
         params: DailyReportQueryParams,
         current_user: User,
         page: int = 1,
-        page_size: int = 20
+        page_size: int = 20,
     ) -> Tuple[List[DailyReport], int]:
         """
         获取日报列表
@@ -276,7 +282,7 @@ class DailyReportService:
         query = self.db.query(DailyReport).options(
             joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
             joinedload(DailyReport.submitter),
-            joinedload(DailyReport.auditor)  # 审核人关系
+            joinedload(DailyReport.auditor),  # 审核人关系
         )
 
         # 构建查询条件
@@ -334,7 +340,7 @@ class DailyReportService:
         # 应用权限过滤 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
         if current_user.role == UserRole.MEDIA_BUYER.value:
             # 投手：只能看分配给自己的账户的日报
-            logger.debug(f"Applying media_buyer RBAC filter for user {current_user.id}")
+            logger.debug(f"Applying pitcher RBAC filter for user {current_user.id}")
             where_conditions.append(
                 DailyReport.ad_account_id.in_(
                     self.db.query(AdAccount.id).filter(
@@ -356,12 +362,20 @@ class DailyReportService:
                     )
                 )
             )
-        elif current_user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
+        elif current_user.role in [
+            UserRole.ADMIN.value,
+            UserRole.FINANCE.value,
+            UserRole.DATA_OPERATOR.value,
+        ]:
             # 管理员、财务、数据员：可以看所有数据
-            logger.debug(f"User {current_user.id} ({current_user.role}) has full access to all reports")
+            logger.debug(
+                f"User {current_user.id} ({current_user.role}) has full access to all reports"
+            )
         else:
             # 未知角色：拒绝访问
-            logger.error(f"Unauthorized role {current_user.role} for user {current_user.id}")
+            logger.error(
+                f"Unauthorized role {current_user.role} for user {current_user.id}"
+            )
             raise PermissionDeniedError("未授权的角色，无法查看日报")
 
         # 应用所有条件
@@ -372,9 +386,12 @@ class DailyReportService:
         total = query.count()
 
         # 分页和排序
-        reports = query.order_by(desc(DailyReport.report_date)).offset(
-            (page - 1) * page_size
-        ).limit(page_size).all()
+        reports = (
+            query.order_by(desc(DailyReport.report_date))
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
 
         logger.info(
             f"Daily reports query completed: user={current_user.id}, "
@@ -387,7 +404,7 @@ class DailyReportService:
         current_user: User,
         project_id: Optional[int] = None,
         start_date: Optional[str] = None,
-        end_date: Optional[str] = None
+        end_date: Optional[str] = None,
     ) -> dict:
         """
         获取各状态的日报数量统计
@@ -405,15 +422,14 @@ class DailyReportService:
         from datetime import datetime
 
         query = self.db.query(
-            DailyReport.status,
-            func.count(DailyReport.id).label('count')
+            DailyReport.status, func.count(DailyReport.id).label("count")
         )
 
         # 权限过滤
         if current_user.role == UserRole.MEDIA_BUYER.value:
             query = query.filter(DailyReport.submitted_by == current_user.id)
         elif current_user.role == UserRole.FINANCE.value:
-            query = query.filter(DailyReport.status == 'final_locked')
+            query = query.filter(DailyReport.status == "final_locked")
 
         # 项目筛选 (通过 ad_account)
         if project_id:
@@ -424,14 +440,14 @@ class DailyReportService:
         # 日期筛选
         if start_date:
             try:
-                start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+                start_dt = datetime.strptime(start_date, "%Y-%m-%d").date()
                 query = query.filter(DailyReport.report_date >= start_dt)
             except ValueError:
                 pass
 
         if end_date:
             try:
-                end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+                end_dt = datetime.strptime(end_date, "%Y-%m-%d").date()
                 query = query.filter(DailyReport.report_date <= end_dt)
             except ValueError:
                 pass
@@ -441,14 +457,14 @@ class DailyReportService:
 
         # 构建返回结果 (8状态机)
         stats = {
-            'raw_submitted': 0,
-            'trend_pending': 0,
-            'trend_ok': 0,
-            'trend_flagged': 0,
-            'trend_resolved': 0,
-            'final_pending': 0,
-            'final_confirmed': 0,
-            'final_locked': 0,
+            "raw_submitted": 0,
+            "trend_pending": 0,
+            "trend_ok": 0,
+            "trend_flagged": 0,
+            "trend_resolved": 0,
+            "final_pending": 0,
+            "final_confirmed": 0,
+            "final_locked": 0,
         }
 
         for status_value, count in results:
@@ -457,11 +473,7 @@ class DailyReportService:
 
         return stats
 
-    def get_daily_report(
-        self,
-        report_id: int,
-        current_user: User
-    ) -> DailyReport:
+    def get_daily_report(self, report_id: int, current_user: User) -> DailyReport:
         """
         获取日报详情
 
@@ -476,11 +488,16 @@ class DailyReportService:
             ResourceNotFoundError: 日报不存在
             PermissionDeniedError: 无权限查看
         """
-        report = self.db.query(DailyReport).options(
-            joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
-            joinedload(DailyReport.submitter),
-            joinedload(DailyReport.auditor)  # 审核人关系
-        ).filter(DailyReport.id == report_id).first()
+        report = (
+            self.db.query(DailyReport)
+            .options(
+                joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
+                joinedload(DailyReport.submitter),
+                joinedload(DailyReport.auditor),  # 审核人关系
+            )
+            .filter(DailyReport.id == report_id)
+            .first()
+        )
 
         if not report:
             # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
@@ -493,10 +510,7 @@ class DailyReportService:
         return report
 
     def update_daily_report(
-        self,
-        report_id: int,
-        request: DailyReportUpdateRequest,
-        current_user: User
+        self, report_id: int, request: DailyReportUpdateRequest, current_user: User
     ) -> DailyReport:
         """
         更新日报
@@ -522,9 +536,14 @@ class DailyReportService:
 
         # 检查是否可以修改 - 终态 (FINAL_LOCKED/FINAL_CONFIRMED) 不可修改
         # 基于 STATE_MACHINE.md v2.6 第8章
-        terminal_states = [DailyReportStatus.FINAL_LOCKED.value, DailyReportStatus.FINAL_CONFIRMED.value]
+        terminal_states = [
+            DailyReportStatus.FINAL_LOCKED.value,
+            DailyReportStatus.FINAL_CONFIRMED.value,
+        ]
         if report.status in terminal_states:
-            logger.warning(f"Cannot update locked/confirmed report: id={report_id}, status={report.status}")
+            logger.warning(
+                f"Cannot update locked/confirmed report: id={report_id}, status={report.status}"
+            )
             raise BusinessLogicError("已确认或锁定的日报不能修改")
 
         # 权限检查：验证当前用户是否有权限编辑该日报
@@ -548,8 +567,8 @@ class DailyReportService:
                 audit_user_id=current_user.id,
                 old_status=report.status,
                 new_status=report.status,
-                ip_address=getattr(current_user, 'ip_address', None),
-                user_agent=getattr(current_user, 'user_agent', None)
+                ip_address=getattr(current_user, "ip_address", None),
+                user_agent=getattr(current_user, "user_agent", None),
             )
 
             logger.info(
@@ -558,11 +577,7 @@ class DailyReportService:
             )
             return report
 
-    def delete_daily_report(
-        self,
-        report_id: int,
-        current_user: User
-    ) -> bool:
+    def delete_daily_report(self, report_id: int, current_user: User) -> bool:
         """
         删除日报
 
@@ -592,10 +607,14 @@ class DailyReportService:
 
         with self.transaction():
             # 删除关联的审计日志（使用通用 AuditLog 模型）
-            deleted_logs = self.db.query(AuditLog).filter(
-                AuditLog.resource_type == "daily_report",
-                AuditLog.resource_id == str(report_id)
-            ).delete()
+            deleted_logs = (
+                self.db.query(AuditLog)
+                .filter(
+                    AuditLog.resource_type == "daily_report",
+                    AuditLog.resource_id == str(report_id),
+                )
+                .delete()
+            )
             logger.debug(f"Deleted {deleted_logs} audit logs for report {report_id}")
 
             # 删除日报
@@ -605,20 +624,20 @@ class DailyReportService:
             return True
 
     def confirm_final_report(
-        self,
-        report_id: int,
-        request: DailyReportAuditRequest,
-        current_user: User
+        self, report_id: int, request: DailyReportAuditRequest, current_user: User
     ) -> DailyReport:
         """
-        确认最终粉数（运营确认）
+        确认最终粉数（运营确认）- TASK-RPT-007
 
-        基于 STATE_MACHINE.md v2.6 第8章:
-        final_pending → final_confirmed
+        基于 STATE_MACHINE.md v2.8 §4，支持两种流转路径:
+        - Phase 1 简化流程: trend_ok → final_confirmed (直接确认)
+        - Phase 2 完整流程: final_pending → final_confirmed
+
+        权限: project_owner, admin (BR-RPT-008)
 
         Args:
             report_id: 日报ID
-            request: 审核请求
+            request: 审核请求 (包含 conversions_final 最终有效粉数)
             current_user: 当前用户
 
         Returns:
@@ -628,14 +647,11 @@ class DailyReportService:
             report_id=report_id,
             target_status=DailyReportStatus.FINAL_CONFIRMED,
             audit_request=request,
-            current_user=current_user
+            current_user=current_user,
         )
 
     def lock_final_report(
-        self,
-        report_id: int,
-        request: DailyReportAuditRequest,
-        current_user: User
+        self, report_id: int, request: DailyReportAuditRequest, current_user: User
     ) -> DailyReport:
         """
         锁定日报并生成计费 Ledger 记录
@@ -668,14 +684,17 @@ class DailyReportService:
         # Phase-aware: 结算锁定检查 (MASTER.md v4.4 §8)
         # Phase 2 模式下，已锁定的报告无法再修改
         if should_lock_settlement():
-            logger.debug(f"[Phase2] Settlement lock enabled, checking report {report_id}")
+            logger.debug(
+                f"[Phase2] Settlement lock enabled, checking report {report_id}"
+            )
 
         # 获取日报（带关联的广告账户）
-        report = self.db.query(DailyReport).options(
-            joinedload(DailyReport.ad_account)
-        ).filter(
-            DailyReport.id == report_id
-        ).first()
+        report = (
+            self.db.query(DailyReport)
+            .options(joinedload(DailyReport.ad_account))
+            .filter(DailyReport.id == report_id)
+            .first()
+        )
 
         if not report:
             raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ-002")
@@ -684,30 +703,26 @@ class DailyReportService:
 
         # 使用状态机验证并执行转换 (状态机会验证角色权限)
         self._validate_transition(
-            report,
-            DailyReportStatus.FINAL_LOCKED.value,
-            current_user.role,
-            "锁定日报"
+            report, DailyReportStatus.FINAL_LOCKED.value, current_user.role, "锁定日报"
         )
 
         # ====== 计费数据校验 (LEDGER_SOT.md v1.1) ======
         conversions_final = report.conversions_final or 0
-        unit_price = report.unit_price or Decimal('0.00')
-        real_spend = report.real_spend or Decimal('0.00')
-        fee = report.fee or Decimal('0.00')
+        unit_price = report.unit_price or Decimal("0.00")
+        real_spend = report.real_spend or Decimal("0.00")
+        fee = report.fee or Decimal("0.00")
 
         # 校验：final 粉数必须有值
         if conversions_final <= 0:
             raise BusinessLogicError(
                 f"计费失败：最终粉数 conversions_final={conversions_final} 必须大于 0",
-                error_code="BIZ-001"
+                error_code="BIZ-001",
             )
 
         # 校验：单价必须有值
         if unit_price <= 0:
             raise BusinessLogicError(
-                f"计费失败：单粉价格 unit_price={unit_price} 必须大于 0",
-                error_code="BIZ-001"
+                f"计费失败：单粉价格 unit_price={unit_price} 必须大于 0", error_code="BIZ-001"
             )
 
         # 计算收入和成本
@@ -716,14 +731,16 @@ class DailyReportService:
 
         with self.transaction():
             # Step 1: 锁定广告账户（行锁，防止并发）
-            ad_account = self.db.query(AdAccount).filter(
-                AdAccount.id == report.ad_account_id
-            ).with_for_update().first()
+            ad_account = (
+                self.db.query(AdAccount)
+                .filter(AdAccount.id == report.ad_account_id)
+                .with_for_update()
+                .first()
+            )
 
             if not ad_account:
                 raise BusinessLogicError(
-                    f"关联的广告账户 {report.ad_account_id} 不存在",
-                    error_code="BIZ-002"
+                    f"关联的广告账户 {report.ad_account_id} 不存在", error_code="BIZ-002"
                 )
 
             # Step 2: 获取账户当前余额
@@ -737,7 +754,7 @@ class DailyReportService:
                 balance_after=current_balance + revenue_amount,
                 reference_type="daily_report",
                 reference_id=report.id,
-                notes=f"日报计费收入 #{report.id} - 粉数:{conversions_final} × 单价:{unit_price}"
+                notes=f"日报计费收入 #{report.id} - 粉数:{conversions_final} × 单价:{unit_price}",
             )
             self.db.add(revenue_entry)
             self.db.flush()  # 获取 entry ID
@@ -753,7 +770,7 @@ class DailyReportService:
                 balance_after=balance_after_revenue + cost_amount,
                 reference_type="daily_report",
                 reference_id=report.id,
-                notes=f"日报计费成本 #{report.id} - 消耗:{real_spend} + 手续费:{fee}"
+                notes=f"日报计费成本 #{report.id} - 消耗:{real_spend} + 手续费:{fee}",
             )
             self.db.add(cost_entry)
 
@@ -780,8 +797,8 @@ class DailyReportService:
                     f"REVENUE={revenue_amount}, COST={cost_amount}, "
                     f"balance_after={final_balance}"
                 ),
-                ip_address=getattr(current_user, 'ip_address', None),
-                user_agent=getattr(current_user, 'user_agent', None)
+                ip_address=getattr(current_user, "ip_address", None),
+                user_agent=getattr(current_user, "user_agent", None),
             )
 
             logger.info(
@@ -794,10 +811,7 @@ class DailyReportService:
             return report
 
     def flag_trend_anomaly(
-        self,
-        report_id: int,
-        request: DailyReportAuditRequest,
-        current_user: User
+        self, report_id: int, request: DailyReportAuditRequest, current_user: User
     ) -> DailyReport:
         """
         标记趋势异常（需人工复核）
@@ -817,14 +831,11 @@ class DailyReportService:
             report_id=report_id,
             target_status=DailyReportStatus.TREND_FLAGGED,
             audit_request=request,
-            current_user=current_user
+            current_user=current_user,
         )
 
     def resolve_trend_anomaly(
-        self,
-        report_id: int,
-        request: DailyReportAuditRequest,
-        current_user: User
+        self, report_id: int, request: DailyReportAuditRequest, current_user: User
     ) -> DailyReport:
         """
         解决趋势异常
@@ -844,14 +855,11 @@ class DailyReportService:
             report_id=report_id,
             target_status=DailyReportStatus.TREND_RESOLVED,
             audit_request=request,
-            current_user=current_user
+            current_user=current_user,
         )
 
     def update_real_spend(
-        self,
-        report_id: int,
-        request: RealSpendRequest,
-        current_user: User
+        self, report_id: int, request: RealSpendRequest, current_user: User
     ) -> DailyReport:
         """
         录入 real 消耗数据 (API_SOT.md v9.0 第 9.5 节)
@@ -884,10 +892,7 @@ class DailyReportService:
 
         # 使用状态机验证并执行转换 (状态机会验证角色权限)
         self._validate_transition(
-            report,
-            DailyReportStatus.FINAL_PENDING.value,
-            current_user.role,
-            "录入真实消耗"
+            report, DailyReportStatus.FINAL_PENDING.value, current_user.role, "录入真实消耗"
         )
 
         with self.transaction():
@@ -904,8 +909,8 @@ class DailyReportService:
                 old_status=report.status,
                 new_status=DailyReportStatus.FINAL_PENDING.value,
                 audit_notes=f"real_spend={request.real_spend}, fee={request.fee}",
-                ip_address=getattr(current_user, 'ip_address', None),
-                user_agent=getattr(current_user, 'user_agent', None)
+                ip_address=getattr(current_user, "ip_address", None),
+                user_agent=getattr(current_user, "user_agent", None),
             )
 
             logger.info(
@@ -916,9 +921,7 @@ class DailyReportService:
             return report
 
     def batch_import_daily_reports(
-        self,
-        request: DailyReportBatchImportRequest,
-        current_user: User
+        self, request: DailyReportBatchImportRequest, current_user: User
     ) -> Tuple[int, int, List[DailyReportImportError], List[int]]:
         """
         批量导入日报
@@ -947,7 +950,7 @@ class DailyReportService:
                     row_number=index,
                     error_code="IMPORT_ERROR",
                     error_message=str(e),
-                    invalid_data=report_request.model_dump()
+                    invalid_data=report_request.model_dump(),
                 )
                 errors.append(error_info)
 
@@ -958,9 +961,7 @@ class DailyReportService:
         return success_count, error_count, errors, imported_ids
 
     def get_daily_report_statistics(
-        self,
-        params: DailyReportQueryParams,
-        current_user: User
+        self, params: DailyReportQueryParams, current_user: User
     ) -> Dict[str, Any]:
         """
         获取日报统计数据
@@ -992,55 +993,70 @@ class DailyReportService:
 
         # 执行统计查询
         stats = query.with_entities(
-            func.count(DailyReport.id).label('total_reports'),
-            func.sum(DailyReport.spend).label('total_spend'),
-            func.sum(DailyReport.impressions).label('total_impressions'),
-            func.sum(DailyReport.clicks).label('total_clicks'),
-            func.sum(DailyReport.conversions).label('total_conversions'),
-            func.sum(DailyReport.new_follows).label('total_new_follows'),
-            func.avg(DailyReport.cpa).label('avg_cpa'),
-            func.avg(DailyReport.roas).label('avg_roas')
+            func.count(DailyReport.id).label("total_reports"),
+            func.sum(DailyReport.spend).label("total_spend"),
+            func.sum(DailyReport.impressions).label("total_impressions"),
+            func.sum(DailyReport.clicks).label("total_clicks"),
+            func.sum(DailyReport.conversions).label("total_conversions"),
+            func.sum(DailyReport.new_follows).label("total_new_follows"),
+            func.avg(DailyReport.cpa).label("avg_cpa"),
+            func.avg(DailyReport.roas).label("avg_roas"),
         ).first()
 
         # 按状态统计
-        status_stats = query.with_entities(
-            DailyReport.status,
-            func.count(DailyReport.id).label('count')
-        ).group_by(DailyReport.status).all()
+        status_stats = (
+            query.with_entities(
+                DailyReport.status, func.count(DailyReport.id).label("count")
+            )
+            .group_by(DailyReport.status)
+            .all()
+        )
 
         status_counts = {status: count for status, count in status_stats}
 
         # 构建返回数据 - 使用 8 状态机枚举 (STATE_MACHINE.md v2.6)
         result = {
-            'total_reports': stats.total_reports or 0,
+            "total_reports": stats.total_reports or 0,
             # 8 状态统计
-            'raw_submitted_reports': status_counts.get(DailyReportStatus.RAW_SUBMITTED.value, 0),
-            'trend_pending_reports': status_counts.get(DailyReportStatus.TREND_PENDING.value, 0),
-            'trend_ok_reports': status_counts.get(DailyReportStatus.TREND_OK.value, 0),
-            'trend_flagged_reports': status_counts.get(DailyReportStatus.TREND_FLAGGED.value, 0),
-            'trend_resolved_reports': status_counts.get(DailyReportStatus.TREND_RESOLVED.value, 0),
-            'final_pending_reports': status_counts.get(DailyReportStatus.FINAL_PENDING.value, 0),
-            'final_confirmed_reports': status_counts.get(DailyReportStatus.FINAL_CONFIRMED.value, 0),
-            'final_locked_reports': status_counts.get(DailyReportStatus.FINAL_LOCKED.value, 0),
-            'total_spend': stats.total_spend or Decimal('0'),
-            'total_impressions': stats.total_impressions or 0,
-            'total_clicks': stats.total_clicks or 0,
-            'total_conversions': stats.total_conversions or 0,
-            'total_new_follows': stats.total_new_follows or 0,
-            'avg_cpa': stats.avg_cpa,
-            'avg_roas': stats.avg_roas,
-            'date_range': {
-                'start_date': params.report_date_start,
-                'end_date': params.report_date_end
-            }
+            "raw_submitted_reports": status_counts.get(
+                DailyReportStatus.RAW_SUBMITTED.value, 0
+            ),
+            "trend_pending_reports": status_counts.get(
+                DailyReportStatus.TREND_PENDING.value, 0
+            ),
+            "trend_ok_reports": status_counts.get(DailyReportStatus.TREND_OK.value, 0),
+            "trend_flagged_reports": status_counts.get(
+                DailyReportStatus.TREND_FLAGGED.value, 0
+            ),
+            "trend_resolved_reports": status_counts.get(
+                DailyReportStatus.TREND_RESOLVED.value, 0
+            ),
+            "final_pending_reports": status_counts.get(
+                DailyReportStatus.FINAL_PENDING.value, 0
+            ),
+            "final_confirmed_reports": status_counts.get(
+                DailyReportStatus.FINAL_CONFIRMED.value, 0
+            ),
+            "final_locked_reports": status_counts.get(
+                DailyReportStatus.FINAL_LOCKED.value, 0
+            ),
+            "total_spend": stats.total_spend or Decimal("0"),
+            "total_impressions": stats.total_impressions or 0,
+            "total_clicks": stats.total_clicks or 0,
+            "total_conversions": stats.total_conversions or 0,
+            "total_new_follows": stats.total_new_follows or 0,
+            "avg_cpa": stats.avg_cpa,
+            "avg_roas": stats.avg_roas,
+            "date_range": {
+                "start_date": params.report_date_start,
+                "end_date": params.report_date_end,
+            },
         }
 
         return result
 
     def get_daily_report_audit_logs(
-        self,
-        report_id: int,
-        current_user: User
+        self, report_id: int, current_user: User
     ) -> List[AuditLog]:
         """
         获取日报审核日志（使用通用 AuditLog 模型）
@@ -1056,19 +1072,19 @@ class DailyReportService:
         self.get_daily_report(report_id, current_user)
 
         # 使用通用 AuditLog 模型查询 daily_report 类型的日志
-        return self.db.query(AuditLog).options(
-            joinedload(AuditLog.user)
-        ).filter(
-            AuditLog.resource_type == "daily_report",
-            AuditLog.resource_id == str(report_id)
-        ).order_by(desc(AuditLog.created_at)).all()
+        return (
+            self.db.query(AuditLog)
+            .options(joinedload(AuditLog.user))
+            .filter(
+                AuditLog.resource_type == "daily_report",
+                AuditLog.resource_id == str(report_id),
+            )
+            .order_by(desc(AuditLog.created_at))
+            .all()
+        )
 
     def _validate_transition(
-        self,
-        report: DailyReport,
-        target_status: str,
-        user_role: str,
-        action_name: str
+        self, report: DailyReport, target_status: str, user_role: str, action_name: str
     ) -> None:
         """
         使用状态机验证状态转换
@@ -1090,7 +1106,7 @@ class DailyReportService:
             raise BusinessLogicError(
                 f"当前状态({current_status})不能执行{action_name}操作，"
                 f"允许的目标状态: {allowed or '无'}",
-                error_code="STATE_400"
+                error_code="STATE_400",
             )
 
         # 使用状态机执行转换 (会验证角色权限)
@@ -1106,7 +1122,7 @@ class DailyReportService:
         report_id: int,
         target_status: DailyReportStatus,
         audit_request: DailyReportAuditRequest,
-        current_user: User
+        current_user: User,
     ) -> DailyReport:
         """
         日报状态流转内部方法
@@ -1130,7 +1146,7 @@ class DailyReportService:
             report,
             target_status.value,
             current_user.role,
-            f"状态流转到 {target_status.value}"
+            f"状态流转到 {target_status.value}",
         )
 
         with self.transaction():
@@ -1147,8 +1163,8 @@ class DailyReportService:
                 old_status=old_status,
                 new_status=target_status.value,
                 audit_notes=audit_request.audit_notes,
-                ip_address=getattr(current_user, 'ip_address', None),
-                user_agent=getattr(current_user, 'user_agent', None)
+                ip_address=getattr(current_user, "ip_address", None),
+                user_agent=getattr(current_user, "user_agent", None),
             )
 
             return report
@@ -1162,7 +1178,7 @@ class DailyReportService:
         new_status: Optional[str] = None,
         audit_notes: Optional[str] = None,
         ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None
+        user_agent: Optional[str] = None,
     ) -> AuditLog:
         """
         创建审计日志（使用通用 AuditLog 模型）
@@ -1181,10 +1197,11 @@ class DailyReportService:
             AuditLog: 审计日志对象
         """
         old_values = {"status": old_status} if old_status else None
-        new_values = {
-            "status": new_status,
-            "audit_notes": audit_notes
-        } if new_status or audit_notes else None
+        new_values = (
+            {"status": new_status, "audit_notes": audit_notes}
+            if new_status or audit_notes
+            else None
+        )
 
         audit_log = AuditLog(
             user_id=audit_user_id,
@@ -1194,7 +1211,7 @@ class DailyReportService:
             old_values=old_values,
             new_values=new_values,
             ip_address=ip_address,
-            user_agent=user_agent
+            user_agent=user_agent,
         )
         self.db.add(audit_log)
         logger.debug(
@@ -1223,19 +1240,22 @@ class DailyReportService:
         from backend.models import Project, ProjectMember
 
         # 1. 作为account_manager的项目
-        managed_projects = self.db.query(Project.id).filter(
-            Project.account_manager_id == user_id
-        ).all()
+        managed_projects = (
+            self.db.query(Project.id)
+            .filter(Project.account_manager_id == user_id)
+            .all()
+        )
 
         # 2. 作为成员的项目
-        member_projects = self.db.query(ProjectMember.project_id).filter(
-            ProjectMember.user_id == user_id
-        ).all()
+        member_projects = (
+            self.db.query(ProjectMember.project_id)
+            .filter(ProjectMember.user_id == user_id)
+            .all()
+        )
 
         # 合并去重
         project_ids = set(
-            [p.id for p in managed_projects] +
-            [p.project_id for p in member_projects]
+            [p.id for p in managed_projects] + [p.project_id for p in member_projects]
         )
 
         # TODO: 考虑缓存该结果以提升性能，避免每次查询都join
@@ -1260,6 +1280,7 @@ class DailyReportService:
             - 其他角色: 无权限
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         # admin 全部权限 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
@@ -1269,7 +1290,9 @@ class DailyReportService:
 
         # 数据员可以操作所有账户（用于审核）
         if user.role == UserRole.DATA_OPERATOR.value:
-            logger.debug(f"User {user.id} (data_operator) has access to account {account.id}")
+            logger.debug(
+                f"User {user.id} (data_operator) has access to account {account.id}"
+            )
             return True
 
         # 投手：只能操作 assigned_user_id 是自己的账户
@@ -1290,7 +1313,9 @@ class DailyReportService:
             return has_access
 
         # 其他角色：无权限
-        logger.warning(f"User {user.id} with role {user.role} has NO access to account {account.id}")
+        logger.warning(
+            f"User {user.id} with role {user.role} has NO access to account {account.id}"
+        )
         return False
 
     def _can_user_view_report(self, user: User, report: DailyReport) -> bool:
@@ -1310,10 +1335,15 @@ class DailyReportService:
             - account_manager: 只能查看自己管理的项目的日报
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         # admin/finance/data_operator 可以看所有 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
-        if user.role in [UserRole.ADMIN.value, UserRole.FINANCE.value, UserRole.DATA_OPERATOR.value]:
+        if user.role in [
+            UserRole.ADMIN.value,
+            UserRole.FINANCE.value,
+            UserRole.DATA_OPERATOR.value,
+        ]:
             logger.debug(f"User {user.id} ({user.role}) can view report {report.id}")
             return True
 
@@ -1332,7 +1362,9 @@ class DailyReportService:
         # 项目经理：检查是否有项目权限
         if user.role == UserRole.ACCOUNT_MANAGER.value:
             if not report.ad_account or not report.ad_account.project_id:
-                logger.warning(f"Report {report.id} has no associated account or project")
+                logger.warning(
+                    f"Report {report.id} has no associated account or project"
+                )
                 return False
             accessible_projects = self._get_manager_accessible_projects(user.id)
             has_access = report.ad_account.project_id in accessible_projects
@@ -1341,7 +1373,9 @@ class DailyReportService:
             )
             return has_access
 
-        logger.warning(f"User {user.id} with role {user.role} CANNOT view report {report.id}")
+        logger.warning(
+            f"User {user.id} with role {user.role} CANNOT view report {report.id}"
+        )
         return False
 
     def _can_user_edit_report(self, user: User, report: DailyReport) -> bool:
@@ -1375,5 +1409,7 @@ class DailyReportService:
             return has_access
 
         # 其他角色（财务、户管）不能直接编辑日报
-        logger.warning(f"User {user.id} with role {user.role} CANNOT edit report {report.id}")
+        logger.warning(
+            f"User {user.id} with role {user.role} CANNOT edit report {report.id}"
+        )
         return False

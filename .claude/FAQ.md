@@ -162,7 +162,7 @@ raw_submitted → trend_pending → trend_ok → final_pending → final_confirm
 **A**: 按 CLAUDE.md 要求：
 
 1. 读 `memory-bank/architecture.md` 了解项目结构
-2. 读 `memory-bank/game-design-document.md` 了解需求
+2. 读 `memory-bank/prd.md` 了解需求
 3. 查 `docs/sot/MASTER.md` 确认规则
 4. 查对应的 `BR-*.md` 获取详细业务规则
 
@@ -182,7 +182,7 @@ raw_submitted → trend_pending → trend_ok → final_pending → final_confirm
 | progress.md | 进度记录 |
 | architecture.md | 架构说明 |
 | implementation-plan.md | 实施计划 |
-| game-design-document.md | 需求/PRD |
+| prd.md | 需求/PRD |
 
 每次对话开始时自动读取，确保上下文连续。
 

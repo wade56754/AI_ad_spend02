@@ -40,6 +40,8 @@ from backend.models import (
     Project,
     ProjectMember,
     ProjectExpense,
+    ProjectPrepayment,
+    PrepaymentEntryType,
     User,
     AdAccount,
     DailyReport,
@@ -50,6 +52,8 @@ from backend.schemas.project import (
     ProjectMemberAssignRequest,
     ProjectExpenseRequest,
     ProjectMarkFulfilledRequest,
+    PrepaymentCreateRequest,
+    PrepaymentReversalRequest,
 )
 
 
@@ -147,7 +151,7 @@ class ProjectService:
         权限过滤规则:
         - admin/ceo: 全部项目
         - account_manager: 自己负责的项目
-        - media_buyer/pitcher: 参与的项目
+        - pitcher: 参与的项目
 
         Args:
             current_user: 当前用户
@@ -545,6 +549,263 @@ class ProjectService:
         return items, total
 
     # ========================================
+    # 预付款管理 (TASK-PRJ-005)
+    # ========================================
+
+    def add_prepayment(
+        self, project_id: int, request: PrepaymentCreateRequest, current_user: User
+    ) -> ProjectPrepayment:
+        """
+        添加预付款入账
+
+        TASK-PRJ-005: 预付款管理
+        SoT Reference: DATA_SCHEMA.md v5.7 §3.4 (三本账体系 - 预付款账本)
+        SoT Reference: BUSINESS_RULES.md v4.8 BR-FIN-004 (预收款≠收入)
+
+        权限: admin, finance, project_owner, ceo
+
+        业务规则:
+        - 预收款在履约完成前是负债，不是收入
+        - 入账金额必须为正数
+        - 入账日期不能是未来日期
+
+        Args:
+            project_id: 项目 ID
+            request: 入账请求 (amount, entry_date, notes)
+            current_user: 当前用户
+
+        Returns:
+            创建的预付款记录
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权操作
+            ValidationError: 验证失败 (日期在未来)
+        """
+        project = self.get_project(project_id, current_user)
+
+        # 权限检查
+        if current_user.role not in ["admin", "finance", "project_owner", "ceo"]:
+            raise_permission_denied("add_prepayment")
+
+        # 验证入账日期不能是未来日期
+        if request.entry_date > date.today():
+            raise_validation_error("entry_date", "入账日期不能是未来日期")
+
+        # 获取当前余额
+        current_balance = ProjectPrepayment.get_project_balance(self.db, project_id)
+
+        # 计算交易后余额
+        balance_after = current_balance + request.amount
+
+        # 创建入账记录
+        prepayment = ProjectPrepayment(
+            project_id=project_id,
+            entry_type=PrepaymentEntryType.TOPUP,
+            amount=request.amount,
+            balance_after=balance_after,
+            entry_date=request.entry_date,
+            notes=request.notes,
+            created_by=current_user.id if isinstance(current_user.id, int) else None,
+        )
+
+        self.db.add(prepayment)
+        self.db.commit()
+        self.db.refresh(prepayment)
+
+        return prepayment
+
+    def add_prepayment_reversal(
+        self, project_id: int, request: PrepaymentReversalRequest, current_user: User
+    ) -> ProjectPrepayment:
+        """
+        添加预付款红冲
+
+        红冲用于冲销错误的入账记录。
+
+        权限: admin, finance
+
+        业务规则:
+        - 红冲金额必须为负数
+        - 必须关联原入账记录ID
+        - 只能红冲 TOPUP 类型的记录
+
+        Args:
+            project_id: 项目 ID
+            request: 红冲请求 (reference_id, amount, entry_date, notes)
+            current_user: 当前用户
+
+        Returns:
+            创建的红冲记录
+
+        Raises:
+            NotFoundError: 项目或原入账记录不存在
+            PermissionError: 无权操作
+            BusinessError: 原记录不是入账类型 / 红冲金额超过原金额
+        """
+        project = self.get_project(project_id, current_user)
+
+        # 权限检查: 只有 admin 和 finance 可以红冲
+        if current_user.role not in ["admin", "finance"]:
+            raise_permission_denied("add_prepayment_reversal")
+
+        # 查找原入账记录
+        original = (
+            self.db.query(ProjectPrepayment)
+            .filter(
+                ProjectPrepayment.id == request.reference_id,
+                ProjectPrepayment.project_id == project_id,
+            )
+            .first()
+        )
+
+        if not original:
+            raise_not_found("ProjectPrepayment", request.reference_id)
+
+        # 验证原记录是入账类型
+        if original.entry_type != PrepaymentEntryType.TOPUP:
+            raise BusinessError(
+                message="只能红冲入账(TOPUP)类型的记录",
+                error=BusinessErrorCodes.INVALID_OPERATION,
+            )
+
+        # 验证红冲金额不超过原金额
+        if abs(request.amount) > original.amount:
+            raise BusinessError(
+                message=f"红冲金额 ({abs(request.amount)}) 不能超过原入账金额 ({original.amount})",
+                error=BusinessErrorCodes.INVALID_AMOUNT,
+            )
+
+        # 获取当前余额
+        current_balance = ProjectPrepayment.get_project_balance(self.db, project_id)
+
+        # 计算交易后余额 (红冲是减少余额)
+        balance_after = current_balance + request.amount  # amount 是负数
+
+        # 创建红冲记录
+        reversal = ProjectPrepayment(
+            project_id=project_id,
+            entry_type=PrepaymentEntryType.REVERSAL,
+            amount=request.amount,  # 负数
+            balance_after=balance_after,
+            entry_date=request.entry_date,
+            reference_id=request.reference_id,
+            reference_type="ProjectPrepayment",
+            notes=request.notes,
+            created_by=current_user.id if isinstance(current_user.id, int) else None,
+        )
+
+        self.db.add(reversal)
+        self.db.commit()
+        self.db.refresh(reversal)
+
+        return reversal
+
+    def get_prepayment_balance(self, project_id: int, current_user: User) -> dict:
+        """
+        获取项目预付款余额
+
+        TASK-PRJ-005: 预付款管理
+        SoT Reference: DATA_SCHEMA.md v5.7 §3.4.4 (三本账体系)
+
+        Args:
+            project_id: 项目 ID
+            current_user: 当前用户
+
+        Returns:
+            dict: 包含余额、累计入账、累计红冲、记录数等信息
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权访问
+        """
+        project = self.get_project(project_id, current_user)
+
+        # 计算汇总数据
+        topup_sum = self.db.query(func.sum(ProjectPrepayment.amount)).filter(
+            ProjectPrepayment.project_id == project_id,
+            ProjectPrepayment.entry_type == PrepaymentEntryType.TOPUP,
+        ).scalar() or Decimal("0.00")
+
+        reversal_sum = self.db.query(func.sum(ProjectPrepayment.amount)).filter(
+            ProjectPrepayment.project_id == project_id,
+            ProjectPrepayment.entry_type == PrepaymentEntryType.REVERSAL,
+        ).scalar() or Decimal("0.00")
+
+        entry_count = (
+            self.db.query(func.count(ProjectPrepayment.id))
+            .filter(ProjectPrepayment.project_id == project_id)
+            .scalar()
+            or 0
+        )
+
+        # 最后入账日期
+        last_entry = (
+            self.db.query(ProjectPrepayment)
+            .filter(ProjectPrepayment.project_id == project_id)
+            .order_by(desc(ProjectPrepayment.id))
+            .first()
+        )
+
+        last_entry_date = last_entry.entry_date if last_entry else None
+
+        # 当前余额 (从最后一条记录获取)
+        balance = last_entry.balance_after if last_entry else Decimal("0.00")
+
+        return {
+            "project_id": project_id,
+            "project_name": project.name,
+            "balance": balance,
+            "total_topup": topup_sum,
+            "total_reversal": reversal_sum,  # 负数
+            "entry_count": entry_count,
+            "last_entry_date": last_entry_date,
+        }
+
+    def get_prepayment_entries(
+        self,
+        project_id: int,
+        current_user: User,
+        pagination: PaginationParams,
+        entry_type: Optional[str] = None,
+    ) -> Tuple[List[ProjectPrepayment], int]:
+        """
+        获取项目预付款流水列表 (分页)
+
+        Args:
+            project_id: 项目 ID
+            current_user: 当前用户
+            pagination: 分页参数
+            entry_type: 筛选分录类型 (TOPUP/REVERSAL)
+
+        Returns:
+            (流水列表, 总数)
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权访问
+        """
+        # 验证项目访问权限
+        project = self.get_project(project_id, current_user)
+
+        query = (
+            self.db.query(ProjectPrepayment)
+            .filter(ProjectPrepayment.project_id == project_id)
+            .order_by(desc(ProjectPrepayment.id))
+        )
+
+        if entry_type:
+            query = query.filter(ProjectPrepayment.entry_type == entry_type)
+
+        items, total = paginate(query, pagination, ProjectPrepayment)
+
+        # 添加 project_name 属性
+        for item in items:
+            item.project_name = project.name
+
+        return items, total
+
+    # ========================================
     # 统计
     # ========================================
 
@@ -552,18 +813,18 @@ class ProjectService:
         """
         获取项目统计信息
 
-        权限: admin, finance, ceo, data_operator
+        权限: admin, finance, ceo, project_owner
         注意: account_manager 只能管理账户，不能查看项目统计
 
         SoT Reference: BUSINESS_RULES.md v4.6 BR-PROJ-006
         """
-        # data_operator (主管) 需要统计信息来监督团队
+        # project_owner 需要统计信息来监督项目
         # account_manager 不允许查看统计信息 (test_project_permissions.py:122)
         if current_user.role not in [
             "admin",
             "finance",
             "ceo",
-            "data_operator",
+            "project_owner",
         ]:
             raise_permission_denied("view_statistics")
 
@@ -611,7 +872,7 @@ class ProjectService:
         if user.role == "account_manager":
             return project.account_manager_id == self._user_id_to_int(user.id)
 
-        # media_buyer/pitcher: 必须是项目成员
+        # pitcher: 必须是项目成员
         member = (
             self.db.query(ProjectMember)
             .filter(
@@ -753,6 +1014,185 @@ class ProjectService:
         if isinstance(user_id, UUID):
             return abs(user_id.int) % (2**63)
         return None
+
+    # ========================================
+    # 项目仪表盘 (TASK-PRJ-004)
+    # ========================================
+
+    def get_project_dashboard(
+        self,
+        project_id: int,
+        current_user: User,
+        days: int = 30,
+    ) -> dict:
+        """
+        获取项目仪表盘数据
+
+        SoT Reference: API_SOT.md v9.3 §6.8 项目仪表盘
+
+        Args:
+            project_id: 项目ID
+            current_user: 当前用户
+            days: 趋势数据天数 (默认30天)
+
+        Returns:
+            dict: 包含 KPI、趋势、账户表现的仪表盘数据
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权限访问
+        """
+        # 1. 获取项目并检查权限
+        project = self.get_project(project_id, current_user)
+
+        # 2. 获取项目关联的账户ID列表
+        account_ids = [
+            acc.id
+            for acc in self.db.query(AdAccount.id)
+            .filter(AdAccount.project_id == project_id)
+            .all()
+        ]
+
+        # 3. 计算日期范围
+        from datetime import timedelta
+
+        today = date.today()
+        start_date = today - timedelta(days=days - 1)
+
+        # 4. 基础 KPI 汇总
+        kpi_result = {
+            "total_spend": Decimal("0.00"),
+            "total_follows": 0,
+            "total_conversions": 0,
+        }
+
+        if account_ids:
+            kpi_query = (
+                self.db.query(
+                    func.sum(DailyReport.real_spend).label("total_spend"),
+                    func.sum(DailyReport.follows_count).label("total_follows"),
+                    func.sum(DailyReport.conversions_final).label("total_conversions"),
+                )
+                .filter(
+                    DailyReport.ad_account_id.in_(account_ids),
+                    DailyReport.report_date >= start_date,
+                    DailyReport.report_date <= today,
+                )
+                .first()
+            )
+
+            if kpi_query:
+                kpi_result["total_spend"] = kpi_query.total_spend or Decimal("0.00")
+                kpi_result["total_follows"] = kpi_query.total_follows or 0
+                kpi_result["total_conversions"] = kpi_query.total_conversions or 0
+
+        # 5. 计算平均 CPL
+        avg_cpl = None
+        if kpi_result["total_follows"] > 0:
+            avg_cpl = kpi_result["total_spend"] / Decimal(kpi_result["total_follows"])
+
+        # 6. 计算预算使用率
+        budget_usage_percent = Decimal("0.00")
+        if project.budget and project.budget > 0:
+            budget_usage_percent = (kpi_result["total_spend"] / project.budget) * 100
+
+        # 7. 每日趋势数据
+        daily_trend = []
+        if account_ids:
+            trend_query = (
+                self.db.query(
+                    DailyReport.report_date,
+                    func.sum(DailyReport.real_spend).label("spend"),
+                    func.sum(DailyReport.follows_count).label("follows"),
+                    func.sum(DailyReport.conversions_final).label("conversions"),
+                )
+                .filter(
+                    DailyReport.ad_account_id.in_(account_ids),
+                    DailyReport.report_date >= start_date,
+                    DailyReport.report_date <= today,
+                )
+                .group_by(DailyReport.report_date)
+                .order_by(DailyReport.report_date)
+                .all()
+            )
+
+            for row in trend_query:
+                spend = row.spend or Decimal("0.00")
+                follows = row.follows or 0
+                cpl = None
+                if follows > 0:
+                    cpl = spend / Decimal(follows)
+
+                daily_trend.append(
+                    {
+                        "date": row.report_date.isoformat(),
+                        "spend": spend,
+                        "follows": follows,
+                        "conversions": row.conversions or 0,
+                        "cpl": cpl,
+                    }
+                )
+
+        # 8. 账户表现排行
+        account_performance = []
+        if account_ids:
+            perf_query = (
+                self.db.query(
+                    AdAccount.id.label("account_id"),
+                    AdAccount.name.label("account_name"),
+                    AdAccount.platform,
+                    AdAccount.status,
+                    func.sum(DailyReport.real_spend).label("spend"),
+                    func.sum(DailyReport.follows_count).label("follows"),
+                    func.sum(DailyReport.conversions_final).label("conversions"),
+                )
+                .outerjoin(
+                    DailyReport,
+                    and_(
+                        DailyReport.ad_account_id == AdAccount.id,
+                        DailyReport.report_date >= start_date,
+                        DailyReport.report_date <= today,
+                    ),
+                )
+                .filter(AdAccount.project_id == project_id)
+                .group_by(
+                    AdAccount.id, AdAccount.name, AdAccount.platform, AdAccount.status
+                )
+                .order_by(desc(func.sum(DailyReport.real_spend)))
+                .all()
+            )
+
+            for row in perf_query:
+                spend = row.spend or Decimal("0.00")
+                follows = row.follows or 0
+                cpl = None
+                if follows > 0:
+                    cpl = spend / Decimal(follows)
+
+                account_performance.append(
+                    {
+                        "account_id": row.account_id,
+                        "account_name": row.account_name,
+                        "platform": row.platform,
+                        "status": row.status,
+                        "spend": spend,
+                        "follows": follows,
+                        "conversions": row.conversions or 0,
+                        "cpl": cpl,
+                    }
+                )
+
+        return {
+            "total_spend": kpi_result["total_spend"],
+            "total_follows": kpi_result["total_follows"],
+            "total_conversions": kpi_result["total_conversions"],
+            "avg_cpl": avg_cpl,
+            "budget_usage_percent": budget_usage_percent,
+            "daily_trend": daily_trend,
+            "account_performance": account_performance,
+            "period_start": start_date.isoformat(),
+            "period_end": today.isoformat(),
+        }
 
 
 # ========================================

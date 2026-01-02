@@ -7,6 +7,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -23,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Edit, Trash, Users } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash, Users, BarChart3 } from 'lucide-react';
 import { useProjects, useDeleteProject } from '../hooks';
 import { PROJECT_STATUS_CONFIG } from '../types';
 import type { Project, ProjectListParams } from '../types';
@@ -63,11 +64,7 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
   }
 
   if (error) {
-    return (
-      <div className="py-8 text-center text-destructive">
-        加载失败: {error.message}
-      </div>
-    );
+    return <div className="py-8 text-center text-destructive">加载失败: {error.message}</div>;
   }
 
   const projects = data?.data ?? [];
@@ -119,21 +116,22 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
               return (
                 <TableRow key={project.id}>
                   <TableCell>
-                    <div className="font-medium">{project.name}</div>
+                    <Link
+                      href={`/projects/${project.id}`}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {project.name}
+                    </Link>
                   </TableCell>
                   <TableCell>
-                    <span className="text-muted-foreground">
-                      {formatDate(project.start_date)}
-                    </span>
+                    <span className="text-muted-foreground">{formatDate(project.start_date)}</span>
                   </TableCell>
                   <TableCell>
                     <span className={project.region ? 'text-foreground' : 'text-muted-foreground'}>
                       {project.region || '--'}
                     </span>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {formatCPL(project.unit_price)}
-                  </TableCell>
+                  <TableCell className="text-right">{formatCPL(project.unit_price)}</TableCell>
                   <TableCell className="text-right font-medium">
                     {formatFollows(project.total_follows)}
                   </TableCell>
@@ -148,10 +146,10 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
                         statusConfig.variant === 'success'
                           ? 'default'
                           : statusConfig.variant === 'error'
-                          ? 'destructive'
-                          : statusConfig.variant === 'warning'
-                          ? 'outline'
-                          : 'secondary'
+                            ? 'destructive'
+                            : statusConfig.variant === 'warning'
+                              ? 'outline'
+                              : 'secondary'
                       }
                     >
                       {statusConfig.label}
@@ -165,6 +163,12 @@ export function ProjectsTable({ onEdit, onViewMembers }: ProjectsTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/projects/${project.id}`}>
+                            <BarChart3 className="mr-2 h-4 w-4" />
+                            仪表盘
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onEdit?.(project)}>
                           <Edit className="mr-2 h-4 w-4" />
                           编辑

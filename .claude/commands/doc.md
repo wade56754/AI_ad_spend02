@@ -1,121 +1,183 @@
 ---
-description: "文档审计 Agent: 扫描 docs 目录检查 P0/P1 问题"
-argument-hint: "[目录] [--auto-fix]"
+description: "文档生成: API文档/README/变更日志"
+argument-hint: "<type> [target]"
 ---
 
-# 文档审计 Agent
+# 文档生成 Skill
 
-扫描项目文档，检查与 SoT 的一致性，识别 P0/P1 问题。
-
-## 参数
-
-用户输入: `$ARGUMENTS`
-
-- 无参数: 扫描整个 `docs/` 目录
-- 指定目录: 扫描该目录 (如 `docs/sot/`)
-- `--auto-fix`: 自动修复发现的问题
-
-## 工作流程
-
-### Phase 1: 扫描分析
-
-1. 遍历 docs/ 目录结构
-2. 检查每个 .md 文件:
-   - 版本引用是否最新
-   - 交叉引用是否有效
-   - 格式是否规范
-   - 内容是否与 SoT 冲突
-
-### Phase 2: 问题分类
-
-| 级别 | 说明 | 示例 |
-|------|------|------|
-| P0 | 阻断级 | 缺失关键文档、严重冲突 |
-| P1 | 警告级 | 版本过时、引用失效 |
-| P2 | 建议级 | 格式问题、文档优化 |
-
-### Phase 3: 报告输出
-
-输出格式:
-```
-## 文档审计报告
-
-### 扫描范围
-- 目录: docs/
-- 文件数: N
-- 扫描时间: YYYY-MM-DD HH:MM
-
-### 问题汇总
-- P0: N 个
-- P1: M 个
-- P2: K 个
-
-### P0 问题详情
-| 文件 | 问题 | 建议修复 |
-|------|------|----------|
-| xxx.md | 缺失必要章节 | 补充 §3 |
-
-### P1 问题详情
-| 文件 | 问题 | 建议修复 |
-|------|------|----------|
-| yyy.md | 引用 v2.5 应为 v2.6 | 更新版本号 |
-
-### 下一步
-- 输入 "修复 P0" 仅修复阻断级
-- 输入 "修复全部" 修复所有问题
-- 输入 "跳过" 不做修改
-```
-
-## SoT 版本基线
-
-当前冻结版本:
-- STATE_MACHINE.md v2.6
-- DATA_SCHEMA.md v5.2
-- BUSINESS_RULES.md v3.1
-- API_SOT.md v9.0
-- ERROR_CODES_SOT.md v2.1
-- AUTH_SPEC.md v2.0
-- LEDGER_SOT.md v1.1
-
-## 检查规则
-
-### 版本引用检查
-```markdown
-# ❌ 过时引用
-参见 STATE_MACHINE.md v2.5
-
-# ✅ 正确引用
-参见 STATE_MACHINE.md v2.6
-```
-
-### 交叉引用检查
-```markdown
-# ❌ 失效引用
-详见 [API文档](docs/api/README.md)  <- 文件不存在
-
-# ✅ 有效引用
-详见 [API文档](docs/sot/API_SOT.md)
-```
-
-### 层级结构检查
-确保文档在正确的层级目录:
-- Layer 1: docs/1.overview/
-- Layer 2: docs/sot/
-- Layer 3: docs/3.dev-guides/
-- Layer 4: docs/4.architecture/
-- Layer 5: docs/5.infrastructure/ 和 docs/5.testing/
-- Layer 6: docs/6.agent-layer/
-
-## 示例
+## 使用方式
 
 ```bash
-# 扫描全部文档
-/doc
-
-# 扫描指定目录
-/doc docs/sot/
-
-# 扫描并自动修复
-/doc --auto-fix
+/doc api                           # 生成 API 文档
+/doc readme backend/services/      # 生成模块 README
+/doc changelog                     # 生成变更日志
+/doc sot daily_report              # 生成 SoT 规范文档
 ```
 
+## 支持的文档类型
+
+| 类型 | 说明 | 输出位置 |
+|------|------|----------|
+| `api` | OpenAPI/Swagger 文档 | `docs/api/` |
+| `readme` | 模块说明文档 | 目标目录 |
+| `changelog` | 版本变更日志 | `CHANGELOG.md` |
+| `sot` | SoT 规范文档 | `docs/sot/` |
+| `arch` | 架构设计文档 | `docs/architecture/` |
+
+## 执行流程
+
+### Type: api
+
+生成 API 文档:
+
+```
+Step 1: 扫描 backend/routers/*.py
+Step 2: 提取所有路由定义
+Step 3: 解析 Pydantic Schema
+Step 4: 生成 OpenAPI 规范
+Step 5: 输出到 docs/api/openapi.json
+```
+
+**输出格式**:
+```yaml
+openapi: 3.0.0
+info:
+  title: AI 广告代投系统 API
+  version: 1.0.0
+paths:
+  /api/v1/daily-reports:
+    post:
+      summary: 创建日报
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyReportCreate'
+      responses:
+        201:
+          description: 创建成功
+```
+
+### Type: readme
+
+生成模块 README:
+
+```
+Step 1: 分析目标目录结构
+Step 2: 提取主要类/函数
+Step 3: 生成功能说明
+Step 4: 添加使用示例
+Step 5: 输出 README.md
+```
+
+**模板**:
+```markdown
+# 模块名称
+
+## 概述
+模块功能描述
+
+## 文件结构
+├── file1.py  # 说明
+└── file2.py  # 说明
+
+## 主要功能
+- 功能1
+- 功能2
+
+## 使用示例
+```python
+from module import func
+result = func()
+```
+
+## SoT 依赖
+- STATE_MACHINE.md v2.8
+- API_SOT.md v9.4
+```
+
+### Type: changelog
+
+生成变更日志:
+
+```
+Step 1: 读取 git log
+Step 2: 按版本分组
+Step 3: 分类 (feat/fix/docs/refactor)
+Step 4: 生成 CHANGELOG.md
+```
+
+**输出格式**:
+```markdown
+# Changelog
+
+## [1.2.0] - 2025-12-30
+
+### Added
+- 新增日报批量提交功能
+
+### Fixed
+- 修复状态流转错误
+
+### Changed
+- 优化查询性能
+```
+
+### Type: sot
+
+生成 SoT 规范文档:
+
+```
+Step 1: 分析现有代码
+Step 2: 提取状态/角色/错误码
+Step 3: 对比现有 SoT
+Step 4: 生成差异报告或新规范
+```
+
+**约束**:
+- 不能自动修改已冻结的 SoT
+- 只能生成草案供人工审核
+- 必须标注版本号
+
+## SoT 引用规则
+
+生成的文档必须包含 SoT 引用:
+
+```markdown
+## SoT 引用
+
+| 文档 | 版本 | 相关章节 |
+|------|------|----------|
+| MASTER.md | v4.6 | §2.4 角色定义 |
+| STATE_MACHINE.md | v2.8 | §3.1 状态流转 |
+| API_SOT.md | v9.4 | §5.2 日报接口 |
+```
+
+## 输出示例
+
+```
+✅ 文档生成完成
+
+📄 生成文件:
+  - docs/api/openapi.json (更新)
+  - docs/api/daily-reports.md (新增)
+
+📊 统计:
+  - API 端点: 45 个
+  - Schema 定义: 32 个
+  - 示例代码: 28 段
+
+🔗 SoT 引用:
+  - API_SOT.md v9.4
+  - DATA_SCHEMA.md v5.6
+```
+
+## 与其他命令集成
+
+```bash
+# 生成代码后自动更新文档
+/gen be 创建新接口 && /doc api
+
+# 发版前生成变更日志
+/doc changelog && git tag v1.2.0
+```

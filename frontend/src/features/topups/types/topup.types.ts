@@ -18,13 +18,13 @@ import type { UUID, ISODateString, Money } from '@/types';
  *                         rejected           rejected/cancelled
  */
 export type TopupStatus =
-  | 'draft'           // 草稿
-  | 'pending_review'  // 待数据复核
+  | 'draft' // 草稿
+  | 'pending_review' // 待数据复核
   | 'finance_approve' // 待财务终审
-  | 'paid'            // 已支付
-  | 'completed'       // 已完成 (终态)
-  | 'rejected'        // 已拒绝 (终态)
-  | 'cancelled';      // 已取消 (终态)
+  | 'paid' // 已支付
+  | 'completed' // 已完成 (终态)
+  | 'rejected' // 已拒绝 (终态)
+  | 'cancelled'; // 已取消 (终态)
 
 // === Entity Types ===
 
@@ -175,12 +175,15 @@ export type TopupAction =
 
 // === Status Display Config ===
 
-export const TOPUP_STATUS_CONFIG: Record<TopupStatus, {
-  label: string;
-  variant: 'default' | 'success' | 'warning' | 'error' | 'info' | 'secondary';
-  description: string;
-  step: number; // Progress step (1-5)
-}> = {
+export const TOPUP_STATUS_CONFIG: Record<
+  TopupStatus,
+  {
+    label: string;
+    variant: 'default' | 'success' | 'warning' | 'error' | 'info' | 'secondary';
+    description: string;
+    step: number; // Progress step (1-5)
+  }
+> = {
   draft: {
     label: '草稿',
     variant: 'secondary',
@@ -241,18 +244,19 @@ export const TOPUP_TRANSITIONS: Record<TopupStatus, TopupStatus[]> = {
 
 /**
  * 充值操作角色权限
- * SoT: MASTER.md v4.6 §2.4, backend/routers/topup.py
+ * SoT: MASTER.md v4.9 §2.4
+ * 合法角色（6个）: ceo, project_owner, finance, pitcher, account_manager, admin
  */
 export const TOPUP_ACTION_ROLES: Record<TopupAction, string[]> = {
-  create: ['pitcher', 'media_buyer', 'account_manager', 'admin'],
-  submit: ['pitcher', 'media_buyer', 'account_manager', 'admin'],
+  create: ['pitcher', 'account_manager', 'admin'],
+  submit: ['pitcher', 'account_manager', 'admin'],
   data_review_approve: ['project_owner', 'finance', 'admin'],
   data_review_reject: ['project_owner', 'finance', 'admin'],
   finance_approve: ['finance', 'admin'],
   finance_reject: ['finance', 'admin'],
   mark_paid: ['finance', 'admin'],
   complete: ['finance', 'system', 'admin'],
-  cancel: ['pitcher', 'media_buyer', 'account_manager', 'admin'],
+  cancel: ['pitcher', 'account_manager', 'admin'],
 };
 
 // === Statistics Types ===
@@ -260,6 +264,7 @@ export const TOPUP_ACTION_ROLES: Record<TopupAction, string[]> = {
 export interface TopupStatistics {
   by_status: Record<TopupStatus, number>;
   total_amount: number;
+  pending_count: number; // Total pending (pending_review + finance_approve)
   pending_review_count: number;
   finance_approve_count: number;
   total_count: number;

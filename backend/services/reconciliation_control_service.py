@@ -30,7 +30,7 @@ from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 from backend.models.reconciliation import (
     SettlementRule,
@@ -42,6 +42,7 @@ from backend.models.reconciliation import (
     IssueStatus,
     ResolutionType,
     ISSUE_STATUS_TRANSITIONS,
+    CommissionRule,
 )
 from backend.models import AdAccount, User
 from backend.schemas.reconciliation import (
@@ -53,6 +54,8 @@ from backend.schemas.reconciliation import (
     ReconciliationIssueAssign,
     ReconciliationIssueResolve,
     ReconciliationIssueStatus as SchemaIssueStatus,
+    CommissionRuleCreate,
+    CommissionRuleUpdate,
 )
 
 
@@ -62,11 +65,7 @@ class SettlementRuleService:
     def __init__(self, db: Session):
         self.db = db
 
-    def create(
-        self,
-        data: SettlementRuleCreate,
-        created_by: UUID
-    ) -> SettlementRule:
+    def create(self, data: SettlementRuleCreate, created_by: UUID) -> SettlementRule:
         """
         创建结算规则
 
@@ -89,16 +88,16 @@ class SettlementRuleService:
 
     def get_by_id(self, rule_id: int) -> Optional[SettlementRule]:
         """根据ID获取规则"""
-        return self.db.query(SettlementRule).filter(
-            SettlementRule.id == rule_id
-        ).first()
+        return (
+            self.db.query(SettlementRule).filter(SettlementRule.id == rule_id).first()
+        )
 
     def list_rules(
         self,
         rule_type: Optional[RuleType] = None,
         effective_date: Optional[date] = None,
         skip: int = 0,
-        limit: int = 20
+        limit: int = 20,
     ) -> Tuple[List[SettlementRule], int]:
         """列出结算规则"""
         query = self.db.query(SettlementRule)
@@ -112,20 +111,21 @@ class SettlementRuleService:
                     SettlementRule.effective_from <= effective_date,
                     or_(
                         SettlementRule.effective_to.is_(None),
-                        SettlementRule.effective_to >= effective_date
-                    )
+                        SettlementRule.effective_to >= effective_date,
+                    ),
                 )
             )
 
         total = query.count()
-        rules = query.order_by(desc(SettlementRule.created_at)).offset(skip).limit(limit).all()
+        rules = (
+            query.order_by(desc(SettlementRule.created_at))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
         return rules, total
 
-    def update(
-        self,
-        rule_id: int,
-        data: SettlementRuleUpdate
-    ) -> SettlementRule:
+    def update(self, rule_id: int, data: SettlementRuleUpdate) -> SettlementRule:
         """更新结算规则"""
         rule = self.get_by_id(rule_id)
         if not rule:
@@ -151,6 +151,7 @@ class SettlementRuleService:
         # 软删除：设置结束日期
         # 必须满足 effective_to > effective_from 约束
         from datetime import timedelta
+
         tomorrow = date.today() + timedelta(days=1)
         # 如果规则 effective_from 是今天或未来，设置为 effective_from + 1 天
         if rule.effective_from >= date.today():
@@ -168,9 +169,7 @@ class BalanceSnapshotService:
         self.db = db
 
     def create(
-        self,
-        data: BalanceSnapshotCreate,
-        created_by: UUID
+        self, data: BalanceSnapshotCreate, created_by: UUID
     ) -> AdAccountBalanceSnapshot:
         """
         创建余额快照
@@ -179,12 +178,16 @@ class BalanceSnapshotService:
         - BR-REC-003: 同账户同日期只能有一条快照
         """
         # 检查是否已存在
-        existing = self.db.query(AdAccountBalanceSnapshot).filter(
-            and_(
-                AdAccountBalanceSnapshot.ad_account_id == data.ad_account_id,
-                AdAccountBalanceSnapshot.snapshot_date == data.snapshot_date
+        existing = (
+            self.db.query(AdAccountBalanceSnapshot)
+            .filter(
+                and_(
+                    AdAccountBalanceSnapshot.ad_account_id == data.ad_account_id,
+                    AdAccountBalanceSnapshot.snapshot_date == data.snapshot_date,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if existing:
             raise ResourceConflictError(
@@ -210,9 +213,7 @@ class BalanceSnapshotService:
         return snapshot
 
     def batch_create(
-        self,
-        data: BalanceSnapshotBatchCreate,
-        created_by: UUID
+        self, data: BalanceSnapshotBatchCreate, created_by: UUID
     ) -> List[AdAccountBalanceSnapshot]:
         """批量创建余额快照"""
         snapshots = []
@@ -227,22 +228,26 @@ class BalanceSnapshotService:
 
     def get_by_id(self, snapshot_id: int) -> Optional[AdAccountBalanceSnapshot]:
         """根据ID获取快照"""
-        return self.db.query(AdAccountBalanceSnapshot).filter(
-            AdAccountBalanceSnapshot.id == snapshot_id
-        ).first()
+        return (
+            self.db.query(AdAccountBalanceSnapshot)
+            .filter(AdAccountBalanceSnapshot.id == snapshot_id)
+            .first()
+        )
 
     def get_by_account_date(
-        self,
-        ad_account_id: int,
-        snapshot_date: date
+        self, ad_account_id: int, snapshot_date: date
     ) -> Optional[AdAccountBalanceSnapshot]:
         """根据账户和日期获取快照"""
-        return self.db.query(AdAccountBalanceSnapshot).filter(
-            and_(
-                AdAccountBalanceSnapshot.ad_account_id == ad_account_id,
-                AdAccountBalanceSnapshot.snapshot_date == snapshot_date
+        return (
+            self.db.query(AdAccountBalanceSnapshot)
+            .filter(
+                and_(
+                    AdAccountBalanceSnapshot.ad_account_id == ad_account_id,
+                    AdAccountBalanceSnapshot.snapshot_date == snapshot_date,
+                )
             )
-        ).first()
+            .first()
+        )
 
     def list_snapshots(
         self,
@@ -250,22 +255,27 @@ class BalanceSnapshotService:
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         skip: int = 0,
-        limit: int = 20
+        limit: int = 20,
     ) -> Tuple[List[AdAccountBalanceSnapshot], int]:
         """列出余额快照"""
         query = self.db.query(AdAccountBalanceSnapshot)
 
         if ad_account_id:
-            query = query.filter(AdAccountBalanceSnapshot.ad_account_id == ad_account_id)
+            query = query.filter(
+                AdAccountBalanceSnapshot.ad_account_id == ad_account_id
+            )
         if start_date:
             query = query.filter(AdAccountBalanceSnapshot.snapshot_date >= start_date)
         if end_date:
             query = query.filter(AdAccountBalanceSnapshot.snapshot_date <= end_date)
 
         total = query.count()
-        snapshots = query.order_by(
-            desc(AdAccountBalanceSnapshot.snapshot_date)
-        ).offset(skip).limit(limit).all()
+        snapshots = (
+            query.order_by(desc(AdAccountBalanceSnapshot.snapshot_date))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
         return snapshots, total
 
     def verify_conservation(
@@ -274,7 +284,7 @@ class BalanceSnapshotService:
         start_date: date,
         end_date: date,
         topup_total: Decimal,
-        spend_total: Decimal
+        spend_total: Decimal,
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         验证守恒公式 (BR-REC-001)
@@ -291,7 +301,7 @@ class BalanceSnapshotService:
             return False, {
                 "error": "快照缺失",
                 "missing_start": start_snapshot is None,
-                "missing_end": end_snapshot is None
+                "missing_end": end_snapshot is None,
             }
 
         # 计算余额和押款变化
@@ -314,7 +324,7 @@ class BalanceSnapshotService:
             "left_side": float(left_side),
             "right_side": float(right_side),
             "difference": float(left_side - right_side),
-            "is_valid": is_valid
+            "is_valid": is_valid,
         }
 
 
@@ -325,9 +335,7 @@ class ReconciliationIssueService:
         self.db = db
 
     def create(
-        self,
-        data: ReconciliationIssueCreate,
-        created_by: UUID
+        self, data: ReconciliationIssueCreate, created_by: UUID
     ) -> ReconciliationIssue:
         """
         创建对账差异单
@@ -352,9 +360,11 @@ class ReconciliationIssueService:
 
     def get_by_id(self, issue_id: int) -> Optional[ReconciliationIssue]:
         """根据ID获取差异单"""
-        return self.db.query(ReconciliationIssue).filter(
-            ReconciliationIssue.id == issue_id
-        ).first()
+        return (
+            self.db.query(ReconciliationIssue)
+            .filter(ReconciliationIssue.id == issue_id)
+            .first()
+        )
 
     def list_issues(
         self,
@@ -366,7 +376,7 @@ class ReconciliationIssueService:
         end_date: Optional[date] = None,
         sla_breached: Optional[bool] = None,
         skip: int = 0,
-        limit: int = 20
+        limit: int = 20,
     ) -> Tuple[List[ReconciliationIssue], int]:
         """列出差异单"""
         query = self.db.query(ReconciliationIssue)
@@ -387,16 +397,16 @@ class ReconciliationIssueService:
             query = query.filter(ReconciliationIssue.sla_breached == sla_breached)
 
         total = query.count()
-        issues = query.order_by(
-            desc(ReconciliationIssue.created_at)
-        ).offset(skip).limit(limit).all()
+        issues = (
+            query.order_by(desc(ReconciliationIssue.created_at))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
         return issues, total
 
     def assign(
-        self,
-        issue_id: int,
-        data: ReconciliationIssueAssign,
-        operator_id: UUID
+        self, issue_id: int, data: ReconciliationIssueAssign, operator_id: UUID
     ) -> ReconciliationIssue:
         """
         分配差异单
@@ -410,8 +420,7 @@ class ReconciliationIssueService:
         # 检查状态流转
         if not issue.can_transition_to(IssueStatus.ASSIGNED):
             raise BusinessLogicError(
-                f"无法从 {issue.status} 状态分配差异单",
-                error_code="REC_005"
+                f"无法从 {issue.status} 状态分配差异单", error_code="REC_005"
             )
 
         issue.status = IssueStatus.ASSIGNED.value
@@ -425,9 +434,7 @@ class ReconciliationIssueService:
         return issue
 
     def start_investigation(
-        self,
-        issue_id: int,
-        operator_id: UUID
+        self, issue_id: int, operator_id: UUID
     ) -> ReconciliationIssue:
         """
         开始调查
@@ -439,10 +446,7 @@ class ReconciliationIssueService:
             raise ResourceNotFoundError("差异单不存在")
 
         if not issue.can_transition_to(IssueStatus.INVESTIGATING):
-            raise BusinessLogicError(
-                f"无法从 {issue.status} 状态开始调查",
-                error_code="REC_005"
-            )
+            raise BusinessLogicError(f"无法从 {issue.status} 状态开始调查", error_code="REC_005")
 
         issue.status = IssueStatus.INVESTIGATING.value
         self.db.commit()
@@ -450,10 +454,7 @@ class ReconciliationIssueService:
         return issue
 
     def resolve(
-        self,
-        issue_id: int,
-        data: ReconciliationIssueResolve,
-        resolved_by: UUID
+        self, issue_id: int, data: ReconciliationIssueResolve, resolved_by: UUID
     ) -> ReconciliationIssue:
         """
         处理差异单
@@ -466,8 +467,7 @@ class ReconciliationIssueService:
 
         if not issue.can_transition_to(IssueStatus.RESOLVED):
             raise BusinessLogicError(
-                f"无法从 {issue.status} 状态处理差异单",
-                error_code="REC_005"
+                f"无法从 {issue.status} 状态处理差异单", error_code="REC_005"
             )
 
         issue.status = IssueStatus.RESOLVED.value
@@ -482,11 +482,7 @@ class ReconciliationIssueService:
         self.db.refresh(issue)
         return issue
 
-    def close(
-        self,
-        issue_id: int,
-        operator_id: UUID
-    ) -> ReconciliationIssue:
+    def close(self, issue_id: int, operator_id: UUID) -> ReconciliationIssue:
         """
         关闭差异单 (终态)
 
@@ -498,8 +494,7 @@ class ReconciliationIssueService:
 
         if not issue.can_transition_to(IssueStatus.CLOSED):
             raise BusinessLogicError(
-                f"无法从 {issue.status} 状态关闭差异单",
-                error_code="REC_005"
+                f"无法从 {issue.status} 状态关闭差异单", error_code="REC_005"
             )
 
         issue.status = IssueStatus.CLOSED.value
@@ -507,11 +502,7 @@ class ReconciliationIssueService:
         self.db.refresh(issue)
         return issue
 
-    def reopen(
-        self,
-        issue_id: int,
-        operator_id: UUID
-    ) -> ReconciliationIssue:
+    def reopen(self, issue_id: int, operator_id: UUID) -> ReconciliationIssue:
         """
         重新打开差异单
 
@@ -534,10 +525,7 @@ class ReconciliationIssueService:
             else:
                 raise BusinessLogicError("无法回退该差异单状态", error_code="REC_005")
         else:
-            raise BusinessLogicError(
-                f"无法从 {issue.status} 状态重新打开",
-                error_code="REC_005"
-            )
+            raise BusinessLogicError(f"无法从 {issue.status} 状态重新打开", error_code="REC_005")
 
         self.db.commit()
         self.db.refresh(issue)
@@ -553,17 +541,20 @@ class ReconciliationIssueService:
             标记的数量
         """
         now = datetime.now(timezone.utc)
-        count = self.db.query(ReconciliationIssue).filter(
-            and_(
-                ReconciliationIssue.sla_breached == False,
-                ReconciliationIssue.sla_deadline.isnot(None),
-                ReconciliationIssue.sla_deadline < now,
-                ReconciliationIssue.status.notin_([
-                    IssueStatus.RESOLVED.value,
-                    IssueStatus.CLOSED.value
-                ])
+        count = (
+            self.db.query(ReconciliationIssue)
+            .filter(
+                and_(
+                    ReconciliationIssue.sla_breached == False,
+                    ReconciliationIssue.sla_deadline.isnot(None),
+                    ReconciliationIssue.sla_deadline < now,
+                    ReconciliationIssue.status.notin_(
+                        [IssueStatus.RESOLVED.value, IssueStatus.CLOSED.value]
+                    ),
+                )
             )
-        ).update({"sla_breached": True})
+            .update({"sla_breached": True})
+        )
 
         self.db.commit()
         return count
@@ -574,20 +565,48 @@ class ReconciliationIssueService:
 
         result = self.db.query(
             func.count(ReconciliationIssue.id).label("total"),
-            func.sum(case((ReconciliationIssue.status == IssueStatus.OPEN.value, 1), else_=0)).label("open"),
-            func.sum(case((ReconciliationIssue.status == IssueStatus.ASSIGNED.value, 1), else_=0)).label("assigned"),
-            func.sum(case((ReconciliationIssue.status == IssueStatus.INVESTIGATING.value, 1), else_=0)).label("investigating"),
-            func.sum(case((ReconciliationIssue.status == IssueStatus.RESOLVED.value, 1), else_=0)).label("resolved"),
-            func.sum(case((ReconciliationIssue.status == IssueStatus.CLOSED.value, 1), else_=0)).label("closed"),
-            func.sum(case((ReconciliationIssue.sla_breached == True, 1), else_=0)).label("sla_breached"),
-            func.coalesce(func.sum(ReconciliationIssue.difference_amount), 0).label("total_difference"),
+            func.sum(
+                case((ReconciliationIssue.status == IssueStatus.OPEN.value, 1), else_=0)
+            ).label("open"),
+            func.sum(
+                case(
+                    (ReconciliationIssue.status == IssueStatus.ASSIGNED.value, 1),
+                    else_=0,
+                )
+            ).label("assigned"),
+            func.sum(
+                case(
+                    (ReconciliationIssue.status == IssueStatus.INVESTIGATING.value, 1),
+                    else_=0,
+                )
+            ).label("investigating"),
+            func.sum(
+                case(
+                    (ReconciliationIssue.status == IssueStatus.RESOLVED.value, 1),
+                    else_=0,
+                )
+            ).label("resolved"),
+            func.sum(
+                case(
+                    (ReconciliationIssue.status == IssueStatus.CLOSED.value, 1), else_=0
+                )
+            ).label("closed"),
+            func.sum(
+                case((ReconciliationIssue.sla_breached == True, 1), else_=0)
+            ).label("sla_breached"),
+            func.coalesce(func.sum(ReconciliationIssue.difference_amount), 0).label(
+                "total_difference"
+            ),
         ).first()
 
         # 按类型统计
-        type_counts = self.db.query(
-            ReconciliationIssue.issue_type,
-            func.count(ReconciliationIssue.id)
-        ).group_by(ReconciliationIssue.issue_type).all()
+        type_counts = (
+            self.db.query(
+                ReconciliationIssue.issue_type, func.count(ReconciliationIssue.id)
+            )
+            .group_by(ReconciliationIssue.issue_type)
+            .all()
+        )
 
         return {
             "total_issues": result.total or 0,
@@ -598,5 +617,216 @@ class ReconciliationIssueService:
             "closed_issues": result.closed or 0,
             "sla_breached_issues": result.sla_breached or 0,
             "total_difference_amount": float(result.total_difference or 0),
-            "issues_by_type": {t: c for t, c in type_counts}
+            "issues_by_type": {t: c for t, c in type_counts},
         }
+
+
+class CommissionRuleService:
+    """
+    提成规则服务
+
+    TASK-PRJ-003: 提成配置
+    SoT References:
+    - BUSINESS_RULES.md v4.8 BR-COM-*
+    - DATA_SCHEMA.md v5.7 §3.5.8
+
+    提成计算逻辑:
+    - 基于 conversions_final (确认进粉数) 计算
+    - 阶梯累加: Σ(tier.count × tier.rate)
+    - 按月累计，按项目计算
+    - 只统计 final_confirmed 状态的日报
+    """
+
+    def __init__(self, db: Session):
+        self.db = db
+
+    def create(self, data: CommissionRuleCreate, created_by: UUID) -> CommissionRule:
+        """
+        创建提成规则
+
+        Business Rules:
+        - BR-COM-001: tiers 数组必须非空
+        - BR-COM-002: 阶梯必须连续 (min[n+1] = max[n] + 1)
+        """
+        rule = CommissionRule(
+            name=data.name,
+            config=data.config,
+            effective_from=data.effective_from,
+            effective_to=data.effective_to,
+            is_default=data.is_default,
+            created_by=created_by,
+        )
+
+        # 如果设为默认规则，取消其他默认规则
+        if data.is_default:
+            self._clear_default_rules()
+
+        self.db.add(rule)
+        self.db.commit()
+        self.db.refresh(rule)
+        return rule
+
+    def _clear_default_rules(self):
+        """取消所有默认规则标记"""
+        self.db.query(CommissionRule).filter(CommissionRule.is_default == True).update(
+            {"is_default": False}
+        )
+
+    def get_by_id(self, rule_id: int) -> Optional[CommissionRule]:
+        """根据ID获取规则"""
+        return (
+            self.db.query(CommissionRule).filter(CommissionRule.id == rule_id).first()
+        )
+
+    def get_default_rule(self) -> Optional[CommissionRule]:
+        """获取默认提成规则"""
+        return (
+            self.db.query(CommissionRule)
+            .filter(CommissionRule.is_default == True)
+            .first()
+        )
+
+    def list_rules(
+        self,
+        effective_date: Optional[date] = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> Tuple[List[CommissionRule], int]:
+        """列出提成规则"""
+        query = self.db.query(CommissionRule)
+
+        if effective_date:
+            query = query.filter(
+                and_(
+                    CommissionRule.effective_from <= effective_date,
+                    or_(
+                        CommissionRule.effective_to.is_(None),
+                        CommissionRule.effective_to >= effective_date,
+                    ),
+                )
+            )
+
+        total = query.count()
+        rules = (
+            query.order_by(desc(CommissionRule.created_at))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        return rules, total
+
+    def update(self, rule_id: int, data: CommissionRuleUpdate) -> CommissionRule:
+        """更新提成规则"""
+        rule = self.get_by_id(rule_id)
+        if not rule:
+            raise ResourceNotFoundError("提成规则不存在")
+
+        if data.name is not None:
+            rule.name = data.name
+        if data.config is not None:
+            rule.config = data.config
+        if data.effective_to is not None:
+            rule.effective_to = data.effective_to
+        if data.is_default is not None:
+            if data.is_default:
+                self._clear_default_rules()
+            rule.is_default = data.is_default
+
+        self.db.commit()
+        self.db.refresh(rule)
+        return rule
+
+    def delete(self, rule_id: int) -> bool:
+        """删除提成规则 (软删除 - 设置 effective_to)"""
+        rule = self.get_by_id(rule_id)
+        if not rule:
+            raise ResourceNotFoundError("提成规则不存在")
+
+        # 软删除：设置结束日期
+        from datetime import timedelta
+
+        tomorrow = date.today() + timedelta(days=1)
+        if rule.effective_from >= date.today():
+            rule.effective_to = rule.effective_from + timedelta(days=1)
+        else:
+            rule.effective_to = tomorrow
+
+        # 如果是默认规则，取消默认标记
+        rule.is_default = False
+
+        self.db.commit()
+        return True
+
+    def calculate_commission(self, rule_id: int, conversions: int) -> Dict[str, Any]:
+        """
+        计算提成金额
+
+        Args:
+            rule_id: 提成规则ID
+            conversions: 进粉数 (conversions_final)
+
+        Returns:
+            {
+                "rule_id": int,
+                "rule_name": str,
+                "conversions": int,
+                "total_commission": Decimal,
+                "currency": str,
+                "breakdown": [{"tier": {...}, "count": int, "amount": Decimal}, ...]
+            }
+
+        Example:
+            tiers: [
+                {"min": 1, "max": 50, "rate": 1.0},
+                {"min": 51, "max": 100, "rate": 1.5},
+                {"min": 101, "max": null, "rate": 2.0}
+            ]
+            conversions: 120
+            result: 50×1.0 + 50×1.5 + 20×2.0 = 165.0
+        """
+        rule = self.get_by_id(rule_id)
+        if not rule:
+            raise ResourceNotFoundError("提成规则不存在")
+
+        total, breakdown = rule.calculate_commission(conversions)
+
+        return {
+            "rule_id": rule.id,
+            "rule_name": rule.name,
+            "conversions": conversions,
+            "total_commission": total,
+            "currency": "CNY",
+            "breakdown": breakdown,
+        }
+
+    def get_effective_rule_for_project(
+        self, project_id: int, target_date: Optional[date] = None
+    ) -> Optional[CommissionRule]:
+        """
+        获取项目的生效提成规则
+
+        优先级:
+        1. 项目关联的规则 (如果生效)
+        2. 默认规则 (如果生效)
+        """
+        from backend.models.core import Project
+
+        target = target_date or date.today()
+
+        # 查找项目
+        project = self.db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            return None
+
+        # 检查项目关联的规则
+        if project.commission_rules_id:
+            rule = self.get_by_id(project.commission_rules_id)
+            if rule and rule.is_effective(target):
+                return rule
+
+        # 回退到默认规则
+        default_rule = self.get_default_rule()
+        if default_rule and default_rule.is_effective(target):
+            return default_rule
+
+        return None

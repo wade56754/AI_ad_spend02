@@ -1,5 +1,13 @@
-# SoT 5秒扫描 (AI防幻觉检查)
-cd "$(dirname "$0")/../.." && ./scripts/sot-scan.sh
+#!/bin/sh
+# AI 广告代投系统 - Pre-commit Hook
+# 1. SoT 5秒扫描 (AI防幻觉检查)
+# 2. lint-staged (代码格式化)
 
-# lint-staged (代码格式化)
-cd frontend && npx lint-staged
+# 使用绝对路径，避免路径问题
+PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+
+# SoT 5秒扫描
+"$PROJECT_ROOT/scripts/sot-scan.sh" || exit $?
+
+# lint-staged
+cd "$PROJECT_ROOT/frontend" && npx lint-staged

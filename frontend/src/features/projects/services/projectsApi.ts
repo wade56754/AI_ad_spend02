@@ -19,6 +19,13 @@ import type {
   ProjectCreateInput,
   ProjectUpdateInput,
   ProjectMemberAssignInput,
+  ProjectDashboard,
+  ProjectDashboardParams,
+  PrepaymentEntry,
+  PrepaymentBalance,
+  PrepaymentCreateInput,
+  PrepaymentReversalInput,
+  PrepaymentListParams,
 } from '../types';
 
 const BASE_PATH = '/api/v1/projects';
@@ -85,6 +92,26 @@ export async function getProjectMembers(projectId: number): Promise<{ data: Proj
   return { data: response ?? [] };
 }
 
+/**
+ * 获取项目仪表盘数据
+ * GET /api/v1/projects/{id}/dashboard
+ * TASK-PRJ-004
+ */
+export async function getProjectDashboard(
+  projectId: number,
+  params: ProjectDashboardParams = {}
+): Promise<{ data: ProjectDashboard }> {
+  const searchParams = new URLSearchParams();
+  if (params.days) searchParams.set('days', String(params.days));
+  const query = searchParams.toString();
+  const url = query
+    ? `${BASE_PATH}/${projectId}/dashboard?${query}`
+    : `${BASE_PATH}/${projectId}/dashboard`;
+
+  const response = await apiFetch<ProjectDashboard>(url);
+  return { data: response };
+}
+
 // ========== Mutation Functions ==========
 
 /**
@@ -149,4 +176,87 @@ export async function assignMember(
  */
 export async function removeMember(projectId: number, userId: string): Promise<void> {
   await apiFetch(`${BASE_PATH}/${projectId}/members/${userId}`, { method: 'DELETE' });
+}
+
+// ========== Prepayment Functions (TASK-PRJ-005) ==========
+
+/**
+ * 获取项目预付款余额
+ * GET /api/v1/projects/{id}/prepayments/balance
+ * TASK-PRJ-005: 三本账体系 - 预付款账本
+ */
+export async function getPrepaymentBalance(
+  projectId: number
+): Promise<{ data: PrepaymentBalance }> {
+  const response = await apiFetch<PrepaymentBalance>(
+    `${BASE_PATH}/${projectId}/prepayments/balance`
+  );
+  return { data: response };
+}
+
+/**
+ * 获取项目预付款流水列表
+ * GET /api/v1/projects/{id}/prepayments
+ * TASK-PRJ-005
+ */
+export async function getPrepaymentEntries(
+  projectId: number,
+  params: PrepaymentListParams = {}
+): Promise<{
+  data: PrepaymentEntry[];
+  meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
+}> {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set('page', String(params.page));
+  if (params.page_size) searchParams.set('page_size', String(params.page_size));
+  if (params.entry_type) searchParams.set('entry_type', params.entry_type);
+  const query = searchParams.toString();
+  const url = query
+    ? `${BASE_PATH}/${projectId}/prepayments?${query}`
+    : `${BASE_PATH}/${projectId}/prepayments`;
+
+  const response = await apiFetch<{
+    items: PrepaymentEntry[];
+    meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
+  }>(url);
+
+  return {
+    data: response.items ?? [],
+    meta: response.meta,
+  };
+}
+
+/**
+ * 添加预付款入账
+ * POST /api/v1/projects/{id}/prepayments
+ * TASK-PRJ-005: 记录客户预付款
+ */
+export async function createPrepayment(
+  projectId: number,
+  input: PrepaymentCreateInput
+): Promise<{ data: PrepaymentEntry }> {
+  const response = await apiFetch<PrepaymentEntry>(`${BASE_PATH}/${projectId}/prepayments`, {
+    method: 'POST',
+    body: input,
+  });
+  return { data: response };
+}
+
+/**
+ * 添加预付款红冲
+ * POST /api/v1/projects/{id}/prepayments/reversal
+ * TASK-PRJ-005: 红冲错误入账
+ */
+export async function createPrepaymentReversal(
+  projectId: number,
+  input: PrepaymentReversalInput
+): Promise<{ data: PrepaymentEntry }> {
+  const response = await apiFetch<PrepaymentEntry>(
+    `${BASE_PATH}/${projectId}/prepayments/reversal`,
+    {
+      method: 'POST',
+      body: input,
+    }
+  );
+  return { data: response };
 }

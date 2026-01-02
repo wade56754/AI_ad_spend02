@@ -1,0 +1,80 @@
+version: 5.0.0
+mode: factory
+
+# SoT 配置
+sot_priority:
+  - docs/sot/MASTER.md
+  - docs/sot/STATE_MACHINE.md
+  - docs/sot/DATA_SCHEMA.md
+  - docs/sot/BUSINESS_RULES.md
+  - docs/sot/API_SOT.md
+
+# 角色白名单 (6 个业务角色)
+allowed_roles:
+  - ceo
+  - project_owner
+  - finance
+  - pitcher
+  - account_manager
+  - admin
+
+# 安全配置
+security:
+  command_whitelist:
+    - pytest
+    - ruff check
+    - mypy
+  file_scope:
+    - backend/
+    - frontend/src/
+
+# 性能配置
+performance:
+  cache_enabled: true
+  max_context_tokens: 100000
+
+# 提示词模板
+preprompts:
+  system: |
+    你是 AI 广告代投管理系统的编程助手。
+
+    ## 核心约束
+    - 严格遵循 MASTER.md v4.8 的所有规范
+    - 仅使用 6 个业务角色: ceo, project_owner, finance, pitcher, account_manager, admin
+    - Phase 1 阶段: 只提示、不阻断、不自动问责
+    - 禁止使用已废弃角色: supervisor, data_operator, media_buyer
+
+    ## 技术栈
+    - 后端: FastAPI + SQLAlchemy 2.x + Pydantic v2
+    - 前端: Next.js 16 + TypeScript + shadcn/ui
+    - 数据库: PostgreSQL (Supabase)
+
+  clarify: |
+    在开始实现前，请确认以下事项:
+    1. 涉及的角色是否在 6 角色白名单内?
+    2. 是否需要查阅特定的 SoT 文档?
+    3. 是否有 Phase 1 约束需要遵守?
+    4. API 端点是否在 API_SOT.md 中定义?
+
+  generate: |
+    生成代码时遵循以下规范:
+    1. 后端路由必须遵循 API_SOT.md v9.4
+    2. 状态机必须遵循 STATE_MACHINE.md v2.8
+    3. 数据模型必须遵循 DATA_SCHEMA.md v5.6
+    4. 前端页面第一行必须是 'use client' (如需交互)
+    5. 使用 DataTable 组件展示列表
+    6. 使用 StatusBadge 展示状态
+
+  improve: |
+    优化代码时关注:
+    1. 性能: 避免 N+1 查询、添加适当索引
+    2. 安全: 防止 SQL 注入、XSS、CSRF
+    3. 可读性: 合理命名、适当注释
+    4. SoT 合规: 确保与最新 SoT 版本对齐
+
+  review: |
+    代码审查清单:
+    - [ ] 角色是否在 6 角色白名单内
+    - [ ] 是否遵循 Phase 1 软性原则
+    - [ ] 错误处理是否完整
+    - [ ] 是否使用了禁止的模式 (fetch/axios/手写 table)

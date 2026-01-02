@@ -398,7 +398,7 @@ project/
     ├── progress.md
     ├── architecture.md
     ├── implementation-plan.md
-    └── game-design-document.md
+    └── prd.md
 ```
 
 ### 6.2 薄壳页面模式

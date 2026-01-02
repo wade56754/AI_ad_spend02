@@ -1,11 +1,12 @@
 # BR-PROFIT - 利润统计规则
 
-> **文档版本**: v1.0
+> **文档版本**: v1.2
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
-> **父文档**: BUSINESS_RULES.md v4.6
-> **关联 SoT**: DATA_SCHEMA.md v5.6 §3.6, API_SOT.md v9.0
+> **last_reviewed**: 2026-01-02
+> **父文档**: BUSINESS_RULES.md v5.1
+> **关联 SoT**: DATA_SCHEMA.md v5.7 §3.6, API_SOT.md v9.7
+> **业务参考**: 见本文档 §定价模式（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
 
@@ -13,11 +14,11 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v4.6 | §4.9 | 规则索引定义 |
-| DATA_SCHEMA.md | v5.6 | §3.6 | profit_aggregates 表结构 |
+| BUSINESS_RULES.md | v5.0 | §4.9 | 规则索引定义 |
+| DATA_SCHEMA.md | v5.7 | §3.6 | profit_aggregates 表结构 |
 | API_SOT.md | v9.0 | §2.3.3 | 账本公式定义 |
 | ERROR_CODES.md | v2.3 | §4.8 | PROFIT_ 错误码 |
-| STATE_MACHINE.md | v2.7 | §5 | 日报 final_locked 状态 |
+| STATE_MACHINE.md | v2.9 | §5 | 日报 final_locked 状态 |
 
 ---
 
@@ -27,10 +28,11 @@
 |--------|----------|--------|----------|
 | BR-PROFIT-001 | 收入公式（per_lead） | P0 | ✅ |
 | BR-PROFIT-002 | 收入公式（fee_rate） | P0 | 🟡 |
-| BR-PROFIT-003 | 成本公式 | P0 | ✅ |
-| BR-PROFIT-004 | 毛利公式 | P0 | ✅ |
-| BR-PROFIT-005 | CPL 公式 | P1 | 🟡 |
-| BR-PROFIT-006 | 低量标记 | P2 | 🟡 |
+| BR-PROFIT-003 | 收入公式（tiered） | P1 | 🟡 |
+| BR-PROFIT-004 | 成本公式 | P0 | ✅ |
+| BR-PROFIT-005 | 毛利公式 | P0 | ✅ |
+| BR-PROFIT-006 | CPL 公式 | P1 | 🟡 |
+| BR-PROFIT-007 | 低量标记 | P2 | 🟡 |
 
 ---
 
@@ -47,6 +49,7 @@
 │                                                                 │
 │  [收入 Revenue]                                                 │
 │  ├── per_lead 模式: conversions_final × unit_price             │
+│  ├── tiered 模式: Σ(各档位线索数 × 该档单价)                    │
 │  └── fee_rate 模式: ad_spend × service_fee_rate                │
 │                                                                 │
 │  [成本 Cost]                                                    │
@@ -162,7 +165,72 @@ revenue = real_spend × service_fee_rate
 
 ---
 
-### BR-PROFIT-003: 成本公式
+### BR-PROFIT-003: 收入公式（tiered）
+
+> **业务参考**: 本文档 §定价模式说明
+
+#### 业务场景
+tiered（阶梯定价）模式适用于高价值市场和大客户场景。随着线索数量增加，单价逐级递减或递增，激励客户扩大投放规模。收入按各档位分别计算后求和。
+
+#### 详细约束
+- 📌 **强制**: 收入公式 = `Σ(各档位线索数 × 该档单价)`
+- 📌 **强制**: 档位必须连续无间隙（如 1-100, 101-500, 501+）
+- 📌 **强制**: 每个档位单价精度 DECIMAL(15,2)
+- 📌 **强制**: 线索数超过最高档位时，使用最高档单价
+- ❌ **禁止**: 档位重叠或存在间隙
+- ✅ **允许**: 单价递减（常见）或递增（少见）
+
+#### 公式详解
+```
+revenue = Σ(tier_leads_i × tier_price_i)
+
+示例（三档递减）:
+  档位1: 1-100 粉，单价 60 元/粉
+  档位2: 101-500 粉，单价 50 元/粉
+  档位3: 501+ 粉，单价 40 元/粉
+
+  若 conversions_final = 650:
+    档位1: 100 × 60 = 6,000
+    档位2: 400 × 50 = 20,000
+    档位3: 150 × 40 = 6,000
+    总收入 = 32,000 元
+```
+
+#### 档位配置结构
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| tier_min | INT | 档位起始（含） |
+| tier_max | INT | 档位结束（含，NULL 表示无上限） |
+| tier_price | DECIMAL(15,2) | 该档单价 |
+
+#### 前置条件
+- 项目配置: settlement_mode = 'tiered'
+- 引用: DATA_SCHEMA.md v5.6 §3.2.5（projects.settlement_mode, pricing_tiers）
+
+#### 错误码映射
+| 违反场景 | 错误码 | HTTP | 错误消息 |
+|----------|--------|------|----------|
+| 档位配置缺失 | `VALIDATION_001` | 400 | 阶梯定价档位未配置 |
+| 档位存在间隙 | `BIZ_701` | 400 | 阶梯档位配置存在间隙 |
+| 模式不匹配 | `BIZ_001` | 400 | 项目结算模式不支持此计算 |
+| 计算失败 | `PROFIT_006` | 500 | 收入计算失败 |
+
+#### 代码引用
+- Service: `backend/services/profit_service.py`
+- 方法: `calculate_revenue_tiered()`
+
+#### Test Intent
+| ID | 测试场景 | 输入 | 预期结果 |
+|----|----------|------|----------|
+| T1 | 单档计算 | leads=50, tier1=[1-100,60] | revenue=3000.00 |
+| T2 | 跨档计算 | leads=150, tiers=[1-100,60],[101+,50] | revenue=8500.00 |
+| T3 | 档位缺失 | tiers=[] | `VALIDATION_001` |
+| T4 | 档位间隙 | tiers=[1-100,60],[200+,40] | `BIZ_701` |
+| T5 | 边界值 | leads=100 (恰好档位边界) | revenue=6000.00 |
+
+---
+
+### BR-PROFIT-004: 成本公式
 
 #### 业务场景
 成本由两部分组成：广告消耗（real_spend）和平台手续费（fee）。手续费是支付给广告平台的服务费用，与广告消耗分开核算，确保成本计算的准确性。
@@ -209,7 +277,7 @@ cost = real_spend + fee
 
 ---
 
-### BR-PROFIT-004: 毛利公式
+### BR-PROFIT-005: 毛利公式
 
 #### 业务场景
 毛利是衡量项目盈利能力的核心指标，反映收入覆盖成本后的剩余利润。毛利率则用于评估项目的盈利效率，便于跨项目对比。
@@ -258,7 +326,7 @@ gross_margin_pct = (gross_profit / revenue) × 100
 
 ---
 
-### BR-PROFIT-005: CPL 公式
+### BR-PROFIT-006: CPL 公式
 
 #### 业务场景
 CPL（Cost Per Lead，单粉成本）是投放效率的核心指标，反映获取每个线索的平均成本。投手的绩效考核和账户优化决策都依赖 CPL 数据。
@@ -269,7 +337,7 @@ CPL（Cost Per Lead，单粉成本）是投放效率的核心指标，反映获�
 - 📌 **强制**: CPL 保留两位小数，HALF_UP 四舍五入
 - ✅ **允许**: CPL 值无上限（低效投放）
 - ❌ **禁止**: CPL 为负数
-- 📌 **强制**: 参考 BR-PROFIT-006 低量标记规则
+- 📌 **强制**: 参考 BR-PROFIT-007 低量标记规则
 
 #### 公式详解
 ```
@@ -306,7 +374,7 @@ cpl = ad_spend / conversions_final
 
 ---
 
-### BR-PROFIT-006: 低量标记
+### BR-PROFIT-007: 低量标记
 
 #### 业务场景
 当进粉数较少时，CPL 的统计意义降低，容易受单个异常数据影响。系统对低量数据进行标记，提示用户谨慎参考，避免基于不稳定数据做决策。
@@ -327,7 +395,7 @@ cpl = ad_spend / conversions_final
 
 #### 前置条件
 - 数据状态: CPL 已计算
-- 引用: MASTER.md v4.6 §2.5（Phase 1 软性原则）
+- 引用: MASTER.md v4.8 §2.5（Phase 1 软性原则）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -351,15 +419,15 @@ cpl = ad_spend / conversions_final
 ## 规则依赖关系
 
 ```
-BR-PROFIT-001/002 (收入公式)
+BR-PROFIT-001/002/003 (收入公式: per_lead/fee_rate/tiered)
          ↓
-BR-PROFIT-003 (成本公式)
+BR-PROFIT-004 (成本公式)
          ↓
-BR-PROFIT-004 (毛利公式) ←── 依赖收入和成本
+BR-PROFIT-005 (毛利公式) ←── 依赖收入和成本
          ↓
-BR-PROFIT-005 (CPL 公式)
+BR-PROFIT-006 (CPL 公式)
          ↓
-BR-PROFIT-006 (低量标记) ←── 依赖 CPL 结果
+BR-PROFIT-007 (低量标记) ←── 依赖 CPL 结果
 ```
 
 ---
@@ -381,12 +449,15 @@ BR-PROFIT-006 (低量标记) ←── 依赖 CPL 结果
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
+| v1.2 | 2026-01-02 | 断链引用修复：移除 BUSINESS_LOGIC_FRAMEWORK.md 引用；更新父文档 BUSINESS_RULES.md v5.1、API_SOT.md v9.7 |
+| v1.1 | 2026-01-02 | 新增 BR-PROFIT-003 阶梯定价规则；规则重新编号（003→004, 004→005, 005→006, 006→007）；对齐 BUSINESS_RULES.md v4.9 |
 | v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.6；错误码对齐 ERROR_CODES.md v2.3（PROFIT_*系列） |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
-**父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: DATA_SCHEMA.md v5.6 §3.6, API_SOT.md v9.0
-**版本**: v1.0
+**父文档**: BUSINESS_RULES.md v5.1
+**关联 SoT**: DATA_SCHEMA.md v5.7 §3.6, API_SOT.md v9.7
+**业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.0 已废弃）
+**版本**: v1.2

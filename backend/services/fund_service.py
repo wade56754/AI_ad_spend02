@@ -19,7 +19,6 @@ SoT References:
 - admin: 全公司数据 (只读)
 - project_owner: 自己负责的项目
 - account_manager: 账户余额部分
-- supervisor: 团队相关数据
 
 Version: 2.0
 Author: Claude Code
@@ -34,9 +33,15 @@ from sqlalchemy import func, and_, or_, desc, asc, case
 from sqlalchemy.orm import Session, joinedload
 
 from backend.models import (
-    User, Project, AdAccount, DailyReport,
-    TopupRequest, Supplier, UserRole
+    User,
+    Project,
+    AdAccount,
+    DailyReport,
+    TopupRequest,
+    Supplier,
+    UserRole,
 )
+
 # Note: AdSpendDaily is a placeholder, using DailyReport.raw_spend for spend data
 from backend.models.enums import TopupRequestStatus
 from backend.schemas.fund import (
@@ -72,7 +77,6 @@ class FundService:
     - admin: 全公司数据 (只读)
     - project_owner: 自己负责的项目
     - account_manager: 账户余额部分
-    - supervisor: 团队相关数据
     """
 
     # 资金占用率预警阈值
@@ -88,7 +92,7 @@ class FundService:
         self,
         current_user: User,
         date_from: Optional[date] = None,
-        date_to: Optional[date] = None
+        date_to: Optional[date] = None,
     ) -> FundOverviewResponse:
         """
         获取资金概览
@@ -157,10 +161,12 @@ class FundService:
         self,
         project_ids: Optional[List[int]],
         date_from: Optional[date],
-        date_to: Optional[date]
+        date_to: Optional[date],
     ) -> Decimal:
         """计算累计充值"""
-        query = self.db.query(func.coalesce(func.sum(TopupRequest.amount), Decimal("0")))
+        query = self.db.query(
+            func.coalesce(func.sum(TopupRequest.amount), Decimal("0"))
+        )
 
         # 只计算已完成的充值
         query = query.filter(TopupRequest.status == TopupRequestStatus.COMPLETED.value)
@@ -182,7 +188,7 @@ class FundService:
         self,
         project_ids: Optional[List[int]],
         date_from: Optional[date],
-        date_to: Optional[date]
+        date_to: Optional[date],
     ) -> Decimal:
         """
         计算累计消耗
@@ -190,7 +196,9 @@ class FundService:
         使用 DailyReport.raw_spend 作为消耗数据源
         (AdSpendDaily 是占位符，待重构)
         """
-        query = self.db.query(func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0")))
+        query = self.db.query(
+            func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0"))
+        )
 
         if project_ids is not None:
             query = query.join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
@@ -208,7 +216,7 @@ class FundService:
         self,
         project_ids: Optional[List[int]],
         date_from: Optional[date],
-        date_to: Optional[date]
+        date_to: Optional[date],
     ) -> Decimal:
         """
         计算预计收入 = SUM(conversions × unit_price)
@@ -218,8 +226,7 @@ class FundService:
         """
         query = self.db.query(
             func.coalesce(
-                func.sum(DailyReport.conversions * DailyReport.unit_price),
-                Decimal("0")
+                func.sum(DailyReport.conversions * DailyReport.unit_price), Decimal("0")
             )
         )
 
@@ -243,7 +250,7 @@ class FundService:
         self,
         project_ids: Optional[List[int]],
         date_from: Optional[date],
-        date_to: Optional[date]
+        date_to: Optional[date],
     ) -> Decimal:
         """
         计算累计回款
@@ -258,7 +265,7 @@ class FundService:
         self,
         project_ids: Optional[List[int]],
         date_from: Optional[date],
-        date_to: Optional[date]
+        date_to: Optional[date],
     ) -> Tuple[Optional[float], Optional[float], Optional[float]]:
         """计算与上月的变化率"""
         # 简化实现：暂时返回 None
@@ -292,7 +299,7 @@ class FundService:
         sort_by: str = "topup",
         order: str = "desc",
         date_from: Optional[date] = None,
-        date_to: Optional[date] = None
+        date_to: Optional[date] = None,
     ) -> FundDistributionProjectsResponse:
         """获取按项目的资金分布"""
         # 权限检查
@@ -302,9 +309,7 @@ class FundService:
         project_ids = self._get_accessible_project_ids(current_user)
 
         # 构建基础查询
-        query = self.db.query(Project).options(
-            joinedload(Project.creator)
-        )
+        query = self.db.query(Project).options(joinedload(Project.creator))
 
         if project_ids is not None:
             query = query.filter(Project.id.in_(project_ids))
@@ -324,27 +329,36 @@ class FundService:
 
         for project in projects:
             # 计算每个项目的资金数据
-            project_topup = self._calculate_project_topup(project.id, date_from, date_to)
-            project_spend = self._calculate_project_spend(project.id, date_from, date_to)
+            project_topup = self._calculate_project_topup(
+                project.id, date_from, date_to
+            )
+            project_spend = self._calculate_project_spend(
+                project.id, date_from, date_to
+            )
             project_balance = project_topup - project_spend
-            project_revenue = self._calculate_project_revenue(project.id, date_from, date_to)
+            project_revenue = self._calculate_project_revenue(
+                project.id, date_from, date_to
+            )
 
             # 获取项目的平均单价 (从日报)
             project_unit_price = self._get_project_unit_price(project.id)
 
-            items.append(ProjectFundItem(
-                project_id=project.id,
-                project_name=project.name,
-                owner_id=project.created_by,
-                owner_name=project.creator.full_name if project.creator else None,
-                total_topup=project_topup,
-                total_spend=project_spend,
-                balance=project_balance,
-                receivable=project_revenue,
-                received=Decimal("0"),  # TODO: 待 receivable 表实现
-                unit_price=project_unit_price,
-                is_pricing_pending=project_unit_price is None or project_unit_price <= 0,
-            ))
+            items.append(
+                ProjectFundItem(
+                    project_id=project.id,
+                    project_name=project.name,
+                    owner_id=project.created_by,
+                    owner_name=project.creator.full_name if project.creator else None,
+                    total_topup=project_topup,
+                    total_spend=project_spend,
+                    balance=project_balance,
+                    receivable=project_revenue,
+                    received=Decimal("0"),  # TODO: 待 receivable 表实现
+                    unit_price=project_unit_price,
+                    is_pricing_pending=project_unit_price is None
+                    or project_unit_price <= 0,
+                )
+            )
 
             total_topup_sum += project_topup
             total_spend_sum += project_spend
@@ -368,17 +382,16 @@ class FundService:
                 "total_topup": total_topup_sum,
                 "total_spend": total_spend_sum,
                 "total_balance": total_balance_sum,
-            }
+            },
         )
 
     def _calculate_project_topup(
-        self,
-        project_id: int,
-        date_from: Optional[date],
-        date_to: Optional[date]
+        self, project_id: int, date_from: Optional[date], date_to: Optional[date]
     ) -> Decimal:
         """计算单个项目的充值"""
-        query = self.db.query(func.coalesce(func.sum(TopupRequest.amount), Decimal("0")))
+        query = self.db.query(
+            func.coalesce(func.sum(TopupRequest.amount), Decimal("0"))
+        )
         query = query.join(AdAccount, TopupRequest.ad_account_id == AdAccount.id)
         query = query.filter(AdAccount.project_id == project_id)
         query = query.filter(TopupRequest.status == TopupRequestStatus.COMPLETED.value)
@@ -391,17 +404,16 @@ class FundService:
         return query.scalar() or Decimal("0")
 
     def _calculate_project_spend(
-        self,
-        project_id: int,
-        date_from: Optional[date],
-        date_to: Optional[date]
+        self, project_id: int, date_from: Optional[date], date_to: Optional[date]
     ) -> Decimal:
         """
         计算单个项目的消耗
 
         使用 DailyReport.raw_spend 作为消耗数据源
         """
-        query = self.db.query(func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0")))
+        query = self.db.query(
+            func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0"))
+        )
         query = query.join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
         query = query.filter(AdAccount.project_id == project_id)
 
@@ -413,10 +425,7 @@ class FundService:
         return query.scalar() or Decimal("0")
 
     def _calculate_project_revenue(
-        self,
-        project_id: int,
-        date_from: Optional[date],
-        date_to: Optional[date]
+        self, project_id: int, date_from: Optional[date], date_to: Optional[date]
     ) -> Decimal:
         """
         计算单个项目的预计收入
@@ -425,8 +434,7 @@ class FundService:
         """
         query = self.db.query(
             func.coalesce(
-                func.sum(DailyReport.conversions * DailyReport.unit_price),
-                Decimal("0")
+                func.sum(DailyReport.conversions * DailyReport.unit_price), Decimal("0")
             )
         )
         query = query.join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
@@ -446,15 +454,17 @@ class FundService:
 
         从该项目的日报中获取最新的 unit_price
         """
-        result = self.db.query(DailyReport.unit_price).join(
-            AdAccount, DailyReport.ad_account_id == AdAccount.id
-        ).filter(
-            AdAccount.project_id == project_id,
-            DailyReport.unit_price.isnot(None),
-            DailyReport.unit_price > 0
-        ).order_by(
-            DailyReport.report_date.desc()
-        ).first()
+        result = (
+            self.db.query(DailyReport.unit_price)
+            .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+            .filter(
+                AdAccount.project_id == project_id,
+                DailyReport.unit_price.isnot(None),
+                DailyReport.unit_price > 0,
+            )
+            .order_by(DailyReport.report_date.desc())
+            .first()
+        )
 
         return result[0] if result else None
 
@@ -468,7 +478,7 @@ class FundService:
         sort_by: str = "topup",
         order: str = "desc",
         date_from: Optional[date] = None,
-        date_to: Optional[date] = None
+        date_to: Optional[date] = None,
     ) -> FundDistributionChannelsResponse:
         """获取按渠道的资金分布"""
         # 权限检查
@@ -481,16 +491,18 @@ class FundService:
         query = self.db.query(
             Supplier.id,
             Supplier.name,
-            func.coalesce(func.sum(TopupRequest.amount), Decimal("0")).label("total_topup"),
-            func.count(func.distinct(AdAccount.id)).label("account_count")
+            func.coalesce(func.sum(TopupRequest.amount), Decimal("0")).label(
+                "total_topup"
+            ),
+            func.count(func.distinct(AdAccount.id)).label("account_count"),
         )
         query = query.outerjoin(AdAccount, AdAccount.supplier_id == Supplier.id)
         query = query.outerjoin(
             TopupRequest,
             and_(
                 TopupRequest.ad_account_id == AdAccount.id,
-                TopupRequest.status == TopupRequestStatus.COMPLETED.value
-            )
+                TopupRequest.status == TopupRequestStatus.COMPLETED.value,
+            ),
         )
 
         if project_ids is not None:
@@ -520,14 +532,16 @@ class FundService:
             )
             channel_balance = total_topup - channel_spend
 
-            items.append(ChannelFundItem(
-                channel_id=str(channel_id) if channel_id else None,
-                channel_name=channel_name or "未知渠道",
-                total_topup=total_topup,
-                total_spend=channel_spend,
-                balance=channel_balance,
-                account_count=account_count or 0,
-            ))
+            items.append(
+                ChannelFundItem(
+                    channel_id=str(channel_id) if channel_id else None,
+                    channel_name=channel_name or "未知渠道",
+                    total_topup=total_topup,
+                    total_spend=channel_spend,
+                    balance=channel_balance,
+                    account_count=account_count or 0,
+                )
+            )
 
             total_topup_sum += total_topup
             total_spend_sum += channel_spend
@@ -551,7 +565,7 @@ class FundService:
                 "total_topup": total_topup_sum,
                 "total_spend": total_spend_sum,
                 "total_balance": total_balance_sum,
-            }
+            },
         )
 
     def _calculate_channel_spend(
@@ -559,14 +573,16 @@ class FundService:
         supplier_id: int,
         project_ids: Optional[List[int]],
         date_from: Optional[date],
-        date_to: Optional[date]
+        date_to: Optional[date],
     ) -> Decimal:
         """
         计算渠道消耗
 
         使用 DailyReport.raw_spend 作为消耗数据源
         """
-        query = self.db.query(func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0")))
+        query = self.db.query(
+            func.coalesce(func.sum(DailyReport.raw_spend), Decimal("0"))
+        )
         query = query.join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
         query = query.filter(AdAccount.supplier_id == supplier_id)
 
@@ -588,7 +604,7 @@ class FundService:
         page: int = 1,
         page_size: int = 20,
         project_id: Optional[int] = None,
-        status: Optional[str] = None
+        status: Optional[str] = None,
     ) -> ReceivableListResponse:
         """
         获取应收明细
@@ -618,7 +634,7 @@ class FundService:
         page_size: int = 20,
         project_id: Optional[int] = None,
         date_from: Optional[date] = None,
-        date_to: Optional[date] = None
+        date_to: Optional[date] = None,
     ) -> PaymentListResponse:
         """
         获取回款记录
@@ -650,34 +666,44 @@ class FundService:
         overview = self.get_fund_overview(current_user)
 
         # 检查资金占用率预警
-        if overview.occupy_rate and overview.occupy_rate >= float(self.OCCUPY_RATE_CRITICAL * 100):
-            alerts.append(FundAlertItem(
-                alert_type="high_occupy_rate",
-                severity="critical",
-                message=f"资金占用率过高: {overview.occupy_rate:.1f}%，超过 90% 警戒线",
-                value=Decimal(str(overview.occupy_rate)),
-                threshold=self.OCCUPY_RATE_CRITICAL * 100,
-                created_at=datetime.now(),
-            ))
-        elif overview.occupy_rate and overview.occupy_rate >= float(self.OCCUPY_RATE_WARNING * 100):
-            alerts.append(FundAlertItem(
-                alert_type="high_occupy_rate",
-                severity="high",
-                message=f"资金占用率较高: {overview.occupy_rate:.1f}%，超过 80% 预警线",
-                value=Decimal(str(overview.occupy_rate)),
-                threshold=self.OCCUPY_RATE_WARNING * 100,
-                created_at=datetime.now(),
-            ))
+        if overview.occupy_rate and overview.occupy_rate >= float(
+            self.OCCUPY_RATE_CRITICAL * 100
+        ):
+            alerts.append(
+                FundAlertItem(
+                    alert_type="high_occupy_rate",
+                    severity="critical",
+                    message=f"资金占用率过高: {overview.occupy_rate:.1f}%，超过 90% 警戒线",
+                    value=Decimal(str(overview.occupy_rate)),
+                    threshold=self.OCCUPY_RATE_CRITICAL * 100,
+                    created_at=datetime.now(),
+                )
+            )
+        elif overview.occupy_rate and overview.occupy_rate >= float(
+            self.OCCUPY_RATE_WARNING * 100
+        ):
+            alerts.append(
+                FundAlertItem(
+                    alert_type="high_occupy_rate",
+                    severity="high",
+                    message=f"资金占用率较高: {overview.occupy_rate:.1f}%，超过 80% 预警线",
+                    value=Decimal(str(overview.occupy_rate)),
+                    threshold=self.OCCUPY_RATE_WARNING * 100,
+                    created_at=datetime.now(),
+                )
+            )
 
         # 检查余额为负
         if overview.current_balance < 0:
-            alerts.append(FundAlertItem(
-                alert_type="negative_balance",
-                severity="critical",
-                message=f"账户余额为负: ¥{overview.current_balance:,.2f}",
-                value=overview.current_balance,
-                created_at=datetime.now(),
-            ))
+            alerts.append(
+                FundAlertItem(
+                    alert_type="negative_balance",
+                    severity="critical",
+                    message=f"账户余额为负: ¥{overview.current_balance:,.2f}",
+                    value=overview.current_balance,
+                    created_at=datetime.now(),
+                )
+            )
 
         critical_count = sum(1 for a in alerts if a.severity == "critical")
         high_count = sum(1 for a in alerts if a.severity == "high")
@@ -699,9 +725,15 @@ class FundService:
         - ceo, finance, admin: 全部数据
         - project_owner: 自己项目
         - account_manager: 账户余额
-        - supervisor: 团队数据
+        - project_owner: 项目数据
         """
-        allowed_roles = ["ceo", "finance", "project_owner", "account_manager", "admin", "supervisor"]
+        allowed_roles = [
+            "ceo",
+            "finance",
+            "project_owner",
+            "account_manager",
+            "admin",
+        ]
         if current_user.role not in allowed_roles:
             raise PermissionDeniedError("无权访问资金总览")
 
@@ -711,32 +743,27 @@ class FundService:
 
         返回 (MASTER.md v4.4 §2.4):
         - None: 可访问全部项目 (ceo, finance, admin)
-        - List[int]: 限定的项目ID列表 (project_owner, account_manager, supervisor)
+        - List[int]: 限定的项目ID列表 (project_owner, account_manager)
         """
         if current_user.role in ["ceo", "finance", "admin"]:
             return None  # 全部项目
 
         if current_user.role == "project_owner":
             # 查询用户负责的项目 (使用 created_by 字段)
-            project_ids = self.db.query(Project.id).filter(
-                Project.created_by == current_user.id
-            ).all()
-            return [p[0] for p in project_ids]
-
-        if current_user.role == "supervisor":
-            # 主管: 查询团队成员负责的项目
-            # TODO: 待 team 表实现后完善，目前返回全部项目
-            # 暂时使用与 project_owner 相同逻辑
-            project_ids = self.db.query(Project.id).filter(
-                Project.created_by == current_user.id
-            ).all()
+            project_ids = (
+                self.db.query(Project.id)
+                .filter(Project.created_by == current_user.id)
+                .all()
+            )
             return [p[0] for p in project_ids]
 
         if current_user.role == "account_manager":
             # 查询用户管理的账户所属项目
-            project_ids = self.db.query(func.distinct(AdAccount.project_id)).filter(
-                AdAccount.assigned_to == current_user.id
-            ).all()
+            project_ids = (
+                self.db.query(func.distinct(AdAccount.project_id))
+                .filter(AdAccount.assigned_to == current_user.id)
+                .all()
+            )
             return [p[0] for p in project_ids if p[0] is not None]
 
         return []  # 其他角色无权访问 (pitcher)

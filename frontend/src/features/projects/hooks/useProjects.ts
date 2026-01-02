@@ -23,27 +23,45 @@ import {
   getProject,
   getProjectStatistics,
   getProjectMembers,
+  getProjectDashboard,
   createProject,
   updateProject,
   deleteProject,
   assignMember,
   removeMember,
+  getPrepaymentBalance,
+  getPrepaymentEntries,
+  createPrepayment,
+  createPrepaymentReversal,
 } from '../services';
 import type {
   Project,
   ProjectMember,
   ProjectStatistics,
+  ProjectDashboard,
   ProjectListParams,
   ProjectCreateInput,
   ProjectUpdateInput,
   ProjectMemberAssignInput,
+  ProjectDashboardParams,
+  PrepaymentBalance,
+  PrepaymentEntry,
+  PrepaymentListParams,
+  PrepaymentCreateInput,
+  PrepaymentReversalInput,
 } from '../types';
 
 // ========== Query Hooks ==========
 
 export function useProjects(
   params: ProjectListParams = {},
-  options?: Omit<UseQueryOptions<{ data: Project[]; meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } } }>, 'queryKey' | 'queryFn'>
+  options?: Omit<
+    UseQueryOptions<{
+      data: Project[];
+      meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
+    }>,
+    'queryKey' | 'queryFn'
+  >
 ) {
   return useQuery({
     queryKey: queryKeys.projects.list(params),
@@ -86,6 +104,24 @@ export function useProjectMembers(
   });
 }
 
+/**
+ * 获取项目仪表盘数据
+ * TASK-PRJ-004
+ */
+export function useProjectDashboard(
+  projectId: number,
+  params: ProjectDashboardParams = {},
+  options?: Omit<UseQueryOptions<{ data: ProjectDashboard }>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: [...queryKeys.projects.detail(projectId), 'dashboard', params],
+    queryFn: () => getProjectDashboard(projectId, params),
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000, // 2 分钟
+    ...options,
+  });
+}
+
 // ========== Mutation Hooks ==========
 
 export function useCreateProject(
@@ -117,9 +153,7 @@ export function useUpdateProject(
   });
 }
 
-export function useDeleteProject(
-  options?: UseMutationOptions<void, Error, number>
-) {
+export function useDeleteProject(options?: UseMutationOptions<void, Error, number>) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -132,7 +166,11 @@ export function useDeleteProject(
 }
 
 export function useAssignMember(
-  options?: UseMutationOptions<{ data: ProjectMember }, Error, { projectId: number; input: ProjectMemberAssignInput }>
+  options?: UseMutationOptions<
+    { data: ProjectMember },
+    Error,
+    { projectId: number; input: ProjectMemberAssignInput }
+  >
 ) {
   const queryClient = useQueryClient();
 
@@ -154,6 +192,99 @@ export function useRemoveMember(
     mutationFn: ({ projectId, userId }) => removeMember(projectId, userId),
     onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.members(projectId) });
+    },
+    ...options,
+  });
+}
+
+// ========== Prepayment Hooks (TASK-PRJ-005) ==========
+
+/**
+ * 获取项目预付款余额
+ * TASK-PRJ-005: 三本账体系 - 预付款账本
+ */
+export function usePrepaymentBalance(
+  projectId: number,
+  options?: Omit<UseQueryOptions<{ data: PrepaymentBalance }>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery({
+    queryKey: [...queryKeys.projects.detail(projectId), 'prepayments', 'balance'],
+    queryFn: () => getPrepaymentBalance(projectId),
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000,
+    ...options,
+  });
+}
+
+/**
+ * 获取项目预付款流水列表
+ * TASK-PRJ-005
+ */
+export function usePrepaymentEntries(
+  projectId: number,
+  params: PrepaymentListParams = {},
+  options?: Omit<
+    UseQueryOptions<{
+      data: PrepaymentEntry[];
+      meta: { pagination: { page: number; page_size: number; total: number; total_pages: number } };
+    }>,
+    'queryKey' | 'queryFn'
+  >
+) {
+  return useQuery({
+    queryKey: [...queryKeys.projects.detail(projectId), 'prepayments', 'list', params],
+    queryFn: () => getPrepaymentEntries(projectId, params),
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000,
+    ...options,
+  });
+}
+
+/**
+ * 添加预付款入账
+ * TASK-PRJ-005
+ */
+export function useCreatePrepayment(
+  options?: UseMutationOptions<
+    { data: PrepaymentEntry },
+    Error,
+    { projectId: number; input: PrepaymentCreateInput }
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, input }) => createPrepayment(projectId, input),
+    onSuccess: (_, { projectId }) => {
+      // 刷新余额和流水列表
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.projects.detail(projectId), 'prepayments'],
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 添加预付款红冲
+ * TASK-PRJ-005
+ */
+export function useCreatePrepaymentReversal(
+  options?: UseMutationOptions<
+    { data: PrepaymentEntry },
+    Error,
+    { projectId: number; input: PrepaymentReversalInput }
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ projectId, input }) => createPrepaymentReversal(projectId, input),
+    onSuccess: (_, { projectId }) => {
+      // 刷新余额和流水列表
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.projects.detail(projectId), 'prepayments'],
+      });
     },
     ...options,
   });

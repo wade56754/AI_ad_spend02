@@ -52,6 +52,7 @@ from backend.routers import (
     fund,  # ✅ 资金总览API (A2-fund-overview.md)
     finance_v2,  # ✅ 财务管理V2 (资金总览+项目盈亏重构)
     profit,  # ✅ 利润模块API (TASK-PROFIT-001)
+    monthly_settlements,  # ✅ 月度锁账API (TASK-FIN-003)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # ai_monitoring,  # AI监控API
     # supabase_auth,  # 使用authentication代替
@@ -156,6 +157,9 @@ app.include_router(
 app.include_router(fund.router, prefix=API_V1_PREFIX)  # 资金总览 ✅ A2-fund-overview.md
 app.include_router(finance_v2.router)  # 财务管理V2 ✅ 资金总览+项目盈亏重构 (已包含 /api/v1 前缀)
 app.include_router(profit.router, prefix=API_V1_PREFIX)  # 利润模块 ✅ TASK-PROFIT-001
+app.include_router(
+    monthly_settlements.router, prefix=API_V1_PREFIX
+)  # 月度锁账 ✅ TASK-FIN-003
 # 暂时注释掉缺失依赖的路由,以便测试运行:
 # app.include_router(ai_monitoring.router, prefix=API_V1_PREFIX)  # AI监控
 

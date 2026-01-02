@@ -381,3 +381,4 @@ def execute_tool(name: str, **kwargs) -> ToolResult:
     """执行全局注册表中的工具"""
     return _global_registry.execute(name, **kwargs)
 
+

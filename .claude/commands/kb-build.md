@@ -36,3 +36,4 @@ for source, stat in stats.items():
 
 索引构建完成后，可以使用 `/kb-search` 搜索内容。
 
+

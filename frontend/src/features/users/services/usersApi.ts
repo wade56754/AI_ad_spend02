@@ -17,113 +17,9 @@
 
 import { apiFetch, apiFetchPaginated } from '@/lib/api';
 import type { PaginatedResponse } from '@/lib/api';
-import type {
-  User,
-  UserListParams,
-  CreateUserRequest,
-  UpdateUserRequest,
-  UserRole,
-  UserStatus,
-} from '../types';
+import type { User, UserListParams, CreateUserRequest, UpdateUserRequest } from '../types';
 
 const BASE_PATH = '/api/v1/users';
-
-// ========== Mock 数据生成 ==========
-// SoT: C2-pitcher-mgmt.md §2 数据需求
-
-/**
- * 生成 Mock 投手数据
- * SoT: C2-pitcher-mgmt.md §4.2 响应示例
- */
-function generateMockPitchers(): User[] {
-  const now = new Date().toISOString();
-
-  return [
-    {
-      id: 'uuid-pitcher-001',
-      username: 'zhangsan',
-      full_name: '张三',
-      email: 'zhangsan@example.com',
-      role: 'pitcher' as unknown as UserRole,
-      status: 'active' as unknown as UserStatus,
-      is_active: true,
-      account_manager_id: 'uuid-manager-001',
-      manager_name: '李经理',
-      team_name: 'A组',
-      account_count: 5,
-      project_count: 2,
-      created_at: '2025-01-01T00:00:00Z',
-      last_login: now,
-    },
-    {
-      id: 'uuid-pitcher-002',
-      username: 'lisi',
-      full_name: '李四',
-      email: 'lisi@example.com',
-      role: 'pitcher' as unknown as UserRole,
-      status: 'active' as unknown as UserStatus,
-      is_active: true,
-      account_manager_id: 'uuid-manager-001',
-      manager_name: '李经理',
-      team_name: 'A组',
-      account_count: 3,
-      project_count: 1,
-      created_at: '2025-02-15T00:00:00Z',
-      last_login: now,
-    },
-    {
-      id: 'uuid-pitcher-003',
-      username: 'wangwu',
-      full_name: '王五',
-      email: 'wangwu@example.com',
-      role: 'pitcher' as unknown as UserRole,
-      status: 'inactive' as unknown as UserStatus,
-      is_active: false,
-      account_manager_id: 'uuid-manager-002',
-      manager_name: '王经理',
-      team_name: 'B组',
-      account_count: 4,
-      project_count: 1,
-      created_at: '2025-03-01T00:00:00Z',
-      last_login: '2025-12-01T10:00:00Z',
-    },
-    {
-      id: 'uuid-pitcher-004',
-      username: 'zhaoliu',
-      full_name: '赵六',
-      email: 'zhaoliu@example.com',
-      role: 'pitcher' as unknown as UserRole,
-      status: 'active' as unknown as UserStatus,
-      is_active: true,
-      account_manager_id: 'uuid-manager-002',
-      manager_name: '王经理',
-      team_name: 'B组',
-      account_count: 6,
-      project_count: 3,
-      created_at: '2025-04-01T00:00:00Z',
-      last_login: now,
-    },
-  ];
-}
-
-/**
- * 生成 Mock 用户统计
- * SoT: C2-pitcher-mgmt.md §3.1 KPI 卡片
- */
-function generateMockUserStats() {
-  return {
-    total: 25,
-    active: 22,
-    inactive: 3,
-    by_role: {
-      pitcher: 18,
-      project_owner: 3,
-      finance: 2,
-      account_manager: 1,
-      admin: 1,
-    },
-  };
-}
 
 // === Query Functions ===
 
@@ -133,9 +29,7 @@ function generateMockUserStats() {
  * SoT: C2-pitcher-mgmt.md §4.1 接口清单
  * 权限: admin
  */
-export async function getUsers(
-  params: UserListParams = {}
-): Promise<PaginatedResponse<User>> {
+export async function getUsers(params: UserListParams = {}): Promise<PaginatedResponse<User>> {
   const searchParams = new URLSearchParams();
 
   if (params.page) searchParams.set('page', String(params.page));
@@ -147,51 +41,7 @@ export async function getUsers(
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}?${query}` : BASE_PATH;
 
-  try {
-    return await apiFetchPaginated<User>(url);
-  } catch (error) {
-    console.warn('[Users] API 不可用，使用 Mock 数据', error);
-    let mockItems = generateMockPitchers();
-
-    // 应用筛选
-    if (params.role) {
-      mockItems = mockItems.filter(item => item.role === params.role);
-    }
-    if (params.is_active !== undefined) {
-      mockItems = mockItems.filter(item => item.is_active === params.is_active);
-    }
-    if (params.search) {
-      const search = params.search.toLowerCase();
-      mockItems = mockItems.filter(
-        item =>
-          item.full_name?.toLowerCase().includes(search) ||
-          item.username.toLowerCase().includes(search) ||
-          item.email.toLowerCase().includes(search)
-      );
-    }
-
-    const page = params.page || 1;
-    const pageSize = params.page_size || 20;
-    const total = mockItems.length;
-    const totalPages = Math.ceil(total / pageSize);
-
-    return {
-      // New format
-      items: mockItems,
-      total,
-      page,
-      page_size: pageSize,
-      total_pages: totalPages,
-      // Legacy format
-      data: mockItems,
-      meta: {
-        total,
-        page,
-        page_size: pageSize,
-        total_pages: totalPages,
-      },
-    };
-  }
+  return apiFetchPaginated<User>(url);
 }
 
 /**
@@ -201,15 +51,7 @@ export async function getUsers(
  * 权限: admin / self
  */
 export async function getUser(id: string): Promise<User> {
-  try {
-    return await apiFetch<User>(`${BASE_PATH}/${id}`);
-  } catch (error) {
-    console.warn('[Users] API 不可用，使用 Mock 数据', error);
-    const mockItems = generateMockPitchers();
-    const found = mockItems.find(item => item.id === id);
-    if (found) return found;
-    throw new Error(`用户 ${id} 不存在`);
-  }
+  return apiFetch<User>(`${BASE_PATH}/${id}`);
 }
 
 /**
@@ -223,12 +65,7 @@ export async function getUserStatistics(): Promise<{
   inactive: number;
   by_role: Record<string, number>;
 }> {
-  try {
-    return await apiFetch(`${BASE_PATH}/statistics/summary`);
-  } catch (error) {
-    console.warn('[Users] Stats API 不可用，使用 Mock 数据', error);
-    return generateMockUserStats();
-  }
+  return apiFetch(`${BASE_PATH}/statistics/summary`);
 }
 
 // === Mutation Functions ===
@@ -250,10 +87,7 @@ export async function createUser(input: CreateUserRequest): Promise<User> {
  * PUT /api/v1/users/:id
  * 权限: admin
  */
-export async function updateUser(
-  id: string,
-  input: UpdateUserRequest
-): Promise<User> {
+export async function updateUser(id: string, input: UpdateUserRequest): Promise<User> {
   return apiFetch<User>(`${BASE_PATH}/${id}`, {
     method: 'PUT',
     body: input,
@@ -276,9 +110,6 @@ export async function deleteUser(id: string): Promise<{ user_id: string }> {
  * PUT /api/v1/users/:id
  * 权限: admin
  */
-export async function toggleUserStatus(
-  id: string,
-  isActive: boolean
-): Promise<User> {
+export async function toggleUserStatus(id: string, isActive: boolean): Promise<User> {
   return updateUser(id, { is_active: isActive });
 }

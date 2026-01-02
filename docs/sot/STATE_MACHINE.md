@@ -1,17 +1,19 @@
 # AI广告代投系统 - 状态机定义文档（SoT-State）
 
-> **版本**: v2.8
+> **版本**: v2.9
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-29
-> **更新日期**: 2025-12-29
+> **last_reviewed**: 2026-01-02
+> **更新日期**: 2026-01-02
 > **类型**: 状态与合法流转的唯一事实来源（SoT-State）
 > **互锁文档**
-> - 实现规范 → `./MASTER.md` v4.6
-> - 数据结构 → `./DATA_SCHEMA.md`（CHECK/枚举必须完全复制本文件，不得自创）
+> - 实现规范 → `./MASTER.md` v4.8
+> - 数据结构 → `./DATA_SCHEMA.md` v5.7（CHECK/枚举必须完全复制本文件，不得自创）
+> - 业务规则 → `./BUSINESS_RULES.md` v5.0（业务逻辑框架）
 > - API 流程 → `../2.dev-guides/API_DEVELOPMENT_FLOW.md`
-> - 技术层角色 → `admin/finance/account_manager/media_buyer` (4角色，对齐 MASTER.md v4.6 §INV-007)
-> - 业务层角色（6角色）→ §2.1 映射表，PRD v2.2 已移除 supervisor
+> - 技术层角色 → `admin/finance/account_manager/media_buyer` (4角色，对齐 MASTER.md v4.8 §INV-007)
+> - 业务层角色（6角色）→ §2.1 映射表（PRD v5.2 已与 MASTER.md v4.8 完全对齐）
+> - 框架对齐 → `BUSINESS_LOGIC_FRAMEWORK_v2.1.md`（业务逻辑框架参考）
 
 ---
 
@@ -26,15 +28,15 @@
 
 ## 2. 角色与操作者
 
-- 技术层合法角色：`admin`, `finance`, `account_manager`, `media_buyer`（4 角色，对齐 MASTER.md v4.6 §INV-007）。
+- 技术层合法角色：`admin`, `finance`, `account_manager`, `media_buyer`（4 角色，对齐 MASTER.md v4.8 §INV-007）。
 - **project_owner（业务属性）**：通过 `users.is_project_owner=true` 或 `project_members` 表判断，用于日报审核等业务操作。
 - **system（虚拟操作者）**：用于定时任务/事件驱动的自动流转，不参与 RBAC，仅可出现在审计日志（`operator_role = 'system'`）。业务授权只看 4 个技术层角色 + project_owner 业务属性。
 - 审批分离：提交者不能审批自身请求；终态回退仅 `admin`（需审计理由）。
 
 ### 2.1 业务层角色映射（MASTER v4.6 对齐）
 
-> **引用**: MASTER.md v4.6 §2.4
-> **PRD v2.2 变更**: 移除 supervisor 角色，职责合并到 project_owner
+> **引用**: MASTER.md v4.8 §2.4
+> **架构决策（MASTER v4.6+）**: 移除 supervisor 角色，职责合并到 project_owner。
 
 技术层维持 4 角色 CHECK 约束（admin/finance/account_manager/media_buyer），业务层通过以下映射对齐 MASTER 定义：
 
@@ -50,9 +52,9 @@
 > **注意**：
 > - `project_owner` 通过 users 表的业务属性或 `project_members` 表实现，不新增角色枚举。
 > - 日报审核流程中的"运营"指代 `project_owner` 角色。
-> - PRD v2.2 已移除 supervisor 角色，其职责（日报审核、数据统计）合并到 project_owner。
+> - MASTER v4.6+ 已移除 supervisor 角色，其职责（日报审核、数据统计）合并到 project_owner。
 > - 禁止新增角色枚举，必须复用 4 个技术层角色 + project_owner 业务属性。
-> - `data_operator` 已废弃（PRD v2.2），其职责按场景分配：日报审核→project_owner，充值/对账→finance。
+> - `data_operator` 已废弃（MASTER v4.6+），其职责按场景分配：日报审核→project_owner，充值/对账→finance。
 
 ---
 
@@ -90,7 +92,7 @@
 
 ## 4A. Phase 边界说明
 
-> **引用**: MASTER.md v4.6 §2.5（Phase 1/Phase 2 执行边界）、§9 INV-003
+> **引用**: MASTER.md v4.8 §2.5（Phase 1/Phase 2 执行边界）、§9 INV-003
 
 ### 4A.1 日报状态机 Phase 边界
 
@@ -174,7 +176,7 @@
 
 ## 7.5 Phase 1 / Phase 2 日报状态机边界（重要）
 
-> **依据**: MASTER.md v4.4 §3（Phase 1/Phase 2 执行边界）、§9 INV-003（简化vs完整流程）
+> **依据**: MASTER.md v4.9 §3（Phase 1/Phase 2 执行边界）、§9 INV-003（简化vs完整流程）
 
 ### 7.5.1 Phase 1 简化版（3 状态快速流转）
 
@@ -209,7 +211,7 @@ raw_submitted → trend_ok → final_confirmed
 
 **状态枚举**: 见第 8 章完整定义（8 个状态）
 
-**启用条件** (MASTER.md v4.4 §3.4):
+**启用条件** (MASTER.md v4.9 §3.4):
 1. Phase 1 稳定运行 2 个月
 2. 日报填报率 ≥ 90%
 3. 老板批准启用
@@ -2801,7 +2803,7 @@ pytest -m state_machine --cov=backend/services --cov-report=html
 
 1. 增删状态或调整流转：先改本文件，再改 DATA_SCHEMA CHECK、模型枚举、API 校验。
 2. Legacy 映射：
-   - 旧角色：`manager` → `account_manager`，`data_clerk` → `finance`（已废弃，PRD v2.2），`data_operator` → `project_owner`/`finance`（已废弃，PRD v2.2）。
+   - 旧角色：`manager` → `account_manager`，`data_clerk` → `finance`（已废弃，MASTER v4.6+），`data_operator` → `project_owner`/`finance`（已废弃，MASTER v4.6+）。
    - 旧充值状态：`pending` → `pending_review`；`posted` → `completed`。
 3. 所有变更需审计记录与评审通过后发布。
 
@@ -2832,6 +2834,7 @@ pytest -m state_machine --cov=backend/services --cov-report=html
 
 | 版本 | 日期 | 主要变更 |
 | --- | --- | --- |
+| **v2.9** | **2026‑01‑02** | **【SoT 互锁更新】对齐 BUSINESS_LOGIC_FRAMEWORK_v2.1.md**：<br>**互锁文档版本更新**：DATA_SCHEMA.md v5.7、BUSINESS_RULES.md v5.0<br>**新增框架引用**：添加 BUSINESS_LOGIC_FRAMEWORK_v2.1.md 作为业务逻辑框架参考<br>**维护性更新**：无功能变更，仅文档版本同步 |
 | **v2.8** | **2025‑12‑29** | **【PRD v2.2 + MASTER v4.6 对齐】角色系统重构**：<br>**移除 data_operator 角色**：全文 45 处替换，按场景分配到 project_owner/finance/admin/account_manager<br>**技术层角色精简**：从 5 角色调整为 4 角色（admin/finance/account_manager/media_buyer）<br>**业务层映射**：project_owner 通过 is_project_owner 属性或 project_members 表实现<br>**职责分配**：日报审核→project_owner，充值/对账→finance，渠道评审→account_manager<br>**对齐依据**：PRD v2.2 §1.2 + MASTER.md v4.6 §INV-007 |
 | **v2.6** | **2025‑01‑21** | **【BRD v3.1 对齐】粉数确认状态机重大更新**：<br>**第4章 全局状态一览表**：daily_reports.status更新为8状态粉数确认状态机(raw_submitted/trend_pending/trend_ok/trend_flagged/trend_resolved/final_pending/final_confirmed/final_locked)<br>**第8章 完全重写**：替换旧日报状态机为"粉数确认状态机(6状态流程)",新增8个小节(状态枚举/流转规则/趋势风控规则TF-001/002/003/三数据流字段定义/业务约束/角色权限/API端点映射/红冲修正机制/CHECK约束/审计日志要求)<br>**第13章 权限视角提示**：新增6个日报相关操作(提交raw粉数/趋势风控检查/复核/录入real_spend/确认final/计费锁定)<br>**第14.5章 白名单机制**：更新daily_reports.status流转白名单为8状态流转<br>**第15.2.2章 CHECK约束**：更新为8状态CHECK约束,默认值改为raw_submitted<br>**第16.3章 API映射表**：更新为7个粉数确认流程API端点(trend-check/trend-resolve/update-real-spend/final-confirm/final-lock/reversal)<br>**对齐依据**：MASTER_SPEC v2.2 第2.3.1节 + BRD v3.1第4章粉数确认状态机 |
 | **v2.5** | **2025‑01‑19** | **【P0 增强版】新增 4 个关键章节**：<br>**15. 数据库 CHECK 约束同步清单**：10 个状态字段的 CHECK 模板、ENUM vs TEXT 规范、与 DATA_SCHEMA 同步流程、约束变更迁移示例<br>**16. API → 状态流转映射表**：10 个模块、50+ API 端点的完整映射（当前状态、目标状态、角色、审计、错误码）<br>**17. 并发冲突处理规范**：Optimistic Locking 实施方案（version 字段 vs updated_at）、Service/API/前端实现模式、STATE_409 错误码<br>**18. 状态机测试用例规范**：5 类测试（正向/非法/终态/System/并发）、测试模板、覆盖率要求<br>**文档定位升级**：可直接作为后端实现与测试的唯一事实来源 |

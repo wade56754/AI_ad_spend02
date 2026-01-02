@@ -1,25 +1,22 @@
 """
-AI 代码工厂 v5.0 - AI 编程助手升级版
+AI 代码工厂 v6.0 - 轻量化 Hook 集成版
 
-基准文档: MASTER.md v4.6, STATE_MACHINE.md v2.8, DATA_SCHEMA.md v5.6
+基准文档: MASTER.md v4.8, STATE_MACHINE.md v2.8, DATA_SCHEMA.md v5.7
 
-借鉴开源项目最佳实践:
-- gpt-engineer: Preprompts 系统、增量改进模式
-- Dify: RAG 知识库、工作流编排
-- awesome-cursorrules: 规则配置化、多项目模板
+v6.0 变更 (方案 C 实施):
+- 移除与 Claude Code 重叠的功能 (CLI, RAG, Searcher 等)
+- 核心验证能力迁移到 .claude/hooks/lib/
+- 保留核心编排和安全验证模块
 
-v5.0 新增能力:
-- Preprompts 系统: 可配置的提示词模板
-- CLARIFY 阶段: 需求澄清
-- RAG 知识库: 文档索引与语义检索
-- 项目配置: .codefactory.yaml
-- Agent 工具: 可扩展的工具框架
-- CLI 命令行: 交互模式与一次性生成
+核心能力:
+- SoT 验证: 角色白名单、状态机、Phase 边界
+- 安全检查: 高风险模块检测、合规验证
+- 任务管理: 任务列表、会话管理
 
 架构说明:
-- CodeFactory (factory.py): 主编排器，管理完整的 7 阶段流水线
-  CLARIFY → SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM
-- ContextEngine (core/factory.py): 上下文构建器，专注于 SoT 加载、验证
+- CodeFactory (factory.py): 主编排器
+- SecurityValidator (security.py): 安全验证
+- SoT 验证: 已迁移到 .claude/hooks/lib/sot_validator.py
 """
 
 # 核心组件
@@ -29,25 +26,17 @@ from .session import SessionManager, SessionType, ProgressTracker
 from .factory import CodeFactory, FactoryConfig, run_factory, create_factory
 
 # 上下文引擎 (core 模块)
-from .core import ContextEngine, GenerationContext, run_context_engine, create_context_engine
-
-# 子 Skill 组件
-from .searcher import CodeSearcher, SearchCandidate, SearchResult
-from .selector import CodeSelector, SelectionResult, AdaptationPlan
-from .adapter import CodeAdapter, AdaptResult, AdaptedFile
-from .assembler import CodeAssembler, AssembleResult
-from .verifier import CodeVerifier, VerifyResult, VerifyDecision
-
-# v5.0 新增 - Preprompts 系统
-from .prompts import (
-    Preprompts, 
-    PrepromptType, 
-    PrepromptSet, 
-    ProjectTemplate,
-    create_preprompts,
+from .core import (
+    ContextEngine,
+    GenerationContext,
+    run_context_engine,
+    create_context_engine,
 )
 
-# v5.0 新增 - CLARIFY 阶段
+# 验证器
+from .verifier import CodeVerifier, VerifyResult, VerifyDecision
+
+# v5.0 - CLARIFY 阶段 (保留)
 from .phases import (
     ClarifyPhase,
     ClarifyResult,
@@ -56,33 +45,21 @@ from .phases import (
     auto_clarify,
 )
 
-# v5.0 新增 - 项目配置
+# v5.0 - 项目配置 (保留)
 from .config import (
     ProjectConfig,
     ProjectConfigLoader,
     load_project_config,
 )
 
-# v5.0 新增 - RAG 知识库
-from .rag import (
-    KnowledgeBase,
-    KnowledgeBaseConfig,
-    DocumentIndexer,
-    DocumentRetriever,
-    create_knowledge_base,
-)
-
-# v5.0 新增 - Agent 工具
+# v5.0 - Agent 工具 (保留)
 from .tools import (
     Tool,
     ToolResult,
     ToolRegistry,
 )
 
-# v5.0 新增 - CLI
-from .cli import CodeFactoryCLI, main as cli_main
-
-__version__ = "5.0.0"
+__version__ = "6.0.0"
 __all__ = [
     # 核心编排器
     "CodeFactory",
@@ -106,27 +83,10 @@ __all__ = [
     "SessionManager",
     "SessionType",
     "ProgressTracker",
-    # 子 Skill
-    "CodeSearcher",
-    "SearchCandidate",
-    "SearchResult",
-    "CodeSelector",
-    "SelectionResult",
-    "AdaptationPlan",
-    "CodeAdapter",
-    "AdaptResult",
-    "AdaptedFile",
-    "CodeAssembler",
-    "AssembleResult",
+    # 验证
     "CodeVerifier",
     "VerifyResult",
     "VerifyDecision",
-    # v5.0 - Preprompts
-    "Preprompts",
-    "PrepromptType",
-    "PrepromptSet",
-    "ProjectTemplate",
-    "create_preprompts",
     # v5.0 - CLARIFY
     "ClarifyPhase",
     "ClarifyResult",
@@ -137,17 +97,8 @@ __all__ = [
     "ProjectConfig",
     "ProjectConfigLoader",
     "load_project_config",
-    # v5.0 - RAG
-    "KnowledgeBase",
-    "KnowledgeBaseConfig",
-    "DocumentIndexer",
-    "DocumentRetriever",
-    "create_knowledge_base",
     # v5.0 - 工具
     "Tool",
     "ToolResult",
     "ToolRegistry",
-    # v5.0 - CLI
-    "CodeFactoryCLI",
-    "cli_main",
 ]

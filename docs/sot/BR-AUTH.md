@@ -1,11 +1,12 @@
 # BR-AUTH - 认证授权规则
 
-> **文档版本**: v1.0
+> **文档版本**: v1.1
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
-> **父文档**: BUSINESS_RULES.md v4.6
-> **关联 SoT**: AUTH_SPEC.md v2.2, DATA_SCHEMA.md v5.6 §3.1.1
+> **last_reviewed**: 2026-01-02
+> **父文档**: BUSINESS_RULES.md v5.1
+> **关联 SoT**: AUTH_SPEC.md v2.2, DATA_SCHEMA.md v5.7 §3.1.1
+> **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
 
@@ -13,11 +14,11 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v4.6 | §4.1 | 规则索引定义 |
+| BUSINESS_RULES.md | v5.0 | §4.1 | 规则索引定义 |
 | AUTH_SPEC.md | v2.2 | §2-10 | 认证授权完整规范 |
-| DATA_SCHEMA.md | v5.6 | §3.1.1 | users 表结构、角色枚举 |
+| DATA_SCHEMA.md | v5.7 | §3.1.1 | users 表结构、角色枚举 |
 | ERROR_CODES.md | v2.3 | §4.1, §4.2 | AUTH_*/BIZ_* 错误码 |
-| MASTER.md | v4.6 | §2.4 | 角色定义（6 业务角色） |
+| MASTER.md | v4.8 | §2.4 | 角色定义（6 业务角色） |
 
 ---
 
@@ -50,7 +51,7 @@
 
 #### 前置条件
 - 数据状态: 用户已注册且账户状态为 active
-- 引用: AUTH_SPEC.md v2.2 §3.2
+- 引用: AUTH_SPEC.md v2.1 §3.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -96,7 +97,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 
 #### 前置条件
 - 数据状态: Token 已签发
-- 引用: AUTH_SPEC.md v2.2 §3.3
+- 引用: AUTH_SPEC.md v2.1 §3.3
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -143,7 +144,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 
 #### 前置条件
 - 数据状态: 用户创建或角色变更时
-- 引用: MASTER.md v4.6 §2.4, AUTH_SPEC.md v2.2 §2.2
+- 引用: MASTER.md v4.8 §2.4, AUTH_SPEC.md v2.1 §2.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -189,7 +190,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 
 #### 前置条件
 - 数据状态: API 请求时进行权限校验
-- 引用: AUTH_SPEC.md v2.2 §5.2
+- 引用: AUTH_SPEC.md v2.1 §5.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -231,7 +232,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 
 #### 前置条件
 - 数据状态: 用户注册或密码修改时
-- 引用: AUTH_SPEC.md v2.2 §6.1
+- 引用: AUTH_SPEC.md v2.1 §6.1
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -276,7 +277,7 @@ Access Token 有效期控制在合理范围内，平衡安全性与用户体验�
 
 #### 前置条件
 - 数据状态: 审核/审批操作时
-- 引用: AUTH_SPEC.md v2.2 §5.1.2, BUSINESS_RULES.md v4.6 BR-FIN-002
+- 引用: AUTH_SPEC.md v2.1 §5.1.2, BUSINESS_RULES.md v4.8 BR-FIN-002
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -350,12 +351,12 @@ BR-AUTH-006 (职责分离)
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.6；所有错误码对齐 ERROR_CODES.md v2.3；角色对齐 MASTER.md v4.6（6 业务角色） |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.8；所有错误码对齐 ERROR_CODES.md v2.2；角色对齐 MASTER.md v4.8（6 业务角色） |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
 **父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: AUTH_SPEC.md v2.2, DATA_SCHEMA.md v5.6 §3.1.1
+**关联 SoT**: AUTH_SPEC.md v2.1, DATA_SCHEMA.md v5.6 §3.1.1
 **版本**: v1.0

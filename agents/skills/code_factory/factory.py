@@ -45,25 +45,30 @@ from datetime import datetime
 from .task_list import TaskList, Task, TaskStatus, generate_api_tasks
 from .security import SecurityValidator, SoTComplianceChecker, create_security_hook
 from .session import SessionManager, SessionType, ProgressTracker
-from .searcher import CodeSearcher, SearchCandidate, SearchResult
-from .selector import CodeSelector, SelectionResult, AdaptationPlan
-from .adapter import CodeAdapter, AdaptResult, AdaptedFile
-from .assembler import CodeAssembler, AssembleResult
+
+# v6.0: 使用 stub 实现，实际功能已迁移到 Claude Code
+from .stubs import CodeSearcher, SearchCandidate, SearchResult
+from .stubs import CodeSelector, SelectionResult, AdaptationPlan
+from .stubs import CodeAdapter, AdaptResult, AdaptedFile
+from .stubs import CodeAssembler, AssembleResult
 from .verifier import CodeVerifier, VerifyResult, VerifyDecision
 
 
 @dataclass
 class FactoryConfig:
     """工厂配置"""
+
     # 项目路径
     project_dir: Path
 
     # 搜索配置
-    search_sources: Dict[str, bool] = field(default_factory=lambda: {
-        "local_project": True,
-        "code_library": True,
-        "github": False,
-    })
+    search_sources: Dict[str, bool] = field(
+        default_factory=lambda: {
+            "local_project": True,
+            "code_library": True,
+            "github": False,
+        }
+    )
 
     # 执行配置
     max_iterations: Optional[int] = None
@@ -82,6 +87,7 @@ class FactoryConfig:
 @dataclass
 class PhaseResult:
     """阶段结果"""
+
     phase: str
     success: bool
     data: Any = None
@@ -92,6 +98,7 @@ class PhaseResult:
 @dataclass
 class TaskResult:
     """任务结果"""
+
     task_id: str
     success: bool
     phases: List[PhaseResult] = field(default_factory=list)
@@ -128,7 +135,9 @@ class CodeFactory:
         self.progress = ProgressTracker(self.session)
 
         # 安全组件
-        self.security = SecurityValidator(self.project_dir) if config.enable_security else None
+        self.security = (
+            SecurityValidator(self.project_dir) if config.enable_security else None
+        )
         self.sot_checker = SoTComplianceChecker() if config.enable_sot_check else None
 
         # 子 Skill 组件 (5 阶段流水线)
@@ -216,7 +225,9 @@ class CodeFactory:
         print(f"    找到 {len(search_results)} 个候选参考")
         if search_results and self.config.verbose:
             for i, result in enumerate(search_results[:3]):  # 显示前 3 个
-                print(f"      [{i+1}] {result['path']} (相关度: {result['relevance_score']:.0f})")
+                print(
+                    f"      [{i+1}] {result['path']} (相关度: {result['relevance_score']:.0f})"
+                )
                 print(f"          来源: {result['source']} | {result['match_reason']}")
 
         # Step 3: 生成任务列表
@@ -291,17 +302,19 @@ class CodeFactory:
         # 转换为字典列表以便兼容
         results = []
         for candidate in search_result.candidates:
-            results.append({
-                "id": candidate.id,
-                "source": candidate.source,
-                "path": candidate.path,
-                "relevance_score": candidate.relevance_score,
-                "snippet": candidate.snippet,
-                "match_reason": candidate.match_reason,
-                "tech_stack_match": candidate.tech_stack_match,
-                "adaptation_hint": candidate.adaptation_hint,
-                "language": candidate.language,
-            })
+            results.append(
+                {
+                    "id": candidate.id,
+                    "source": candidate.source,
+                    "path": candidate.path,
+                    "relevance_score": candidate.relevance_score,
+                    "snippet": candidate.snippet,
+                    "match_reason": candidate.match_reason,
+                    "tech_stack_match": candidate.tech_stack_match,
+                    "adaptation_hint": candidate.adaptation_hint,
+                    "language": candidate.language,
+                }
+            )
 
         return results
 
@@ -539,7 +552,9 @@ class CodeFactory:
                 "adaptation_cost": result.scores.adaptation_cost,
                 "code_quality": result.scores.code_quality,
                 "total": result.scores.total,
-            } if result.scores else {},
+            }
+            if result.scores
+            else {},
             "alternatives": result.alternatives,
         }
 
@@ -579,7 +594,9 @@ class CodeFactory:
             "summary": {
                 "total_adaptations": result.summary.total_adaptations,
                 "by_type": result.summary.by_type,
-            } if result.summary else {},
+            }
+            if result.summary
+            else {},
         }
 
     def _phase_assemble(self, task: Task) -> Dict[str, Any]:
@@ -616,22 +633,32 @@ class CodeFactory:
         if self.config.verbose:
             print(f"       组装 {len(output_files)} 个文件")
             if result.repo_map:
-                print(f"       新建: {len(result.repo_map.new_files)} | 修改: {len(result.repo_map.modified_files)}")
+                print(
+                    f"       新建: {len(result.repo_map.new_files)} | 修改: {len(result.repo_map.modified_files)}"
+                )
 
         return {
             "module": {
                 "name": result.module.name,
-                "files": [{"path": f.path, "action": f.action} for f in result.module.files],
+                "files": [
+                    {"path": f.path, "action": f.action} for f in result.module.files
+                ],
                 "entry_points": result.module.entry_points,
-            } if result.module else None,
+            }
+            if result.module
+            else None,
             "repo_map": {
                 "new_files": result.repo_map.new_files,
                 "modified_files": result.repo_map.modified_files,
-            } if result.repo_map else {},
+            }
+            if result.repo_map
+            else {},
             "integration_guide": {
                 "steps": result.integration_guide.steps,
                 "imports_to_add": result.integration_guide.imports_to_add,
-            } if result.integration_guide else {},
+            }
+            if result.integration_guide
+            else {},
             "output_files": output_files,
         }
 
@@ -667,16 +694,24 @@ class CodeFactory:
         all_issues = []
 
         for fr in result.file_results:
-            verified_files.append({
-                "path": fr.file_path,
-                "passed": fr.decision in (VerifyDecision.APPROVED, VerifyDecision.FIX_APPLIED),
-                "decision": fr.decision.value,
-                "issues": [
-                    {"code": i.code, "line": i.line, "message": i.message, "severity": i.severity}
-                    for i in fr.issues
-                ],
-                "fixed": fr.decision == VerifyDecision.FIX_APPLIED,
-            })
+            verified_files.append(
+                {
+                    "path": fr.file_path,
+                    "passed": fr.decision
+                    in (VerifyDecision.APPROVED, VerifyDecision.FIX_APPLIED),
+                    "decision": fr.decision.value,
+                    "issues": [
+                        {
+                            "code": i.code,
+                            "line": i.line,
+                            "message": i.message,
+                            "severity": i.severity,
+                        }
+                        for i in fr.issues
+                    ],
+                    "fixed": fr.decision == VerifyDecision.FIX_APPLIED,
+                }
+            )
             all_issues.extend(fr.issues)
 
         # 如果有修复，使用修复后的内容
@@ -697,10 +732,12 @@ class CodeFactory:
                 VerifyDecision.MANUAL_REVIEW: "⚠️",
             }
             emoji = decision_emoji.get(result.decision, "?")
-            print(f"       {emoji} {result.decision.value} "
-                  f"(错误: {result.summary.get('total_errors', 0)}, "
-                  f"警告: {result.summary.get('total_warnings', 0)}, "
-                  f"修复: {result.summary.get('total_fixes', 0)})")
+            print(
+                f"       {emoji} {result.decision.value} "
+                f"(错误: {result.summary.get('total_errors', 0)}, "
+                f"警告: {result.summary.get('total_warnings', 0)}, "
+                f"修复: {result.summary.get('total_fixes', 0)})"
+            )
 
         # 写入文件 (如果验证通过且不是预览模式)
         if result.success and self.config.output_mode == "files":
@@ -768,9 +805,10 @@ class CodeFactory:
             # 检查 1: 角色值追溯
             # 匹配类似 role="xxx" 或 role: "xxx" 或 UserRole.xxx 的模式
             import re
+
             role_patterns = [
                 r'role\s*[=:]\s*["\'](\w+)["\']',
-                r'UserRole\.(\w+)',
+                r"UserRole\.(\w+)",
                 r"role\s*==\s*[\"'](\w+)[\"']",
             ]
             for pattern in role_patterns:
@@ -783,20 +821,26 @@ class CodeFactory:
                     is_valid_tech = sot_loader.is_valid_role(role, "tech")
 
                     if is_valid_business or is_valid_tech:
-                        file_report["checks"].append({
-                            "type": "role",
-                            "value": role,
-                            "valid": True,
-                            "source": "MASTER.md v4.6 §2.4" if is_valid_business else "backend/models/enums.py",
-                        })
+                        file_report["checks"].append(
+                            {
+                                "type": "role",
+                                "value": role,
+                                "valid": True,
+                                "source": "MASTER.md v4.6 §2.4"
+                                if is_valid_business
+                                else "backend/models/enums.py",
+                            }
+                        )
                     else:
-                        file_report["checks"].append({
-                            "type": "role",
-                            "value": role,
-                            "valid": False,
-                            "source": None,
-                            "error": f"角色 '{role}' 不在 6 角色白名单中",
-                        })
+                        file_report["checks"].append(
+                            {
+                                "type": "role",
+                                "value": role,
+                                "valid": False,
+                                "source": None,
+                                "error": f"角色 '{role}' 不在 6 角色白名单中",
+                            }
+                        )
                         file_report["confirmed"] = False
                         all_confirmed = False
                         blocking_issues.append(f"[{f.path}] 无效角色: {role}")
@@ -804,41 +848,47 @@ class CodeFactory:
             # 检查 2: 状态值追溯
             status_patterns = [
                 r'status\s*[=:]\s*["\'](\w+)["\']',
-                r'DailyReportStatus\.(\w+)',
-                r'TopupRequestStatus\.(\w+)',
+                r"DailyReportStatus\.(\w+)",
+                r"TopupRequestStatus\.(\w+)",
             ]
             for pattern in status_patterns:
                 matches = re.findall(pattern, content)
                 for match in matches:
                     status = match.lower()
                     if sot_loader.is_valid_status(status):
-                        file_report["checks"].append({
-                            "type": "status",
-                            "value": status,
-                            "valid": True,
-                            "source": "STATE_MACHINE.md",
-                        })
+                        file_report["checks"].append(
+                            {
+                                "type": "status",
+                                "value": status,
+                                "valid": True,
+                                "source": "STATE_MACHINE.md",
+                            }
+                        )
                     else:
-                        file_report["checks"].append({
-                            "type": "status",
-                            "value": status,
-                            "valid": False,
-                            "source": None,
-                            "error": f"状态 '{status}' 不在状态机白名单中",
-                        })
+                        file_report["checks"].append(
+                            {
+                                "type": "status",
+                                "value": status,
+                                "valid": False,
+                                "source": None,
+                                "error": f"状态 '{status}' 不在状态机白名单中",
+                            }
+                        )
                         file_report["confirmed"] = False
                         all_confirmed = False
                         blocking_issues.append(f"[{f.path}] 无效状态: {status}")
 
             # 检查 3: SoT 标注检查
-            sot_annotations = re.findall(r'#\s*SoT:\s*(\S+)', content)
+            sot_annotations = re.findall(r"#\s*SoT:\s*(\S+)", content)
             for annotation in sot_annotations:
-                file_report["checks"].append({
-                    "type": "sot_annotation",
-                    "value": annotation,
-                    "valid": True,
-                    "source": annotation,
-                })
+                file_report["checks"].append(
+                    {
+                        "type": "sot_annotation",
+                        "value": annotation,
+                        "valid": True,
+                        "source": annotation,
+                    }
+                )
 
             traceability_report.append(file_report)
 
@@ -855,8 +905,10 @@ class CodeFactory:
 
         # 如果有 BLOCKING 问题，抛出异常
         if not all_confirmed and self.sot_checker:
-            raise Exception(f"CONFIRM 阶段失败: {len(blocking_issues)} 个幻觉问题\n" +
-                          "\n".join(blocking_issues))
+            raise Exception(
+                f"CONFIRM 阶段失败: {len(blocking_issues)} 个幻觉问题\n"
+                + "\n".join(blocking_issues)
+            )
 
         return {
             "confirmed": all_confirmed,
@@ -907,6 +959,7 @@ class CodeFactory:
 # ============================================================
 # 便捷函数
 # ============================================================
+
 
 def create_factory(project_dir: str, **kwargs) -> CodeFactory:
     """创建代码工厂实例"""

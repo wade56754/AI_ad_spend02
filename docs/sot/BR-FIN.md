@@ -1,11 +1,12 @@
 # BR-FIN - 财务流程规则
 
-> **文档版本**: v1.0
+> **文档版本**: v1.1
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
-> **父文档**: BUSINESS_RULES.md v4.6
-> **关联 SoT**: STATE_MACHINE.md v2.7 §9, DATA_SCHEMA.md v5.6 §3.4
+> **last_reviewed**: 2026-01-02
+> **父文档**: BUSINESS_RULES.md v5.1
+> **关联 SoT**: STATE_MACHINE.md v2.9 §9, DATA_SCHEMA.md v5.7 §3.4
+> **业务参考**: 见本文档 §三本账体系（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
 
@@ -13,12 +14,12 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v4.6 | §4.5 | 规则索引定义 |
-| STATE_MACHINE.md | v2.7 | §9, §16.4 | 充值状态机（7 状态）、Phase 边界 |
-| DATA_SCHEMA.md | v5.6 | §3.4 | topup_requests, ledger_entries 表结构 |
+| BUSINESS_RULES.md | v5.0 | §4.5 | 规则索引定义 |
+| STATE_MACHINE.md | v2.9 | §9, §16.4 | 充值状态机（7 状态）、Phase 边界 |
+| DATA_SCHEMA.md | v5.7 | §3.4 | topup_requests, ledger_entries 表结构 |
 | ERROR_CODES.md | v2.3 | §3-4 | 错误码映射 |
 | AUTH_SPEC.md | v2.2 | §2.2, §3 | 角色权限、审批流程 |
-| MASTER.md | v4.6 | §2.4, §3 | 角色定义、不变量 |
+| MASTER.md | v4.8 | §2.4, §3 | 角色定义、不变量 |
 
 ---
 
@@ -34,7 +35,7 @@
 | BR-FIN-006 | 可用资金公式 | P0 | ✅ |
 | BR-FIN-007 | 锁定后不可改 | P0 | ✅ |
 | BR-FIN-008 | 红冲必须有理由 | P0 | ✅ |
-| BR-FIN-009 | 双账本原则 | P0 | ✅ |
+| BR-FIN-009 | 三本账体系 | P0 | ✅ |
 | BR-FIN-010 | 资金流水审计 | P0 | 🟡 |
 
 ---
@@ -56,7 +57,7 @@
 #### 前置条件
 - 用户角色: `pitcher`（技术层: `media_buyer`）或 `account_manager`
 - 数据状态: 关联项目状态为 `active`
-- 引用: STATE_MACHINE.md v2.7 §9, DATA_SCHEMA.md v5.6 §3.4.1
+- 引用: STATE_MACHINE.md v2.8 §9, DATA_SCHEMA.md v5.6 §3.4.1
 
 #### 充值状态机（7 状态）
 ```
@@ -101,7 +102,7 @@ draft → pending_review → finance_approve → paid → completed
 #### 业务场景
 充值涉及资金安全，必须经过多级审批。复核由项目负责人执行（确认业务需要），终审由财务执行（确认资金合规）。
 
-> **PRD v2.2 变更**: 充值复核由原 supervisor 变更为 project_owner
+> **架构决策（MASTER v4.6+）变更**: 充值复核由原 supervisor 变更为 project_owner
 
 #### 详细约束
 - ✅ **允许**: `project_owner` 复核充值申请（`pending_review` → `finance_approve` / `rejected`）
@@ -113,7 +114,7 @@ draft → pending_review → finance_approve → paid → completed
 #### 前置条件
 - 用户角色: 复核 `project_owner`，终审 `finance`
 - 数据状态: 申请状态为 `pending_review`（复核）或 `finance_approve`（终审）
-- 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.6 §2.4
+- 引用: AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §2.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -151,7 +152,7 @@ draft → pending_review → finance_approve → paid → completed
 #### 前置条件
 - 用户角色: `ceo` 或 `admin`（大额），`finance`（普通）
 - 数据状态: 申请金额超过阈值
-- 引用: MASTER.md v4.6 §2.4（ceo 职责）
+- 引用: MASTER.md v4.8 §2.4（ceo 职责）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -312,7 +313,7 @@ WHERE project_id = :project_id AND ledger_type = 'PROJECT';
 
 #### 前置条件
 - 数据状态: `daily_reports.status=final_locked` 或 `ledger_entries.is_locked=true`
-- 引用: CLAUDE.md 不变量, STATE_MACHINE.md v2.7 §7
+- 引用: CLAUDE.md 不变量, STATE_MACHINE.md v2.8 §8
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -374,10 +375,15 @@ WHERE project_id = :project_id AND ledger_type = 'PROJECT';
 
 ---
 
-### BR-FIN-009: 双账本原则
+### BR-FIN-009: 三本账体系
 
 #### 业务场景
-系统采用双账本模型：PROJECT 账本记录项目收入（粉数计费），SUPPLIER 账本记录供应商成本（真实消耗）。两本账必须分开记录，确保收入和成本的独立核算。
+系统采用三本账体系：
+1. **预付款账本（PROJECT）**：记录客户付给我们的钱，余额表示还"欠"客户多少（待消耗）
+2. **充值账本（SUPPLIER）**：记录我们充给代理商的钱，余额表示累计投入多少
+3. **押款账本（计算值）**：充值 - 消耗 = 押在代理商的钱（资金占用）
+
+三本账必须分开记录，确保收入、成本、资金占用的独立核算。
 
 #### 详细约束
 - 📌 **强制**: `ledger_type=PROJECT` 时 `project_id` 必填
@@ -471,7 +477,7 @@ BR-FIN-002 (充值审批人)
     ↓
 BR-FIN-003 (大额充值)
     ↓
-BR-FIN-004 (预收款非收入) ←── BR-FIN-009 (双账本原则)
+BR-FIN-004 (预收款非收入) ←── BR-FIN-009 (三本账体系)
     ↓
 BR-FIN-005 (消耗不含手续费)
     ↓
@@ -488,12 +494,12 @@ BR-FIN-010 (资金流水审计)
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.6；BR-FIN-002 充值复核由 supervisor 变更为 project_owner（PRD v2.2）；所有错误码对齐 ERROR_CODES.md v2.3 |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.8；BR-FIN-002 充值复核由 supervisor 变更为 project_owner（MASTER v4.6+）；所有错误码对齐 ERROR_CODES.md v2.2 |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
 **父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: STATE_MACHINE.md v2.7 §9, DATA_SCHEMA.md v5.6 §3.4
+**关联 SoT**: STATE_MACHINE.md v2.8 §9, DATA_SCHEMA.md v5.6 §3.4
 **版本**: v1.0

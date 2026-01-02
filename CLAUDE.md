@@ -1,6 +1,6 @@
 # AI广告代投管理系统
 
-> **SoT 版本**: MASTER.md v4.6 | BUSINESS_RULES.md v4.7 | DATA_SCHEMA.md v5.6 | STATE_MACHINE.md v2.8
+> **SoT 版本**: MASTER.md v4.9 | BUSINESS_RULES.md v5.1 | DATA_SCHEMA.md v5.10 | STATE_MACHINE.md v2.9
 > **AI 模型**: Claude Opus 4.5 优化 | Cursor 兼容
 
 ---
@@ -25,13 +25,40 @@
     ↑ Explore Agent    ↑ Plan Agent    ↑ AskUserQuestion
 ```
 
+### MCP 服务器集成
+
+| MCP 服务器 | 用途 | 工具数 |
+|-----------|------|--------|
+| `taskmaster-ai` | PRD→任务管理 | 7 (core) |
+| `sequential-thinking` | 结构化思考 | 1 |
+| `context7` | 文档检索 | 2 |
+| `playwright` | 浏览器自动化 | 20+ |
+| `chrome-devtools` | 调试工具 | 15+ |
+
+#### Task Master 工作流
+```
+PRD 文档 → [Task Master] parse_prd → 任务列表
+    ↓
+[Claude Code] TodoWrite → 任务同步
+    ↓
+[AI 代码工厂] /gen → 代码生成 + SoT 验证
+    ↓
+[Task Master] set_task_status → 状态更新
+```
+
+**核心命令**:
+- `parse_prd` - 从 PRD 生成任务
+- `next_task` - 获取下一个待办任务
+- `expand_task` - 拆解复杂任务
+- `get_tasks` - 列出所有任务
+
 ---
 
 ## 强制规则 (MANDATORY)
 
 ### 写任何代码前必须
 1. **完整阅读** `memory-bank/architecture.md` - 了解项目结构
-2. **完整阅读** `memory-bank/game-design-document.md` - 了解业务规则
+2. **完整阅读** `memory-bank/prd.md` - 了解业务规则
 3. **查阅对应 SoT** - 不允许凭想象实现任何功能
 
 ### 每完成一个功能后必须
@@ -88,7 +115,7 @@
 
 ## 合法角色（仅 6 个）
 
-> **来源**: MASTER.md v4.6 §2.4
+> **来源**: MASTER.md v4.9 §2.4
 > **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |
@@ -146,7 +173,7 @@ CPL: cpl = ad_spend / conversions_final
 ## 开发前必做
 
 1. 读 `memory-bank/architecture.md` 了解项目结构
-2. 读 `memory-bank/game-design-document.md` 了解需求
+2. 读 `memory-bank/prd.md` 了解需求
 3. 查 `docs/sot/MASTER.md` 确认规则
 4. 查 `docs/sot/BR-*.md` 获取详细业务规则
 5. 检查 `docs/sot/STATE_MACHINE.md` 状态机是否符合
@@ -208,7 +235,7 @@ just release-check    # 上线门禁
 ### Memory Bank (项目记忆库)
 | 文件 | 用途 |
 |------|------|
-| `memory-bank/game-design-document.md` | 需求/PRD - 做什么 |
+| `memory-bank/prd.md` | 需求/PRD - 做什么 |
 | `memory-bank/tech-stack.md` | 技术栈 - 用什么 |
 | `memory-bank/implementation-plan.md` | 实施计划 - 怎么做 |
 | `memory-bank/progress.md` | 进度记录 - 做到哪了 |
