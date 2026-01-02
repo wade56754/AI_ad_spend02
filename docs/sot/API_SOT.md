@@ -1,13 +1,13 @@
 # API 开发与使用规范（API Single Source of Truth）
 
-> **文档版本**: v9.4 (对齐 PRD v2.2, MASTER.md v4.6, STATE_MACHINE.md v2.8)
+> **文档版本**: v9.7 (对齐 PRD v5.2, MASTER.md v4.9, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.1, AUTH_SPEC.md v2.2)
 > **status**: frozen
 > **owner**: wade
-> **last_reviewed**: 2025-12-29
+> **last_reviewed**: 2026-01-02
 > **文档类型**: 项目唯一真相源（SoT）
 > **适用范围**: 所有后端API开发与前端API调用
 > **规范级别**: 🔴 强制执行
-> **最后更新**: 2025-12-24
+> **最后更新**: 2026-01-02
 > **文档定位**: 端点级API规范,任何开发者仅凭本文档即可完成API开发/调用/测试
 
 ---
@@ -50,22 +50,23 @@
 
 ### 1.1 唯一真相源（强制依赖）
 
-- **系统宪法**: [`./MASTER.md`](./MASTER.md) v4.4 - 系统全局规则、角色定义、Phase 边界
-- **数据定义**: [`./DATA_SCHEMA.md`](./DATA_SCHEMA.md) v5.2 - 表结构、字段、类型的唯一来源
-- **状态机定义**: [`./STATE_MACHINE.md`](./STATE_MACHINE.md) v2.6 - 业务状态流转的唯一来源
-- **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v4.1 - 业务约束的唯一来源
-- **错误码**: [`./ERROR_CODES_SOT.md`](./ERROR_CODES_SOT.md) v2.1 - 错误码定义的唯一来源
-- **认证授权**: [`./AUTH_SPEC.md`](./AUTH_SPEC.md) v2.0 - 权限矩阵的唯一来源
+- **系统宪法**: [`./MASTER.md`](./MASTER.md) v4.9 - 系统全局规则、角色定义、Phase 边界
+- **数据定义**: [`./DATA_SCHEMA.md`](./DATA_SCHEMA.md) v5.7 - 表结构、字段、类型的唯一来源
+- **状态机定义**: [`./STATE_MACHINE.md`](./STATE_MACHINE.md) v2.9 - 业务状态流转的唯一来源
+- **业务规则**: [`./BUSINESS_RULES.md`](./BUSINESS_RULES.md) v5.1 - 业务约束的唯一来源
+- **错误码**: [`./ERROR_CODES_SOT.md`](./ERROR_CODES_SOT.md) v2.2 - 错误码定义的唯一来源
+- **认证授权**: [`./AUTH_SPEC.md`](./AUTH_SPEC.md) v2.2 - 权限矩阵的唯一来源
+- **财务规则**: [`./BR-FIN.md`](./BR-FIN.md) v1.1 - 三本账体系参考
 
 ### 1.2 五个不可违背的规则
 
 1. **数据库字段禁止自创** - 所有字段必须在 DATA_SCHEMA.md 中定义
-2. **角色限定为6个** - 见下方角色定义表（来源: PRD v2.2 §1.2, MASTER.md v4.6 §2.4）
+2. **角色限定为6个** - 见下方角色定义表（来源: PRD v5.1 §1.2, MASTER.md v4.9 §2.4）。
 3. **响应必须使用 Envelope** - 使用 `success_response`/`error_response`
 4. **前端必须通过 apiFetch** - 禁止直接 fetch 或其他 HTTP 库
 5. **开发顺序强制执行** - Schema → Service → Router → Test → Exception Handler
 
-#### 1.2.1 角色定义（6 角色，来源: PRD v2.2 §1.2, MASTER.md v4.6 §2.4）
+#### 1.2.1 角色定义（6 角色，来源: PRD v5.1 §1.2, MASTER.md v4.9 §2.4）。
 
 | 角色 | 系统角色名 | 职责边界 | 典型操作 |
 |------|-----------|---------|---------|
@@ -76,12 +77,12 @@
 | 户管 | `account_manager` | 账户分配、账户状态监控 | 分配账户、标记死号、余额迁移 |
 | 管理员 | `admin` | 系统配置（不参与业务） | 用户管理、系统配置 |
 
-> **PRD v2.2 变更说明**:
+> **架构决策（MASTER v4.6+）变更说明**:
 > - 移除 `supervisor` 角色，其职责（日报审核、数据统计）合并到 `project_owner`
 > - 移除 `data_operator` 角色，职责按场景分配到 `project_owner`（日报）或 `finance`（对账）
 > - 旧角色映射：`media_buyer` → `pitcher`，`supervisor` → `project_owner`，`data_operator` → `project_owner`/`finance`
 
-### 1.3 三数据流与双账本（核心概念）
+### 1.3 三数据流与三本账（核心概念）
 
 #### 三数据流（raw/real/final）
 
@@ -91,20 +92,21 @@
 | **real数据流** | `real_spend` | 项目负责人 (project_owner) | T+1 12:00前 | 成本核算 |
 | **final数据流** | `conversions_final` | 项目负责人 (project_owner) | T+1 14:00前 | 计费基准 |
 
-**引用**: MASTER.md v4.4 §4（三数据流）、BUSINESS_RULES.md v4.1
+**引用**: MASTER.md v4.8 §4（三数据流）、BUSINESS_RULES.md v5.0
 
-#### 双账本（PROJECT/SUPPLIER）
+#### 三本账体系（BR-FIN.md v1.1 §BR-FIN-009）
 
-| 账本类型 | 用途 | 关联实体 | entry_type范围 | 计费公式 |
-|---------|------|---------|---------------|---------|
-| **PROJECT** | 项目收入账本 | `project_id` | `REVENUE`, `REVERSAL` | `revenue = conversions_final × unit_price` |
-| **SUPPLIER** | 供应商成本账本 | `supplier_id` | `COST`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL` | `cost = real_spend + fee` |
+| 账本类型 | 用途 | 关联实体 | entry_type范围 | 说明 |
+|---------|------|---------|---------------|------|
+| **预付款账本（PROJECT）** | 客户预付款 | `project_id` | `REVENUE`, `REVERSAL` | 余额=还"欠"客户多少（待消耗） |
+| **充值账本（SUPPLIER）** | 代理商充值 | `supplier_id` | `COST`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL` | 余额=累计投入多少 |
+| **押款账本（计算值）** | 资金占用 | 计算字段 | — | 充值 - 消耗 = 押在代理商的钱 |
 
-**引用**: LEDGER_SOT.md v1.2、DATA_SCHEMA.md v5.3 §3.4.4
+**引用**: BR-FIN.md v1.1 §BR-FIN-009（三本账体系）、DATA_SCHEMA.md v5.7 §3.4.4
 
-### 1.4 Phase 边界说明（MASTER v4.4 对齐）
+### 1.4 Phase 边界说明（MASTER v4.8 对齐）
 
-> **引用**: MASTER.md v4.4 §2.5、§4.1
+> **引用**: MASTER.md v4.8 §2.5、§4.1
 
 #### 1.4.1 数据流 Phase 适用性
 
@@ -1073,7 +1075,7 @@ final_pending → final_confirmed → final_locked
 - 数据表: DATA_SCHEMA.md 3.3.1节
 - 状态机: STATE_MACHINE.md 第8章（粉数确认状态机）
 - 业务规则: BR-RPT-001, BR-RPT-002, BR-RPT-004, BR-RPT-005
-- 三数据流: MASTER.md v4.4 §4
+- 三数据流: MASTER.md v4.8 §4
 
 ### 9.2 POST `/api/v1/daily-reports` - 提交日报（raw粉数）
 
@@ -1184,7 +1186,7 @@ final_pending → final_confirmed → final_locked
 - 业务规则: BR-RPT-001（提交约束）, BR-RPT-005（粉数确认流程）
 - 数据表: DATA_SCHEMA.md 3.3.1节
 - 状态机: STATE_MACHINE.md 第8章
-- 三数据流: MASTER.md v4.4 §4
+- 三数据流: MASTER.md v4.8 §4
 
 #### 权限
 
@@ -1709,7 +1711,7 @@ def check_trend_risk(report: DailyReport):
 **引用**:
 - 业务规则: BR-RPT-004（终态保护）, BR-RPT-005（计费锁定）
 - 数据表: DATA_SCHEMA.md 3.3.1, 3.4.4节
-- 双账本: LEDGER_SOT.md v1.2
+- 三本账: BR-FIN.md v1.1 §BR-FIN-009
 
 #### 权限
 
@@ -2091,14 +2093,15 @@ with db.begin():
 | GET | `/api/v1/ledger/supplier/{supplier_id}` | 查询供应商Ledger | `admin`, `finance` | implemented |
 | POST | `/api/v1/ledger/reversal` | 创建红冲记录 | `admin` | implemented |
 
-**双账本类型**:
-- **PROJECT账本**: 项目收入（REVENUE, REVERSAL）
-- **SUPPLIER账本**: 供应商成本（COST, TRANSFER_OUT, TRANSFER_IN, REVERSAL）
+**三本账体系**（BR-FIN.md v1.1 §BR-FIN-009）:
+- **预付款账本（PROJECT）**: 客户预付款（REVENUE, REVERSAL），余额=待消耗
+- **充值账本（SUPPLIER）**: 代理商充值（COST, TRANSFER_OUT, TRANSFER_IN, REVERSAL），余额=累计投入
+- **押款账本（计算值）**: 充值 - 消耗 = 押在代理商的钱
 
 **引用**:
-- 数据表: DATA_SCHEMA.md 3.4.4节
-- 双账本: LEDGER_SOT.md v1.2
-- 业务规则: BR-FIN-005（双写一致性）
+- 数据表: DATA_SCHEMA.md v5.7 §3.4.4
+- 三本账: BR-FIN.md v1.1 §BR-FIN-009
+- 业务规则: BR-FIN-009（三本账体系）
 
 ---
 
@@ -2115,9 +2118,9 @@ with db.begin():
 | GET | `/api/v1/finance/profit/accounts/{id}` | 账户消耗明细 | `admin`, `finance`, `account_manager`, `pitcher` | implemented |
 | GET | `/api/v1/finance/profit/summary` | 整体利润汇总 | `admin`, `finance` | implemented |
 
-**错误码**: PROFIT_001 ~ PROFIT_008（详见 ERROR_CODES_SOT.md v2.1）
+**错误码**: PROFIT_001 ~ PROFIT_008（详见 ERROR_CODES_SOT.md v2.2）
 
-**计费公式**（来自 BUSINESS_RULES.md v4.1）:
+**计费公式**（来自 BUSINESS_RULES.md v5.0）:
 - `revenue = conversions_final × unit_price`
 - `cost = real_spend + fee`
 - `profit = revenue - cost`
@@ -2125,8 +2128,8 @@ with db.begin():
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.3.1节 `daily_reports`, 3.2.1节 `projects`, 3.2.9节 `ad_accounts`
-- 业务规则: BUSINESS_RULES.md v4.1 利润计算公式
-- 权限矩阵: AUTH_SPEC.md v2.0
+- 业务规则: BUSINESS_RULES.md v5.0 利润计算公式
+- 权限矩阵: AUTH_SPEC.md v2.2
 
 ---
 
@@ -2219,14 +2222,14 @@ Authorization: Bearer <token>
 | `BIZ_607` | 500 | 利润统计查询失败 | 通用异常捕获 |
 
 **引用**:
-- 错误码: ERROR_CODES_SOT.md v2.1 第3-4节
-- 权限: AUTH_SPEC.md v2.0 权限矩阵
+- 错误码: ERROR_CODES_SOT.md v2.2 第3-4节
+- 权限: AUTH_SPEC.md v2.2 权限矩阵
 
 #### 权限
 
 - **允许角色**: `admin`, `finance`
 - **业务约束**:
-  - 查询范围受角色限制（参考 AUTH_SPEC.md v2.0 第3章）
+  - 查询范围受角色限制（参考 AUTH_SPEC.md v2.2 第3章）
   - project_id 若指定必须存在
   - 日期范围 start_date ≤ end_date
 
@@ -2303,7 +2306,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | GET | `/api/v1/reconciliations/adjustments/{adjustment_id}` | 获取调整详情 | `admin`, `finance` | - | implemented |
 | POST | `/api/v1/reconciliations/adjustments/{adjustment_id}/execute` | 执行调整 | `admin` | - | implemented |
 
-**对账状态机**: `draft` → `pending_review` → `approved` → `completed` (或 `needs_adjustment` → `approved` → `completed`)（来自 STATE_MACHINE.md v2.7 第11.1节）
+**对账状态机**: `draft` → `pending_review` → `approved` → `completed` (或 `needs_adjustment` → `approved` → `completed`)（来自 STATE_MACHINE.md v2.9 第11.1节）
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.5节
@@ -2326,12 +2329,12 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | POST | `/api/v1/transfers/{transfer_id}/reject` | 拒绝申请 | `finance`, `admin` | → `rejected` | implemented |
 | POST | `/api/v1/transfers/{transfer_id}/complete` | 完成迁移 | `admin` | `approved` → `completed` | implemented |
 
-**迁移状态机**: `draft` → `pending_approval` → `approved` → `completed` (或 `rejected`)（来自 STATE_MACHINE.md v2.7 第12章）
+**迁移状态机**: `draft` → `pending_approval` → `approved` → `completed` (或 `rejected`)（来自 STATE_MACHINE.md v2.9 第12章）
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.4.6节 `transfer_requests`
 - 状态机: STATE_MACHINE.md 第12章
-- 账本规则: LEDGER_SOT.md v1.2 (TRANSFER_OUT/TRANSFER_IN)
+- 账本规则: BR-FIN.md v1.1 (TRANSFER_OUT/TRANSFER_IN)
 
 ---
 
@@ -2352,7 +2355,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 
 **引用**:
 - 数据表: DATA_SCHEMA.md `suppliers` 表
-- 账本规则: LEDGER_SOT.md v1.2 (SUPPLIER 账本)
+- 账本规则: BR-FIN.md v1.1 (SUPPLIER 账本)
 
 ---
 
@@ -2374,7 +2377,7 @@ const allProjectsSummary = await apiFetch('/api/v1/finance/profit/summary');
 | POST | `/api/v1/settlements/{settlement_id}/cancel` | 取消结算 | `admin` | → `cancelled` | implemented |
 
 **引用**:
-- 账本规则: LEDGER_SOT.md v1.2 (支付记录生成账本分录)
+- 账本规则: BR-FIN.md v1.1 (支付记录生成账本分录)
 
 ---
 
@@ -2539,8 +2542,8 @@ draft → submitted
 - **BR-WB-005**: 提交后状态不可回退 (Phase 1 不强制)
 
 **引用**:
-- 数据表: DATA_SCHEMA.md (weekly_briefs 表)
-- 业务规则: BUSINESS_RULES.md v4.1
+- 数据表: DATA_SCHEMA.md v5.7 (weekly_briefs 表)
+- 业务规则: BUSINESS_RULES.md v5.0
 
 ---
 
@@ -2558,7 +2561,7 @@ draft → submitted
 
 ### 13.1 核心常量定义
 
-#### 13.1.1 角色常量（6 角色，来源: PRD v2.2 §1.2, MASTER.md v4.6 §2.4）
+#### 13.1.1 角色常量（6 角色，来源: PRD v5.1 §1.2, MASTER.md v4.8 §2.4）
 
 ```python
 # backend/core/constants.py
@@ -2571,24 +2574,24 @@ VALID_ROLES = [
     "admin"            # 管理员 - 系统配置（不参与业务）
 ]
 
-# 旧角色映射（兼容性，PRD v2.2 废弃角色）
+# 旧角色映射（兼容性，MASTER v4.6+ 废弃角色，PRD v5.1 仍包含但架构以 MASTER 为准）
 ROLE_ALIASES = {
     "media_buyer": "pitcher",       # 旧名 → 新名
-    "supervisor": "project_owner",  # PRD v2.2 废弃，职责合并到 project_owner
-    "data_operator": "project_owner"  # PRD v2.2 废弃，日报相关职责合并到 project_owner
+    "supervisor": "project_owner",  # MASTER v4.6+ 废弃，职责合并到 project_owner（PRD v5.1 仍包含但架构以 MASTER 为准）
+    "data_operator": "project_owner"  # MASTER v4.6+ 废弃，日报相关职责合并到 project_owner（PRD v5.1 仍包含但架构以 MASTER 为准）
 }
 ```
 
-#### 13.1.2 状态枚举（严格对齐 STATE_MACHINE.md v2.7）
+#### 13.1.2 状态枚举（严格对齐 STATE_MACHINE.md v2.9）
 
-⚠️ **强制约束**: 所有状态枚举必须严格对齐 [STATE_MACHINE.md v2.7](./STATE_MACHINE.md) 定义，禁止使用未在下方列出的旧状态值。任何状态流转必须遵循 STATE_MACHINE.md 中的合法流转白名单。
+⚠️ **强制约束**: 所有状态枚举必须严格对齐 [STATE_MACHINE.md v2.9](./STATE_MACHINE.md) 定义，禁止使用未在下方列出的旧状态值。任何状态流转必须遵循 STATE_MACHINE.md 中的合法流转白名单。
 
-**项目状态** (STATE_MACHINE.md v2.7 第5章):
+**项目状态** (STATE_MACHINE.md v2.9 第5章):
 ```python
 PROJECT_STATUS = Literal["draft", "active", "suspended", "archived"]
 ```
 
-**日报状态** (STATE_MACHINE.md v2.7 第8章):
+**日报状态** (STATE_MACHINE.md v2.9 第8章):
 ```python
 DAILY_REPORT_STATUS = Literal[
     "raw_submitted",
@@ -2602,7 +2605,7 @@ DAILY_REPORT_STATUS = Literal[
 ]
 ```
 
-**充值状态** (STATE_MACHINE.md v2.7 第9章):
+**充值状态** (STATE_MACHINE.md v2.9 第9章):
 ```python
 TOPUP_STATUS = Literal[
     "draft",
@@ -2615,7 +2618,7 @@ TOPUP_STATUS = Literal[
 ]
 ```
 
-**对账状态** (STATE_MACHINE.md v2.7 第11章):
+**对账状态** (STATE_MACHINE.md v2.9 第11章):
 ```python
 RECONCILIATION_STATUS = Literal[
     "draft",
@@ -2626,7 +2629,7 @@ RECONCILIATION_STATUS = Literal[
 ]
 ```
 
-**迁移状态** (STATE_MACHINE.md v2.7 第12章):
+**迁移状态** (STATE_MACHINE.md v2.9 第12章):
 ```python
 TRANSFER_STATUS = Literal[
     "draft",
@@ -2721,11 +2724,34 @@ try {
 **文档性质**: 项目强制规范
 **执行级别**: 🔴 必须严格遵守
 **违规处理**: PR自动拒绝 / 代码回滚
-**最后更新**: 2025-12-29
-**版本**: v9.4 (对齐 PRD v2.2, MASTER.md v4.6, STATE_MACHINE.md v2.8)
+**最后更新**: 2026-01-02
+**版本**: v9.7 (对齐 PRD v5.2, MASTER.md v4.9, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.1, AUTH_SPEC.md v2.2)
+
+**v9.7 更新说明** (2026-01-02):
+- **【SoT 版本对齐】修复互锁引用版本不一致**
+- MASTER.md v4.8 → v4.9（3 处）
+- BUSINESS_RULES.md v5.0 → v5.1（2 处）
+- ERROR_CODES_SOT.md v2.1 → v2.2（4 处）
+
+**v9.6 更新说明** (2026-01-02):
+- **【SoT 互锁引用修复】消除断链引用**
+- AUTH_SPEC.md v2.0 → v2.2（4 处）
+- LEDGER_SOT.md（已废弃）→ BR-FIN.md v1.1（6 处）
+- BUSINESS_LOGIC_FRAMEWORK.md（已废弃）→ BR-FIN.md v1.1（3 处）
+- 修复日期不一致：最后更新 2025-12-24 → 2026-01-02
+- 新增 BR-FIN.md v1.1 引用（三本账体系）
+
+**v9.5 更新说明** (2026-01-02):
+- **【BUSINESS_LOGIC_FRAMEWORK v2.1 对齐】双账本升级为三本账体系**
+- 新增押款账本（计算值）：充值 - 消耗 = 押在代理商的钱
+- 更新 SoT 互锁引用：MASTER.md v4.8, DATA_SCHEMA.md v5.7, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.0
+- 新增 BUSINESS_LOGIC_FRAMEWORK.md v2.1 引用【已在 v9.6 替换为 BR-FIN.md】
+- 更新 §1.3 三本账体系说明
+- 更新 §11 Ledger API 三本账体系描述
+- BR-FIN-005（双写一致性）→ BR-FIN-009（三本账体系）
 
 **v9.4 更新说明** (2025-12-29):
-- **【PRD v2.2 对齐】角色从 7 个精简为 6 个**
+- **【PRD v5.1 + MASTER v4.6+ 对齐】角色从 7 个精简为 6 个**
 - 移除 `supervisor` 角色，职责合并到 `project_owner`
 - 移除 `data_operator` 角色（废弃），职责按场景分配到 `project_owner`（日报）或 `finance`（对账）
 - 更新三数据流提交者：real/final 数据流改为 `project_owner`
@@ -2758,10 +2784,10 @@ try {
 - 完全重写为端点级API规范
 - 新增所有核心模块的详细端点定义（Users/Projects/Channels/AdAccounts/DailyReports/Topup/Ledger/Reconciliation）
 - 每个端点包含完整的Request/Response Schema、字段映射、错误码、权限、并发控制、事务边界
-- 集成三数据流（raw/real/final）和双账本（PROJECT/SUPPLIER）概念
+- 集成三数据流（raw/real/final）和三本账（PROJECT/SUPPLIER/押款）概念
 - 新增8状态粉数确认状态机完整流程
 - 新增红冲修正机制详细说明
 - 所有字段严格对齐 DATA_SCHEMA.md v5.3
-- 所有状态流转严格对齐 STATE_MACHINE.md v2.7
-- 所有错误码严格对齐 ERROR_CODES_SOT.md v2.1
+- 所有状态流转严格对齐 STATE_MACHINE.md v2.9
+- 所有错误码严格对齐 ERROR_CODES_SOT.md v2.2
 - 所有业务规则严格对齐 BUSINESS_RULES.md v4.1

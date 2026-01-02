@@ -1,11 +1,12 @@
 # BR-PROJ - 项目管理规则
 
-> **文档版本**: v1.0
+> **文档版本**: v1.1
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
-> **父文档**: BUSINESS_RULES.md v4.6
-> **关联 SoT**: STATE_MACHINE.md v2.7 §5, DATA_SCHEMA.md v5.6 §3.2.1
+> **last_reviewed**: 2026-01-02
+> **父文档**: BUSINESS_RULES.md v5.1
+> **关联 SoT**: STATE_MACHINE.md v2.9 §5, DATA_SCHEMA.md v5.7 §3.2.1
+> **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
 
@@ -13,12 +14,12 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v4.6 | §4.3 | 规则索引定义 |
-| STATE_MACHINE.md | v2.7 | §5, §4A.3 | 项目状态机（4 状态）、Phase 边界 |
-| DATA_SCHEMA.md | v5.6 | §3.2.1 | projects 表结构、字段定义 |
+| BUSINESS_RULES.md | v5.0 | §4.3 | 规则索引定义 |
+| STATE_MACHINE.md | v2.9 | §5, §4A.3 | 项目状态机（4 状态）、Phase 边界 |
+| DATA_SCHEMA.md | v5.7 | §3.2.1 | projects 表结构、字段定义 |
 | ERROR_CODES.md | v2.3 | §3-4 | 错误码映射 |
 | AUTH_SPEC.md | v2.2 | §2.2, §3 | 角色权限 |
-| MASTER.md | v4.6 | §2.4, §3 | 角色定义、Phase 边界 |
+| MASTER.md | v4.8 | §2.4, §3 | 角色定义、Phase 边界 |
 
 ---
 
@@ -54,7 +55,7 @@
 #### 前置条件
 - 用户角色: `admin` 或 `ceo` 创建项目
 - 数据状态: 指定的负责人用户状态为 active
-- 引用: DATA_SCHEMA.md v5.6 §3.2.1, AUTH_SPEC.md v2.2 §2.2
+- 引用: DATA_SCHEMA.md v5.6 §3.2.1, AUTH_SPEC.md v2.1 §2.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -126,7 +127,7 @@
 项目状态机定义了项目从创建到归档的完整生命周期。所有状态变更必须遵循预定义的合法流转路径，确保项目管理的规范性和可追溯性。
 
 #### 详细约束
-- ✅ **允许**: 仅 STATE_MACHINE.md v2.7 §5 定义的合法流转
+- ✅ **允许**: 仅 STATE_MACHINE.md v2.8 §5 定义的合法流转
 - ❌ **禁止**: 直接 UPDATE `projects.status` 字段
 - ❌ **禁止**: 跳过中间状态
 - 📌 **强制**: 状态变更必须通过业务动作触发
@@ -134,7 +135,7 @@
 
 #### 前置条件
 - 数据状态: 当前状态必须在合法流转表中
-- 引用: STATE_MACHINE.md v2.7 §5
+- 引用: STATE_MACHINE.md v2.8 §5
 
 #### 项目状态机（4 状态）
 ```
@@ -187,7 +188,7 @@ draft → active → suspended → archived
 
 #### 前置条件
 - 数据状态: 项目状态为 `archived`
-- 引用: STATE_MACHINE.md v2.7 §14.2
+- 引用: STATE_MACHINE.md v2.8 §14.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -225,7 +226,7 @@ draft → active → suspended → archived
 
 #### 前置条件
 - 数据状态: 项目状态为 `active`
-- 引用: STATE_MACHINE.md v2.7 §4A.3
+- 引用: STATE_MACHINE.md v2.8 §4A.3
 
 #### Phase 边界
 | Phase | 冷启动期行为 |
@@ -418,5 +419,5 @@ BR-PROJ-004 (归档不可逆)
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
 **父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: STATE_MACHINE.md v2.7 §5, DATA_SCHEMA.md v5.6 §3.2.1
+**关联 SoT**: STATE_MACHINE.md v2.8 §5, DATA_SCHEMA.md v5.6 §3.2.1
 **版本**: v1.0

@@ -1,11 +1,12 @@
 # BR-DATA - 数据完整性规则
 
-> **文档版本**: v1.0
+> **文档版本**: v1.1
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2025-12-27
-> **父文档**: BUSINESS_RULES.md v4.6
-> **关联 SoT**: DATA_SCHEMA.md v5.6 §1-2
+> **last_reviewed**: 2026-01-02
+> **父文档**: BUSINESS_RULES.md v5.1
+> **关联 SoT**: DATA_SCHEMA.md v5.7 §1-2
+> **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
 
@@ -13,10 +14,10 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v4.6 | §4.8 | 规则索引定义 |
-| DATA_SCHEMA.md | v5.6 | §1-2 | 数据模型通用约束 |
+| BUSINESS_RULES.md | v5.0 | §4.8 | 规则索引定义 |
+| DATA_SCHEMA.md | v5.7 | §1-2 | 数据模型通用约束 |
 | ERROR_CODES.md | v2.3 | §4.4, §4.5 | 错误码映射 |
-| STATE_MACHINE.md | v2.7 | §3 | 枚举值定义 |
+| STATE_MACHINE.md | v2.9 | §3 | 枚举值定义 |
 
 ---
 
@@ -231,14 +232,14 @@
 #### 核心枚举定义
 | 枚举类型 | 合法取值 | 引用 |
 |----------|----------|------|
-| 技术角色 | admin, finance, account_manager, media_buyer | STATE_MACHINE.md §2, MASTER.md v4.6 §INV-007 |
+| 技术角色 | admin, finance, account_manager, media_buyer | STATE_MACHINE.md §2, MASTER.md v4.8 §INV-007 |
 | 账户状态 | new, testing, active, suspended, dead, archived | STATE_MACHINE.md §6 |
 | 日报状态 | raw_submitted, trend_pending, trend_ok, ... | STATE_MACHINE.md §5 |
 | 项目状态 | draft, active, suspended, archived | STATE_MACHINE.md §4 |
 
 #### 前置条件
 - 数据模型: 枚举定义在 STATE_MACHINE.md
-- 引用: STATE_MACHINE.md v2.7 §4
+- 引用: STATE_MACHINE.md v2.8 §4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |

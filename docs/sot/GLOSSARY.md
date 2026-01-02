@@ -1,8 +1,8 @@
 # 术语汇总 (Glossary)
 
-> **版本**: v1.0
-> **最后更新**: 2025-12-30
-> **来源**: MASTER.md v4.6, DATA_SCHEMA.md v5.6
+> **版本**: v1.1
+> **最后更新**: 2026-01-02
+> **来源**: MASTER.md v4.9, DATA_SCHEMA.md v5.7
 
 ---
 
@@ -21,7 +21,7 @@
 
 | 术语 | 英文 | 废弃原因 | 替代方案 |
 |------|------|---------|---------|
-| ~~主管~~ | supervisor | PRD v2.2 废弃 | 合并到 project_owner |
+| ~~主管~~ | supervisor | MASTER v4.6+ 废弃（PRD v5.1 仍包含但架构以 MASTER 为准） | 合并到 project_owner |
 | ~~数据运营~~ | data_operator | 不在宪法中 | 不使用 |
 | ~~媒体买手~~ | media_buyer | 技术层术语 | 业务层用 pitcher |
 

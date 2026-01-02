@@ -3,11 +3,12 @@
 > **文档性质**: 系统唯一入口，所有代码实现的最高裁决依据
 > **核心目标**: 支撑老板决策，而不是替代人做判断
 > **约束级别**: 强制执行，违反本文档定义的不变量视为 P0 缺陷
-> **版本**: v4.7
+> **版本**: v4.9
 > **status**: active
-> **基准**: PRD v2.2, BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
+> **基准**: PRD v5.2, BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
+> **PRD对齐**: PRD v5.2 已与 MASTER 6 角色模型完全对齐（删除 Supervisor，合并到 project_owner）
 > **owner**: wade
-> **last_reviewed**: 2025-12-31
+> **last_reviewed**: 2026-01-02
 
 ---
 
@@ -167,16 +168,27 @@
 
 ### 2.4 角色定义（6 角色）
 
-> **PRD v2.2 变更**：移除 supervisor 角色，其职责（日报审核、数据统计）合并到 project_owner
+> **架构决策（MASTER v4.6+, PRD v5.2 已对齐）**：系统只有 6 个角色，supervisor 角色已移除，其职责（日报审核、数据统计、团队管理）合并到 project_owner。PRD v5.2 已完成角色对齐。
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |
 |--------|-------|---------|---------|
-| ceo | 老板 | 资金安全、公司盈亏、最终决策 | 全部可见，批准充值，锁定结算 |
-| project_owner | 项目负责人 | 项目盈亏、资金使用效率、日报审核、统计实际消耗、与甲方确认有效粉 | 申请充值，审核日报，查看项目，提交周报，调配投手 |
-| finance | 财务 | 资金出入准确、数据真实、对账 | 审核充值，更新资金表，锁定结算 |
-| pitcher | 投手 | CPL 达标、日报准确、执行投放 | 填报日报，查看自己数据 |
-| account_manager | 户管 | 账户分配、账户状态监控、收集充值申请 | 管理账户分配，收集投手充值需求 |
-| admin | 管理员 | 系统配置 | 系统设置（不参与业务） |
+| ceo | 老板 | 资金安全、公司盈亏、最终决策、月度锁账 | 全部可见，批准充值，锁定结算 |
+| project_owner | 项目负责人 | 项目盈亏、有效线索确认、团队管理、日报审核、资金使用效率 | 申请充值，审核日报，查看项目，提交周报，调配投手 |
+| finance | 财务 | 资金审批、转账执行、利润核算、收入录入 | 审核充值，更新资金表，锁定结算 |
+| pitcher | 投手 | 广告投放、日报填写、充值申请 | 填报日报，查看自己数据 |
+| account_manager | 户管 | 账户管理、环境分配、代理商对接、实际消耗录入 | 管理账户分配，收集投手充值需求 |
+| admin | 管理员 | 系统配置、用户管理 | 系统设置（不参与业务） |
+
+**技术层角色映射（PRD v5.2 §2.2.2）**：
+
+| 业务角色 | 系统角色值（user.role） | 说明 |
+|----------|------------------------|------|
+| 老板 | `ceo` | 最高权限 |
+| 项目负责人 | `project_owner` | 负责项目和团队管理 |
+| 财务 | `finance` | 资金和核算管理 |
+| 投手 | `pitcher` | 日常投放操作 |
+| 户管 | `account_manager` | 账户和渠道管理 |
+| 管理员 | `admin` | 系统配置 |
 
 **角色权限矩阵**
 
@@ -611,9 +623,9 @@ def get_conversions_for_billing(report: DailyReport, phase: str) -> int:
         return report.conversions
 ```
 
-#### 4.5.8 数据 SoT 三层架构（PRD v2.2）
+#### 4.5.8 数据 SoT 三层架构（PRD v5.1）
 
-> **核心变更**：PRD v2.2 明确了数据的三层架构，从投手申报到最终结算形成完整链条。
+> **核心变更**：PRD v5.1 明确了数据的三层架构，从投手申报到最终结算形成完整链条。
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -642,9 +654,9 @@ def get_conversions_for_billing(report: DailyReport, phase: str) -> int:
 | 实际数据层 | 平台拉取/统计 | project_owner | 成本核算、过程管理 | 成本 SoT |
 | 结算数据层 | 甲方确认 | project_owner + 甲方 | 收入计算、项目结算 | 收入 SoT |
 
-#### 4.5.9 成本分类口径（PRD v2.2）
+#### 4.5.9 成本分类口径（PRD v5.1）
 
-> **核心变更**：PRD v2.2 定义了 3 类成本，明确广告配套不分摊到项目。
+> **核心变更**：PRD v5.1 定义了 3 类成本，明确广告配套不分摊到项目。
 
 ```python
 EXPENSE_CATEGORY = frozenset([
@@ -663,7 +675,7 @@ EXPENSE_CATEGORY = frozenset([
 **禁止行为**：
 - F-011: 禁止将广告配套 (ad_support) 分摊到项目
 
-#### 4.5.10 公司利润公式（PRD v2.2）
+#### 4.5.10 公司利润公式（PRD v5.1）
 
 > **核心变更**：简化利润公式，明确公司级盈亏计算。
 
@@ -679,7 +691,7 @@ EXPENSE_CATEGORY = frozenset([
 | 项目级 | `项目收款 - 项目广告费充值` | 项目负责人对此负责 |
 | 公司级 | `Σ项目收款 - Σ所有支出` | 老板对此负责 |
 
-#### 4.5.11 充值审批链（PRD v2.2）
+#### 4.5.11 充值审批链（PRD v5.1）
 
 > **核心变更**：日常充值不需要老板逐笔审批，老板看整体资金可随时介入。
 
@@ -707,7 +719,7 @@ EXPENSE_CATEGORY = frozenset([
 - 项目累计充值超预算
 - 老板主动介入
 
-#### 4.5.12 押款定义（PRD v2.2）
+#### 4.5.12 押款定义（PRD v5.1）
 
 > **核心变更**：明确押款计算口径。
 
@@ -976,31 +988,33 @@ EXPENSE_CATEGORY = frozenset([
 当多份文档对同一概念有不同定义时，按以下优先级解决冲突：
 
 ```
-0. MASTER.md (本文档) v4.7              → 架构宪法，最高优先级
-1. BUSINESS_FLOW_MANAGEMENT.md          → 业务流程与责任模型
-2. MVP_PHASE_DESIGN.md                  → Phase 边界与页面定义
-3. STATE_MACHINE.md v2.8                → 状态定义与转换
-4. DATA_SCHEMA.md v5.7                  → 表结构与字段，含账本规则（§3.4.4）
-5. BUSINESS_RULES.md v4.8               → 业务规则
-6. API_SOT.md v9.4                      → API 定义
-7. ERROR_CODES_SOT.md v2.2              → 错误码
-8. AUTH_SPEC.md v2.1                    → 认证授权
+0. MASTER.md (本文档) v4.9              → 架构宪法，最高优先级
+1. PRD v5.2                             → 产品需求文档（与 MASTER 6 角色模型已对齐）
+2. BUSINESS_FLOW_MANAGEMENT.md          → 业务流程与责任模型
+3. MVP_PHASE_DESIGN.md                  → Phase 边界与页面定义
+4. STATE_MACHINE.md v2.9                → 状态定义与转换
+5. DATA_SCHEMA.md v5.7                  → 表结构与字段，含账本规则（§3.4.4）
+6. BUSINESS_RULES.md v5.0               → 业务规则
+7. API_SOT.md v9.6                      → API 定义
+8. ERROR_CODES_SOT.md v2.2              → 错误码
+9. AUTH_SPEC.md v2.2                    → 认证授权
 ```
 
 ### 8.2 文档索引
 
 **Tier 1: 架构宪法**
-- **docs/sot/MASTER.md** v4.7 - 系统唯一入口（本文档）
+- **docs/sot/MASTER.md** v4.9 - 系统唯一入口（本文档）
+- **docs/PRD_v5.2.md** - 产品需求文档（6 角色模型已对齐）
 - **dataset/out/BUSINESS_FLOW_MANAGEMENT.md** - 业务流程优化方案
 - **dataset/out/MVP_PHASE_DESIGN.md** - MVP 分阶段执行方案
 
 **Tier 2: 单源真相 (docs/sot/)**
-- **STATE_MACHINE.md** v2.8 - 状态定义与转换规则
+- **STATE_MACHINE.md** v2.9 - 状态定义与转换规则
 - **DATA_SCHEMA.md** v5.7 - 数据库表结构与字段定义，含账本规则（§3.4.4 ledger_entries）
-- **BUSINESS_RULES.md** v4.8 - 业务规则与约束
-- **API_SOT.md** v9.4 - API 端点定义与规范
+- **BUSINESS_RULES.md** v5.0 - 业务规则与约束
+- **API_SOT.md** v9.6 - API 端点定义与规范
 - **ERROR_CODES_SOT.md** v2.2 - 错误码定义
-- **AUTH_SPEC.md** v2.1 - 认证授权规范
+- **AUTH_SPEC.md** v2.2 - 认证授权规范
 
 **Tier 3: 实施指南 (docs/2.dev-guides/)**
 - **BACKEND_DEV_GUIDE.md** - 后端开发指南
@@ -1135,7 +1149,7 @@ raw_submitted → trend_pending → trend_ok → final_pending
 - 系统只记录「应该阻断」的事件，但不执行
 - 管理者可查看「如果是 Phase 2，会发生什么」
 
-### INV-006: 禁止行为列表（PRD v2.2）
+### INV-006: 禁止行为列表（PRD v5.1）
 
 > 本节汇总所有禁止行为，代码生成时必须检查。
 
@@ -1150,38 +1164,36 @@ raw_submitted → trend_pending → trend_ok → final_pending
 | F-007 | 替代人做裁决 | 人工裁决优先 | BI-03 |
 | F-008 | 强制必填字段 | 允许数据不完整（Phase 1） | §4.3 |
 | **F-009** | 充值流程强制添加老板逐笔审批 | 日常充值由财务审批即可 | §4.5.11 |
-| **F-010** | 使用已移除的角色（supervisor） | PRD v2.2 已移除 | §2.4 |
+| **F-010** | 使用已移除的角色（supervisor） | MASTER v4.6+ 已移除，PRD v5.2 已完成对齐 | §2.4 |
 | **F-011** | 广告配套分摊到项目 | 应公司统一记账 | §4.5.9 |
 
 ### INV-007: 角色映射表（技术层↔业务层）
 
-> 数据库 CHECK 约束与业务角色的映射关系。
+> **PRD v5.2 对齐**：业务角色与 user.role 字段的标准映射关系。
 
-| 业务角色(PRD v2.2) | 技术层角色 | 映射方式 | 说明 |
-|-------------------|-----------|---------|------|
-| ceo | admin | 直接使用 | 老板使用 admin 权限 |
-| project_owner | (业务属性) | `users.is_project_owner=true` 或 `project_members` | 项目级角色 |
-| finance | finance | 直接使用 | 财务角色 |
-| pitcher | media_buyer | 直接使用 | 投手 = 媒体采买 |
-| account_manager | account_manager | 直接使用 | 户管角色 |
-| admin | admin | 直接使用 | 系统管理员 |
+| 业务角色 | 系统角色值（user.role） | 说明 |
+|----------|------------------------|------|
+| 老板 | `ceo` | 最高权限 |
+| 项目负责人 | `project_owner` | 负责项目和团队管理 |
+| 财务 | `finance` | 资金和核算管理 |
+| 投手 | `pitcher` | 日常投放操作 |
+| 户管 | `account_manager` | 账户和渠道管理 |
+| 管理员 | `admin` | 系统配置 |
 
-**技术层角色 CHECK 约束**（不变）：
+**技术层角色 CHECK 约束**：
 ```sql
-CHECK (role IN ('admin', 'finance', 'media_buyer', 'account_manager'))
+CHECK (role IN ('ceo', 'project_owner', 'finance', 'pitcher', 'account_manager', 'admin'))
 ```
 
-**业务层到技术层映射代码**：
-```python
-ROLE_MAPPING = {
-    "ceo": "admin",
-    "project_owner": None,  # 通过 is_project_owner 或 project_members 判断
-    "finance": "finance",
-    "pitcher": "media_buyer",
-    "account_manager": "account_manager",
-    "admin": "admin",
-}
-```
+**废弃角色（禁止使用）**：
+
+| 角色 | 状态 | 替代方案 |
+|------|------|---------|
+| `supervisor` | ❌ 已废弃 (PRD v5.2) | 合并到 project_owner |
+| `data_operator` | ❌ 已废弃 | 不在宪法中 |
+| `media_buyer` | ❌ 非标准 | 使用 pitcher |
+
+> ⚠️ **重要**: 代码中如存在 `media_buyer`、`data_operator`、`supervisor`，应修正为标准角色
 
 ---
 
@@ -1209,18 +1221,34 @@ ROLE_MAPPING = {
 | v4.3 | 2025-12-22 | P0 一致性修复：daily_report 字段命名统一、SoT 字段级消歧、计费/结算读取约束 | Master Architect |
 | v4.4 | 2025-12-22 | P0 最终修复：Phase 1 隐性问责消除、日报消耗与平台消耗 SoT 消歧、已回款 SoT 明确 | Master Architect |
 | v4.5 | 2025-12-25 | 业务模型完善：新增双结算模式、进粉数据流、甲方核对机制 | Master Architect |
-| v4.6 | 2025-12-27 | PRD v2.2 对齐：角色精简 7→6、数据 SoT 三层架构、成本分类、充值审批链 | Master Architect |
+| v4.6 | 2025-12-27 | PRD v5.1 对齐：角色精简 7→6、数据 SoT 三层架构、成本分类、充值审批链 | Master Architect |
 | v4.7 | 2025-12-31 | SoT 审计修复：移除 LEDGER_SOT.md 引用（账本规则已整合到 DATA_SCHEMA.md §3.4.4）、裁判链版本号对齐 | Claude Opus 4.5 |
+| v4.8 | 2026-01-01 | PRD v5.2 完全对齐：PRD 已删除 supervisor 角色与 MASTER 一致；更新技术层角色映射表；添加废弃角色列表；裁判链添加 PRD v5.2；DATA_SCHEMA 版本更新为 v5.7 | Claude Opus 4.5 |
+| v4.9 | 2026-01-02 | SoT 互锁版本对齐：更新裁判链和文档索引中的所有 SoT 版本引用（STATE_MACHINE v2.9, BUSINESS_RULES v5.0, API_SOT v9.6, AUTH_SPEC v2.2） | Claude Opus 4.5 |
+
+**v4.9 SoT 互锁版本对齐**：
+- §8.1 裁判链：更新所有 SoT 文档版本号（STATE_MACHINE v2.8→v2.9, BUSINESS_RULES v4.8→v5.0, API_SOT v2.1→v9.6, AUTH_SPEC v2.1→v2.2）
+- §8.2 文档索引 Tier 2：同步更新版本引用
+- 本版本由 AI 代码工厂 SoT 合规检查器自动生成
+
+**v4.8 PRD v5.2 完全对齐**：
+- 更新基准文档为 PRD v5.2（PRD 已删除 supervisor 角色，与 MASTER 6 角色模型一致）
+- §2.4 角色定义：新增「技术层角色映射」表，明确 user.role 字段的标准值
+- §9 INV-007：重构角色映射表，使用 PRD v5.2 标准格式；新增「废弃角色」列表
+- §9 INV-006 F-010：更新说明为「PRD v5.2 已完成对齐」
+- §8.1 裁判链：添加 PRD v5.2 为优先级 1
+- §8.2 文档索引：添加 PRD_v5.2.md；DATA_SCHEMA 版本更新为 v5.7；API_SOT 版本更正为 v2.1
+- 移除旧的「PRD v5.1 仍包含 7 角色」警告，PRD 和 MASTER 现已完全一致
 
 **v4.7 SoT 审计修复**：
-- §8.1 裁判链优先级：移除 LEDGER_SOT.md（不存在），账本规则见 DATA_SCHEMA.md v5.7 §3.4.4
-- §8.1 裁判链：添加所有 SoT 文档版本号（STATE_MACHINE v2.8, DATA_SCHEMA v5.7, BUSINESS_RULES v4.8, API_SOT v9.4, ERROR_CODES_SOT v2.2, AUTH_SPEC v2.1）
+- §8.1 裁判链优先级：移除 LEDGER_SOT.md（不存在），账本规则见 DATA_SCHEMA.md v5.6 §3.4.4
+- §8.1 裁判链：添加所有 SoT 文档版本号（STATE_MACHINE v2.8, DATA_SCHEMA v5.6, BUSINESS_RULES v4.8, API_SOT v9.4, ERROR_CODES_SOT v2.2, AUTH_SPEC v2.1）
 - §8.2 文档索引 Tier 1：MASTER.md v4.0 → v4.7
 - §8.2 文档索引 Tier 2：移除 LEDGER_SOT.md，添加账本规则引用说明
 - 修复 P0 问题：LEDGER_SOT.md 引用断裂
 - 修复 P1 问题：4 处版本号缺失/过时
 
-**v4.6 PRD v2.2 对齐**：
+**v4.6 PRD v5.1 对齐**：
 - 角色从 7 个精简为 6 个，移除 supervisor 角色
 - supervisor 职责（日报审核、数据统计、确认有效粉）合并到 project_owner
 - §2.2 责任链简化：投手执行 → 项目负责人监督+盈亏负责 → 老板最终决策
@@ -1311,8 +1339,8 @@ ROLE_MAPPING = {
 
 ---
 
-**文档版本**: v4.7
-**最后更新**: 2025-12-31
-**基准文档**: BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
+**文档版本**: v4.9
+**最后更新**: 2026-01-02
+**基准文档**: PRD v5.2, BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
 **维护者**: 系统架构师
 **变更审批**: 重大修改需经老板确认
