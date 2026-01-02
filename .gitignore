@@ -184,3 +184,37 @@ backend/__pycache__/
 backend_log.txt
 frontend_log.txt
 frontend/playwright-report/
+
+logs
+dev-debug.log
+# Dependency directories
+node_modules/
+# Environment variables
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# OS specific
+
+# Task files
+# tasks.json
+# tasks/
+
+# Claude Code local data (session-specific)
+.claude/data/
+.claude/settings.local.json
+
+# Task Master local data
+.taskmaster/
+
+# Letta Agent
+memory-bank/.letta_agent_id
+scripts/letta/
+
+# Local test files
+frontend/playwright-report/
+test-results/

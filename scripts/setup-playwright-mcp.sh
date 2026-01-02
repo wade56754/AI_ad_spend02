@@ -76,3 +76,5 @@ echo "- .claude/mcp.json (项目配置)"
 echo "- .mcp.json (项目配置)"
 echo ""
 
+
+

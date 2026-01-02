@@ -1,8 +1,8 @@
 # AI 广告代投管理系统 - AI 友好 PRD
 
-> **版本**: v1.0 (基于 PRD_v5.1 重构)
+> **版本**: v1.1 (基于 PRD v5.2 优化)
 > **状态**: ACTIVE
-> **last_reviewed**: 2025-12-31
+> **last_reviewed**: 2026-01-01
 > **兼容性**: Claude Code, Cursor, Windsurf, Copilot
 
 ---
@@ -14,14 +14,15 @@
 ### 0.1 SoT 裁判链（优先级从高到低）
 
 ```
-1. MASTER.md v4.7          → 系统宪法，最高优先级
-2. STATE_MACHINE.md v2.8   → 状态机定义
-3. DATA_SCHEMA.md v5.7     → 数据模型 + 账本规则
-4. BUSINESS_RULES.md v4.8  → 业务规则
-5. API_SOT.md v9.4         → API 契约
-6. ERROR_CODES_SOT.md v2.2 → 错误码
-7. AUTH_SPEC.md v2.1       → 认证授权
-8. PRD_AI_v1.0.md          → 本文档（需求定义）
+1. MASTER.md v4.8          → 系统宪法，最高优先级
+2. PRD v5.2                → 需求文档（已与 MASTER 6 角色完全对齐）
+3. STATE_MACHINE.md v2.8   → 状态机定义
+4. DATA_SCHEMA.md v5.7     → 数据模型 + 账本规则
+5. BUSINESS_RULES.md v4.8  → 业务规则
+6. API_SOT.md v2.1         → API 契约
+7. ERROR_CODES_SOT.md v2.2 → 错误码
+8. AUTH_SPEC.md v2.1       → 认证授权
+9. PRD_AI_v1.0.md          → 本文档（AI 友好格式）
 ```
 
 **冲突处理**: 高层文档覆盖低层文档。遇到冲突先查 MASTER.md。
@@ -113,8 +114,8 @@ pitcher.can_see(account) == (account.pitcher_id == pitcher.id)
 
 ### 2.1 角色定义（6 角色）
 
-> **来源**: MASTER.md v4.7 §2.4, PRD v2.2
-> **变更**: 移除 supervisor，职责合并到 project_owner
+> **来源**: MASTER.md v4.8 §2.4, PRD v5.2 §2.2.1
+> **对齐状态**: PRD v5.2 已与 MASTER 6 角色模型完全对齐（删除 Supervisor，合并到 project_owner）
 
 | 角色 ID | 中文名 | 核心职责 | 关键决策 |
 |---------|--------|---------|---------|
@@ -125,13 +126,30 @@ pitcher.can_see(account) == (account.pitcher_id == pitcher.id)
 | `account_manager` | 户管 | 账户管理、环境分配、实际消耗录入 | 账户分配 |
 | `admin` | 管理员 | 系统配置、用户管理 | 系统设置 |
 
+### 2.1.1 技术层角色映射
+
+> **来源**: MASTER.md v4.8 §2.4, PRD v5.2 §2.2.2
+
+| 业务角色 | `user.role` 字段值 | 说明 |
+|----------|-------------------|------|
+| 老板 | `ceo` | 系统最高权限 |
+| 项目负责人 | `project_owner` | 管理项目和投手 |
+| 财务 | `finance` | 资金和结算管理 |
+| 投手 | `pitcher` | 执行投放，提交日报 |
+| 户管 | `account_manager` | 账户环境管理 |
+| 管理员 | `admin` | 系统配置 |
+
+**汇报关系**: 投手 → 项目负责人 → 老板（无中间层 supervisor）
+
 ### 2.2 废弃角色（禁止使用）
 
-| 角色 | 状态 | 替代方案 | 来源 |
-|------|------|---------|------|
-| `supervisor` | ❌ 废弃 | `project_owner` | PRD v2.2 |
-| `data_operator` | ❌ 废弃 | `project_owner`/`finance` | PRD v2.2 |
-| `media_buyer` | ⚠️ 技术别名 | `pitcher` | 技术层映射 |
+> **来源**: MASTER.md v4.8 INV-007, PRD v5.2 §2.2.1
+
+| 角色 | 状态 | 替代方案 | 废弃原因 |
+|------|------|---------|---------|
+| `supervisor` | ❌ 废弃 | `project_owner` | PRD v2.2 架构决策，职责合并 |
+| `data_operator` | ❌ 废弃 | `project_owner`/`finance` | 不在宪法定义中 |
+| `media_buyer` | ⚠️ 技术别名 | `pitcher` | 非规范名称，应使用 pitcher |
 
 ```python
 # ❌ 错误
@@ -230,7 +248,29 @@ commission = 50 * 1.0 + 50 * 1.5 + 20 * 2.0
 
 ## PART 4: 状态机定义
 
-### 4.1 日报状态机（8 状态）
+### 4.1 日报状态机
+
+> **来源**: STATE_MACHINE.md v2.8 §8
+> **重要**: Phase 1 使用 3 状态简化模型，Phase 2 启用完整 8 状态
+
+#### Phase 1 日报状态机（3 状态）- 当前生效
+
+```
+raw_submitted → trend_ok → final_confirmed
+```
+
+| 状态 | 中文 | 触发动作 | 可转换到 |
+|------|------|---------|---------|
+| `raw_submitted` | 已提交 | 投手提交日报 | `trend_ok` |
+| `trend_ok` | 趋势正常 | 项目负责人审核通过 | `final_confirmed` |
+| `final_confirmed` | 已确认 | 项目负责人确认有效线索 | (终态) |
+
+**Phase 1 简化说明**:
+- 无自动风控阻断（符合 Phase 1 约束）
+- 项目负责人手动审核趋势
+- 异常通过高亮提示，不阻断流程
+
+#### Phase 2 日报状态机（8 状态）- 未来启用
 
 ```
 raw_submitted → trend_pending → trend_ok ────────────────────┐
@@ -252,14 +292,17 @@ raw_submitted → trend_pending → trend_ok ───────────�
 
 **状态转换代码示例**:
 ```python
-# ✅ 合法转换
-report.transition("raw_submitted", "trend_pending")
+# ✅ Phase 1 合法转换
+report.transition("raw_submitted", "trend_ok")
+report.transition("trend_ok", "final_confirmed")
 
-# ❌ 非法转换（跳过状态）
-report.transition("raw_submitted", "final_confirmed")  # 违反状态机
+# ❌ Phase 1 非法转换（使用 Phase 2 状态）
+report.transition("raw_submitted", "trend_pending")  # Phase 1 不存在 trend_pending
 ```
 
 ### 4.2 充值状态机（7 状态）
+
+> **来源**: STATE_MACHINE.md v2.8 §10, PRD v5.2 §2.3.3
 
 ```
 draft → pending_review → finance_approve → paid → completed
@@ -276,6 +319,13 @@ cancelled   rejected        rejected
 | `completed` | 已完成 | (终态) |
 | `rejected` | 已拒绝 | (终态) |
 | `cancelled` | 已取消 | (终态) |
+
+**充值审批链说明**:
+| 充值类型 | 审批流程 | 说明 |
+|---------|---------|------|
+| 日常充值 | 投手申请 → 财务审批 → 转账完成 | 无需老板逐笔审批 |
+| 大额充值 | 投手申请 → 财务初审 → 老板终审 → 转账完成 | 超阈值需老板审批 |
+| 紧急充值 | 投手申请 → 项目负责人确认 → 财务快速处理 | 特殊通道 |
 
 ### 4.3 账户状态机（6 状态）
 
@@ -467,7 +517,7 @@ Content-Type: application/json
 |----|---------|---------|
 | F-STATE-001 | 跳过日报状态 | 按状态机流转 |
 | F-STATE-002 | 修改已锁定数据 | 只能红冲 |
-| F-STATE-003 | 使用旧状态名 | 使用 8 状态机 |
+| F-STATE-003 | 使用 Phase 2 状态 | Phase 1 使用 3 状态机 |
 
 ### 8.4 Phase 1 禁止
 
@@ -498,9 +548,19 @@ Content-Type: application/json
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
+| v1.1 | 2026-01-01 | 与 PRD v5.2 / MASTER v4.8 对齐 | Claude |
 | v1.0 | 2025-12-31 | 基于 PRD_v5.1 重构为 AI 友好格式 | Claude |
 
-### 与 PRD_v5.1 主要差异
+### v1.1 主要变更（2026-01-01）
+
+1. **SoT 裁判链更新**: 添加 PRD v5.2 到优先级 2，更新各文档版本号
+2. **角色定义完善**: 确认 PRD v5.2 已与 MASTER 6 角色完全对齐
+3. **技术层角色映射**: 新增 §2.1.1 技术层角色映射表
+4. **日报状态机澄清**: 明确 Phase 1 使用 3 状态，Phase 2 使用 8 状态
+5. **充值审批链**: 新增日常/大额/紧急充值审批流程说明
+6. **快速参考卡片**: 更新为 Phase 1 三状态模型
+
+### v1.0 与 PRD_v5.1 主要差异
 
 1. **角色精简**: 7 角色 → 6 角色（移除 supervisor）
 2. **结构重组**: 按 AI 友好最佳实践重构
@@ -524,7 +584,12 @@ Content-Type: application/json
 │  角色 (6个):                                                 │
 │  ceo | project_owner | finance | pitcher | account_manager | admin │
 │                                                              │
-│  日报状态 (8个):                                             │
+│  废弃角色: supervisor, data_operator, media_buyer           │
+│                                                              │
+│  日报状态 (Phase 1: 3个):                                    │
+│  raw_submitted → trend_ok → final_confirmed                 │
+│                                                              │
+│  日报状态 (Phase 2: 8个，未来启用):                          │
 │  raw_submitted → trend_pending → trend_ok/trend_flagged     │
 │  → trend_resolved → final_pending → final_confirmed → final_locked │
 │                                                              │
@@ -536,9 +601,11 @@ Content-Type: application/json
 │                                                              │
 │  Phase 1: 只提示、不阻断、不问责                            │
 │                                                              │
+│  SoT 版本: MASTER v4.8, PRD v5.2, DATA_SCHEMA v5.7          │
+│                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-*文档结束 | 版本 v1.0 | 2025-12-31*
+*文档结束 | 版本 v1.1 | 2026-01-01*
