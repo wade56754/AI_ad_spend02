@@ -445,9 +445,35 @@ class LocalAuthService:
         logger.info(f"[CHANGE_PASSWORD] Password changed for user: {user_id}")
         return True
 
+    def create_reset_token(self, user_id: str) -> str:
+        """
+        创建密码重置令牌
+
+        SoT Reference: AUTH_SPEC.md v2.2 §6.5
+
+        Args:
+            user_id: 用户 ID
+
+        Returns:
+            JWT 重置令牌（有效期 1 小时）
+        """
+        expire = datetime.now(timezone.utc) + timedelta(hours=1)
+        to_encode = {
+            "sub": str(user_id),
+            "type": "reset",
+            "exp": expire,
+            "iat": datetime.now(timezone.utc),
+            "jti": str(uuid4()),  # JWT ID 用于令牌唯一性
+        }
+        return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
     async def reset_password(self, email: str) -> bool:
         """
-        发送密码重置邮件（简化实现，实际需要邮件服务）
+        发送密码重置邮件（Phase 1: 生成令牌并记录日志）
+
+        SoT Reference:
+        - AUTH_SPEC.md v2.2 §6.5: 密码重置流程
+        - BR-AUTH-003: 密码强度规则
 
         Args:
             email: 用户邮箱
@@ -458,9 +484,16 @@ class LocalAuthService:
         user = self.db.query(User).filter(User.email == email).first()
 
         if user:
-            # TODO: 实现邮件发送
-            # 生成重置令牌并发送邮件
+            # 生成密码重置令牌
+            reset_token = self.create_reset_token(str(user.id))
+
+            # Phase 1: 记录令牌到日志（实际生产环境应发送邮件）
+            # TODO: 集成邮件服务发送重置链接
             logger.info(f"[RESET_PASSWORD] Reset requested for: {email}")
+            logger.info(
+                f"[RESET_PASSWORD] Reset token (DEV ONLY): {reset_token[:50]}..."
+            )
+            logger.info(f"[RESET_PASSWORD] User ID: {user.id}, Token expires: +1 hour")
 
         # 为安全起见，不暴露邮箱是否存在
         return True
@@ -471,18 +504,86 @@ class LocalAuthService:
         """
         确认密码重置
 
+        SoT Reference:
+        - AUTH_SPEC.md v2.2 §6.5: 密码重置流程
+        - BR-AUTH-003: 密码强度规则（min 8 chars, uppercase, lowercase, digits）
+
         Args:
-            reset_token: 重置令牌
+            reset_token: 重置令牌（JWT，type="reset"）
             new_password: 新密码
-            refresh_token: 刷新令牌（可选）
+            refresh_token: 刷新令牌（可选，用于 Supabase 兼容）
 
         Returns:
             是否成功
+
+        Raises:
+            HTTPException: 令牌无效/过期或密码不符合要求
         """
-        # TODO: 实现令牌验证和密码重置
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="密码重置功能暂未实现，请联系管理员"
-        )
+        try:
+            # 1. 解码并验证 JWT 令牌
+            payload = jwt.decode(
+                reset_token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM]
+            )
+
+            # 2. 验证令牌类型必须是 "reset"
+            token_type = payload.get("type")
+            if token_type != "reset":
+                logger.warning(
+                    f"[RESET_PASSWORD_CONFIRM] Invalid token type: {token_type}"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="无效的重置令牌类型"
+                )
+
+            # 3. 获取用户 ID
+            user_id = payload.get("sub")
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="重置令牌中缺少用户信息"
+                )
+
+            # 4. 查找用户
+            user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在"
+                )
+
+            # 5. 验证用户账户状态
+            if not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, detail="账户已被禁用，无法重置密码"
+                )
+
+            # 6. 验证密码强度（BR-AUTH-003）
+            if len(new_password) < 8:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, detail="密码长度至少 8 位"
+                )
+
+            # 7. 更新密码
+            user.password_hash = self.hash_password(new_password)
+            user.updated_at = datetime.now(timezone.utc)
+            self.db.commit()
+
+            logger.info(
+                f"[RESET_PASSWORD_CONFIRM] Password reset successful for user: {user_id}"
+            )
+            return True
+
+        except JWTError as e:
+            logger.warning(f"[RESET_PASSWORD_CONFIRM] JWT error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="无效或已过期的重置令牌"
+            )
+        except HTTPException:
+            # 重新抛出 HTTPException
+            raise
+        except Exception as e:
+            logger.error(f"[RESET_PASSWORD_CONFIRM] Unexpected error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="密码重置失败，请稍后重试"
+            )
 
     async def verify_email(self, token: str) -> bool:
         """

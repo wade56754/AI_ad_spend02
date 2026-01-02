@@ -72,7 +72,12 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_OPERATOR]
 
     # 序列化配置
-    __json_include_relationships__ = ["creator", "ad_accounts", "account_manager"]
+    __json_include_relationships__ = [
+        "creator",
+        "ad_accounts",
+        "account_manager",
+        "commission_rule",
+    ]
 
     # 主键
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="项目ID")
@@ -112,6 +117,14 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         ForeignKey("settlement_rules.id"),
         nullable=True,
         comment="结算规则ID (tiered/markup类型必填)",
+    )
+
+    # 提成相关字段 (TASK-PRJ-003: 提成配置)
+    commission_rules_id = Column(
+        BigInteger,
+        ForeignKey("commission_rules.id"),
+        nullable=True,
+        comment="提成规则ID (基于 conversions_final 计算投手提成)",
     )
 
     # 履约状态字段 (BUSINESS_RULES.md v4.6 BR-PROJ-006)
@@ -176,6 +189,11 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
     # 多对一：项目 -> 结算规则 (OpenSpec: add-reconciliation-control-center)
     settlement_rule = relationship(
         "SettlementRule", back_populates="projects", lazy="selectin", doc="关联的结算规则"
+    )
+
+    # 多对一：项目 -> 提成规则 (TASK-PRJ-003: 提成配置)
+    commission_rule = relationship(
+        "CommissionRule", back_populates="projects", lazy="selectin", doc="关联的提成规则"
     )
 
     # 多对一：项目 -> 账户管理员

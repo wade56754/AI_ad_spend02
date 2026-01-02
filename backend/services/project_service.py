@@ -40,6 +40,8 @@ from backend.models import (
     Project,
     ProjectMember,
     ProjectExpense,
+    ProjectPrepayment,
+    PrepaymentEntryType,
     User,
     AdAccount,
     DailyReport,
@@ -50,6 +52,8 @@ from backend.schemas.project import (
     ProjectMemberAssignRequest,
     ProjectExpenseRequest,
     ProjectMarkFulfilledRequest,
+    PrepaymentCreateRequest,
+    PrepaymentReversalRequest,
 )
 
 
@@ -541,6 +545,263 @@ class ProjectService:
         )
 
         items, total = paginate(query, pagination, ProjectExpense)
+
+        return items, total
+
+    # ========================================
+    # 预付款管理 (TASK-PRJ-005)
+    # ========================================
+
+    def add_prepayment(
+        self, project_id: int, request: PrepaymentCreateRequest, current_user: User
+    ) -> ProjectPrepayment:
+        """
+        添加预付款入账
+
+        TASK-PRJ-005: 预付款管理
+        SoT Reference: DATA_SCHEMA.md v5.7 §3.4 (三本账体系 - 预付款账本)
+        SoT Reference: BUSINESS_RULES.md v4.8 BR-FIN-004 (预收款≠收入)
+
+        权限: admin, finance, project_owner, ceo
+
+        业务规则:
+        - 预收款在履约完成前是负债，不是收入
+        - 入账金额必须为正数
+        - 入账日期不能是未来日期
+
+        Args:
+            project_id: 项目 ID
+            request: 入账请求 (amount, entry_date, notes)
+            current_user: 当前用户
+
+        Returns:
+            创建的预付款记录
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权操作
+            ValidationError: 验证失败 (日期在未来)
+        """
+        project = self.get_project(project_id, current_user)
+
+        # 权限检查
+        if current_user.role not in ["admin", "finance", "project_owner", "ceo"]:
+            raise_permission_denied("add_prepayment")
+
+        # 验证入账日期不能是未来日期
+        if request.entry_date > date.today():
+            raise_validation_error("entry_date", "入账日期不能是未来日期")
+
+        # 获取当前余额
+        current_balance = ProjectPrepayment.get_project_balance(self.db, project_id)
+
+        # 计算交易后余额
+        balance_after = current_balance + request.amount
+
+        # 创建入账记录
+        prepayment = ProjectPrepayment(
+            project_id=project_id,
+            entry_type=PrepaymentEntryType.TOPUP,
+            amount=request.amount,
+            balance_after=balance_after,
+            entry_date=request.entry_date,
+            notes=request.notes,
+            created_by=current_user.id if isinstance(current_user.id, int) else None,
+        )
+
+        self.db.add(prepayment)
+        self.db.commit()
+        self.db.refresh(prepayment)
+
+        return prepayment
+
+    def add_prepayment_reversal(
+        self, project_id: int, request: PrepaymentReversalRequest, current_user: User
+    ) -> ProjectPrepayment:
+        """
+        添加预付款红冲
+
+        红冲用于冲销错误的入账记录。
+
+        权限: admin, finance
+
+        业务规则:
+        - 红冲金额必须为负数
+        - 必须关联原入账记录ID
+        - 只能红冲 TOPUP 类型的记录
+
+        Args:
+            project_id: 项目 ID
+            request: 红冲请求 (reference_id, amount, entry_date, notes)
+            current_user: 当前用户
+
+        Returns:
+            创建的红冲记录
+
+        Raises:
+            NotFoundError: 项目或原入账记录不存在
+            PermissionError: 无权操作
+            BusinessError: 原记录不是入账类型 / 红冲金额超过原金额
+        """
+        project = self.get_project(project_id, current_user)
+
+        # 权限检查: 只有 admin 和 finance 可以红冲
+        if current_user.role not in ["admin", "finance"]:
+            raise_permission_denied("add_prepayment_reversal")
+
+        # 查找原入账记录
+        original = (
+            self.db.query(ProjectPrepayment)
+            .filter(
+                ProjectPrepayment.id == request.reference_id,
+                ProjectPrepayment.project_id == project_id,
+            )
+            .first()
+        )
+
+        if not original:
+            raise_not_found("ProjectPrepayment", request.reference_id)
+
+        # 验证原记录是入账类型
+        if original.entry_type != PrepaymentEntryType.TOPUP:
+            raise BusinessError(
+                message="只能红冲入账(TOPUP)类型的记录",
+                error=BusinessErrorCodes.INVALID_OPERATION,
+            )
+
+        # 验证红冲金额不超过原金额
+        if abs(request.amount) > original.amount:
+            raise BusinessError(
+                message=f"红冲金额 ({abs(request.amount)}) 不能超过原入账金额 ({original.amount})",
+                error=BusinessErrorCodes.INVALID_AMOUNT,
+            )
+
+        # 获取当前余额
+        current_balance = ProjectPrepayment.get_project_balance(self.db, project_id)
+
+        # 计算交易后余额 (红冲是减少余额)
+        balance_after = current_balance + request.amount  # amount 是负数
+
+        # 创建红冲记录
+        reversal = ProjectPrepayment(
+            project_id=project_id,
+            entry_type=PrepaymentEntryType.REVERSAL,
+            amount=request.amount,  # 负数
+            balance_after=balance_after,
+            entry_date=request.entry_date,
+            reference_id=request.reference_id,
+            reference_type="ProjectPrepayment",
+            notes=request.notes,
+            created_by=current_user.id if isinstance(current_user.id, int) else None,
+        )
+
+        self.db.add(reversal)
+        self.db.commit()
+        self.db.refresh(reversal)
+
+        return reversal
+
+    def get_prepayment_balance(self, project_id: int, current_user: User) -> dict:
+        """
+        获取项目预付款余额
+
+        TASK-PRJ-005: 预付款管理
+        SoT Reference: DATA_SCHEMA.md v5.7 §3.4.4 (三本账体系)
+
+        Args:
+            project_id: 项目 ID
+            current_user: 当前用户
+
+        Returns:
+            dict: 包含余额、累计入账、累计红冲、记录数等信息
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权访问
+        """
+        project = self.get_project(project_id, current_user)
+
+        # 计算汇总数据
+        topup_sum = self.db.query(func.sum(ProjectPrepayment.amount)).filter(
+            ProjectPrepayment.project_id == project_id,
+            ProjectPrepayment.entry_type == PrepaymentEntryType.TOPUP,
+        ).scalar() or Decimal("0.00")
+
+        reversal_sum = self.db.query(func.sum(ProjectPrepayment.amount)).filter(
+            ProjectPrepayment.project_id == project_id,
+            ProjectPrepayment.entry_type == PrepaymentEntryType.REVERSAL,
+        ).scalar() or Decimal("0.00")
+
+        entry_count = (
+            self.db.query(func.count(ProjectPrepayment.id))
+            .filter(ProjectPrepayment.project_id == project_id)
+            .scalar()
+            or 0
+        )
+
+        # 最后入账日期
+        last_entry = (
+            self.db.query(ProjectPrepayment)
+            .filter(ProjectPrepayment.project_id == project_id)
+            .order_by(desc(ProjectPrepayment.id))
+            .first()
+        )
+
+        last_entry_date = last_entry.entry_date if last_entry else None
+
+        # 当前余额 (从最后一条记录获取)
+        balance = last_entry.balance_after if last_entry else Decimal("0.00")
+
+        return {
+            "project_id": project_id,
+            "project_name": project.name,
+            "balance": balance,
+            "total_topup": topup_sum,
+            "total_reversal": reversal_sum,  # 负数
+            "entry_count": entry_count,
+            "last_entry_date": last_entry_date,
+        }
+
+    def get_prepayment_entries(
+        self,
+        project_id: int,
+        current_user: User,
+        pagination: PaginationParams,
+        entry_type: Optional[str] = None,
+    ) -> Tuple[List[ProjectPrepayment], int]:
+        """
+        获取项目预付款流水列表 (分页)
+
+        Args:
+            project_id: 项目 ID
+            current_user: 当前用户
+            pagination: 分页参数
+            entry_type: 筛选分录类型 (TOPUP/REVERSAL)
+
+        Returns:
+            (流水列表, 总数)
+
+        Raises:
+            NotFoundError: 项目不存在
+            PermissionError: 无权访问
+        """
+        # 验证项目访问权限
+        project = self.get_project(project_id, current_user)
+
+        query = (
+            self.db.query(ProjectPrepayment)
+            .filter(ProjectPrepayment.project_id == project_id)
+            .order_by(desc(ProjectPrepayment.id))
+        )
+
+        if entry_type:
+            query = query.filter(ProjectPrepayment.entry_type == entry_type)
+
+        items, total = paginate(query, pagination, ProjectPrepayment)
+
+        # 添加 project_name 属性
+        for item in items:
+            item.project_name = project.name
 
         return items, total
 

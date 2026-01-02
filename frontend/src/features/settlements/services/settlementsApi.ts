@@ -41,108 +41,6 @@ import type {
 const BASE_PATH = '/api/v1/settlements';
 const MONTHLY_PATH = '/api/v1/settlements/monthly';
 
-// ========== Mock 数据生成 (月度结算) ==========
-// SoT: D1-monthly-settlement.md §2 数据需求
-
-/**
- * 生成 Mock 月度结算数据
- * SoT: D1-monthly-settlement.md §4.2 响应示例
- */
-function generateMockMonthlySettlements(month?: string): MonthlySettlement[] {
-  const settlementMonth = month || new Date().toISOString().slice(0, 7);
-  const projects = [
-    { id: 1, name: '项目Alpha', owner: '张三' },
-    { id: 2, name: '项目Beta', owner: '李四' },
-    { id: 3, name: '项目Gamma', owner: '王五' },
-    { id: 4, name: '项目Delta', owner: '赵六' },
-  ];
-
-  const statuses: Array<'draft' | 'confirmed' | 'locked'> = ['draft', 'confirmed', 'locked', 'draft'];
-  const now = new Date().toISOString();
-
-  return projects.map((project, index) => {
-    const totalSpend = 500000 + Math.random() * 500000;
-    const totalConversions = 10000 + Math.random() * 15000;
-    const unitPrice = 50;
-    const revenue = totalConversions * unitPrice;
-    const grossProfit = revenue - totalSpend;
-    const status = statuses[index];
-
-    return {
-      id: index + 1,
-      settlement_month: settlementMonth,
-      project_id: project.id,
-      project_name: project.name,
-      owner_name: project.owner,
-      total_spend: Math.round(totalSpend * 100) / 100,
-      total_conversions: Math.round(totalConversions),
-      avg_cpl: Math.round((totalSpend / totalConversions) * 100) / 100,
-      revenue: Math.round(revenue * 100) / 100,
-      gross_profit: Math.round(grossProfit * 100) / 100,
-      profit_rate: Math.round((grossProfit / revenue) * 10000) / 100,
-      status,
-      confirmed_by: status !== 'draft' ? 1 : null,
-      confirmed_by_name: status !== 'draft' ? '财务张' : null,
-      confirmed_at: status !== 'draft' ? now : null,
-      is_locked: status === 'locked',
-      locked_by: status === 'locked' ? 1 : null,
-      locked_by_name: status === 'locked' ? '财务张' : null,
-      locked_at: status === 'locked' ? now : null,
-      notes: null,
-      created_at: now,
-      updated_at: now,
-    };
-  });
-}
-
-/**
- * 生成 Mock 月度结算汇总
- * SoT: D1-monthly-settlement.md §3.1 KPI 卡片
- */
-function generateMockMonthlySummary(settlements: MonthlySettlement[]): MonthlySettlementSummary {
-  const totalSpend = settlements.reduce((sum, s) => sum + s.total_spend, 0);
-  const totalConversions = settlements.reduce((sum, s) => sum + s.total_conversions, 0);
-  const totalRevenue = settlements.reduce((sum, s) => sum + s.revenue, 0);
-  const totalProfit = settlements.reduce((sum, s) => sum + s.gross_profit, 0);
-
-  return {
-    settlement_month: settlements[0]?.settlement_month || new Date().toISOString().slice(0, 7),
-    total_spend: Math.round(totalSpend * 100) / 100,
-    total_conversions: totalConversions,
-    total_revenue: Math.round(totalRevenue * 100) / 100,
-    total_profit: Math.round(totalProfit * 100) / 100,
-    avg_profit_rate: totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 10000) / 100 : 0,
-    project_count: settlements.length,
-    confirmed_count: settlements.filter((s) => s.status === 'confirmed' || s.status === 'locked').length,
-    locked_count: settlements.filter((s) => s.status === 'locked').length,
-  };
-}
-
-/**
- * 生成 Mock 通用结算统计
- */
-function generateMockStatistics(): SettlementStatistics {
-  return {
-    total_settlements: 45,
-    total_amount: 2856800,
-    pending_amount: 856000,
-    paid_amount: 2000800,
-    overdue_count: 3,
-    overdue_amount: 125000,
-    status_distribution: [
-      { status: 'DRAFT', count: 5, amount: 125000 },
-      { status: 'PENDING', count: 8, amount: 350000 },
-      { status: 'APPROVED', count: 12, amount: 480000 },
-      { status: 'COMPLETED', count: 18, amount: 1800000 },
-      { status: 'REJECTED', count: 2, amount: 101800 },
-    ],
-    type_distribution: [
-      { type: 'SUPPLIER', count: 28, amount: 1856800 },
-      { type: 'CLIENT', count: 17, amount: 1000000 },
-    ],
-  };
-}
-
 // ========== Query Functions ==========
 
 /**
@@ -188,18 +86,14 @@ export async function getSettlementStatistics(
   params: { start_date?: string; end_date?: string } = {}
 ): Promise<SettlementStatistics> {
   const searchParams = new URLSearchParams();
+
   if (params.start_date) searchParams.set('start_date', params.start_date);
   if (params.end_date) searchParams.set('end_date', params.end_date);
 
   const query = searchParams.toString();
   const url = query ? `${BASE_PATH}/statistics?${query}` : `${BASE_PATH}/statistics`;
 
-  try {
-    return await apiFetch<SettlementStatistics>(url);
-  } catch (error) {
-    console.warn('[Settlements] Statistics API 不可用，使用 Mock 数据', error);
-    return generateMockStatistics();
-  }
+  return apiFetch<SettlementStatistics>(url);
 }
 
 /**
@@ -214,9 +108,7 @@ export async function getOverdueSettlements(): Promise<Settlement[]> {
  * Get settlement payments
  * GET /api/v1/settlements/:id/payments
  */
-export async function getSettlementPayments(
-  settlementId: number
-): Promise<SettlementPayment[]> {
+export async function getSettlementPayments(settlementId: number): Promise<SettlementPayment[]> {
   return apiFetch<SettlementPayment[]>(`${BASE_PATH}/${settlementId}/payments`);
 }
 
@@ -226,9 +118,7 @@ export async function getSettlementPayments(
  * Create new settlement
  * POST /api/v1/settlements
  */
-export async function createSettlement(
-  input: SettlementCreateInput
-): Promise<Settlement> {
+export async function createSettlement(input: SettlementCreateInput): Promise<Settlement> {
   return apiFetch<Settlement>(BASE_PATH, {
     method: 'POST',
     body: input,
@@ -297,10 +187,7 @@ export async function recordPayment(
  * POST /api/v1/settlements/:id/cancel
  * State transition: DRAFT/APPROVED -> CANCELLED
  */
-export async function cancelSettlement(
-  id: number,
-  reason?: string
-): Promise<Settlement> {
+export async function cancelSettlement(id: number, reason?: string): Promise<Settlement> {
   const searchParams = new URLSearchParams();
   if (reason) searchParams.set('reason', reason);
 
@@ -334,33 +221,7 @@ export async function getMonthlySettlements(
   const query = searchParams.toString();
   const url = query ? `${MONTHLY_PATH}?${query}` : MONTHLY_PATH;
 
-  try {
-    return await apiFetch<MonthlySettlementListResponse>(url);
-  } catch (error) {
-    console.warn('[Settlements] Monthly API 不可用，使用 Mock 数据', error);
-    let mockItems = generateMockMonthlySettlements(params.month);
-
-    // 应用筛选
-    if (params.project_id) {
-      mockItems = mockItems.filter((s) => s.project_id === params.project_id);
-    }
-    if (params.status) {
-      mockItems = mockItems.filter((s) => s.status === params.status);
-    }
-
-    const page = params.page || 1;
-    const pageSize = params.page_size || 20;
-    const start = (page - 1) * pageSize;
-    const paginatedItems = mockItems.slice(start, start + pageSize);
-
-    return {
-      items: paginatedItems,
-      total: mockItems.length,
-      page,
-      page_size: pageSize,
-      summary: generateMockMonthlySummary(mockItems),
-    };
-  }
+  return apiFetch<MonthlySettlementListResponse>(url);
 }
 
 /**
@@ -370,15 +231,7 @@ export async function getMonthlySettlements(
  * 权限: finance, ceo
  */
 export async function getMonthlySettlement(id: number): Promise<MonthlySettlement> {
-  try {
-    return await apiFetch<MonthlySettlement>(`${MONTHLY_PATH}/${id}`);
-  } catch (error) {
-    console.warn('[Settlements] Monthly Detail API 不可用，使用 Mock 数据', error);
-    const mockItems = generateMockMonthlySettlements();
-    const found = mockItems.find((s) => s.id === id);
-    if (found) return found;
-    throw new Error(`月度结算 ${id} 不存在`);
-  }
+  return apiFetch<MonthlySettlement>(`${MONTHLY_PATH}/${id}`);
 }
 
 /**
@@ -391,14 +244,7 @@ export async function getMonthlySettlementSummary(
   month?: string
 ): Promise<MonthlySettlementSummary> {
   const url = month ? `${MONTHLY_PATH}/summary?month=${month}` : `${MONTHLY_PATH}/summary`;
-
-  try {
-    return await apiFetch<MonthlySettlementSummary>(url);
-  } catch (error) {
-    console.warn('[Settlements] Monthly Summary API 不可用，使用 Mock 数据', error);
-    const mockItems = generateMockMonthlySettlements(month);
-    return generateMockMonthlySummary(mockItems);
-  }
+  return apiFetch<MonthlySettlementSummary>(url);
 }
 
 /**
@@ -407,9 +253,12 @@ export async function getMonthlySettlementSummary(
  * SoT: D1-monthly-settlement.md §4.1 接口清单
  * 权限: finance
  */
-export async function generateMonthlySettlement(
-  input: GenerateMonthlySettlementRequest
-): Promise<{ month: string; generated_count: number; total_spend: number; total_conversions: number }> {
+export async function generateMonthlySettlement(input: GenerateMonthlySettlementRequest): Promise<{
+  month: string;
+  generated_count: number;
+  total_spend: number;
+  total_conversions: number;
+}> {
   return apiFetch(`${MONTHLY_PATH}/generate`, {
     method: 'POST',
     body: input,

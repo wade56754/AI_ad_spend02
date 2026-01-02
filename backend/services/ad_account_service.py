@@ -32,6 +32,8 @@ from backend.schemas.ad_account import (
     AccountDocumentCreateRequest,
     AdAccountResponse,
     AdAccountStatisticsResponse,
+    AccountAssignRequest,
+    AccountAssignResponse,
 )
 from backend.core.response import success_response, error_response
 from backend.exceptions import ValidationError, NotFoundError, PermissionError
@@ -660,6 +662,407 @@ class AdAccountService:
         )
 
         return True
+
+    async def assign_account(
+        self,
+        account_id: int,
+        request: AccountAssignRequest,
+        current_user_id: str,
+        user_role: str,
+    ) -> AccountAssignResponse:
+        """
+        分配广告账户给投手
+
+        TASK-ACC-002: 账户分配 API
+
+        SoT Ref:
+        - BR-ACCT-002: 账户分配唯一性（每账户仅一个负责人）
+        - BR-ACCT-005: 分配记录审计
+        - API_SOT.md v9.7 §8: POST /api/v1/ad-accounts/{account_id}/assign
+        - AUTH_SPEC.md v2.0 §5.3.1: 仅 admin/account_manager 可执行
+
+        Args:
+            account_id: 广告账户 ID
+            request: 分配请求（pitcher_id, reason）
+            current_user_id: 操作人 ID (UUID string)
+            user_role: 操作人角色
+
+        Returns:
+            AccountAssignResponse: 分配结果
+
+        Raises:
+            NotFoundError: 账户不存在 (BIZ_002)
+            ValidationError: 目标用户非投手 (BIZ_001)
+            PermissionError: 无分配权限 (AUTH_500)
+        """
+        from uuid import UUID
+
+        # 1. 权限检查：仅 admin/account_manager 可执行分配
+        if user_role not in ["admin", "account_manager"]:
+            raise PermissionError("仅管理员和户管可执行账户分配")
+
+        # 2. 查询广告账户
+        account = self.db.query(AdAccount).filter(AdAccount.id == account_id).first()
+        if not account:
+            raise NotFoundError(f"广告账户 {account_id} 不存在")
+
+        # 3. 查询目标投手
+        target_user = self.db.query(User).filter(User.id == request.pitcher_id).first()
+        if not target_user:
+            raise NotFoundError(f"用户 {request.pitcher_id} 不存在")
+
+        # 4. 验证目标用户角色：必须是 media_buyer（技术角色，对应业务角色 pitcher）
+        # BR-ACCT-002: 账户分配唯一性 - 仅可分配给投手
+        if target_user.role not in ["media_buyer", "pitcher"]:
+            raise ValidationError(f"目标用户必须是投手角色，当前角色: {target_user.role}")
+
+        # 5. 记录原负责人信息（用于审计和响应）
+        previous_owner_id = account.owner_id
+        previous_owner_name = None
+        if previous_owner_id:
+            previous_owner = (
+                self.db.query(User).filter(User.id == previous_owner_id).first()
+            )
+            if previous_owner:
+                previous_owner_name = (
+                    previous_owner.full_name or previous_owner.username
+                )
+
+        # 6. 执行分配：更新 owner_id 字段
+        account.owner_id = request.pitcher_id
+        assigned_at = datetime.utcnow()
+
+        self.db.commit()
+        self.db.refresh(account)
+
+        # 7. 记录审计日志 (BR-ACCT-005)
+        await self.audit_service.log_action(
+            user_id=current_user_id,
+            action="assign_account",
+            resource_type="ad_account",
+            resource_id=account_id,
+            details=(
+                f"账户分配: {account.account_name} | "
+                f"原负责人: {previous_owner_name or '无'} → "
+                f"新负责人: {target_user.full_name or target_user.username} | "
+                f"原因: {request.reason or '未填写'}"
+            ),
+        )
+
+        # 8. 构建响应
+        return AccountAssignResponse(
+            account_id=account_id,
+            account_name=account.account_name,
+            previous_owner_id=previous_owner_id,
+            previous_owner_name=previous_owner_name,
+            new_owner_id=request.pitcher_id,
+            new_owner_name=target_user.full_name or target_user.username,
+            assigned_at=assigned_at,
+            assigned_by=UUID(current_user_id)
+            if isinstance(current_user_id, str)
+            else current_user_id,
+        )
+
+    async def transfer_account(
+        self,
+        account_id: int,
+        request: "AccountTransferRequest",
+        current_user_id: str,
+        current_user_name: str,
+        user_role: str,
+    ) -> "AccountTransferResponse":
+        """
+        转移广告账户到另一个投手
+
+        TASK-ACC-003: 账户转移 API
+
+        与 assign_account 的区别：
+        - 转移要求账户已有负责人（owner_id 不能为 None）
+        - 必须填写转移原因（用于审计）
+        - action 为 "transfer" 而非 "assign"
+
+        SoT Ref:
+        - BR-ACCT-002: 账户分配唯一性（每账户仅一个负责人）
+        - BR-ACCT-005: 分配记录审计
+        - API_SOT.md v9.7 §8: POST /api/v1/ad-accounts/{account_id}/transfer
+        - AUTH_SPEC.md v2.0 §5.3.1: 仅 admin/account_manager 可执行
+
+        Args:
+            account_id: 广告账户 ID
+            request: 转移请求（target_pitcher_id, reason, notes）
+            current_user_id: 操作人 ID (UUID string)
+            current_user_name: 操作人名称
+            user_role: 操作人角色
+
+        Returns:
+            AccountTransferResponse: 转移结果
+
+        Raises:
+            NotFoundError: 账户不存在 (BIZ_002)
+            ValidationError: 业务规则校验失败 (BIZ_001)
+            PermissionError: 无转移权限 (AUTH_500)
+        """
+        from uuid import UUID
+        from backend.schemas.ad_account import AccountTransferResponse
+
+        # 1. 权限检查：仅 admin/account_manager 可执行转移
+        if user_role not in ["admin", "account_manager"]:
+            raise PermissionError("仅管理员和户管可执行账户转移")
+
+        # 2. 查询广告账户
+        account = self.db.query(AdAccount).filter(AdAccount.id == account_id).first()
+        if not account:
+            raise NotFoundError(f"广告账户 {account_id} 不存在")
+
+        # 3. 检查账户是否有当前负责人（转移前提）
+        if not account.owner_id:
+            raise ValidationError("账户尚未分配负责人，请使用分配（assign）接口而非转移（transfer）")
+
+        # 4. 检查目标投手是否与当前负责人相同
+        if account.owner_id == request.target_pitcher_id:
+            raise ValidationError("目标投手与当前负责人相同，无需转移")
+
+        # 5. 查询原负责人信息
+        previous_owner = self.db.query(User).filter(User.id == account.owner_id).first()
+        if not previous_owner:
+            raise ValidationError("当前负责人用户不存在，数据异常")
+
+        previous_owner_name = previous_owner.full_name or previous_owner.username
+
+        # 6. 查询目标投手
+        target_user = (
+            self.db.query(User).filter(User.id == request.target_pitcher_id).first()
+        )
+        if not target_user:
+            raise NotFoundError(f"目标投手 {request.target_pitcher_id} 不存在")
+
+        # 7. 验证目标用户角色：必须是 media_buyer（技术角色，对应业务角色 pitcher）
+        # BR-ACCT-002: 账户分配唯一性 - 仅可分配给投手
+        if target_user.role not in ["media_buyer", "pitcher"]:
+            raise ValidationError(f"目标用户必须是投手角色，当前角色: {target_user.role}")
+
+        # 8. 执行转移：更新 owner_id 字段
+        previous_owner_id = account.owner_id
+        account.owner_id = request.target_pitcher_id
+        transferred_at = datetime.utcnow()
+
+        self.db.commit()
+        self.db.refresh(account)
+
+        # 9. 记录审计日志 (BR-ACCT-005)
+        # 审计日志格式符合 BR-ACCT-005 定义
+        audit_log_id = await self.audit_service.log_action(
+            user_id=current_user_id,
+            action="transfer",  # 使用 "transfer" 区分于 "assign"
+            resource_type="ad_account",
+            resource_id=account_id,
+            details=(
+                f"账户转移: {account.account_name} ({account.account_code}) | "
+                f"原负责人: {previous_owner_name} → "
+                f"新负责人: {target_user.full_name or target_user.username} | "
+                f"原因: {request.reason}"
+            ),
+            old_value={"owner_id": str(previous_owner_id)},
+            new_value={
+                "owner_id": str(request.target_pitcher_id),
+                "reason": request.reason,
+                "notes": request.notes,
+            },
+        )
+
+        # 10. 构建响应
+        return AccountTransferResponse(
+            account_id=account_id,
+            account_name=account.account_name,
+            account_code=account.account_code,
+            previous_pitcher_id=previous_owner_id,
+            previous_pitcher_name=previous_owner_name,
+            new_pitcher_id=request.target_pitcher_id,
+            new_pitcher_name=target_user.full_name or target_user.username,
+            transferred_at=transferred_at,
+            transferred_by=UUID(current_user_id)
+            if isinstance(current_user_id, str)
+            else current_user_id,
+            transferred_by_name=current_user_name,
+            reason=request.reason,
+            audit_log_id=audit_log_id,
+        )
+
+    async def mark_dead(
+        self,
+        account_id: int,
+        request: "MarkDeadRequest",
+        current_user_id: Union[int, str, UUID],
+        user_role: str,
+    ) -> "MarkDeadResponse":
+        """
+        标记账户为死号 - TASK-ACC-004
+
+        将广告账户标记为死号状态。死号只能进行余额迁移，不能再进行日报、充值等操作。
+
+        SoT References:
+        - STATE_MACHINE.md v2.9 §7.1: 账户状态机 (dead 为终态之一)
+        - BR-ACCT-006: 停用账户禁止操作（死号仅允许余额迁移）
+        - API_SOT.md v9.0 §8: POST /api/v1/ad-accounts/{account_id}/mark-dead
+
+        业务规则:
+        1. 只能从非终态 (new, testing, active, suspended) 转换到 dead
+        2. 已经是 dead 或 archived 的账户不能再次标记
+        3. 必须记录状态历史和审计日志
+        4. 死号后只能进行余额迁移操作
+
+        Args:
+            account_id: 广告账户ID
+            request: 标记死号请求
+            current_user_id: 当前用户ID
+            user_role: 用户角色 (必须是 admin 或 account_manager)
+
+        Returns:
+            MarkDeadResponse: 标记死号响应
+
+        Raises:
+            HTTPException 400: 业务规则违反
+            HTTPException 403: 权限不足
+            HTTPException 404: 账户不存在
+        """
+        from backend.schemas.ad_account import MarkDeadRequest, MarkDeadResponse
+
+        # 1. 权限检查：只有 admin 和 account_manager 可以标记死号
+        allowed_roles = ["admin", "account_manager"]
+        if user_role not in allowed_roles:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "success": False,
+                    "error_code": "AUTH_500",
+                    "message": f"角色 '{user_role}' 无权标记死号，需要 {allowed_roles} 权限",
+                },
+            )
+
+        # 2. 查询账户
+        account = self.db.query(AdAccount).filter(AdAccount.id == account_id).first()
+        if not account:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "success": False,
+                    "error_code": "ACCT_404",
+                    "message": f"账户 {account_id} 不存在",
+                },
+            )
+
+        # 3. 状态检查：不能从终态转换
+        terminal_statuses = ["dead", "archived"]
+        if account.status in terminal_statuses:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "success": False,
+                    "error_code": "STATE_400",
+                    "message": f"账户已是 '{account.status}' 状态，不能重复标记死号",
+                },
+            )
+
+        # 4. 保存旧状态
+        old_status = account.status
+        marked_at = datetime.utcnow()
+
+        # 5. 获取操作者信息
+        user_id_int = (
+            int(current_user_id)
+            if isinstance(current_user_id, str)
+            else current_user_id.int
+            if isinstance(current_user_id, UUID)
+            else current_user_id
+        )
+        current_user = self.db.query(User).filter(User.id == user_id_int).first()
+        current_user_name = (
+            current_user.full_name or current_user.username
+            if current_user
+            else "Unknown"
+        )
+
+        # 6. 获取项目信息
+        project = (
+            self.db.query(Project).filter(Project.id == account.project_id).first()
+            if account.project_id
+            else None
+        )
+        project_name = project.project_name if project else None
+
+        # 7. 计算账户余额（如果有 remaining_budget 字段）
+        final_balance = getattr(account, "remaining_budget", None)
+        needs_balance_transfer = final_balance is not None and final_balance > 0
+
+        # 8. 更新账户状态
+        account.status = "dead"
+        account.status_reason = request.reason
+        account.last_status_change = marked_at
+        account.dead_date = marked_at
+
+        # 9. 创建状态历史记录
+        await self._create_status_history(
+            account_id=account_id,
+            old_status=old_status,
+            new_status="dead",
+            reason=request.reason,
+            source="mark_dead_api",
+            user_id=user_id_int,
+        )
+
+        # 10. 提交数据库更改
+        self.db.commit()
+        self.db.refresh(account)
+
+        # 11. 记录审计日志
+        audit_log_id = await self.audit_service.log_action(
+            user_id=user_id_int,
+            action="mark_dead",
+            resource_type="ad_account",
+            resource_id=account_id,
+            details=(
+                f"账户标记死号: {account.account_name} ({account.account_code}) | "
+                f"原状态: {old_status} → dead | "
+                f"原因: {request.reason}"
+            ),
+            old_value={"status": old_status},
+            new_value={
+                "status": "dead",
+                "reason": request.reason,
+                "notes": request.notes,
+                "marked_at": marked_at.isoformat(),
+            },
+        )
+
+        # 12. 构建响应
+        balance_transfer_url = (
+            f"/api/v1/ad-accounts/{account_id}/balance-transfer"
+            if needs_balance_transfer
+            else None
+        )
+
+        return MarkDeadResponse(
+            account_id=account_id,
+            account_name=account.account_name,
+            account_code=account.account_code,
+            platform=account.platform,
+            project_id=account.project_id,
+            project_name=project_name,
+            previous_status=old_status,
+            new_status="dead",
+            marked_at=marked_at,
+            marked_by=UUID(str(current_user_id))
+            if not isinstance(current_user_id, UUID)
+            else current_user_id,
+            marked_by_name=current_user_name,
+            reason=request.reason,
+            final_balance=final_balance,
+            total_spend=account.total_spend or Decimal("0"),
+            total_leads=account.total_leads or 0,
+            needs_balance_transfer=needs_balance_transfer,
+            balance_transfer_url=balance_transfer_url,
+            audit_log_id=audit_log_id,
+        )
 
     async def _create_status_history(
         self,

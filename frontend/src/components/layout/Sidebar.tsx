@@ -15,13 +15,16 @@ import {
   Settings,
   X,
   CalendarDays,
-  Target,  // Logo 图标
+  Target, // Logo 图标
+  Calculator, // 定价配置
+  Percent, // 提成配置
   // 暂未启用的图标
   // BarChart3,
   // TrendingUp,
   // Bell,
   // HelpCircle,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface NavigationItem {
   name: string;
@@ -62,6 +65,8 @@ const navigation: NavigationItem[] = [
  */
 const adminNavigation: NavigationItem[] = [
   { name: '用户管理', href: '/users', icon: UserCog, testId: 'nav-users' },
+  { name: '定价配置', href: '/settlement-rules', icon: Calculator, testId: 'nav-settlement-rules' },
+  { name: '提成配置', href: '/commission-rules', icon: Percent, testId: 'nav-commission-rules' },
   { name: '系统设置', href: '/settings', icon: Settings, testId: 'nav-settings' },
 ];
 
@@ -109,13 +114,15 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
           </Link>
 
           {/* 移动端关闭按钮 */}
-          <button
+          <Button
             type="button"
-            className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+            variant="ghost"
+            size="icon"
+            className="lg:hidden text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
             onClick={onToggle}
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         {/* 导航菜单 */}
@@ -126,9 +133,10 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
               业务管理
             </h3>
             {navigation.map((item) => {
-              const isActive = item.href === '/'
-                ? pathname === '/'
-                : pathname === item.href || pathname.startsWith(item.href + '/');
+              const isActive =
+                item.href === '/'
+                  ? pathname === '/'
+                  : pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <Link
                   key={item.name}
@@ -142,19 +150,25 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
                   )}
                 >
                   <div className="flex items-center">
-                    <item.icon className={cn(
-                      'mr-3 h-5 w-5 transition-colors duration-200',
-                      isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
-                    )} />
+                    <item.icon
+                      className={cn(
+                        'mr-3 h-5 w-5 transition-colors duration-200',
+                        isActive
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                      )}
+                    />
                     {item.name}
                   </div>
                   {item.badge && (
-                    <span className={cn(
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                      isActive
-                        ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                    )}>
+                    <span
+                      className={cn(
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                        isActive
+                          ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                      )}
+                    >
                       {item.badge}
                     </span>
                   )}
@@ -183,10 +197,14 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
                   )}
                 >
                   <div className="flex items-center">
-                    <item.icon className={cn(
-                      'mr-3 h-5 w-5 transition-colors duration-200',
-                      isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
-                    )} />
+                    <item.icon
+                      className={cn(
+                        'mr-3 h-5 w-5 transition-colors duration-200',
+                        isActive
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300'
+                      )}
+                    />
                     {item.name}
                   </div>
                 </Link>
@@ -197,22 +215,33 @@ export default function Sidebar({ isOpen, onToggle, className = '' }: SidebarPro
 
         {/* 底部操作区域 */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={toggleTheme}
-            className="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+            className="w-full justify-start px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             {theme === 'dark' ? (
               <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                />
               </svg>
             ) : (
               <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                />
               </svg>
             )}
             {theme === 'dark' ? '浅色模式' : '深色模式'}
-          </button>
+          </Button>
         </div>
       </div>
     </>

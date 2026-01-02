@@ -226,3 +226,78 @@ export interface ProjectDashboard {
 export interface ProjectDashboardParams {
   days?: number;
 }
+
+// === Prepayment Types (TASK-PRJ-005) ===
+
+/**
+ * 预付款流水类型
+ * SoT: DATA_SCHEMA.md v5.7 (project_prepayments entity)
+ */
+export type PrepaymentEntryType = 'TOPUP' | 'REVERSAL';
+
+export const PREPAYMENT_ENTRY_TYPE_CONFIG: Record<
+  PrepaymentEntryType,
+  { label: string; variant: 'success' | 'error' }
+> = {
+  TOPUP: { label: '入账', variant: 'success' },
+  REVERSAL: { label: '红冲', variant: 'error' },
+};
+
+/**
+ * 预付款记录
+ */
+export interface PrepaymentEntry {
+  id: number;
+  project_id: number;
+  project_name?: string;
+  entry_type: PrepaymentEntryType;
+  amount: number;
+  balance_after: number;
+  entry_date: string;
+  reference_id?: number | null;
+  notes?: string | null;
+  created_by?: number | null;
+  operator_name?: string | null;
+  created_at: string;
+}
+
+/**
+ * 预付款余额响应
+ */
+export interface PrepaymentBalance {
+  project_id: number;
+  project_name?: string;
+  balance: number;
+  total_topup: number;
+  total_reversal: number;
+  entry_count: number;
+  last_entry_date?: string | null;
+}
+
+/**
+ * 预付款入账请求
+ */
+export interface PrepaymentCreateInput {
+  amount: number;
+  entry_date: string;
+  notes?: string;
+}
+
+/**
+ * 预付款红冲请求
+ */
+export interface PrepaymentReversalInput {
+  reference_id: number;
+  amount: number; // 必须为负数
+  entry_date: string;
+  notes?: string;
+}
+
+/**
+ * 预付款列表查询参数
+ */
+export interface PrepaymentListParams {
+  page?: number;
+  page_size?: number;
+  entry_type?: PrepaymentEntryType;
+}

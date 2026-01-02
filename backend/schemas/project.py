@@ -350,3 +350,113 @@ class ProjectDashboardResponse(BaseModel):
     # 元数据
     period_start: Optional[str] = Field(None, description="统计开始日期")
     period_end: Optional[str] = Field(None, description="统计结束日期")
+
+
+# ========== 预付款管理 Schema (TASK-PRJ-005) ==========
+
+
+class PrepaymentCreateRequest(BaseModel):
+    """
+    预付款入账请求
+
+    TASK-PRJ-005: 预付款管理
+    SoT Reference: DATA_SCHEMA.md v5.7 §3.4 (三本账体系 - 预付款账本)
+    SoT Reference: BUSINESS_RULES.md v4.8 BR-FIN-004 (预收款≠收入)
+
+    业务规则:
+    - 预收款在履约完成前是负债，不是收入
+    - 入账金额必须为正数
+    - 入账日期不能是未来日期
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    amount: Decimal = Field(
+        ...,
+        gt=0,
+        decimal_places=2,
+        description="入账金额（必须为正数）",
+    )
+    entry_date: date = Field(..., description="入账日期")
+    notes: Optional[str] = Field(None, max_length=500, description="备注说明")
+
+
+class PrepaymentReversalRequest(BaseModel):
+    """
+    预付款红冲请求
+
+    红冲用于冲销错误的入账记录。
+
+    业务规则:
+    - 红冲金额必须为负数
+    - 必须关联原入账记录ID
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    reference_id: int = Field(..., gt=0, description="关联的原入账记录ID")
+    amount: Decimal = Field(
+        ...,
+        lt=0,
+        decimal_places=2,
+        description="红冲金额（必须为负数）",
+    )
+    entry_date: date = Field(..., description="红冲日期")
+    notes: Optional[str] = Field(None, max_length=500, description="红冲原因")
+
+
+class PrepaymentResponse(BaseModel):
+    """
+    预付款记录响应
+
+    TASK-PRJ-005: 预付款管理
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int = Field(..., description="记录ID")
+    project_id: int = Field(..., description="项目ID")
+    project_name: Optional[str] = Field(None, description="项目名称")
+    entry_type: str = Field(..., description="分录类型: TOPUP(入账)/REVERSAL(红冲)")
+    amount: Decimal = Field(..., description="金额")
+    balance_after: Decimal = Field(..., description="交易后余额")
+    entry_date: date = Field(..., description="入账日期")
+    reference_id: Optional[int] = Field(None, description="关联记录ID（红冲时）")
+    notes: Optional[str] = Field(None, description="备注")
+    created_by: Optional[int] = Field(None, description="操作人ID")
+    operator_name: Optional[str] = Field(None, description="操作人姓名")
+    created_at: datetime = Field(..., description="创建时间")
+
+
+class PrepaymentListResponse(BaseModel):
+    """预付款记录列表响应"""
+
+    items: List[PrepaymentResponse]
+    meta: Dict[str, Any] = Field(
+        default_factory=lambda: {"total": 0, "page": 1, "page_size": 20}
+    )
+
+
+class PrepaymentBalanceResponse(BaseModel):
+    """
+    项目预付款余额响应
+
+    TASK-PRJ-005: 预付款管理
+    SoT Reference: DATA_SCHEMA.md v5.7 §3.4.4 (三本账体系)
+
+    业务说明:
+    - balance: 当前预付款余额（客户已付款但未消耗的金额）
+    - total_topup: 累计入账总额
+    - total_reversal: 累计红冲总额
+    - entry_count: 流水记录数
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    project_id: int = Field(..., description="项目ID")
+    project_name: Optional[str] = Field(None, description="项目名称")
+    balance: Decimal = Field(default=Decimal("0.00"), description="当前预付款余额")
+    total_topup: Decimal = Field(default=Decimal("0.00"), description="累计入账总额")
+    total_reversal: Decimal = Field(default=Decimal("0.00"), description="累计红冲总额")
+    entry_count: int = Field(default=0, description="流水记录数")
+    last_entry_date: Optional[date] = Field(None, description="最后入账日期")

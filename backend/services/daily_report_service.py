@@ -627,14 +627,17 @@ class DailyReportService:
         self, report_id: int, request: DailyReportAuditRequest, current_user: User
     ) -> DailyReport:
         """
-        确认最终粉数（运营确认）
+        确认最终粉数（运营确认）- TASK-RPT-007
 
-        基于 STATE_MACHINE.md v2.6 第8章:
-        final_pending → final_confirmed
+        基于 STATE_MACHINE.md v2.8 §4，支持两种流转路径:
+        - Phase 1 简化流程: trend_ok → final_confirmed (直接确认)
+        - Phase 2 完整流程: final_pending → final_confirmed
+
+        权限: project_owner, admin (BR-RPT-008)
 
         Args:
             report_id: 日报ID
-            request: 审核请求
+            request: 审核请求 (包含 conversions_final 最终有效粉数)
             current_user: 当前用户
 
         Returns:

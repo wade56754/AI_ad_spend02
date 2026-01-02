@@ -997,11 +997,11 @@ async def update_real_spend(
         )
 
 
-@router.post(
+@router.put(
     "/{report_id}/final-confirm",
     response_model=StandardResponse[DailyReportResponse],
     summary="确认最终粉数",
-    description="运营确认最终粉数 (final_pending → final_confirmed)",
+    description="确认有效粉数 (TASK-RPT-007)。Phase 1: trend_ok → final_confirmed; Phase 2: final_pending → final_confirmed",
 )
 async def confirm_final_report(
     report_id: int,
@@ -1010,8 +1010,13 @@ async def confirm_final_report(
     current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
     """
-    确认最终粉数API (STATE_MACHINE.md v2.6 第8章)
-    final_pending → final_confirmed
+    确认最终粉数API (TASK-RPT-007, STATE_MACHINE.md v2.8 §4)
+
+    支持两种流转路径:
+    - Phase 1 简化流程: trend_ok → final_confirmed (直接确认)
+    - Phase 2 完整流程: final_pending → final_confirmed
+
+    权限: project_owner, admin (BR-RPT-008)
     """
     try:
         report = service.confirm_final_report(report_id, request, current_user)

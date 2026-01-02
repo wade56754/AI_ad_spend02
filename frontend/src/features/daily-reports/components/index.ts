@@ -15,3 +15,6 @@ export * from './DailyReportsPageRefactored';
 export * from './DailyReportsStats';
 export * from './DailyReportsFilters';
 export * from './DailyReportsStatusTabs';
+
+// Pitcher workbench (TASK-RPT-005)
+export * from './PitcherWorkbench';

@@ -23,6 +23,14 @@ from backend.models import AdAccount
 
 # from models import Log  # Log模型不存在，暂时注释
 from backend.schemas import AdAccountCreate, AdAccountRead, AdAccountStatusUpdate
+from backend.schemas.ad_account import (
+    AccountAssignRequest,
+    AccountAssignResponse,
+    AccountTransferRequest,
+    AccountTransferResponse,
+    MarkDeadRequest,
+    MarkDeadResponse,
+)
 from backend.schemas.transfer import TransferRequestCreate, TransferRequestResponse
 
 # from services.log_service import LogService  # 暂时注释，Log模型不存在
@@ -334,6 +342,291 @@ def delete_ad_account(
     db.commit()
 
     return success_response(data={"message": "广告账户删除成功"}, message="广告账户删除成功")
+
+
+@log_requests("ad_accounts")
+@router.post("/{account_id}/assign", response_model=dict)
+async def assign_ad_account(
+    account_id: int,
+    payload: AccountAssignRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    分配广告账户给投手
+
+    TASK-ACC-002: 账户分配 API
+
+    **业务规则** (SoT: BR-ACCT.md v5.5):
+    - BR-ACCT-002: 每个账户同一时刻只能分配给一个投手
+    - BR-ACCT-005: 分配变更必须记录审计日志
+
+    **权限** (SoT: AUTH_SPEC.md v2.0 §5.3.1):
+    - admin: 可分配所有账户
+    - account_manager: 可分配所管项目的账户
+
+    **错误码** (SoT: ERROR_CODES_SOT.md v2.1):
+    - BIZ_001 (400): 目标用户非投手角色
+    - BIZ_002 (404): 账户或用户不存在
+    - AUTH_500 (403): 无分配权限
+
+    Args:
+        account_id: 广告账户 ID
+        payload: 分配请求（pitcher_id, reason）
+
+    Returns:
+        AccountAssignResponse: 分配结果
+    """
+    from backend.exceptions import ValidationError, NotFoundError, PermissionError
+
+    # 权限检查：仅 admin/account_manager 可执行
+    user_role = current_user.role
+    if user_role not in ["admin", "account_manager"]:
+        return error_response(
+            code="AUTH_500",
+            message="权限不足，仅管理员和户管可执行账户分配",
+            status_code=403,
+        )
+
+    try:
+        service = AdAccountService(db)
+        result = await service.assign_account(
+            account_id=account_id,
+            request=payload,
+            current_user_id=str(current_user.id),
+            user_role=user_role,
+        )
+
+        logger.info(
+            "Account assigned successfully",
+            account_id=account_id,
+            new_owner_id=str(payload.pitcher_id),
+            assigned_by=str(current_user.id),
+        )
+
+        return success_response(
+            data=result.model_dump(mode="json"),
+            message="账户分配成功",
+        )
+
+    except NotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=404,
+        )
+    except ValidationError as e:
+        return error_response(
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
+            message=str(e),
+            status_code=400,
+        )
+    except PermissionError as e:
+        return error_response(
+            code="AUTH_500",
+            message=str(e),
+            status_code=403,
+        )
+    except Exception as e:
+        logger.error(
+            "Failed to assign account",
+            error=str(e),
+            account_id=account_id,
+        )
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message=f"账户分配失败: {str(e)}",
+            status_code=500,
+        )
+
+
+@log_requests("ad_accounts")
+@router.post("/{account_id}/transfer", response_model=dict)
+async def transfer_ad_account(
+    account_id: int,
+    payload: AccountTransferRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    转移广告账户到另一个投手
+
+    TASK-ACC-003: 账户转移 API
+
+    **业务规则** (SoT: BR-ACCT.md v5.5):
+    - BR-ACCT-002: 每个账户同一时刻只能分配给一个投手
+    - BR-ACCT-005: 转移变更必须记录审计日志
+    - 账户转移要求: 账户必须已有负责人 (区别于首次分配)
+
+    **权限** (SoT: AUTH_SPEC.md v2.0 §5.3.1):
+    - admin: 可转移所有账户
+    - account_manager: 可转移所管项目的账户
+
+    **错误码** (SoT: ERROR_CODES_SOT.md v2.1):
+    - BIZ_001 (400): 目标用户非投手角色
+    - BIZ_002 (404): 账户或用户不存在
+    - BIZ_003 (400): 账户未分配（无原负责人）
+    - AUTH_500 (403): 无转移权限
+
+    Args:
+        account_id: 广告账户 ID
+        payload: 转移请求（target_pitcher_id, reason, notes）
+
+    Returns:
+        AccountTransferResponse: 转移结果
+    """
+    from backend.exceptions import ValidationError, NotFoundError, PermissionError
+
+    # 权限检查：仅 admin/account_manager 可执行
+    user_role = current_user.role
+    if user_role not in ["admin", "account_manager"]:
+        return error_response(
+            code="AUTH_500",
+            message="权限不足，仅管理员和户管可执行账户转移",
+            status_code=403,
+        )
+
+    try:
+        service = AdAccountService(db)
+        result = await service.transfer_account(
+            account_id=account_id,
+            request=payload,
+            current_user_id=str(current_user.id),
+            current_user_name=current_user.full_name or current_user.username,
+            user_role=user_role,
+        )
+
+        logger.info(
+            "Account transferred successfully",
+            account_id=account_id,
+            previous_owner_id=str(result.previous_pitcher_id),
+            new_owner_id=str(result.new_pitcher_id),
+            transferred_by=str(current_user.id),
+            reason=payload.reason,
+        )
+
+        return success_response(
+            data=result.model_dump(mode="json"),
+            message="账户转移成功",
+        )
+
+    except NotFoundError as e:
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=404,
+        )
+    except ValidationError as e:
+        return error_response(
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
+            message=str(e),
+            status_code=400,
+        )
+    except PermissionError as e:
+        return error_response(
+            code="AUTH_500",
+            message=str(e),
+            status_code=403,
+        )
+    except Exception as e:
+        logger.error(
+            "Failed to transfer account",
+            error=str(e),
+            account_id=account_id,
+        )
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message=f"账户转移失败: {str(e)}",
+            status_code=500,
+        )
+
+
+@log_requests("ad_accounts")
+@router.post("/{account_id}/mark-dead", response_model=dict)
+async def mark_account_dead(
+    account_id: int,
+    payload: MarkDeadRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """
+    标记账户为死号 - TASK-ACC-004
+
+    将广告账户标记为死号状态。死号只能进行余额迁移，不能再进行日报、充值等操作。
+
+    **SoT References**:
+    - STATE_MACHINE.md v2.9 §7.1: 账户状态机 (dead 为终态之一)
+    - BR-ACCT-006: 停用账户禁止操作（死号仅允许余额迁移）
+    - API_SOT.md v9.0 §8: POST /api/v1/ad-accounts/{account_id}/mark-dead
+
+    **业务规则**:
+    1. 只能从非终态 (new, testing, active, suspended) 转换到 dead
+    2. 已经是 dead 或 archived 的账户不能再次标记
+    3. 必须记录状态历史和审计日志
+    4. 死号后只能进行余额迁移操作
+
+    **权限**:
+    - admin: 可标记所有账户
+    - account_manager: 可标记所管项目的账户
+
+    **错误码**:
+    - STATE_400: 状态转换非法（账户已是终态）
+    - AUTH_500: 权限不足
+    - ACCT_404: 账户不存在
+
+    Args:
+        account_id: 广告账户ID
+        payload: 标记死号请求体
+        current_user: 当前登录用户
+        db: 数据库会话
+
+    Returns:
+        dict: 标准响应格式，包含死号标记结果
+    """
+    try:
+        service = AdAccountService(db)
+        result = await service.mark_dead(
+            account_id=account_id,
+            request=payload,
+            current_user_id=current_user.id,
+            user_role=current_user.role,
+        )
+
+        return success_response(
+            data=result.model_dump(),
+            message=f"账户 {result.account_name} 已标记为死号",
+        )
+
+    except HTTPException as e:
+        # 处理业务规则违反和权限错误
+        if isinstance(e.detail, dict):
+            return error_response(
+                code=e.detail.get("error_code", "UNKNOWN"),
+                message=e.detail.get("message", str(e)),
+                status_code=e.status_code,
+            )
+        return error_response(
+            code="UNKNOWN",
+            message=str(e.detail),
+            status_code=e.status_code,
+        )
+    except ValueError as e:
+        return error_response(
+            code=ValidationErrorCodes.VALIDATION_ERROR.code,
+            message=str(e),
+            status_code=400,
+        )
+    except Exception as e:
+        logger.error(
+            "Failed to mark account as dead",
+            error=str(e),
+            account_id=account_id,
+        )
+        return error_response(
+            code=SystemErrorCodes.INTERNAL_ERROR.code,
+            message=f"标记死号失败: {str(e)}",
+            status_code=500,
+        )
 
 
 @log_requests("ad_accounts")
