@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 # SoT 5秒扫描 - AI编程防幻觉检查
+# 注: 使用 POSIX sh 以提高 Windows Git Bash 兼容性
 # 用途: pre-commit hook 或手动执行
 # 版本: v1.1 (2025-12-29)
 #

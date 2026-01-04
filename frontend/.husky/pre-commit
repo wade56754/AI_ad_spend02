@@ -6,6 +6,9 @@
 # 使用绝对路径，避免路径问题
 PROJECT_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
+# 设置 PATH，确保 node_modules/.bin 可用
+export PATH="$PROJECT_ROOT/frontend/node_modules/.bin:$PROJECT_ROOT/node_modules/.bin:$PATH"
+
 # SoT 5秒扫描
 "$PROJECT_ROOT/scripts/sot-scan.sh" || exit $?
 
