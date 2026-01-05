@@ -3,11 +3,13 @@
  *
  * Aligned with:
  * - API_SOT.md v9.0 (API endpoints)
- * - ERROR_CODES_SOT.md v2.1 (error handling)
+ * - ERROR_CODES_SOT.md v2.2 (error handling)
  * - AUTH_SPEC.md v2.0 (authentication)
  *
  * @module lib/api
  */
+
+import { getUserMessage, isSessionExpiredError } from './error-codes';
 
 // ============================================================================
 // Types
@@ -31,19 +33,39 @@ export interface PaginationMeta {
 }
 
 /**
- * Paginated response structure (supports both formats)
- * - New format: { items, total, page, page_size, total_pages }
- * - Legacy format: { data, meta: { total, page, ... } }
+ * Paginated response structure
+ *
+ * **推荐使用标准格式**:
+ * - `items`: 数据列表
+ * - `total`: 总记录数
+ * - `page`: 当前页码
+ * - `page_size`: 每页条数
+ * - `total_pages`: 总页数
+ *
+ * **已废弃属性** (向后兼容):
+ * - `data`: 同 items，推荐使用 items
+ * - `meta`: 分页元信息对象
  */
 export interface PaginatedResponse<T> {
-  // New format
+  /** 数据列表 (推荐使用) */
   items: T[];
+  /** 总记录数 */
   total: number;
+  /** 当前页码 */
   page: number;
+  /** 每页条数 */
   page_size: number;
+  /** 总页数 */
   total_pages: number;
-  // Legacy format (for backward compatibility)
+  /**
+   * 数据列表 (同 items)
+   * @deprecated 请使用 items 属性
+   */
   data: T[];
+  /**
+   * 分页元信息
+   * @deprecated 请直接使用 total, page, page_size, total_pages
+   */
   meta: PaginationMeta;
 }
 
@@ -77,7 +99,7 @@ export interface ApiFetchOptions extends Omit<RequestInit, 'body'> {
 // Configuration
 // ============================================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || '';
 
 /**
  * Get authentication token from storage
@@ -106,6 +128,7 @@ export class ApiRequestError extends Error {
   public readonly code: string;
   public readonly status: number;
   public readonly details?: Record<string, unknown>;
+  public readonly userMessage: string;
 
   constructor(message: string, code: string, status: number, details?: Record<string, unknown>) {
     super(message);
@@ -113,6 +136,8 @@ export class ApiRequestError extends Error {
     this.code = code;
     this.status = status;
     this.details = details;
+    // 使用错误码映射获取用户友好消息
+    this.userMessage = getUserMessage(code, message);
   }
 }
 
@@ -160,8 +185,8 @@ async function handleErrorResponse(response: Response, requestUrl?: string): Pro
       // For login/register failures (wrong password), let the error pass through
       if (isLoginRequest) {
         // Don't clear tokens or redirect for login failures
-      } else {
-        // For all other 401 errors (expired token, invalid token), clear tokens
+      } else if (isSessionExpiredError(error.code)) {
+        // For session expired errors (expired token, invalid token), clear tokens
         localStorage.removeItem('auth-token');
         localStorage.removeItem('auth-user');
         localStorage.removeItem('refresh-token');
@@ -261,12 +286,19 @@ export async function apiFetch<T>(url: string, options: ApiFetchOptions = {}): P
 /**
  * Fetch paginated data
  *
- * Normalizes response to support both formats:
- * - Backend format: { items, total, page, page_size, total_pages }
- * - Legacy format: { data, meta: { total, page, page_size, total_pages } }
+ * **推荐使用**:
+ * - 使用 `items` 属性访问数据列表 (标准格式)
+ * - `data` 属性为向后兼容保留，未来版本可能移除
+ *
+ * **响应格式**:
+ * - 标准格式: { items, total, page, page_size, total_pages }
+ * - 旧格式(deprecated): { data, meta: { total, page, ... } }
  *
  * @example
- * const { items, data, meta } = await apiFetchPaginated<User>('/api/v1/users?page=1');
+ * const { items, total, page } = await apiFetchPaginated<User>('/api/v1/users?page=1');
+ * // 推荐使用 items，而非 data
+ *
+ * @deprecated 请使用 items 属性，data 属性将在未来版本移除
  */
 export async function apiFetchPaginated<T>(
   url: string,
@@ -321,14 +353,25 @@ export async function apiFetchPaginated<T>(
       total_pages: envelope.total_pages || 1,
     };
 
+  // Development warning for legacy format usage
+  if (process.env.NODE_ENV === 'development') {
+    // Check if backend is using legacy format (meta.pagination nested structure)
+    if (envelope.meta?.pagination) {
+      console.warn(
+        `[API Warning] Endpoint "${url}" uses legacy pagination format (meta.pagination). ` +
+          'Consider updating backend to use flat pagination format.'
+      );
+    }
+  }
+
   return {
-    // New format
+    // Standard format (推荐使用)
     items,
     total: meta.total,
     page: meta.page,
     page_size: meta.page_size,
     total_pages: meta.total_pages,
-    // Legacy format
+    // Legacy format (向后兼容, @deprecated)
     data: items,
     meta,
   };

@@ -41,9 +41,27 @@ export type DailyReportStatus =
 export type AdPlatform = 'FB' | 'Google' | 'TikTok' | 'Other';
 
 export type AdRegion =
-  | 'Turkey' | 'India' | 'Italy' | 'Germany' | 'Brazil' | 'UK' | 'Korea' | 'France'
-  | 'Malaysia' | 'Japan' | 'Austria' | 'Spain' | 'Nigeria' | 'Singapore' | 'Belgium'
-  | 'Sweden' | 'Canada' | 'Indonesia' | 'USA' | 'Ireland' | 'Other';
+  | 'Turkey'
+  | 'India'
+  | 'Italy'
+  | 'Germany'
+  | 'Brazil'
+  | 'UK'
+  | 'Korea'
+  | 'France'
+  | 'Malaysia'
+  | 'Japan'
+  | 'Austria'
+  | 'Spain'
+  | 'Nigeria'
+  | 'Singapore'
+  | 'Belgium'
+  | 'Sweden'
+  | 'Canada'
+  | 'Indonesia'
+  | 'USA'
+  | 'Ireland'
+  | 'Other';
 
 export type Currency = 'USD' | 'CNY';
 
@@ -57,15 +75,15 @@ export interface DailyReport {
 
   // 投手提交字段 (v2.0)
   raw_spend: Money;
-  follows_count: number;  // 进粉数
-  result_count: number;   // 成效数
-  region?: AdRegion;      // 投放地区
-  platform?: AdPlatform;  // 广告平台
-  currency: Currency;     // 货币类型
+  follows_count: number; // 进粉数
+  result_count: number; // 成效数
+  region?: AdRegion; // 投放地区
+  platform?: AdPlatform; // 广告平台
+  currency: Currency; // 货币类型
 
   // 系统计算字段 (v2.0)
-  cost_per_follow?: Money;   // 单粉成本 = raw_spend / follows_count
-  cost_per_result?: Money;   // 单次成效费用 = raw_spend / result_count
+  cost_per_follow?: Money; // 单粉成本 = raw_spend / follows_count
+  cost_per_result?: Money; // 单次成效费用 = raw_spend / result_count
 
   // 兼容旧字段
   raw_impressions?: number;
@@ -100,8 +118,8 @@ export interface DailyReport {
   submitted_by?: UUID;
   created_by?: UUID;
   created_by_name?: string;
-  submitter_name?: string;  // 投手名称 (v2.1)
-  team_name?: string;       // 团队名称 (v2.1)
+  submitter_name?: string; // 投手名称 (v2.1)
+  team_name?: string; // 团队名称 (v2.1)
   audit_user_id?: UUID;
   locked_at?: ISODateString;
   created_at: ISODateString;
@@ -118,7 +136,7 @@ export interface DailyReportFilters {
   end_date?: DateString;
   region?: AdRegion;
   platform?: AdPlatform;
-  team_id?: string;       // 团队ID (UUID, v2.1)
+  team_id?: string; // 团队ID (UUID, v2.1)
   submitter_name?: string; // 投手名称 (v2.1)
   search?: string;
 }
@@ -126,7 +144,13 @@ export interface DailyReportFilters {
 export interface DailyReportListParams extends DailyReportFilters {
   page?: number;
   page_size?: number;
-  sort_by?: 'report_date' | 'status' | 'raw_spend' | 'follows_count' | 'result_count' | 'created_at';
+  sort_by?:
+    | 'report_date'
+    | 'status'
+    | 'raw_spend'
+    | 'follows_count'
+    | 'result_count'
+    | 'created_at';
   sort_order?: 'asc' | 'desc';
 }
 
@@ -146,12 +170,12 @@ export interface DailyReportListParams extends DailyReportFilters {
 export interface DailyReportCreateInput {
   report_date: DateString;
   ad_account_id: number;
-  raw_spend: number;       // 广告消耗 (USD)
-  follows_count: number;   // 进粉数
-  result_count: number;    // 成效数
-  region: AdRegion;        // 投放地区
-  platform?: AdPlatform;   // 广告平台 (可选)
-  currency?: Currency;     // 货币类型 (默认 USD)
+  raw_spend: number; // 广告消耗 (USD)
+  follows_count: number; // 进粉数
+  result_count: number; // 成效数
+  region: AdRegion; // 投放地区
+  platform?: AdPlatform; // 广告平台 (可选)
+  currency?: Currency; // 货币类型 (默认 USD)
   campaign_name?: string;
   ad_group_name?: string;
   ad_creative_name?: string;
@@ -204,19 +228,57 @@ export interface StateTransition {
  * Allowed transitions per STATE_MACHINE.md v2.6 Section 8.2
  */
 export const ALLOWED_TRANSITIONS: StateTransition[] = [
-  { from: 'raw_submitted', to: 'trend_pending', action: 'submit_for_trend', allowed_roles: ['operator', 'manager', 'admin'] },
-  { from: 'trend_pending', to: 'trend_ok', action: 'approve_trend', allowed_roles: ['manager', 'admin'] },
-  { from: 'trend_pending', to: 'trend_flagged', action: 'flag_trend', allowed_roles: ['manager', 'admin'] },
-  { from: 'trend_flagged', to: 'trend_resolved', action: 'resolve_flag', allowed_roles: ['manager', 'admin'] },
-  { from: 'trend_ok', to: 'final_pending', action: 'submit_for_final', allowed_roles: ['manager', 'admin'] },
-  { from: 'trend_resolved', to: 'final_pending', action: 'submit_for_final', allowed_roles: ['manager', 'admin'] },
-  { from: 'final_pending', to: 'final_confirmed', action: 'confirm_final', allowed_roles: ['admin'] },
+  {
+    from: 'raw_submitted',
+    to: 'trend_pending',
+    action: 'submit_for_trend',
+    allowed_roles: ['operator', 'manager', 'admin'],
+  },
+  {
+    from: 'trend_pending',
+    to: 'trend_ok',
+    action: 'approve_trend',
+    allowed_roles: ['manager', 'admin'],
+  },
+  {
+    from: 'trend_pending',
+    to: 'trend_flagged',
+    action: 'flag_trend',
+    allowed_roles: ['manager', 'admin'],
+  },
+  {
+    from: 'trend_flagged',
+    to: 'trend_resolved',
+    action: 'resolve_flag',
+    allowed_roles: ['manager', 'admin'],
+  },
+  {
+    from: 'trend_ok',
+    to: 'final_pending',
+    action: 'submit_for_final',
+    allowed_roles: ['manager', 'admin'],
+  },
+  {
+    from: 'trend_resolved',
+    to: 'final_pending',
+    action: 'submit_for_final',
+    allowed_roles: ['manager', 'admin'],
+  },
+  {
+    from: 'final_pending',
+    to: 'final_confirmed',
+    action: 'confirm_final',
+    allowed_roles: ['admin'],
+  },
   { from: 'final_confirmed', to: 'final_locked', action: 'lock', allowed_roles: ['admin'] },
 ];
 
 // === Status Display Config ===
 
-export const STATUS_CONFIG: Record<DailyReportStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'error' | 'info' }> = {
+export const STATUS_CONFIG: Record<
+  DailyReportStatus,
+  { label: string; variant: 'default' | 'success' | 'warning' | 'error' | 'info' }
+> = {
   raw_submitted: { label: '原始提交', variant: 'default' },
   trend_pending: { label: '趋势待审', variant: 'info' },
   trend_ok: { label: '趋势通过', variant: 'success' },
@@ -226,6 +288,46 @@ export const STATUS_CONFIG: Record<DailyReportStatus, { label: string; variant: 
   final_confirmed: { label: '终审确认', variant: 'success' },
   final_locked: { label: '已锁定', variant: 'default' },
 };
+
+// === Phase 1 简化状态配置 (CLAUDE.md Phase 1 要求) ===
+// Phase 1 只展示 3 个核心状态: raw_submitted → trend_ok → final_confirmed
+// 其他中间状态映射到这 3 个状态进行展示
+
+export type Phase1Status = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
+
+/**
+ * 将 8 状态映射到 Phase 1 的 3 个展示状态
+ */
+export const PHASE1_STATUS_MAP: Record<DailyReportStatus, Phase1Status> = {
+  raw_submitted: 'raw_submitted', // 已提交
+  trend_pending: 'raw_submitted', // 处理中 → 显示为已提交
+  trend_ok: 'trend_ok', // 趋势通过
+  trend_flagged: 'raw_submitted', // 异常 → 显示为已提交(待处理)
+  trend_resolved: 'trend_ok', // 已解决 → 显示为趋势通过
+  final_pending: 'trend_ok', // 待终审 → 显示为趋势通过
+  final_confirmed: 'final_confirmed', // 已确认
+  final_locked: 'final_confirmed', // 已锁定 → 显示为已确认
+};
+
+export const PHASE1_STATUS_CONFIG: Record<
+  Phase1Status,
+  { label: string; variant: 'default' | 'success' | 'warning' | 'error' | 'info' }
+> = {
+  raw_submitted: { label: '已提交', variant: 'info' },
+  trend_ok: { label: '已审核', variant: 'success' },
+  final_confirmed: { label: '已确认', variant: 'default' },
+};
+
+/**
+ * 获取状态的 Phase 1 展示配置
+ */
+export function getPhase1StatusConfig(status: DailyReportStatus): {
+  label: string;
+  variant: 'default' | 'success' | 'warning' | 'error' | 'info';
+} {
+  const phase1Status = PHASE1_STATUS_MAP[status];
+  return PHASE1_STATUS_CONFIG[phase1Status];
+}
 
 // === Platform & Region Options (v2.0) ===
 

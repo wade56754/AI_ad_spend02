@@ -207,10 +207,7 @@ export function useAuth() {
     [registerMutation]
   );
 
-  const logout = useCallback(
-    () => logoutMutation.mutateAsync(),
-    [logoutMutation]
-  );
+  const logout = useCallback(() => logoutMutation.mutateAsync(), [logoutMutation]);
 
   const changePassword = useCallback(
     (data: ChangePasswordRequest) => changePasswordMutation.mutateAsync(data),
@@ -253,18 +250,69 @@ export function useRequireAuth(redirectTo = '/login') {
 
 /**
  * Hook to require specific role
+ *
+ * 改进: 增加 isRoleVerified 标志，确保角色信息从服务器确认后再进行权限判断
  */
 export function useRequireRole(allowedRoles: string[], redirectTo = '/') {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const [isRoleVerified, setIsRoleVerified] = useState(false);
 
+  // 当用户数据加载完成后，标记角色已验证
   useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
+    if (!isLoading && user) {
+      setIsRoleVerified(true);
+    } else if (!isLoading && !user) {
+      setIsRoleVerified(false);
+    }
+  }, [isLoading, user]);
+
+  // 权限重定向逻辑 - 只在角色验证完成后执行
+  useEffect(() => {
+    if (!isLoading && isRoleVerified && isAuthenticated && user) {
       if (!allowedRoles.includes(user.role)) {
         router.push(redirectTo);
       }
     }
-  }, [isLoading, isAuthenticated, user, allowedRoles, router, redirectTo]);
+  }, [isLoading, isRoleVerified, isAuthenticated, user, allowedRoles, router, redirectTo]);
 
-  return { user, isLoading, isAuthenticated, hasAccess: user ? allowedRoles.includes(user.role) : false };
+  // 计算是否有访问权限 - 只在角色验证后才判断
+  const hasAccess = isRoleVerified && user ? allowedRoles.includes(user.role) : false;
+
+  // isCheckingRole: 正在验证角色中（加载中或等待角色验证）
+  const isCheckingRole = isLoading || (!isRoleVerified && !!user);
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated,
+    hasAccess,
+    isCheckingRole, // 新增: 用于组件判断是否显示加载状态
+    isRoleVerified, // 新增: 角色是否已验证
+  };
+}
+
+/**
+ * Hook to check if user has permission for specific action
+ *
+ * 用于细粒度权限控制，确保权限检查在角色加载完成后进行
+ */
+export function usePermission(requiredRoles: string[]) {
+  const { user, isLoading } = useAuth();
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setIsReady(true);
+    }
+  }, [isLoading]);
+
+  return {
+    // 权限是否正在加载中
+    isLoading: !isReady,
+    // 是否有权限 - 只在加载完成后返回 true
+    hasPermission: isReady && user ? requiredRoles.includes(user.role) : false,
+    // 用户角色
+    userRole: user?.role,
+  };
 }

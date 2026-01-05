@@ -9,7 +9,7 @@
  * @module features/topups/services
  */
 
-import { apiFetch, apiFetchPaginated, apiDownload } from '@/lib/api';
+import { apiFetch, apiFetchPaginated, apiDownload, apiUpload } from '@/lib/api';
 import type { PaginatedResponse } from '@/lib/api';
 import type {
   TopupRequest,
@@ -224,15 +224,8 @@ export async function cancelTopup(id: string, input?: TopupCancelInput): Promise
  * SoT: API_SOT.md v9.7 §10.1
  */
 export async function uploadReceipt(id: string, file: File): Promise<{ url: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  return apiFetch<{ url: string }>(`${BASE_PATH}/${id}/receipt`, {
-    method: 'POST',
-    body: formData,
-    headers: {
-      // Let browser set Content-Type with boundary for FormData
-    },
+  return apiUpload<{ url: string }>(`${BASE_PATH}/${id}/receipt`, file, {
+    fieldName: 'file',
   });
 }
 

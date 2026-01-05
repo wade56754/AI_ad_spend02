@@ -3,6 +3,10 @@
  *
  * Displays the current status of a daily report with appropriate styling
  * SoT: STATE_MACHINE.md v2.6 § 8 (8-state machine)
+ *
+ * Phase 1 模式 (默认启用):
+ * - 只显示 3 个状态: 已提交 → 已审核 → 已确认
+ * - 8 状态机的中间状态会被映射到这 3 个展示状态
  */
 
 'use client';
@@ -19,18 +23,25 @@ import {
   AlertCircle,
   ShieldCheck,
 } from 'lucide-react';
-import type { DailyReportStatus } from '../types';
-import { STATUS_CONFIG } from '../types';
+import type { DailyReportStatus, Phase1Status } from '../types';
+import {
+  STATUS_CONFIG,
+  PHASE1_STATUS_MAP,
+  PHASE1_STATUS_CONFIG,
+  getPhase1StatusConfig,
+} from '../types';
 
 interface StatusBadgeProps {
   status: DailyReportStatus;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
   className?: string;
+  /** Phase 1 模式 - 简化为 3 个状态展示 (默认 true) */
+  phase1?: boolean;
 }
 
 /**
- * Icon mapping for each status
+ * Icon mapping for each status (8-state machine)
  */
 const STATUS_ICONS: Record<DailyReportStatus, React.ComponentType<{ className?: string }>> = {
   raw_submitted: Send,
@@ -41,6 +52,15 @@ const STATUS_ICONS: Record<DailyReportStatus, React.ComponentType<{ className?: 
   final_pending: FileCheck,
   final_confirmed: CheckCircle,
   final_locked: Lock,
+};
+
+/**
+ * Icon mapping for Phase 1 (3 states)
+ */
+const PHASE1_STATUS_ICONS: Record<Phase1Status, React.ComponentType<{ className?: string }>> = {
+  raw_submitted: Send,
+  trend_ok: CheckCircle,
+  final_confirmed: Lock,
 };
 
 /**
@@ -74,7 +94,31 @@ export function StatusBadge({
   size = 'md',
   showIcon = true,
   className,
+  phase1 = true, // Phase 1 默认启用
 }: StatusBadgeProps) {
+  // Phase 1 模式: 使用简化的 3 状态展示
+  if (phase1) {
+    const phase1Status = PHASE1_STATUS_MAP[status];
+    const config = PHASE1_STATUS_CONFIG[phase1Status];
+    const Icon = PHASE1_STATUS_ICONS[phase1Status];
+
+    return (
+      <Badge
+        variant="outline"
+        className={cn(
+          'font-medium border inline-flex items-center gap-1.5',
+          VARIANT_STYLES[config.variant],
+          SIZE_STYLES[size],
+          className
+        )}
+      >
+        {showIcon && Icon && <Icon className={ICON_SIZES[size]} />}
+        <span>{config.label}</span>
+      </Badge>
+    );
+  }
+
+  // 完整 8 状态模式 (Phase 2+)
   const config = STATUS_CONFIG[status];
   const Icon = STATUS_ICONS[status];
 
@@ -143,22 +187,17 @@ export function StatusProgress({ status, className }: StatusProgressProps) {
                 isCurrent && VARIANT_STYLES[config.variant].includes('green')
                   ? 'bg-green-500'
                   : isCurrent && VARIANT_STYLES[config.variant].includes('amber')
-                  ? 'bg-amber-500'
-                  : isCurrent && VARIANT_STYLES[config.variant].includes('blue')
-                  ? 'bg-blue-500'
-                  : isCurrent
-                  ? 'bg-gray-500'
-                  : 'bg-gray-200'
+                    ? 'bg-amber-500'
+                    : isCurrent && VARIANT_STYLES[config.variant].includes('blue')
+                      ? 'bg-blue-500'
+                      : isCurrent
+                        ? 'bg-gray-500'
+                        : 'bg-gray-200'
               )}
               title={config.label}
             />
             {index < statusPath.length - 1 && (
-              <div
-                className={cn(
-                  'w-4 h-0.5',
-                  isCompleted ? 'bg-green-500' : 'bg-gray-200'
-                )}
-              />
+              <div className={cn('w-4 h-0.5', isCompleted ? 'bg-green-500' : 'bg-gray-200')} />
             )}
           </div>
         );
@@ -170,7 +209,26 @@ export function StatusProgress({ status, className }: StatusProgressProps) {
 /**
  * Status Legend component for displaying all possible statuses
  */
-export function StatusLegend() {
+interface StatusLegendProps {
+  /** Phase 1 模式 - 只显示 3 个状态 (默认 true) */
+  phase1?: boolean;
+}
+
+export function StatusLegend({ phase1 = true }: StatusLegendProps) {
+  // Phase 1: 只显示 3 个核心状态
+  if (phase1) {
+    const phase1Statuses: Phase1Status[] = ['raw_submitted', 'trend_ok', 'final_confirmed'];
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {phase1Statuses.map((status) => (
+          <StatusBadge key={status} status={status} size="sm" phase1={true} />
+        ))}
+      </div>
+    );
+  }
+
+  // 完整 8 状态
   const allStatuses: DailyReportStatus[] = [
     'raw_submitted',
     'trend_pending',
@@ -185,7 +243,7 @@ export function StatusLegend() {
   return (
     <div className="flex flex-wrap gap-2">
       {allStatuses.map((status) => (
-        <StatusBadge key={status} status={status} size="sm" />
+        <StatusBadge key={status} status={status} size="sm" phase1={false} />
       ))}
     </div>
   );

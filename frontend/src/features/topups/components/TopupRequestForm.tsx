@@ -1,14 +1,24 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { getAdAccounts } from '@/features/ad-accounts/services/adAccountsApi';
+import { getProjects } from '@/features/projects/services/projectsApi';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -17,13 +27,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Upload,
   FileText,
@@ -37,10 +42,10 @@ import {
   HelpCircle,
   Eye,
   Download,
-  X
-} from "lucide-react";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
+  X,
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 
 // 类型定义 - 对齐 init_schema.sql §5.1
 interface AdAccount {
@@ -86,136 +91,142 @@ interface TopupRequestFormProps {
   initialData?: Partial<TopupFormData>;
 }
 
-export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: TopupRequestFormProps) {
-  const [activeTab, setActiveTab] = useState("basic");
+export function TopupRequestForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+}: TopupRequestFormProps) {
+  const [activeTab, setActiveTab] = useState('basic');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [previewAmount, setPreviewAmount] = useState(0);
 
   // 表单状态
   const [formData, setFormData] = useState({
-    account_id: "",
-    project_id: "",
-    amount: "",
-    currency: "CNY",
-    urgency_level: "normal",
-    reason: "",
-    expected_impact: "",
-    alternative_plans: "",
+    account_id: '',
+    project_id: '',
+    amount: '',
+    currency: 'CNY',
+    urgency_level: 'normal',
+    reason: '',
+    expected_impact: '',
+    alternative_plans: '',
     supporting_documents: [] as File[],
-    request_type: "regular",
-    scheduled_date: "",
+    request_type: 'regular',
+    scheduled_date: '',
   });
 
-  // 模拟数据 - 对齐 init_schema.sql §5.1
-  const [adAccounts] = useState<AdAccount[]>([
-    {
-      id: 1,
-      name: "Facebook广告账户01",
-      platform: "facebook",
-      account_code: "act_1234567890",
-      current_balance: 5000,
-      currency: "CNY",
-      spend_limit: 100000,
-      owner_name: "张三",
-      status: "active"
-    },
-    {
-      id: 2,
-      name: "TikTok广告账户02",
-      platform: "tiktok",
-      account_code: "adv_0987654321",
-      current_balance: 2000,
-      currency: "CNY",
-      spend_limit: 80000,
-      owner_name: "李四",
-      status: "active"
-    },
-    {
-      id: 3,
-      name: "Google Ads账户03",
-      platform: "google",
-      account_code: "123-456-7890",
-      current_balance: 8000,
-      currency: "CNY",
-      spend_limit: 120000,
-      owner_name: "王五",
-      status: "active"
-    },
-  ]);
+  // 从 API 获取广告账户列表
+  const { data: adAccountsData, isLoading: isLoadingAccounts } = useQuery({
+    queryKey: ['adAccounts', 'topup-form'],
+    queryFn: () => getAdAccounts({ status: 'active', page_size: 100 }),
+    staleTime: 5 * 60 * 1000, // 5 分钟缓存
+  });
 
-  const [projects] = useState<Project[]>([
-    {
-      id: 1,
-      name: "美妆品牌推广项目",
-      client_name: "雅诗兰黛",
-      budget: 200000,
-      current_spend: 85000,
-      currency: "CNY",
-      end_date: "2025-02-28"
-    },
-    {
-      id: 2,
-      name: "电商大促活动",
-      client_name: "京东商城",
-      budget: 500000,
-      current_spend: 320000,
-      currency: "CNY",
-      end_date: "2025-01-31"
-    },
-    {
-      id: 3,
-      name: "游戏发行推广",
-      client_name: "腾讯游戏",
-      budget: 150000,
-      current_spend: 45000,
-      currency: "CNY",
-      end_date: "2025-03-15"
-    },
-  ]);
+  // 从 API 获取项目列表
+  const { data: projectsData, isLoading: isLoadingProjects } = useQuery({
+    queryKey: ['projects', 'topup-form'],
+    queryFn: () => getProjects({ status: 'active', page_size: 100 }),
+    staleTime: 5 * 60 * 1000, // 5 分钟缓存
+  });
+
+  // 转换 API 数据格式
+  const adAccounts: AdAccount[] = (adAccountsData?.items || adAccountsData?.data || []).map(
+    (account: any) => ({
+      id: account.id,
+      name: account.name || account.account_name || `账户 ${account.id}`,
+      platform: account.platform || 'unknown',
+      account_code: account.account_code || account.external_id || '',
+      current_balance: account.current_balance || account.balance || 0,
+      currency: account.currency || 'CNY',
+      spend_limit: account.spend_limit || account.daily_budget || 100000,
+      owner_name: account.owner_name || account.pitcher_name || '未分配',
+      status: account.status || 'active',
+    })
+  );
+
+  const projects: Project[] = (projectsData?.items || projectsData?.data || []).map(
+    (project: any) => ({
+      id: project.id,
+      name: project.name,
+      client_name: project.client_name || project.customer_name || '未知客户',
+      budget: project.budget || project.total_budget || 0,
+      current_spend: project.current_spend || project.total_spent || 0,
+      currency: project.currency || 'CNY',
+      end_date: project.end_date || '',
+    })
+  );
+
+  const isLoadingData = isLoadingAccounts || isLoadingProjects;
 
   const urgencyLevels = [
-    { value: "low", label: "普通", color: "bg-green-100 text-green-700", description: "3-5个工作日处理" },
-    { value: "normal", label: "标准", color: "bg-blue-100 text-blue-700", description: "1-2个工作日处理" },
-    { value: "high", label: "紧急", color: "bg-yellow-100 text-yellow-700", description: "24小时内处理" },
-    { value: "urgent", label: "特急", color: "bg-red-100 text-red-700", description: "需要立即处理" },
+    {
+      value: 'low',
+      label: '普通',
+      color: 'bg-green-100 text-green-700',
+      description: '3-5个工作日处理',
+    },
+    {
+      value: 'normal',
+      label: '标准',
+      color: 'bg-blue-100 text-blue-700',
+      description: '1-2个工作日处理',
+    },
+    {
+      value: 'high',
+      label: '紧急',
+      color: 'bg-yellow-100 text-yellow-700',
+      description: '24小时内处理',
+    },
+    {
+      value: 'urgent',
+      label: '特急',
+      color: 'bg-red-100 text-red-700',
+      description: '需要立即处理',
+    },
   ];
 
   const requestTypes = [
-    { value: "regular", label: "常规充值", description: "日常运营资金补充" },
-    { value: "campaign", label: "活动充值", description: "特定推广活动资金需求" },
-    { value: "emergency", label: "紧急充值", description: "账户余额不足紧急补充" },
-    { value: "strategic", label: "战略充值", description: "重要项目战略资金储备" },
+    { value: 'regular', label: '常规充值', description: '日常运营资金补充' },
+    { value: 'campaign', label: '活动充值', description: '特定推广活动资金需求' },
+    { value: 'emergency', label: '紧急充值', description: '账户余额不足紧急补充' },
+    { value: 'strategic', label: '战略充值', description: '重要项目战略资金储备' },
   ];
 
   // 获取平台图标
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
-      case "facebook": return "📘";
-      case "tiktok": return "🎵";
-      case "google": return "🔍";
-      case "twitter": return "🐦";
-      default: return "📱";
+      case 'facebook':
+        return '📘';
+      case 'tiktok':
+        return '🎵';
+      case 'google':
+        return '🔍';
+      case 'twitter':
+        return '🐦';
+      default:
+        return '📱';
     }
   };
 
   // 获取余额状态颜色
   const getBalanceStatusColor = (balance: number, limit: number) => {
     const percentage = (balance / limit) * 100;
-    if (percentage < 10) return "text-red-600";
-    if (percentage < 25) return "text-yellow-600";
-    return "text-green-600";
+    if (percentage < 10) return 'text-red-600';
+    if (percentage < 25) return 'text-yellow-600';
+    return 'text-green-600';
   };
 
   // 处理表单字段变化
   const handleInputChange = (field: keyof TopupFormData, value: string | File[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
 
     // 计算预览金额
-    if (field === "amount") {
+    if (field === 'amount') {
       setPreviewAmount(Number(value) || 0);
     }
   };
@@ -225,39 +236,39 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
     const files = event.target.files;
     if (files && files.length > 0) {
       const newFiles = Array.from(files);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        supporting_documents: [...prev.supporting_documents, ...newFiles]
+        supporting_documents: [...prev.supporting_documents, ...newFiles],
       }));
     }
   };
 
   // 移除上传的文件
   const removeFile = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      supporting_documents: prev.supporting_documents.filter((_, i) => i !== index)
+      supporting_documents: prev.supporting_documents.filter((_, i) => i !== index),
     }));
   };
 
   // 获取选中的账户信息
-  const selectedAccount = adAccounts.find(account => account.id === Number(formData.account_id));
-  const selectedProject = projects.find(project => project.id === Number(formData.project_id));
-  const selectedUrgency = urgencyLevels.find(level => level.value === formData.urgency_level);
-  const selectedRequestType = requestTypes.find(type => type.value === formData.request_type);
+  const selectedAccount = adAccounts.find((account) => account.id === Number(formData.account_id));
+  const selectedProject = projects.find((project) => project.id === Number(formData.project_id));
+  const selectedUrgency = urgencyLevels.find((level) => level.value === formData.urgency_level);
+  const selectedRequestType = requestTypes.find((type) => type.value === formData.request_type);
 
   // 验证表单
   const validateForm = () => {
     if (!formData.account_id) {
-      alert("请选择广告账户");
+      alert('请选择广告账户');
       return false;
     }
     if (!formData.amount || Number(formData.amount) <= 0) {
-      alert("请输入有效的充值金额");
+      alert('请输入有效的充值金额');
       return false;
     }
     if (!formData.reason.trim()) {
-      alert("请填写申请理由");
+      alert('请填写申请理由');
       return false;
     }
     return true;
@@ -287,21 +298,21 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
       onClose();
       // 重置表单
       setFormData({
-        account_id: "",
-        project_id: "",
-        amount: "",
-        currency: "CNY",
-        urgency_level: "normal",
-        reason: "",
-        expected_impact: "",
-        alternative_plans: "",
+        account_id: '',
+        project_id: '',
+        amount: '',
+        currency: 'CNY',
+        urgency_level: 'normal',
+        reason: '',
+        expected_impact: '',
+        alternative_plans: '',
         supporting_documents: [],
-        request_type: "regular",
-        scheduled_date: "",
+        request_type: 'regular',
+        scheduled_date: '',
       });
     } catch (error) {
-      console.error("提交失败:", error);
-      alert("提交失败，请重试");
+      console.error('提交失败:', error);
+      alert('提交失败，请重试');
     } finally {
       setIsSubmitting(false);
     }
@@ -334,35 +345,71 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
               {/* 广告账户选择 */}
               <div className="space-y-2">
                 <Label htmlFor="account_id">广告账户 *</Label>
-                <Select value={formData.account_id} onValueChange={(value) => handleInputChange("account_id", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择广告账户" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {adAccounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id.toString()}>
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center gap-2">
-                            <span>{getPlatformIcon(account.platform)}</span>
-                            <span>{account.name}</span>
+                {isLoadingAccounts ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <Select
+                    value={formData.account_id}
+                    onValueChange={(value) => handleInputChange('account_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={adAccounts.length === 0 ? '暂无可用账户' : '选择广告账户'}
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {adAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id.toString()}>
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-2">
+                              <span>{getPlatformIcon(account.platform)}</span>
+                              <span>{account.name}</span>
+                            </div>
+                            <div
+                              className={`text-xs ${getBalanceStatusColor(account.current_balance, account.spend_limit)}`}
+                            >
+                              ¥{account.current_balance.toLocaleString()}
+                            </div>
                           </div>
-                          <div className={`text-xs ${getBalanceStatusColor(account.current_balance, account.spend_limit)}`}>
-                            ¥{account.current_balance.toLocaleString()}
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 {selectedAccount && (
                   <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md">
                     <div className="grid grid-cols-2 gap-2">
-                      <div>平台: <span className="font-medium capitalize">{selectedAccount.platform}</span></div>
-                      <div>账户代码: <span className="font-medium">{selectedAccount.account_code}</span></div>
-                      <div>当前余额: <span className={`font-medium ${getBalanceStatusColor(selectedAccount.current_balance, selectedAccount.spend_limit)}`}>¥{selectedAccount.current_balance.toLocaleString()}</span></div>
-                      <div>消耗限额: <span className="font-medium">¥{selectedAccount.spend_limit.toLocaleString()}</span></div>
-                      <div>负责人: <span className="font-medium">{selectedAccount.owner_name}</span></div>
-                      <div>状态: <span className="font-medium">{selectedAccount.status === "active" ? "正常" : "异常"}</span></div>
+                      <div>
+                        平台:{' '}
+                        <span className="font-medium capitalize">{selectedAccount.platform}</span>
+                      </div>
+                      <div>
+                        账户代码:{' '}
+                        <span className="font-medium">{selectedAccount.account_code}</span>
+                      </div>
+                      <div>
+                        当前余额:{' '}
+                        <span
+                          className={`font-medium ${getBalanceStatusColor(selectedAccount.current_balance, selectedAccount.spend_limit)}`}
+                        >
+                          ¥{selectedAccount.current_balance.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        消耗限额:{' '}
+                        <span className="font-medium">
+                          ¥{selectedAccount.spend_limit.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        负责人: <span className="font-medium">{selectedAccount.owner_name}</span>
+                      </div>
+                      <div>
+                        状态:{' '}
+                        <span className="font-medium">
+                          {selectedAccount.status === 'active' ? '正常' : '异常'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -371,29 +418,56 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
               {/* 关联项目 */}
               <div className="space-y-2">
                 <Label htmlFor="project_id">关联项目</Label>
-                <Select value={formData.project_id} onValueChange={(value) => handleInputChange("project_id", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择关联项目（可选）" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">无关联项目</SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id.toString()}>
-                        <div className="flex flex-col">
-                          <span>{project.name}</span>
-                          <span className="text-xs text-gray-500">{project.client_name}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isLoadingProjects ? (
+                  <Skeleton className="h-10 w-full" />
+                ) : (
+                  <Select
+                    value={formData.project_id}
+                    onValueChange={(value) => handleInputChange('project_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="选择关联项目（可选）" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">无关联项目</SelectItem>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id.toString()}>
+                          <div className="flex flex-col">
+                            <span>{project.name}</span>
+                            <span className="text-xs text-gray-500">{project.client_name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 {selectedProject && (
                   <div className="text-sm text-gray-600 p-3 bg-gray-50 rounded-md">
                     <div className="grid grid-cols-2 gap-2">
-                      <div>客户: <span className="font-medium">{selectedProject.client_name}</span></div>
-                      <div>项目预算: <span className="font-medium">¥{selectedProject.budget.toLocaleString()}</span></div>
-                      <div>已消耗: <span className="font-medium">¥{selectedProject.current_spend.toLocaleString()}</span></div>
-                      <div>剩余预算: <span className="font-medium">¥{(selectedProject.budget - selectedProject.current_spend).toLocaleString()}</span></div>
+                      <div>
+                        客户: <span className="font-medium">{selectedProject.client_name}</span>
+                      </div>
+                      <div>
+                        项目预算:{' '}
+                        <span className="font-medium">
+                          ¥{selectedProject.budget.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        已消耗:{' '}
+                        <span className="font-medium">
+                          ¥{selectedProject.current_spend.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        剩余预算:{' '}
+                        <span className="font-medium">
+                          ¥
+                          {(
+                            selectedProject.budget - selectedProject.current_spend
+                          ).toLocaleString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -407,13 +481,14 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   type="number"
                   placeholder="请输入充值金额"
                   value={formData.amount}
-                  onChange={(e) => handleInputChange("amount", e.target.value)}
+                  onChange={(e) => handleInputChange('amount', e.target.value)}
                   min="0"
                   step="100"
                 />
                 {selectedAccount && previewAmount > 0 && (
                   <div className="text-sm text-gray-600">
-                    充值后余额: <span className="font-medium text-green-600">
+                    充值后余额:{' '}
+                    <span className="font-medium text-green-600">
                       ¥{(selectedAccount.current_balance + previewAmount).toLocaleString()}
                     </span>
                   </div>
@@ -423,7 +498,10 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
               {/* 申请类型 */}
               <div className="space-y-2">
                 <Label htmlFor="request_type">申请类型</Label>
-                <Select value={formData.request_type} onValueChange={(value) => handleInputChange("request_type", value)}>
+                <Select
+                  value={formData.request_type}
+                  onValueChange={(value) => handleInputChange('request_type', value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -439,16 +517,17 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   </SelectContent>
                 </Select>
                 {selectedRequestType && (
-                  <div className="text-sm text-gray-600">
-                    {selectedRequestType.description}
-                  </div>
+                  <div className="text-sm text-gray-600">{selectedRequestType.description}</div>
                 )}
               </div>
 
               {/* 紧急程度 */}
               <div className="space-y-2">
                 <Label htmlFor="urgency_level">紧急程度</Label>
-                <Select value={formData.urgency_level} onValueChange={(value) => handleInputChange("urgency_level", value)}>
+                <Select
+                  value={formData.urgency_level}
+                  onValueChange={(value) => handleInputChange('urgency_level', value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -456,9 +535,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                     {urgencyLevels.map((level) => (
                       <SelectItem key={level.value} value={level.value}>
                         <div className="flex items-center gap-2">
-                          <Badge className={level.color}>
-                            {level.label}
-                          </Badge>
+                          <Badge className={level.color}>{level.label}</Badge>
                           <span className="text-xs text-gray-500">{level.description}</span>
                         </div>
                       </SelectItem>
@@ -468,9 +545,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                 {selectedUrgency && (
                   <Alert>
                     <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      {selectedUrgency.description}
-                    </AlertDescription>
+                    <AlertDescription>{selectedUrgency.description}</AlertDescription>
                   </Alert>
                 )}
               </div>
@@ -482,8 +557,8 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   id="scheduled_date"
                   type="date"
                   value={formData.scheduled_date}
-                  onChange={(e) => handleInputChange("scheduled_date", e.target.value)}
-                  min={format(new Date(), "yyyy-MM-dd")}
+                  onChange={(e) => handleInputChange('scheduled_date', e.target.value)}
+                  min={format(new Date(), 'yyyy-MM-dd')}
                 />
               </div>
             </div>
@@ -499,7 +574,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   id="reason"
                   placeholder="请详细说明充值原因，包括具体的业务需求和市场情况..."
                   value={formData.reason}
-                  onChange={(e) => handleInputChange("reason", e.target.value)}
+                  onChange={(e) => handleInputChange('reason', e.target.value)}
                   rows={4}
                   className="resize-none"
                 />
@@ -515,7 +590,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   id="expected_impact"
                   placeholder="描述本次充值预期带来的业务效果和ROI..."
                   value={formData.expected_impact}
-                  onChange={(e) => handleInputChange("expected_impact", e.target.value)}
+                  onChange={(e) => handleInputChange('expected_impact', e.target.value)}
                   rows={3}
                   className="resize-none"
                 />
@@ -531,13 +606,11 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   id="alternative_plans"
                   placeholder="如果申请被拒绝或延迟，有什么备选方案..."
                   value={formData.alternative_plans}
-                  onChange={(e) => handleInputChange("alternative_plans", e.target.value)}
+                  onChange={(e) => handleInputChange('alternative_plans', e.target.value)}
                   rows={3}
                   className="resize-none"
                 />
-                <div className="text-xs text-gray-500">
-                  描述如果充值无法及时到位的替代解决方案
-                </div>
+                <div className="text-xs text-gray-500">描述如果充值无法及时到位的替代解决方案</div>
               </div>
 
               {/* 历史充值记录 */}
@@ -603,7 +676,10 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   <Label>已上传文件</Label>
                   <div className="space-y-2">
                     {formData.supporting_documents.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                      >
                         <div className="flex items-center gap-3">
                           <FileText className="w-5 h-5 text-gray-400" />
                           <div>
@@ -617,11 +693,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                           <Button variant="ghost" size="sm">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFile(index)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => removeFile(index)}>
                             <X className="w-4 h-4" />
                           </Button>
                         </div>
@@ -649,9 +721,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   <Eye className="w-5 h-5" />
                   申请预览
                 </CardTitle>
-                <CardDescription>
-                  请仔细检查以下信息，确认无误后提交申请
-                </CardDescription>
+                <CardDescription>请仔细检查以下信息，确认无误后提交申请</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* 基本信息 */}
@@ -659,7 +729,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   <div>
                     <Label className="text-sm text-gray-600">广告账户</Label>
                     <div className="font-medium">
-                      {selectedAccount ? selectedAccount.name : "未选择"}
+                      {selectedAccount ? selectedAccount.name : '未选择'}
                     </div>
                   </div>
                   <div>
@@ -671,16 +741,14 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                   <div>
                     <Label className="text-sm text-gray-600">申请类型</Label>
                     <div className="font-medium">
-                      {selectedRequestType ? selectedRequestType.label : "未选择"}
+                      {selectedRequestType ? selectedRequestType.label : '未选择'}
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm text-gray-600">紧急程度</Label>
                     <div>
                       {selectedUrgency && (
-                        <Badge className={selectedUrgency.color}>
-                          {selectedUrgency.label}
-                        </Badge>
+                        <Badge className={selectedUrgency.color}>{selectedUrgency.label}</Badge>
                       )}
                     </div>
                   </div>
@@ -702,9 +770,7 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
                 {formData.reason && (
                   <div>
                     <Label className="text-sm text-gray-600">申请理由</Label>
-                    <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm">
-                      {formData.reason}
-                    </div>
+                    <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm">{formData.reason}</div>
                   </div>
                 )}
 
@@ -740,18 +806,14 @@ export function TopupRequestForm({ isOpen, onClose, onSubmit, initialData }: Top
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             取消
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="min-w-[100px]"
-          >
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="min-w-[100px]">
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 提交中...
               </div>
             ) : (
-              "提交申请"
+              '提交申请'
             )}
           </Button>
         </DialogFooter>
