@@ -1,10 +1,11 @@
-// Original components
-export * from './DashboardCards';
-export * from './TrendChart';
+// Page component
 export * from './ReportsPage';
 
-// Refactored components (from ReportsPage.tsx split)
-export * from './ReportsPageRefactored';
+// Core components
+export * from './DashboardCards';
+export * from './TrendChart';
+
+// Supporting components
 export * from './ReportsHeader';
 export * from './ReportsFilters';
 export * from './ReportsPerformanceTab';

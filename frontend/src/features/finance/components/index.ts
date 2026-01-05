@@ -1,8 +1,7 @@
-// Original page
+// Page component
 export { FinancePage } from './FinancePage';
 
-// Refactored components (from FinancePage.tsx split)
-export { FinancePageRefactored } from './FinancePageRefactored';
+// Supporting components
 export { FinanceOverviewCards } from './FinanceOverviewCards';
 export { FinanceTrendChart } from './FinanceTrendChart';
 export { FinanceTodoList } from './FinanceTodoList';

@@ -1,16 +1,53 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+/**
+ * Ad Account Form Component
+ *
+ * Refactored to use react-hook-form + zod validation
+ * SoT: DATA_SCHEMA.md - ad_accounts table
+ * SoT: STATE_MACHINE.md - account status enum
+ */
+
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   CreditCard,
   Users,
@@ -21,11 +58,15 @@ import {
   EyeOff,
   RefreshCw,
   HelpCircle,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiGet, apiPost } from "@/lib/api";
 
-// 类型定义
+// ============================================================================
+// Types
+// ============================================================================
+
 interface User {
   id: number;
   username: string;
@@ -41,38 +82,70 @@ interface Project {
   status: string;
 }
 
-interface AdAccount {
+// Platform type
+const platforms = ["facebook", "tiktok", "google", "twitter"] as const;
+type Platform = (typeof platforms)[number];
+
+// Account status (SoT: STATE_MACHINE.md)
+const accountStatuses = ["new", "testing", "active", "suspended", "dead", "archived"] as const;
+type AccountStatus = (typeof accountStatuses)[number];
+
+// Account type
+const accountTypes = ["personal", "business"] as const;
+type AccountType = (typeof accountTypes)[number];
+
+// ============================================================================
+// Zod Schema
+// ============================================================================
+
+const notificationSettingsSchema = z.object({
+  budget_alert: z.boolean().default(true),
+  performance_alert: z.boolean().default(true),
+  status_change_alert: z.boolean().default(true),
+});
+
+const adAccountSchema = z.object({
+  name: z.string().min(1, "账户名称不能为空").max(100, "账户名称不能超过100字符"),
+  platform: z.enum(platforms, { required_error: "请选择平台" }),
+  account_code: z.string().min(1, "账户代码不能为空").max(50, "账户代码不能超过50字符"),
+  account_type: z.enum(accountTypes).default("business"),
+  currency: z.string().min(1, "请选择货币"),
+  timezone: z.string().min(1, "请选择时区"),
+  spend_limit: z.number().min(1, "消耗限额必须大于0"),
+  daily_budget: z.number().min(1, "日预算必须大于0").optional().nullable(),
+  status: z.enum(accountStatuses).default("new"),
+  owner_id: z.string().optional().nullable(),
+  project_id: z.number().optional().nullable(),
+  notes: z.string().max(500, "备注不能超过500字符").optional().nullable(),
+  auto_optimization: z.boolean().default(false),
+  notification_settings: notificationSettingsSchema.default({
+    budget_alert: true,
+    performance_alert: true,
+    status_change_alert: true,
+  }),
+});
+
+type AdAccountFormValues = z.infer<typeof adAccountSchema>;
+
+// Extended type for API with optional id
+interface AdAccount extends AdAccountFormValues {
   id?: number;
-  name: string; // 对齐 init_schema.sql - 账户名称
-  platform: "facebook" | "tiktok" | "google" | "twitter";
-  account_code: string; // 对齐 init_schema.sql - 账户代码
-  account_type: "personal" | "business";
-  currency: string;
-  timezone: string;
-  spend_limit: number; // 对齐 init_schema.sql - 消耗限额
-  daily_budget?: number;
-  status: "new" | "testing" | "active" | "suspended" | "dead" | "archived"; // 对齐 STATE_MACHINE.md
-  owner_id?: string; // 对齐 init_schema.sql - 负责人 (UUID)
-  project_id?: number;
-  notes?: string;
-  auto_optimization?: boolean;
-  notification_settings?: {
-    budget_alert: boolean;
-    performance_alert: boolean;
-    status_change_alert: boolean;
-  };
 }
 
-interface AdAccountFormProps {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (data: AdAccount) => Promise<void>;
-  editData?: AdAccount;
-  mode: "create" | "edit";
-}
+// ============================================================================
+// Platform Configuration
+// ============================================================================
 
-// 平台配置
-const platformConfigs = {
+const platformConfigs: Record<
+  Platform,
+  {
+    name: string;
+    color: string;
+    idPrefix: string;
+    currencies: string[];
+    features: string[];
+  }
+> = {
   facebook: {
     name: "Facebook",
     color: "bg-blue-500",
@@ -103,6 +176,30 @@ const platformConfigs = {
   },
 };
 
+const timezones = [
+  { value: "Asia/Shanghai", label: "Asia/Shanghai" },
+  { value: "Asia/Tokyo", label: "Asia/Tokyo" },
+  { value: "UTC", label: "UTC" },
+  { value: "America/New_York", label: "America/New_York" },
+  { value: "Europe/London", label: "Europe/London" },
+];
+
+// ============================================================================
+// Props
+// ============================================================================
+
+interface AdAccountFormProps {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (data: AdAccount) => Promise<void>;
+  editData?: AdAccount;
+  mode: "create" | "edit";
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
 export function AdAccountForm({
   open,
   onClose,
@@ -110,38 +207,52 @@ export function AdAccountForm({
   editData,
   mode,
 }: AdAccountFormProps) {
-  const [formData, setFormData] = useState<AdAccount>({
-    name: "",
-    platform: "facebook",
-    account_code: "",
-    account_type: "business",
-    currency: "CNY",
-    timezone: "Asia/Shanghai",
-    spend_limit: 5000,
-    daily_budget: undefined,
-    status: "new",
-    notes: "",
-    auto_optimization: false,
-    notification_settings: {
-      budget_alert: true,
-      performance_alert: true,
-      status_change_alert: true,
+  // Form setup with react-hook-form + zod
+  const form = useForm<AdAccountFormValues>({
+    resolver: zodResolver(adAccountSchema),
+    defaultValues: {
+      name: "",
+      platform: "facebook",
+      account_code: "",
+      account_type: "business",
+      currency: "CNY",
+      timezone: "Asia/Shanghai",
+      spend_limit: 5000,
+      daily_budget: null,
+      status: "new",
+      owner_id: null,
+      project_id: null,
+      notes: "",
+      auto_optimization: false,
+      notification_settings: {
+        budget_alert: true,
+        performance_alert: true,
+        status_change_alert: true,
+      },
     },
   });
 
+  // Local state
   const [users, setUsers] = useState<User[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [accountValid, setAccountValid] = useState<boolean | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 获取用户列表
+  // Watch platform for dynamic config
+  const platform = form.watch("platform");
+  const accountCode = form.watch("account_code");
+  const dailyBudget = form.watch("daily_budget");
+  const platformConfig = platformConfigs[platform];
+
+  // ========== Data Fetching ==========
+
   const fetchUsers = async () => {
     try {
-      // SoT: MASTER.md v4.6 §2.4 - 投手 (pitcher) 和户管 (account_manager)
-      const response = await apiGet<{ data: User[] }>("/api/v1/users", { role: "pitcher,account_manager" });
+      const response = await apiGet<{ data: User[] }>("/api/v1/users", {
+        role: "pitcher,account_manager",
+      });
       if (response.data) {
         setUsers(response.data);
       }
@@ -150,10 +261,11 @@ export function AdAccountForm({
     }
   };
 
-  // 获取项目列表
   const fetchProjects = async () => {
     try {
-      const response = await apiGet<{ data: Project[] }>("/api/v1/projects", { status: "active" });
+      const response = await apiGet<{ data: Project[] }>("/api/v1/projects", {
+        status: "active",
+      });
       if (response.data) {
         setProjects(response.data);
       }
@@ -162,19 +274,18 @@ export function AdAccountForm({
     }
   };
 
-  // 验证账户代码
+  // Validate account code
   const validateAccountCode = async () => {
-    if (!formData.account_code || !formData.platform) return;
+    if (!accountCode || !platform) return;
 
     setValidating(true);
     setAccountValid(null);
 
     try {
-      const response = await apiPost<{ data?: { valid: boolean } }>(`/api/v1/ad-accounts/validate`, {
-        platform: formData.platform,
-        account_code: formData.account_code,
-      });
-
+      const response = await apiPost<{ data?: { valid: boolean } }>(
+        `/api/v1/ad-accounts/validate`,
+        { platform, account_code: accountCode }
+      );
       setAccountValid(response.data?.valid ?? false);
     } catch (error) {
       console.error("验证失败:", error);
@@ -184,95 +295,29 @@ export function AdAccountForm({
     }
   };
 
-  // 表单验证
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+  // ========== Effects ==========
 
-    if (!formData.name?.trim()) {
-      newErrors.name = "账户名称不能为空";
-    }
-
-    if (!formData.account_code?.trim()) {
-      newErrors.account_code = "账户代码不能为空";
-    }
-
-    if (accountValid === false) {
-      newErrors.account_code = "账户代码无效或已被占用";
-    }
-
-    if (!formData.spend_limit || formData.spend_limit <= 0) {
-      newErrors.spend_limit = "消耗限额必须大于0";
-    }
-
-    if (formData.daily_budget && formData.daily_budget <= 0) {
-      newErrors.daily_budget = "日预算必须大于0";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // 处理表单提交
-  const handleSubmit = async () => {
-    if (!validateForm()) {
-      toast.error("请检查表单填写是否正确");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await onSubmit(formData);
-      toast.success(mode === "create" ? "账户创建成功" : "账户更新成功");
-      onClose();
-    } catch (error) {
-      toast.error("操作失败，请重试");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 重置表单
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      platform: "facebook",
-      account_code: "",
-      account_type: "business",
-      currency: "CNY",
-      timezone: "Asia/Shanghai",
-      spend_limit: 5000,
-      daily_budget: undefined,
-      status: "new",
-      notes: "",
-      auto_optimization: false,
-      notification_settings: {
-        budget_alert: true,
-        performance_alert: true,
-        status_change_alert: true,
-      },
-    });
-    setErrors({});
-    setAccountValid(null);
-    setShowAdvanced(false);
-  };
-
-  // 初始化编辑数据
+  // Initialize edit data
   useEffect(() => {
-    if (editData) {
-      setFormData({
+    if (open && editData) {
+      form.reset({
         ...editData,
-        notification_settings: editData.notification_settings || {
+        daily_budget: editData.daily_budget ?? null,
+        owner_id: editData.owner_id ?? null,
+        project_id: editData.project_id ?? null,
+        notes: editData.notes ?? "",
+        notification_settings: editData.notification_settings ?? {
           budget_alert: true,
           performance_alert: true,
           status_change_alert: true,
         },
       });
-    } else {
-      resetForm();
+    } else if (open && !editData) {
+      form.reset();
     }
-  }, [editData, open]);
+  }, [editData, open, form]);
 
-  // 获取数据
+  // Fetch data when dialog opens
   useEffect(() => {
     if (open) {
       fetchUsers();
@@ -280,20 +325,50 @@ export function AdAccountForm({
     }
   }, [open]);
 
-  // 账户代码变化时验证
+  // Validate account code with debounce
   useEffect(() => {
-    if (formData.account_code && formData.platform) {
+    if (accountCode && platform) {
       const timer = setTimeout(() => {
         validateAccountCode();
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [formData.account_code, formData.platform]);
+  }, [accountCode, platform]);
 
-  const platformConfig = platformConfigs[formData.platform];
+  // ========== Handlers ==========
+
+  const handleFormSubmit = async (values: AdAccountFormValues) => {
+    if (accountValid === false) {
+      toast.error("账户代码无效或已被占用");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        ...values,
+        id: editData?.id,
+      });
+      toast.success(mode === "create" ? "账户创建成功" : "账户更新成功");
+      onClose();
+    } catch (error) {
+      toast.error("操作失败，请重试");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    form.reset();
+    setAccountValid(null);
+    setShowAdvanced(false);
+    onClose();
+  };
+
+  // ========== Render ==========
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -303,417 +378,486 @@ export function AdAccountForm({
           <DialogDescription>
             {mode === "create"
               ? "创建新的广告账户，请确保信息准确无误"
-              : "编辑广告账户信息，修改后请保存"
-            }
+              : "编辑广告账户信息，修改后请保存"}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* 平台选择 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">平台信息</CardTitle>
-              <CardDescription>选择广告投放平台</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(platformConfigs).map(([key, config]) => (
-                  <div
-                    key={key}
-                    className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                      formData.platform === key
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => setFormData({ ...formData, platform: key as any })}
-                  >
-                    <div className={`w-3 h-3 rounded-full ${config.color} mb-2`} />
-                    <div className="font-medium">{config.name}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      ID前缀: {config.idPrefix}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 基本信息 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">基本信息</CardTitle>
-              <CardDescription>账户的基本配置信息</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="accountName">
-                    账户名称 <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="accountName"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="输入账户名称"
-                    className={errors.name ? "border-red-500" : ""}
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+            {/* Platform Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">平台信息</CardTitle>
+                <CardDescription>选择广告投放平台</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="platform"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {platforms.map((p) => {
+                          const config = platformConfigs[p];
+                          return (
+                            <div
+                              key={p}
+                              className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
+                                field.value === p
+                                  ? "border-blue-500 bg-blue-50"
+                                  : "border-gray-200 hover:border-gray-300"
+                              }`}
+                              onClick={() => field.onChange(p)}
+                            >
+                              <div className={`w-3 h-3 rounded-full ${config.color} mb-2`} />
+                              <div className="font-medium">{config.name}</div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                ID前缀: {config.idPrefix}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
-
-                <div>
-                  <Label htmlFor="accountCode">
-                    账户代码 <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="accountCode"
-                      value={formData.account_code}
-                      onChange={(e) => setFormData({ ...formData, account_code: e.target.value })}
-                      placeholder={`${platformConfig.idPrefix}1234567890`}
-                      className={errors.account_code ? "border-red-500" : ""}
-                    />
-                    {validating && (
-                      <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
-                    )}
-                    {accountValid !== null && !validating && (
-                      accountValid ? (
-                        <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
-                      ) : (
-                        <AlertTriangle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
-                      )
-                    )}
-                  </div>
-                  {errors.account_code && (
-                    <p className="text-sm text-red-500 mt-1">{errors.account_code}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="accountType">账户类型</Label>
-                  <Select
-                    value={formData.account_type}
-                    onValueChange={(value: string) => setFormData({ ...formData, account_type: value as "personal" | "business" })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="personal">个人账户</SelectItem>
-                      <SelectItem value="business">商业账户</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="currency">货币</Label>
-                  <Select
-                    value={formData.currency}
-                    onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {platformConfig.currencies.map((currency) => (
-                        <SelectItem key={currency} value={currency}>
-                          {currency}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="timezone">时区</Label>
-                  <Select
-                    value={formData.timezone}
-                    onValueChange={(value) => setFormData({ ...formData, timezone: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Asia/Shanghai">Asia/Shanghai</SelectItem>
-                      <SelectItem value="Asia/Tokyo">Asia/Tokyo</SelectItem>
-                      <SelectItem value="UTC">UTC</SelectItem>
-                      <SelectItem value="America/New_York">America/New_York</SelectItem>
-                      <SelectItem value="Europe/London">Europe/London</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="status">初始状态</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: string) => setFormData({ ...formData, status: value as "new" | "testing" | "active" | "suspended" | "dead" | "archived" })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new">新建</SelectItem>
-                      <SelectItem value="testing">测试中</SelectItem>
-                      <SelectItem value="active">活跃</SelectItem>
-                      <SelectItem value="suspended">暂停</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ownerId">负责人</Label>
-                  <Select
-                    value={formData.owner_id?.toString()}
-                    onValueChange={(value) => setFormData({
-                      ...formData,
-                      owner_id: value || undefined
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择负责人" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">未分配</SelectItem>
-                      {users
-                        .filter(user => user.status === "active")
-                        .map((user) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            <span>{user.nickname} ({user.username})</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="project">所属项目</Label>
-                  <Select
-                    value={formData.project_id?.toString()}
-                    onValueChange={(value) => setFormData({
-                      ...formData,
-                      project_id: value ? parseInt(value) : undefined
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="选择项目" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">未分配</SelectItem>
-                      {projects
-                        .filter(project => project.status === "active")
-                        .map((project) => (
-                        <SelectItem key={project.id} value={project.id.toString()}>
-                          {project.name} - {project.client_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="notes">备注</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="输入账户相关备注信息..."
-                  rows={3}
                 />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* 预算设置 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">预算设置</CardTitle>
-              <CardDescription>设置账户的消耗限额和预算</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="spendLimit">
-                    消耗限额 <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="spendLimit"
-                    type="number"
-                    value={formData.spend_limit}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      spend_limit: parseFloat(e.target.value) || 0
-                    })}
-                    placeholder="输入消耗限额"
-                    className={errors.spend_limit ? "border-red-500" : ""}
-                  />
-                  {errors.spend_limit && (
-                    <p className="text-sm text-red-500 mt-1">{errors.spend_limit}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="dailyBudget">日预算（可选）</Label>
-                  <Input
-                    id="dailyBudget"
-                    type="number"
-                    value={formData.daily_budget || ""}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      daily_budget: e.target.value ? parseFloat(e.target.value) : undefined
-                    })}
-                    placeholder="输入日预算"
-                    className={errors.daily_budget ? "border-red-500" : ""}
-                  />
-                  {errors.daily_budget && (
-                    <p className="text-sm text-red-500 mt-1">{errors.daily_budget}</p>
-                  )}
-                </div>
-              </div>
-
-              {formData.daily_budget && (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    设置日预算将限制每日消耗，月度消耗限额仍然有效。
-                    当前设置日预算为 ¥{formData.daily_budget.toLocaleString()}，
-                    月度预计消耗 ¥{(formData.daily_budget * 30).toLocaleString()}。
-                  </AlertDescription>
-                </Alert>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 高级设置 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                高级设置
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                >
-                  {showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  {showAdvanced ? "隐藏" : "显示"}
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            {showAdvanced && (
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">基本信息</CardTitle>
+                <CardDescription>账户的基本配置信息</CardDescription>
+              </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="autoOptimization"
-                    checked={formData.auto_optimization}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, auto_optimization: checked as boolean })
-                    }
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          账户名称 <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="输入账户名称" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  <Label htmlFor="autoOptimization">启用自动优化</Label>
+
+                  <FormField
+                    control={form.control}
+                    name="account_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          账户代码 <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              placeholder={`${platformConfig.idPrefix}1234567890`}
+                              {...field}
+                            />
+                            {validating && (
+                              <RefreshCw className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
+                            )}
+                            {accountValid !== null && !validating && (
+                              accountValid ? (
+                                <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
+                              ) : (
+                                <AlertTriangle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
+                              )
+                            )}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="account_type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>账户类型</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="personal">个人账户</SelectItem>
+                            <SelectItem value="business">商业账户</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>货币</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {platformConfig.currencies.map((currency) => (
+                              <SelectItem key={currency} value={currency}>
+                                {currency}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="timezone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>时区</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {timezones.map((tz) => (
+                              <SelectItem key={tz.value} value={tz.value}>
+                                {tz.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>初始状态</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="new">新建</SelectItem>
+                            <SelectItem value="testing">测试中</SelectItem>
+                            <SelectItem value="active">活跃</SelectItem>
+                            <SelectItem value="suspended">暂停</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
-                <div className="space-y-3">
-                  <Label>通知设置</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="budgetAlert"
-                        checked={formData.notification_settings?.budget_alert}
-                        onCheckedChange={(checked) =>
-                          setFormData({
-                            ...formData,
-                            notification_settings: {
-                              ...formData.notification_settings!,
-                              budget_alert: checked as boolean,
-                            },
-                          })
-                        }
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="owner_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>负责人</FormLabel>
+                        <Select
+                          onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}
+                          value={field.value ?? "__none__"}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="选择负责人" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">未分配</SelectItem>
+                            {users
+                              .filter((user) => user.status === "active")
+                              .map((user) => (
+                                <SelectItem key={user.id} value={user.id.toString()}>
+                                  <div className="flex items-center gap-2">
+                                    <Users className="w-4 h-4" />
+                                    <span>
+                                      {user.nickname} ({user.username})
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="project_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>所属项目</FormLabel>
+                        <Select
+                          onValueChange={(v) =>
+                            field.onChange(v === "__none__" ? null : parseInt(v))
+                          }
+                          value={field.value?.toString() ?? "__none__"}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="选择项目" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="__none__">未分配</SelectItem>
+                            {projects
+                              .filter((project) => project.status === "active")
+                              .map((project) => (
+                                <SelectItem key={project.id} value={project.id.toString()}>
+                                  {project.name} - {project.client_name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>备注</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="输入账户相关备注信息..."
+                          rows={3}
+                          {...field}
+                          value={field.value ?? ""}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Budget Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">预算设置</CardTitle>
+                <CardDescription>设置账户的消耗限额和预算</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="spend_limit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          消耗限额 <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="输入消耗限额"
+                            {...field}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="daily_budget"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>日预算（可选）</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="输入日预算"
+                            value={field.value ?? ""}
+                            onChange={(e) =>
+                              field.onChange(e.target.value ? parseFloat(e.target.value) : null)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {dailyBudget && dailyBudget > 0 && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      设置日预算将限制每日消耗，月度消耗限额仍然有效。 当前设置日预算为 ¥
+                      {dailyBudget.toLocaleString()}， 月度预计消耗 ¥
+                      {(dailyBudget * 30).toLocaleString()}。
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Advanced Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  高级设置
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                  >
+                    {showAdvanced ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showAdvanced ? "隐藏" : "显示"}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              {showAdvanced && (
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="auto_optimization"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="!mt-0">启用自动优化</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="space-y-3">
+                    <FormLabel>通知设置</FormLabel>
+                    <div className="space-y-2">
+                      <FormField
+                        control={form.control}
+                        name="notification_settings.budget_alert"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="!mt-0">预算告警通知</FormLabel>
+                          </FormItem>
+                        )}
                       />
-                      <Label htmlFor="budgetAlert">预算告警通知</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="performanceAlert"
-                        checked={formData.notification_settings?.performance_alert}
-                        onCheckedChange={(checked) =>
-                          setFormData({
-                            ...formData,
-                            notification_settings: {
-                              ...formData.notification_settings!,
-                              performance_alert: checked as boolean,
-                            },
-                          })
-                        }
+                      <FormField
+                        control={form.control}
+                        name="notification_settings.performance_alert"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="!mt-0">性能异常通知</FormLabel>
+                          </FormItem>
+                        )}
                       />
-                      <Label htmlFor="performanceAlert">性能异常通知</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="statusChangeAlert"
-                        checked={formData.notification_settings?.status_change_alert}
-                        onCheckedChange={(checked) =>
-                          setFormData({
-                            ...formData,
-                            notification_settings: {
-                              ...formData.notification_settings!,
-                              status_change_alert: checked as boolean,
-                            },
-                          })
-                        }
+                      <FormField
+                        control={form.control}
+                        name="notification_settings.status_change_alert"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormLabel className="!mt-0">状态变更通知</FormLabel>
+                          </FormItem>
+                        )}
                       />
-                      <Label htmlFor="statusChangeAlert">状态变更通知</Label>
                     </div>
                   </div>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* Platform Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5" />
+                  {platformConfig.name} 平台特性
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {platformConfig.features.map((feature, index) => (
+                    <Badge key={index} variant="outline" className="justify-center">
+                      {feature}
+                    </Badge>
+                  ))}
                 </div>
               </CardContent>
-            )}
-          </Card>
+            </Card>
 
-          {/* 平台特性说明 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <HelpCircle className="w-5 h-5" />
-                {platformConfig.name} 平台特性
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {platformConfig.features.map((feature, index) => (
-                  <Badge key={index} variant="outline" className="justify-center">
-                    {feature}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            取消
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading || accountValid === false}>
-            {loading ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                {mode === "create" ? "创建中..." : "保存中..."}
-              </>
-            ) : (
-              <>
-                {mode === "create" ? "创建账户" : "保存修改"}
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                取消
+              </Button>
+              <Button type="submit" disabled={isSubmitting || accountValid === false}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {mode === "create" ? "创建中..." : "保存中..."}
+                  </>
+                ) : (
+                  <>{mode === "create" ? "创建账户" : "保存修改"}</>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

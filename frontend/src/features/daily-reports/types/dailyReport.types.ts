@@ -226,43 +226,48 @@ export interface StateTransition {
 
 /**
  * Allowed transitions per STATE_MACHINE.md v2.6 Section 8.2
+ *
+ * SoT: MASTER.md v4.6 §2.4 - 宪法角色定义
+ * - pitcher: 投手
+ * - project_owner: 项目负责人
+ * - admin: 管理员
  */
 export const ALLOWED_TRANSITIONS: StateTransition[] = [
   {
     from: 'raw_submitted',
     to: 'trend_pending',
     action: 'submit_for_trend',
-    allowed_roles: ['operator', 'manager', 'admin'],
+    allowed_roles: ['pitcher', 'project_owner', 'admin'],
   },
   {
     from: 'trend_pending',
     to: 'trend_ok',
     action: 'approve_trend',
-    allowed_roles: ['manager', 'admin'],
+    allowed_roles: ['project_owner', 'admin'],
   },
   {
     from: 'trend_pending',
     to: 'trend_flagged',
     action: 'flag_trend',
-    allowed_roles: ['manager', 'admin'],
+    allowed_roles: ['project_owner', 'admin'],
   },
   {
     from: 'trend_flagged',
     to: 'trend_resolved',
     action: 'resolve_flag',
-    allowed_roles: ['manager', 'admin'],
+    allowed_roles: ['project_owner', 'admin'],
   },
   {
     from: 'trend_ok',
     to: 'final_pending',
     action: 'submit_for_final',
-    allowed_roles: ['manager', 'admin'],
+    allowed_roles: ['project_owner', 'admin'],
   },
   {
     from: 'trend_resolved',
     to: 'final_pending',
     action: 'submit_for_final',
-    allowed_roles: ['manager', 'admin'],
+    allowed_roles: ['project_owner', 'admin'],
   },
   {
     from: 'final_pending',

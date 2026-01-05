@@ -54,9 +54,10 @@ import {
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DailyReportsTable } from './DailyReportsTable';
+import { DailyReportsStatusTabs } from './DailyReportsStatusTabs';
 import { useDailyReports, useDailyReportStats, useRefreshDailyReports } from '../hooks';
-import type { DailyReportStatus, DailyReportListParams } from '../types';
-import { STATUS_CONFIG, PLATFORM_OPTIONS, REGION_OPTIONS } from '../types';
+import type { DailyReportStatus, DailyReportListParams, Phase1Status } from '../types';
+import { STATUS_CONFIG, PLATFORM_OPTIONS, REGION_OPTIONS, PHASE1_STATUS_CONFIG } from '../types';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch, apiDownload } from '@/lib/api';
 import { toast } from 'sonner';
@@ -144,65 +145,6 @@ function StatCard({ title, value, icon: Icon, color, isActive, onClick }: StatCa
 }
 
 // ============================================================================
-// 子组件 - 状态 Tab (v3.0 Segmented Control 风格)
-// ============================================================================
-
-interface StatusTabsProps {
-  value: DailyReportStatus | 'all';
-  onChange: (status: DailyReportStatus | 'all') => void;
-  stats?: Record<DailyReportStatus, number>;
-}
-
-function StatusTabs({ value, onChange, stats }: StatusTabsProps) {
-  const totalCount = stats
-    ? Object.values(stats).reduce((sum, count) => sum + count, 0)
-    : 0;
-
-  const tabs: Array<{
-    key: DailyReportStatus | 'all';
-    label: string;
-    count: number;
-    highlight?: boolean;
-  }> = [
-    { key: 'all', label: '全部', count: totalCount },
-    { key: 'trend_pending', label: '待审核', count: (stats?.trend_pending ?? 0) + (stats?.final_pending ?? 0), highlight: true },
-    { key: 'trend_flagged', label: '异常', count: stats?.trend_flagged ?? 0, highlight: true },
-    { key: 'final_locked', label: '已完成', count: stats?.final_locked ?? 0 },
-  ];
-
-  return (
-    <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg w-fit">
-      {tabs.map((tab) => (
-        <button
-          key={tab.key}
-          onClick={() => onChange(tab.key)}
-          className={cn(
-            'px-4 py-2 text-sm font-medium rounded-md transition-all',
-            value === tab.key
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          )}
-        >
-          {tab.label}
-          {tab.count > 0 && (
-            <span className={cn(
-              'ml-2 px-2 py-0.5 text-xs rounded-full',
-              tab.highlight && tab.count > 0
-                ? 'bg-red-100 text-red-700'
-                : value === tab.key
-                  ? 'bg-gray-100 text-gray-700'
-                  : 'bg-gray-200 text-gray-600'
-            )}>
-              {tab.count}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ============================================================================
 // 主组件
 // ============================================================================
 
@@ -218,7 +160,7 @@ export function DailyReportsPage() {
     from: undefined,
     to: undefined,
   });
-  const [statusFilter, setStatusFilter] = useState<DailyReportStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<Phase1Status | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'stats'>('table');
@@ -235,11 +177,26 @@ export function DailyReportsPage() {
   const { data: submitterOptions = [] } = useSubmitterOptions();
 
   // ========== Handlers ==========
-  const handleStatusFilter = (status: DailyReportStatus | 'all') => {
+  // Phase 1: 将 3 个展示状态映射到 API 筛选参数
+  const handleStatusFilter = (status: Phase1Status | 'all') => {
     setStatusFilter(status);
+    // Phase 1 状态到 API 状态的映射
+    let apiStatus: DailyReportStatus | DailyReportStatus[] | undefined;
+    if (status === 'all') {
+      apiStatus = undefined;
+    } else if (status === 'raw_submitted') {
+      // 待审核: 包含 raw_submitted, trend_pending, trend_flagged
+      apiStatus = ['raw_submitted', 'trend_pending', 'trend_flagged'];
+    } else if (status === 'trend_ok') {
+      // 已审核: 包含 trend_ok, trend_resolved, final_pending
+      apiStatus = ['trend_ok', 'trend_resolved', 'final_pending'];
+    } else if (status === 'final_confirmed') {
+      // 已确认: 包含 final_confirmed, final_locked
+      apiStatus = ['final_confirmed', 'final_locked'];
+    }
     setFilters((prev) => ({
       ...prev,
-      status: status === 'all' ? undefined : status,
+      status: apiStatus,
       page: 1,
     }));
   };
@@ -311,11 +268,13 @@ export function DailyReportsPage() {
     }
   };
 
-  // ========== Computed ==========
+  // ========== Computed (Phase 1: 聚合到 3 状态) ==========
   const totalReports = reportsData?.meta?.pagination?.total ?? 0;
-  const pendingCount = (stats?.trend_pending ?? 0) + (stats?.final_pending ?? 0);
-  const flaggedCount = stats?.trend_flagged ?? 0;
-  const lockedCount = stats?.final_locked ?? 0;
+
+  // Phase 1 统计: 将 8 状态聚合到 3 个展示状态
+  const rawSubmittedCount = (stats?.raw_submitted ?? 0) + (stats?.trend_pending ?? 0) + (stats?.trend_flagged ?? 0);
+  const trendOkCount = (stats?.trend_ok ?? 0) + (stats?.trend_resolved ?? 0) + (stats?.final_pending ?? 0);
+  const finalConfirmedCount = (stats?.final_confirmed ?? 0) + (stats?.final_locked ?? 0);
 
   const hasActiveFilters = filters.team_id || filters.submitter_name ||
     filters.region || filters.platform || filters.search ||
@@ -357,7 +316,7 @@ export function DailyReportsPage() {
         </div>
       </div>
 
-      {/* ====== KPI Cards (去边框+投影+色块图标) ====== */}
+      {/* ====== KPI Cards (Phase 1: 3 状态卡片) ====== */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="总日报"
@@ -368,28 +327,28 @@ export function DailyReportsPage() {
           onClick={() => handleStatusFilter('all')}
         />
         <StatCard
-          title="待审核"
-          value={pendingCount}
+          title="已提交"
+          value={rawSubmittedCount}
           icon={Clock}
           color="amber"
-          isActive={statusFilter === 'trend_pending' || statusFilter === 'final_pending'}
-          onClick={() => handleStatusFilter('trend_pending')}
+          isActive={statusFilter === 'raw_submitted'}
+          onClick={() => handleStatusFilter('raw_submitted')}
         />
         <StatCard
-          title="异常待处理"
-          value={flaggedCount}
+          title="已审核"
+          value={trendOkCount}
           icon={AlertTriangle}
-          color="red"
-          isActive={statusFilter === 'trend_flagged'}
-          onClick={() => handleStatusFilter('trend_flagged')}
+          color="blue"
+          isActive={statusFilter === 'trend_ok'}
+          onClick={() => handleStatusFilter('trend_ok')}
         />
         <StatCard
-          title="已锁定"
-          value={lockedCount}
+          title="已确认"
+          value={finalConfirmedCount}
           icon={Lock}
           color="green"
-          isActive={statusFilter === 'final_locked'}
-          onClick={() => handleStatusFilter('final_locked')}
+          isActive={statusFilter === 'final_confirmed'}
+          onClick={() => handleStatusFilter('final_confirmed')}
         />
       </div>
 
@@ -555,12 +514,13 @@ export function DailyReportsPage() {
           </div>
         )}
 
-        {/* Row 3: 状态 Tab (替代原状态说明) */}
+        {/* Row 3: 状态 Tab (Phase 1: 3 状态) */}
         <div className="pt-4 border-t border-gray-100" data-testid="status-filter">
-          <StatusTabs
+          <DailyReportsStatusTabs
             value={statusFilter}
             onChange={handleStatusFilter}
             stats={stats}
+            phase1={true}
           />
         </div>
       </div>
@@ -574,26 +534,34 @@ export function DailyReportsPage() {
         <Card className="shadow-sm border-0">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">状态分布统计</CardTitle>
-            <CardDescription>各状态的日报数量分布</CardDescription>
+            <CardDescription>各状态的日报数量分布 (Phase 1)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Object.entries(STATUS_CONFIG).map(([status, config]) => (
-                <div
-                  key={status}
-                  className={cn(
-                    'p-5 rounded-xl bg-gray-50 text-center cursor-pointer transition-all',
-                    'hover:bg-gray-100',
-                    statusFilter === status && 'ring-2 ring-primary bg-white shadow-sm'
-                  )}
-                  onClick={() => handleStatusFilter(status as DailyReportStatus)}
-                >
-                  <p className="text-3xl font-bold text-gray-900 tabular-nums">
-                    {stats?.[status as DailyReportStatus] ?? 0}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">{config.label}</p>
-                </div>
-              ))}
+              {/* Phase 1: 只显示 3 个状态 */}
+              {(Object.entries(PHASE1_STATUS_CONFIG) as [Phase1Status, { label: string; variant: string }][]).map(([status, config]) => {
+                // 计算每个 Phase 1 状态的聚合数量
+                const count = status === 'raw_submitted' ? rawSubmittedCount
+                  : status === 'trend_ok' ? trendOkCount
+                  : finalConfirmedCount;
+
+                return (
+                  <div
+                    key={status}
+                    className={cn(
+                      'p-5 rounded-xl bg-gray-50 text-center cursor-pointer transition-all',
+                      'hover:bg-gray-100',
+                      statusFilter === status && 'ring-2 ring-primary bg-white shadow-sm'
+                    )}
+                    onClick={() => handleStatusFilter(status)}
+                  >
+                    <p className="text-3xl font-bold text-gray-900 tabular-nums">
+                      {count}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">{config.label}</p>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

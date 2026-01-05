@@ -53,7 +53,7 @@ export function getAvailableActions(status: DailyReportStatus): AvailableAction[
         description: '提交日报进行趋势分析检查',
         variant: 'default',
         requiresInput: false,
-        allowedRoles: ['operator', 'manager', 'admin'],
+        allowedRoles: ['pitcher', 'project_owner', 'admin'],
       });
       break;
 
@@ -64,7 +64,7 @@ export function getAvailableActions(status: DailyReportStatus): AvailableAction[
         description: '确认趋势数据正常',
         variant: 'success',
         requiresInput: false,
-        allowedRoles: ['manager', 'admin'],
+        allowedRoles: ['project_owner', 'admin'],
       });
       actions.push({
         action: 'flag_trend',
@@ -72,7 +72,7 @@ export function getAvailableActions(status: DailyReportStatus): AvailableAction[
         description: '标记趋势数据异常需要处理',
         variant: 'warning',
         requiresInput: true,
-        allowedRoles: ['manager', 'admin'],
+        allowedRoles: ['project_owner', 'admin'],
       });
       break;
 
@@ -83,7 +83,7 @@ export function getAvailableActions(status: DailyReportStatus): AvailableAction[
         description: '提交日报进行最终确认',
         variant: 'default',
         requiresInput: false,
-        allowedRoles: ['manager', 'admin'],
+        allowedRoles: ['project_owner', 'admin'],
       });
       break;
 
@@ -94,7 +94,7 @@ export function getAvailableActions(status: DailyReportStatus): AvailableAction[
         description: '处理趋势异常问题',
         variant: 'warning',
         requiresInput: true,
-        allowedRoles: ['manager', 'admin'],
+        allowedRoles: ['project_owner', 'admin'],
       });
       break;
 
@@ -105,7 +105,7 @@ export function getAvailableActions(status: DailyReportStatus): AvailableAction[
         description: '提交日报进行最终确认',
         variant: 'default',
         requiresInput: false,
-        allowedRoles: ['manager', 'admin'],
+        allowedRoles: ['project_owner', 'admin'],
       });
       break;
 

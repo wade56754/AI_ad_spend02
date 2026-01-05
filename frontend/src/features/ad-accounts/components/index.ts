@@ -1,12 +1,12 @@
-// Original components
+// Core components
 export * from './AdAccountsTable';
-export * from './AdAccountsPage';
 export * from './AdAccountForm';
 export * from './BatchOperations';
 
-// V2 Refactored components (from AdAccountsPageV2.tsx split)
+// Page component (V2 is the production version)
 export * from './AdAccountsPageV2';
-export * from './AdAccountsPageRefactored';
+
+// Supporting components
 export * from './AdAccountsStats';
 export * from './AdAccountsFilters';
 export * from './AdAccountsActions';
