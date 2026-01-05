@@ -1,8 +1,20 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2026-01-04
+> **最后更新**: 2026-01-05
 > **数据来源**: Task Master MCP (自动同步) + TASK_CARDS_FRONTEND.md v1.0
 > **SoT 基准**: MASTER.md v4.9 | DATA_SCHEMA.md v5.10 | STATE_MACHINE.md v2.9 | 6 角色白名单
+
+---
+
+## 0. 最近更新
+
+### 2026-01-05
+- [x] 新增 `memory-bank/frontend-best-practices.md` - 前端页面最佳实践文档
+  - 四层分离模式 (Types → Services → Hooks → Components)
+  - SoT 驱动开发规范
+  - 禁止事项清单 (F-001 ~ F-009)
+  - Phase 1 原则 (只提示不阻断)
+  - 质量门禁和代码审查清单
 
 ---
 
