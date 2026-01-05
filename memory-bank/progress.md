@@ -1,20 +1,64 @@
 # AI 广告代投管理系统 - 进度记录
 
-> **最后更新**: 2026-01-05
-> **数据来源**: Task Master MCP (自动同步) + TASK_CARDS_FRONTEND.md v1.0
+> **最后更新**: 2026-01-06
+> **数据来源**: PROMPT_LIBRARY_FRONTEND.md v3.1 + Task Master MCP
 > **SoT 基准**: MASTER.md v4.9 | DATA_SCHEMA.md v5.10 | STATE_MACHINE.md v2.9 | 6 角色白名单
 
 ---
 
 ## 0. 最近更新
 
-### 2026-01-05
-- [x] 新增 `memory-bank/frontend-best-practices.md` - 前端页面最佳实践文档
-  - 四层分离模式 (Types → Services → Hooks → Components)
-  - SoT 驱动开发规范
-  - 禁止事项清单 (F-001 ~ F-009)
-  - Phase 1 原则 (只提示不阻断)
-  - 质量门禁和代码审查清单
+### 2026-01-06
+**前端代码重构 - P0-P3 全部完成** ✅
+
+> **Commit**: `864a668` | **分支**: master | **已推送**: ✅
+
+**P2 阶段 - 表单迁移 (已完成)**
+- [x] P2.1 迁移 `AdAccountForm.tsx` (720行 useState → react-hook-form + zod)
+- [x] P2.2 迁移 `BatchOperations.tsx` (discriminated union schema)
+- [x] P2.3 迁移 `FlagTrendDialog.tsx` (zod enum validation)
+- [x] P2.4 迁移 `ResolveFlagDialog.tsx` (zod + FormField)
+
+**P3 阶段 - 代码清理 (已完成)**
+- [x] P3.1 合并 ad-accounts 组件版本 (删除 Page, PageRefactored, 保留 V2)
+- [x] P3.2 合并 users 组件版本 (删除 UsersPageRefactored)
+- [x] P3.3 合并 daily-reports/finance/reports 组件版本 (删除 3 个 Refactored 文件)
+- [x] P3.4 统一 utils 导出 (ad-accounts, users, reports 添加 utils 导出)
+
+**统计**:
+| 指标 | 数值 |
+|------|------|
+| 修改文件 | 42 |
+| 新增文件 | 16 |
+| 删除文件 | 6 |
+| 新增行数 | +2,162 |
+| 删除行数 | -2,307 |
+| TypeScript 错误 | 0 |
+
+---
+
+### 2026-01-05 (下午)
+**前端代码重构 - 基于 frontend-best-practices.md**
+
+**P0 阶段 - 修复关键违规 (已完成)**
+- [x] P0.1 修复 `dailyReport.types.ts` 角色定义 (operator→pitcher, manager→project_owner)
+- [x] P0.2 修复 `useDailyReportActions.ts` 角色 (6 处修改)
+- [x] P0.3 标记 Phase 2 组件 (FlagTrendDialog, ResolveFlagDialog 添加 enabled prop)
+- [x] P0.4 验证 Phase 1 状态显示 (DailyReportsPage 重构为 3 状态显示)
+
+**P1 阶段 - 完善模块结构 (已完成)**
+- [x] P1.1 完善 audit-logs 模块 (新建 services/, hooks/)
+- [x] P1.2 完善 cost-analysis 模块 (新建 services/, hooks/)
+- [x] P1.3 完善 profile 模块 (新建 services/, hooks/)
+- [x] P1.4 完善 settings 模块 (新建 services/, hooks/)
+- [x] P1.5 修复 finance 模块导出 (更新 index.ts)
+
+### 2026-01-05 (上午)
+- [x] 完成 `PROMPT_LIBRARY_FRONTEND.md` v3.1 - 57 个任务卡提示词全覆盖
+- [x] 修复 3 处 `as any` 类型安全问题
+- [x] 补充 USER-003 思考要点和边缘情况
+- [x] 更新 progress.md 任务清单（与提示词库对齐）
+- [x] 创建 `memory-bank/frontend-best-practices.md` - 前端最佳实践文档
 
 ---
 
@@ -39,6 +83,7 @@
 进行中:     0
 待开始:     56
 预估工时:   212h (剩余)
+提示词覆盖: 100% ✅
 ```
 
 ### 综合进度
@@ -50,10 +95,11 @@
 
 ---
 
-## 2. 前端模块进度（按优先级）
+## 2. 前端任务清单（按模块）
 
-### P0 - MVP 核心模块
+### P0 - MVP 核心模块 (33 任务)
 
+<<<<<<< Updated upstream
 #### COMMON 通用模块
 进度: ███░░░░░░░░░░░░ 20% (1/5) 🔄
 
@@ -64,118 +110,136 @@
 | TASK-FE-COMMON-003 | 状态配置与 StatusBadge | ⏳ todo | 3h |
 | TASK-FE-COMMON-004 | 导航访问控制 | ⏳ todo | 3h |
 | TASK-FE-COMMON-005 | 通用列表页模板 | ⏳ todo | 4h |
+=======
+#### COMMON 通用模块 (5 任务)
+进度: ░░░░░░░░░░░░░░░ 0% (0/5) ⏳
 
-#### DASH 驾驶舱模块
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-COMMON-001 | 类型定义与常量 | ⏳ todo | 4h | ✅ |
+| TASK-FE-COMMON-002 | 权限检查 Hook (usePermission) | ⏳ todo | 4h | ✅ |
+| TASK-FE-COMMON-003 | 状态配置与 StatusBadge | ⏳ todo | 4h | ✅ |
+| TASK-FE-COMMON-004 | 导航访问控制 (canAccessNav) | ⏳ todo | 3h | ✅ |
+| TASK-FE-COMMON-005 | 通用列表页模板 | ⏳ todo | 3h | ✅ |
+>>>>>>> Stashed changes
+
+#### DASH 驾驶舱模块 (6 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/6) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-DASH-001 | 驾驶舱布局 | ⏳ todo | 3h |
-| TASK-FE-DASH-002 | KPI 卡片组件 | ⏳ todo | 4h |
-| TASK-FE-DASH-003 | 趋势图表组件 | ⏳ todo | 4h |
-| TASK-FE-DASH-004 | 待办事项列表 | ⏳ todo | 4h |
-| TASK-FE-DASH-005 | 项目排名列表 | ⏳ todo | 3h |
-| TASK-FE-DASH-006 | 账户状态概览 | ⏳ todo | 4h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-DASH-001 | 驾驶舱页面框架 | ⏳ todo | 3h | ✅ |
+| TASK-FE-DASH-002 | KPI 卡片组件 | ⏳ todo | 4h | ✅ |
+| TASK-FE-DASH-003 | 趋势图表组件 | ⏳ todo | 4h | ✅ |
+| TASK-FE-DASH-004 | 待办事项卡片 | ⏳ todo | 4h | ✅ |
+| TASK-FE-DASH-005 | 快捷操作组件 | ⏳ todo | 3h | ✅ |
+| TASK-FE-DASH-006 | 角色视图切换 | ⏳ todo | 4h | ✅ |
 
-#### RPT 日报模块
+#### RPT 日报模块 (7 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/7) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-RPT-001 | 日报列表页 | ⏳ todo | 4h |
-| TASK-FE-RPT-002 | 日报填写表单 | ⏳ todo | 5h |
-| TASK-FE-RPT-003 | 日报详情页 | ⏳ todo | 4h |
-| TASK-FE-RPT-004 | 日报状态流转 | ⏳ todo | 4h |
-| TASK-FE-RPT-005 | 趋势检查面板 | ⏳ todo | 4h |
-| TASK-FE-RPT-006 | 确认有效粉弹窗 | ⏳ todo | 3h |
-| TASK-FE-RPT-007 | 投手工作台 | ⏳ todo | 4h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-RPT-001 | 日报列表页 | ⏳ todo | 4h | ✅ |
+| TASK-FE-RPT-002 | 日报筛选器 | ⏳ todo | 3h | ✅ |
+| TASK-FE-RPT-003 | 日报表格组件 | ⏳ todo | 4h | ✅ |
+| TASK-FE-RPT-004 | 日报提交表单 | ⏳ todo | 5h | ✅ |
+| TASK-FE-RPT-005 | 日报审核操作 | ⏳ todo | 4h | ✅ |
+| TASK-FE-RPT-006 | 日报状态流转 UI | ⏳ todo | 3h | ✅ |
+| TASK-FE-RPT-007 | 日报详情弹窗 | ⏳ todo | 4h | ✅ |
 
-#### PROJ 项目模块
+#### PROJ 项目模块 (7 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/7) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-PROJ-001 | 项目列表页 | ⏳ todo | 4h |
-| TASK-FE-PROJ-002 | 项目创建表单 | ⏳ todo | 4h |
-| TASK-FE-PROJ-003 | 项目详情页 | ⏳ todo | 4h |
-| TASK-FE-PROJ-004 | 定价配置 | ⏳ todo | 4h |
-| TASK-FE-PROJ-005 | 提成配置 | ⏳ todo | 4h |
-| TASK-FE-PROJ-006 | 项目仪表盘 | ⏳ todo | 4h |
-| TASK-FE-PROJ-007 | 预付款管理 | ⏳ todo | 3h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-PROJ-001 | 项目列表页 | ⏳ todo | 4h | ✅ |
+| TASK-FE-PROJ-002 | 项目筛选器 | ⏳ todo | 3h | ✅ |
+| TASK-FE-PROJ-003 | 项目表格组件 | ⏳ todo | 4h | ✅ |
+| TASK-FE-PROJ-004 | 项目创建/编辑表单 | ⏳ todo | 4h | ✅ |
+| TASK-FE-PROJ-005 | 项目详情页 | ⏳ todo | 4h | ✅ |
+| TASK-FE-PROJ-006 | 项目成员管理 | ⏳ todo | 4h | ✅ |
+| TASK-FE-PROJ-007 | 项目状态流转 | ⏳ todo | 4h | ✅ |
 
-#### ACCT 账户模块
+#### ACCT 账户模块 (8 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/8) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-ACCT-001 | 账户列表页 | ⏳ todo | 4h |
-| TASK-FE-ACCT-002 | 账户创建表单 | ⏳ todo | 4h |
-| TASK-FE-ACCT-003 | 账户详情页 | ⏳ todo | 4h |
-| TASK-FE-ACCT-004 | 账户分配弹窗 | ⏳ todo | 4h |
-| TASK-FE-ACCT-005 | 账户转移弹窗 | ⏳ todo | 3h |
-| TASK-FE-ACCT-006 | 死号标记弹窗 | ⏳ todo | 3h |
-| TASK-FE-ACCT-007 | 账户状态流转 | ⏳ todo | 4h |
-| TASK-FE-ACCT-008 | 账户筛选器 | ⏳ todo | 4h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-ACCT-001 | 账户列表页 | ⏳ todo | 4h | ✅ |
+| TASK-FE-ACCT-002 | 账户状态看板 | ⏳ todo | 4h | ✅ |
+| TASK-FE-ACCT-003 | 账户筛选器 | ⏳ todo | 3h | ✅ |
+| TASK-FE-ACCT-004 | 账户表格组件 | ⏳ todo | 4h | ✅ |
+| TASK-FE-ACCT-005 | 账户创建/编辑表单 | ⏳ todo | 4h | ✅ |
+| TASK-FE-ACCT-006 | 账户分配操作 | ⏳ todo | 3h | ✅ |
+| TASK-FE-ACCT-007 | 账户状态流转（6 状态） | ⏳ todo | 4h | ✅ |
+| TASK-FE-ACCT-008 | 账户详情弹窗 | ⏳ todo | 4h | ✅ |
 
-### P1 - 业务支撑模块
+---
 
-#### CHAN 渠道模块
+### P1 - 业务支撑模块 (11 任务)
+
+#### CHAN 渠道模块 (4 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/4) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-CHAN-001 | 渠道列表页 | ⏳ todo | 3h |
-| TASK-FE-CHAN-002 | 渠道创建表单 | ⏳ todo | 3h |
-| TASK-FE-CHAN-003 | 渠道详情页 | ⏳ todo | 3h |
-| TASK-FE-CHAN-004 | 渠道状态管理 | ⏳ todo | 4h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-CHAN-001 | 渠道列表页 | ⏳ todo | 3h | ✅ |
+| TASK-FE-CHAN-002 | 渠道表格组件 | ⏳ todo | 3h | ✅ |
+| TASK-FE-CHAN-003 | 渠道创建/编辑表单 | ⏳ todo | 3h | ✅ |
+| TASK-FE-CHAN-004 | 渠道状态切换 | ⏳ todo | 4h | ✅ |
 
-#### TOP 充值模块
+#### TOP 充值模块 (7 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/7) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-TOP-001 | 充值列表页 | ⏳ todo | 4h |
-| TASK-FE-TOP-002 | 充值详情页 | ⏳ todo | 4h |
-| TASK-FE-TOP-003 | 充值状态流转 | ⏳ todo | 4h |
-| TASK-FE-TOP-004 | 充值申请表单 | ⏳ todo | 4h |
-| TASK-FE-TOP-005 | 充值审批弹窗 | ⏳ todo | 4h |
-| TASK-FE-TOP-006 | 实际消耗录入 | ⏳ todo | 4h |
-| TASK-FE-TOP-007 | 充值统计面板 | ⏳ todo | 4h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-TOP-001 | 充值列表页 | ⏳ todo | 4h | ✅ |
+| TASK-FE-TOP-002 | 充值筛选器 | ⏳ todo | 3h | ✅ |
+| TASK-FE-TOP-003 | 充值表格组件 | ⏳ todo | 4h | ✅ |
+| TASK-FE-TOP-004 | 充值申请表单 | ⏳ todo | 4h | ✅ |
+| TASK-FE-TOP-005 | 充值审批操作（7 状态） | ⏳ todo | 4h | ✅ |
+| TASK-FE-TOP-006 | 充值详情弹窗 | ⏳ todo | 4h | ✅ |
+| TASK-FE-TOP-007 | 充值状态流转 UI | ⏳ todo | 4h | ✅ |
 
-### P2 - 管理功能模块
+---
 
-#### FIN 财务模块
+### P2 - 管理功能模块 (10 任务)
+
+#### FIN 财务模块 (5 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/5) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-FIN-001 | 财务仪表盘 | ⏳ todo | 5h |
-| TASK-FE-FIN-002 | 收入录入表单 | ⏳ todo | 4h |
-| TASK-FE-FIN-003 | 押款统计页 | ⏳ todo | 4h |
-| TASK-FE-FIN-004 | 月度锁账页 | ⏳ todo | 5h |
-| TASK-FE-FIN-005 | 利润报表页 | ⏳ todo | 4h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-FIN-001 | 财务中心页面框架 | ⏳ todo | 5h | ✅ |
+| TASK-FE-FIN-002 | 账本子页面 | ⏳ todo | 4h | ✅ |
+| TASK-FE-FIN-003 | 对账子页面 | ⏳ todo | 4h | ✅ |
+| TASK-FE-FIN-004 | 利润子页面 | ⏳ todo | 5h | ✅ |
+| TASK-FE-FIN-005 | 财务权限守卫 | ⏳ todo | 4h | ✅ |
 
-#### USER 用户模块
+#### USER 用户模块 (5 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/5) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-USER-001 | 用户列表页 | ⏳ todo | 4h |
-| TASK-FE-USER-002 | 用户创建表单 | ⏳ todo | 4h |
-| TASK-FE-USER-003 | 用户详情页 | ⏳ todo | 3h |
-| TASK-FE-USER-004 | 角色权限配置 | ⏳ todo | 4h |
-| TASK-FE-USER-005 | 个人资料页 | ⏳ todo | 3h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-USER-001 | 用户列表页 | ⏳ todo | 4h | ✅ |
+| TASK-FE-USER-002 | 用户表格组件 | ⏳ todo | 4h | ✅ |
+| TASK-FE-USER-003 | 用户创建/编辑表单 | ⏳ todo | 4h | ✅ |
+| TASK-FE-USER-004 | 用户角色分配 | ⏳ todo | 4h | ✅ |
+| TASK-FE-USER-005 | 用户停用/启用操作 | ⏳ todo | 3h | ✅ |
 
-### P3 - 系统配置模块
+---
 
-#### SET 设置模块
+### P3 - 系统配置模块 (3 任务)
+
+#### SET 设置模块 (3 任务)
 进度: ░░░░░░░░░░░░░░░ 0% (0/3) ⏳
 
-| 任务卡 | 描述 | 状态 | 工时 |
-|--------|------|------|------|
-| TASK-FE-SET-001 | 系统设置页 | ⏳ todo | 4h |
-| TASK-FE-SET-002 | 日志查看页 | ⏳ todo | 3h |
-| TASK-FE-SET-003 | 通知设置页 | ⏳ todo | 3h |
+| 任务卡 | 描述 | 状态 | 工时 | 提示词 |
+|--------|------|------|------|--------|
+| TASK-FE-SET-001 | 系统设置页面框架 | ⏳ todo | 4h | ✅ |
+| TASK-FE-SET-002 | 基础配置表单 | ⏳ todo | 3h | ✅ |
+| TASK-FE-SET-003 | 充值阈值配置 | ⏳ todo | 3h | ✅ |
 
 ---
 
@@ -246,13 +310,13 @@
 
 ## 4. 前端优先级统计
 
-| 优先级 | 模块 | 任务数 | 预估工时 | 状态 |
-|--------|------|--------|----------|------|
-| **P0** | COMMON, DASH, RPT, PROJ, ACCT | 33 | 125h | ⏳ 待开始 |
-| **P1** | CHAN, TOP | 11 | 41h | ⏳ 待开始 |
-| **P2** | FIN, USER | 10 | 40h | ⏳ 待开始 |
-| **P3** | SET | 3 | 10h | ⏳ 待开始 |
-| **合计** | - | **57** | **216h** | - |
+| 优先级 | 模块 | 任务数 | 预估工时 | 状态 | 提示词 |
+|--------|------|--------|----------|------|--------|
+| **P0** | COMMON, DASH, RPT, PROJ, ACCT | 33 | 125h | ⏳ 待开始 | 100% ✅ |
+| **P1** | CHAN, TOP | 11 | 40h | ⏳ 待开始 | 100% ✅ |
+| **P2** | FIN, USER | 10 | 41h | ⏳ 待开始 | 100% ✅ |
+| **P3** | SET | 3 | 10h | ⏳ 待开始 | 100% ✅ |
+| **合计** | - | **57** | **216h** | - | **100%** |
 
 ---
 
@@ -261,83 +325,140 @@
 ### 前端开发路线图
 
 #### 第一阶段：基础设施 (P0-COMMON)
+<<<<<<< Updated upstream
 > 预计工时: 18h | 已完成: 4h
 
 1. [x] TASK-FE-COMMON-001: 类型定义与常量 ✅ (2026-01-05)
+=======
+> 预计工时: 18h | 提示词: ✅ 就绪
+
+```
+执行顺序:
+1. [ ] TASK-FE-COMMON-001: 类型定义与常量
+>>>>>>> Stashed changes
 2. [ ] TASK-FE-COMMON-002: 权限检查 Hook (usePermission)
 3. [ ] TASK-FE-COMMON-003: 状态配置与 StatusBadge
 4. [ ] TASK-FE-COMMON-004: 导航访问控制 (canAccessNav)
 5. [ ] TASK-FE-COMMON-005: 通用列表页模板
+<<<<<<< Updated upstream
+=======
+```
+
+**开发命令**:
+```bash
+# 复制提示词到 Claude
+cat docs/guides/PROMPT_LIBRARY_FRONTEND.md | grep -A 200 "TASK-FE-COMMON-001"
+```
+>>>>>>> Stashed changes
 
 #### 第二阶段：核心业务 (P0-DASH/RPT/PROJ/ACCT)
-> 预计工时: 107h
+> 预计工时: 107h | 提示词: ✅ 就绪
 
 - DASH: 驾驶舱（6 任务，22h）
-- RPT: 日报管理（7 任务，28h）
+- RPT: 日报管理（7 任务，27h）
 - PROJ: 项目管理（7 任务，27h）
 - ACCT: 账户管理（8 任务，30h）
 
 #### 第三阶段：业务支撑 (P1-CHAN/TOP)
-> 预计工时: 41h
+> 预计工时: 40h | 提示词: ✅ 就绪
 
 - CHAN: 渠道管理（4 任务，13h）
-- TOP: 充值管理（7 任务，28h）
+- TOP: 充值管理（7 任务，27h）
 
 #### 第四阶段：管理功能 (P2-FIN/USER)
-> 预计工时: 40h
+> 预计工时: 41h | 提示词: ✅ 就绪
 
 - FIN: 财务中心（5 任务，22h）
-- USER: 用户管理（5 任务，18h）
+- USER: 用户管理（5 任务，19h）
 
 #### 第五阶段：系统配置 (P3-SET)
-> 预计工时: 10h
+> 预计工时: 10h | 提示词: ✅ 就绪
 
 - SET: 系统设置（3 任务，10h）
 
-### Phase 2 启用条件
-| 条件 | 状态 | 说明 |
-|------|------|------|
-| Phase 1 前端完成 | ⏳ 待满足 | 57 任务待开发 |
-| Phase 1 稳定运行 | ⏳ 待满足 | 需运行 2 个月 |
-| Feature Flag | ⚙️ 待启用 | `ENABLE_FULL_DAILY_REPORT_SM=true` |
-| 日报填报率 | ⏳ 待统计 | 目标 ≥ 90% |
+---
+
+## 6. 提示词使用指南
+
+### 开发流程
+```
+1. 查看 progress.md 确定下一个任务
+2. 打开 PROMPT_LIBRARY_FRONTEND.md v3.1
+3. 复制 Part 2 系统约束 (一次对话只需复制一次)
+4. 复制对应任务卡的提示词
+5. 发送给 Claude，等待生成代码
+6. 运行 npm run build 验证
+7. 更新 progress.md 状态
+```
+
+### 提示词文件位置
+```
+docs/guides/PROMPT_LIBRARY_FRONTEND.md  # v3.1 完整版
+```
+
+### 快速检索
+```bash
+# 搜索任务卡
+grep -n "TASK-FE-COMMON-001" docs/guides/PROMPT_LIBRARY_FRONTEND.md
+
+# 统计任务卡
+grep -c "^### TASK-FE-" docs/guides/PROMPT_LIBRARY_FRONTEND.md
+# 结果: 57
+```
 
 ---
 
-## 6. 技术约束提醒
+## 7. 技术约束提醒
 
 ### 日报状态机 (Phase 1: 3 状态)
 ```
 raw_submitted → trend_ok → final_confirmed
 ```
 
+### 充值状态机 (7 状态)
+```
+draft → pending_review → finance_approve → paid → completed
+                    ↓                        ↓
+                rejected                 cancelled
+```
+
 ### 角色白名单 (6 角色)
-| 业务角色 | 技术实现 |
-|----------|----------|
-| 老板 (ceo) | `role = 'admin'` + `isCeo()` |
+| 业务角色 | 技术层角色 |
+|----------|------------|
+| 老板 (ceo) | `ceo` |
 | 项目负责人 | `is_project_owner = true` |
-| 财务 (finance) | `role = 'finance'` |
-| 投手 (pitcher) | `role = 'media_buyer'` |
-| 户管 | `role = 'account_manager'` |
-| 管理员 (admin) | `role = 'admin'` |
+| 财务 (finance) | `finance` |
+| 投手 (pitcher) | `pitcher` |
+| 户管 | `account_manager` |
+| 管理员 (admin) | `admin` |
 
 ### 禁止使用
 - ❌ `supervisor` 角色（已合并到 project_owner）
+- ❌ `media_buyer` 角色（使用 pitcher）
 - ❌ `data_operator` 角色
-- ❌ Phase 2 状态（trend_pending, trend_flagged, final_locked 等）
+- ❌ Phase 2 状态（trend_pending, trend_flagged 等）
+- ❌ `fetch()` / `axios`（使用 apiGet/apiPost）
+- ❌ 原生 `<table>`（使用 DataTable）
+- ❌ `as any` 类型断言
 
 ---
 
-## 7. 同步信息
+## 8. 同步信息
 
 | 属性 | 值 |
 |------|------|
 | 同步时间 | 2026-01-05 |
+<<<<<<< Updated upstream
 | Task Master 版本 | 0.40.1 |
 | 前端任务卡版本 | TASK_CARDS_FRONTEND.md v1.0 |
+=======
+| 提示词库版本 | PROMPT_LIBRARY_FRONTEND.md v3.1 |
+| 任务卡总数 | 57 个 |
+| 提示词覆盖率 | 100% |
+>>>>>>> Stashed changes
 | SoT 基准 | MASTER.md v4.9 / DATA_SCHEMA.md v5.10 / STATE_MACHINE.md v2.9 |
-| 数据标签 | master |
 
+<<<<<<< Updated upstream
 ---
 
 ## 8. 最近完成的任务
@@ -348,3 +469,7 @@ raw_submitted → trend_ok → final_confirmed
 
 > 此文档由 `scripts/sync_progress.py` 自动生成
 > 运行 `/sync-progress` 或完成任务卡时自动更新
+=======
+> 此文档与 `PROMPT_LIBRARY_FRONTEND.md` 保持同步
+> 运行 `/sync-progress` 或完成任务卡时手动更新
+>>>>>>> Stashed changes
