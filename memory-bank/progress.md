@@ -32,21 +32,21 @@
 
 ### 前端进度
 ```
-前端任务完成率: ░░░░░░░░░░░░░░░░░░░░░░░░░ 0%
+前端任务完成率: █░░░░░░░░░░░░░░░░░░░░░░░░ 2%
 
 总任务数:   57
-已完成:     0
+已完成:     1
 进行中:     0
-待开始:     57
-预估工时:   216h
+待开始:     56
+预估工时:   212h (剩余)
 ```
 
 ### 综合进度
 | 端 | 任务数 | 已完成 | 完成率 | 预估工时 |
 |----|--------|--------|--------|----------|
 | 后端 | 24 | 24 | 100% | - |
-| 前端 | 57 | 0 | 0% | 216h |
-| **合计** | **81** | **24** | **30%** | - |
+| 前端 | 57 | 1 | 2% | 212h |
+| **合计** | **81** | **25** | **31%** | - |
 
 ---
 
@@ -55,15 +55,15 @@
 ### P0 - MVP 核心模块
 
 #### COMMON 通用模块
-进度: ░░░░░░░░░░░░░░░ 0% (0/5) ⏳
+进度: ███░░░░░░░░░░░░ 20% (1/5) 🔄
 
 | 任务卡 | 描述 | 状态 | 工时 |
 |--------|------|------|------|
-| TASK-FE-COMMON-001 | API 客户端封装 | ⏳ todo | 4h |
-| TASK-FE-COMMON-002 | 认证状态管理 | ⏳ todo | 4h |
-| TASK-FE-COMMON-003 | 全局布局组件 | ⏳ todo | 4h |
-| TASK-FE-COMMON-004 | 通用表格组件 | ⏳ todo | 3h |
-| TASK-FE-COMMON-005 | 通用表单组件 | ⏳ todo | 3h |
+| TASK-FE-COMMON-001 | 类型定义与常量 | ✅ done | 4h |
+| TASK-FE-COMMON-002 | 权限检查 Hook | ⏳ todo | 4h |
+| TASK-FE-COMMON-003 | 状态配置与 StatusBadge | ⏳ todo | 3h |
+| TASK-FE-COMMON-004 | 导航访问控制 | ⏳ todo | 3h |
+| TASK-FE-COMMON-005 | 通用列表页模板 | ⏳ todo | 4h |
 
 #### DASH 驾驶舱模块
 进度: ░░░░░░░░░░░░░░░ 0% (0/6) ⏳
@@ -261,13 +261,13 @@
 ### 前端开发路线图
 
 #### 第一阶段：基础设施 (P0-COMMON)
-> 预计工时: 18h
+> 预计工时: 18h | 已完成: 4h
 
-1. [ ] TASK-FE-COMMON-001: API 客户端封装
-2. [ ] TASK-FE-COMMON-002: 认证状态管理
-3. [ ] TASK-FE-COMMON-003: 全局布局组件
-4. [ ] TASK-FE-COMMON-004: 通用表格组件
-5. [ ] TASK-FE-COMMON-005: 通用表单组件
+1. [x] TASK-FE-COMMON-001: 类型定义与常量 ✅ (2026-01-05)
+2. [ ] TASK-FE-COMMON-002: 权限检查 Hook (usePermission)
+3. [ ] TASK-FE-COMMON-003: 状态配置与 StatusBadge
+4. [ ] TASK-FE-COMMON-004: 导航访问控制 (canAccessNav)
+5. [ ] TASK-FE-COMMON-005: 通用列表页模板
 
 #### 第二阶段：核心业务 (P0-DASH/RPT/PROJ/ACCT)
 > 预计工时: 107h
@@ -332,11 +332,19 @@ raw_submitted → trend_ok → final_confirmed
 
 | 属性 | 值 |
 |------|------|
-| 同步时间 | 2026-01-04 |
+| 同步时间 | 2026-01-05 |
 | Task Master 版本 | 0.40.1 |
 | 前端任务卡版本 | TASK_CARDS_FRONTEND.md v1.0 |
 | SoT 基准 | MASTER.md v4.9 / DATA_SCHEMA.md v5.10 / STATE_MACHINE.md v2.9 |
 | 数据标签 | master |
+
+---
+
+## 8. 最近完成的任务
+
+| 日期 | 任务卡 | 描述 | 生成文件 |
+|------|--------|------|----------|
+| 2026-01-05 | TASK-FE-COMMON-001 | 类型定义与常量 | `types/roles.ts`, `types/status.ts`, `types/user.ts`, `lib/constants/roles.ts`, `lib/constants/status-config.ts` |
 
 > 此文档由 `scripts/sync_progress.py` 自动生成
 > 运行 `/sync-progress` 或完成任务卡时自动更新

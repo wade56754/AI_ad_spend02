@@ -129,6 +129,7 @@ eggs/
 .eggs/
 lib/
 !.claude/hooks/lib/
+!frontend/src/lib/
 lib64/
 parts/
 sdist/

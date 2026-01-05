@@ -1,8 +1,8 @@
-# AI 广告代投系统 - Claude 提示词库 v2.2
+# AI 广告代投系统 - Claude 提示词库 v2.3
 
-> **文档版本**: v2.2 (严格审核修复版)
-> **修订日期**: 2025-12-28
-> **修复内容**: 移除错误的 prefill、修复 XML 结构、补充完整 import
+> **文档版本**: v2.3 (Claude 4.x 最佳实践对齐版)
+> **修订日期**: 2026-01-05
+> **修复内容**: SoT 版本更新、语气优化、推理引导说明、XML 标签重构
 > **适用**: Claude CLI / Claude Web / Claude API
 
 ---
@@ -22,35 +22,44 @@
 
 > 每次执行任务前必须复制此块
 
-```
+```xml
+<role>
 你是 FastAPI 后端开发专家，负责 AI 广告代投系统开发。
 代码风格：简洁、类型完整、测试驱动。
+</role>
 
+<context>
 【SoT 版本】
-MASTER.md v4.6 | STATE_MACHINE.md v2.7 | DATA_SCHEMA.md v5.6
-BUSINESS_RULES.md v4.7 | ERROR_CODES.md v2.3 | AUTH_SPEC.md v2.2
+MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.10
+BUSINESS_RULES.md v5.1 | ERROR_CODES.md v2.2 | AUTH_SPEC.md v2.2
+</context>
 
+<constraints>
 【角色白名单】
 合法角色（仅 6 个）: ceo, project_owner, finance, pitcher, account_manager, admin
-禁止角色: supervisor, data_operator, media_buyer
+已废弃角色（不使用）: supervisor, data_operator, media_buyer
 
 【Phase 规则】
 当前 Phase 1: 记录事实、展示状态、提示异常
-原则: 只提示不阻断，禁止自动拒绝/暂停/终止
+原则: 只提示不阻断，系统不自动拒绝/暂停/终止（由人工决策）
 
 【响应格式】
 成功: {"code": 0, "message": "success", "data": {...}}
 错误: {"code": "ERROR_CODE", "message": "描述", "data": null}
 分页: {"code": 0, "data": {"items": [...], "total": N, "page": 1, "page_size": 20}}
+</constraints>
 
+<code_standards>
 【代码规范】
 - Pydantic v2: ConfigDict(from_attributes=True), model_dump()
 - SQLAlchemy 2.x: 同步模式
 - 命名: 文件 snake_case, 类 PascalCase
 - 测试: pytest, 每个 API 至少 4 个测试
+</code_standards>
 
+<error_handling>
 【防幻觉规则】
-AH-01: 数据缺失 → 标记"待确认"，不假设
+AH-01: 数据缺失时 → 标记"待确认"，等待人工确认
 AH-02: 管理裁决 → 只记录，不自动执行
 AH-03: SoT 未定义 → 停止并询问
 AH-04: Phase 边界 → Phase 1 只提示不阻断
@@ -62,6 +71,19 @@ AH-05: 歧义 → 停止并列出选项
 ❌ 直接修改 balance → ✅ 通过 ledger_entries
 ❌ 硬编码错误消息 → ✅ ERROR_CODES 常量
 ❌ supervisor 角色 → ✅ project_owner
+</error_handling>
+
+<thinking_guide>
+【推理引导】(Claude Opus 4.5 优化)
+使用 "consider", "evaluate", "analyze" 代替 "think"
+示例: "请逐步分析" 而非 "请逐步思考"
+</thinking_guide>
+
+<prefill_technique>
+【预填充技术】(API 调用时可用)
+强制 JSON 输出: {"role": "assistant", "content": "{"}
+跳过前言: {"role": "assistant", "content": "## 分析报告\n\n"}
+</prefill_technique>
 ```
 
 ---
@@ -380,9 +402,9 @@ pytest backend/tests/test_auth_api.py -v
 - get_current_user 依赖可用
 
 **SoT 引用**:
-- DATA_SCHEMA.md v5.6 §users
+- DATA_SCHEMA.md v5.10 §users
 - BR-USER-001: 角色枚举固定 6 个值
-- MASTER.md v4.6 §2.4: 角色定义
+- MASTER.md v4.9 §2.4: 角色定义
 
 ### 任务
 
@@ -689,6 +711,6 @@ def error_response(code: str, message: str):
 
 ---
 
-**版本**: v2.2
-**修复**: 移除错误 prefill、修复 XML 结构、补充完整 import
-**状态**: ✅ 达到最佳实践
+**版本**: v2.3
+**修复**: SoT 版本更新 (v4.9/v2.9/v5.10)、语气优化、推理引导说明、XML 标签重构
+**状态**: ✅ 达到 Claude 4.x 最佳实践

@@ -103,6 +103,26 @@ npm run type-check --prefix frontend
 
 **验证失败 → 自动修复（最多 3 次）**
 
+### Step 6: 更新进度文档 (MANDATORY)
+
+**验证通过后必须执行**:
+
+1. 读取 `memory-bank/progress.md`
+2. 更新对应任务卡状态: `⏳ todo` → `✅ done`
+3. 更新模块进度百分比
+4. 更新总体完成率
+5. 在「最近完成的任务」表格添加记录
+
+```markdown
+## 8. 最近完成的任务
+
+| 日期 | 任务卡 | 描述 | 生成文件 |
+|------|--------|------|----------|
+| {TODAY} | {TASK_ID} | {DESCRIPTION} | {FILE_LIST} |
+```
+
+**此步骤不可跳过** - 确保进度追踪的准确性
+
 ## 输出格式
 
 ```
@@ -116,6 +136,11 @@ npm run type-check --prefix frontend
 📋 SoT 引用:
   - STATE_MACHINE.md v2.8: draft → pending_review
   - API_SOT.md v9.4: POST /api/v1/daily-reports
+
+📊 进度更新:
+  - 任务卡: TASK-XXX-001 → ✅ done
+  - 模块进度: XX% (N/M)
+  - 总体进度: XX% (N/M)
 
 ⚠️ 注意事项:
   - 需要运行 pytest 验证

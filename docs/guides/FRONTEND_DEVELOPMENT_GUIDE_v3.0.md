@@ -1,7 +1,7 @@
 # AI 广告代投系统 - 前端开发指南 v3.0
 
-> **技术栈**: Next.js 14 + TanStack Query v5 + shadcn/ui + TypeScript
-> **基准文档**: MASTER.md v4.6 + PRD v2.2 + STATE_MACHINE.md v2.7
+> **技术栈**: Next.js 16 + TanStack Query v5 + shadcn/ui + TypeScript
+> **基准文档**: MASTER.md v4.9 + PRD v5.2 + STATE_MACHINE.md v2.9
 > **后端状态**: ✅ 已完成 (57/57 任务)
 > **文档版本**: v3.0 (AI 编程友好版 - 铁律前置 + Phase 边界明确)
 
@@ -22,6 +22,22 @@ type Role = 'ceo' | 'project_owner' | 'finance' | 'pitcher' | 'account_manager' 
 // data_operator - 从未存在
 ```
 
+### 0.1.1 角色双层系统
+
+> **来源**: STATE_MACHINE.md v2.9 §2.1
+
+| 业务角色 (6个) | 技术层映射 | 说明 |
+|---------------|-----------|------|
+| ceo | admin | 系统最高权限 |
+| project_owner | users.is_project_owner=true | 项目负责人 |
+| finance | finance | 财务 |
+| pitcher | media_buyer | 投手 |
+| account_manager | account_manager | 户管 |
+| admin | admin | 系统管理员 |
+
+> **注意**: 技术层数据库 CHECK 约束使用 4 角色 (admin/finance/account_manager/media_buyer)
+> 业务层通过 `is_project_owner` 属性扩展为 6 角色
+
 ### 0.2 日报状态（Phase 1 只用 3 个）
 
 ```typescript
@@ -38,16 +54,17 @@ type Phase1ReportStatus = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
 export type ReportStatus = Phase1ReportStatus;
 ```
 
-### 0.3 充值状态（6 个）
+### 0.3 充值状态（7 个）
 
 ```typescript
-type TopupStatus = 
+type TopupStatus =
   | 'draft'           // 草稿
   | 'pending_review'  // 待审核
-  | 'approved'        // 已批准
-  | 'rejected'        // 已拒绝
+  | 'finance_approve' // 财务已批准
   | 'paid'            // 已转账
-  | 'completed';      // 已完成
+  | 'completed'       // 已完成
+  | 'rejected'        // 已拒绝
+  | 'cancelled';      // 已取消
 ```
 
 ### 0.4 禁止事项清单
@@ -389,14 +406,15 @@ export type Phase2ReportStatus =
 // 当前使用 Phase 1
 export type ReportStatus = Phase1ReportStatus;
 
-// ============ 充值状态（6 个）============
-export type TopupStatus = 
+// ============ 充值状态（7 个）============
+export type TopupStatus =
   | 'draft'           // 草稿
   | 'pending_review'  // 待审核
-  | 'approved'        // 已批准
-  | 'rejected'        // 已拒绝
+  | 'finance_approve' // 财务已批准
   | 'paid'            // 已转账
-  | 'completed';      // 已完成
+  | 'completed'       // 已完成
+  | 'rejected'        // 已拒绝
+  | 'cancelled';      // 已取消
 
 // ============ 项目状态 ============
 export type ProjectStatus = 'draft' | 'active' | 'paused' | 'completed';
@@ -486,10 +504,11 @@ export const REPORT_STATUS_LABELS: Record<Phase1ReportStatus, string> = {
 export const TOPUP_STATUS_LABELS: Record<TopupStatus, string> = {
   draft: '草稿',
   pending_review: '待审核',
-  approved: '已批准',
-  rejected: '已拒绝',
+  finance_approve: '财务已批准',
   paid: '已转账',
   completed: '已完成',
+  rejected: '已拒绝',
+  cancelled: '已取消',
 };
 
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
@@ -1081,14 +1100,16 @@ src/
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
+| v3.1 | 2026-01-05 | 对齐 SoT: 充值状态 7 个、版本更新、角色双层系统 |
 | v3.0 | 2025-12-28 | AI 编程友好版：铁律前置 + Phase 边界明确 + 决策树 |
 | v2.2 | 2025-12-28 | 整合实际代码库组件 60+ |
 | v2.1 | 2025-12-28 | 修复 API 对齐 + 恢复提示词模板 |
 
 ---
 
-**文档版本**: v3.0
+**文档版本**: v3.1
 **创建日期**: 2025-12-28
+**最后更新**: 2026-01-05
 **核心改进**: 
 - ✅ 铁律前置（第零章）
 - ✅ Phase 1 日报状态明确为 3 个
@@ -1097,4 +1118,4 @@ src/
 - ✅ 组件强制使用规则
 - ✅ 完整页面示例（Phase 1 版本）
 
-**基准文档**: MASTER.md v4.6 + PRD v2.2 + STATE_MACHINE.md v2.7
+**基准文档**: MASTER.md v4.9 + PRD v5.2 + STATE_MACHINE.md v2.9
