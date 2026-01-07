@@ -17,3 +17,7 @@ export * from './MainTrendChart';
 export * from './TopLists';
 export * from './charts';
 export * from './CEODashboardV3';
+
+// TASK-FE-DASH-006: 角色视图切换
+export * from './RoleViewSwitcher';
+export * from './role-views';

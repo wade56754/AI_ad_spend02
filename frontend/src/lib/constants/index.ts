@@ -32,3 +32,19 @@ export {
   // 类型
   type StatusConfig,
 } from './status-config';
+
+// 权限矩阵 (TASK-FE-COMMON-002)
+export {
+  ROLE_PERMISSIONS,
+  PERMISSION_LABELS,
+  type Permission,
+} from './permission-matrix';
+
+// 状态变体 (TASK-FE-COMMON-003)
+export {
+  STATUS_VARIANT_COLORS,
+  STATUS_VARIANT_LABELS,
+  COMMON_STATUS_VARIANTS,
+  getVariantClasses,
+  getVariantFromStatus,
+} from './status-variants';

@@ -224,3 +224,60 @@ export function useProfitTrendV2(params?: ProfitTrendParams) {
     staleTime: 1000 * 60 * 5,
   });
 }
+
+// ============================================================================
+// TASK-FE-FIN-002: 账本 Hook
+// ============================================================================
+
+import { apiGet } from '@/lib/api';
+
+interface LedgerParams {
+  page?: number;
+  page_size?: number;
+  type?: 'topup' | 'spend' | 'reversal';
+  search?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+interface LedgerItem {
+  id: string;
+  type: string;
+  amount: number;
+  balance_after: number;
+  description: string;
+  account_name?: string;
+  project_name?: string;
+  created_at: string;
+  ref_id?: string;
+}
+
+interface LedgerResponse {
+  items: LedgerItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/**
+ * 获取账本流水
+ * SoT: API_SOT.md v9.7 (GET /api/v1/ledger)
+ */
+export function useLedger(params?: LedgerParams) {
+  return useQuery({
+    queryKey: ['finance', 'ledger', params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set('page', String(params.page));
+      if (params?.page_size) searchParams.set('page_size', String(params.page_size));
+      if (params?.type) searchParams.set('type', params.type);
+      if (params?.search) searchParams.set('search', params.search);
+      if (params?.start_date) searchParams.set('start_date', params.start_date);
+      if (params?.end_date) searchParams.set('end_date', params.end_date);
+
+      const query = searchParams.toString();
+      return apiGet<LedgerResponse>(`/api/v1/ledger${query ? `?${query}` : ''}`);
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}

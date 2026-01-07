@@ -1,16 +1,23 @@
 /**
  * SettingsPage Component
  *
+ * TASK-FE-SET-001: 系统设置页面框架
+ *
  * Main settings page with tabbed navigation
  * Uses shadcn/ui components following project patterns
  *
+ * SoT 引用:
+ * - FRONTEND_PAGE_DESIGN_v2.1.md §5.1 (页面清单)
+ * - FRONTEND_PAGE_DESIGN_v2.1.md §4.1 (权限矩阵)
+ *
  * Layout: Sidebar navigation + Content area
  * Sub-components: ProfileSettings, NotificationSettings, SecuritySettings, ThemeSettings
+ * Admin-only: BasicSettings, TopupThresholdSettings
  */
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   Settings,
   User,
@@ -19,28 +26,35 @@ import {
   Sliders,
   Save,
   Loader2,
+  Cog,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/features/auth';
+import { usePermission } from '@/hooks/usePermission';
 
 import { ProfileSettings } from './ProfileSettings';
 import { NotificationSettings } from './NotificationSettings';
 import { SecuritySettings } from './SecuritySettings';
 import { ThemeSettings } from './ThemeSettings';
+import { BasicSettings } from './BasicSettings';
+import { TopupThresholdSettings } from './TopupThresholdSettings';
 
 // ============================================================
 // Types
 // ============================================================
 
-export type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'security';
+export type SettingsTab = 'profile' | 'preferences' | 'notifications' | 'security' | 'system' | 'topup';
 
 interface SettingsSection {
   id: SettingsTab;
   title: string;
   description: string;
   icon: React.ReactNode;
+  adminOnly?: boolean;
 }
 
 // ============================================================
@@ -72,6 +86,20 @@ const SETTINGS_TABS: SettingsSection[] = [
     description: '密码和会话管理',
     icon: <Shield className="h-4 w-4" />,
   },
+  {
+    id: 'system',
+    title: '系统配置',
+    description: '全局系统参数',
+    icon: <Cog className="h-4 w-4" />,
+    adminOnly: true,
+  },
+  {
+    id: 'topup',
+    title: '充值阈值',
+    description: '大额充值审批配置',
+    icon: <DollarSign className="h-4 w-4" />,
+    adminOnly: true,
+  },
 ];
 
 // ============================================================
@@ -80,9 +108,18 @@ const SETTINGS_TABS: SettingsSection[] = [
 
 export function SettingsPage() {
   const { user } = useAuth();
+  const { businessRole, isCeo } = usePermission();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  // 判断是否为管理员或 CEO - SoT: MASTER.md v4.9 §2.4
+  const isAdmin = businessRole === 'admin' || isCeo;
+
+  // 根据权限过滤可见的 Tab
+  const visibleTabs = useMemo(() => {
+    return SETTINGS_TABS.filter((tab) => !tab.adminOnly || isAdmin);
+  }, [isAdmin]);
 
   // Handle save - would integrate with API in production
   const handleSave = useCallback(async () => {
@@ -140,8 +177,8 @@ export function SettingsPage() {
         className="space-y-6"
       >
         {/* Tab Navigation */}
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-flex">
-          {SETTINGS_TABS.map((tab) => (
+        <TabsList className="flex flex-wrap lg:inline-flex">
+          {visibleTabs.map((tab) => (
             <TabsTrigger
               key={tab.id}
               value={tab.id}
@@ -149,6 +186,11 @@ export function SettingsPage() {
             >
               {tab.icon}
               <span className="hidden sm:inline">{tab.title}</span>
+              {tab.adminOnly && (
+                <Badge variant="secondary" className="ml-1 text-xs hidden md:inline-flex">
+                  管理员
+                </Badge>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -227,6 +269,48 @@ export function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* System Settings - Admin Only */}
+        {isAdmin && (
+          <TabsContent value="system" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Cog className="h-5 w-5" />
+                  系统配置
+                  <Badge variant="secondary">管理员</Badge>
+                </CardTitle>
+                <CardDescription>
+                  配置系统名称、日期格式、语言等全局参数
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BasicSettings onChange={handleChange} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Topup Threshold Settings - Admin Only */}
+        {isAdmin && (
+          <TabsContent value="topup" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  充值阈值配置
+                  <Badge variant="secondary">管理员</Badge>
+                </CardTitle>
+                <CardDescription>
+                  配置大额充值审批阈值和余额预警参数
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TopupThresholdSettings onChange={handleChange} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
