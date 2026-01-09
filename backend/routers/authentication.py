@@ -66,7 +66,7 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(..., description="刷新令牌")
 
 
-@router.post("/login", response_model=dict)
+@router.post("/login")
 @log_requests("auth")
 async def login(
     request: LoginRequest,
@@ -110,7 +110,7 @@ async def login(
         )
 
 
-@router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("/register",  status_code=status.HTTP_201_CREATED)
 @log_requests("auth")
 async def register(
     request: RegisterRequest,
@@ -163,7 +163,7 @@ async def register(
         )
 
 
-@router.post("/refresh", response_model=dict)
+@router.post("/refresh")
 @log_requests("auth")
 async def refresh_token(
     request: RefreshTokenRequest,
@@ -198,7 +198,7 @@ async def refresh_token(
         )
 
 
-@router.post("/logout", response_model=dict)
+@router.post("/logout")
 @log_requests("auth")
 async def logout(
     request: Request,
@@ -235,7 +235,7 @@ async def logout(
         )
 
 
-@router.post("/logout-all", response_model=dict)
+@router.post("/logout-all")
 @log_requests("auth")
 async def logout_all(
     request: Request,
@@ -268,7 +268,7 @@ async def logout_all(
         )
 
 
-@router.get("/me", response_model=dict)
+@router.get("/me")
 @log_requests("auth")
 async def get_current_user_info(
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -304,7 +304,7 @@ async def get_current_user_info(
         )
 
 
-@router.post("/change-password", response_model=dict)
+@router.post("/change-password")
 @log_requests("auth")
 async def change_password(
     request: ChangePasswordRequest,
@@ -351,7 +351,7 @@ async def change_password(
         )
 
 
-@router.post("/forgot-password", response_model=dict)
+@router.post("/forgot-password")
 @log_requests("auth")
 async def forgot_password(
     request: ResetPasswordRequest,
@@ -375,7 +375,7 @@ async def forgot_password(
         )
 
 
-@router.post("/reset-password", response_model=dict)
+@router.post("/reset-password")
 @log_requests("auth")
 async def reset_password(
     request: ResetPasswordConfirmRequest,
@@ -410,7 +410,7 @@ async def reset_password(
         )
 
 
-@router.post("/verify-email", response_model=dict)
+@router.post("/verify-email")
 @log_requests("auth")
 async def verify_email(
     token: str = Body(..., embed=True),
@@ -441,7 +441,7 @@ async def verify_email(
         )
 
 
-@router.post("/resend-verification", response_model=dict)
+@router.post("/resend-verification")
 @log_requests("auth")
 async def resend_verification(
     db: Session = Depends(get_db),
@@ -480,7 +480,7 @@ async def resend_verification(
         )
 
 
-@router.post("/verify-token", response_model=dict)
+@router.post("/verify-token")
 @log_requests("auth")
 async def verify_token(
     current_user: Dict[str, Any] = Depends(get_current_user)
@@ -499,7 +499,7 @@ async def verify_token(
 
 
 # 兼容旧版本的OAuth2PasswordRequestForm登录方式
-@router.post("/login/oauth", response_model=dict)
+@router.post("/login/oauth")
 @log_requests("auth")
 async def login_oauth(
     form_data: OAuth2PasswordRequestForm = Depends(),

@@ -95,7 +95,7 @@ class TopupService:
                 # Phase 2: 硬阻断
                 raise BusinessLogicError(
                     f"单笔充值金额不能超过{self.MAX_SINGLE_AMOUNT}",
-                    error_code="BIZ-201"
+                    error_code="BIZ_201"
                 )
             else:
                 # Phase 1: 仅记录警告，不阻断
@@ -233,7 +233,7 @@ class TopupService:
 
         if not request:
             # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
-            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ-002")
+            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ_002")
 
         # 检查访问权限
         self._check_request_access(request, current_user)
@@ -318,7 +318,7 @@ class TopupService:
         if request.requested_by == current_user.id:
             raise BusinessLogicError(
                 "违反职责分离原则：申请者不能审批自己的申请",
-                error_code="BIZ-001"
+                error_code="BIZ_001"
             )
 
         # 验证当前状态必须为 pending_review
@@ -472,7 +472,7 @@ class TopupService:
         if request.requested_by == current_user.id:
             raise BusinessLogicError(
                 "违反职责分离原则：申请者不能拒绝自己的申请",
-                error_code="BIZ-001"
+                error_code="BIZ_001"
             )
 
         old_status = request.status
@@ -693,7 +693,7 @@ class TopupService:
         if request.paid_at:
             raise ResourceConflictError(
                 "该申请已确认付款",
-                error_code="BIZ-207"
+                error_code="BIZ_207"
             )
 
         # 执行状态转换: finance_approve → paid
@@ -778,7 +778,7 @@ class TopupService:
         if request.completed_at:
             raise ResourceConflictError(
                 "该申请已确认到账",
-                error_code="BIZ-208"
+                error_code="BIZ_208"
             )
 
         # 执行状态转换: paid → completed
@@ -848,7 +848,7 @@ class TopupService:
 
         # 检查是否已打款
         if request.paid_at:
-            raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ-207")
+            raise ResourceConflictError("该申请已标记为已打款", error_code="BIZ_207")
 
         old_status = request.status
         new_status = TopupStatus.PAID.value
@@ -1298,7 +1298,7 @@ class TopupService:
             if ad_account.assigned_to == current_user.id:
                 return ad_account
 
-        raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ-206")
+        raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ_206")
 
     def _check_account_balance_limit(self, ad_account_id: int, requested_amount: Decimal):
         """检查账户余额上限
@@ -1325,7 +1325,7 @@ class TopupService:
                 # Phase 2: 强制阻断
                 raise BusinessLogicError(
                     f"充值后账户余额将超出上限({self.MAX_ACCOUNT_BALANCE})",
-                    error_code="BIZ-202"
+                    error_code="BIZ_202"
                 )
             else:
                 # Phase 1: 仅记录警告，不阻断
@@ -1364,7 +1364,7 @@ class TopupService:
                 # Phase 2: 硬阻断
                 raise BusinessLogicError(
                     f"同一账户24小时内最多只能申请{self.MAX_DAILY_REQUESTS}次充值",
-                    error_code="BIZ-204"
+                    error_code="BIZ_204"
                 )
             else:
                 # Phase 1: 仅记录警告，不阻断
@@ -1416,7 +1416,7 @@ class TopupService:
             if request.requested_by == current_user.id:
                 return
 
-        raise PermissionDeniedError("无权限查看该充值申请", error_code="BIZ-206")
+        raise PermissionDeniedError("无权限查看该充值申请", error_code="BIZ_206")
 
     def _get_request_for_action(
         self,
@@ -1430,10 +1430,10 @@ class TopupService:
         # 验证操作权限 - 使用 UserRole 枚举 (MASTER.md v4.6 §4.5.11)
         # 充值审批流程: pitcher 申请 → 户管收集 → 财务审批
         if action == "data_review" and current_user.role != UserRole.ACCOUNT_MANAGER.value:
-            raise PermissionDeniedError("只有户管可以进行数据审核", error_code="BIZ-206")
+            raise PermissionDeniedError("只有户管可以进行数据审核", error_code="BIZ_206")
 
         if action == "finance_approve" and current_user.role != UserRole.FINANCE.value:
-            raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ-206")
+            raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ_206")
 
         return request
 

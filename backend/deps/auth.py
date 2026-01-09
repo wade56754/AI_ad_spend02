@@ -6,7 +6,7 @@ NOTE: 此模块已重构为直接使用 backend.core.dependencies
 保留以兼容旧导入
 """
 
-# 从 core.dependencies 重新导出所有认证依赖 (使用 Supabase auth)
+# 从 core.dependencies 重新导出所有认证依赖 (使用本地 JWT auth)
 from backend.core.dependencies import (
     get_current_user,
     get_current_user_optional,
@@ -17,14 +17,15 @@ from backend.core.dependencies import (
     ROLE_PERMISSIONS,
     require_admin,
     require_finance,
-    require_data_operator,
     require_account_manager,
-    require_media_buyer,
     require_project_access,
     require_account_access,
     require_finance_access,
     require_report_access,
     check_user_role,
+    # PRD v2.2: 已移除 require_data_operator 和 require_media_buyer
+    # 使用 require_finance 或 require_project_owner 替代 require_data_operator
+    # 使用 require_pitcher 替代 require_media_buyer
 )
 
 # 保持向后兼容的导入
@@ -40,9 +41,8 @@ __all__ = [
     "ROLE_PERMISSIONS",
     "require_admin",
     "require_finance",
-    "require_data_operator",
     "require_account_manager",
-    "require_media_buyer",
+    # PRD v2.2: 已移除 require_data_operator 和 require_media_buyer
     "require_project_access",
     "require_account_access",
     "require_finance_access",

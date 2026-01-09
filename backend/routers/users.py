@@ -91,7 +91,7 @@ def get_service(db: Session = Depends(get_db)) -> UserService:
     return UserService(db)
 
 
-@router.get("", response_model=dict)
+@router.get("")
 async def get_users(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -148,7 +148,7 @@ async def get_users(
         return _handle_service_exception(e, "获取用户列表")
 
 
-@router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("",  status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
     current_user: User = Depends(require_role(["admin"])),
@@ -194,7 +194,7 @@ async def create_user(
         return _handle_service_exception(e, "创建用户")
 
 
-@router.get("/{user_id}", response_model=dict)
+@router.get("/{user_id}")
 async def get_user(
     user_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -234,7 +234,7 @@ async def get_user(
         return _handle_service_exception(e, "获取用户详情")
 
 
-@router.put("/{user_id}", response_model=dict)
+@router.put("/{user_id}")
 async def update_user(
     user_id: UUID,
     user_data: UserUpdate,
@@ -287,7 +287,7 @@ async def update_user(
         return _handle_service_exception(e, "更新用户")
 
 
-@router.delete("/{user_id}", response_model=dict)
+@router.delete("/{user_id}")
 async def delete_user(
     user_id: UUID,
     current_user: User = Depends(require_role(["admin"])),
@@ -315,7 +315,7 @@ async def delete_user(
         return _handle_service_exception(e, "删除用户")
 
 
-@router.get("/statistics/summary", response_model=dict)
+@router.get("/statistics/summary")
 async def get_user_statistics(
     current_user: User = Depends(
         require_role(["admin", "ceo", "finance", "project_owner"])

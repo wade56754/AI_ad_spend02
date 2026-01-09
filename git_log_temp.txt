@@ -1,3 +1,5 @@
-2a4a5e2 docs(guides): 添加前端 AI 编程最佳实践 v1.2
-bd15e2d fix(tests): 修复权限测试和 Python 3.9 兼容性问题
-259ee36 fix(hooks): 合并 master 的 Python 3.9 兼容性修复
+8155bc3 docs: resolve merge conflict in progress.md
+34fcae6 feat(frontend): 完成 TASK-FE-COMMON-001 类型定义与常量
+864a668 refactor(frontend): 前端代码重构 P0-P3 完成
+e6030a5 docs(memory-bank): 新增前端最佳实践文档
+b1380f0 fix(frontend): 修复前端-后端对接问题 (8项)

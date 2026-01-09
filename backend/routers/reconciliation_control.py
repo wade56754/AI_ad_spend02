@@ -69,7 +69,6 @@ router = APIRouter(
 
 @router.post(
     "/settlement-rules",
-    response_model=dict,
     summary="创建结算规则",
     description="创建新的结算规则 (tiered/markup)",
 )
@@ -88,7 +87,7 @@ async def create_settlement_rule(
 
 
 @router.get(
-    "/settlement-rules", response_model=dict, summary="列出结算规则", description="查询结算规则列表"
+    "/settlement-rules", summary="列出结算规则", description="查询结算规则列表"
 )
 async def list_settlement_rules(
     rule_type: Optional[SettlementRuleType] = Query(None, description="规则类型"),
@@ -114,7 +113,6 @@ async def list_settlement_rules(
 
 @router.get(
     "/settlement-rules/{rule_id}",
-    response_model=dict,
     summary="获取结算规则",
     description="根据ID获取结算规则详情",
 )
@@ -135,7 +133,6 @@ async def get_settlement_rule(
 
 @router.patch(
     "/settlement-rules/{rule_id}",
-    response_model=dict,
     summary="更新结算规则",
     description="更新结算规则配置",
 )
@@ -156,7 +153,6 @@ async def update_settlement_rule(
 
 @router.delete(
     "/settlement-rules/{rule_id}",
-    response_model=dict,
     summary="删除结算规则",
     description="软删除结算规则（设置结束日期）",
 )
@@ -176,7 +172,6 @@ async def delete_settlement_rule(
 
 @router.post(
     "/balance-snapshots",
-    response_model=dict,
     summary="创建余额快照",
     description="为广告账户创建余额/押款快照",
 )
@@ -196,7 +191,6 @@ async def create_balance_snapshot(
 
 @router.post(
     "/balance-snapshots/batch",
-    response_model=dict,
     summary="批量创建余额快照",
     description="批量导入余额快照",
 )
@@ -221,7 +215,7 @@ async def batch_create_balance_snapshots(
 
 
 @router.get(
-    "/balance-snapshots", response_model=dict, summary="列出余额快照", description="查询余额快照列表"
+    "/balance-snapshots", summary="列出余额快照", description="查询余额快照列表"
 )
 async def list_balance_snapshots(
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
@@ -250,7 +244,6 @@ async def list_balance_snapshots(
 
 @router.get(
     "/balance-snapshots/{snapshot_id}",
-    response_model=dict,
     summary="获取余额快照",
     description="根据ID获取余额快照详情",
 )
@@ -271,7 +264,6 @@ async def get_balance_snapshot(
 
 @router.post(
     "/balance-snapshots/verify-conservation",
-    response_model=dict,
     summary="验证守恒公式",
     description="验证对账守恒公式: Σ(充值) - Σ(消耗) = Δ(余额) + Δ(押款)",
 )
@@ -304,7 +296,7 @@ async def verify_conservation(
 # ==================== Reconciliation Issues ====================
 
 
-@router.post("/issues", response_model=dict, summary="创建差异单", description="创建对账差异单")
+@router.post("/issues", summary="创建差异单", description="创建对账差异单")
 async def create_issue(
     data: ReconciliationIssueCreate,
     db: Session = Depends(get_db),
@@ -319,7 +311,7 @@ async def create_issue(
     )
 
 
-@router.get("/issues", response_model=dict, summary="列出差异单", description="查询差异单列表")
+@router.get("/issues", summary="列出差异单", description="查询差异单列表")
 async def list_issues(
     status: Optional[ReconciliationIssueStatus] = Query(None, description="状态"),
     issue_type: Optional[ReconciliationIssueType] = Query(None, description="差异类型"),
@@ -354,7 +346,7 @@ async def list_issues(
 
 
 @router.get(
-    "/issues/summary", response_model=dict, summary="差异单统计", description="获取差异单统计摘要"
+    "/issues/summary", summary="差异单统计", description="获取差异单统计摘要"
 )
 async def get_issues_summary(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
@@ -367,7 +359,6 @@ async def get_issues_summary(
 
 @router.get(
     "/issues/{issue_id}",
-    response_model=dict,
     summary="获取差异单",
     description="根据ID获取差异单详情",
 )
@@ -388,7 +379,6 @@ async def get_issue(
 
 @router.post(
     "/issues/{issue_id}/assign",
-    response_model=dict,
     summary="分配差异单",
     description="将差异单分配给处理人",
 )
@@ -409,7 +399,6 @@ async def assign_issue(
 
 @router.post(
     "/issues/{issue_id}/investigate",
-    response_model=dict,
     summary="开始调查",
     description="开始调查差异单",
 )
@@ -429,7 +418,6 @@ async def start_investigation(
 
 @router.post(
     "/issues/{issue_id}/resolve",
-    response_model=dict,
     summary="处理差异单",
     description="处理并记录差异单解决方案",
 )
@@ -450,7 +438,6 @@ async def resolve_issue(
 
 @router.post(
     "/issues/{issue_id}/close",
-    response_model=dict,
     summary="关闭差异单",
     description="关闭已处理的差异单（终态）",
 )
@@ -470,7 +457,6 @@ async def close_issue(
 
 @router.post(
     "/issues/{issue_id}/reopen",
-    response_model=dict,
     summary="重新打开差异单",
     description="重新打开已处理的差异单",
 )
@@ -490,7 +476,6 @@ async def reopen_issue(
 
 @router.post(
     "/issues/check-sla",
-    response_model=dict,
     summary="检查SLA超时",
     description="检查并标记SLA超时的差异单（Phase 1: 仅标记）",
 )
@@ -510,7 +495,6 @@ async def check_sla_breach(
 
 @router.post(
     "/commission-rules",
-    response_model=dict,
     summary="创建提成规则",
     description="创建新的提成规则 (阶梯提成)",
 )
@@ -536,7 +520,6 @@ async def create_commission_rule(
 
 @router.get(
     "/commission-rules",
-    response_model=dict,
     summary="列出提成规则",
     description="查询提成规则列表",
 )
@@ -562,7 +545,6 @@ async def list_commission_rules(
 
 @router.get(
     "/commission-rules/default",
-    response_model=dict,
     summary="获取默认提成规则",
     description="获取当前默认的提成规则",
 )
@@ -582,7 +564,6 @@ async def get_default_commission_rule(
 
 @router.get(
     "/commission-rules/{rule_id}",
-    response_model=dict,
     summary="获取提成规则",
     description="根据ID获取提成规则详情",
 )
@@ -603,7 +584,6 @@ async def get_commission_rule(
 
 @router.patch(
     "/commission-rules/{rule_id}",
-    response_model=dict,
     summary="更新提成规则",
     description="更新提成规则配置",
 )
@@ -624,7 +604,6 @@ async def update_commission_rule(
 
 @router.delete(
     "/commission-rules/{rule_id}",
-    response_model=dict,
     summary="删除提成规则",
     description="软删除提成规则（设置结束日期）",
 )
@@ -641,7 +620,6 @@ async def delete_commission_rule(
 
 @router.post(
     "/commission-rules/{rule_id}/calculate",
-    response_model=dict,
     summary="计算提成",
     description="根据进粉数计算提成金额",
 )
@@ -669,7 +647,6 @@ async def calculate_commission(
 
 @router.get(
     "/projects/{project_id}/effective-commission-rule",
-    response_model=dict,
     summary="获取项目生效提成规则",
     description="获取项目当前生效的提成规则（优先项目配置，否则使用默认规则）",
 )

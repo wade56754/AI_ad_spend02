@@ -1,54 +1,41 @@
 {
-    "mcpServers": {
-        "lark": {
-            "command": "cmd",
-            "args": [
-                "/c",
-                "npx",
-                "-y",
-                "@larksuiteoapi/lark-mcp",
-                "mcp",
-                "-a",
-                "cli_a98f34e454ba100c",
-                "-s",
-                "C0mABqwJAOAfhGudb8qfCbwool64Q0Tn",
-                "-u",
-                "u-ek2ZcNG5tf4oNgRGnQOIgZk51uWQk4gjXoGaEN402xp5"
-            ]
-        },
-        "supabase": {
-            "command": "cmd",
-            "args": [
-                "/c",
-                "npx",
-                "-y",
-                "@supabase/mcp-server-supabase@latest",
-                "--access-token",
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6bWNvaXZ4aGl5aWRpem5jeWFxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjMxNzgxMSwiZXhwIjoyMDc3ODkzODExfQ.IP2Gu-KIYDJvd2ahKLc60dca5KWV90uNHN7GtE5Sx8s",
-                "--project-ref",
-                "jzmcoivxhiyidizncyq"
-            ]
-        },
-        "sequential-thinking": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-sequential-thinking"
-            ]
-        },
-        "context7": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@upstash/context7-mcp"
-            ]
-        },
-        "playwright": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@playwright/mcp@latest"
-            ]
-        }
+  "mcpServers": {
+    "lark": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@larksuiteoapi/lark-mcp",
+        "mcp",
+        "-a",
+        "cli_a98f34e454ba100c",
+        "-s",
+        "C0mABqwJAOAfhGudb8qfCbwool64Q0Tn",
+        "-u",
+        "u-ek2ZcNG5tf4oNgRGnQOIgZk51uWQk4gjXoGaEN402xp5"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ]
     }
+  }
 }

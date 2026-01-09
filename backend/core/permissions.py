@@ -507,28 +507,11 @@ def account_manager_required(
     return user
 
 
-def data_operator_required(
-    user: AuthenticatedUser = Depends(get_current_active_user),
-) -> AuthenticatedUser:
-    """要求数据员权限"""
-    if user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要数据员权限"},
-        )
-    return user
-
-
-def media_buyer_required(
-    user: AuthenticatedUser = Depends(get_current_active_user),
-) -> AuthenticatedUser:
-    """要求投手权限"""
-    if user.role not in [UserRole.ADMIN.value, UserRole.MEDIA_BUYER.value]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要投手权限"},
-        )
-    return user
+# ============================================================================
+# 废弃函数已移除 (PRD v2.2)
+# - data_operator_required: 使用 finance_required 或 project_owner_required
+# - media_buyer_required: 使用 pitcher_required
+# ============================================================================
 
 
 # ============================================================================
@@ -953,8 +936,7 @@ __all__ = [
     "admin_required",
     "finance_required",
     "account_manager_required",
-    "data_operator_required",
-    "media_buyer_required",
+    # data_operator_required 和 media_buyer_required 已废弃 (PRD v2.2)
     # 项目权限守卫
     "require_project_owner",
     "require_project_member",

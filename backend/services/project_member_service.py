@@ -176,7 +176,7 @@ class ProjectMemberService:
         if existing:
             raise ResourceConflictError(
                 f"用户已是项目成员 (角色: {existing.role})",
-                error_code="BIZ-001"
+                error_code="BIZ_001"
             )
 
         # 如果添加为 owner，检查是否已有 owner
@@ -189,7 +189,7 @@ class ProjectMemberService:
             if existing_owner:
                 raise ResourceConflictError(
                     "项目已有负责人，请使用转移负责人功能",
-                    error_code="BIZ-002"
+                    error_code="BIZ_002"
                 )
 
         # 创建成员
@@ -221,11 +221,11 @@ class ProjectMemberService:
             if 'idx_one_owner_per_project' in str(e):
                 raise ResourceConflictError(
                     "项目已有负责人",
-                    error_code="BIZ-002"
+                    error_code="BIZ_002"
                 )
             raise ResourceConflictError(
                 "成员已存在",
-                error_code="BIZ-001"
+                error_code="BIZ_001"
             )
 
     def get_member(
@@ -412,7 +412,7 @@ class ProjectMemberService:
                 if existing_owner:
                     raise ResourceConflictError(
                         "项目已有负责人，请使用转移负责人功能",
-                        error_code="BIZ-002"
+                        error_code="BIZ_002"
                     )
 
             member.role = new_role
@@ -440,7 +440,7 @@ class ProjectMemberService:
             self.db.rollback()
             raise ResourceConflictError(
                 "更新失败：角色冲突",
-                error_code="BIZ-002"
+                error_code="BIZ_002"
             )
 
     def delete_member(
@@ -481,7 +481,7 @@ class ProjectMemberService:
         if member.role == 'owner':
             raise BusinessLogicError(
                 "项目负责人不能直接删除，请先转移负责人",
-                error_code="BIZ-003"
+                error_code="BIZ_003"
             )
 
         project_id = member.project_id
@@ -601,7 +601,7 @@ class ProjectMemberService:
             self.db.rollback()
             raise BusinessLogicError(
                 "转移负责人失败：数据冲突",
-                error_code="BIZ-003"
+                error_code="BIZ_003"
             )
 
     def get_project_owner(

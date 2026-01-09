@@ -20,7 +20,7 @@ logger = structlog.get_logger(__name__)
 router = APIRouter(prefix="/channels", tags=["channels"])
 
 
-@router.get("", response_model=dict)
+@router.get("")
 @log_requests("channels")
 def list_channels(
     page: int = Query(1, ge=1),
@@ -58,7 +58,7 @@ def list_channels(
     return success_response(data={"items": data, "meta": {"pagination": pagination}}, message="获取渠道列表成功")
 
 
-@router.get("/{channel_id}", response_model=dict)
+@router.get("/{channel_id}")
 @log_requests("channels")
 def get_channel(
     channel_id: UUID,
@@ -76,7 +76,7 @@ def get_channel(
     return success_response(data=data)
 
 
-@router.post("", response_model=dict, status_code=201)
+@router.post("",  status_code=201)
 @log_requests("channels")
 def create_channel(
     payload: ChannelCreate,
@@ -114,7 +114,7 @@ def create_channel(
     return success_response(data=data, message="渠道创建成功", status_code=201)
 
 
-@router.put("/{channel_id}", response_model=dict)
+@router.put("/{channel_id}")
 @log_requests("channels")
 def update_channel(
     channel_id: UUID,

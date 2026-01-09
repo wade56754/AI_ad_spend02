@@ -1,197 +1,24 @@
-﻿git : [33m[STARTED][39m Backing up original state...
-所在位置 行:1 字符: 29
-+ ... ion 'D:\git\1108'; git commit -m 'chore: 更新 SoT 文档和开发规范' 2>&1 | Out-F ...
-+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: ([33m[STARTED]...iginal state... 
-   :String) [], RemoteException
-    + FullyQualifiedErrorId : NativeCommandError
- 
-[32m[COMPLETED][39m Backed up original state in git stash (47a4601)
-[33m[STARTED][39m Hiding unstaged changes to partially staged files...
-[32m[COMPLETED][39m Hiding unstaged changes to partially staged files...
-[33m[STARTED][39m Running tasks for staged files...
-[33m[STARTED][39m package.json[0;90m 鈥?21 files[0m
-[33m[STARTED][39m *.{ts,tsx}[0;90m 鈥?17 files[0m
-[33m[STARTED][39m *.{json,md,css}[0;90m 鈥?3 files[0m
-[33m[STARTED][39m eslint --fix
-[33m[STARTED][39m prettier --write
-[32m[COMPLETED][39m prettier --write
-[32m[COMPLETED][39m *.{json,md,css}[0;90m 鈥?3 files[0m
-[31m[FAILED][39m [0;31meslint --fix[0m [0;90m[FAILED][0m
-[31m[FAILED][39m [0;31meslint --fix[0m [0;90m[FAILED][0m
-[32m[COMPLETED][39m Running tasks for staged files...
-[33m[STARTED][39m Applying modifications from tasks...
-[33m[SKIPPED][39m Skipped because of errors from tasks.
-[33m[STARTED][39m Restoring unstaged changes...
-[33m[SKIPPED][39m Skipped because of errors from tasks.
-[33m[STARTED][39m Reverting to original state because of errors...
-[32m[COMPLETED][39m Reverting to original state because of errors...
-[33m[STARTED][39m Cleaning up temporary files...
-[32m[COMPLETED][39m Cleaning up temporary files...
-
-[0;31m[0;31m鉁?[0m eslint --fix:[0m
-[0m[0m
-[0m[4mD:\git\1108\frontend\src\config\nav-config.ts[24m[0m
-[0m  [2m29:8[22m  [33mwarning[39m  'LucideIcon' is defined but never used.
- Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[2
-2m[0m
-[0m[0m
-[0m[4mD:\git\1108\frontend\src\features\ad-accounts\components\AdAccountForm.
-tsx[24m[0m
-[0m  [2m227:14[22m  [33mwarning[39m  'error' is defined but never used    
-                                                                               
-    [2m@typescript-eslint/no-unused-vars[22m[0m
-[0m  [2m291:6[22m   [33mwarning[39m  React Hook useEffect has a missing de
-pendency: 'validateAccountCode'. Either include it or remove the dependency arr
-ay  [2mreact-hooks/exhaustive-deps[22m[0m
-[0m  [2m328:80[22m  [33mwarning[39m  Unexpected any. Specify a different t
-ype                                                                            
-    [2m@typescript-eslint/no-explicit-any[22m[0m
-[0m[0m
-[0m[4mD:\git\1108\frontend\src\features\ad-accounts\components\BatchOperation
-s.tsx[24m[0m
-[0m  [2m16:10[22m  [33mwarning[39m  'Textarea' is defined but never used. 
-Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22
-m[0m
-[0m  [2m20:10[22m  [33mwarning[39m  'Checkbox' is defined but never used. 
-Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unused-vars[22
-m[0m
-[0m  [2m87:54[22m  [33mwarning[39m  Unexpected any. Specify a different ty
-pe                                    [2m@typescript-eslint/no-explicit-any[2
-2m[0m
-[0m[0m
-[0m[4mD:\git\1108\frontend\src\features\auth\components\ForgotPasswordPage.ts
-x[24m[0m
-[0m   [2m52:16[22m  [31merror[39m  <button> is forbidden, 浣跨敤 <Button> 缁勪欢
-鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')  [2mreact/forbid-elements[22
-m[0m
-[0m   [2m87:14[22m  [31merror[39m  <label> is forbidden, 浣跨敤 <Label> 缁勪欢鏇夸
-唬 <label> 鏍囩 (from '@/components/ui/label')      [2mreact/forbid-elements[22
-m[0m
-[0m   [2m90:14[22m  [31merror[39m  <input> is forbidden, 浣跨敤 <Input> 缁勪欢鏇夸
-唬 <input> 鏍囩 (from '@/components/ui/input')      [2mreact/forbid-elements[22
-m[0m
-[0m  [2m104:14[22m  [31merror[39m  <button> is forbidden, 浣跨敤 <Button> 缁勪欢
-鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')  [2mreact/forbid-elements[22
-m[0m
-[0m[0m
-[0m[4mD:\git\1108\frontend\src\features\profile\components\ProfilePage.tsx[2
-4m[0m
-[0m  [2m103:20[22m  [31merror[39m  <button> is forbidden, 浣跨敤 <Button> 缁勪欢
-鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')  [2mreact/forbid-elements[22
-m[0m
-[0m[0m
-[0m[4mD:\git\1108\frontend\src\features\users\components\UsersPage.tsx[24m[
-0m
-[0m   [2m35:3[22m   [33mwarning[39m  'useToggleUserStatus' is defined but 
-never used. Allowed unused vars must match /^_/u  [2m@typescript-eslint/no-unu
-sed-vars[22m[0m
-[0m   [2m92:12[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m   [2m99:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m102:14[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m115:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m118:14[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m129:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m132:14[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m144:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m145:14[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m155:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m158:14[22m  [31merror[39m    <select> is forbidden, 浣跨敤 <Select> 缁
-勪欢鏇夸唬 <select> 鏍囩 (from '@/components/ui/select')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m173:14[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m180:14[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m231:12[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m238:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m239:14[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m248:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m249:14[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m258:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m259:14[22m  [31merror[39m    <select> is forbidden, 浣跨敤 <Select> 缁
-勪欢鏇夸唬 <select> 鏍囩 (from '@/components/ui/select')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m273:14[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m280:14[22m  [31merror[39m    <label> is forbidden, 浣跨敤 <Label> 缁勪欢
-鏇夸唬 <label> 鏍囩 (from '@/components/ui/label')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m286:14[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m293:14[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m334:12[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m340:12[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m471:16[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m479:16[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m499:18[22m  [31merror[39m    <input> is forbidden, 浣跨敤 <Input> 缁勪欢
-鏇夸唬 <input> 鏍囩 (from '@/components/ui/input')        [2mreact/forbid-elements
-[22m[0m
-[0m  [2m511:14[22m  [31merror[39m    <select> is forbidden, 浣跨敤 <Select> 缁
-勪欢鏇夸唬 <select> 鏍囩 (from '@/components/ui/select')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m538:14[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m642:32[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m649:32[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m672:22[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m  [2m682:22[22m  [31merror[39m    <button> is forbidden, 浣跨敤 <Button> 缁
-勪欢鏇夸唬 <button> 鏍囩 (from '@/components/ui/button')    [2mreact/forbid-elements
-[22m[0m
-[0m[0m
-[0m[31m[1m鉁?48 problems (40 errors, 8 warnings)[22m[39m[0m
-[0m[31m[1m[22m[39m[0m
-husky - pre-commit script failed (code 1)
+[master 864a668] refactor(frontend): 前端代码重构 P0-P3 完成
+ 42 files changed, 2162 insertions(+), 2307 deletions(-)
+ delete mode 100644 frontend/src/features/ad-accounts/components/AdAccountsPage.tsx
+ delete mode 100644 frontend/src/features/ad-accounts/components/AdAccountsPageRefactored.tsx
+ create mode 100644 frontend/src/features/audit-logs/hooks/index.ts
+ create mode 100644 frontend/src/features/audit-logs/hooks/useAuditLogs.ts
+ create mode 100644 frontend/src/features/audit-logs/services/auditLogsApi.ts
+ create mode 100644 frontend/src/features/audit-logs/services/index.ts
+ create mode 100644 frontend/src/features/cost-analysis/hooks/index.ts
+ create mode 100644 frontend/src/features/cost-analysis/hooks/useCostAnalysis.ts
+ create mode 100644 frontend/src/features/cost-analysis/services/costAnalysisApi.ts
+ create mode 100644 frontend/src/features/cost-analysis/services/index.ts
+ delete mode 100644 frontend/src/features/daily-reports/components/DailyReportsPageRefactored.tsx
+ delete mode 100644 frontend/src/features/finance/components/FinancePageRefactored.tsx
+ create mode 100644 frontend/src/features/profile/hooks/index.ts
+ create mode 100644 frontend/src/features/profile/hooks/useProfile.ts
+ create mode 100644 frontend/src/features/profile/services/index.ts
+ create mode 100644 frontend/src/features/profile/services/profileApi.ts
+ delete mode 100644 frontend/src/features/reports/components/ReportsPageRefactored.tsx
+ create mode 100644 frontend/src/features/settings/hooks/index.ts
+ create mode 100644 frontend/src/features/settings/hooks/useSettings.ts
+ create mode 100644 frontend/src/features/settings/services/index.ts
+ create mode 100644 frontend/src/features/settings/services/settingsApi.ts
+ delete mode 100644 frontend/src/features/users/components/UsersPageRefactored.tsx

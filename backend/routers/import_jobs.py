@@ -52,7 +52,7 @@ def get_import_job_service(db: Session = Depends(get_db)) -> ImportJobService:
 # ========== 文件上传端点 ==========
 
 
-@router.post("/upload", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("/upload",  status_code=status.HTTP_201_CREATED)
 async def upload_import_file(
     file: UploadFile = File(..., description="CSV文件"),
     job_type: str = Query(
@@ -141,7 +141,7 @@ async def upload_import_file(
 # ========== 任务列表与详情 ==========
 
 
-@router.get("", response_model=dict)
+@router.get("")
 async def list_import_jobs(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -191,7 +191,7 @@ async def list_import_jobs(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/statistics", response_model=dict)
+@router.get("/statistics")
 async def get_import_statistics(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(["admin", "finance", "project_owner"])),
@@ -209,7 +209,7 @@ async def get_import_statistics(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/{job_id}", response_model=dict)
+@router.get("/{job_id}")
 async def get_import_job(
     job_id: int,
     db: Session = Depends(get_db),
@@ -242,7 +242,7 @@ async def get_import_job(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/{job_id}/progress", response_model=dict)
+@router.get("/{job_id}/progress")
 async def get_import_job_progress(
     job_id: int,
     db: Session = Depends(get_db),
@@ -279,7 +279,7 @@ async def get_import_job_progress(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/{job_id}/errors", response_model=dict)
+@router.get("/{job_id}/errors")
 async def get_import_job_errors(
     job_id: int,
     page: int = Query(1, ge=1),
@@ -315,7 +315,7 @@ async def get_import_job_errors(
 # ========== 任务操作端点 ==========
 
 
-@router.post("/{job_id}/start", response_model=dict)
+@router.post("/{job_id}/start")
 async def start_import_job(
     job_id: int,
     db: Session = Depends(get_db),
@@ -353,7 +353,7 @@ async def start_import_job(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.post("/{job_id}/cancel", response_model=dict)
+@router.post("/{job_id}/cancel")
 async def cancel_import_job(
     job_id: int,
     db: Session = Depends(get_db),
@@ -395,7 +395,7 @@ async def cancel_import_job(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.delete("/{job_id}", response_model=dict)
+@router.delete("/{job_id}")
 async def delete_import_job(
     job_id: int,
     db: Session = Depends(get_db),
@@ -436,7 +436,7 @@ async def delete_import_job(
 # ========== 重复检查端点 ==========
 
 
-@router.post("/check-duplicate", response_model=dict)
+@router.post("/check-duplicate")
 async def check_duplicate_file(
     file: UploadFile = File(..., description="要检查的文件"),
     db: Session = Depends(get_db),

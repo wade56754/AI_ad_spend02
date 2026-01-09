@@ -296,8 +296,10 @@ export function useRequireRole(allowedRoles: string[], redirectTo = '/') {
  * Hook to check if user has permission for specific action
  *
  * 用于细粒度权限控制，确保权限检查在角色加载完成后进行
+ *
+ * @deprecated 推荐使用 @/hooks/usePermission，提供更完整的权限检查功能
  */
-export function usePermission(requiredRoles: string[]) {
+export function useRolePermission(requiredRoles: string[]) {
   const { user, isLoading } = useAuth();
   const [isReady, setIsReady] = useState(false);
 

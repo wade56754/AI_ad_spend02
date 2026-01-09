@@ -1,25 +1,46 @@
 /**
  * Navigation Types - 导航权限类型定义
  *
- * SoT 对齐: MASTER.md v4.6 §2.4 角色白名单
- * 参考设计: next-shadcn-dashboard-starter
+ * SoT 引用:
+ * - MASTER.md v4.9 §2.4 (角色白名单)
+ * - FRONTEND_PAGE_DESIGN_v2.1.md §5.2 (导航配置)
  */
 
 import type { LucideIcon } from 'lucide-react';
-import { UserRole } from '@/features/auth/types';
+import type { TechRole } from './roles';
 
-// ========== 权限检查类型 ==========
+// ========== 导航访问控制类型 (新) ==========
 
 /**
- * 权限检查配置
- * 用于控制导航项的可见性
+ * 导航访问控制配置
+ *
+ * SoT: FRONTEND_PAGE_DESIGN_v2.1.md §5.2
+ *
+ * 规则: allowAll OR (techRoles OR requireProjectOwner OR requireCeo)
+ */
+export interface NavAccess {
+  /** 允许访问的技术层角色 */
+  techRoles?: TechRole[];
+  /** 是否需要项目负责人身份 */
+  requireProjectOwner?: boolean;
+  /** 是否需要 CEO 身份 */
+  requireCeo?: boolean;
+  /** 是否对全部角色开放 */
+  allowAll?: boolean;
+}
+
+// ========== 权限检查类型 (旧版兼容) ==========
+
+/**
+ * 权限检查配置 (旧版)
+ * @deprecated 建议使用 NavAccess
  */
 export interface PermissionCheck {
   /**
    * 允许访问的角色列表
    * 如果为空或未定义，表示所有角色都可访问
    */
-  roles?: UserRole[];
+  roles?: string[];
 
   /**
    * 是否需要项目上下文

@@ -114,7 +114,7 @@ def _brief_to_response(brief, cpl_trend: Optional[float] = None) -> WeeklyBriefR
     )
 
 
-@router.get("", response_model=dict)
+@router.get("")
 async def get_weekly_briefs(
     week: Optional[str] = Query(None, description="周次 (如 2025-W51)"),
     week_start: Optional[date] = Query(None, description="周开始日期"),
@@ -180,7 +180,7 @@ async def get_weekly_briefs(
         return _handle_service_exception(e, "获取周报列表")
 
 
-@router.get("/stats", response_model=dict)
+@router.get("/stats")
 async def get_weekly_brief_stats(
     week: Optional[str] = Query(None, description="周次 (如 2025-W51)"),
     week_start: Optional[date] = Query(None, description="周开始日期"),
@@ -216,7 +216,7 @@ async def get_weekly_brief_stats(
         return _handle_service_exception(e, "获取周报统计")
 
 
-@router.get("/{brief_id}", response_model=dict)
+@router.get("/{brief_id}")
 async def get_weekly_brief(
     brief_id: int = Path(..., gt=0, description="周报ID"),
     db: Session = Depends(get_db),
@@ -238,7 +238,7 @@ async def get_weekly_brief(
         return _handle_service_exception(e, "获取周报详情")
 
 
-@router.post("", response_model=dict)
+@router.post("")
 async def create_weekly_brief(
     request: WeeklyBriefCreateRequest,
     db: Session = Depends(get_db),
@@ -265,7 +265,7 @@ async def create_weekly_brief(
         return _handle_service_exception(e, "创建周报")
 
 
-@router.put("/{brief_id}", response_model=dict)
+@router.put("/{brief_id}")
 async def update_weekly_brief(
     brief_id: int = Path(..., gt=0, description="周报ID"),
     request: WeeklyBriefUpdateRequest = ...,
@@ -291,7 +291,7 @@ async def update_weekly_brief(
         return _handle_service_exception(e, "更新周报")
 
 
-@router.post("/{brief_id}/submit", response_model=dict)
+@router.post("/{brief_id}/submit")
 async def submit_weekly_brief(
     brief_id: int = Path(..., gt=0, description="周报ID"),
     db: Session = Depends(get_db),
@@ -320,7 +320,7 @@ async def submit_weekly_brief(
         return _handle_service_exception(e, "提交周报")
 
 
-@router.get("/export", response_model=dict)
+@router.get("/export")
 async def export_weekly_briefs(
     week: Optional[str] = Query(None, description="周次"),
     project_id: Optional[int] = Query(None, gt=0, description="项目ID"),
@@ -345,7 +345,7 @@ async def export_weekly_briefs(
 # ========== 项目周数据汇总 ==========
 
 
-@router.get("/projects/{project_id}/weekly-summary", response_model=dict)
+@router.get("/projects/{project_id}/weekly-summary")
 async def get_project_weekly_summary(
     project_id: int = Path(..., gt=0, description="项目ID"),
     week_start: date = Query(..., description="周开始日期"),

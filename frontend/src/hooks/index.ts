@@ -5,24 +5,24 @@
  */
 
 export { useTheme } from './use-theme';
-export { useIsMounted } from './useIsMounted';
+export { useIsMounted, useDeferredRender } from './useIsMounted';
 export { useTableParams, serializeTableParams } from './use-table-params';
 export type { TableParams, SortOrder } from './use-table-params';
 
 // 权限检查 Hook (TASK-FE-COMMON-002)
 export {
   usePermission,
-  isCeo,
-  getBusinessRole,
-  getRolePermissions,
+  usePermissionGuard,
+  useRoleCheck,
 } from './usePermission';
-export type { Permission, UsePermissionReturn } from './usePermission';
+export type { UsePermissionReturn } from './usePermission';
 
 // 列表查询 Hook (TASK-FE-COMMON-005)
 export { useListQuery } from './useListQuery';
 export type {
-  PaginatedResponse,
-  ListQueryParams,
+  ListParams,
   UseListQueryOptions,
   UseListQueryReturn,
 } from './useListQuery';
+// 注意: PaginatedResponse 从 @/lib/api 重新导出
+export type { PaginatedResponse } from '@/lib/api';

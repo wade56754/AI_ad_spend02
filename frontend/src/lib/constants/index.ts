@@ -37,7 +37,12 @@ export {
 export {
   ROLE_PERMISSIONS,
   PERMISSION_LABELS,
+  PERMISSION_MATRIX,
+  PERMISSION_GROUPS,
+  getPermissionsForRole,
+  isValidPermissionAction,
   type Permission,
+  type PermissionAction,
 } from './permission-matrix';
 
 // 状态变体 (TASK-FE-COMMON-003)

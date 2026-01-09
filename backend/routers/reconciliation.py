@@ -81,7 +81,7 @@ def get_audit_service(db: Session = Depends(get_db)) -> AuditLogService:
     return AuditLogService(db)
 
 
-@router.get("", response_model=dict)
+@router.get("")
 async def get_reconciliation_batches(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -140,7 +140,7 @@ async def get_reconciliation_batches(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.post("/batches", response_model=dict)
+@router.post("/batches")
 async def create_reconciliation_batch(
     request: ReconciliationBatchCreateRequest,
     db: Session = Depends(get_db),
@@ -171,7 +171,7 @@ async def create_reconciliation_batch(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/batches/{batch_id}", response_model=dict)
+@router.get("/batches/{batch_id}")
 async def get_reconciliation_batch(
     batch_id: int,
     db: Session = Depends(get_db),
@@ -220,7 +220,7 @@ async def get_reconciliation_batch(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.post("/batches/{batch_id}/run", response_model=dict)
+@router.post("/batches/{batch_id}/run")
 async def run_reconciliation(
     batch_id: int,
     db: Session = Depends(get_db),
@@ -255,7 +255,7 @@ async def run_reconciliation(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/batches/{batch_id}/details", response_model=dict)
+@router.get("/batches/{batch_id}/details")
 async def get_reconciliation_details(
     batch_id: int,
     page: int = Query(1, ge=1, description="页码"),
@@ -311,7 +311,7 @@ async def get_reconciliation_details(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.put("/details/{detail_id}/review", response_model=dict)
+@router.put("/details/{detail_id}/review")
 async def review_reconciliation_detail(
     detail_id: int,
     request: ReconciliationDetailReviewRequest,
@@ -347,7 +347,7 @@ async def review_reconciliation_detail(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.post("/details/{detail_id}/adjust", response_model=dict)
+@router.post("/details/{detail_id}/adjust")
 async def create_adjustment(
     detail_id: int,
     request: ReconciliationAdjustmentCreateRequest,
@@ -395,7 +395,7 @@ async def create_adjustment(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/statistics", response_model=dict)
+@router.get("/statistics")
 async def get_reconciliation_statistics(
     date_from: Optional[date] = Query(None, description="开始日期"),
     date_to: Optional[date] = Query(None, description="结束日期"),
@@ -475,7 +475,7 @@ async def export_reconciliation_data(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/reports", response_model=dict)
+@router.get("/reports")
 async def get_reconciliation_reports(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -529,7 +529,7 @@ async def get_reconciliation_reports(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.post("/reports", response_model=dict)
+@router.post("/reports")
 async def generate_reconciliation_report(
     request: ReconciliationReportGenerateRequest,
     db: Session = Depends(get_db),
@@ -565,7 +565,7 @@ async def generate_reconciliation_report(
 # ========== 批次状态转换端点 (STATE_MACHINE.md v2.6 第16.6节) ==========
 
 
-@router.put("/batches/{batch_id}/submit", response_model=dict)
+@router.put("/batches/{batch_id}/submit")
 async def submit_batch(
     batch_id: int,
     db: Session = Depends(get_db),
@@ -602,7 +602,7 @@ async def submit_batch(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.put("/batches/{batch_id}/approve", response_model=dict)
+@router.put("/batches/{batch_id}/approve")
 async def approve_batch(
     batch_id: int,
     db: Session = Depends(get_db),
@@ -639,7 +639,7 @@ async def approve_batch(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.put("/batches/{batch_id}/request-adjustment", response_model=dict)
+@router.put("/batches/{batch_id}/request-adjustment")
 async def request_adjustment(
     batch_id: int,
     reason: str = Query(..., min_length=1, max_length=500, description="调整原因"),
@@ -677,7 +677,7 @@ async def request_adjustment(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.put("/batches/{batch_id}/resubmit", response_model=dict)
+@router.put("/batches/{batch_id}/resubmit")
 async def resubmit_batch(
     batch_id: int,
     db: Session = Depends(get_db),
@@ -714,7 +714,7 @@ async def resubmit_batch(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.put("/batches/{batch_id}/complete", response_model=dict)
+@router.put("/batches/{batch_id}/complete")
 async def complete_batch(
     batch_id: int,
     db: Session = Depends(get_db),
@@ -752,7 +752,7 @@ async def complete_batch(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.put("/batches/{batch_id}/force-complete", response_model=dict)
+@router.put("/batches/{batch_id}/force-complete")
 async def force_complete_batch(
     batch_id: int,
     reason: str = Query(..., min_length=1, max_length=500, description="强制完成原因"),
@@ -797,7 +797,7 @@ async def force_complete_batch(
 # ========== 明细状态转换端点 (STATE_MACHINE.md v2.6 第16.7节) ==========
 
 
-@router.put("/details/{detail_id}/confirm", response_model=dict)
+@router.put("/details/{detail_id}/confirm")
 async def confirm_detail(
     detail_id: int,
     db: Session = Depends(get_db),
@@ -834,7 +834,7 @@ async def confirm_detail(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.put("/details/{detail_id}/adjust", response_model=dict)
+@router.put("/details/{detail_id}/adjust")
 async def adjust_detail(
     detail_id: int,
     request: ReconciliationAdjustmentCreateRequest,
@@ -888,7 +888,7 @@ async def adjust_detail(
 # ========== 批次更新/删除端点 (RECONCILIATION_SOT.md §12) ==========
 
 
-@router.put("/batches/{batch_id}", response_model=dict)
+@router.put("/batches/{batch_id}")
 async def update_batch(
     batch_id: int,
     request: ReconciliationBatchCreateRequest,
@@ -935,7 +935,7 @@ async def update_batch(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.delete("/batches/{batch_id}", response_model=dict)
+@router.delete("/batches/{batch_id}")
 async def delete_batch(
     batch_id: int,
     db: Session = Depends(get_db),
@@ -980,7 +980,7 @@ async def delete_batch(
 # ========== 明细单独查询端点 ==========
 
 
-@router.get("/details/{detail_id}", response_model=dict)
+@router.get("/details/{detail_id}")
 async def get_detail_by_id(
     detail_id: int,
     db: Session = Depends(get_db),
@@ -1012,7 +1012,7 @@ async def get_detail_by_id(
 # ========== 调整记录端点 ==========
 
 
-@router.get("/adjustments", response_model=dict)
+@router.get("/adjustments")
 async def get_adjustments(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -1047,7 +1047,7 @@ async def get_adjustments(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.get("/adjustments/{adjustment_id}", response_model=dict)
+@router.get("/adjustments/{adjustment_id}")
 async def get_adjustment_by_id(
     adjustment_id: int,
     db: Session = Depends(get_db),
@@ -1070,7 +1070,7 @@ async def get_adjustment_by_id(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.post("/adjustments/{adjustment_id}/execute", response_model=dict)
+@router.post("/adjustments/{adjustment_id}/execute")
 async def execute_adjustment(
     adjustment_id: int,
     db: Session = Depends(get_db),
@@ -1115,7 +1115,7 @@ async def execute_adjustment(
 # ========== 报告详情/删除端点 ==========
 
 
-@router.get("/reports/{report_id}", response_model=dict)
+@router.get("/reports/{report_id}")
 async def get_report_by_id(
     report_id: int,
     db: Session = Depends(get_db),
@@ -1138,7 +1138,7 @@ async def get_report_by_id(
         return error_response(code="SYS_001", message=str(e), status_code=500)
 
 
-@router.delete("/reports/{report_id}", response_model=dict)
+@router.delete("/reports/{report_id}")
 async def delete_report(
     report_id: int,
     db: Session = Depends(get_db),

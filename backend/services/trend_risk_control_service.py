@@ -366,7 +366,7 @@ class TrendRiskControlService:
         if not report:
             raise ResourceNotFoundError(
                 message=f"日报 {report_id} 不存在",
-                error_code="BIZ-002"
+                error_code="BIZ_002"
             )
 
         # 验证状态 - 只能从 trend_pending 执行风控检查

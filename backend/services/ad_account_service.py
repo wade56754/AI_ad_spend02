@@ -4,9 +4,12 @@ Version: 1.0
 Author: Claude协作开发
 """
 
+from __future__ import annotations
+
 from datetime import datetime, date
 from decimal import Decimal
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Dict, Any, Tuple, Union
+from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, select, desc
 

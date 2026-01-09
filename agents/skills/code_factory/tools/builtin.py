@@ -662,3 +662,7 @@ def register_builtin_tools(registry, project_dir: Path = None):
     registry.register(FileWriteTool(project_dir=project_dir))
 
 
+
+
+
+

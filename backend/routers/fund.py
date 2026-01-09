@@ -87,7 +87,7 @@ def _handle_service_exception(e: Exception):
 router = APIRouter(prefix="/fund", tags=["资金总览"])
 
 
-@router.get("/overview", response_model=dict)
+@router.get("/overview")
 async def get_fund_overview(
     date_from: Optional[date] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     date_to: Optional[date] = Query(None, description="结束日期 (YYYY-MM-DD)"),
@@ -121,7 +121,7 @@ async def get_fund_overview(
         return _handle_service_exception(e)
 
 
-@router.get("/distribution/projects", response_model=dict)
+@router.get("/distribution/projects")
 async def get_fund_distribution_by_projects(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -157,7 +157,7 @@ async def get_fund_distribution_by_projects(
         return _handle_service_exception(e)
 
 
-@router.get("/distribution/channels", response_model=dict)
+@router.get("/distribution/channels")
 async def get_fund_distribution_by_channels(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -193,7 +193,7 @@ async def get_fund_distribution_by_channels(
         return _handle_service_exception(e)
 
 
-@router.get("/receivables", response_model=dict)
+@router.get("/receivables")
 async def get_receivables(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -227,7 +227,7 @@ async def get_receivables(
         return _handle_service_exception(e)
 
 
-@router.get("/payments", response_model=dict)
+@router.get("/payments")
 async def get_payments(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -261,7 +261,7 @@ async def get_payments(
         return _handle_service_exception(e)
 
 
-@router.get("/alerts", response_model=dict)
+@router.get("/alerts")
 async def get_fund_alerts(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

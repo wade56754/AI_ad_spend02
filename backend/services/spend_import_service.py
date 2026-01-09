@@ -145,7 +145,7 @@ class SpendImportService:
         except Exception as e:
             raise BusinessLogicError(
                 f"Excel 文件解析失败: {str(e)}",
-                error_code="BIZ-501"
+                error_code="BIZ_501"
             )
 
         result.total_rows = len(df)
@@ -153,7 +153,7 @@ class SpendImportService:
         if result.total_rows == 0:
             raise BusinessLogicError(
                 "Excel 文件为空",
-                error_code="BIZ-502"
+                error_code="BIZ_502"
             )
 
         # 3. 列名映射
@@ -197,7 +197,7 @@ class SpendImportService:
                     else:
                         result.errors.append(ImportRowError(
                             row_number=row_num,
-                            error_code="BIZ-503",
+                            error_code="BIZ_503",
                             error_message=f"重复记录: {idempotency_key}"
                         ))
                         result.invalid_rows += 1
@@ -210,7 +210,7 @@ class SpendImportService:
                         row_number=row_num,
                         column="account_id",
                         value=str(event_data["ad_account_id"]),
-                        error_code="BIZ-504",
+                        error_code="BIZ_504",
                         error_message=f"广告账户不存在: {event_data['ad_account_id']}"
                     ))
                     result.invalid_rows += 1
@@ -258,7 +258,7 @@ class SpendImportService:
             except ValueError as e:
                 result.errors.append(ImportRowError(
                     row_number=row_num,
-                    error_code="BIZ-505",
+                    error_code="BIZ_505",
                     error_message=str(e)
                 ))
                 result.invalid_rows += 1
@@ -277,7 +277,7 @@ class SpendImportService:
                 self.db.rollback()
                 raise BusinessLogicError(
                     f"数据库插入失败: {str(e)}",
-                    error_code="BIZ-506"
+                    error_code="BIZ_506"
                 )
         elif request.dry_run:
             result.imported_rows = 0  # dry_run 不实际导入
@@ -410,7 +410,7 @@ class SpendImportService:
                     errors.append(ValidationError(
                         event_id=event.id,
                         field="ad_account_id",
-                        error_code="BIZ-504",
+                        error_code="BIZ_504",
                         error_message=f"广告账户不存在: {event.ad_account_id}"
                     ))
 
@@ -570,7 +570,7 @@ class SpendImportService:
                 response.failed_events += 1
                 response.failed_details.append({
                     "event_id": str(event.id),
-                    "error_code": "BIZ-507",
+                    "error_code": "BIZ_507",
                     "error_message": str(e)
                 })
 
@@ -1183,7 +1183,7 @@ class SpendImportService:
                 response.failed_events += 1
                 response.failed_details.append({
                     "event_id": str(event_id),
-                    "error_code": "BIZ-508",
+                    "error_code": "BIZ_508",
                     "error_message": str(e)
                 })
 

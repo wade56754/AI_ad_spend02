@@ -420,7 +420,7 @@ class ReconciliationIssueService:
         # 检查状态流转
         if not issue.can_transition_to(IssueStatus.ASSIGNED):
             raise BusinessLogicError(
-                f"无法从 {issue.status} 状态分配差异单", error_code="REC_005"
+                f"无法从 {issue.status} 状态分配差异单", error_code="RECON_005"
             )
 
         issue.status = IssueStatus.ASSIGNED.value
@@ -446,7 +446,7 @@ class ReconciliationIssueService:
             raise ResourceNotFoundError("差异单不存在")
 
         if not issue.can_transition_to(IssueStatus.INVESTIGATING):
-            raise BusinessLogicError(f"无法从 {issue.status} 状态开始调查", error_code="REC_005")
+            raise BusinessLogicError(f"无法从 {issue.status} 状态开始调查", error_code="RECON_005")
 
         issue.status = IssueStatus.INVESTIGATING.value
         self.db.commit()
@@ -467,7 +467,7 @@ class ReconciliationIssueService:
 
         if not issue.can_transition_to(IssueStatus.RESOLVED):
             raise BusinessLogicError(
-                f"无法从 {issue.status} 状态处理差异单", error_code="REC_005"
+                f"无法从 {issue.status} 状态处理差异单", error_code="RECON_005"
             )
 
         issue.status = IssueStatus.RESOLVED.value
@@ -494,7 +494,7 @@ class ReconciliationIssueService:
 
         if not issue.can_transition_to(IssueStatus.CLOSED):
             raise BusinessLogicError(
-                f"无法从 {issue.status} 状态关闭差异单", error_code="REC_005"
+                f"无法从 {issue.status} 状态关闭差异单", error_code="RECON_005"
             )
 
         issue.status = IssueStatus.CLOSED.value
@@ -518,14 +518,14 @@ class ReconciliationIssueService:
             if issue.can_transition_to(IssueStatus.INVESTIGATING):
                 issue.status = IssueStatus.INVESTIGATING.value
             else:
-                raise BusinessLogicError("无法重新打开该差异单", error_code="REC_005")
+                raise BusinessLogicError("无法重新打开该差异单", error_code="RECON_005")
         elif current_status == IssueStatus.INVESTIGATING:
             if issue.can_transition_to(IssueStatus.ASSIGNED):
                 issue.status = IssueStatus.ASSIGNED.value
             else:
-                raise BusinessLogicError("无法回退该差异单状态", error_code="REC_005")
+                raise BusinessLogicError("无法回退该差异单状态", error_code="RECON_005")
         else:
-            raise BusinessLogicError(f"无法从 {issue.status} 状态重新打开", error_code="REC_005")
+            raise BusinessLogicError(f"无法从 {issue.status} 状态重新打开", error_code="RECON_005")
 
         self.db.commit()
         self.db.refresh(issue)

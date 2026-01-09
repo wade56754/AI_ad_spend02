@@ -408,16 +408,16 @@ export default function DailyReviewsPage() {
             <div className="space-y-2">
               <Label>状态</Label>
               <Select
-                value={filters.status}
+                value={filters.status || "__all__"}
                 onValueChange={(value) =>
-                  setFilters({ ...filters, status: value })
+                  setFilters({ ...filters, status: value === "__all__" ? "" : value })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="选择状态" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">全部状态</SelectItem>
+                  <SelectItem value="__all__">全部状态</SelectItem>
                   <SelectItem value="pending">待审核</SelectItem>
                   <SelectItem value="approved">已审核</SelectItem>
                   <SelectItem value="rejected">已拒绝</SelectItem>

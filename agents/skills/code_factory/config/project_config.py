@@ -543,3 +543,7 @@ class MyModel(BaseModel):
         print(f"  ❌ {v['pattern']}: {v['reason']}")
 
 
+
+
+
+

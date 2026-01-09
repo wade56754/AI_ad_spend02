@@ -72,7 +72,7 @@ ALLOWED_TRANSITIONS: Dict[str, List[str]] = {
 
 
 @log_requests("ad_accounts")
-@router.get("", response_model=dict)
+@router.get("")
 def list_ad_accounts(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -161,7 +161,7 @@ def list_ad_accounts(
 
 
 @log_requests("ad_accounts")
-@router.get("/{account_id}", response_model=dict)
+@router.get("/{account_id}")
 def get_ad_account(
     account_id: int,  # BigInteger in model
     current_user: User = Depends(get_current_user),
@@ -226,7 +226,7 @@ def get_ad_account(
 
 
 @log_requests("ad_accounts")
-@router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("",  status_code=status.HTTP_201_CREATED)
 def create_ad_account(
     payload: AdAccountCreate,
     current_user: User = Depends(get_current_user),
@@ -251,7 +251,7 @@ def create_ad_account(
 
 
 @log_requests("ad_accounts")
-@router.put("/{account_id}/status", response_model=dict)
+@router.put("/{account_id}/status")
 def update_ad_account_status(
     account_id: int,  # BigInteger in model
     payload: AdAccountStatusUpdate,
@@ -317,7 +317,7 @@ def update_ad_account_status(
 
 
 @log_requests("ad_accounts")
-@router.delete("/{account_id}", response_model=dict)
+@router.delete("/{account_id}")
 def delete_ad_account(
     account_id: int,  # BigInteger in model
     current_user: User = Depends(get_current_user),
@@ -345,7 +345,7 @@ def delete_ad_account(
 
 
 @log_requests("ad_accounts")
-@router.post("/{account_id}/assign", response_model=dict)
+@router.post("/{account_id}/assign")
 async def assign_ad_account(
     account_id: int,
     payload: AccountAssignRequest,
@@ -441,7 +441,7 @@ async def assign_ad_account(
 
 
 @log_requests("ad_accounts")
-@router.post("/{account_id}/transfer", response_model=dict)
+@router.post("/{account_id}/transfer")
 async def transfer_ad_account(
     account_id: int,
     payload: AccountTransferRequest,
@@ -542,7 +542,7 @@ async def transfer_ad_account(
 
 
 @log_requests("ad_accounts")
-@router.post("/{account_id}/mark-dead", response_model=dict)
+@router.post("/{account_id}/mark-dead")
 async def mark_account_dead(
     account_id: int,
     payload: MarkDeadRequest,
@@ -632,7 +632,7 @@ async def mark_account_dead(
 @log_requests("ad_accounts")
 @router.post(
     "/{account_id}/balance-transfer",
-    response_model=dict,
+    
     status_code=status.HTTP_201_CREATED,
 )
 def create_balance_transfer(

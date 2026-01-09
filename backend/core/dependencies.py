@@ -44,53 +44,53 @@ def _auth_user_to_db_user(
         自动同步模式: 如果 Supabase 用户在本地不存在，自动创建
         这确保了 Supabase 认证用户能无缝使用系统
     """
-    try:
-        # 尝试将字符串ID转为UUID
-        user_uuid = UUID(str(auth_user.id))
-    except (TypeError, ValueError) as e:
-        logger.error(f"Invalid user ID format: {auth_user.id}, error: {e}")
-        raise HTTPException(
-            status_code=AuthErrorCodes.TOKEN_INVALID.status_code,
-            detail={
-                "code": AuthErrorCodes.TOKEN_INVALID.code,
-                "message": "用户ID格式无效"
-            }
-        )
+    # 从数据库查询用户 - 优先使用 email 查询（兼容 SQLite 和 PostgreSQL）
+    db_user = None
+    if auth_user.email:
+        db_user = db.query(User).filter(User.email == auth_user.email).first()
 
-    # 从数据库查询用户
-    db_user = db.query(User).filter(User.id == user_uuid).first()
+    # 如果 email 查询失败，尝试用 ID 查询（PostgreSQL）
+    if not db_user:
+        try:
+            user_uuid = UUID(str(auth_user.id))
+            db_user = db.query(User).filter(User.id == user_uuid).first()
+        except (TypeError, ValueError) as e:
+            logger.warning(f"UUID conversion failed for {auth_user.id}: {e}")
+            # 继续执行，db_user 为 None 会触发自动创建逻辑
 
     if db_user:
         # 数据库中存在，返回完整User对象
-        logger.debug(f"User {user_uuid} found in database, role: {db_user.role}")
+        logger.debug(f"User {auth_user.id} found in database, role: {db_user.role}")
         return db_user
 
     # 用户在本地数据库不存在，自动创建
     # 这发生在用户通过 Supabase 注册但本地 users 表尚未同步的情况
     logger.info(
-        f"User {user_uuid} not found in database, auto-creating. "
+        f"User {auth_user.id} not found in database, auto-creating. "
         f"Email: {auth_user.email}, Role: {auth_user.role}"
     )
 
     try:
+        # 尝试转换 UUID
+        user_uuid = UUID(str(auth_user.id))
         # 从 Supabase 用户信息创建本地用户记录
         new_user = User(
             id=user_uuid,
-            email=auth_user.email or f"{user_uuid}@placeholder.local",
-            username=auth_user.email.split("@")[0] if auth_user.email else str(user_uuid)[:8],
-            role=auth_user.role or "media_buyer",  # 默认角色
+            email=auth_user.email or f"{auth_user.id}@placeholder.local",
+            username=auth_user.email.split("@")[0] if auth_user.email else str(auth_user.id)[:8],
+            role=auth_user.role or "pitcher",  # 默认角色 (使用合法角色)
             is_active=True
         )
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        logger.info(f"Auto-created user {user_uuid} with role {new_user.role}")
+        logger.info(f"Auto-created user {auth_user.id} with role {new_user.role}")
         return new_user
 
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to auto-create user {user_uuid}: {e}")
+        logger.error(f"Failed to auto-create user {auth_user.id}: {e}")
         raise HTTPException(
             status_code=AuthErrorCodes.USER_NOT_FOUND.status_code,
             detail={
@@ -308,9 +308,9 @@ def require_finance():
     return require_role(["admin", "finance"])
 
 
-def require_data_operator():
-    """需要数据员权限"""
-    return require_role(["admin", "data_operator"])
+def require_project_owner():
+    """需要项目负责人权限"""
+    return require_role(["admin", "ceo", "project_owner"])
 
 
 def require_account_manager():
@@ -318,28 +318,30 @@ def require_account_manager():
     return require_role(["admin", "account_manager"])
 
 
-def require_media_buyer():
+def require_pitcher():
     """需要投手权限"""
-    return require_role(["admin", "media_buyer"])
+    return require_role(["admin", "pitcher"])
 
 
-# 角色权限映射
+# 角色权限映射 (SoT 6 角色)
 ROLE_PERMISSIONS = {
     "admin": ["*"],  # 管理员拥有所有权限
+    "ceo": ["*"],  # CEO 拥有所有权限
     "finance": [
         "finance:read", "finance:create", "finance:update",
         "topup:approve", "topup:confirm", "reconciliation:manage"
     ],
-    "data_operator": [
+    "project_owner": [
         "project:read", "project:update",
         "account:read", "account:assign",
-        "report:submit", "report:review"
+        "report:submit", "report:review",
+        "topup:request"
     ],
     "account_manager": [
         "account:create", "account:read", "account:update",
         "channel:read", "channel:apply"
     ],
-    "media_buyer": [
+    "pitcher": [
         "account:read", "account:monitor",
         "report:submit", "topup:request"
     ]

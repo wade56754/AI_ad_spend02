@@ -1,136 +1,60 @@
-A  .claude/CAPABILITIES.md
-A  .claude/FAQ.md
-A  .claude/INTEGRATION_MAP.md
-M  .claude/PROJECT_RULES.md
-R  .claude/README_SUPERVISOR.md -> .claude/README_HOOKS.md
-A  .claude/VERSIONING.md
-A  .claude/commands/ai-help.md
-A  .claude/commands/check-code.md
-A  .claude/commands/clarify.md
-A  .claude/commands/gen-feature.md
-A  .claude/commands/kb-build.md
-A  .claude/commands/kb-search.md
-A  .claude/commands/preprompt.md
-A  .claude/commands/project-config.md
-M  .claude/commands/review.md
-A  .claude/commands/sot-context.md
-M  .claude/data/config.yaml
-M  .claude/data/daily_reports.json
-MM .claude/data/session_data.json
-M  .claude/data/session_history.json
-A  .claude/data/session_timestamps.jsonl
-A  .claude/hooks/lib/progress_tracker.py
-A  .claude/hooks/lib/risk_detector.py
-M  .claude/mcp.json
-A  .claude/rules/development-guidelines.md
-A  .claude/rules/project-requirements.md
-M  .claude/settings.local.json
-M  .claude/skills/INDEX.md
-M  .claude/skills/ai-ad-api-automation-test/SKILL.md
-M  .claude/skills/ai-ad-be-gen/SKILL.md
-M  .claude/skills/ai-ad-code-factory/SKILL.md
-M  .claude/skills/ai-ad-code-factory/knowledge/anti-hallucination-rules.md
-M  .claude/skills/ai-ad-code-verifier/SKILL.md
-M  .claude/skills/ai-ad-doc-fixer/skill.md
-M  .claude/skills/ai-ad-fe-gen/SKILL.md
-M  .claude/skills/ai-ad-prompt-structurer/SKILL.md
-M  .claude/skills/ai-ad-spec-governor/SKILL.md
-D  .claude/skills/files.zip
-M  .cursor/rules/.project-rules.md
-M  .github/copilot-instructions.md
-M  AGENTS.md
-M  CLAUDE.md
-M  agents/skills/code_factory/README.md
-M  agents/skills/code_factory/__init__.py
-A  agents/skills/code_factory/cli.py
-A  agents/skills/code_factory/config/__init__.py
-A  agents/skills/code_factory/config/project_config.py
-M  agents/skills/code_factory/core/__init__.py
-M  agents/skills/code_factory/core/constants.py
-M  agents/skills/code_factory/core/exceptions.py
-M  agents/skills/code_factory/core/factory.py
-A  agents/skills/code_factory/docs/CLAUDE_CLI_USAGE.md
-A  agents/skills/code_factory/docs/QUICK_START.md
-A  agents/skills/code_factory/docs/USER_GUIDE.md
-M  agents/skills/code_factory/factory.py
-M  agents/skills/code_factory/phases/__init__.py
-A  agents/skills/code_factory/phases/clarify.py
-A  agents/skills/code_factory/prompts/__init__.py
-A  agents/skills/code_factory/prompts/injector.py
-A  agents/skills/code_factory/prompts/loader.py
-A  agents/skills/code_factory/prompts/optimizer.py
-A  agents/skills/code_factory/prompts/preprompts.py
-A  agents/skills/code_factory/prompts/structurer.py
-A  agents/skills/code_factory/prompts/templates/behavior.md
-A  agents/skills/code_factory/prompts/templates/clarify.md
-A  agents/skills/code_factory/prompts/templates/generate.md
-A  agents/skills/code_factory/prompts/templates/improve.md
-A  agents/skills/code_factory/prompts/templates/project_templates/fastapi.md
-A  agents/skills/code_factory/prompts/templates/project_templates/fullstack.md
-A  agents/skills/code_factory/prompts/templates/project_templates/nextjs.md
-A  agents/skills/code_factory/prompts/templates/review.md
-A  agents/skills/code_factory/prompts/templates/security.md
-A  agents/skills/code_factory/prompts/templates/system.md
-A  agents/skills/code_factory/prompts/templates/task/bugfix.md
-A  agents/skills/code_factory/prompts/templates/task/default.md
-A  agents/skills/code_factory/prompts/templates/task/feature.md
-A  agents/skills/code_factory/prompts/templates/task/refactor.md
-A  agents/skills/code_factory/prompts/templates/task/research.md
-A  agents/skills/code_factory/prompts/validator.py
-A  agents/skills/code_factory/rag/__init__.py
-A  agents/skills/code_factory/rag/indexer.py
-A  agents/skills/code_factory/rag/knowledge_base.py
-A  agents/skills/code_factory/rag/retriever.py
-M  agents/skills/code_factory/searcher.py
-M  agents/skills/code_factory/security.py
-M  agents/skills/code_factory/tests/integration/test_factory_e2e.py
-A  agents/skills/code_factory/tools/__init__.py
-A  agents/skills/code_factory/tools/base.py
-A  agents/skills/code_factory/tools/builtin.py
-M  agents/skills/code_factory/validation/__init__.py
-A  agents/skills/code_factory/validation/ast_analyzer.py
-A  build_kb_temp.py
-M  docs/PRD.md
-A  "docs/adr/001-\345\205\255\350\247\222\350\211\262\346\250\241\345\236\213.md"
-M  "docs/adr/002-phase1\345\217\252\346\217\220\347\244\272.md"
-M  "docs/adr/003-\345\217\257\347\224\250\350\265\204\351\207\221\346\234\257\350\257\255\347\273\237\344\270\200.md"
-M  docs/guides/AI_CODING_SOP_v2.1.md
-M  docs/guides/FRONTEND_AI_PROGRAMMING_BEST_PRACTICES.md
-M  docs/guides/FRONTEND_AI_PROGRAMMING_BEST_PRACTICES_v1.2.md
-M  docs/guides/TASK_CARDS_v2.md
-A  docs/sot/CHANGELOG.md
-M  docs/sot/DATA_SCHEMA.md
-R  docs/sot/ERROR_CODES.md -> docs/sot/ERROR_CODES_SOT.md
-A  docs/sot/GLOSSARY.md
-R  docs/MASTER.md -> docs/sot/MASTER.md
-A  docs/sot/VERSION_MANIFEST.md
-D  frontend/.eslintrc.json
-M  frontend/CLAUDE.md
-A  frontend/eslint.config.mjs
-M  frontend/package-lock.json
-M  frontend/package.json
-M  frontend/playwright/pages.spec.ts
-M  frontend/src/app/forgot-password/page.tsx
-M  frontend/src/app/reset-password/page.tsx
-M  frontend/src/config/nav-config.ts
-M  frontend/src/features/ad-accounts/components/AdAccountForm.tsx
-M  frontend/src/features/ad-accounts/components/BatchOperations.tsx
-M  frontend/src/features/audit-logs/components/AuditLogsPage.tsx
-M  frontend/src/features/auth/components/ForgotPasswordPage.tsx
-M  frontend/src/features/auth/types/auth.types.ts
-M  frontend/src/features/profile/components/ProfilePage.tsx
-M  frontend/src/features/projects/components/ProjectMembersDialog.tsx
-M  frontend/src/features/projects/types/project.types.ts
-M  frontend/src/features/topups/components/TopupDetailDialog.tsx
-M  frontend/src/features/topups/types/topup.types.ts
-M  frontend/src/features/users/components/CreateUserDialog.tsx
-M  frontend/src/features/users/components/UsersPage.tsx
-M  frontend/src/features/users/types/user.types.ts
-A  git_status.txt
-M  memory-bank/game-design-document.md
-M  memory-bank/implementation-plan.md
-M  memory-bank/progress.md
-M  memory-bank/quick-reference.md
-A  "\346\226\271\346\241\2103\357\274\232\346\250\241\345\235\227\345\214\226Agent\350\256\276\350\256\241.md"
-?? git_log_temp.txt
-?? git_status_temp.txt
+On branch master
+Your branch is behind 'origin/master' by 1 commit, and can be fast-forwarded.
+  (use "git pull" to update your local branch)
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .claude/mcp.json
+	modified:   .claude/settings.local.json
+	modified:   .mcp.json
+	deleted:    "D\357\200\272git1108git_status_output.txt"
+	modified:   backend/core/dependencies.py
+	modified:   backend/services/ad_account_service.py
+	modified:   backend/services/local_auth_service.py
+	deleted:    build_kb_temp.py
+	deleted:    check_after_add.txt
+	deleted:    commit_output.txt
+	modified:   commit_result.txt
+	deleted:    commit_result2.txt
+	modified:   frontend/_app_legacy/(dashboard)/daily-reviews/page.tsx
+	modified:   frontend/src/hooks/index.ts
+	modified:   frontend/src/lib/constants/index.ts
+	modified:   frontend/src/types/navigation.ts
+	modified:   git_log_temp.txt
+	deleted:    git_status.txt
+	modified:   git_status_temp.txt
+	modified:   memory-bank/progress.md
+	modified:   push_result.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.claude/ralph-loop.local.md
+	.playwright-mcp/test-reports/
+	"D\357\200\272git1108sot_result.txt"
+	"D\357\200\272git1108status_now.txt"
+	commit_merge.txt
+	diff_stat.txt
+	docs/guides/PROMPT_LIBRARY_FRONTEND.md
+	frontend/src/components/common/
+	frontend/src/components/ui/status-badge.tsx
+	frontend/src/hooks/useListQuery.ts
+	frontend/src/hooks/usePermission.ts
+	frontend/src/lib/access-control.ts
+	frontend/src/lib/auth.ts
+	frontend/src/lib/constants/permission-matrix.ts
+	frontend/src/lib/error-codes.ts
+	frontend/src/lib/navigation.ts
+	frontend/src/lib/query-config.ts
+	frontend/src/lib/supabase.ts
+	git_log_check.txt
+	git_status_check.txt
+	pull_result.txt
+	push_final.txt
+	push_result2.txt
+	push_status.txt
+	stash_pop.txt
+	stash_result.txt
+	status_now.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")

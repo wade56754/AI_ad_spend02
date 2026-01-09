@@ -112,7 +112,7 @@ def _handle_service_exception(e: Exception, context: str = "操作"):
 router = APIRouter(prefix="/settlements", tags=["Settlements"])
 
 
-@router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("",  status_code=status.HTTP_201_CREATED)
 async def create_settlement(
     request: SettlementCreateRequest,
     db: Session = Depends(get_db),
@@ -140,7 +140,7 @@ async def create_settlement(
         return _handle_service_exception(e, "创建结算")
 
 
-@router.get("", response_model=dict)
+@router.get("")
 async def list_settlements(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -184,7 +184,7 @@ async def list_settlements(
         return _handle_service_exception(e, "获取结算列表")
 
 
-@router.get("/statistics", response_model=dict)
+@router.get("/statistics")
 async def get_settlement_statistics(
     start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
@@ -209,7 +209,7 @@ async def get_settlement_statistics(
         return _handle_service_exception(e, "获取结算统计")
 
 
-@router.get("/overdue", response_model=dict)
+@router.get("/overdue")
 async def get_overdue_settlements(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role(["admin", "finance"]))
@@ -230,7 +230,7 @@ async def get_overdue_settlements(
         return _handle_service_exception(e, "获取逾期结算")
 
 
-@router.get("/{settlement_id}", response_model=dict)
+@router.get("/{settlement_id}")
 async def get_settlement(
     settlement_id: int,
     db: Session = Depends(get_db),
@@ -253,7 +253,7 @@ async def get_settlement(
         return _handle_service_exception(e, "获取结算详情")
 
 
-@router.put("/{settlement_id}", response_model=dict)
+@router.put("/{settlement_id}")
 async def update_settlement(
     settlement_id: int,
     request: SettlementUpdateRequest,
@@ -279,7 +279,7 @@ async def update_settlement(
         return _handle_service_exception(e, "更新结算")
 
 
-@router.post("/{settlement_id}/submit", response_model=dict)
+@router.post("/{settlement_id}/submit")
 async def submit_settlement(
     settlement_id: int,
     db: Session = Depends(get_db),
@@ -303,7 +303,7 @@ async def submit_settlement(
         return _handle_service_exception(e, "提交结算审批")
 
 
-@router.post("/{settlement_id}/approve", response_model=dict)
+@router.post("/{settlement_id}/approve")
 async def approve_settlement(
     settlement_id: int,
     request: SettlementApproveRequest,
@@ -330,7 +330,7 @@ async def approve_settlement(
         return _handle_service_exception(e, "审批结算")
 
 
-@router.post("/{settlement_id}/pay", response_model=dict)
+@router.post("/{settlement_id}/pay")
 async def record_payment(
     settlement_id: int,
     request: SettlementPaymentRequest,
@@ -357,7 +357,7 @@ async def record_payment(
         return _handle_service_exception(e, "记录支付")
 
 
-@router.post("/{settlement_id}/cancel", response_model=dict)
+@router.post("/{settlement_id}/cancel")
 async def cancel_settlement(
     settlement_id: int,
     reason: Optional[str] = Query(None, description="取消原因"),

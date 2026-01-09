@@ -382,3 +382,7 @@ def execute_tool(name: str, **kwargs) -> ToolResult:
     return _global_registry.execute(name, **kwargs)
 
 
+
+
+
+

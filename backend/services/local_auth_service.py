@@ -315,10 +315,16 @@ class LocalAuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌"
             )
 
-        # 查找用户
+        # 查找用户 - 使用 email 查询（同时兼容 SQLite 和 PostgreSQL）
         try:
-            user = self.db.query(User).filter(User.id == UUID(user_id)).first()
-        except ValueError:
+            email = payload.get("email")
+            if email:
+                user = self.db.query(User).filter(User.email == email).first()
+            else:
+                # 回退到 ID 查询（PostgreSQL）
+                user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        except (ValueError, Exception) as e:
+            logger.warning(f"User lookup error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的用户ID"
             )
@@ -373,8 +379,10 @@ class LocalAuthService:
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的令牌"
             )
 
-        # 查找用户
-        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        # 查找用户 - 支持字符串和 UUID 格式的 ID
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            user = self.db.query(User).filter(User.id == UUID(user_id)).first()
 
         if not user:
             raise HTTPException(
@@ -429,7 +437,10 @@ class LocalAuthService:
         Returns:
             是否成功
         """
-        user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+        # 查找用户 - 支持字符串和 UUID 格式的 ID
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            user = self.db.query(User).filter(User.id == UUID(user_id)).first()
 
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
@@ -542,8 +553,10 @@ class LocalAuthService:
                     status_code=status.HTTP_400_BAD_REQUEST, detail="重置令牌中缺少用户信息"
                 )
 
-            # 4. 查找用户
-            user = self.db.query(User).filter(User.id == UUID(user_id)).first()
+            # 4. 查找用户 - 支持字符串和 UUID 格式的 ID
+            user = self.db.query(User).filter(User.id == user_id).first()
+            if not user:
+                user = self.db.query(User).filter(User.id == UUID(user_id)).first()
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在"

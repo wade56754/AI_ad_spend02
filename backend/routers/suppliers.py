@@ -55,7 +55,7 @@ class FeeRateUpdateRequest(BaseModel):
 router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 
 
-@router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post("",  status_code=status.HTTP_201_CREATED)
 async def create_supplier(
     request: SupplierCreateRequest,
     db: Session = Depends(get_db),
@@ -82,7 +82,7 @@ async def create_supplier(
         return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
-@router.get("", response_model=dict)
+@router.get("")
 async def list_suppliers(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
@@ -118,7 +118,7 @@ async def list_suppliers(
         return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
-@router.get("/statistics", response_model=dict)
+@router.get("/statistics")
 async def get_supplier_statistics(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
@@ -139,7 +139,7 @@ async def get_supplier_statistics(
         return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
-@router.get("/{supplier_id}", response_model=dict)
+@router.get("/{supplier_id}")
 async def get_supplier(
     supplier_id: int,
     db: Session = Depends(get_db),
@@ -164,7 +164,7 @@ async def get_supplier(
         return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
-@router.put("/{supplier_id}", response_model=dict)
+@router.put("/{supplier_id}")
 async def update_supplier(
     supplier_id: int,
     request: SupplierUpdateRequest,
@@ -193,7 +193,7 @@ async def update_supplier(
         return error_response(code="BIZ_003", message=str(e), status_code=409)
 
 
-@router.delete("/{supplier_id}", response_model=dict)
+@router.delete("/{supplier_id}")
 async def delete_supplier(
     supplier_id: int,
     db: Session = Depends(get_db),
@@ -221,7 +221,7 @@ async def delete_supplier(
         return error_response(code="BIZ_001", message=str(e), status_code=400)
 
 
-@router.get("/{supplier_id}/accounts", response_model=dict)
+@router.get("/{supplier_id}/accounts")
 async def get_supplier_accounts(
     supplier_id: int,
     page: int = Query(1, ge=1, description="页码"),
@@ -255,7 +255,7 @@ async def get_supplier_accounts(
         return error_response(code="AUTH_003", message=str(e), status_code=403)
 
 
-@router.get("/{supplier_id}/ledger-summary", response_model=dict)
+@router.get("/{supplier_id}/ledger-summary")
 async def get_supplier_ledger_summary(
     supplier_id: int,
     start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
@@ -287,7 +287,7 @@ async def get_supplier_ledger_summary(
 
 # ========== Fee Rate APIs (Phase 4) ==========
 
-@router.get("/{supplier_id}/fee-rate", response_model=dict)
+@router.get("/{supplier_id}/fee-rate")
 async def get_supplier_fee_rate(
     supplier_id: int,
     db: Session = Depends(get_db),
@@ -320,7 +320,7 @@ async def get_supplier_fee_rate(
         return error_response(code="FEE_010", message=str(e), status_code=400)
 
 
-@router.put("/{supplier_id}/fee-rate", response_model=dict)
+@router.put("/{supplier_id}/fee-rate")
 async def update_supplier_fee_rate(
     supplier_id: int,
     request: FeeRateUpdateRequest,
