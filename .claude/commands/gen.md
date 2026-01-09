@@ -74,11 +74,17 @@ argument-hint: "<be|fe|test> <task-description>"
 
 **前端 (fe)**:
 ```
-生成顺序: Types → API → Component
+生成顺序: Types → API → Component → 设计审查
 文件位置:
   - frontend/src/features/{module}/types/
   - frontend/src/features/{module}/services/
   - frontend/src/features/{module}/components/
+
+设计审查 (调用 frontend-design skill):
+  - 设计系统一致性 (颜色/间距/字体)
+  - 组件复用性验证 (使用 DataTable, StatusBadge 等)
+  - 响应式布局检查 (断点策略)
+  - 可访问性检查 (a11y)
 ```
 
 **测试 (test)**:
@@ -103,6 +109,42 @@ npm run type-check --prefix frontend
 
 **验证失败 → 自动修复（最多 3 次）**
 
+### Step 5.5: 前端设计审查 (仅 fe 类型)
+
+**当 type = fe 时，调用 frontend-design skill 进行设计审查**:
+
+```
+设计审查清单:
+
+□ 设计系统一致性
+  - 颜色使用正确的 CSS 变量 (--primary, --destructive 等)
+  - 间距使用 Tailwind 标准值 (space-4, gap-6 等)
+  - 字体层级正确 (text-2xl/bold, text-lg/medium 等)
+
+□ 组件复用性
+  - 表格使用 DataTable 组件
+  - 状态显示使用 StatusBadge 组件
+  - 表单使用 Form + FormField 模式
+  - 弹窗使用 Dialog/AlertDialog
+
+□ 响应式设计
+  - 使用 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 模式
+  - 移动端适配考虑
+
+□ 可访问性 (a11y)
+  - 按钮有 aria-label
+  - 表单元素有关联 label
+  - 颜色对比度达标
+
+□ 禁止模式检查
+  ✗ 内联样式 style={{}}
+  ✗ 硬编码颜色 bg-[#xxx]
+  ✗ 手写 <table> 标签
+  ✗ 魔法数字 w-[347px]
+```
+
+**审查不通过 → 自动修复 → 重新审查**
+
 ### Step 6: 更新进度文档 (MANDATORY)
 
 **验证通过后必须执行**:
@@ -125,6 +167,7 @@ npm run type-check --prefix frontend
 
 ## 输出格式
 
+**后端生成输出**:
 ```
 ✅ 代码生成完成
 
@@ -144,6 +187,30 @@ npm run type-check --prefix frontend
 
 ⚠️ 注意事项:
   - 需要运行 pytest 验证
+```
+
+**前端生成输出 (包含设计审查)**:
+```
+✅ 代码生成完成
+
+📁 生成文件:
+  - frontend/src/features/daily-reports/types/index.ts (新增)
+  - frontend/src/features/daily-reports/components/DailyReportList.tsx (新增)
+
+📋 SoT 引用:
+  - STATE_MACHINE.md v2.8: raw_submitted, trend_ok, final_confirmed
+  - API_SOT.md v9.4: GET /api/v1/daily-reports
+
+🎨 设计审查结果:
+  ✅ 设计系统一致性: 通过
+  ✅ 组件复用性: 使用 DataTable, StatusBadge
+  ✅ 响应式设计: md:grid-cols-2 lg:grid-cols-4
+  ✅ 可访问性: aria-label 已添加
+  ⚠️ 修复项: 1 个硬编码颜色已替换为 CSS 变量
+
+📊 进度更新:
+  - 任务卡: TASK-XXX-001 → ✅ done
+  - 模块进度: XX% (N/M)
 ```
 
 ## 约束

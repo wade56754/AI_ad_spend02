@@ -1,5 +1,5 @@
 """
-内置工具集 v5.0
+内置工具集 v5.1
 
 提供常用的 Agent 工具:
 - RunTestsTool: 运行测试
@@ -9,9 +9,13 @@
 - RunMigrationTool: 数据库迁移
 - FileReadTool: 读取文件
 - FileWriteTool: 写入文件
+- FrontendDesignTool: 前端设计审查 (v5.1 新增)
 
-基准文档: MASTER.md v4.6
-版本: v5.0
+基准文档: MASTER.md v4.6, frontend-design SKILL.md v1.0
+版本: v5.1
+
+变更记录:
+- v5.1: 新增 FrontendDesignTool，集成 frontend-design skill
 """
 
 from pathlib import Path
@@ -577,15 +581,398 @@ class FileReadTool(Tool):
             return ToolResult.fail(str(e))
 
 
+class FrontendDesignTool(Tool):
+    """
+    前端设计审查工具 (集成 frontend-design skill)
+
+    职责:
+    - 设计系统一致性检查 (颜色、间距、字体)
+    - 组件复用性审查 (使用注册组件)
+    - 响应式设计验证 (断点策略)
+    - 可访问性检查 (a11y, WCAG 2.1 AA)
+
+    来源: frontend-design SKILL.md v1.0
+    基准: UI_DESIGN_SYSTEM.md, COMPONENT_REGISTRY.md
+    """
+
+    name = "frontend_design_review"
+    description = "前端设计审查 - 检查设计系统一致性、组件复用性、响应式和可访问性"
+
+    # 禁止模式
+    FORBIDDEN_PATTERNS = [
+        (r'style=\{\{', "内联样式 style={{}}，应使用 Tailwind 类"),
+        (r'bg-\[#[0-9a-fA-F]+\]', "硬编码颜色 bg-[#xxx]，应使用 CSS 变量"),
+        (r'text-\[#[0-9a-fA-F]+\]', "硬编码颜色 text-[#xxx]，应使用 CSS 变量"),
+        (r'<table>', "手写 <table> 标签，应使用 DataTable 组件"),
+        (r'<table\s', "手写 <table> 标签，应使用 DataTable 组件"),
+        (r'w-\[\d+px\]', "魔法数字宽度 w-[Npx]，应使用 Tailwind 标准值"),
+        (r'h-\[\d+px\]', "魔法数字高度 h-[Npx]，应使用 Tailwind 标准值"),
+        (r"fetch\(['\"]\/api", "直接 fetch('/api...)，应使用 apiFetch"),
+        (r'axios\.', "使用 axios，应使用 apiFetch"),
+    ]
+
+    # 必须使用的组件
+    REQUIRED_COMPONENTS = {
+        "表格/列表": ["DataTable", "data-table"],
+        "状态标签": ["StatusBadge", "status-badge"],
+        "表单": ["Form", "FormField", "useForm"],
+        "弹窗": ["Dialog", "AlertDialog"],
+        "加载状态": ["Skeleton", "DataStateManager"],
+    }
+
+    # 设计系统颜色变量
+    DESIGN_COLORS = [
+        "--primary", "--primary-foreground",
+        "--secondary", "--secondary-foreground",
+        "--destructive", "--destructive-foreground",
+        "--muted", "--muted-foreground",
+        "--accent", "--accent-foreground",
+        "--success", "--warning",
+    ]
+
+    def __init__(self, project_dir: Path = None, **config):
+        super().__init__(**config)
+        self.project_dir = project_dir or Path.cwd()
+
+    def get_parameters(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "description": "要审查的文件路径 (.tsx/.jsx)",
+                },
+                "content": {
+                    "type": "string",
+                    "description": "要审查的代码内容 (如果没有文件路径)",
+                },
+                "check_types": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "检查类型",
+                    "default": ["design_system", "components", "responsive", "a11y", "forbidden"],
+                },
+                "auto_fix": {
+                    "type": "boolean",
+                    "description": "是否返回修复建议",
+                    "default": True,
+                },
+            },
+            "required": [],
+        }
+
+    def execute(
+        self,
+        file_path: str = None,
+        content: str = None,
+        check_types: List[str] = None,
+        auto_fix: bool = True,
+    ) -> ToolResult:
+        """执行前端设计审查"""
+        import re
+
+        check_types = check_types or ["design_system", "components", "responsive", "a11y", "forbidden"]
+
+        # 获取代码内容
+        if file_path:
+            full_path = self.project_dir / file_path
+            if not full_path.exists():
+                return ToolResult.fail(f"文件不存在: {file_path}")
+            try:
+                content = full_path.read_text(encoding="utf-8")
+            except Exception as e:
+                return ToolResult.fail(f"读取文件失败: {e}")
+
+        if not content:
+            return ToolResult.fail("请提供 file_path 或 content 参数")
+
+        # 执行各项检查
+        results = {
+            "passed": True,
+            "checks": {},
+            "issues": [],
+            "suggestions": [],
+        }
+
+        # 1. 禁止模式检查
+        if "forbidden" in check_types:
+            forbidden_issues = self._check_forbidden_patterns(content)
+            results["checks"]["forbidden"] = {
+                "passed": len(forbidden_issues) == 0,
+                "issues": forbidden_issues,
+            }
+            if forbidden_issues:
+                results["passed"] = False
+                results["issues"].extend(forbidden_issues)
+
+        # 2. 设计系统一致性检查
+        if "design_system" in check_types:
+            design_issues = self._check_design_system(content)
+            results["checks"]["design_system"] = {
+                "passed": len(design_issues) == 0,
+                "issues": design_issues,
+            }
+            if design_issues:
+                results["issues"].extend(design_issues)
+
+        # 3. 组件复用性检查
+        if "components" in check_types:
+            component_info = self._check_components(content)
+            results["checks"]["components"] = component_info
+            if component_info.get("missing"):
+                results["suggestions"].extend([
+                    f"建议使用 {comp} 组件替代手写实现"
+                    for comp in component_info["missing"]
+                ])
+
+        # 4. 响应式设计检查
+        if "responsive" in check_types:
+            responsive_info = self._check_responsive(content)
+            results["checks"]["responsive"] = responsive_info
+            if not responsive_info.get("has_responsive"):
+                results["suggestions"].append("建议添加响应式断点 (md:, lg:)")
+
+        # 5. 可访问性检查
+        if "a11y" in check_types:
+            a11y_issues = self._check_a11y(content)
+            results["checks"]["a11y"] = {
+                "passed": len(a11y_issues) == 0,
+                "issues": a11y_issues,
+            }
+            if a11y_issues:
+                results["issues"].extend(a11y_issues)
+
+        # 生成修复建议
+        if auto_fix and results["issues"]:
+            results["fix_suggestions"] = self._generate_fix_suggestions(results["issues"])
+
+        # 生成审查报告
+        report = self._generate_report(results, file_path)
+
+        return ToolResult.ok(
+            output=report,
+            passed=results["passed"],
+            total_issues=len(results["issues"]),
+            checks=results["checks"],
+            suggestions=results["suggestions"],
+        )
+
+    def _check_forbidden_patterns(self, content: str) -> List[Dict]:
+        """检查禁止模式"""
+        import re
+        issues = []
+        lines = content.split("\n")
+
+        for pattern, reason in self.FORBIDDEN_PATTERNS:
+            for i, line in enumerate(lines, 1):
+                if re.search(pattern, line):
+                    issues.append({
+                        "type": "forbidden",
+                        "line": i,
+                        "pattern": pattern,
+                        "reason": reason,
+                        "code": line.strip()[:80],
+                    })
+
+        return issues
+
+    def _check_design_system(self, content: str) -> List[Dict]:
+        """检查设计系统一致性"""
+        import re
+        issues = []
+
+        # 检查硬编码颜色 (非 Tailwind 标准色)
+        hardcoded_colors = re.findall(r'(#[0-9a-fA-F]{3,6})', content)
+        if hardcoded_colors:
+            issues.append({
+                "type": "design_system",
+                "category": "color",
+                "reason": f"发现 {len(hardcoded_colors)} 个硬编码颜色值",
+                "values": list(set(hardcoded_colors))[:5],
+            })
+
+        # 检查非标准间距
+        non_standard_spacing = re.findall(r'(p|m|gap|space)-\[(\d+)px\]', content)
+        if non_standard_spacing:
+            issues.append({
+                "type": "design_system",
+                "category": "spacing",
+                "reason": f"发现 {len(non_standard_spacing)} 个非标准间距值",
+                "values": [f"{s[0]}-[{s[1]}px]" for s in non_standard_spacing[:5]],
+            })
+
+        return issues
+
+    def _check_components(self, content: str) -> Dict:
+        """检查组件复用性"""
+        used = []
+        missing = []
+
+        for category, components in self.REQUIRED_COMPONENTS.items():
+            found = False
+            for comp in components:
+                if comp in content:
+                    used.append(comp)
+                    found = True
+                    break
+
+            # 特殊检查: 如果有表格相关代码但没用 DataTable
+            if category == "表格/列表" and not found:
+                if "<table" in content.lower() or "map(" in content:
+                    missing.append("DataTable")
+
+            # 如果有状态显示但没用 StatusBadge
+            if category == "状态标签" and not found:
+                if "status" in content.lower() and "badge" not in content.lower():
+                    missing.append("StatusBadge")
+
+        return {
+            "used": used,
+            "missing": missing,
+            "passed": len(missing) == 0,
+        }
+
+    def _check_responsive(self, content: str) -> Dict:
+        """检查响应式设计"""
+        breakpoints = {
+            "sm": "sm:" in content,
+            "md": "md:" in content,
+            "lg": "lg:" in content,
+            "xl": "xl:" in content,
+        }
+
+        has_grid = "grid-cols" in content or "grid" in content
+        has_flex = "flex" in content
+
+        return {
+            "has_responsive": any(breakpoints.values()),
+            "breakpoints": breakpoints,
+            "has_grid": has_grid,
+            "has_flex": has_flex,
+            "passed": any(breakpoints.values()) or (has_grid or has_flex),
+        }
+
+    def _check_a11y(self, content: str) -> List[Dict]:
+        """检查可访问性"""
+        import re
+        issues = []
+
+        # 检查按钮是否有 aria-label
+        icon_buttons = re.findall(r'<Button[^>]*>[^<]*<[^/][^>]*Icon[^>]*/>[^<]*</Button>', content)
+        if icon_buttons:
+            # 检查是否有 aria-label
+            for btn in icon_buttons:
+                if 'aria-label' not in btn:
+                    issues.append({
+                        "type": "a11y",
+                        "category": "aria-label",
+                        "reason": "图标按钮缺少 aria-label",
+                        "code": btn[:60],
+                    })
+
+        # 检查 img 是否有 alt
+        imgs = re.findall(r'<img[^>]*>', content)
+        for img in imgs:
+            if 'alt=' not in img and 'alt =' not in img:
+                issues.append({
+                    "type": "a11y",
+                    "category": "img-alt",
+                    "reason": "图片缺少 alt 属性",
+                    "code": img[:60],
+                })
+
+        return issues
+
+    def _generate_fix_suggestions(self, issues: List[Dict]) -> List[str]:
+        """生成修复建议"""
+        suggestions = []
+
+        for issue in issues:
+            if issue.get("type") == "forbidden":
+                if "style=" in issue.get("pattern", ""):
+                    suggestions.append("将内联样式转换为 Tailwind 类")
+                elif "bg-[#" in issue.get("pattern", "") or "text-[#" in issue.get("pattern", ""):
+                    suggestions.append("使用 CSS 变量: bg-primary, text-destructive 等")
+                elif "<table" in issue.get("pattern", ""):
+                    suggestions.append("使用 DataTable 组件: import { DataTable } from '@/components/ui/data-table'")
+                elif "fetch" in issue.get("pattern", ""):
+                    suggestions.append("使用 apiFetch: import { apiFetch } from '@/lib/api'")
+
+        return list(set(suggestions))
+
+    def _generate_report(self, results: Dict, file_path: str = None) -> str:
+        """生成审查报告"""
+        lines = ["🎨 前端设计审查结果", "=" * 40, ""]
+
+        if file_path:
+            lines.append(f"📁 文件: {file_path}")
+            lines.append("")
+
+        # 各项检查结果
+        checks = results.get("checks", {})
+
+        for check_name, check_result in checks.items():
+            passed = check_result.get("passed", True)
+            icon = "✅" if passed else "❌"
+
+            check_labels = {
+                "forbidden": "禁止模式检查",
+                "design_system": "设计系统一致性",
+                "components": "组件复用性",
+                "responsive": "响应式设计",
+                "a11y": "可访问性",
+            }
+
+            label = check_labels.get(check_name, check_name)
+            lines.append(f"{icon} {label}")
+
+            # 详细信息
+            if check_name == "components":
+                if check_result.get("used"):
+                    lines.append(f"   使用: {', '.join(check_result['used'])}")
+                if check_result.get("missing"):
+                    lines.append(f"   缺失: {', '.join(check_result['missing'])}")
+            elif check_name == "responsive":
+                if check_result.get("breakpoints"):
+                    active = [k for k, v in check_result["breakpoints"].items() if v]
+                    if active:
+                        lines.append(f"   断点: {', '.join(active)}")
+
+        lines.append("")
+
+        # 问题列表
+        if results.get("issues"):
+            lines.append(f"⚠️ 发现 {len(results['issues'])} 个问题:")
+            for i, issue in enumerate(results["issues"][:5], 1):
+                reason = issue.get("reason", "未知问题")
+                line_num = issue.get("line", "")
+                line_info = f" (行 {line_num})" if line_num else ""
+                lines.append(f"   {i}. {reason}{line_info}")
+
+        # 修复建议
+        if results.get("fix_suggestions"):
+            lines.append("")
+            lines.append("💡 修复建议:")
+            for sug in results["fix_suggestions"][:3]:
+                lines.append(f"   • {sug}")
+
+        lines.append("")
+        lines.append("=" * 40)
+        overall = "✅ 通过" if results.get("passed", True) else "❌ 需要修复"
+        lines.append(f"总体结果: {overall}")
+
+        return "\n".join(lines)
+
+
 class FileWriteTool(Tool):
     """
     文件写入工具
     """
-    
+
     name = "file_write"
     description = "写入文件内容"
     requires_confirmation = True
-    
+
     def __init__(self, project_dir: Path = None, **config):
         super().__init__(**config)
         self.project_dir = project_dir or Path.cwd()
@@ -646,13 +1033,13 @@ class FileWriteTool(Tool):
 
 def register_builtin_tools(registry, project_dir: Path = None):
     """注册所有内置工具
-    
+
     Args:
         registry: ToolRegistry 实例
         project_dir: 项目目录
     """
     project_dir = project_dir or Path.cwd()
-    
+
     registry.register(RunTestsTool(project_dir=project_dir))
     registry.register(LintCodeTool(project_dir=project_dir))
     registry.register(SearchDocsTool())
@@ -660,6 +1047,7 @@ def register_builtin_tools(registry, project_dir: Path = None):
     registry.register(RunMigrationTool(project_dir=project_dir))
     registry.register(FileReadTool(project_dir=project_dir))
     registry.register(FileWriteTool(project_dir=project_dir))
+    registry.register(FrontendDesignTool(project_dir=project_dir))
 
 
 
