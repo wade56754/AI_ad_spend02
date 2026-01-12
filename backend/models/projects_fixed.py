@@ -1,6 +1,17 @@
 """
 项目管理模块（已对齐 DATA_SCHEMA.md v5.0）
 包含项目、成员、费用等相关模型
+
+⚠️ 注意：此文件名为 `projects_fixed.py`，但包含的是当前正在使用的模型类。
+ProjectExpense 类正在被以下模块使用：
+- backend/models/__init__.py
+- backend/models/core/project.py
+- backend/tests/test_project_service.py
+
+注意：此文件中的 Project 类已被废弃（使用 backend/models/core/project.py 中的 Project），
+但 ProjectExpense 类仍在使用中。
+
+未来重构建议：将 ProjectExpense 移动到 `backend/models/core/` 目录，并重命名此文件。
 """
 
 from datetime import date

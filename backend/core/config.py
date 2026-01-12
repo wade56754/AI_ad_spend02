@@ -5,11 +5,14 @@ AI财务系统配置管理模块
 
 import os
 import secrets
+import logging
 from functools import lru_cache
 from typing import Any, List, Optional, Union
 
 from pydantic import field_validator, Field
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
 class SecurityConfig(BaseSettings):
@@ -234,7 +237,7 @@ class Settings(BaseSettings):
             self.dict()
             return True
         except Exception as e:
-            print(f"配置验证失败: {e}")
+            logger.error(f"配置验证失败: {e}", exc_info=True)
             return False
 
 
@@ -291,7 +294,7 @@ def get_settings() -> Settings:
                 if not value.strip() or (
                     not value.strip().startswith("[") and "," in value
                 ):
-                    print(f"WARNING: 清理冲突的环境变量: {var}={value}")
+                    logger.warning(f"清理冲突的环境变量: {var}={value}")
                     os.environ[var] = ""
 
     try:
@@ -314,21 +317,21 @@ def get_settings() -> Settings:
 
         # 验证关键配置
         if not settings.allowed_origins:
-            print("WARNING: ALLOWED_ORIGINS 为空，使用默认值")
+            logger.warning("ALLOWED_ORIGINS 为空，使用默认值")
             settings.allowed_origins = [
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
             ]
 
-        print(f"SUCCESS: 配置加载成功 - 环境: {settings.env_name}")
-        print(f"   - 数据库: {settings.database_url}")
-        print(f"   - 允许源: {settings.allowed_origins}")
+        logger.info(f"配置加载成功 - 环境: {settings.env_name}")
+        logger.debug(f"   - 数据库: {settings.database_url}")
+        logger.debug(f"   - 允许源: {settings.allowed_origins}")
 
         return settings
 
     except Exception as e:
-        print(f"ERROR: 配置加载失败: {e}")
-        print("RETRY: 使用安全默认配置...")
+        logger.error(f"配置加载失败: {e}", exc_info=True)
+        logger.info("使用安全默认配置重试...")
 
         # 提供默认配置（所有环境）- 使用生成的临时密钥
         return Settings(
@@ -338,6 +341,8 @@ def get_settings() -> Settings:
             database_url="sqlite:///./ai_ad_spend_dev.db",
             jwt_secret=secrets.token_urlsafe(64),
             encryption_key=secrets.token_urlsafe(32),
+            # ⚠️ 安全警告：这些是开发环境的占位符值
+            # 生产环境必须通过环境变量提供真实的 Supabase 配置
             supabase_url=os.getenv("SUPABASE_URL", "https://placeholder.supabase.co"),
             supabase_anon_key=os.getenv(
                 "SUPABASE_ANON_KEY", "placeholder_anon_key_change_in_production"

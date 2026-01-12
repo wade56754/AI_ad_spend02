@@ -1,0 +1,106 @@
+# wshobson/agents 代理映射到项目需求
+# 版本: v1.0
+# 基准: wshobson/agents + AI 广告代投系统需求
+
+mappings:
+  # ========== Tier 1: Opus 4.5 (关键任务) ==========
+  
+  # 系统架构（Opus 4.5）
+  - source: "system-architect"
+    target: "system-architect"
+    model_tier: "tier1"
+    category: "architecture"
+    description: "系统架构师 - 架构设计、系统规划"
+    
+  # 代码生成（Opus 4.5）
+  - source: "backend-architect"
+    target: "backend-architect"
+    model_tier: "tier1"
+    category: "development"
+    description: "后端架构师 - 后端代码生成、架构设计"
+    
+  - source: "full-stack-developer"
+    target: "full-stack-developer"
+    model_tier: "tier1"
+    category: "development"
+    description: "全栈开发者 - 全栈代码生成"
+    
+  # 代码审查（Opus 4.5）
+  - source: "code-reviewer"
+    target: "code-reviewer"
+    model_tier: "tier1"
+    category: "quality"
+    description: "代码审查员 - 代码质量审查、安全审计"
+    
+  # Bug 修复（Opus 4.5）
+  - source: "debugging-specialist"
+    target: "debugging-specialist"
+    model_tier: "tier1"
+    category: "development"
+    description: "调试专家 - 复杂 Bug 修复、调试"
+    
+  # 性能优化（Opus 4.5）
+  - source: "performance-engineer"
+    target: "performance-engineer"
+    model_tier: "tier1"
+    category: "quality"
+    description: "性能工程师 - 性能分析、优化建议"
+    
+  # 安全审计（Opus 4.5）
+  - source: "security-auditor"
+    target: "security-auditor"
+    model_tier: "tier1"
+    category: "security"
+    description: "安全审计员 - 安全审计、漏洞检测"
+    
+  # 数据库架构（Opus 4.5）
+  - source: "database-architect"
+    target: "database-architect"
+    model_tier: "tier1"
+    category: "architecture"
+    description: "数据库架构师 - 数据库设计、优化"
+    
+  # API 架构（Opus 4.5）
+  - source: "api-architect"
+    target: "api-architect"
+    model_tier: "tier1"
+    category: "architecture"
+    description: "API 架构师 - API 设计、规范"
+    
+  # ========== Tier 2: Sonnet 4.5 (其他任务) ==========
+  
+  # 前端开发（Sonnet 4.5）
+  - source: "frontend-developer"
+    target: "frontend-developer"
+    model_tier: "tier2"
+    category: "development"
+    description: "前端开发者 - 前端代码生成"
+    
+  # 测试自动化（Sonnet 4.5）
+  - source: "test-automator"
+    target: "test-automator"
+    model_tier: "tier2"
+    category: "quality"
+    description: "测试自动化专家 - 测试代码生成"
+    
+  # 文档工程（Sonnet 4.5）
+  - source: "documentation-engineer"
+    target: "documentation-engineer"
+    model_tier: "tier2"
+    category: "documentation"
+    description: "文档工程师 - 文档生成"
+    
+  # 技术写作（Sonnet 4.5）
+  - source: "technical-writer"
+    target: "technical-writer"
+    model_tier: "tier2"
+    category: "documentation"
+    description: "技术写作者 - 技术文档编写"
+    
+  # 合规专家（Sonnet 4.5）
+  - source: "compliance-specialist"
+    target: "compliance-specialist"
+    model_tier: "tier2"
+    category: "security"
+    description: "合规专家 - 合规检查、规范验证"
+

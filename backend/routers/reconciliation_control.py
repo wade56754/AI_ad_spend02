@@ -122,10 +122,17 @@ async def get_settlement_rule(
     current_user: User = Depends(get_current_user),
 ):
     """获取结算规则"""
+    from backend.core.response import error_response
+    from backend.core.error_codes import BusinessErrorCodes
+    
     service = SettlementRuleService(db)
     rule = service.get_by_id(rule_id)
     if not rule:
-        raise HTTPException(status_code=404, detail="结算规则不存在")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="结算规则不存在",
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
     return success_response(
         data=SettlementRuleResponse.model_validate(rule).model_dump()
     )
@@ -253,10 +260,17 @@ async def get_balance_snapshot(
     current_user: User = Depends(get_current_user),
 ):
     """获取余额快照"""
+    from backend.core.response import error_response
+    from backend.core.error_codes import BusinessErrorCodes
+    
     service = BalanceSnapshotService(db)
     snapshot = service.get_by_id(snapshot_id)
     if not snapshot:
-        raise HTTPException(status_code=404, detail="余额快照不存在")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="余额快照不存在",
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
     return success_response(
         data=BalanceSnapshotResponse.model_validate(snapshot).model_dump()
     )
@@ -368,10 +382,17 @@ async def get_issue(
     current_user: User = Depends(get_current_user),
 ):
     """获取差异单"""
+    from backend.core.response import error_response
+    from backend.core.error_codes import BusinessErrorCodes
+    
     service = ReconciliationIssueService(db)
     issue = service.get_by_id(issue_id)
     if not issue:
-        raise HTTPException(status_code=404, detail="差异单不存在")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="差异单不存在",
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
     return success_response(
         data=ReconciliationIssueResponse.model_validate(issue).model_dump()
     )
@@ -553,10 +574,17 @@ async def get_default_commission_rule(
     current_user: User = Depends(get_current_user),
 ):
     """获取默认提成规则"""
+    from backend.core.response import error_response
+    from backend.core.error_codes import BusinessErrorCodes
+    
     service = CommissionRuleService(db)
     rule = service.get_default_rule()
     if not rule:
-        raise HTTPException(status_code=404, detail="未设置默认提成规则")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="未设置默认提成规则",
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
     return success_response(
         data=CommissionRuleResponse.model_validate(rule).model_dump()
     )
@@ -573,10 +601,17 @@ async def get_commission_rule(
     current_user: User = Depends(get_current_user),
 ):
     """获取提成规则"""
+    from backend.core.response import error_response
+    from backend.core.error_codes import BusinessErrorCodes
+    
     service = CommissionRuleService(db)
     rule = service.get_by_id(rule_id)
     if not rule:
-        raise HTTPException(status_code=404, detail="提成规则不存在")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="提成规则不存在",
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
     return success_response(
         data=CommissionRuleResponse.model_validate(rule).model_dump()
     )
@@ -657,10 +692,17 @@ async def get_project_effective_commission_rule(
     current_user: User = Depends(get_current_user),
 ):
     """获取项目生效的提成规则"""
+    from backend.core.response import error_response
+    from backend.core.error_codes import BusinessErrorCodes
+    
     service = CommissionRuleService(db)
     rule = service.get_effective_rule_for_project(project_id, target_date)
     if not rule:
-        raise HTTPException(status_code=404, detail="项目未配置有效的提成规则")
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="项目未配置有效的提成规则",
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
+        )
     return success_response(
         data=CommissionRuleResponse.model_validate(rule).model_dump()
     )

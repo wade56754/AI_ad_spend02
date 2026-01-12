@@ -22,6 +22,7 @@ description: Skills 技能库索引文档
 
 | 技能 | 版本 | 状态 | 说明 |
 |------|------|------|------|
+| [ai-code-factory-workflow](./ai-code-factory-workflow/SKILL.md) | 5.1 | ready | **工作流执行器 - 自然语言调用，支持全栈开发/代码审查/Bug修复/性能优化/系统架构** |
 | [ai-ad-code-factory](./ai-ad-code-factory/SKILL.md) | 2.0 | ready | 主编排器 - 搜索→选型→适配→组装→验证 |
 | [ai-ad-code-searcher](./ai-ad-code-searcher/SKILL.md) | 1.0 | ready | 代码搜索引擎 |
 | [ai-ad-code-selector](./ai-ad-code-selector/SKILL.md) | 1.0 | ready | 代码选型器 |
@@ -75,6 +76,7 @@ description: Skills 技能库索引文档
 - [ai-ad-agents-test-orchestrator](./ai-ad-agents-test-orchestrator/SKILL.md) - Agent 测试编排器
 - [ai-ad-agents-test-runner](./ai-ad-agents-test-runner/SKILL.md) - Agent 测试运行器
 - [ai-ad-api-automation-test](./ai-ad-api-automation-test/SKILL.md) - API 自动化测试
+- [ai-code-factory-workflow](./ai-code-factory-workflow/SKILL.md) - **代码工厂工作流执行器（自然语言调用）**
 - [ai-ad-code-adapter](./ai-ad-code-adapter/SKILL.md) - 代码适配器
 - [ai-ad-code-assembler](./ai-ad-code-assembler/SKILL.md) - 代码组装器
 - [ai-ad-code-factory](./ai-ad-code-factory/SKILL.md) - 代码工厂主编排器
@@ -99,13 +101,13 @@ description: Skills 技能库索引文档
 
 | 类别 | 数量 | 状态 |
 |------|------|------|
-| 代码工厂 | 6 | ready |
+| 代码工厂 | 7 | ready |
 | 文档处理 | 6 | ready |
 | 规范驱动 | 2 | ready |
 | 架构与工程 | 2 | ready |
 | 前端设计 | 1 | ready |
 | 测试自动化 | 3 | 2 ready, 1 beta |
-| **总计** | **20** | **19 ready, 1 beta** |
+| **总计** | **21** | **20 ready, 1 beta** |
 
 ---
 

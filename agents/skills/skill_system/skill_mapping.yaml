@@ -1,0 +1,114 @@
+# wshobson/agents 技能映射
+# 版本: v1.0
+# 基准: wshobson/agents + AI 广告代投系统需求
+
+mappings:
+  # ========== Tier 1: Opus 4.5 (关键任务) ==========
+  
+  # 后端开发技能（Opus 4.5）
+  - source: "backend-development"
+    target: "backend-development"
+    model_tier: "tier1"
+    adapt_required: true  # 需要适配 SoT
+    description: "后端开发技能 - FastAPI, SQLAlchemy 2.x"
+    
+  # API 设计技能（Opus 4.5）
+  - source: "api-design"
+    target: "api-design"
+    model_tier: "tier1"
+    adapt_required: true
+    description: "API 设计技能 - RESTful API 设计"
+    
+  # 数据库设计技能（Opus 4.5）
+  - source: "database-design"
+    target: "database-design"
+    model_tier: "tier1"
+    adapt_required: true
+    description: "数据库设计技能 - PostgreSQL, 表设计"
+    
+  # 安全模式技能（Opus 4.5）
+  - source: "security-patterns"
+    target: "security-patterns"
+    model_tier: "tier1"
+    adapt_required: true
+    description: "安全模式技能 - 认证、授权、数据安全"
+    
+  # 性能优化技能（Opus 4.5）
+  - source: "performance-optimization"
+    target: "performance-optimization"
+    model_tier: "tier1"
+    adapt_required: true
+    description: "性能优化技能 - 查询优化、缓存策略"
+    
+  # FastAPI 框架技能（Opus 4.5）
+  - source: "fastapi"
+    target: "fastapi"
+    model_tier: "tier1"
+    adapt_required: true
+    description: "FastAPI 框架技能 - 异步、依赖注入"
+    
+  # SQLAlchemy ORM 技能（Opus 4.5）
+  - source: "sqlalchemy"
+    target: "sqlalchemy"
+    model_tier: "tier1"
+    adapt_required: true
+    description: "SQLAlchemy ORM 技能 - SQLAlchemy 2.x"
+    
+  # ========== Tier 2: Sonnet 4.5 (其他任务) ==========
+  
+  # 前端开发技能（Sonnet 4.5）
+  - source: "frontend-development"
+    target: "frontend-development"
+    model_tier: "tier2"
+    adapt_required: true
+    description: "前端开发技能 - Next.js 16, React, TypeScript"
+    
+  # 测试模式技能（Sonnet 4.5）
+  - source: "testing-patterns"
+    target: "testing-patterns"
+    model_tier: "tier2"
+    adapt_required: false  # 可直接使用
+    description: "测试模式技能 - pytest, Jest"
+    
+  # React 框架技能（Sonnet 4.5）
+  - source: "react"
+    target: "react"
+    model_tier: "tier2"
+    adapt_required: true
+    description: "React 框架技能 - React Hooks, 组件设计"
+    
+  # Next.js 框架技能（Sonnet 4.5）
+  - source: "nextjs"
+    target: "nextjs"
+    model_tier: "tier2"
+    adapt_required: true
+    description: "Next.js 框架技能 - App Router, Server Components"
+    
+  # Python 语言技能（已有，可增强）
+  - source: "python"
+    target: "python"
+    model_tier: "tier1"  # 代码生成使用 Opus
+    adapt_required: true
+    description: "Python 语言技能 - Python 3.11+, 类型提示"
+    
+  # TypeScript 语言技能（已有，可增强）
+  - source: "typescript"
+    target: "typescript"
+    model_tier: "tier2"  # 前端开发使用 Sonnet
+    adapt_required: true
+    description: "TypeScript 语言技能 - TypeScript 5.x, 严格模式"
+    
+  # JavaScript 语言技能（Sonnet 4.5）
+  - source: "javascript"
+    target: "javascript"
+    model_tier: "tier2"
+    adapt_required: false
+    description: "JavaScript 语言技能"
+    
+  # SQL 技能（Sonnet 4.5）
+  - source: "sql"
+    target: "sql"
+    model_tier: "tier2"
+    adapt_required: false
+    description: "SQL 技能 - PostgreSQL SQL"
+

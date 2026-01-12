@@ -29,7 +29,7 @@ import logging
 from contextlib import contextmanager
 from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Iterator
 from uuid import UUID
 
 from sqlalchemy import and_, func, or_
@@ -87,7 +87,7 @@ class ProfitService:
         self.db = db
 
     @contextmanager
-    def transaction(self):
+    def transaction(self) -> Iterator[None]:
         """事务上下文管理器"""
         try:
             yield

@@ -2,6 +2,12 @@
 Dashboard Schema 定义 (Legacy V1/V2)
 
 SoT Reference: MASTER.md v4.4 - CEO Dashboard / 运营驾驶舱
+
+⚠️ 注意：此文件名为 `_legacy.py`，但包含的是当前正在使用的 Schema 定义。
+这些 Schema 正在被以下模块使用：
+- backend/schemas/dashboard/__init__.py
+
+未来重构建议：将此文件重命名为 `dashboard_schemas.py` 或 `dashboard_models.py`。
 """
 
 from datetime import date, datetime

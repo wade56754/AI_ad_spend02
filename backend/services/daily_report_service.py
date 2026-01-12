@@ -12,7 +12,7 @@ import logging
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Iterator
 
 from sqlalchemy import and_, or_, func, desc, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -65,7 +65,7 @@ class DailyReportService:
         self.db = db
 
     @contextmanager
-    def transaction(self):
+    def transaction(self) -> Iterator[None]:
         """事务上下文管理器"""
         try:
             yield
@@ -273,131 +273,154 @@ class DailyReportService:
 
         Returns:
             Tuple[List[DailyReport], int]: 日报列表和总数
+
+        Raises:
+            DatabaseError: 数据库查询失败
         """
         logger.info(
             f"Querying daily reports: user={current_user.id} ({current_user.role}), "
             f"page={page}, page_size={page_size}"
         )
 
-        query = self.db.query(DailyReport).options(
-            joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
-            joinedload(DailyReport.submitter),
-            joinedload(DailyReport.auditor),  # 审核人关系
-        )
+        try:
+            query = self.db.query(DailyReport).options(
+                joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
+                joinedload(DailyReport.submitter),
+                joinedload(DailyReport.auditor),  # 审核人关系
+            )
 
-        # 构建查询条件
-        where_conditions = []
+            # 构建查询条件
+            where_conditions = []
 
-        # 日期范围
-        if params.report_date_start:
-            where_conditions.append(DailyReport.report_date >= params.report_date_start)
-        if params.report_date_end:
-            where_conditions.append(DailyReport.report_date <= params.report_date_end)
+            # 日期范围
+            if params.report_date_start:
+                where_conditions.append(DailyReport.report_date >= params.report_date_start)
+            if params.report_date_end:
+                where_conditions.append(DailyReport.report_date <= params.report_date_end)
 
-        # 广告账户
-        if params.ad_account_id:
-            where_conditions.append(DailyReport.ad_account_id == params.ad_account_id)
+            # 广告账户
+            if params.ad_account_id:
+                where_conditions.append(DailyReport.ad_account_id == params.ad_account_id)
 
-        # 状态
-        if params.status:
-            where_conditions.append(DailyReport.status == params.status)
+            # 状态
+            if params.status:
+                where_conditions.append(DailyReport.status == params.status)
 
-        # 创建者（投手）
-        if params.media_buyer_id:
-            where_conditions.append(DailyReport.created_by == params.media_buyer_id)
+            # 创建者（投手）
+            if params.media_buyer_id:
+                where_conditions.append(DailyReport.created_by == params.media_buyer_id)
 
-        # 项目筛选
-        if params.project_id:
-            where_conditions.append(
-                DailyReport.ad_account_id.in_(
-                    self.db.query(AdAccount.id).filter(
-                        AdAccount.project_id == params.project_id
+            # 项目筛选
+            if params.project_id:
+                where_conditions.append(
+                    DailyReport.ad_account_id.in_(
+                        self.db.query(AdAccount.id).filter(
+                            AdAccount.project_id == params.project_id
+                        )
                     )
                 )
+
+            # 团队筛选 (v2.1)
+            if params.team_id:
+                where_conditions.append(
+                    DailyReport.ad_account_id.in_(
+                        self.db.query(AdAccount.id).filter(
+                            AdAccount.team_id == params.team_id
+                        )
+                    )
+                )
+
+            # 投手名称模糊筛选 (v2.1) - 基于账户名的投手前缀
+            if params.submitter_name:
+                # 账户名格式: "投手名_平台_地区", 使用 like 匹配
+                where_conditions.append(
+                    DailyReport.ad_account_id.in_(
+                        self.db.query(AdAccount.id).filter(
+                            AdAccount.name.like(f"{params.submitter_name}%")
+                        )
+                    )
+                )
+
+            # 应用权限过滤 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+            if current_user.role == UserRole.MEDIA_BUYER.value:
+                # 投手：只能看分配给自己的账户的日报
+                logger.debug(f"Applying pitcher RBAC filter for user {current_user.id}")
+                where_conditions.append(
+                    DailyReport.ad_account_id.in_(
+                        self.db.query(AdAccount.id).filter(
+                            AdAccount.owner_id == current_user.id
+                        )
+                    )
+                )
+            elif current_user.role == UserRole.ACCOUNT_MANAGER.value:
+                # 户管：只能看所管理项目的日报
+                accessible_projects = self._get_manager_accessible_projects(current_user.id)
+                logger.debug(
+                    f"Applying account_manager RBAC filter for user {current_user.id}, "
+                    f"accessible_projects={accessible_projects}"
+                )
+                where_conditions.append(
+                    DailyReport.ad_account_id.in_(
+                        self.db.query(AdAccount.id).filter(
+                            AdAccount.project_id.in_(accessible_projects)
+                        )
+                    )
+                )
+            elif current_user.role in [
+                UserRole.ADMIN.value,
+                UserRole.FINANCE.value,
+                UserRole.PROJECT_OWNER.value,
+            ]:
+                # 管理员、财务、项目负责人：可以看所有数据
+                logger.debug(
+                    f"User {current_user.id} ({current_user.role}) has full access to all reports"
+                )
+            else:
+                # 未知角色：拒绝访问
+                logger.error(
+                    f"Unauthorized role {current_user.role} for user {current_user.id}"
+                )
+                raise PermissionDeniedError("未授权的角色，无法查看日报")
+
+            # 应用所有条件
+            if where_conditions:
+                query = query.filter(and_(*where_conditions))
+
+            # 统计总数
+            total = query.count()
+
+            # 分页和排序 - 使用 eager loading 避免 N+1 查询（options 已在第 286-290 行设置）
+            reports = (
+                query.order_by(desc(DailyReport.report_date))
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+                .all()
             )
 
-        # 团队筛选 (v2.1)
-        if params.team_id:
-            where_conditions.append(
-                DailyReport.ad_account_id.in_(
-                    self.db.query(AdAccount.id).filter(
-                        AdAccount.team_id == params.team_id
-                    )
-                )
+            logger.info(
+                f"Daily reports query completed: user={current_user.id}, "
+                f"total={total}, page={page}, returned={len(reports)}"
             )
-
-        # 投手名称模糊筛选 (v2.1) - 基于账户名的投手前缀
-        if params.submitter_name:
-            # 账户名格式: "投手名_平台_地区", 使用 like 匹配
-            where_conditions.append(
-                DailyReport.ad_account_id.in_(
-                    self.db.query(AdAccount.id).filter(
-                        AdAccount.name.like(f"{params.submitter_name}%")
-                    )
-                )
-            )
-
-        # 应用权限过滤 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
-        if current_user.role == UserRole.MEDIA_BUYER.value:
-            # 投手：只能看分配给自己的账户的日报
-            logger.debug(f"Applying pitcher RBAC filter for user {current_user.id}")
-            where_conditions.append(
-                DailyReport.ad_account_id.in_(
-                    self.db.query(AdAccount.id).filter(
-                        AdAccount.owner_id == current_user.id
-                    )
-                )
-            )
-        elif current_user.role == UserRole.ACCOUNT_MANAGER.value:
-            # 户管：只能看所管理项目的日报
-            accessible_projects = self._get_manager_accessible_projects(current_user.id)
-            logger.debug(
-                f"Applying account_manager RBAC filter for user {current_user.id}, "
-                f"accessible_projects={accessible_projects}"
-            )
-            where_conditions.append(
-                DailyReport.ad_account_id.in_(
-                    self.db.query(AdAccount.id).filter(
-                        AdAccount.project_id.in_(accessible_projects)
-                    )
-                )
-            )
-        elif current_user.role in [
-            UserRole.ADMIN.value,
-            UserRole.FINANCE.value,
-            UserRole.DATA_OPERATOR.value,
-        ]:
-            # 管理员、财务、数据员：可以看所有数据
-            logger.debug(
-                f"User {current_user.id} ({current_user.role}) has full access to all reports"
-            )
-        else:
-            # 未知角色：拒绝访问
+            return reports, total
+        except SQLAlchemyError as e:
             logger.error(
-                f"Unauthorized role {current_user.role} for user {current_user.id}"
+                f"Database error while querying daily reports: {str(e)}",
+                exc_info=True
             )
-            raise PermissionDeniedError("未授权的角色，无法查看日报")
-
-        # 应用所有条件
-        if where_conditions:
-            query = query.filter(and_(*where_conditions))
-
-        # 统计总数
-        total = query.count()
-
-        # 分页和排序
-        reports = (
-            query.order_by(desc(DailyReport.report_date))
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-            .all()
-        )
-
-        logger.info(
-            f"Daily reports query completed: user={current_user.id}, "
-            f"total={total}, page={page}, returned={len(reports)}"
-        )
-        return reports, total
+            from backend.exceptions.custom_exceptions import DatabaseError
+            raise DatabaseError(
+                message="查询日报列表时发生数据库错误",
+                error_code="DB_002"
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error while querying daily reports: {str(e)}",
+                exc_info=True
+            )
+            raise BusinessLogicError(
+                message=f"查询日报列表失败: {str(e)}",
+                error_code="BIZ_900"
+            )
 
     def get_status_stats(
         self,
@@ -487,27 +510,51 @@ class DailyReportService:
         Raises:
             ResourceNotFoundError: 日报不存在
             PermissionDeniedError: 无权限查看
+            DatabaseError: 数据库查询失败
         """
-        report = (
-            self.db.query(DailyReport)
-            .options(
-                joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
-                joinedload(DailyReport.submitter),
-                joinedload(DailyReport.auditor),  # 审核人关系
+        try:
+            report = (
+                self.db.query(DailyReport)
+                .options(
+                    joinedload(DailyReport.ad_account).joinedload(AdAccount.team),  # 嵌套加载团队
+                    joinedload(DailyReport.submitter),
+                    joinedload(DailyReport.auditor),  # 审核人关系
+                )
+                .filter(DailyReport.id == report_id)
+                .first()
             )
-            .filter(DailyReport.id == report_id)
-            .first()
-        )
 
-        if not report:
-            # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
-            raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ_002")
+            if not report:
+                # ERROR_CODES_SOT v2.1: BIZ_002 = 资源未找到 (404)
+                raise ResourceNotFoundError(f"日报 {report_id} 不存在", error_code="BIZ_002")
 
-        # 权限检查：验证当前用户是否有权限查看该日报
-        if not self._can_user_view_report(current_user, report):
-            raise PermissionDeniedError(f"无权限查看该日报（ID: {report_id}）")
+            # 权限检查：验证当前用户是否有权限查看该日报
+            if not self._can_user_view_report(current_user, report):
+                raise PermissionDeniedError(f"无权限查看该日报（ID: {report_id}）")
 
-        return report
+            return report
+        except (ResourceNotFoundError, PermissionDeniedError):
+            # 重新抛出业务异常
+            raise
+        except SQLAlchemyError as e:
+            logger.error(
+                f"Database error while getting daily report {report_id}: {str(e)}",
+                exc_info=True
+            )
+            from backend.exceptions.custom_exceptions import DatabaseError
+            raise DatabaseError(
+                message="查询日报详情时发生数据库错误",
+                error_code="DB_002"
+            )
+        except Exception as e:
+            logger.error(
+                f"Unexpected error while getting daily report {report_id}: {str(e)}",
+                exc_info=True
+            )
+            raise BusinessLogicError(
+                message=f"获取日报详情失败: {str(e)}",
+                error_code="BIZ_900"
+            )
 
     def update_daily_report(
         self, report_id: int, request: DailyReportUpdateRequest, current_user: User
@@ -879,7 +926,7 @@ class DailyReportService:
 
         Raises:
             ResourceNotFoundError: 日报不存在
-            PermissionDeniedError: 无权限（非 data_operator/admin）
+            PermissionDeniedError: 无权限（非 project_owner/admin）
             BusinessLogicError: 状态不允许录入 real_spend
         """
         logger.info(
@@ -1288,10 +1335,10 @@ class DailyReportService:
             logger.debug(f"User {user.id} (admin) has access to account {account.id}")
             return True
 
-        # 数据员可以操作所有账户（用于审核）
-        if user.role == UserRole.DATA_OPERATOR.value:
+        # 项目负责人可以操作所有账户（用于审核）
+        if user.role == UserRole.PROJECT_OWNER.value:
             logger.debug(
-                f"User {user.id} (data_operator) has access to account {account.id}"
+                f"User {user.id} (project_owner) has access to account {account.id}"
             )
             return True
 
@@ -1330,7 +1377,7 @@ class DailyReportService:
             bool: 是否有权限
 
         Permission Rules:
-            - admin/finance/data_operator: 可以查看所有日报
+            - admin/finance/project_owner: 可以查看所有日报
             - media_buyer: 只能查看 assigned_user_id 为自己的账户的日报
             - account_manager: 只能查看自己管理的项目的日报
         """
@@ -1338,11 +1385,11 @@ class DailyReportService:
 
         logger = logging.getLogger(__name__)
 
-        # admin/finance/data_operator 可以看所有 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        # admin/finance/project_owner 可以看所有 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
         if user.role in [
             UserRole.ADMIN.value,
             UserRole.FINANCE.value,
-            UserRole.DATA_OPERATOR.value,
+            UserRole.PROJECT_OWNER.value,
         ]:
             logger.debug(f"User {user.id} ({user.role}) can view report {report.id}")
             return True
@@ -1383,7 +1430,7 @@ class DailyReportService:
         检查用户是否可以编辑日报
 
         权限规则：
-        - admin/data_operator: 可以编辑所有日报（用于数据管理和审核）
+        - admin/project_owner: 可以编辑所有日报（用于数据管理和审核）
         - media_buyer: 只能编辑自己创建的日报
         - 其他角色: 不能编辑日报
 
@@ -1394,8 +1441,8 @@ class DailyReportService:
         Returns:
             bool: 是否有编辑权限
         """
-        # 管理员和数据员可以编辑所有日报 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
-        if user.role in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
+        # 管理员和项目负责人可以编辑所有日报 - 使用 UserRole 枚举 (AUTH_SPEC.md v2.0)
+        if user.role in [UserRole.ADMIN.value, UserRole.PROJECT_OWNER.value]:
             logger.debug(f"User {user.id} ({user.role}) can edit all reports")
             return True
 

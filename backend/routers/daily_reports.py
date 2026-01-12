@@ -24,6 +24,7 @@ from typing import List, Optional, Tuple, Dict, Any
 from enum import Enum as PyEnum
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
+from pydantic import field_validator
 from pydantic import BaseModel, Field
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -272,8 +273,8 @@ def parse_excel_row_to_report(
 async def list_daily_reports(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    report_date_start: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
-    report_date_end: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    report_date_start: Optional[date] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    report_date_end: Optional[date] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
     status: Optional[str] = Query(
         None,
@@ -441,8 +442,8 @@ async def create_daily_report(
 )
 async def get_daily_report_stats(
     project_id: Optional[int] = Query(None, description="项目ID"),
-    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    start_date: Optional[date] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     service: DailyReportService = Depends(get_daily_report_service),
     current_user: User = Depends(get_current_user),
 ):
@@ -1324,8 +1325,8 @@ async def import_daily_reports_from_file(
 
 @router.get("/export", summary="导出日报", description="导出日报数据为Excel文件")
 async def export_daily_reports(
-    report_date_start: Optional[str] = Query(None, description="开始日期"),
-    report_date_end: Optional[str] = Query(None, description="结束日期"),
+    report_date_start: Optional[date] = Query(None, description="开始日期"),
+    report_date_end: Optional[date] = Query(None, description="结束日期"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
     status: Optional[str] = Query(None, description="审核状态"),
     service: DailyReportService = Depends(get_daily_report_service),
@@ -1478,8 +1479,8 @@ async def export_daily_reports(
     description="获取日报统计数据",
 )
 async def get_daily_report_statistics(
-    report_date_start: Optional[str] = Query(None, description="开始日期"),
-    report_date_end: Optional[str] = Query(None, description="结束日期"),
+    report_date_start: Optional[date] = Query(None, description="开始日期"),
+    report_date_end: Optional[date] = Query(None, description="结束日期"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID"),
     status: Optional[str] = Query(None, description="审核状态"),
     media_buyer_id: Optional[int] = Query(None, description="投手ID"),
@@ -1732,7 +1733,7 @@ async def trigger_trend_check(
 )
 async def batch_execute_trend_check(
     ad_account_id: Optional[int] = Query(None, description="广告账户ID筛选"),
-    report_date: Optional[str] = Query(None, description="报告日期筛选 (YYYY-MM-DD)"),
+    report_date: Optional[date] = Query(None, description="报告日期筛选 (YYYY-MM-DD)"),
     trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
     current_user: User = Depends(require_role(["project_owner", "admin"])),
 ):
@@ -1803,8 +1804,8 @@ async def get_trend_flagged_reports(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     ad_account_id: Optional[int] = Query(None, description="广告账户ID筛选"),
-    report_date_start: Optional[str] = Query(None, description="开始日期"),
-    report_date_end: Optional[str] = Query(None, description="结束日期"),
+    report_date_start: Optional[date] = Query(None, description="开始日期"),
+    report_date_end: Optional[date] = Query(None, description="结束日期"),
     trend_service: TrendRiskControlService = Depends(get_trend_risk_service),
     current_user: User = Depends(require_role(["project_owner", "admin", "finance"])),
 ):

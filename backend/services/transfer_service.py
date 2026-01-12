@@ -14,7 +14,7 @@ import logging
 from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Iterator
 from uuid import uuid4
 
 from sqlalchemy import and_, or_, func
@@ -52,7 +52,7 @@ class TransferService:
         self.db = db
 
     @contextmanager
-    def transaction(self):
+    def transaction(self) -> Iterator[None]:
         """事务上下文管理器"""
         try:
             yield

@@ -33,6 +33,12 @@ from .factory import (
     create_context_engine,
 )
 
+# 执行引擎（新）
+from .agent_executor import AgentExecutor, ExecutionResult
+from .task_queue import TaskQueue, ExecutionPattern
+from .monitoring import PerformanceMonitor, PerformanceMetrics, get_monitor
+from .orchestrator import CodeFactoryOrchestrator, OrchestrationContext
+
 __all__ = [
     # 配置
     "FactoryConfig",
@@ -55,4 +61,14 @@ __all__ = [
     "FactoryResult",
     "run_context_engine",
     "create_context_engine",
+    # 执行引擎（新）
+    "AgentExecutor",
+    "ExecutionResult",
+    "TaskQueue",
+    "ExecutionPattern",
+    "PerformanceMonitor",
+    "PerformanceMetrics",
+    "get_monitor",
+    "CodeFactoryOrchestrator",
+    "OrchestrationContext",
 ]

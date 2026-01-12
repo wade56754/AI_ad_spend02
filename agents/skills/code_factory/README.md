@@ -16,6 +16,16 @@ AI 代码工厂是一个基于"搜索优先、组装为主"理念的代码生成
 SoT 驱动 → 规范一致
 ```
 
+### v5.1 新增能力（整合 wshobson/agents）
+
+| 能力 | 说明 | 来源 |
+|------|------|------|
+| 插件市场 | 统一插件管理（wshobson/agents + custom） | wshobson/agents |
+| 代理系统 | 99个专业代理（已整合14个关键代理） | wshobson/agents |
+| 技能系统 | 107个代理技能（已整合15个核心技能） | wshobson/agents |
+| 两层模型策略 | Opus 4.5（关键任务）+ Sonnet 4.5（其他任务） | 自定义 |
+| 工作流编排 | 标准工作流预设（顺序/并行/条件/循环） | wshobson/agents |
+
 ### v5.0 新增能力
 
 | 能力 | 说明 | 借鉴 |
@@ -492,6 +502,7 @@ async def create_daily_report(...):
 
 | 项目 | License | 借鉴内容 |
 |------|---------|----------|
+| [wshobson/agents](https://github.com/wshobson/agents) | MIT | **插件化架构、渐进式披露、99个代理、107个技能、工作流编排** |
 | [gpt-engineer](https://github.com/AntonOsika/gpt-engineer) | MIT | Preprompts 系统、增量改进模式 |
 | [Dify](https://github.com/langgenius/dify) | Apache 2.0 | RAG 知识库、工作流编排、Agent 工具 |
 | [awesome-cursorrules](https://github.com/PatrickJS/awesome-cursorrules) | MIT | 规则配置化、多项目模板 |

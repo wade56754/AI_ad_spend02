@@ -48,6 +48,9 @@ from backend.exceptions.custom_exceptions import (
 )
 from backend.models import User
 from backend.models.finance.financial_event import EventStatus, SourceType
+import logging
+
+logger = logging.getLogger(__name__)
 from backend.schemas.spend import (
     SpendImportRequest,
     SpendEventCreate,
@@ -184,10 +187,19 @@ async def import_spend_from_excel(
             data=result, message=f"导入完成: {result.imported_rows}/{result.total_rows} 行"
         )
 
-    except BusinessLogicError:
-        raise
+    except BusinessLogicError as e:
+        return error_response(
+            code=e.error_code if hasattr(e, 'error_code') else BusinessErrorCodes.IMPORT_ERROR.code,
+            message=str(e),
+            status_code=400
+        )
     except Exception as e:
-        raise BusinessLogicError(f"导入失败: {str(e)}", error_code="BIZ-501")
+        logger.exception(f"导入失败: {e}")
+        return error_response(
+            code=BusinessErrorCodes.IMPORT_ERROR.code,
+            message=f"导入失败: {str(e)}",
+            status_code=BusinessErrorCodes.IMPORT_ERROR.status_code
+        )
 
 
 # ========== CRUD 端点 ==========
@@ -218,21 +230,14 @@ async def create_spend_event(
         )
         return success_response(data=_build_event_response(event), message="消耗事件创建成功")
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-                "message": str(e),
-            },
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except ResourceConflictError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": BusinessErrorCodes.RESOURCE_ALREADY_EXISTS.code,
-                "message": str(e),
-            },
-        )
+        # ResourceConflictError 会被 BaseCustomException 处理器自动处理
+        raise e
 
 
 @router.get(
@@ -310,12 +315,10 @@ async def get_spend_event(
 
     event = service.get_event_by_id(event_id)
     if not event:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-                "message": f"消耗事件不存在: {event_id}",
-            },
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message="消耗事件不存在",
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
 
     return success_response(data=_build_event_response(event), message="获取成功")
@@ -452,17 +455,17 @@ async def reverse_spend_event(
         )
         return success_response(data=result, message=result.message)
     except ResourceNotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
-                "message": str(e),
-            },
+        return error_response(
+            code=BusinessErrorCodes.RESOURCE_NOT_FOUND.code,
+            message=str(e),
+            status_code=BusinessErrorCodes.RESOURCE_NOT_FOUND.status_code
         )
     except BusinessLogicError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)},
+        error_code = e.error_code if hasattr(e, 'error_code') else BusinessErrorCodes.INVALID_OPERATION.code
+        return error_response(
+            code=error_code,
+            message=str(e),
+            status_code=400
         )
 
 
@@ -534,9 +537,11 @@ async def batch_reverse_spend_events(
         )
         return success_response(data=result, message=result.message)
     except BusinessLogicError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": e.error_code, "message": str(e)},
+        error_code = e.error_code if hasattr(e, 'error_code') else BusinessErrorCodes.INVALID_OPERATION.code
+        return error_response(
+            code=error_code,
+            message=str(e),
+            status_code=400
         )
 
 

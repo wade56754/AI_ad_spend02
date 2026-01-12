@@ -2,9 +2,9 @@
 # Cursor Rules 格式 - YAML Frontmatter
 alwaysApply: true
 description: "AI 广告代投系统 - 项目规则总纲 (Project Constitution)"
-version: "3.5"
+version: "3.6"
 author: "AI Architecture Team"
-lastUpdated: "2025-12-17"
+lastUpdated: "2026-01-09"
 
 # 六大规则分类 (参考 Cursor Rules & Prompts)
 categories:
@@ -89,7 +89,7 @@ sotChain:
 
 # AI 广告代投系统 - 项目规则总纲 (Project Constitution)
 
-> **文档版本**: v3.5 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0 + OpenSpec v1.0 + Cursor Rules Format)
+> **文档版本**: v3.6 (基于 ASDD Freeze v1.0 + SoT Freeze v2.6 + Dev-Guides Freeze v2.1 + Architecture Freeze v1.0 + OpenSpec v1.0 + Cursor Rules Format + AI Code Factory v5.1)
 > **文档类型**: Claude/SuperClaude 的"世界观" - SoT 体系的裁判规则
 > **适用范围**: 所有开发/重构/代码生成工作
 > **规范级别**: 🔴 强制执行 (CI/CD 验证)
@@ -606,7 +606,90 @@ raise HTTPException(status_code=400, detail="状态错误")  # 没有使用标�
 
 ---
 
-## 📌 十、冲突处理流程
+## 📌 十、AI 代码工厂强制使用规则 (MANDATORY)
+
+### 核心规则
+
+**🔴 强制执行**: 所有代码生成工作必须使用 AI 代码工厂工作流。
+
+### 适用范围
+
+以下工作**必须**使用 AI 代码工厂：
+- ✅ 创建新功能（后端 API、前端页面、组件）
+- ✅ 实现新功能
+- ✅ 添加新模块或服务
+- ✅ 创建新的数据库模型或迁移
+- ✅ 编写新测试
+- ✅ 重构现有代码（如果涉及大量修改）
+
+### 例外情况
+
+以下工作**可以不使用** AI 代码工厂：
+- ❌ 简单 Bug 修复（拼写错误、语法错误）
+- ❌ 文档更新（Markdown、注释）
+- ❌ 配置文件修改（.env、config 文件）
+- ❌ 小规模重构（重命名变量、格式化）
+- ❌ 用户明确要求直接编辑代码
+
+### 使用方法
+
+#### 方式一：自然语言调用（推荐）
+
+直接在对话框中输入需求：
+
+```
+创建一个用户管理功能，包括列表、创建、编辑、删除
+```
+
+```
+审查用户管理模块的代码质量
+```
+
+```
+修复用户登录功能的 bug
+```
+
+#### 方式二：明确指定工作流
+
+```
+使用代码工厂工作流，类型：全栈开发
+需求：创建一个订单管理功能
+```
+
+### 工作流类型
+
+| 工作流类型 | 触发词 | 说明 |
+|-----------|--------|------|
+| `full_stack_development` | "创建"、"开发"、"实现" | 全栈功能开发 |
+| `code_review` | "审查"、"检查"、"review" | 代码审查 |
+| `bug_fixing` | "修复"、"bug"、"问题" | Bug 修复 |
+| `performance_optimization` | "优化"、"性能"、"慢" | 性能优化 |
+| `system_architecture` | "架构"、"设计" | 系统架构 |
+
+### 执行流程
+
+1. **自动识别**: 根据关键词自动识别工作流类型
+2. **调用代码工厂**: 使用 Python 代码调用 `CodeFactoryOrchestrator`
+3. **执行代理**: 按工作流顺序/并行执行多个专业代理
+4. **返回结果**: 展示每个代理的输出、性能指标、后续建议
+
+### 违规处理
+
+如果用户请求代码生成但未使用 AI 代码工厂：
+
+1. **提醒**: "根据项目规则，所有代码生成工作必须使用 AI 代码工厂工作流"
+2. **询问**: "请允许我使用代码工厂工作流来完成这个任务"
+3. **执行**: 使用 AI 代码工厂工作流
+
+### 相关文档
+
+- Skill 定义: `.claude/skills/ai-code-factory-workflow/SKILL.md`
+- 使用指南: `docs/integration/USAGE_GUIDE.md`
+- 快速开始: `.claude/skills/ai-code-factory-workflow/QUICK_START.md`
+
+---
+
+## 📌 十一、冲突处理流程
 
 ### 当 AI 输出与 SoT 冲突时
 
@@ -819,6 +902,8 @@ docs/4.architecture/ (架构视图 - Freeze v1.0)
 
 **所有代码生成前必须执行以下检查**:
 
+**⚠️ 重要**: 根据 §十 AI 代码工厂强制使用规则，所有代码生成工作必须使用 AI 代码工厂工作流。代码工厂会自动执行以下检查。
+
 1. **SoT/Dev-Guides/Architecture 对齐验证**
    - 查询 SoT Layer 对应文档 (STATE_MACHINE/DATA_SCHEMA/API_SOT 等)
    - 查询 Dev-Guides Layer 对应文档 (API_DEVELOPMENT_FLOW 等)
@@ -952,7 +1037,7 @@ python -m pytest backend/tests/test_topup_api.py -q -k "not skip"
 
 ---
 
-## 🔄 十四、OpenSpec 集成规则
+## 🔄 十五、OpenSpec 集成规则
 
 ### OpenSpec 唯一变更通道
 

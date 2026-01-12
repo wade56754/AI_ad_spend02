@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Iterator
 
 from sqlalchemy import and_, func
 from sqlalchemy.orm import Session
@@ -86,7 +86,7 @@ class TrendRiskControlService:
         self.thresholds = thresholds or TrendRiskThresholds()
 
     @contextmanager
-    def transaction(self):
+    def transaction(self) -> Iterator[None]:
         """事务上下文管理器"""
         try:
             yield

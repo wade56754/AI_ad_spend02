@@ -10,6 +10,7 @@ Aligned with SoT:
 """
 
 from decimal import Decimal
+from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, Body, status
 from pydantic import BaseModel, ConfigDict, Field
@@ -17,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.response import success_response, error_response, paginated_response
-from backend.core.dependencies import get_current_user
+from backend.core.dependencies import get_current_user, require_role
 from backend.services.supplier_service import SupplierService
 from backend.services.fee_service import FeeService
 from backend.schemas.supplier import (
@@ -55,11 +56,25 @@ class FeeRateUpdateRequest(BaseModel):
 router = APIRouter(prefix="/suppliers", tags=["Suppliers"])
 
 
+# ========== 依赖注入函数 ==========
+
+def get_supplier_service(db: Session = Depends(get_db)) -> SupplierService:
+    """Supplier Service 依赖注入"""
+    return SupplierService(db)
+
+
+def get_fee_service(db: Session = Depends(get_db)) -> FeeService:
+    """Fee Service 依赖注入"""
+    return FeeService(db)
+
+
+# ========== 供应商 CRUD 端点 ==========
+
 @router.post("",  status_code=status.HTTP_201_CREATED)
 async def create_supplier(
     request: SupplierCreateRequest,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    service: SupplierService = Depends(get_supplier_service),
+    current_user: dict = Depends(require_role(["admin", "finance"]))
 ):
     """
     创建供应商
@@ -67,7 +82,6 @@ async def create_supplier(
     权限：admin, finance
     """
     try:
-        service = SupplierService(db)
         supplier = service.create_supplier(
             request=request,
             current_user_id=current_user.id,
@@ -89,8 +103,8 @@ async def list_suppliers(
     status: Optional[str] = Query(None, description="供应商状态"),
     country: Optional[str] = Query(None, description="国家代码"),
     search: Optional[str] = Query(None, description="搜索关键词"),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    service: SupplierService = Depends(get_supplier_service),
+    current_user: dict = Depends(require_role(["admin", "finance", "account_manager"]))
 ):
     """
     获取供应商列表
@@ -98,7 +112,6 @@ async def list_suppliers(
     权限：admin, finance, account_manager
     """
     try:
-        service = SupplierService(db)
         suppliers, total = service.get_suppliers(
             current_user_id=current_user.id,
             current_user_role=current_user.role,
@@ -120,8 +133,8 @@ async def list_suppliers(
 
 @router.get("/statistics")
 async def get_supplier_statistics(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    service: SupplierService = Depends(get_supplier_service),
+    current_user: dict = Depends(require_role(["admin", "finance"]))
 ):
     """
     获取供应商统计信息
@@ -129,7 +142,6 @@ async def get_supplier_statistics(
     权限：admin, finance
     """
     try:
-        service = SupplierService(db)
         stats = service.get_supplier_statistics(
             current_user_id=current_user.id,
             current_user_role=current_user.role
@@ -142,7 +154,7 @@ async def get_supplier_statistics(
 @router.get("/{supplier_id}")
 async def get_supplier(
     supplier_id: int,
-    db: Session = Depends(get_db),
+    service: SupplierService = Depends(get_supplier_service),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -151,7 +163,6 @@ async def get_supplier(
     权限：admin, finance, account_manager
     """
     try:
-        service = SupplierService(db)
         supplier = service.get_supplier(
             supplier_id=supplier_id,
             current_user_id=current_user.id,
@@ -168,7 +179,7 @@ async def get_supplier(
 async def update_supplier(
     supplier_id: int,
     request: SupplierUpdateRequest,
-    db: Session = Depends(get_db),
+    service: SupplierService = Depends(get_supplier_service),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -177,7 +188,6 @@ async def update_supplier(
     权限：admin, finance
     """
     try:
-        service = SupplierService(db)
         supplier = service.update_supplier(
             supplier_id=supplier_id,
             request=request,
@@ -196,7 +206,7 @@ async def update_supplier(
 @router.delete("/{supplier_id}")
 async def delete_supplier(
     supplier_id: int,
-    db: Session = Depends(get_db),
+    service: SupplierService = Depends(get_supplier_service),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -206,7 +216,6 @@ async def delete_supplier(
     约束：不能删除有关联账户的供应商
     """
     try:
-        service = SupplierService(db)
         service.delete_supplier(
             supplier_id=supplier_id,
             current_user_id=current_user.id,
@@ -226,7 +235,7 @@ async def get_supplier_accounts(
     supplier_id: int,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    db: Session = Depends(get_db),
+    service: SupplierService = Depends(get_supplier_service),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -235,7 +244,6 @@ async def get_supplier_accounts(
     权限：admin, finance, account_manager
     """
     try:
-        service = SupplierService(db)
         accounts, total = service.get_supplier_accounts(
             supplier_id=supplier_id,
             current_user_id=current_user.id,
@@ -258,9 +266,9 @@ async def get_supplier_accounts(
 @router.get("/{supplier_id}/ledger-summary")
 async def get_supplier_ledger_summary(
     supplier_id: int,
-    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
-    db: Session = Depends(get_db),
+    start_date: Optional[date] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    service: SupplierService = Depends(get_supplier_service),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -270,7 +278,6 @@ async def get_supplier_ledger_summary(
     按 LEDGER_SOT.md v1.1 规范，汇总 COST / TRANSFER_OUT 等分录类型
     """
     try:
-        service = SupplierService(db)
         summary = service.get_supplier_ledger_summary(
             supplier_id=supplier_id,
             current_user_id=current_user.id,
@@ -290,8 +297,8 @@ async def get_supplier_ledger_summary(
 @router.get("/{supplier_id}/fee-rate")
 async def get_supplier_fee_rate(
     supplier_id: int,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    service: FeeService = Depends(get_fee_service),
+    current_user: dict = Depends(require_role(["admin", "finance"]))
 ):
     """
     获取供应商费率配置
@@ -301,17 +308,7 @@ async def get_supplier_fee_rate(
 
     SoT Ref: FINANCIAL_REFACTOR_PLAN.md Phase 4
     """
-    # 权限检查
-    role = current_user.role
-    if role not in ["admin", "finance"]:
-        return error_response(
-            code="AUTH_003",
-            message="权限不足，需要 admin 或 finance 角色",
-            status_code=403
-        )
-
     try:
-        service = FeeService(db)
         result = service.get_effective_fee_rate(supplier_id)
         return success_response(data=result, message="获取费率成功")
     except ResourceNotFoundError as e:
@@ -324,8 +321,8 @@ async def get_supplier_fee_rate(
 async def update_supplier_fee_rate(
     supplier_id: int,
     request: FeeRateUpdateRequest,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    service: FeeService = Depends(get_fee_service),
+    current_user: dict = Depends(require_role(["admin", "finance"]))
 ):
     """
     更新供应商费率
@@ -336,17 +333,7 @@ async def update_supplier_fee_rate(
 
     SoT Ref: FINANCIAL_REFACTOR_PLAN.md Phase 4
     """
-    # 权限检查
-    role = current_user.role
-    if role not in ["admin", "finance"]:
-        return error_response(
-            code="FEE_021",
-            message="权限不足，需要 admin 或 finance 角色",
-            status_code=403
-        )
-
     try:
-        service = FeeService(db)
         result = service.update_fee_rate(
             supplier_id=supplier_id,
             new_rate=request.fee_rate,

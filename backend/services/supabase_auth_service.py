@@ -326,15 +326,11 @@ class SupabaseAuthService:
             )
 
             logger.info(f"Supabase response: {response}")
-            print(f"[DEBUG] Password reset email sent to {email}, response: {response}")
+            logger.debug(f"Password reset email sent to {email}, response: {response}")
 
         except Exception as e:
             # 记录详细错误但不暴露给用户
-            logger.error(f"Password reset email error: {type(e).__name__}: {e}")
-            print(f"[ERROR] Password reset failed: {type(e).__name__}: {e}")
-            import traceback
-
-            traceback.print_exc()
+            logger.error(f"Password reset email error: {type(e).__name__}: {e}", exc_info=True)
 
     async def update_password(self, new_password: str, access_token: str) -> None:
         """

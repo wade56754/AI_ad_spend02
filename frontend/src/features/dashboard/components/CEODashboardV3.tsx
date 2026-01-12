@@ -282,11 +282,31 @@ export function CEODashboardV3() {
 
   // Error state
   if (isError) {
+    // 检查是否是权限错误
+    const isPermissionError = 
+      error && (
+        (error as any)?.code === 'AUTH_500' ||
+        (error as any)?.status === 403 ||
+        (error as any)?.message?.includes('仅限') ||
+        (error as any)?.message?.includes('权限')
+      );
+
     return (
       <div className="p-6 text-center">
         <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">加载仪表盘失败</h2>
-        <p className="text-muted-foreground mb-4">{error?.message || '未知错误'}</p>
+        {isPermissionError ? (
+          <>
+            <p className="text-muted-foreground mb-2">
+              CEO 驾驶舱仅限老板和管理员访问
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              当前用户角色可能没有访问权限，请联系系统管理员
+            </p>
+          </>
+        ) : (
+          <p className="text-muted-foreground mb-4">{error?.message || '未知错误'}</p>
+        )}
         <Button onClick={() => refreshAll()}>
           <RefreshCw className="h-4 w-4 mr-2" />
           重试

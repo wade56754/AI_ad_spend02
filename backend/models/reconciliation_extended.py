@@ -1,6 +1,13 @@
 """
 对账管理扩展模块
 包含对账批次、对账详情、差异处理等完整对账功能
+
+⚠️ 注意：此文件名为 `reconciliation_extended.py`，但包含的是当前正在使用的模型类和枚举。
+这些类正在被以下模块使用：
+- backend/services/reconciliation_service_extended.py
+- backend/tests/test_new_modules_integration.py
+
+未来重构建议：将此文件重命名为 `reconciliation_models.py` 或移动到 `backend/models/finance/` 目录。
 """
 
 from datetime import datetime, date

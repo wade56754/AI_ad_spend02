@@ -103,10 +103,10 @@ class ProfitInfo(BaseModel):
     """利润信息"""
     total: float
     label: str
-    rate: float
-    rate_pct: float
+    rate: Optional[float] = None  # 当收款=0 时为 None
+    rate_pct: Optional[float] = None  # 当收款=0 时为 None
     target_rate: float
-    gap: float
+    gap: Optional[float] = None  # 当收款=0 时为 None
     status: str
     status_label: str
 
@@ -340,8 +340,8 @@ class ProfitStatusSummary(BaseModel):
     total_revenue: float
     total_cost: float
     total_profit: float
-    profit_rate: float
-    profit_rate_pct: float
+    profit_rate: Optional[float] = None  # 当收款=0 时为 None
+    profit_rate_pct: Optional[float] = None  # 当收款=0 时为 None
     total_conversions: int
     avg_cpl: float
     target_profit_rate: float
@@ -368,8 +368,8 @@ class TopProject(BaseModel):
     """Top 项目"""
     project_name: str
     profit: float
-    profit_rate: float
-    profit_rate_pct: float
+    profit_rate: Optional[float] = None  # 当收款=0 时为 None
+    profit_rate_pct: Optional[float] = None  # 当收款=0 时为 None
     status: str
 
 

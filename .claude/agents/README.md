@@ -1,18 +1,36 @@
 # Claude Agents 索引
 
-> **版本**: v1.0
-> **更新日期**: 2025-12-17
-> **代理总数**: 3
+> **版本**: v2.0
+> **更新日期**: 2026-01-09
+> **代理总数**: 10+ (整合 wshobson/agents)
 
 ---
 
 ## 代理清单
+
+### 自定义代理
 
 | 代理 | 用途 | 触发条件 |
 |------|------|---------|
 | [codex-loop](./codex-loop.md) | Codex 循环代理 | 代码审查/重构/生成的迭代优化 |
 | [doc-architect](./doc-architect.md) | 文档架构代理 | 文档规划、结构设计 |
 | [doc-fixer](./doc-fixer.md) | 文档修复代理 | 文档问题修正、一致性检查 |
+
+### wshobson/agents 整合代理（Tier 1: Opus 4.5）
+
+| 代理 | 用途 | 模型 | 来源 |
+|------|------|------|------|
+| [system-architect](./system-architect.yaml) | 系统架构师 | Opus 4.5 | wshobson/agents |
+| [backend-architect](./backend-architect.yaml) | 后端架构师 | Opus 4.5 | wshobson/agents |
+| [code-reviewer](./code-reviewer.yaml) | 代码审查员 | Opus 4.5 | wshobson/agents |
+| [debugging-specialist](./debugging-specialist.yaml) | 调试专家 | Opus 4.5 | wshobson/agents |
+| [performance-engineer](./performance-engineer.yaml) | 性能工程师 | Opus 4.5 | wshobson/agents |
+
+### wshobson/agents 整合代理（Tier 2: Sonnet 4.5）
+
+| 代理 | 用途 | 模型 | 来源 |
+|------|------|------|------|
+| [frontend-developer](./frontend-developer.yaml) | 前端开发者 | Sonnet 4.5 | wshobson/agents |
 
 ---
 

@@ -69,7 +69,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
 
     # RLS 配置
     __rls_user_field__ = "created_by"
-    __rls_admin_roles__ = [UserRole.ADMIN, UserRole.DATA_OPERATOR]
+    __rls_admin_roles__ = [UserRole.ADMIN, UserRole.PROJECT_OWNER]
 
     # 序列化配置
     __json_include_relationships__ = [
@@ -370,7 +370,7 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
 
     def can_be_edited_by(self, user_id, user_role: UserRole) -> bool:
         """检查用户是否可以编辑此项目"""
-        if user_role in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
+        if user_role in [UserRole.ADMIN, UserRole.PROJECT_OWNER]:
             return True
 
         if user_role == UserRole.MEDIA_BUYER:
@@ -390,8 +390,8 @@ class Project(Base, TimestampMixin, UserScopeMixin, RLSAwareMixin, SerializableM
         """获取用户可访问的项目查询（RLS 逻辑）"""
         query = session.query(cls)
 
-        # 管理员和数据员可以访问所有项目
-        if user_role in [UserRole.ADMIN, UserRole.DATA_OPERATOR]:
+        # 管理员和项目负责人可以访问所有项目
+        if user_role in [UserRole.ADMIN, UserRole.PROJECT_OWNER]:
             return query
 
         # 投手只能访问自己创建的项目

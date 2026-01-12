@@ -1,6 +1,6 @@
 # ===========================
-# AI_ad_spend02 Cursor Rules v2.3
-# 基于 MASTER.md v4.7 + STATE_MACHINE.md v2.8 + PRD v2.2
+# AI_ad_spend02 Cursor Rules v2.4
+# 基于 MASTER.md v4.7 + STATE_MACHINE.md v2.8 + PRD v2.2 + AI Code Factory v5.1
 # 兼容 Claude Code + Cursor IDE
 # ===========================
 
@@ -10,6 +10,55 @@ RULE: You are an expert AI coding assistant. Treat AI as a pair programmer, not 
 RULE: Always prefer minimal, surgical changes instead of rewriting whole files.
 RULE: Never invent new concepts, fields, statuses, roles, or APIs not in SoT documents.
 RULE: When editing code or docs, preserve existing intent unless task is explicitly a redesign.
+
+# ---------- AI 代码工厂强制使用规则 (MANDATORY) ----------
+
+RULE: **ALL code generation work MUST use AI Code Factory workflow**.
+RULE: Before generating any code, you MUST use the `ai-code-factory-workflow` skill.
+RULE: Code generation includes but not limited to:
+  - Creating new features (backend API, frontend pages, components)
+  - Implementing new functionality
+  - Adding new modules or services
+  - Creating new database models or migrations
+  - Writing new tests
+  - Refactoring existing code (if substantial)
+
+RULE: How to use AI Code Factory:
+  1. Identify the workflow type based on user requirement:
+     - "创建" / "开发" / "实现" → full_stack_development
+     - "审查" / "检查" / "review" → code_review
+     - "修复" / "bug" / "问题" → bug_fixing
+     - "优化" / "性能" / "慢" → performance_optimization
+     - "架构" / "设计" → system_architecture
+  
+  2. Use natural language to call the workflow:
+     ```
+     使用代码工厂工作流，需求：[用户需求描述]
+     ```
+     OR simply describe the requirement naturally:
+     ```
+     创建一个用户管理功能，包括列表、创建、编辑、删除
+     ```
+  
+  3. The workflow will automatically:
+     - Select appropriate agents (system-architect, backend-architect, etc.)
+     - Execute tasks in sequence or parallel
+     - Return complete results with code, suggestions, and metrics
+
+RULE: **Exceptions** (when NOT to use AI Code Factory):
+  - Simple bug fixes (typos, syntax errors)
+  - Documentation updates (markdown, comments)
+  - Configuration changes (.env, config files)
+  - Minor refactoring (renaming variables, formatting)
+  - User explicitly requests direct code editing
+
+RULE: If user requests code generation without using AI Code Factory, you MUST:
+  1. Politely remind: "根据项目规则，所有代码生成工作必须使用 AI 代码工厂工作流"
+  2. Ask: "请允许我使用代码工厂工作流来完成这个任务"
+  3. Proceed with AI Code Factory workflow
+
+RULE: AI Code Factory skill location: `.claude/skills/ai-code-factory-workflow/SKILL.md`
+RULE: For detailed usage, refer to: `docs/integration/USAGE_GUIDE.md`
 
 # ---------- SoT 裁判链（完整 8 层，优先级从高到低） ----------
 
@@ -305,4 +354,4 @@ RULE: If change could break CLI, API, or SoT invariants:
 # Supabase MCP: .claude/mcp.json, .mcp.json
 # Playwright MCP: .claude/mcp.json, .mcp.json
 
-# End of Cursor Rules v2.3
+# End of Cursor Rules v2.4

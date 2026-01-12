@@ -165,7 +165,7 @@ async def get_transactions(
 ):
     """
     获取交易记录列表
-    需要权限: FINANCE 或 ADMIN 或 DATA_OPERATOR
+    需要权限: FINANCE 或 ADMIN 或 PROJECT_OWNER
     """
     try:
         result = ledger_service.get_transactions(
@@ -244,7 +244,7 @@ async def get_account_balance(
 ):
     """
     获取账户余额
-    需要权限: FINANCE 或 ADMIN 或 DATA_OPERATOR
+    需要权限: FINANCE 或 ADMIN 或 PROJECT_OWNER
     """
     try:
         balance_data = ledger_service.get_account_balance(
@@ -275,7 +275,7 @@ async def get_project_budget_allocation(
 ):
     """
     获取项目预算分配
-    需要权限: FINANCE 或 ADMIN 或 DATA_OPERATOR
+    需要权限: FINANCE 或 ADMIN 或 PROJECT_OWNER
     """
     try:
         allocations = ledger_service.get_project_budget_allocation(project_id)
@@ -348,7 +348,7 @@ async def get_transaction_statistics(
 ):
     """
     获取交易统计信息
-    需要权限: FINANCE 或 ADMIN 或 DATA_OPERATOR
+    需要权限: FINANCE 或 ADMIN 或 PROJECT_OWNER
     """
     try:
         statistics = ledger_service.get_transaction_statistics(

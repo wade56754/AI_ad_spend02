@@ -149,8 +149,8 @@ async def list_settlements(
     payment_status: Optional[str] = Query(None, description="支付状态"),
     supplier_id: Optional[int] = Query(None, description="供应商ID"),
     client_id: Optional[int] = Query(None, description="客户ID"),
-    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    start_date: Optional[date] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role(["admin", "finance"]))
 ):
@@ -186,8 +186,8 @@ async def list_settlements(
 
 @router.get("/statistics")
 async def get_settlement_statistics(
-    start_date: Optional[str] = Query(None, description="开始日期 (YYYY-MM-DD)"),
-    end_date: Optional[str] = Query(None, description="结束日期 (YYYY-MM-DD)"),
+    start_date: Optional[date] = Query(None, description="开始日期 (YYYY-MM-DD)"),
+    end_date: Optional[date] = Query(None, description="结束日期 (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role(["admin", "finance"]))
 ):

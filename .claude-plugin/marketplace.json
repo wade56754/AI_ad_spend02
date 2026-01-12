@@ -1,0 +1,301 @@
+{
+  "version": "2.0.0",
+  "source": "wshobson/agents + custom",
+  "description": "AI 代码工厂插件市场 - 整合 wshobson/agents 和自定义插件",
+  "plugins": [
+    {
+      "id": "code-factory",
+      "name": "AI 代码工厂",
+      "version": "5.0",
+      "source": "custom",
+      "description": "6阶段代码生成流水线 - SEARCH → SELECT → ADAPT → ASSEMBLE → VERIFY → CONFIRM",
+      "category": "development",
+      "agents": [
+        {
+          "id": "code-factory-orchestrator",
+          "source": "custom",
+          "model_tier": "tier1"
+        }
+      ],
+      "skills": [
+        {
+          "id": "code-searcher",
+          "source": "custom",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "code-selector",
+          "source": "custom",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "code-adapter",
+          "source": "custom",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "code-assembler",
+          "source": "custom",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "code-verifier",
+          "source": "custom",
+          "model_tier": "tier1"
+        }
+      ],
+      "tools": ["run-tests", "lint-code"],
+      "dependencies": []
+    },
+    {
+      "id": "backend-development",
+      "name": "后端开发",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "后端开发代理和技能（来自 wshobson/agents）",
+      "category": "development",
+      "agents": [
+        {
+          "id": "backend-architect",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "full-stack-developer",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "skills": [
+        {
+          "id": "backend-development",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "fastapi",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "sqlalchemy",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "python",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "frontend-development",
+      "name": "前端开发",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "前端开发代理和技能（来自 wshobson/agents）",
+      "category": "development",
+      "agents": [
+        {
+          "id": "frontend-developer",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        }
+      ],
+      "skills": [
+        {
+          "id": "frontend-development",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "react",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "nextjs",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "typescript",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "code-review",
+      "name": "代码审查",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "代码审查代理和技能（来自 wshobson/agents）",
+      "category": "quality",
+      "agents": [
+        {
+          "id": "code-reviewer",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "security-auditor",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "skills": [
+        {
+          "id": "code-review-patterns",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "security-patterns",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "bug-fixing",
+      "name": "Bug 修复",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "Bug 修复代理和技能（来自 wshobson/agents）",
+      "category": "development",
+      "agents": [
+        {
+          "id": "debugging-specialist",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "skills": [
+        {
+          "id": "debugging-patterns",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "performance-optimization",
+      "name": "性能优化",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "性能优化代理和技能（来自 wshobson/agents）",
+      "category": "quality",
+      "agents": [
+        {
+          "id": "performance-engineer",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "skills": [
+        {
+          "id": "performance-optimization",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "system-architecture",
+      "name": "系统架构",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "系统架构代理和技能（来自 wshobson/agents）",
+      "category": "architecture",
+      "agents": [
+        {
+          "id": "system-architect",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "database-architect",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "api-architect",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "skills": [
+        {
+          "id": "api-design",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        },
+        {
+          "id": "database-design",
+          "source": "wshobson/agents",
+          "model_tier": "tier1"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "testing",
+      "name": "测试自动化",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "测试自动化代理和技能（来自 wshobson/agents）",
+      "category": "quality",
+      "agents": [
+        {
+          "id": "test-automator",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        }
+      ],
+      "skills": [
+        {
+          "id": "testing-patterns",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        }
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "documentation",
+      "name": "文档生成",
+      "version": "1.0",
+      "source": "wshobson/agents",
+      "description": "文档生成代理和技能（来自 wshobson/agents）",
+      "category": "documentation",
+      "agents": [
+        {
+          "id": "documentation-engineer",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        },
+        {
+          "id": "technical-writer",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        }
+      ],
+      "skills": [
+        {
+          "id": "documentation-patterns",
+          "source": "wshobson/agents",
+          "model_tier": "tier2"
+        }
+      ],
+      "dependencies": []
+    }
+  ]
+}
+

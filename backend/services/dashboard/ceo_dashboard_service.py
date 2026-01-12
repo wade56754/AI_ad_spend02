@@ -11,6 +11,7 @@ Version: 3.0
 Author: Claude Code
 """
 
+import logging
 from decimal import Decimal
 from datetime import date, datetime
 from typing import Dict, Any, List
@@ -20,6 +21,8 @@ from .profit_service import ProfitService
 from .project_balance_service import ProjectBalanceService
 from .cash_status_service import CashStatusService
 from backend.models import Project, DailyReport
+
+logger = logging.getLogger(__name__)
 
 
 class CEODashboardService:
@@ -41,20 +44,53 @@ class CEODashboardService:
         Returns:
             完整仪表盘数据
         """
-        # 现金状况
-        cash_status = self.cash_service.get_cash_status(period)
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            # 现金状况
+            logger.debug(f"Getting cash status for period: {period}")
+            cash_status = self.cash_service.get_cash_status(period)
+            logger.debug(f"Cash status retrieved: {cash_status}")
+        except Exception as e:
+            logger.error(f"Error getting cash status: {e}", exc_info=True)
+            raise
 
-        # 利润概览
-        profit_summary = self.profit_service.get_profit_summary(period)
+        try:
+            # 利润概览
+            logger.debug(f"Getting profit summary for period: {period}")
+            profit_summary = self.profit_service.get_profit_summary(period)
+            logger.debug(f"Profit summary retrieved: {profit_summary}")
+        except Exception as e:
+            logger.error(f"Error getting profit summary: {e}", exc_info=True)
+            raise
 
-        # 项目余额
-        project_balance = self.balance_service.get_all_balances(period)
+        try:
+            # 项目余额
+            logger.debug(f"Getting project balance for period: {period}")
+            project_balance = self.balance_service.get_all_balances(period)
+            logger.debug(f"Project balance retrieved: {project_balance}")
+        except Exception as e:
+            logger.error(f"Error getting project balance: {e}", exc_info=True)
+            raise
 
-        # 待办事项
-        action_items = self.get_action_items(period)
+        try:
+            # 待办事项
+            logger.debug(f"Getting action items for period: {period}")
+            action_items = self.get_action_items(period)
+            logger.debug(f"Action items retrieved: {action_items}")
+        except Exception as e:
+            logger.error(f"Error getting action items: {e}", exc_info=True)
+            raise
 
-        # 项目排行 Top 5
-        ranking = self.profit_service.get_project_ranking(period, limit=5)
+        try:
+            # 项目排行 Top 5
+            logger.debug(f"Getting project ranking for period: {period}")
+            ranking = self.profit_service.get_project_ranking(period, limit=5)
+            logger.debug(f"Project ranking retrieved: {ranking}")
+        except Exception as e:
+            logger.error(f"Error getting project ranking: {e}", exc_info=True)
+            raise
 
         return {
             "period": period or self._current_period(),
@@ -102,7 +138,7 @@ class CEODashboardService:
                     "profit_rate_pct": p["metrics"]["profit_rate_pct"],
                     "status": p["profit_status"]
                 }
-                for p in ranking["items"][:5]
+                for p in (ranking.get("items", []))[:5]
             ]
         }
 

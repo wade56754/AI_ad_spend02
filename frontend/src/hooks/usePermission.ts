@@ -14,7 +14,7 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import type { BusinessRole, TechRole } from '@/types/roles';
-import { TECH_TO_BUSINESS_ROLE } from '@/types/roles';
+import { TECH_TO_BUSINESS_MAP } from '@/types/roles';
 import { PERMISSION_MATRIX, type PermissionAction } from '@/lib/constants/permission-matrix';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -90,7 +90,7 @@ export function usePermission(): UsePermissionReturn {
   // - user: 用户信息变化时需要重新计算权限
   // - isLoading: 加载状态变化时需要更新返回值
   // - CEO_USER_IDS 是模块级常量，不需要作为依赖
-  // - PERMISSION_MATRIX/TECH_TO_BUSINESS_ROLE 是静态映射，不需要作为依赖
+  // - PERMISSION_MATRIX/TECH_TO_BUSINESS_MAP 是静态映射，不需要作为依赖
   return useMemo(() => {
     // ─── 用户未登录或加载中 ───
     if (!user) {
@@ -124,7 +124,7 @@ export function usePermission(): UsePermissionReturn {
       if (checkIsProjectOwner()) return 'project_owner';
       // 技术角色映射到业务角色
       const techRole = user.role as TechRole;
-      return TECH_TO_BUSINESS_ROLE[techRole] || 'pitcher';
+      return TECH_TO_BUSINESS_MAP[techRole] || 'pitcher';
     };
 
     const businessRole = getBusinessRole();

@@ -4,6 +4,14 @@ Version: 2.1 - Fixed SQLAlchemy syntax
 
 仅包含 TopupTransaction 和 TopupApprovalLog。
 TopupRequest 定义在 backend/models/workflow/topup_request.py 中。
+
+⚠️ 注意：此文件名为 `topup_fixed.py`，但包含的是当前正在使用的模型类。
+这些类（TopupTransaction, TopupApprovalLog）正在被以下模块使用：
+- backend/services/topup_service.py
+- backend/models/__init__.py
+- backend/tests/test_topup_service.py
+
+未来重构建议：将此文件重命名为 `topup_transaction.py` 或移动到 `backend/models/workflow/` 目录。
 """
 
 from datetime import datetime
