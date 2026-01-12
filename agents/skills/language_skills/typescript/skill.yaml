@@ -1,0 +1,37 @@
+# TypeScript 技能
+# 覆盖: React, Next.js, TanStack Query, shadcn/ui
+
+id: typescript
+name: TypeScript 技能
+version: "1.0"
+category: language
+
+# Layer 1: 元数据
+triggers:
+  - "TypeScript"
+  - "前端"
+  - "frontend"
+  - "React"
+  - "Next.js"
+  - "组件"
+  - "页面"
+
+keywords:
+  - "use client"
+  - "useQuery"
+  - "useMutation"
+  - "shadcn"
+  - "DataTable"
+  - "apiGet"
+  - "apiPost"
+
+# SoT 引用
+sot_references:
+  - "AGENTS.md#TypeScript前端"
+  - ".cursorrules#前端组件规范"
+
+instructions: "./instructions.md"
+resources:
+  - "./resources/react_hooks.md"
+  - "./resources/tanstack_query.md"
+  - "./resources/shadcn_ui.md"

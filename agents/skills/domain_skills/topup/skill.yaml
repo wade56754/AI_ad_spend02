@@ -1,0 +1,39 @@
+# 充值管理技能
+# SoT: STATE_MACHINE.md#topup, DATA_SCHEMA.md#topup_requests
+
+id: topup
+name: 充值管理技能
+version: "1.0"
+category: domain
+
+# Layer 1: 元数据 (始终加载)
+triggers:
+  - "充值"
+  - "topup"
+  - "top-up"
+  - "充值申请"
+  - "财务审批"
+  - "充值审核"
+
+keywords:
+  - "draft"
+  - "pending_review"
+  - "finance_approve"
+  - "paid"
+  - "completed"
+  - "rejected"
+  - "cancelled"
+  - "充值金额"
+  - "审批链"
+
+# SoT 引用
+sot_references:
+  - "STATE_MACHINE.md#topup"
+  - "DATA_SCHEMA.md#topup_requests"
+  - "API_SOT.md#topups"
+  - "BUSINESS_RULES.md#BR-FIN"
+
+# Layer 2 & 3 路径
+instructions: "./instructions.md"
+resources:
+  - "./resources/approval_chain.md"

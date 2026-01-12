@@ -1,0 +1,36 @@
+# Python 技能
+# 覆盖: Pydantic v2, SQLAlchemy 2.x, FastAPI
+
+id: python
+name: Python 技能
+version: "1.0"
+category: language
+
+# Layer 1: 元数据
+triggers:
+  - "Python"
+  - "后端"
+  - "backend"
+  - "FastAPI"
+  - "SQLAlchemy"
+  - "Pydantic"
+
+keywords:
+  - "model_config"
+  - "ConfigDict"
+  - "from_attributes"
+  - "mapped_column"
+  - "select"
+  - "async"
+  - "await"
+
+# SoT 引用
+sot_references:
+  - "AGENTS.md#Python后端"
+  - ".cursorrules#技术栈约束"
+
+instructions: "./instructions.md"
+resources:
+  - "./resources/pydantic_v2.md"
+  - "./resources/sqlalchemy_2x.md"
+  - "./resources/fastapi.md"

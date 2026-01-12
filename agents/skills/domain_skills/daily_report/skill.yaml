@@ -1,0 +1,44 @@
+# 日报管理技能
+# SoT: STATE_MACHINE.md#daily_report, DATA_SCHEMA.md#daily_reports
+
+id: daily-report
+name: 日报管理技能
+version: "1.0"
+category: domain
+
+# Layer 1: 元数据 (始终加载)
+triggers:
+  - "日报"
+  - "daily report"
+  - "投手日报"
+  - "趋势检测"
+  - "粉数确认"
+  - "日报审核"
+
+keywords:
+  - "raw_submitted"
+  - "trend_pending"
+  - "trend_ok"
+  - "trend_flagged"
+  - "trend_resolved"
+  - "final_pending"
+  - "final_confirmed"
+  - "final_locked"
+  - "粉数"
+  - "消耗"
+  - "conversions"
+  - "spend"
+
+# SoT 引用
+sot_references:
+  - "STATE_MACHINE.md#daily_report"
+  - "DATA_SCHEMA.md#daily_reports"
+  - "API_SOT.md#daily-reports"
+  - "BUSINESS_RULES.md#BR-RPT"
+
+# Layer 2 & 3 路径
+instructions: "./instructions.md"
+resources:
+  - "./resources/state_machine.md"
+  - "./resources/api_examples.md"
+  - "./resources/edge_cases.md"

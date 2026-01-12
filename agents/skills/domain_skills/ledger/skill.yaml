@@ -1,0 +1,39 @@
+# 账本管理技能
+# SoT: DATA_SCHEMA.md#ledger_entries, BUSINESS_RULES.md#BR-FIN
+
+id: ledger
+name: 账本管理技能
+version: "1.0"
+category: domain
+
+# Layer 1: 元数据 (始终加载)
+triggers:
+  - "账本"
+  - "ledger"
+  - "记账"
+  - "余额"
+  - "balance"
+  - "财务流水"
+  - "对账"
+
+keywords:
+  - "ledger_entry"
+  - "debit"
+  - "credit"
+  - "balance"
+  - "double_entry"
+  - "复式记账"
+  - "借方"
+  - "贷方"
+
+# SoT 引用
+sot_references:
+  - "DATA_SCHEMA.md#ledger_entries"
+  - "DATA_SCHEMA.md#ad_accounts"
+  - "BUSINESS_RULES.md#BR-FIN"
+  - "MASTER.md#账本规则"
+
+# Layer 2 & 3 路径
+instructions: "./instructions.md"
+resources:
+  - "./resources/double_entry.md"
