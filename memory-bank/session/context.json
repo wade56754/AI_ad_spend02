@@ -1,0 +1,16 @@
+{
+  "session_id": "7f07fd8e",
+  "started_at": "2026-01-14T05:10:13.015868",
+  "current_task": "task-001",
+  "current_task_title": "测试",
+  "completed_steps": [
+    "步骤1 - 完成了步骤1"
+  ],
+  "pending_steps": [
+    "步骤2"
+  ],
+  "key_decisions": [],
+  "modified_files": [],
+  "errors_encountered": [],
+  "last_updated": "2026-01-14T05:10:13.016872"
+}

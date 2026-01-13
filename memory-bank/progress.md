@@ -8,6 +8,37 @@
 
 ## 0. 最近更新
 
+### 2026-01-12
+**财务模块 UI 最佳实践修复** ✅
+
+> **分支**: master | **AI 代码工厂**: /gen fe
+
+**修复内容**:
+- [x] P2 修复 ProfitSummaryCards 货币默认值 USD→CNY
+- [x] P1 修复 FundOverviewPage 刷新逻辑 (invalidateQueries)
+- [x] P1 修复 ProfitAnalysisPage 刷新逻辑 (invalidateQueries)
+- [x] P3 添加完整错误状态展示 (Alert 组件)
+
+**修改文件**:
+| 文件 | 修改类型 | 说明 |
+|------|---------|------|
+| `ProfitSummaryCards.tsx` | 修改 | 货币默认值 CNY |
+| `FundOverviewPage.tsx` | 重构 | queryClient + 错误状态 |
+| `ProfitAnalysisPage.tsx` | 重构 | queryClient + 错误状态 |
+
+**设计审查结果**:
+- ✅ 设计系统一致性: 通过
+- ✅ 响应式设计: md:grid-cols-2 lg:grid-cols-4
+- ✅ 错误处理: Loading/Error/Success 三态
+- ⚠️ 待优化: ProjectProfitTable 使用原生 Table
+
+**待后端修复 (CORS/400)**:
+- `/api/v1/finance/profit/suppliers` - CORS
+- `/api/v1/finance/profit/projects` - CORS
+- `/api/v1/finance/profit/trend` - 400 Bad Request
+
+---
+
 ### 2026-01-09
 **前端任务全部完成 (57/57)** ✅
 
