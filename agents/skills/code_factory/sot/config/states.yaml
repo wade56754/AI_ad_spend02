@@ -1,0 +1,107 @@
+# SoT 状态配置
+# 来源: STATE_MACHINE.md v2.8
+# 版本: v7.0
+
+version: "1.0"
+sot_refs:
+  - STATE_MACHINE.md v2.8
+
+# 日报状态机 (8 状态)
+daily_report_states:
+  - id: raw_submitted
+    name: 原始提交
+    description: 投手提交原始数据
+    is_initial: true
+    next_states:
+      - trend_pending
+    
+  - id: trend_pending
+    name: 趋势检测中
+    description: 趋势风控检测中
+    next_states:
+      - trend_ok
+      - trend_flagged
+    
+  - id: trend_ok
+    name: 趋势正常
+    description: 趋势风控通过
+    next_states:
+      - final_pending
+    
+  - id: trend_flagged
+    name: 趋势异常
+    description: 需运营复核
+    next_states:
+      - trend_resolved
+    
+  - id: trend_resolved
+    name: 趋势已处理
+    description: 运营确认正常波动
+    next_states:
+      - final_pending
+    
+  - id: final_pending
+    name: 等待最终确认
+    description: 等待最终确认
+    next_states:
+      - final_confirmed
+    
+  - id: final_confirmed
+    name: 最终已确认
+    description: 运营确认最终粉数
+    next_states:
+      - final_locked
+    
+  - id: final_locked
+    name: 计费已锁定
+    description: 计费锁定 (终态)
+    is_terminal: true
+    next_states: []
+
+# 废弃状态 (禁止使用)
+deprecated_daily_report_states:
+  - draft
+  - pending
+  - approved
+  - rejected
+
+# 充值状态机 (7 状态)
+topup_states:
+  - id: draft
+    name: 草稿
+    is_initial: true
+    next_states:
+      - pending_review
+      - cancelled
+    
+  - id: pending_review
+    name: 待审核
+    next_states:
+      - finance_approve
+      - rejected
+    
+  - id: finance_approve
+    name: 财务已批准
+    next_states:
+      - paid
+      - rejected
+    
+  - id: paid
+    name: 已付款
+    next_states:
+      - completed
+    
+  - id: completed
+    name: 已完成
+    is_terminal: true
+    next_states: []
+    
+  - id: cancelled
+    name: 已取消
+    is_terminal: true
+    next_states: []
+    
+  - id: rejected
+    name: 已拒绝
+    is_terminal: true
+    next_states: []

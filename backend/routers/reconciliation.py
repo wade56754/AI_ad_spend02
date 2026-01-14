@@ -492,7 +492,8 @@ async def get_reconciliation_reports(
         query = db.query(ReconciliationReport)
 
         # 根据角色过滤
-        if current_user.role in ["account_manager", "pitcher"]:
+        # PRD v2.2: pitcher ↔ media_buyer 角色别名
+        if current_user.role in ["account_manager", "pitcher", "media_buyer"]:
             # TODO: 实现基于角色的数据过滤
             pass
 

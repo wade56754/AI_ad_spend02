@@ -63,6 +63,12 @@ from .enhanced_verifier import (
     create_verifier_from_project,
     quick_verify,
 )
+from .source_tracing_verifier import (
+    SourceTracingVerifier,
+    HallucinationGuard,
+    verify_source_tracing,
+    verify_hallucination_guard,
+)
 
 __all__ = [
     # 基础类型
@@ -88,4 +94,9 @@ __all__ = [
     # 便捷函数
     "create_verifier_from_project",
     "quick_verify",
+    # 来源追溯验证器 (v1.0)
+    "SourceTracingVerifier",
+    "HallucinationGuard",
+    "verify_source_tracing",
+    "verify_hallucination_guard",
 ]

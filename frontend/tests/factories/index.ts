@@ -183,7 +183,7 @@ export const topupRequestFactory = {
     to_status: toStatus,
     operator_id: `op-${randomString(8)}`,
     operator_name: `操作人_${randomString(4)}`,
-    operator_role: action.includes('data_review') ? 'data_operator' : action.includes('finance') ? 'finance' : 'admin',
+    operator_role: action.includes('data_review') ? 'finance' : action.includes('finance') ? 'finance' : 'admin', // data_operator 废弃，使用 finance
     notes: `${action} 操作`,
     created_at: new Date().toISOString(),
   }),

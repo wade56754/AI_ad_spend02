@@ -56,6 +56,7 @@ import {
 
 import { useDashboardData, useRefreshDashboard, showAlertToasts, showSuccessToast } from '../hooks';
 import { formatCurrency, formatCurrencyWan } from '../utils/formatters';
+import { safeAverage } from '@/lib';
 import type { PendingTask } from '../types';
 
 export function DashboardPage() {
@@ -181,12 +182,14 @@ export function DashboardPage() {
   );
 
   // 计算 7 日均值 (用于 KPI 卡片)
+  // FE-P0-1 修复: 使用 safeAverage 替代硬编码除以 7，正确处理不足 7 天的情况
   const average7d = useMemo(() => {
     const last7Days = mainTrendData.slice(-7);
-    const avgSpend = last7Days.reduce((sum, d) => sum + (d.spend || 0), 0) / 7;
-    const avgRevenue = last7Days.reduce((sum, d) => sum + (d.revenue || 0), 0) / 7;
-    const avgProfit = last7Days.reduce((sum, d) => sum + (d.profit || 0), 0) / 7;
-    const avgConversions = last7Days.reduce((sum, d) => sum + (d.conversions || 0), 0) / 7;
+    // safeAverage 会正确除以实际数组长度，而非固定值 7
+    const avgSpend = safeAverage(last7Days.map(d => d.spend));
+    const avgRevenue = safeAverage(last7Days.map(d => d.revenue));
+    const avgProfit = safeAverage(last7Days.map(d => d.profit));
+    const avgConversions = safeAverage(last7Days.map(d => d.conversions));
 
     return {
       spend: formatCurrency(avgSpend),

@@ -187,15 +187,15 @@ class TestStateMachineRoles:
         """创建带角色验证的状态机"""
         return StateMachine([
             Transition(TopupStatus.DRAFT, TopupStatus.PENDING_REVIEW,
-                      required_roles=["media_buyer", "account_manager"]),
+                      required_roles=["pitcher", "account_manager"]),
             Transition(TopupStatus.PENDING_REVIEW, TopupStatus.FINANCE_APPROVE,
-                      required_roles=["data_operator"]),
+                      required_roles=["account_manager"]),  # PRD v2.2: data_operator → account_manager
         ])
 
     def test_transition_with_valid_role(self, role_machine):
         """测试有效角色转换"""
         entity = MockEntity(status="draft")
-        role_machine.transition(entity, "draft", "pending_review", user_role="media_buyer")
+        role_machine.transition(entity, "draft", "pending_review", user_role="pitcher")
         assert entity.status == "pending_review"
 
     def test_transition_with_alternative_role(self, role_machine):
@@ -289,7 +289,7 @@ class TestDailyReportStateMachine:
     def test_trend_ok_to_final_pending(self):
         """测试 trend_ok → final_pending 需要角色"""
         entity = MockEntity(status="trend_ok")
-        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_ok", "final_pending", user_role="data_operator")
+        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_ok", "final_pending", user_role="project_owner")
         assert entity.status == "final_pending"
 
     def test_final_confirmed_to_locked(self):
@@ -316,13 +316,13 @@ class TestTopupStateMachine:
     def test_draft_to_pending_review(self):
         """测试 draft → pending_review"""
         entity = MockEntity(status="draft")
-        TOPUP_STATE_MACHINE.transition(entity, "draft", "pending_review", user_role="media_buyer")
+        TOPUP_STATE_MACHINE.transition(entity, "draft", "pending_review", user_role="pitcher")
         assert entity.status == "pending_review"
 
     def test_pending_review_to_finance_approve(self):
-        """测试 pending_review → finance_approve 需要 data_operator"""
+        """测试 pending_review → finance_approve 需要 account_manager (PRD v2.2)"""
         entity = MockEntity(status="pending_review")
-        TOPUP_STATE_MACHINE.transition(entity, "pending_review", "finance_approve", user_role="data_operator")
+        TOPUP_STATE_MACHINE.transition(entity, "pending_review", "finance_approve", user_role="account_manager")
         assert entity.status == "finance_approve"
 
     def test_finance_approve_to_paid(self):
@@ -338,9 +338,9 @@ class TestTopupStateMachine:
         assert entity.status == "cancelled"
 
     def test_pending_review_can_reject(self):
-        """测试 pending_review 可以拒绝"""
+        """测试 pending_review 可以拒绝 (account_manager, PRD v2.2)"""
         entity = MockEntity(status="pending_review")
-        TOPUP_STATE_MACHINE.transition(entity, "pending_review", "rejected", user_role="data_operator")
+        TOPUP_STATE_MACHINE.transition(entity, "pending_review", "rejected", user_role="account_manager")
         assert entity.status == "rejected"
 
     def test_invalid_skip_review(self):
@@ -358,7 +358,7 @@ class TestTransferStateMachine:
         """测试完整审批流程"""
         entity = MockEntity(status="draft")
 
-        TRANSFER_STATE_MACHINE.transition(entity, "draft", "pending_approval", user_role="media_buyer")
+        TRANSFER_STATE_MACHINE.transition(entity, "draft", "pending_approval", user_role="pitcher")
         assert entity.status == "pending_approval"
 
         TRANSFER_STATE_MACHINE.transition(entity, "pending_approval", "approved", user_role="finance")
@@ -424,8 +424,8 @@ class TestStateMachineIntegration:
 
         DAILY_REPORT_STATE_MACHINE.transition(entity, "raw_submitted", "trend_pending")
         DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_pending", "trend_ok")
-        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_ok", "final_pending", user_role="data_operator")
-        DAILY_REPORT_STATE_MACHINE.transition(entity, "final_pending", "final_confirmed", user_role="data_operator")
+        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_ok", "final_pending", user_role="project_owner")
+        DAILY_REPORT_STATE_MACHINE.transition(entity, "final_pending", "final_confirmed", user_role="project_owner")
         DAILY_REPORT_STATE_MACHINE.transition(entity, "final_confirmed", "final_locked")
 
         assert entity.status == "final_locked"
@@ -436,8 +436,8 @@ class TestStateMachineIntegration:
 
         DAILY_REPORT_STATE_MACHINE.transition(entity, "raw_submitted", "trend_pending")
         DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_pending", "trend_flagged")
-        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_flagged", "trend_resolved", user_role="data_operator")
-        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_resolved", "final_pending", user_role="data_operator")
+        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_flagged", "trend_resolved", user_role="project_owner")
+        DAILY_REPORT_STATE_MACHINE.transition(entity, "trend_resolved", "final_pending", user_role="project_owner")
 
         assert entity.status == "final_pending"
 
@@ -445,8 +445,8 @@ class TestStateMachineIntegration:
         """测试充值完整流程"""
         entity = MockEntity(status="draft")
 
-        TOPUP_STATE_MACHINE.transition(entity, "draft", "pending_review", user_role="media_buyer")
-        TOPUP_STATE_MACHINE.transition(entity, "pending_review", "finance_approve", user_role="data_operator")
+        TOPUP_STATE_MACHINE.transition(entity, "draft", "pending_review", user_role="pitcher")
+        TOPUP_STATE_MACHINE.transition(entity, "pending_review", "finance_approve", user_role="account_manager")
         TOPUP_STATE_MACHINE.transition(entity, "finance_approve", "paid", user_role="finance")
         TOPUP_STATE_MACHINE.transition(entity, "paid", "completed", user_role="finance")
 

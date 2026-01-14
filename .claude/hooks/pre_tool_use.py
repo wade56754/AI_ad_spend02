@@ -230,6 +230,25 @@ def check_write_tool(tool_input: dict) -> tuple[str, str | None]:
             )
             return "reject", reason
 
+    # SoT 验证器检查 (P0-3: 启用 SoT 验证)
+    if SOT_VALIDATOR_AVAILABLE:
+        try:
+            sot_result = validate_code(content, file_path)
+            if not sot_result.success:
+                # 只对 error 级别问题进行阻断
+                errors = [i for i in sot_result.issues if i.level == "error"]
+                if errors:
+                    reasons = [f"{i.code}: {i.message}" for i in errors[:3]]
+                    reason = f"SoT violations ({len(errors)}): " + "; ".join(reasons)
+                    logger.warning(f"Write rejected (SoT): {file_path} - {reason}")
+                    return "reject", reason
+                # 警告级别只记录日志
+                warnings = [i for i in sot_result.issues if i.level == "warning"]
+                if warnings:
+                    logger.info(f"SoT warnings for {file_path}: {len(warnings)} warnings")
+        except Exception as e:
+            logger.error(f"SoT validation error: {e}")
+
     logger.info(f"Write approved: {file_path}")
     return "approve", None
 
@@ -277,6 +296,25 @@ def check_edit_tool(tool_input: dict) -> tuple[str, str | None]:
                 f"Edit rejected: {file_path} - {len(critical)} critical violations"
             )
             return "reject", reason
+
+    # SoT 验证器检查 (P0-3: 启用 SoT 验证)
+    if SOT_VALIDATOR_AVAILABLE:
+        try:
+            sot_result = validate_code(new_string, file_path)
+            if not sot_result.success:
+                # 只对 error 级别问题进行阻断
+                errors = [i for i in sot_result.issues if i.level == "error"]
+                if errors:
+                    reasons = [f"{i.code}: {i.message}" for i in errors[:3]]
+                    reason = f"SoT violations in edit ({len(errors)}): " + "; ".join(reasons)
+                    logger.warning(f"Edit rejected (SoT): {file_path} - {reason}")
+                    return "reject", reason
+                # 警告级别只记录日志
+                warnings = [i for i in sot_result.issues if i.level == "warning"]
+                if warnings:
+                    logger.info(f"SoT warnings in edit for {file_path}: {len(warnings)} warnings")
+        except Exception as e:
+            logger.error(f"SoT validation error in edit: {e}")
 
     logger.info(f"Edit approved: {file_path}")
     return "approve", None

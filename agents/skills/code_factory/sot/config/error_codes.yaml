@@ -1,0 +1,95 @@
+# SoT 错误码配置
+# 来源: ERROR_CODES_SOT.md v2.2
+# 版本: v7.0
+
+version: "1.0"
+sot_refs:
+  - ERROR_CODES_SOT.md v2.2
+
+# 错误码格式: {CATEGORY}-{MODULE}-{NUMBER}
+# 例如: BIZ-STATE-001
+
+categories:
+  - code: BIZ
+    name: 业务错误
+    range: "001-999"
+    
+  - code: AUTH
+    name: 认证授权错误
+    range: "001-099"
+    
+  - code: VAL
+    name: 验证错误
+    range: "001-099"
+    
+  - code: SYS
+    name: 系统错误
+    range: "001-099"
+
+modules:
+  - code: STATE
+    name: 状态机
+    category: BIZ
+    
+  - code: ROLE
+    name: 角色权限
+    category: AUTH
+    
+  - code: TOPUP
+    name: 充值
+    category: BIZ
+    
+  - code: LEDGER
+    name: 账本
+    category: BIZ
+    
+  - code: REPORT
+    name: 日报
+    category: BIZ
+
+# 已注册错误码
+registered_codes:
+  # 状态机错误
+  - code: BIZ-STATE-001
+    message: 状态转换非法
+    description: 尝试进行不允许的状态转换
+    
+  - code: BIZ-STATE-002
+    message: 状态不存在
+    description: 指定的状态不在白名单中
+    
+  # 角色错误
+  - code: AUTH-ROLE-001
+    message: 角色不存在
+    description: 指定的角色不在白名单中
+    
+  - code: AUTH-ROLE-002
+    message: 权限不足
+    description: 用户没有执行此操作的权限
+    
+  # 充值错误
+  - code: BIZ-TOPUP-001
+    message: 充值金额无效
+    description: 充值金额必须大于 0
+    
+  - code: BIZ-TOPUP-002
+    message: 账户余额不足
+    description: 账户余额不足以完成此操作
+    
+  # 账本错误
+  - code: BIZ-LEDGER-001
+    message: 余额不一致
+    description: 账本余额与计算值不一致
+    
+  - code: BIZ-LEDGER-002
+    message: 记录已锁定
+    description: 尝试修改已锁定的账本记录
+    
+  # 日报错误
+  - code: BIZ-REPORT-001
+    message: 日报已存在
+    description: 该日期已存在日报
+    
+  - code: BIZ-REPORT-002
+    message: 日报数据无效
+    description: 日报数据不符合格式要求

@@ -1,36 +1,30 @@
 """
-资金总览 API 路由 (重构版)
+资金总览 API 路由 (已废弃 - Deprecated)
+
+⚠️  警告: 此路由已废弃，请使用 finance_v2.py 中的统一财务 API
+    新路径: /api/v1/finance/fund/* 和 /api/v1/finance/profit/*
+    迁移指南: 见 docs/sot/API_SOT.md v9.4
+
+此路由将在 v3.0 版本中移除。
 
 SoT References:
 - A2-fund-overview.md §5 API 接口
-- API_SOT.md v9.3 标准响应格式
-- AUTH_SPEC.md v2.0 角色权限控制
-- MASTER.md v4.8 §2.4 (6角色模型)
-- ERROR_CODES_SOT.md v2.1 (错误码)
+- API_SOT.md v9.4 标准响应格式
+- AUTH_SPEC.md v2.1 角色权限控制
+- MASTER.md v4.9 §2.4 (6角色模型)
+- ERROR_CODES_SOT.md v2.2 (错误码)
 
-端点列表:
-- GET /fund/overview              - 获取资金概览
-- GET /fund/distribution/projects - 按项目资金分布
-- GET /fund/distribution/channels - 按渠道资金分布
-- GET /fund/receivables           - 应收明细
-- GET /fund/payments              - 回款记录
-- GET /fund/alerts                - 资金预警
+端点列表 (已废弃):
+- GET /fund/overview              → /api/v1/finance/fund/overview
+- GET /fund/distribution/projects → /api/v1/finance/fund/distribution?group_by=project
+- GET /fund/distribution/channels → /api/v1/finance/fund/distribution?group_by=supplier
+- GET /fund/receivables           → /api/v1/finance/fund/receivables
+- GET /fund/payments              - 回款记录 (仅此路由保留)
+- GET /fund/alerts                - 资金预警 (仅此路由保留)
 
-权限矩阵 (MASTER.md v4.8 §2.4 - 6角色模型):
-- ceo, finance: 全公司数据
-- admin: 全公司数据 (只读)
-- project_owner: 自己负责的项目
-- account_manager: 账户余额部分
-- pitcher: 无访问权限
-
-依赖代码块:
-- response-envelope: success_response, error_response
-- pagination: PaginationParams, get_pagination, create_paginated_response
-- permission-filter: require_role
-- error-codes: PERM-001, SYS-500
-
-Version: 2.0
+Version: 2.1 (Deprecated)
 Author: Claude Code
+Deprecated: 2026-01-12
 """
 
 from datetime import date

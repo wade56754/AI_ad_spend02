@@ -12,6 +12,7 @@ from typing import List, Optional, Dict, Any, Tuple, Union
 from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func, select, desc
+from fastapi import HTTPException
 
 from backend.models import (
     AdAccount,

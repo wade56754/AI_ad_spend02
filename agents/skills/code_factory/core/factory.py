@@ -39,14 +39,14 @@ from ..guardrails.recovery_loop import EditGuardrails
 from ..event_stream.stream import EventStream
 
 # v6.0: 使用 stub 实现
-from ..stubs import RepoMapGenerator, RepoMap
+from ..types import RepoMapGenerator, RepoMap
 from ..risk.classifier import RiskClassifier, RiskLevel
 
 if TYPE_CHECKING:
     from ..task_cards.models import TaskCard, TaskCardIndex
 
     # v6.0: 使用 stub 实现
-    from ..stubs import InjectedContext
+    from ..types import InjectedContext
 
 
 @dataclass
@@ -791,7 +791,7 @@ class ContextEngine:
         if self._prompt_injector is None:
             try:
                 # v6.0: 使用 stub 实现
-                from ..stubs import PromptInjector, PromptLoader
+                from ..types import PromptInjector, PromptLoader
 
                 loader = PromptLoader()
                 self._prompt_injector = PromptInjector()

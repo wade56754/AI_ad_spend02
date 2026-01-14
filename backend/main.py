@@ -1,3 +1,4 @@
+# Reload trigger: 2026-01-12 18:58 - Fixed Supplier.platform query
 from datetime import datetime, timezone
 from typing import Dict, Tuple
 
@@ -49,9 +50,9 @@ from backend.routers import (
     dashboard,  # ✅ CEO驾驶舱API (Phase C - MASTER.md v4.4 §6.5)
     weekly_briefs,  # ✅ 周度简报API (B3-weekly-brief.md)
     weekly_reports,  # ✅ 周报管理API (TASK-WEEKLY-002)
-    fund,  # ✅ 资金总览API (A2-fund-overview.md)
-    finance_v2,  # ✅ 财务管理V2 (资金总览+项目盈亏重构)
-    profit,  # ✅ 利润模块API (TASK-PROFIT-001)
+    # fund,  # ⚠️ 废弃: 已合并到 finance_v2
+    finance_v2,  # ✅ 财务管理V2 (资金总览+项目盈亏重构) - 统一入口
+    # profit,  # ⚠️ 废弃: 已合并到 finance_v2
     monthly_settlements,  # ✅ 月度锁账API (TASK-FIN-003)
     # 暂时注释掉缺失依赖的路由,以便测试运行:
     # ai_monitoring,  # AI监控API
@@ -62,6 +63,7 @@ from backend.routers import (
 
 
 settings = get_settings()
+print(f"INFO: CORS allowed_origins: {settings.allowed_origins}")
 
 
 @asynccontextmanager
@@ -107,10 +109,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Allow ALL origins for debugging CORS issue
+print("INFO: CORS - Allowing ALL origins (*)")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,  # credentials=False is required when using "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -154,9 +158,14 @@ app.include_router(
 app.include_router(
     weekly_reports.router, prefix=API_V1_PREFIX
 )  # 周报管理 ✅ TASK-WEEKLY-002
-app.include_router(fund.router, prefix=API_V1_PREFIX)  # 资金总览 ✅ A2-fund-overview.md
+# ⚠️ 废弃: fund.router 功能已合并到 finance_v2.router
+# app.include_router(fund.router, prefix=API_V1_PREFIX)  # 资金总览 ✅ A2-fund-overview.md
+
+# ✅ 统一财务路由 - 包含资金总览 (/finance/fund) 和项目盈亏 (/finance/profit)
 app.include_router(finance_v2.router)  # 财务管理V2 ✅ 资金总览+项目盈亏重构 (已包含 /api/v1 前缀)
-app.include_router(profit.router, prefix=API_V1_PREFIX)  # 利润模块 ✅ TASK-PROFIT-001
+
+# ⚠️ 废弃: profit.router 功能已合并到 finance_v2.router
+# app.include_router(profit.router, prefix=API_V1_PREFIX)  # 利润模块 ✅ TASK-PROFIT-001
 app.include_router(
     monthly_settlements.router, prefix=API_V1_PREFIX
 )  # 月度锁账 ✅ TASK-FIN-003

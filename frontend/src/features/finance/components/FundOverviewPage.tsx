@@ -5,16 +5,21 @@
  *
  * 路由: /finance/fund
  *
+ * SoT: BR-FIN.md v1.1 §BR-FIN-004 (预收款非收入)
+ * 修复: 2026-01-12 刷新逻辑完整化 + 错误状态展示
+ *
  * @module features/finance/components
  */
 
 'use client';
 
 import { useState } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   useFundOverviewV2,
   useReceivablesV2,
@@ -24,32 +29,40 @@ import { FundSummaryCards, ReceivablesTable, FundDistribution } from './FundOver
 
 export function FundOverviewPage() {
   const [period, setPeriod] = useState<string | undefined>(undefined);
+  const queryClient = useQueryClient();
 
   const {
     data: overviewData,
     isLoading: overviewLoading,
-    refetch: refetchOverview,
+    isError: overviewError,
+    error: overviewErrorMsg,
   } = useFundOverviewV2({ date: period });
 
   const {
     data: receivablesData,
     isLoading: receivablesLoading,
+    isError: receivablesError,
+    error: receivablesErrorMsg,
   } = useReceivablesV2();
 
   const {
     data: projectDistribution,
     isLoading: projectDistLoading,
+    isError: projectDistError,
   } = useFundDistributionV2({ group_by: 'project' });
 
   const {
     data: supplierDistribution,
     isLoading: supplierDistLoading,
+    isError: supplierDistError,
   } = useFundDistributionV2({ group_by: 'supplier' });
 
   const isLoading = overviewLoading || receivablesLoading || projectDistLoading || supplierDistLoading;
+  const hasError = overviewError || receivablesError || projectDistError || supplierDistError;
 
+  // 刷新所有相关查询（最佳实践）
   const handleRefresh = () => {
-    refetchOverview();
+    queryClient.invalidateQueries({ queryKey: ['finance', 'fund'] });
   };
 
   const handleExport = () => {
@@ -76,6 +89,21 @@ export function FundOverviewPage() {
         </div>
       </div>
 
+      {/* 错误提示 */}
+      {hasError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>数据加载失败</AlertTitle>
+          <AlertDescription>
+            {overviewError && '资金概览加载失败。'}
+            {receivablesError && '应收账款加载失败。'}
+            {projectDistError && '项目分布加载失败。'}
+            {supplierDistError && '渠道分布加载失败。'}
+            请检查网络连接或稍后重试。
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* 统计卡片 */}
       {overviewLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -91,13 +119,21 @@ export function FundOverviewPage() {
             </Card>
           ))}
         </div>
-      ) : overviewData ? (
+      ) : overviewError ? (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>资金概览加载失败</AlertTitle>
+          <AlertDescription>
+            {overviewErrorMsg?.message || '请检查网络连接或稍后重试'}
+          </AlertDescription>
+        </Alert>
+      ) : overviewData?.summary ? (
         <FundSummaryCards
           data={{
             summary: overviewData.summary,
-            changes: overviewData.changes,
+            changes: overviewData.changes ?? { income_change_pct: null, expense_change_pct: null, balance_change_pct: null },
           }}
-          currency={overviewData.currency}
+          currency={overviewData.currency ?? 'CNY'}
         />
       ) : null}
 
@@ -114,6 +150,14 @@ export function FundOverviewPage() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
+          ) : receivablesError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>应收账款加载失败</AlertTitle>
+              <AlertDescription>
+                {receivablesErrorMsg?.message || '请检查网络连接或稍后重试'}
+              </AlertDescription>
+            </Alert>
           ) : receivablesData ? (
             <ReceivablesTable
               items={receivablesData.items}

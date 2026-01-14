@@ -18,9 +18,10 @@ SoT References:
 - 🔴 danger: profit_rate < 5%
 - ⚫ inactive: refunded/closed
 
-Version: 1.0
+Version: 1.1
 Author: Claude Code
 Created: 2025-12-25
+Updated: 2026-01-12 - Fixed Supplier.name query in get_supplier_costs
 """
 
 from datetime import date, timedelta
@@ -32,6 +33,7 @@ from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 
 from backend.models import Project, DailyReport, AdAccount
+from backend.models.finance.supplier import Supplier
 from backend.schemas.finance_v2 import (
     ProfitOverviewData,
     ProfitSummary,
@@ -151,18 +153,21 @@ class ProfitServiceV2:
         project_ids = [p.id for p in projects]
 
         # ===== N+1 优化: 批量预取所有项目的日报聚合数据 =====
+        # DailyReport 通过 AdAccount 关联到 Project
         daily_report_aggs = {}
         if project_ids:
             agg_results = self.db.query(
-                DailyReport.project_id,
+                AdAccount.project_id,
                 func.coalesce(func.sum(DailyReport.conversions_final), 0).label("conversions"),
                 func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
+            ).join(
+                AdAccount, DailyReport.ad_account_id == AdAccount.id
             ).filter(
-                DailyReport.project_id.in_(project_ids),
+                AdAccount.project_id.in_(project_ids),
                 DailyReport.report_date >= start_date,
                 DailyReport.report_date <= end_date,
                 DailyReport.status == "final_locked",
-            ).group_by(DailyReport.project_id).all()
+            ).group_by(AdAccount.project_id).all()
 
             for row in agg_results:
                 daily_report_aggs[row.project_id] = {
@@ -210,9 +215,9 @@ class ProfitServiceV2:
             ),
         )
 
-    def get_supplier_costs(self, period: Optional[str] = None) -> SupplierCostsData:
+    def get_supplier_costs(self, period: Optional[str] = None) -> SupplierCostsData:  # v1.2 - Supplier.name JOIN
         """
-        获取渠道成本分析
+        获取渠道成本分析 (Updated 2026-01-12)
 
         Args:
             period: 时间范围
@@ -223,23 +228,26 @@ class ProfitServiceV2:
         start_date, end_date, _ = self._parse_period(period)
 
         # 按渠道/供应商聚合
-        # 简化：按 ad_account 的 supplier_id 分组
+        # 通过 AdAccount.supplier_id 关联 Supplier 表获取供应商名称和平台
+        # 注意: platform 在 Supplier 表上，不在 AdAccount 表上
         results = self.db.query(
             AdAccount.supplier_id,
-            AdAccount.supplier_name,
-            AdAccount.platform,
+            Supplier.name.label("supplier_name"),
+            Supplier.platform.label("platform"),  # 从 Supplier 获取 platform
             func.sum(DailyReport.real_spend).label("total_spend"),
             func.count(func.distinct(AdAccount.id)).label("account_count"),
         ).join(
             DailyReport, DailyReport.ad_account_id == AdAccount.id
+        ).outerjoin(
+            Supplier, AdAccount.supplier_id == Supplier.id
         ).filter(
             DailyReport.report_date >= start_date,
             DailyReport.report_date <= end_date,
             DailyReport.status == "final_locked",
         ).group_by(
             AdAccount.supplier_id,
-            AdAccount.supplier_name,
-            AdAccount.platform,
+            Supplier.name,
+            Supplier.platform,  # 从 Supplier 获取 platform
         ).all()
 
         items = []
@@ -369,13 +377,16 @@ class ProfitServiceV2:
         spend = Decimal(str(result.spend or 0))
 
         # 计算收入：需要按项目的 unit_price 计算
+        # DailyReport -> AdAccount -> Project
         revenue_result = self.db.query(
             func.coalesce(
                 func.sum(DailyReport.conversions_final * Project.unit_price),
                 0
             )
         ).join(
-            Project, DailyReport.project_id == Project.id
+            AdAccount, DailyReport.ad_account_id == AdAccount.id
+        ).join(
+            Project, AdAccount.project_id == Project.id
         ).filter(
             DailyReport.report_date >= start,
             DailyReport.report_date <= end,
@@ -426,12 +437,14 @@ class ProfitServiceV2:
         """计算单个项目的利润"""
         unit_price = project.unit_price or Decimal("0")
 
-        # 聚合日报数据
+        # 聚合日报数据 - DailyReport 通过 AdAccount 关联到 Project
         result = self.db.query(
             func.coalesce(func.sum(DailyReport.conversions_final), 0).label("conversions"),
             func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
+        ).join(
+            AdAccount, DailyReport.ad_account_id == AdAccount.id
         ).filter(
-            DailyReport.project_id == project.id,
+            AdAccount.project_id == project.id,
             DailyReport.report_date >= start,
             DailyReport.report_date <= end,
             DailyReport.status == "final_locked",

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { SupplierCostItem, SupplierCostSummary } from '../../types/finance.types';
+import { formatCurrency, formatPercent } from '../../utils/financeHelpers';
 
 interface SupplierCostTableProps {
   items: SupplierCostItem[];
@@ -25,8 +26,6 @@ interface SupplierCostTableProps {
 }
 
 export function SupplierCostTable({ items, summary }: SupplierCostTableProps) {
-  const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
-  const formatPercent = (value: number) => `${(value * 100).toFixed(1)}%`;
 
   return (
     <Card>

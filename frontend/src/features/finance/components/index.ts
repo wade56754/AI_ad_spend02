@@ -18,7 +18,7 @@ export * from './FundOverview';
 // V2 Components - Profit Analysis
 export * from './ProfitAnalysis';
 
-// TASK-FE-FIN-002/003/005: 账本、对账、权限守卫
-export * from './LedgerPage';
-export * from './ReconciliationPage';
-export * from './FinanceGuard';
+// TASK-FE-FIN-005: 权限守卫
+// Note: LedgerPage is at @/features/ledger, ReconciliationPage is at @/features/reconciliation
+export { FinanceGuard, useFinanceAccess } from './FinanceGuard';
+export * from './FinanceAnalysisDashboard';

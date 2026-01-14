@@ -629,8 +629,9 @@ async def get_account_profit(
                 return error_response(
                     code="PERM-001", message="无权限访问该账户", status_code=403
                 )
-    elif current_user.role == "pitcher":
+    elif current_user.role in ("pitcher", "media_buyer"):
         # pitcher: 检查是否有该账户的日报创建记录
+        # PRD v2.2: pitcher ↔ media_buyer 角色别名
         from backend.models import DailyReport
 
         has_report = (
@@ -1024,12 +1025,20 @@ async def get_profit_trend(
     if start_date and end_date and end_date < start_date:
         return error_response(code="BIZ-001", message="开始日期不能晚于结束日期", status_code=400)
 
-    # 验证 granularity
-    valid_granularities = ["daily", "weekly", "monthly"]
-    if granularity not in valid_granularities:
+    # 验证 granularity - 支持两种格式: day/week/month 和 daily/weekly/monthly
+    granularity_map = {
+        "day": "daily",
+        "week": "weekly",
+        "month": "monthly",
+        "daily": "daily",
+        "weekly": "weekly",
+        "monthly": "monthly",
+    }
+    if granularity not in granularity_map:
         return error_response(
             code="VAL-001", message=f"无效的粒度值: {granularity}", status_code=400
         )
+    granularity = granularity_map[granularity]  # 标准化为 daily/weekly/monthly
 
     try:
         service = FinanceService(db)

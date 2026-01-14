@@ -72,13 +72,15 @@ describe('canTransition', () => {
     expect(canTransition('final_confirmed', 'final_locked', 'admin')).toBe(true);
   });
 
-  it('allows operator to submit for trend', () => {
-    expect(canTransition('raw_submitted', 'trend_pending', 'operator')).toBe(true);
+  it('allows pitcher to submit for trend', () => {
+    // SoT: MASTER.md v4.6 §2.4 - pitcher (投手) can submit for trend
+    expect(canTransition('raw_submitted', 'trend_pending', 'pitcher')).toBe(true);
   });
 
-  it('allows manager to approve/flag trends', () => {
-    expect(canTransition('trend_pending', 'trend_ok', 'manager')).toBe(true);
-    expect(canTransition('trend_pending', 'trend_flagged', 'manager')).toBe(true);
+  it('allows project_owner to approve/flag trends', () => {
+    // SoT: MASTER.md v4.6 §2.4 - project_owner can approve/flag trends
+    expect(canTransition('trend_pending', 'trend_ok', 'project_owner')).toBe(true);
+    expect(canTransition('trend_pending', 'trend_flagged', 'project_owner')).toBe(true);
   });
 
   it('denies invalid transitions', () => {
@@ -88,8 +90,10 @@ describe('canTransition', () => {
   });
 
   it('denies transitions for unauthorized roles', () => {
-    expect(canTransition('final_pending', 'final_confirmed', 'operator')).toBe(false);
-    expect(canTransition('final_confirmed', 'final_locked', 'manager')).toBe(false);
+    // pitcher cannot confirm final (only admin)
+    expect(canTransition('final_pending', 'final_confirmed', 'pitcher')).toBe(false);
+    // project_owner cannot lock (only admin)
+    expect(canTransition('final_confirmed', 'final_locked', 'project_owner')).toBe(false);
   });
 });
 

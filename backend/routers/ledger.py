@@ -28,6 +28,7 @@ class PaginatedResponse(BaseModel):
     total: int
     page: int
     size: int
+    pages: int = 0  # 总页数
 
 
 router = APIRouter(prefix="/ledger", tags=["ledger"])
@@ -150,6 +151,7 @@ async def create_transaction(
         )
 
 
+@router.get("/entries", response_model=StandardResponse[PaginatedResponse])
 @router.get("/transactions", response_model=StandardResponse[PaginatedResponse])
 async def get_transactions(
     project_id: Optional[UUID] = Query(None, description="项目ID"),
@@ -167,6 +169,10 @@ async def get_transactions(
     获取交易记录列表
     需要权限: FINANCE 或 ADMIN 或 PROJECT_OWNER
     """
+    import logging
+    import traceback
+    logger = logging.getLogger(__name__)
+
     try:
         result = ledger_service.get_transactions(
             project_id=project_id,
@@ -179,9 +185,13 @@ async def get_transactions(
             size=size,
         )
 
+        logger.info(f"Ledger transactions result: {result}")
+
         return success_response(data=result, message="获取交易记录成功")
 
     except Exception as e:
+        logger.error(f"获取交易记录失败: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return error_response(
             code=BusinessErrorCodes.LEDGER_QUERY_ERROR.code,
             message=f"获取交易记录失败: {str(e)}",

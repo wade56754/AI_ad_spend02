@@ -60,6 +60,7 @@ from backend.core.phase_config import (
     log_phase_warning
 )
 from backend.models.ledger import LedgerTransaction, AccountBalance, BudgetAllocation, TransactionType, TransactionStatus
+from backend.models.finance.ledger import LedgerEntry
 from backend.services.audit_service import AuditService, BusinessAction
 
 import logging
@@ -325,33 +326,97 @@ class LedgerService:
         page: int = 1,
         size: int = 20
     ) -> PaginatedResponse:
-        """获取交易记录列表"""
-        with get_db_session() as session:
-            query = session.query(LedgerTransaction)
+        """获取交易记录列表（使用原始 SQL 查询）
 
-            # 应用过滤条件
-            if project_id:
-                query = query.filter(LedgerTransaction.project_id == project_id)
+        数据库实际列: id, ledger_type, project_id, supplier_id, ad_account_id,
+        entry_type, amount, currency, reference_id, occurred_at, created_by,
+        notes, created_at, entity_type, entity_id, event_id, idempotency_key,
+        direction, entry_date
+        """
+        from sqlalchemy import text
+
+        with get_db_session() as session:
+            # 构建 WHERE 条件
+            conditions = []
+            params = {}
+
             if account_id:
-                query = query.filter(LedgerTransaction.account_id == account_id)
+                conditions.append("ad_account_id = :account_id")
+                params["account_id"] = int(account_id) if account_id else None
             if transaction_type:
-                query = query.filter(LedgerTransaction.transaction_type == transaction_type)
-            if status:
-                query = query.filter(LedgerTransaction.status == status)
+                type_mapping = {
+                    TransactionType.TOPUP: 'TOPUP',
+                    TransactionType.SPEND: 'COST',
+                    TransactionType.REFUND: 'REVERSAL',
+                }
+                entry_type = type_mapping.get(transaction_type, transaction_type.value if transaction_type else None)
+                if entry_type:
+                    conditions.append("entry_type = :entry_type")
+                    params["entry_type"] = entry_type
             if start_date:
-                query = query.filter(LedgerTransaction.created_at >= start_date)
+                conditions.append("entry_date >= :start_date")
+                params["start_date"] = start_date
             if end_date:
-                query = query.filter(LedgerTransaction.created_at <= end_date)
+                conditions.append("entry_date <= :end_date")
+                params["end_date"] = end_date
+
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
 
             # 获取总数
-            total = query.count()
+            count_sql = text(f"SELECT COUNT(*) FROM ledger_entries WHERE {where_clause}")
+            total = session.execute(count_sql, params).scalar() or 0
 
-            # 应用分页
+            # 获取分页数据
             offset = (page - 1) * size
-            transactions = query.order_by(desc(LedgerTransaction.created_at)).offset(offset).limit(size).all()
+            params["limit"] = size
+            params["offset"] = offset
+
+            data_sql = text(f"""
+                SELECT id, ledger_type, project_id, ad_account_id, entry_type,
+                       amount, currency, reference_id, notes, created_at,
+                       entity_type, entity_id, event_id, direction, entry_date
+                FROM ledger_entries
+                WHERE {where_clause}
+                ORDER BY entry_date DESC
+                LIMIT :limit OFFSET :offset
+            """)
+
+            rows = session.execute(data_sql, params).fetchall()
+
+            # 转换为字典列表
+            items = []
+            type_mapping_reverse = {
+                'TOPUP': 'TOPUP', 'COST': 'SPEND', 'REVENUE': 'REVENUE',
+                'TRANSFER_OUT': 'TRANSFER', 'TRANSFER_IN': 'TRANSFER', 'REVERSAL': 'REFUND',
+            }
+
+            for row in rows:
+                items.append({
+                    "id": str(row.id),
+                    "transaction_number": f"LED{row.id:08d}",
+                    "transaction_type": type_mapping_reverse.get(row.entry_type, row.entry_type) if row.entry_type else 'UNKNOWN',
+                    "amount": float(row.amount) if row.amount else 0.0,
+                    "currency": row.currency or "CNY",
+                    "status": "completed",
+                    "project_id": str(row.project_id) if row.project_id else None,
+                    "account_id": str(row.ad_account_id) if row.ad_account_id else None,
+                    "topup_id": None,
+                    "reference_id": str(row.reference_id) if row.reference_id else None,
+                    "description": row.notes,
+                    "metadata": {
+                        "entry_type": row.entry_type,
+                        "ledger_type": row.ledger_type,
+                        "direction": row.direction,
+                        "entity_type": row.entity_type,
+                        "entity_id": row.entity_id,
+                        "event_id": str(row.event_id) if row.event_id else None,
+                    },
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                    "updated_at": None,
+                })
 
             return PaginatedResponse(
-                items=[LedgerService._transaction_to_dict(t) for t in transactions],
+                items=items,
                 total=total,
                 page=page,
                 size=size,
@@ -650,6 +715,48 @@ class LedgerService:
             "metadata": transaction.transaction_metadata,
             "created_at": transaction.created_at.isoformat(),
             "updated_at": transaction.updated_at.isoformat() if transaction.updated_at else None
+        }
+
+    @staticmethod
+    def _entry_to_dict(entry: LedgerEntry) -> Dict[str, Any]:
+        """转换 LedgerEntry 为字典（用于 API 响应）
+
+        注意: 只使用数据库中实际存在的列:
+        id, ledger_type, project_id, supplier_id, ad_account_id, entry_type,
+        amount, currency, reference_id, occurred_at, created_by, notes,
+        created_at, entity_type, entity_id, event_id, idempotency_key, direction, entry_date
+        """
+        # 映射 entry_type 到前端期望的 transaction_type
+        type_mapping = {
+            'TOPUP': 'TOPUP',
+            'COST': 'SPEND',
+            'REVENUE': 'REVENUE',
+            'TRANSFER_OUT': 'TRANSFER',
+            'TRANSFER_IN': 'TRANSFER',
+            'REVERSAL': 'REFUND',
+        }
+        return {
+            "id": str(entry.id),
+            "transaction_number": f"LED{entry.id:08d}",  # 生成交易流水号
+            "transaction_type": type_mapping.get(entry.entry_type, entry.entry_type) if entry.entry_type else 'UNKNOWN',
+            "amount": float(entry.amount) if entry.amount else 0.0,
+            "currency": entry.currency or "CNY",  # 使用实际的 currency 字段
+            "status": "completed",  # LedgerEntry 都是已完成的
+            "project_id": str(entry.project_id) if entry.project_id else None,
+            "account_id": str(entry.ad_account_id) if entry.ad_account_id else None,
+            "topup_id": None,
+            "reference_id": str(entry.reference_id) if entry.reference_id else None,
+            "description": entry.notes,
+            "metadata": {
+                "entry_type": entry.entry_type,
+                "ledger_type": entry.ledger_type,
+                "direction": entry.direction,
+                "entity_type": entry.entity_type,
+                "entity_id": entry.entity_id,
+                "event_id": str(entry.event_id) if entry.event_id else None,
+            },
+            "created_at": entry.created_at.isoformat() if entry.created_at else None,
+            "updated_at": None,
         }
 
 

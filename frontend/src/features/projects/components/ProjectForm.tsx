@@ -114,7 +114,10 @@ export function ProjectForm({ project, open, onOpenChange }: ProjectFormProps) {
   const { data: commissionRulesData, isLoading: commissionRulesLoading } = useCommissionRules({
     limit: 50,
   });
-  const commissionRules = commissionRulesData?.data.items ?? [];
+  // apiFetch 已解包响应，直接访问 items 属性
+  const commissionRules = Array.isArray(commissionRulesData?.items)
+    ? commissionRulesData.items
+    : [];
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),

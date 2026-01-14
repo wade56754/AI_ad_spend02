@@ -1,0 +1,58 @@
+# SoT 角色配置
+# 来源: MASTER.md v4.8 §2.4, AUTH_SPEC.md v2.1
+# 版本: v7.0
+
+version: "1.0"
+sot_refs:
+  - MASTER.md v4.8 §2.4
+  - AUTH_SPEC.md v2.1
+  - PRD v2.2
+
+# 技术层角色 (数据库 CHECK 约束)
+technical_roles:
+  - id: admin
+    name: 系统管理员
+    permissions: ["*"]
+    description: 全部权限
+    
+  - id: finance
+    name: 财务
+    permissions:
+      - topup.approve
+      - reconciliation.manage
+      - ledger.read
+    description: 充值终审、对账、报表
+    
+  - id: account_manager
+    name: 账户管理员
+    permissions:
+      - project.manage
+      - account.assign
+    description: 项目管理、账户分配
+    
+  - id: media_buyer
+    name: 广告投手
+    permissions:
+      - daily_report.submit
+      - topup.request
+    description: 日报提交、充值申请
+
+# 业务层角色到技术层映射
+business_to_technical_mapping:
+  ceo: admin
+  project_owner: null  # 通过 users.is_project_owner 判断
+  finance: finance
+  pitcher: media_buyer
+  account_manager: account_manager
+  admin: admin
+
+# 废弃角色 (禁止使用)
+deprecated_roles:
+  - supervisor
+  - data_operator
+  - data_clerk
+  - manager
+  - trader
+  - super_admin
+  - accountant
+  - operator

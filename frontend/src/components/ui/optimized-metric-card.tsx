@@ -5,7 +5,7 @@ import React, { useState } from "react";
 export type TrendType = 'up' | 'down' | 'neutral';
 export type MetricColor = 'primary' | 'success' | 'warning' | 'error';
 
-interface OptimizedMetricCardProps {
+export interface OptimizedMetricCardProps {
   title: string;
   value: string | number;
   change?: number;

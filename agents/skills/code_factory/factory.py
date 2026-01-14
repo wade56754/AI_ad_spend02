@@ -46,11 +46,8 @@ from .task_list import TaskList, Task, TaskStatus, generate_api_tasks
 from .security import SecurityValidator, SoTComplianceChecker, create_security_hook
 from .session import SessionManager, SessionType, ProgressTracker
 
-# v6.0: 使用 stub 实现，实际功能已迁移到 Claude Code
-from .stubs import CodeSearcher, SearchCandidate, SearchResult
-from .stubs import CodeSelector, SelectionResult, AdaptationPlan
-from .stubs import CodeAdapter, AdaptResult, AdaptedFile
-from .stubs import CodeAssembler, AssembleResult
+# v7.0: 使用 types 模块的数据类型，核心功能由 LightweightOrchestrator 处理
+from .types import AdaptedFile, PhaseResult as TypedPhaseResult, PipelineResult
 from .verifier import CodeVerifier, VerifyResult, VerifyDecision
 
 

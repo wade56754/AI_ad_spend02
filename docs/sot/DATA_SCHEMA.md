@@ -1,10 +1,10 @@
 # DATA_SCHEMA.md · 数据结构唯一事实来源 (SoT-Data)
 
-> **版本**: v5.10
+> **版本**: v5.11
 > **status**: active
 > **owner**: wade
-> **last_reviewed**: 2026-01-02
-> **更新日期**: 2026-01-02
+> **last_reviewed**: 2026-01-10
+> **更新日期**: 2026-01-10
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
@@ -130,6 +130,12 @@
 | `monthly_settlements` | 月度结算表 | BIGSERIAL | implemented |
 | `receivable` | 回款记录表（SoT：已回款） | BIGSERIAL | implemented |
 | `company_expenses` | 公司运营支出（不进账本） | BIGSERIAL | implemented |
+| `buyers` | 投手/买手表（财务事件关联） | UUID | implemented |
+| `financial_events` | 财务事件表（统一事件记录） | UUID | implemented |
+| `account_performance` | 账户效果数据（按日聚合） | BIGSERIAL | implemented |
+| `commission_rules` | 投手提成规则配置 | BIGSERIAL | implemented |
+| `import_jobs` | 数据导入任务管理 | BIGSERIAL | implemented |
+| `ad_account_balance_snapshots` | 广告账户余额快照（对账用） | BIGSERIAL | implemented |
 
 ---
 
@@ -973,6 +979,220 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 **SoT Reference**: DATA_SCHEMA.md v5.6 §3.4.4 (不进入账本，见账本规则)
 
+### 3.5 财务与工作流扩展表
+
+#### 3.5.1 `buyers`（implemented）
+
+**说明**：投手/买手表，用于管理广告投放人员。与 `users` 表分离，支持一个系统用户关联多个投手身份，或投手不关联系统用户的场景。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | UUID | PK | 投手唯一标识，DEFAULT gen_random_uuid() |
+| `code` | VARCHAR(20) | UNIQUE, NOT NULL | 投手代码（业务编号） |
+| `name` | VARCHAR(100) | 可空 | 投手姓名 |
+| `team_id` | UUID | FK → `teams.id` ON DELETE SET NULL, 可空 | 所属团队 |
+| `user_id` | UUID | FK → `users.id` ON DELETE SET NULL, 可空 | 关联系统用户 |
+| `status` | VARCHAR(20) | NOT NULL, CHECK, DEFAULT 'active' | 状态：active/inactive |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**：
+- CHECK (status IN ('active', 'inactive'))
+
+**索引**：`idx_buyers_code`, `idx_buyers_team_id`, `idx_buyers_user_id`, `idx_buyers_status`.
+
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.1
+
+---
+
+#### 3.5.2 `financial_events`（implemented）
+
+**说明**：财务事件表，统一记录所有财务变动的原始事件。经过状态流转后生成账本分录（`ledger_entries`）。这是财务系统的核心事件溯源表。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | UUID | PK | 事件唯一标识，DEFAULT gen_random_uuid() |
+| `event_type` | VARCHAR(20) | NOT NULL, CHECK | 事件类型：TOPUP/SPEND/PAYMENT/TRANSFER/ADJUSTMENT/FEE/REFUND |
+| `event_status` | VARCHAR(20) | NOT NULL, CHECK, DEFAULT 'raw' | 事件状态：raw/pending/confirmed/posted/reversed |
+| `source_type` | VARCHAR(50) | 可空 | 来源类型：excel_import/api/manual/system |
+| `source_ref` | VARCHAR(255) | 可空 | 来源引用（如导入任务ID、API请求ID） |
+| `idempotency_key` | VARCHAR(255) | UNIQUE, NOT NULL | 幂等键（防止重复创建） |
+| `amount` | NUMERIC(18,4) | NOT NULL | 金额 |
+| `fee_amount` | NUMERIC(18,4) | NOT NULL, DEFAULT 0 | 手续费 |
+| `gross_amount` | NUMERIC(18,4) | 可空 | 含费金额（amount + fee_amount） |
+| `currency` | VARCHAR(3) | NOT NULL, DEFAULT 'USD' | 币种 |
+| `event_date` | DATE | NOT NULL | 事件发生日期 |
+| `team_id` | UUID | FK → `teams.id` ON DELETE SET NULL, 可空 | 关联团队 |
+| `buyer_id` | UUID | FK → `buyers.id` ON DELETE SET NULL, 可空 | 关联投手 |
+| `supplier_id` | BIGINT | FK → `suppliers.id` ON DELETE SET NULL, 可空 | 关联供应商 |
+| `ad_account_id` | BIGINT | FK → `ad_accounts.id` ON DELETE SET NULL, 可空 | 关联广告账户 |
+| `project_id` | BIGINT | FK → `projects.id` ON DELETE SET NULL, 可空 | 关联项目 |
+| `payload` | JSONB | NOT NULL, DEFAULT '{}' | 扩展数据 |
+| `created_by` | UUID | FK → `users.id` ON DELETE SET NULL, 可空 | 创建者 |
+| `confirmed_by` | UUID | FK → `users.id` ON DELETE SET NULL, 可空 | 确认者 |
+| `confirmed_at` | TIMESTAMPTZ | 可空 | 确认时间 |
+| `posted_at` | TIMESTAMPTZ | 可空 | 入账时间 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**：
+- CHECK (event_type IN ('TOPUP', 'SPEND', 'PAYMENT', 'TRANSFER', 'ADJUSTMENT', 'FEE', 'REFUND'))
+- CHECK (event_status IN ('raw', 'pending', 'confirmed', 'posted', 'reversed'))
+
+**状态机**：
+```
+RAW → PENDING → CONFIRMED → POSTED → REVERSED
+```
+- `raw`：原始数据导入，待审核
+- `pending`：等待确认
+- `confirmed`：已确认，可入账
+- `posted`：已入账，生成了 ledger_entries
+- `reversed`：已冲正（终态）
+
+**索引**：`idx_fin_events_type_status`, `idx_fin_events_event_date`, `idx_fin_events_supplier_id`, `idx_fin_events_ad_account_id`, `idx_fin_events_project_id`, `idx_fin_events_team_id`, `idx_fin_events_buyer_id`, `idx_fin_events_idempotency_key`, `idx_fin_events_created_at`.
+
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.2, FINANCIAL_SOT_DESIGN.md v1.0
+
+---
+
+#### 3.5.3 `account_performance`（implemented）
+
+**说明**：账户效果数据表，按日聚合广告账户的投放表现指标。用于效果分析和报表生成。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 记录ID |
+| `ad_account_id` | BIGINT | FK → `ad_accounts.id` ON DELETE CASCADE, NOT NULL | 广告账户ID |
+| `date` | DATE | NOT NULL | 统计日期 |
+| `impressions` | BIGINT | NOT NULL, DEFAULT 0 | 展示数 |
+| `clicks` | BIGINT | NOT NULL, DEFAULT 0 | 点击数 |
+| `spend` | NUMERIC(15,2) | NOT NULL, DEFAULT 0.00 | 消耗金额 |
+| `conversions` | BIGINT | NOT NULL, DEFAULT 0 | 转化数 |
+| `revenue` | NUMERIC(15,2) | NOT NULL, DEFAULT 0.00 | 收入 |
+| `ctr` | NUMERIC(8,4) | 可空 | 点击率 (clicks/impressions) |
+| `cpc` | NUMERIC(15,4) | 可空 | 单次点击成本 (spend/clicks) |
+| `cpa` | NUMERIC(15,4) | 可空 | 单次转化成本 (spend/conversions) |
+| `roas` | NUMERIC(8,4) | 可空 | 广告投资回报率 (revenue/spend) |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**：
+- UNIQUE (ad_account_id, date)
+
+**索引**：`idx_account_performance_account_id`, `idx_account_performance_date`, `idx_account_performance_account_date`.
+
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.3
+
+---
+
+#### 3.5.4 `commission_rules`（implemented）
+
+**说明**：投手提成规则配置表，支持阶梯提成计算。提成基于 `conversions_final`（已确认有效线索），按月累计计算。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 规则ID |
+| `name` | VARCHAR(100) | NOT NULL | 规则名称 |
+| `config` | JSONB | NOT NULL | 阶梯提成配置（见下方示例） |
+| `is_default` | BOOLEAN | NOT NULL, DEFAULT false | 是否为默认规则 |
+| `effective_from` | DATE | NOT NULL | 生效开始日期 |
+| `effective_to` | DATE | 可空 | 生效结束日期 |
+| `created_by` | UUID | FK → `users.id`, NOT NULL | 创建人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**config 字段结构示例**：
+```json
+{
+  "tiers": [
+    {"min": 1, "max": 50, "rate": 1.0},
+    {"min": 51, "max": 100, "rate": 1.5},
+    {"min": 101, "max": null, "rate": 2.0}
+  ],
+  "currency": "CNY",
+  "description": "标准阶梯提成"
+}
+```
+
+**约束**：
+- CHECK (effective_to IS NULL OR effective_to > effective_from)
+
+**索引**：`idx_commission_rules_effective`, `idx_commission_rules_default`.
+
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.4, BUSINESS_RULES.md v5.0
+
+---
+
+#### 3.5.5 `import_jobs`（implemented）
+
+**说明**：数据导入任务管理表，跟踪 CSV/Excel 文件的导入流程，包括进度、错误和结果汇总。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 任务ID |
+| `job_no` | VARCHAR(50) | UNIQUE, NOT NULL | 任务编号 |
+| `type` | VARCHAR(20) | NOT NULL, CHECK | 导入类型：finance/spend/reconciliation/daily_report |
+| `status` | VARCHAR(20) | NOT NULL, CHECK, DEFAULT 'pending' | 状态：pending/processing/completed/failed/cancelled |
+| `file_name` | VARCHAR(255) | 可空 | 原始文件名 |
+| `file_path` | VARCHAR(500) | 可空 | 存储路径 |
+| `file_hash` | VARCHAR(64) | 可空 | 文件 SHA256 哈希（用于去重） |
+| `file_size` | BIGINT | 可空 | 文件大小（字节） |
+| `total_rows` | INTEGER | DEFAULT 0 | 总行数 |
+| `processed_rows` | INTEGER | DEFAULT 0 | 已处理行数 |
+| `success_rows` | INTEGER | DEFAULT 0 | 成功行数 |
+| `failed_rows` | INTEGER | DEFAULT 0 | 失败行数 |
+| `error_log` | JSONB | DEFAULT '[]' | 错误详情数组 |
+| `result_summary` | JSONB | DEFAULT '{}' | 处理结果摘要 |
+| `started_at` | TIMESTAMPTZ | 可空 | 开始处理时间 |
+| `completed_at` | TIMESTAMPTZ | 可空 | 完成时间 |
+| `created_by` | UUID | FK → `users.id` ON DELETE SET NULL, 可空 | 创建人 |
+| `updated_by` | UUID | FK → `users.id` ON DELETE SET NULL, 可空 | 更新人 |
+| `version` | INTEGER | NOT NULL, DEFAULT 1 | 乐观锁版本号 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | 更新时间 |
+
+**约束**：
+- CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled'))
+- CHECK (type IN ('finance', 'spend', 'reconciliation', 'daily_report'))
+
+**状态机**：
+```
+pending → processing → completed
+                   ↘ failed
+pending → cancelled
+```
+
+**索引**：`idx_import_jobs_job_no`, `idx_import_jobs_status`, `idx_import_jobs_type`, `idx_import_jobs_created_by`, `idx_import_jobs_created_at`, `idx_import_jobs_file_hash`.
+
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.5
+
+---
+
+#### 3.5.6 `ad_account_balance_snapshots`（implemented）
+
+**说明**：广告账户余额/押款快照表，用于对账守恒公式校验，记录广告账户每日的余额和押款状态。
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| `id` | BIGSERIAL | PK | 快照ID |
+| `ad_account_id` | BIGINT | FK → `ad_accounts.id`, NOT NULL | 广告账户ID |
+| `snapshot_date` | DATE | NOT NULL | 快照日期 |
+| `balance` | NUMERIC(15,2) | NOT NULL | 当日余额 |
+| `deposit` | NUMERIC(15,2) | NOT NULL, DEFAULT 0 | 当日押款 |
+| `remaining_balance` | NUMERIC(15,2) | NOT NULL | 当日剩余可用 = balance - deposit |
+| `source` | VARCHAR(20) | NOT NULL, CHECK, DEFAULT 'manual' | 数据来源：manual/api/import |
+| `created_by` | UUID | FK → `users.id`, NOT NULL | 创建人 |
+| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
+| `notes` | TEXT | 可空 | 备注 |
+
+**约束**：
+- UNIQUE (ad_account_id, snapshot_date)
+- CHECK (source IN ('manual', 'api', 'import'))
+
+**索引**：`idx_ad_account_balance_snapshots_date`, `idx_ad_account_balance_snapshots_account`, `idx_ad_account_balance_snapshots_account_date`.
+
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.6, BR-REC-001 对账守恒公式, BR-REC-003 快照缺失处理
+
 
 ---
 
@@ -1017,6 +1237,20 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 ## 7. 变更历史
 
+### v5.11 (2026-01-10)
+
+- **补充 6 个未文档化的实现表**:
+  - 新增 §3.5 财务与工作流扩展表章节
+  - `buyers`：投手/买手表，管理广告投放人员（9 条数据）
+  - `financial_events`：财务事件表，统一事件溯源（177 条数据）
+  - `account_performance`：账户效果数据，按日聚合投放指标
+  - `commission_rules`：投手提成规则配置，支持阶梯计算
+  - `import_jobs`：数据导入任务管理，跟踪导入流程
+  - `ad_account_balance_snapshots`：广告账户余额快照，对账守恒校验
+  - 表清单（§2）新增 6 个表条目
+  - 所有表均已有 SQLAlchemy 模型和完整索引定义
+  - 引用：FINANCIAL_SOT_DESIGN.md v1.0, BR-REC-001~003
+
 ### v5.10 (2026-01-02)
 
 - **实现 profit 表（利润聚合层）**:
@@ -1058,7 +1292,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 ---
 
-**文档版本**: v5.9
-**最后审阅**: 2026-01-02
-**维护责任**: 数据库规范守门人（与系统架构团队共管）  
+**文档版本**: v5.11
+**最后审阅**: 2026-01-10
+**维护责任**: 数据库规范守门人（与系统架构团队共管）
 **附注**: 若实现规范、状态机或 API 流程更新，必须同步更新本文件；否则任何生成代码/Schema 迁移将被拒绝。

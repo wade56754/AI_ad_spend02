@@ -11,7 +11,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-// 格式化金额
+// 格式化金额（人民币）
 export const formatMoney = (amount: number | undefined | null): string => {
   const num = Number(amount) || 0;
   if (Math.abs(num) >= 10000) {
@@ -19,6 +19,78 @@ export const formatMoney = (amount: number | undefined | null): string => {
   }
   return `¥${num.toLocaleString()}`;
 };
+
+/**
+ * 格式化货币金额
+ * 使用 Intl.NumberFormat 提供标准格式
+ *
+ * @param value 金额数值
+ * @param currency 货币类型：'CNY' | 'USD'，默认 'USD'
+ * @returns 格式化后的字符串，如 "$1,234.56" 或 "¥1,234.56"
+ */
+export function formatCurrency(
+  value: number | undefined | null,
+  currency: 'CNY' | 'USD' = 'USD'
+): string {
+  const num = Number(value) || 0;
+  return new Intl.NumberFormat(currency === 'CNY' ? 'zh-CN' : 'en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(num);
+}
+
+/**
+ * 格式化简洁货币金额（用于图表等空间有限的地方）
+ * 自动转换为 K/M 等单位
+ *
+ * @param value 金额数值
+ * @param currency 货币类型
+ * @returns 格式化后的字符串，如 "$1.2k" 或 "$1.5M"
+ */
+export function formatCurrencyCompact(
+  value: number | undefined | null,
+  currency: 'CNY' | 'USD' = 'USD'
+): string {
+  const num = Number(value) || 0;
+  const symbol = currency === 'CNY' ? '¥' : '$';
+
+  if (Math.abs(num) >= 1000000) {
+    return `${symbol}${(num / 1000000).toFixed(1)}M`;
+  }
+  if (Math.abs(num) >= 1000) {
+    return `${symbol}${(num / 1000).toFixed(0)}k`;
+  }
+  return `${symbol}${num.toFixed(0)}`;
+}
+
+/**
+ * 格式化百分比
+ *
+ * @param value 小数值（如 0.15 表示 15%）
+ * @param decimals 小数位数，默认 1
+ * @returns 格式化后的字符串，如 "15.0%"
+ */
+export function formatPercent(
+  value: number | undefined | null,
+  decimals: number = 1
+): string {
+  const num = Number(value) || 0;
+  return `${(num * 100).toFixed(decimals)}%`;
+}
+
+/**
+ * 格式化变化百分比（带正负号）
+ *
+ * @param value 变化百分比值
+ * @returns 格式化后的字符串，如 "+15.0%" 或 "-5.0%" 或 "-"
+ */
+export function formatChange(value: number | undefined | null): string {
+  if (value === null || value === undefined) return '-';
+  const sign = value >= 0 ? '+' : '';
+  return `${sign}${value.toFixed(1)}%`;
+}
 
 // 待办类型配置
 export type TodoType = 'topup' | 'settlement' | 'reconciliation' | 'alert';

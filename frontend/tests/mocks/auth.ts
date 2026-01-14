@@ -98,6 +98,14 @@ export function mockUnauthenticatedState() {
  * 不同角色的 mock 用户
  */
 export const mockUsers: Record<string, typeof mockUser & { role: UserRole }> = {
+  // 6 角色白名单 (MASTER.md v4.6 / PRD v2.2)
+  ceo: {
+    ...mockUser,
+    id: 'user-ceo-id-001',
+    email: 'ceo@example.com',
+    username: 'ceouser',
+    role: 'ceo' as UserRole,
+  },
   admin: {
     ...mockUser,
     role: 'admin' as UserRole,
@@ -109,12 +117,13 @@ export const mockUsers: Record<string, typeof mockUser & { role: UserRole }> = {
     username: 'financeuser',
     role: 'finance' as UserRole,
   },
+  // 别名: data_operator -> finance (向后兼容)
   data_operator: {
     ...mockUser,
     id: 'user-operator-id-001',
     email: 'operator@example.com',
     username: 'operatoruser',
-    role: 'data_operator' as UserRole,
+    role: 'finance' as UserRole, // data_operator 已废弃，映射到 finance
   },
   account_manager: {
     ...mockUser,
@@ -123,12 +132,21 @@ export const mockUsers: Record<string, typeof mockUser & { role: UserRole }> = {
     username: 'amuser',
     role: 'account_manager' as UserRole,
   },
+  // 标准角色: pitcher (投手)
+  pitcher: {
+    ...mockUser,
+    id: 'user-pitcher-id-001',
+    email: 'pitcher@example.com',
+    username: 'pitcheruser',
+    role: 'pitcher' as UserRole,
+  },
+  // 别名: media_buyer -> pitcher (向后兼容)
   media_buyer: {
     ...mockUser,
     id: 'user-buyer-id-001',
     email: 'buyer@example.com',
     username: 'buyeruser',
-    role: 'media_buyer' as UserRole,
+    role: 'media_buyer' as UserRole, // 技术层别名，实际映射到 pitcher
   },
   project_owner: {
     ...mockUser,

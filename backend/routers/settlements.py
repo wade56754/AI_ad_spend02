@@ -44,6 +44,7 @@ Author: Claude Code
 """
 
 import logging
+from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session

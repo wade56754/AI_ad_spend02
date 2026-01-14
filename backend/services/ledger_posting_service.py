@@ -432,10 +432,8 @@ class LedgerPostingService:
                 ad_account_id=original.ad_account_id,
                 entry_type=LedgerEntryType.REVERSAL.value,
                 amount=-original.amount,  # 金额取反
-                balance_after=Decimal('0'),  # 后续更新
                 reference_id=original.id,
-                reference_type='ledger_entry_reversal',
-                notes=f"冲正原因: {reason}",
+                notes=f"冲正原因: {reason} | 来源: ledger_entry_reversal",
                 entry_date=datetime.utcnow(),
                 entity_type=original.entity_type,
                 entity_id=original.entity_id,
@@ -488,18 +486,12 @@ class LedgerPostingService:
         # 获取 ad_account_id (如果适用)
         ad_account_id = event.ad_account_id
 
-        # 计算 balance_after (简化处理，实际应该从账户余额表获取)
-        # TODO: 集成余额计算逻辑
-        balance_after = Decimal('0')
-
         entry = LedgerEntry(
             ad_account_id=ad_account_id or 0,  # 暂时使用 0，后续优化
             entry_type=entry_type,
             amount=amount,
-            balance_after=balance_after,
             reference_id=None,
-            reference_type=f"financial_event:{event.event_type}",
-            notes=notes or f"{event.event_type} 事件自动生成",
+            notes=notes or f"{event.event_type} 事件自动生成 | 来源: financial_event:{event.event_type}",
             entry_date=event.event_date or datetime.utcnow().date(),
             entity_type=entity_type,
             entity_id=entity_id,

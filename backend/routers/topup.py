@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
 from backend.core.dependencies import get_current_user, require_role, get_client_info
+from backend.core.utils.safe_access import safe_get  # BE-P0-1 修复: 安全属性访问
 from backend.core.response import success_response, error_response
 from backend.core.pagination import (
     get_pagination,
@@ -70,20 +71,25 @@ def get_topup_service(db: Session = Depends(get_db)) -> TopupService:
 
 
 def build_topup_response(topup) -> TopupRequestResponse:
-    """构建充值申请响应"""
+    """
+    构建充值申请响应
+
+    BE-P0-1 修复: 使用 safe_get 安全访问嵌套属性，避免 NoneType 崩溃
+    SoT: MASTER.md v4.9 AH-01 - 禁止假设数据一致
+    """
+    # 安全获取关联属性，避免链式访问崩溃
+    ad_account_name = safe_get(topup, 'ad_account', 'account_name', default='') or \
+                      safe_get(topup, 'ad_account', 'account_code', default='')
+    project_id = safe_get(topup, 'ad_account', 'project_id', default=0) or 0
+    project_name = safe_get(topup, 'ad_account', 'project', 'name', default='')
+
     return TopupRequestResponse(
         id=topup.id,
         request_no=str(topup.id),
         ad_account_id=topup.ad_account_id,
-        ad_account_name=topup.ad_account.account_name or topup.ad_account.account_code
-        if topup.ad_account
-        else "",
-        project_id=topup.ad_account.project_id
-        if topup.ad_account and topup.ad_account.project
-        else 0,
-        project_name=topup.ad_account.project.name
-        if topup.ad_account and topup.ad_account.project
-        else "",
+        ad_account_name=ad_account_name,
+        project_id=project_id,
+        project_name=project_name,
         requested_amount=topup.amount or Decimal("0"),
         actual_amount=getattr(topup, "actual_amount", None),
         currency="CNY",
@@ -92,13 +98,13 @@ def build_topup_response(topup) -> TopupRequestResponse:
         notes=topup.request_notes or "",
         status=topup.status,
         requested_by=0,  # UUID → int placeholder
-        requested_by_name=topup.requester.username if topup.requester else "",
+        requested_by_name=safe_get(topup, 'requester', 'username', default=''),
         data_reviewed_by=0 if topup.reviewed_by else None,
-        data_reviewed_by_name=topup.reviewer.username if topup.reviewer else None,
+        data_reviewed_by_name=safe_get(topup, 'reviewer', 'username', default=None),
         data_reviewed_at=topup.reviewed_at,
         data_review_notes=None,
         finance_approved_by=0 if topup.approved_by else None,
-        finance_approved_by_name=topup.approver.username if topup.approver else None,
+        finance_approved_by_name=safe_get(topup, 'approver', 'username', default=None),
         finance_approved_at=topup.approved_at,
         finance_approve_notes=None,
         paid_at=topup.paid_at,

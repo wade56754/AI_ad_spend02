@@ -18,7 +18,7 @@ SoT Reference: MASTER.md v4.4 §6.5
 import logging
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from backend.core.db import get_db
@@ -26,7 +26,6 @@ from backend.core.dependencies import get_current_user
 from backend.core.error_codes import SystemErrorCodes
 from backend.core.response import StandardResponse, error_response, success_response
 from backend.core.role_mapping import role_in_list
-from backend.exceptions.custom_exceptions import PermissionDeniedError
 from backend.models import User
 from backend.schemas.dashboard import (
     DashboardDetail,
@@ -70,35 +69,15 @@ def require_ceo_access(current_user: User = Depends(get_current_user)) -> User:
     使用 role_in_list 支持等价角色
     """
     allowed_roles = ["admin", "ceo"]
-    
-    # 获取用户角色（可能为 None）
-    user_role = current_user.role if current_user.role else None
-    
-    # 规范化角色值（去除空格，转小写）
-    if user_role:
-        user_role = user_role.strip().lower()
-    
-    # 详细日志：记录实际角色值和检查过程
-    logger.info(
-        f"CEO dashboard access check: user_id={current_user.id}, "
-        f"email={current_user.email}, "
-        f"user_role={user_role} (raw={current_user.role}), "
-        f"allowed_roles={allowed_roles}"
-    )
 
-    # 检查角色是否在允许列表中
-    if not role_in_list(user_role, allowed_roles):
+    if not role_in_list(current_user.role, allowed_roles):
         logger.warning(
-            f"User {current_user.id} (email={current_user.email}, role={user_role}) "
-            f"denied access to CEO dashboard. Allowed roles: {allowed_roles}"
+            f"User {current_user.id} ({current_user.role}) denied access to CEO dashboard"
         )
-        raise PermissionDeniedError(
-            message="CEO 驾驶舱仅限老板和管理员访问"
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "AUTH_500", "message": "CEO 驾驶舱仅限老板和管理员访问"},
         )
-    
-    logger.info(
-        f"User {current_user.id} (role={user_role}) granted access to CEO dashboard"
-    )
 
     return current_user
 
@@ -455,35 +434,24 @@ async def get_ceo_overview_v3(
 
         data = service.get_overview(period)
 
-        # 安全地记录日志（避免 KeyError 或类型错误）
-        try:
-            profit_rate_pct = data.get('profit_summary', {}).get('profit_rate_pct')
-            total_projects = data.get('project_balance_summary', {}).get('total_projects', 0)
-            # 处理 Decimal 类型和 None 值
-            if profit_rate_pct is not None:
-                if hasattr(profit_rate_pct, '__float__'):
-                    profit_rate_pct = float(profit_rate_pct)
-                logger.info(
-                    f"CEO V3 overview: profit_rate={profit_rate_pct:.1f}%, "
-                    f"projects={total_projects}"
-                )
-            else:
-                logger.info(
-                    f"CEO V3 overview: profit_rate=None (no revenue), "
-                    f"projects={total_projects}"
-                )
-        except Exception as log_error:
-            logger.warning(f"Failed to log CEO V3 overview details: {log_error}")
+        profit_rate_pct = data['profit_summary'].get('profit_rate_pct')
+        profit_rate_str = f"{profit_rate_pct:.1f}%" if profit_rate_pct is not None else "N/A"
+        logger.info(
+            f"CEO V3 overview: profit_rate={profit_rate_str}, "
+            f"projects={data['project_balance_summary']['total_projects']}"
+        )
 
         return success_response(data=data)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception(f"Error in CEO dashboard V3 overview: {e}")
+        import traceback
+        tb = traceback.format_exc()
+        logger.error(f"Error in CEO dashboard V3 overview: {e}\nTraceback:\n{tb}")
         return error_response(
             code=SystemErrorCodes.INTERNAL_ERROR.code,
-            message="获取 CEO 仪表盘概览失败",
+            message=f"获取 CEO 仪表盘概览失败: {str(e)[:200]}",
             status_code=SystemErrorCodes.INTERNAL_ERROR.status_code,
         )
 

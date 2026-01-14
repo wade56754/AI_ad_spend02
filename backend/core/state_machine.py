@@ -246,12 +246,14 @@ TOPUP_STATE_MACHINE = StateMachine(
         Transition(
             TopupStatus.PENDING_REVIEW,
             TopupStatus.FINANCE_APPROVE,
-            required_roles=["account_manager"],  # PRD v2.2: data_operator → account_manager (户管审核)
+            # PRD v2.2: 数据审核可由 project_owner, admin 或 data_operator(废弃别名) 执行
+            required_roles=["project_owner", "admin", "data_operator"],
         ),
         Transition(
             TopupStatus.PENDING_REVIEW,
             TopupStatus.REJECTED,
-            required_roles=["account_manager"],  # PRD v2.2: data_operator → account_manager
+            # PRD v2.2: 拒绝审核可由 project_owner, admin 或 data_operator(废弃别名) 执行
+            required_roles=["project_owner", "admin", "data_operator"],
         ),
         Transition(
             TopupStatus.FINANCE_APPROVE, TopupStatus.PAID, required_roles=["finance"]

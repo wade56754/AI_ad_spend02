@@ -32,3 +32,17 @@ export type {
   ApiFetchOptions,
   PaginationMeta,
 } from './api';
+
+// Money utilities (safe arithmetic)
+export {
+  moneyAdd,
+  moneySubtract,
+  moneyMultiply,
+  moneyDivide,
+  safeAverage,
+  calculatePercentage,
+  calculateGrowthRate,
+  formatMoney,
+  ensurePositive,
+  moneyEquals,
+} from './money';

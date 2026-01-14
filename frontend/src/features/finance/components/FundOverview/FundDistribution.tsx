@@ -11,6 +11,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { DistributionItem } from '../../types/finance.types';
+import { formatCurrency } from '../../utils/financeHelpers';
 
 interface FundDistributionProps {
   title: string;
@@ -19,7 +20,6 @@ interface FundDistributionProps {
 }
 
 export function FundDistribution({ title, items, total }: FundDistributionProps) {
-  const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
 
   // 取前 5 个显示
   const topItems = items.slice(0, 5);

@@ -39,21 +39,10 @@ class LedgerEntry(Base, SerializableMixin):
     - TRANSFER_IN: 转入（SUPPLIER账本，正数）
     - REVERSAL: 红冲（两账本通用，负数）
 
-    字段：
-    - id: 主键
-    - ledger_type: 账本类型（PROJECT/SUPPLIER）
-    - project_id: 项目ID（PROJECT账本必填）
-    - supplier_id: 供应商ID（SUPPLIER账本必填）
-    - entry_type: 分录类型（6种）
-    - amount: 金额
-    - balance_after: 交易后余额
-    - reference_id: 关联记录ID
-    - reference_type: 关联记录类型
-    - performed_by: 操作人ID
-    - reason: 操作原因
-    - notes: 备注
-    - entry_date: 分录日期
-    - created_at: 创建时间
+    实际数据库列（共19个）:
+    - id, ledger_type, project_id, supplier_id, ad_account_id, entry_type,
+    - amount, currency, reference_id, occurred_at, created_by, notes,
+    - created_at, entity_type, entity_id, event_id, idempotency_key, direction, entry_date
     """
     __tablename__ = 'ledger_entries'
 
@@ -63,21 +52,29 @@ class LedgerEntry(Base, SerializableMixin):
     # 主键
     id = Column(BigInteger, primary_key=True, autoincrement=True, comment="分录ID")
 
+    # 账本类型和实体关联
+    ledger_type = Column(String(20), nullable=True, comment="账本类型 (PROJECT/SUPPLIER)")
+    project_id = Column(BigInteger, nullable=True, comment="项目ID")
+    supplier_id = Column(PGUUID(as_uuid=True), nullable=True, comment="供应商ID")
+
     # 外键
     ad_account_id = Column(
         BigInteger,
         ForeignKey('ad_accounts.id', ondelete='CASCADE'),
-        nullable=False,
+        nullable=True,  # 数据库允许为空
         comment="广告账户ID"
     )
 
     # 业务字段
     entry_type = Column(String(20), nullable=False, comment="分录类型")
     amount = Column(Numeric(15, 2), nullable=False, comment="金额")
-    balance_after = Column(Numeric(15, 2), nullable=False, comment="交易后余额")
+    currency = Column(String(10), nullable=True, comment="货币代码")
     reference_id = Column(BigInteger, nullable=True, comment="关联记录ID")
-    reference_type = Column(String(50), nullable=True, comment="关联记录类型")
     notes = Column(Text, nullable=True, comment="备注")
+
+    # 操作相关
+    occurred_at = Column(DateTime(timezone=True), nullable=True, comment="发生时间")
+    created_by = Column(PGUUID(as_uuid=True), nullable=True, comment="创建人ID")
 
     # 时间字段
     entry_date = Column(
@@ -225,14 +222,16 @@ class LedgerEntry(Base, SerializableMixin):
 
     @classmethod
     def get_account_balance(cls, session, ad_account_id: int) -> Decimal:
-        """获取账户当前余额（从最后一条记录）"""
-        last_entry = session.query(cls).filter(
-            cls.ad_account_id == ad_account_id
-        ).order_by(
-            cls.entry_date.desc()
-        ).first()
+        """获取账户当前余额（通过汇总所有分录金额计算）
 
-        return last_entry.balance_after if last_entry else Decimal('0.00')
+        注意: 数据库表中没有 balance_after 列，需要通过汇总计算
+        """
+        from sqlalchemy import func
+        result = session.query(func.sum(cls.amount)).filter(
+            cls.ad_account_id == ad_account_id
+        ).scalar()
+
+        return Decimal(str(result)) if result else Decimal('0.00')
 
     @classmethod
     def get_date_range_entries(cls, session, ad_account_id: int, start_date: datetime, end_date: datetime):

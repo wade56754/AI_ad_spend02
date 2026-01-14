@@ -24,6 +24,9 @@ from typing import List, Tuple, Optional, Dict, Any
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import and_, or_, func, desc, extract
 
+# BE-P0-2 修复: 导入数据库锁工具
+from backend.core.utils.db_locks import lock_for_update
+
 from backend.models import TopupRequest
 from backend.models.topup_fixed import TopupTransaction, TopupApprovalLog
 from backend.models import User
@@ -74,6 +77,41 @@ class TopupService:
         self.MAX_SINGLE_AMOUNT = Decimal("100000")  # 单笔充值上限
         self.MAX_ACCOUNT_BALANCE = Decimal("500000")  # 账户余额上限
         self.MAX_DAILY_REQUESTS = 3  # 每日最大申请次数
+
+    def _get_request_for_update(self, request_id: int, current_user: User) -> TopupRequest:
+        """
+        BE-P0-2 修复: 带悲观锁获取充值申请
+
+        用于状态转换操作，防止并发修改导致数据不一致。
+        SoT: LEDGER_SOT.md v1.1 - 账本操作原子性
+
+        锁会持续到事务提交或回滚。
+
+        Args:
+            request_id: 充值申请 ID
+            current_user: 当前用户
+
+        Returns:
+            锁定的充值申请记录
+
+        Raises:
+            ResourceNotFoundError: 记录不存在
+        """
+        # 使用 SELECT FOR UPDATE 锁定记录
+        request = (
+            self.db.query(TopupRequest)
+            .filter(TopupRequest.id == request_id)
+            .with_for_update()  # BE-P0-2: 悲观锁
+            .first()
+        )
+
+        if not request:
+            raise ResourceNotFoundError("充值申请不存在", error_code="BIZ_002")
+
+        # 检查访问权限
+        self._check_request_access(request, current_user)
+
+        return request
 
     def create_request(
         self,
@@ -254,8 +292,10 @@ class TopupService:
         - draft → pending_review
 
         权限: 仅创建者可提交 (API_SOT.md v9.4 §10.2)
+        BE-P0-2: 使用悲观锁防止并发状态修改
         """
-        request = self.get_request_by_id(request_id, current_user)
+        # BE-P0-2: 使用带锁的获取方法
+        request = self._get_request_for_update(request_id, current_user)
 
         old_status = request.status
 
@@ -309,8 +349,11 @@ class TopupService:
 
         权限: finance, admin (API_SOT.md v9.4 §10.2)
         约束: 职责分离 - 申请者不能是审批者 (BR-FIN-004)
+
+        BE-P0-2: 使用悲观锁防止并发状态修改
         """
-        request = self.get_request_by_id(request_id, current_user)
+        # BE-P0-2: 使用带锁的获取方法，防止并发修改
+        request = self._get_request_for_update(request_id, current_user)
 
         old_status = request.status
 
@@ -458,8 +501,10 @@ class TopupService:
 
         权限: finance, admin (API_SOT.md v9.4 §10.2)
         约束: 职责分离 - 申请者不能是审批者 (BR-FIN-004)
+        BE-P0-2: 使用悲观锁防止并发状态修改
         """
-        request = self.get_request_by_id(request_id, current_user)
+        # BE-P0-2: 使用带锁的获取方法
+        request = self._get_request_for_update(request_id, current_user)
 
         # VAL_001: 验证拒绝原因不能为空
         if not reason or not reason.strip():
@@ -522,8 +567,10 @@ class TopupService:
         - pending_review → cancelled (申请人取消)
 
         权限: 申请人本人, admin
+        BE-P0-2: 使用悲观锁防止并发状态修改
         """
-        request = self.get_request_by_id(request_id, current_user)
+        # BE-P0-2: 使用带锁的获取方法
+        request = self._get_request_for_update(request_id, current_user)
 
         # 验证权限 - 只有申请人本人或管理员可以取消
         is_owner = request.requested_by == current_user.id
@@ -611,10 +658,8 @@ class TopupService:
             ad_account_id=request.ad_account_id,
             entry_type=LedgerEntryType.TOPUP.value,
             amount=topup_amount,
-            balance_after=current_balance + topup_amount,
-            reference_type="topup_request",
             reference_id=request_id,
-            notes=f"充值申请 #{request_id} 确认完成 - 操作人: {current_user.username}"
+            notes=f"充值申请 #{request_id} 确认完成 - 操作人: {current_user.username} | 来源: topup_request"
         )
         self.db.add(ledger_entry)
 
@@ -809,10 +854,8 @@ class TopupService:
             ad_account_id=request.ad_account_id,
             entry_type=LedgerEntryType.TOPUP.value,
             amount=topup_amount,
-            balance_after=current_balance + topup_amount,
-            reference_type="topup_request",
             reference_id=request_id,
-            notes=f"充值到账 #{request_id} - 金额: {topup_amount} - 操作人: {current_user.username}"
+            notes=f"充值到账 #{request_id} - 金额: {topup_amount} - 操作人: {current_user.username} | 来源: topup_request"
         )
         self.db.add(ledger_entry)
 
@@ -1199,10 +1242,10 @@ class TopupService:
         if status:
             query = query.filter(TopupRequest.status == status)
 
-        # 加载关联数据
+        # 加载关联数据 (N+1 优化: 预加载 ad_account.project)
         requests = (
             query.options(
-                joinedload(TopupRequest.ad_account),
+                joinedload(TopupRequest.ad_account).joinedload(AdAccount.project),
                 joinedload(TopupRequest.requester),
                 joinedload(TopupRequest.data_reviewer),
                 joinedload(TopupRequest.finance_approver)
@@ -1390,7 +1433,8 @@ class TopupService:
                 .filter(Project.account_manager_id == current_user.id)
                 .subquery()
             )
-            return query.filter(TopupRequest.project_id.in_(project_ids))
+            # 通过 AdAccount 关联获取 project_id (TopupRequest 本身没有 project_id 字段)
+            return query.join(AdAccount).filter(AdAccount.project_id.in_(project_ids))
 
         # 媒体买家查看自己的申请
         if current_user.role == UserRole.MEDIA_BUYER.value:
@@ -1401,13 +1445,15 @@ class TopupService:
 
     def _check_request_access(self, request: TopupRequest, current_user: User):
         """检查充值申请访问权限 - MASTER.md v4.6"""
-        # 管理员/CEO/财务/项目负责人/户管可以访问所有 (TASK-FIN-006)
+        # 管理员/CEO/财务/项目负责人/户管/数据操作员可以访问所有 (TASK-FIN-006)
+        # PRD v2.2: data_operator 是 project_owner 的废弃别名
         if current_user.role in [
             UserRole.ADMIN.value,
             UserRole.CEO.value,
             UserRole.FINANCE.value,
             UserRole.PROJECT_OWNER.value,
-            UserRole.ACCOUNT_MANAGER.value  # 户管可访问所有充值申请，以便确认到账
+            UserRole.ACCOUNT_MANAGER.value,  # 户管可访问所有充值申请，以便确认到账
+            UserRole.DATA_OPERATOR.value,    # PRD v2.2: 废弃别名，等价于 project_owner
         ]:
             return
 
@@ -1428,11 +1474,26 @@ class TopupService:
         request = self.get_request_by_id(request_id, current_user)
 
         # 验证操作权限 - 使用 UserRole 枚举 (MASTER.md v4.6 §4.5.11)
-        # 充值审批流程: pitcher 申请 → 户管收集 → 财务审批
-        if action == "data_review" and current_user.role != UserRole.ACCOUNT_MANAGER.value:
-            raise PermissionDeniedError("只有户管可以进行数据审核", error_code="BIZ_206")
+        # 充值审批流程: pitcher 申请 → 户管收集 → project_owner/admin 审核 → 财务审批
+        # PRD v2.2 角色别名: data_operator → project_owner
+        user_role = current_user.role
+        if hasattr(user_role, 'value'):
+            user_role = user_role.value
 
-        if action == "finance_approve" and current_user.role != UserRole.FINANCE.value:
+        if action == "data_review":
+            # 数据审核: project_owner, admin, data_operator(废弃别名)
+            allowed_roles = [
+                UserRole.PROJECT_OWNER.value,  # project_owner
+                UserRole.ADMIN.value,          # admin
+                UserRole.DATA_OPERATOR.value,  # data_operator (废弃, 映射到 project_owner)
+            ]
+            if user_role not in allowed_roles:
+                raise PermissionDeniedError(
+                    "只有项目负责人或管理员可以进行数据审核",
+                    error_code="BIZ_206"
+                )
+
+        if action == "finance_approve" and user_role != UserRole.FINANCE.value:
             raise PermissionDeniedError("只有财务可以进行财务审批", error_code="BIZ_206")
 
         return request

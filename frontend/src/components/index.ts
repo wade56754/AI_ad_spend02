@@ -139,15 +139,8 @@ export { Toaster } from './ui/sonner'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 
 // 面包屑
-export {
-  Breadcrumb,
-  BreadcrumbEllipsis,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from './ui/breadcrumb'
+export { Breadcrumb } from './ui/breadcrumb'
+export type { BreadcrumbItem } from './ui/breadcrumb'
 
 // 导航菜单
 export {

@@ -427,10 +427,8 @@ class TransferService:
                 ad_account_id=transfer.source_ad_account_id,
                 entry_type=LedgerEntryType.TRANSFER_OUT.value,
                 amount=-transfer_amount,  # 负数表示转出
-                balance_after=source_balance - transfer_amount,
-                reference_type="transfer_request",
                 reference_id=transfer.id,
-                notes=f"余额迁移转出 #{transfer.request_no} 至账户 {transfer.target_ad_account_id}"
+                notes=f"余额迁移转出 #{transfer.request_no} 至账户 {transfer.target_ad_account_id} | 来源: transfer_request"
             )
             self.db.add(transfer_out_entry)
 
@@ -439,10 +437,8 @@ class TransferService:
                 ad_account_id=transfer.target_ad_account_id,
                 entry_type=LedgerEntryType.TRANSFER_IN.value,
                 amount=transfer_amount,  # 正数表示转入
-                balance_after=target_balance + transfer_amount,
-                reference_type="transfer_request",
                 reference_id=transfer.id,
-                notes=f"余额迁移转入 #{transfer.request_no} 从账户 {transfer.source_ad_account_id}"
+                notes=f"余额迁移转入 #{transfer.request_no} 从账户 {transfer.source_ad_account_id} | 来源: transfer_request"
             )
             self.db.add(transfer_in_entry)
 

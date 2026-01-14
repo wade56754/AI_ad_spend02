@@ -504,6 +504,40 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 
 ---
 
+## Superpowers 技能库
+
+本项目集成了 [obra/superpowers](https://github.com/obra/superpowers) 技能库，提供增强的 AI 编码工作流。
+
+### 核心技能
+
+| 技能 | 用途 | 文件位置 |
+|------|------|----------|
+| **test-driven-development** | TDD 红绿重构循环 | `.superpowers/skills/test-driven-development/` |
+| **systematic-debugging** | 4 阶段根因分析 | `.superpowers/skills/systematic-debugging/` |
+| **brainstorming** | 设计讨论和细化 | `.superpowers/skills/brainstorming/` |
+| **writing-plans** | 创建详细实施计划 | `.superpowers/skills/writing-plans/` |
+| **executing-plans** | 批量执行计划 | `.superpowers/skills/executing-plans/` |
+| **subagent-driven-development** | 子代理驱动开发 | `.superpowers/skills/subagent-driven-development/` |
+
+### TDD 铁律
+
+```
+没有失败的测试，就不能写生产代码
+```
+
+**Red-Green-Refactor 循环:**
+1. **RED**: 写一个失败的测试
+2. **验证 RED**: 确认测试因预期原因失败
+3. **GREEN**: 写最小代码使测试通过
+4. **验证 GREEN**: 确认所有测试通过
+5. **REFACTOR**: 清理代码，保持绿灯
+
+### 集成文档
+
+详见: `.claude/skills/superpowers-integration.md`
+
+---
+
 ## 版本同步
 
 本文档基于：

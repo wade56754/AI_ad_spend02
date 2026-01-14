@@ -1,0 +1,35 @@
+# 计划编写技能
+# 封装 Superpowers writing-plans 方法
+
+id: methodology-planning
+name: Writing Plans
+version: "1.0"
+category: methodology
+
+description: |
+  计划编写方法论，创建详细可执行的实施计划。
+  
+  计划要素:
+  1. 任务分解
+  2. 依赖分析
+  3. 风险评估
+  4. 时间估计
+
+triggers:
+  - 计划
+  - 规划
+  - 步骤
+  - 任务
+  - plan
+  - steps
+  - tasks
+
+superpowers_ref: writing-plans
+
+sot_refs:
+  - MASTER.md §12: 计划规范
+
+invariants:
+  - TASKS_MUST_BE_VERIFIABLE
+  - DEPENDENCIES_MUST_BE_EXPLICIT
+  - RISK_MUST_BE_ASSESSED

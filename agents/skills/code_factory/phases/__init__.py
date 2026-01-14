@@ -1,21 +1,21 @@
 """
-阶段模块 - 增强流水线
+阶段模块 v7.0 - 轻量流水线
 
-Phase -1: CLARIFY - 需求澄清 (v5.0 新增)
-Phase 0: INIT - 初始化
-Phase 1: RISK - 风险评估
-Phase 2: PARSE - 需求解析
-Phase 3: SEARCH - 代码搜索
-Phase 4: SELECT - 代码选型
-Phase 5: ADAPT - 代码适配
-Phase 6: ASSEMBLE - 代码组装
-Phase 7: VERIFY - 代码验证
-Phase 8: TRACE - 来源追溯
-Phase 9: OUTPUT - 输出生成
+5 阶段架构 (对齐 Superpowers):
+1. CLARIFY - 需求澄清 (对接 brainstorming)
+2. PLAN - 计划生成 (对接 writing-plans)
+3. IMPLEMENT - TDD 实现 (对接 test-driven-development)
+4. REVIEW - 两阶段审查 (规格 + 质量)
+5. CONFIRM - 幻觉抑制确认
+
+版本: v7.0
+基准: MASTER.md v4.8, Superpowers
 """
 
 from .base import PhaseBase, PhaseResult
 from .context import PipelineContext
+
+# CLARIFY 阶段
 from .clarify import (
     ClarifyPhase,
     ClarifyResult,
@@ -27,13 +27,25 @@ from .clarify import (
     auto_clarify,
 )
 
+# PLAN 阶段 (v7.0)
+from .plan import PlanPhase, PlanResult
+
+# IMPLEMENT 阶段 (v7.0)
+from .implement import ImplementPhase, TDDViolation, TDDPhase, TDDCycleResult
+
+# REVIEW 阶段 (v7.0)
+from .review import ReviewPhase, SpecReviewResult, QualityReviewResult
+
+# CONFIRM 阶段 (v7.0)
+from .confirm import ConfirmPhase, ConfirmResult, TraceResult
+
 __all__ = [
     # 基类
     "PhaseBase",
     "PhaseResult",
     "PipelineContext",
     
-    # CLARIFY 阶段 (v5.0)
+    # CLARIFY 阶段
     "ClarifyPhase",
     "ClarifyResult",
     "ClarifiedRequirement",
@@ -42,4 +54,24 @@ __all__ = [
     "QuestionCategory",
     "clarify_requirement",
     "auto_clarify",
+    
+    # PLAN 阶段 (v7.0)
+    "PlanPhase",
+    "PlanResult",
+    
+    # IMPLEMENT 阶段 (v7.0)
+    "ImplementPhase",
+    "TDDViolation",
+    "TDDPhase",
+    "TDDCycleResult",
+    
+    # REVIEW 阶段 (v7.0)
+    "ReviewPhase",
+    "SpecReviewResult",
+    "QualityReviewResult",
+    
+    # CONFIRM 阶段 (v7.0)
+    "ConfirmPhase",
+    "ConfirmResult",
+    "TraceResult",
 ]

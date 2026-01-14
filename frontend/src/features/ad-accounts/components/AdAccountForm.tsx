@@ -99,30 +99,26 @@ type AccountType = (typeof accountTypes)[number];
 // ============================================================================
 
 const notificationSettingsSchema = z.object({
-  budget_alert: z.boolean().default(true),
-  performance_alert: z.boolean().default(true),
-  status_change_alert: z.boolean().default(true),
+  budget_alert: z.boolean(),
+  performance_alert: z.boolean(),
+  status_change_alert: z.boolean(),
 });
 
 const adAccountSchema = z.object({
   name: z.string().min(1, "账户名称不能为空").max(100, "账户名称不能超过100字符"),
   platform: z.enum(platforms, { required_error: "请选择平台" }),
   account_code: z.string().min(1, "账户代码不能为空").max(50, "账户代码不能超过50字符"),
-  account_type: z.enum(accountTypes).default("business"),
+  account_type: z.enum(accountTypes),
   currency: z.string().min(1, "请选择货币"),
   timezone: z.string().min(1, "请选择时区"),
   spend_limit: z.number().min(1, "消耗限额必须大于0"),
   daily_budget: z.number().min(1, "日预算必须大于0").optional().nullable(),
-  status: z.enum(accountStatuses).default("new"),
+  status: z.enum(accountStatuses),
   owner_id: z.string().optional().nullable(),
   project_id: z.number().optional().nullable(),
   notes: z.string().max(500, "备注不能超过500字符").optional().nullable(),
-  auto_optimization: z.boolean().default(false),
-  notification_settings: notificationSettingsSchema.default({
-    budget_alert: true,
-    performance_alert: true,
-    status_change_alert: true,
-  }),
+  auto_optimization: z.boolean(),
+  notification_settings: notificationSettingsSchema,
 });
 
 type AdAccountFormValues = z.infer<typeof adAccountSchema>;

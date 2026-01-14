@@ -1,0 +1,36 @@
+# 系统化调试技能
+# 封装 Superpowers systematic-debugging 方法
+
+id: methodology-debugging
+name: Systematic Debugging
+version: "1.0"
+category: methodology
+
+description: |
+  系统化调试方法论，4 阶段根因分析。
+  
+  4 阶段:
+  1. REPRODUCE - 复现问题
+  2. HYPOTHESIZE - 形成假设
+  3. VALIDATE - 验证假设
+  4. FIX - 修复并验证
+
+triggers:
+  - 调试
+  - debug
+  - 错误
+  - bug
+  - 问题
+  - 不工作
+  - 失败
+  - 异常
+
+superpowers_ref: systematic-debugging
+
+sot_refs:
+  - MASTER.md §11: 调试规范
+
+invariants:
+  - REPRODUCE_BEFORE_FIX
+  - LOG_HYPOTHESIS
+  - VERIFY_FIX_DOES_NOT_BREAK

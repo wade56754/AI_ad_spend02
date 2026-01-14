@@ -10,7 +10,7 @@ draft → pending_review → approved/needs_adjustment → completed
 from datetime import datetime, date
 from decimal import Decimal
 from typing import List, Optional, Dict, Any, Tuple
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_, func, select, Integer
 
 from backend.models import (
@@ -927,7 +927,12 @@ class ReconciliationService:
         user_role: str = None,
     ) -> List[Dict[str, Any]]:
         """导出对账数据"""
-        query = self.db.query(ReconciliationDetail).join(ReconciliationBatch)
+        # N+1 优化: 使用 joinedload 预加载关联数据
+        query = self.db.query(ReconciliationDetail).options(
+            joinedload(ReconciliationDetail.batch),
+            joinedload(ReconciliationDetail.ad_account).joinedload(AdAccount.project),
+            joinedload(ReconciliationDetail.ad_account).joinedload(AdAccount.channel),
+        ).join(ReconciliationBatch)
 
         # 根据角色过滤
         if user_role in ["account_manager", "pitcher"]:
@@ -1451,9 +1456,8 @@ class ReconciliationService:
             project_id=project_id,
             entry_type=entry_type,
             amount=amount,
-            reference_type="reconciliation_adjustment",
             reference_id=adjustment.id,
-            notes=f"对账调整: {adjustment.reason}",
+            notes=f"对账调整: {adjustment.reason} | 来源: reconciliation_adjustment",
             created_by=current_user_id,
         )
 

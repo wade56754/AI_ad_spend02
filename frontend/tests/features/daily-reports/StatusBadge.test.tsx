@@ -23,54 +23,55 @@ describe('StatusBadge', () => {
     'final_locked',
   ];
 
-  it.each(allStatuses)('renders correct label for %s status', (status) => {
-    render(<StatusBadge status={status} />);
+  // 测试 8 状态模式 (phase1={false})
+  it.each(allStatuses)('renders correct label for %s status (8-state mode)', (status) => {
+    render(<StatusBadge status={status} phase1={false} />);
     const config = STATUS_CONFIG[status];
     expect(screen.getByText(config.label)).toBeInTheDocument();
   });
 
-  it('renders with icon by default', () => {
-    render(<StatusBadge status="raw_submitted" />);
+  it('renders with icon by default (8-state mode)', () => {
+    render(<StatusBadge status="raw_submitted" phase1={false} />);
     // Icon should be present (SVG element)
     const badge = screen.getByText('原始提交').closest('div');
     expect(badge?.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('hides icon when showIcon is false', () => {
-    render(<StatusBadge status="raw_submitted" showIcon={false} />);
+  it('hides icon when showIcon is false (8-state mode)', () => {
+    render(<StatusBadge status="raw_submitted" showIcon={false} phase1={false} />);
     const badge = screen.getByText('原始提交').closest('div');
     expect(badge?.querySelector('svg')).not.toBeInTheDocument();
   });
 
-  it('applies size classes correctly', () => {
-    const { rerender } = render(<StatusBadge status="raw_submitted" size="sm" />);
+  it('applies size classes correctly (8-state mode)', () => {
+    const { rerender } = render(<StatusBadge status="raw_submitted" size="sm" phase1={false} />);
     // Size class is on the Badge container, not the text span
     const badge = screen.getByText('原始提交').closest('[class*="text-"]');
     expect(badge).toHaveClass('text-xs');
 
-    rerender(<StatusBadge status="raw_submitted" size="lg" />);
+    rerender(<StatusBadge status="raw_submitted" size="lg" phase1={false} />);
     const badgeLg = screen.getByText('原始提交').closest('[class*="text-"]');
     expect(badgeLg).toHaveClass('text-base');
   });
 
-  it('applies custom className', () => {
-    render(<StatusBadge status="raw_submitted" className="custom-class" />);
+  it('applies custom className (8-state mode)', () => {
+    render(<StatusBadge status="raw_submitted" className="custom-class" phase1={false} />);
     const badge = screen.getByText('原始提交').closest('div');
     expect(badge).toHaveClass('custom-class');
   });
 });
 
 describe('StatusLegend', () => {
-  it('renders all 8 status badges', () => {
-    render(<StatusLegend />);
+  it('renders all 8 status badges (8-state mode)', () => {
+    render(<StatusLegend phase1={false} />);
 
     Object.values(STATUS_CONFIG).forEach((config) => {
       expect(screen.getByText(config.label)).toBeInTheDocument();
     });
   });
 
-  it('renders exactly 8 badges', () => {
-    render(<StatusLegend />);
+  it('renders exactly 8 badges (8-state mode)', () => {
+    render(<StatusLegend phase1={false} />);
     // Count badge elements by their text content
     const statusLabels = Object.values(STATUS_CONFIG).map((config) => config.label);
     const badges = statusLabels.map((label) => screen.getByText(label));

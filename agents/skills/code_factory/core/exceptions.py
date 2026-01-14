@@ -1,17 +1,40 @@
 """
-自定义异常
+代码工厂异常定义
 
-基准文档: MASTER.md v4.6
-版本: v4.2
+提供标准化的异常类型和错误处理工具。
+
+基准文档: MASTER.md v4.8
+版本: v7.0
 """
 
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 
 
 class CodeFactoryError(Exception):
-    """代码工厂基础异常"""
+    """
+    代码工厂基础异常
+    
+    所有代码工厂异常的基类。
+    """
 
-    pass
+    def __init__(
+        self,
+        message: str = "",
+        code: str = "ERR-FACTORY-000",
+        details: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(message)
+        self.message = message
+        self.code = code
+        self.details = details or {}
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return {
+            "code": self.code,
+            "message": self.message,
+            "details": self.details,
+        }
 
 
 class SotVersionMismatchError(CodeFactoryError):

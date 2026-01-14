@@ -1,16 +1,23 @@
 /**
- * Finance API Service
+ * Finance API Service - 财务模块 API 服务
  *
- * SoT: docs/10.module-specs/A2-fund-overview.md §5 API 接口
- * SoT: LEDGER_SOT.md v1.1 - 账本规则
+ * SoT References:
+ * - API_SOT.md v9.4 §5.7 (财务 API 契约)
+ * - BR-FIN.md v1.1 (财务流程规则)
+ * - BR-PROFIT.md v1.2 (利润统计规则)
+ * - MASTER.md v4.9 §2.4 (6 角色模型)
  *
- * 使用真实后端 API 获取数据
+ * API 版本说明:
+ * - V1 API (/api/v1/fund/*): 已废弃，请迁移到 V2
+ * - V2 API (/api/v1/finance/*): 推荐使用
  *
  * @module features/finance/services
  */
 
 import { apiFetch } from '@/lib/api';
 
+// V1 路径 (已废弃 - Deprecated)
+// @deprecated 请使用 V2 API: /api/v1/finance/fund/* 和 /api/v1/finance/profit/*
 const FUND_BASE_PATH = '/api/v1/fund';
 const PROFIT_BASE_PATH = '/api/v1/finance/profit';
 
@@ -110,11 +117,16 @@ export interface ProfitTrendItem {
   profit: number;
 }
 
-// ========== Query Functions ==========
+// ============================================================================
+// V1 API Functions (已废弃 - Deprecated)
+// 请使用下方 V2 API Functions
+// ============================================================================
 
 /**
  * 获取资金概览
  * GET /api/v1/fund/overview
+ *
+ * @deprecated 请使用 getFundOverviewV2()
  */
 export async function getFundOverview(params: {
   period_start?: string;
@@ -290,7 +302,8 @@ export async function getProfitTrend(params: {
 }
 
 // ============================================================================
-// V2 API - 任务规格重构
+// V2 API Functions (推荐使用 - Recommended)
+// 符合 API_SOT.md v9.4 和最佳实践规范
 // ============================================================================
 
 import type {
@@ -318,6 +331,8 @@ const PROFIT_V2_PATH = '/api/v1/finance/profit';
 /**
  * 获取资金概览 V2
  * GET /api/v1/finance/fund/overview
+ *
+ * 注意: 后端返回扁平结构 (FundOverviewResponse)，需要转换为前端期望的嵌套结构 (FundOverviewData)
  */
 export async function getFundOverviewV2(
   params: FundOverviewParams = {}
@@ -327,7 +342,35 @@ export async function getFundOverviewV2(
   if (params.date) searchParams.set('date', params.date);
   const query = searchParams.toString();
   const url = query ? `${FUND_V2_PATH}/overview?${query}` : `${FUND_V2_PATH}/overview`;
-  return apiFetch<FundOverviewData>(url);
+
+  // 获取后端原始响应（嵌套结构）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = await apiFetch<any>(url);
+
+  // 后端返回格式: { period, currency, summary: {...}, changes: {...} }
+  // 直接使用后端返回的嵌套结构
+  const summary = raw?.summary ?? {};
+  const changes = raw?.changes ?? {};
+
+  return {
+    period: raw?.period || params.period || params.date || new Date().toISOString().slice(0, 7),
+    currency: raw?.currency || 'CNY',
+    summary: {
+      total_income: summary.total_income ?? 0,
+      total_expense: summary.total_expense ?? 0,
+      total_receivable: summary.total_receivable ?? 0,
+      total_received: summary.total_received ?? 0,
+      outstanding: summary.outstanding ?? 0,
+      outstanding_count: summary.outstanding_count ?? 0,
+      available_balance: summary.available_balance ?? 0,
+      opening_balance: summary.opening_balance ?? 0,
+    },
+    changes: {
+      income_change_pct: changes.income_change_pct ?? null,
+      expense_change_pct: changes.expense_change_pct ?? null,
+      balance_change_pct: changes.balance_change_pct ?? null,
+    },
+  };
 }
 
 /**
@@ -365,6 +408,8 @@ export async function getFundDistributionV2(
 /**
  * 获取盈亏概览 V2
  * GET /api/v1/finance/profit/overview
+ *
+ * 注意: 后端返回扁平结构 (ProfitOverviewResponse)，需要转换为前端期望的嵌套结构 (ProfitOverviewData)
  */
 export async function getProfitOverviewV2(
   params: ProfitOverviewParams = {}
@@ -373,7 +418,32 @@ export async function getProfitOverviewV2(
   if (params.period) searchParams.set('period', params.period);
   const query = searchParams.toString();
   const url = query ? `${PROFIT_V2_PATH}/overview?${query}` : `${PROFIT_V2_PATH}/overview`;
-  return apiFetch<ProfitOverviewData>(url);
+
+  // 获取后端原始响应（扁平结构）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = await apiFetch<any>(url);
+
+  // 转换为前端期望格式（嵌套结构）
+  return {
+    period: params.period || new Date().toISOString().slice(0, 7),
+    currency: 'CNY',
+    summary: {
+      total_revenue: raw?.month_revenue ?? 0,
+      total_cost: raw?.month_cost ?? 0,
+      total_profit: raw?.month_profit ?? 0,
+      total_conversions: 0, // 后端未提供此字段
+      avg_profit_rate: (raw?.month_profit_margin ?? 0) / 100, // 后端返回百分比，转为小数
+      total_fee: 0, // 后端未提供此字段
+    },
+    changes: {
+      revenue_change_pct: null, // 后端未提供
+      profit_change_pct: raw?.profit_change_from_last_month ?? null,
+    },
+    benchmarks: {
+      industry_avg_profit_rate: 0.15, // 默认行业平均利润率 15%
+      company_target_profit_rate: 0.20, // 默认公司目标利润率 20%
+    },
+  };
 }
 
 /**

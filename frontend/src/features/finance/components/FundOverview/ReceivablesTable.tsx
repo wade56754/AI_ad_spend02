@@ -3,6 +3,16 @@
  *
  * 显示每个项目的打款、应收、已收、未收情况
  *
+ * UI 设计规范 (财务模块最佳实践):
+ * - 金额列右对齐: text-right
+ * - 异常数据高亮: text-red-500 font-medium
+ * - 双行信息展示: font-medium (主) + text-sm text-muted-foreground (副)
+ * - 空状态: colSpan + text-center + py-8
+ * - 汇总行: flex justify-end gap-8 + 红色高亮未收总额
+ * - 导出按钮: Download 图标 + "导出Excel"
+ *
+ * SoT: BR-FIN.md v1.1 §BR-FIN-004 (预收款非收入)
+ *
  * @module features/finance/components/FundOverview
  */
 
@@ -20,6 +30,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import type { ReceivableItem, ReceivablesTotals, ReceivableStatus } from '../../types/finance.types';
+import { formatCurrency } from '../../utils/financeHelpers';
 
 interface ReceivablesTableProps {
   items: ReceivableItem[];
@@ -34,7 +45,6 @@ const STATUS_CONFIG: Record<ReceivableStatus, { label: string; variant: 'default
 };
 
 export function ReceivablesTable({ items, totals, onExport }: ReceivablesTableProps) {
-  const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
 
   const getStatusBadge = (status: ReceivableStatus, outstanding: number) => {
     const config = STATUS_CONFIG[status];

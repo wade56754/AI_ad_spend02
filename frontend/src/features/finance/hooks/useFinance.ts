@@ -1,7 +1,22 @@
 /**
- * Finance Hooks
+ * Finance Hooks - 财务模块数据钩子
  *
- * SoT: A2-fund-overview.md §5 API 接口
+ * SoT References:
+ * - API_SOT.md v9.4 §5.7 (财务 API 契约)
+ * - BR-FIN.md v1.1 (财务流程规则)
+ * - BR-PROFIT.md v1.2 (利润统计规则)
+ *
+ * Hook 版本说明:
+ * - V1 Hooks (useFundOverview, useProfitSummary 等): 已废弃，请迁移到 V2
+ * - V2 Hooks (useFundOverviewV2, useProfitOverviewV2 等): 推荐使用
+ *
+ * Query Key 层级化规范:
+ * - ['fund', 'overview', params]          - 资金概览
+ * - ['fund', 'distribution', group, params] - 资金分布
+ * - ['fund', 'receivables', params]       - 应收明细
+ * - ['profit', 'overview', params]        - 盈亏概览
+ * - ['profit', 'projects', params]        - 项目利润
+ * - ['profit', 'trend', params]           - 利润趋势
  *
  * @module features/finance/hooks
  */
@@ -18,8 +33,14 @@ import {
   getProfitTrend,
 } from '../services/financeApi';
 
+// ============================================================================
+// V1 Hooks (已废弃 - Deprecated)
+// 请使用下方 V2 Hooks
+// ============================================================================
+
 /**
  * 获取资金概览
+ * @deprecated 请使用 useFundOverviewV2()
  */
 export function useFundOverview(params?: { period_start?: string; period_end?: string }) {
   return useQuery({
@@ -122,7 +143,8 @@ export function useProfitTrend(params?: {
 }
 
 // ============================================================================
-// V2 Hooks - 任务规格重构
+// V2 Hooks (推荐使用 - Recommended)
+// 符合 API_SOT.md v9.4 和最佳实践规范
 // ============================================================================
 
 import {
@@ -148,6 +170,9 @@ import type {
 
 /**
  * 获取资金概览 V2
+ *
+ * SoT: BR-FIN.md v1.1 §BR-FIN-006 (可用资金公式)
+ * 权限: ceo, finance, admin (MASTER.md v4.9 §2.4)
  */
 export function useFundOverviewV2(params?: FundOverviewParams) {
   return useQuery({
@@ -261,7 +286,7 @@ interface LedgerResponse {
 
 /**
  * 获取账本流水
- * SoT: API_SOT.md v9.7 (GET /api/v1/ledger)
+ * SoT: API_SOT.md v9.7 (GET /api/v1/ledger/transactions)
  */
 export function useLedger(params?: LedgerParams) {
   return useQuery({
@@ -276,7 +301,7 @@ export function useLedger(params?: LedgerParams) {
       if (params?.end_date) searchParams.set('end_date', params.end_date);
 
       const query = searchParams.toString();
-      return apiGet<LedgerResponse>(`/api/v1/ledger${query ? `?${query}` : ''}`);
+      return apiGet<LedgerResponse>(`/api/v1/ledger/transactions${query ? `?${query}` : ''}`);
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
   });

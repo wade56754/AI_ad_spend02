@@ -50,6 +50,11 @@ class SkillLoader:
         if language_skills_path.exists():
             self._load_skills_from_directory(language_skills_path, "language")
         
+        # v7.0: 加载方法论技能
+        methodology_skills_path = self.skills_root / "methodology_skills"
+        if methodology_skills_path.exists():
+            self._load_skills_from_directory(methodology_skills_path, "methodology")
+        
         # 加载代码块
         code_blocks_path = self.skills_root / "code_blocks"
         if code_blocks_path.exists():

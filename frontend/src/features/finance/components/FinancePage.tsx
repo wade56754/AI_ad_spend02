@@ -31,7 +31,8 @@ import {
   BarChart3,
   FileText,
   Plus,
-  Loader2
+  Loader2,
+  Banknote,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -40,15 +41,9 @@ import {
   useChannelDistribution,
   useFundAlerts,
 } from '../hooks/useFinance';
+import { moneySubtract, formatMoney } from '@/lib';
 
-// 格式化金额
-const formatMoney = (amount: number | undefined | null) => {
-  const num = Number(amount) || 0;
-  if (Math.abs(num) >= 10000) {
-    return `¥${(num / 10000).toFixed(2)} 万`;
-  }
-  return `¥${num.toLocaleString()}`;
-};
+// FE-P0-2 修复: 使用 @/lib/money 的安全金额计算，避免浮点精度问题
 
 // 待办类型图标和颜色
 const todoConfig = {
@@ -88,30 +83,40 @@ export function FinancePage() {
   };
 
   // 计算概览数据 (从真实数据或默认值)
+  const totalTopup = fundOverview?.total_topup ?? 0;
+  const totalSpend = fundOverview?.total_spend ?? 0;
+  // 押款 = 累计充值 - 累计实际消耗 (PRD P4 核心指标)
+  // 押款表示存放在媒体平台的资金，是老板最关心的资金占用指标
+  // FE-P0-2 修复: 使用 moneySubtract 替代直接相减，避免浮点精度问题
+  const depositBalance = moneySubtract(totalTopup, totalSpend);
+
   const overview = {
-    total_topup: fundOverview?.total_topup ?? 0,      // 累计充值
-    total_spend: fundOverview?.total_spend ?? 0,       // 累计消耗
-    current_balance: fundOverview?.current_balance ?? 0, // 当前余额
+    total_topup: totalTopup,                              // 累计充值
+    total_spend: totalSpend,                              // 累计消耗
+    current_balance: fundOverview?.current_balance ?? 0,  // 当前余额
     total_receivable: fundOverview?.total_receivable ?? 0, // 应收款
-    total_received: fundOverview?.total_received ?? 0,   // 累计回款
-    fund_occupied: fundOverview?.fund_occupied ?? 0,     // 资金占用
-    occupy_rate: fundOverview?.occupy_rate ?? 0,         // 资金占用率
+    total_received: fundOverview?.total_received ?? 0,    // 累计回款
+    fund_occupied: fundOverview?.fund_occupied ?? 0,      // 资金占用
+    occupy_rate: fundOverview?.occupy_rate ?? 0,          // 资金占用率
     pending_count: fundOverview?.pending_receivable_count ?? 0, // 待收款笔数
+    deposit_balance: depositBalance,                       // 押款余额 (新增)
   };
 
-  // 转换趋势数据格式 - 添加防护性检查
-  const trends = (profitTrend ?? []).map(item => ({
+  // 转换趋势数据格式 - 添加防护性检查 + 唯一 key
+  const trends = (profitTrend ?? []).map((item, index) => ({
+    id: `trend-${item.date ?? index}`, // 唯一 key
     date: (item.date ?? '').slice(5) || '未知', // 取 MM-DD 部分
     revenue: item.revenue ?? 0,
     cost: item.cost ?? 0,
     profit: item.profit ?? 0,
   }));
 
-  // 转换渠道数据格式 - 添加防护性检查
+  // 转换渠道数据格式 - 添加防护性检查 + 唯一 key
   // 计算总消耗用于百分比
   const channelData = channelDistribution ?? [];
   const totalChannelSpend = channelData.reduce((sum, item) => sum + (item.total_spend ?? 0), 0);
-  const platformSpend = channelData.map(item => ({
+  const platformSpend = channelData.map((item, index) => ({
+    id: `channel-${item.channel_id ?? item.channel_name ?? index}`, // 唯一 key
     platform: item.channel_name ?? item.channel ?? '未知渠道',
     spend: item.total_spend ?? 0,
     percentage: totalChannelSpend > 0 ? ((item.total_spend ?? 0) / totalChannelSpend) * 100 : 0,
@@ -168,8 +173,8 @@ export function FinancePage() {
         </div>
       </div>
 
-      {/* Overview Cards - v3.0 优化版 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Overview Cards - v3.1 增加押款指标 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="shadow-sm hover:shadow-md transition-shadow border-0">
           <CardContent className="pt-6">
             {isLoadingOverview ? (
@@ -194,6 +199,7 @@ export function FinancePage() {
           </CardContent>
         </Card>
 
+        {/* P0-3: 明确标注为实际消耗（财务依据）*/}
         <Card className="shadow-sm hover:shadow-md transition-shadow border-0">
           <CardContent className="pt-6">
             {isLoadingOverview ? (
@@ -205,9 +211,11 @@ export function FinancePage() {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">累计消耗</p>
                   <p className="text-3xl font-bold text-gray-900 tabular-nums">{formatMoney(overview.total_spend)}</p>
-                  <div className="flex items-center text-red-600 text-sm">
-                    <TrendingDown className="h-4 w-4" />
-                    <span className="ml-1">总消耗</span>
+                  <div className="flex items-center text-sm">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                      实际消耗
+                    </span>
+                    <span className="ml-1 text-gray-400 text-xs">财务依据</span>
                   </div>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50">
@@ -228,13 +236,26 @@ export function FinancePage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">当前余额</p>
-                  <p className="text-3xl font-bold text-green-600 tabular-nums">{formatMoney(overview.current_balance)}</p>
-                  <div className="flex items-center text-gray-500 text-sm">
+                  <p className={`text-3xl font-bold tabular-nums ${
+                    overview.current_balance < 0 ? 'text-red-600' : 'text-green-600'
+                  }`}>
+                    {formatMoney(overview.current_balance)}
+                  </p>
+                  <div className={`flex items-center text-sm ${
+                    overview.current_balance < 0 ? 'text-red-500' : 'text-gray-500'
+                  }`}>
+                    {overview.current_balance < 0 && (
+                      <AlertTriangle className="h-4 w-4 mr-1" />
+                    )}
                     <span>占用率 {(overview.occupy_rate ?? 0).toFixed(1)}%</span>
                   </div>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-                  <Wallet className="h-5 w-5 text-blue-600" />
+                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                  overview.current_balance < 0 ? 'bg-red-50' : 'bg-blue-50'
+                }`}>
+                  <Wallet className={`h-5 w-5 ${
+                    overview.current_balance < 0 ? 'text-red-600' : 'text-blue-600'
+                  }`} />
                 </div>
               </div>
             )}
@@ -259,6 +280,35 @@ export function FinancePage() {
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50">
                   <CreditCard className="h-5 w-5 text-amber-600" />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 押款余额 - P0-1 新增 (PRD P4 核心指标) */}
+        <Card className="shadow-sm hover:shadow-md transition-shadow border-0 border-l-4 border-l-purple-500">
+          <CardContent className="pt-6">
+            {isLoadingOverview ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-purple-600 uppercase tracking-wide">押款余额</p>
+                  <p className={`text-3xl font-bold tabular-nums ${
+                    overview.deposit_balance >= 0 ? 'text-purple-600' : 'text-red-600'
+                  }`}>
+                    {formatMoney(overview.deposit_balance)}
+                  </p>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Banknote className="h-4 w-4 mr-1 text-purple-500" />
+                    <span>平台占用资金</span>
+                  </div>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+                  <Banknote className="h-5 w-5 text-purple-600" />
                 </div>
               </div>
             )}
@@ -303,7 +353,7 @@ export function FinancePage() {
                   {trends.map((day, index) => {
                     const maxValue = Math.max(...trends.map(t => Math.max(t.revenue, t.cost))) || 1;
                     return (
-                      <div key={day.date} className="flex items-center gap-4">
+                      <div key={day.id} className="flex items-center gap-4">
                         <span className="w-12 text-sm text-gray-500">{day.date}</span>
                         <div className="flex-1 flex items-center gap-2">
                           <div className="flex-1 h-6 bg-gray-100 rounded-full overflow-hidden relative">
@@ -366,7 +416,7 @@ export function FinancePage() {
               ) : (
                 <div className="space-y-4">
                   {platformSpend.map((platform) => (
-                    <div key={platform.platform}>
+                    <div key={platform.id}>
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium">{platform.platform}</span>
                         <div className="flex items-center gap-2">
@@ -590,6 +640,12 @@ export function FinancePage() {
               <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2">
                 <BarChart3 className="h-6 w-6 text-indigo-600" />
                 <span>账户管理</span>
+              </Button>
+            </Link>
+            <Link href="/ledger">
+              <Button variant="outline" className="w-full h-auto py-4 flex flex-col items-center gap-2">
+                <DollarSign className="h-6 w-6 text-emerald-600" />
+                <span>财务总账</span>
               </Button>
             </Link>
           </div>

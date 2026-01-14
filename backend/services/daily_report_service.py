@@ -798,10 +798,8 @@ class DailyReportService:
                 ad_account_id=ad_account.id,
                 entry_type=LedgerEntryType.REVENUE.value,
                 amount=revenue_amount,
-                balance_after=current_balance + revenue_amount,
-                reference_type="daily_report",
                 reference_id=report.id,
-                notes=f"日报计费收入 #{report.id} - 粉数:{conversions_final} × 单价:{unit_price}",
+                notes=f"日报计费收入 #{report.id} - 粉数:{conversions_final} × 单价:{unit_price} | 来源: daily_report",
             )
             self.db.add(revenue_entry)
             self.db.flush()  # 获取 entry ID
@@ -814,10 +812,8 @@ class DailyReportService:
                 ad_account_id=ad_account.id,
                 entry_type=LedgerEntryType.COST.value,
                 amount=cost_amount,
-                balance_after=balance_after_revenue + cost_amount,
-                reference_type="daily_report",
                 reference_id=report.id,
-                notes=f"日报计费成本 #{report.id} - 消耗:{real_spend} + 手续费:{fee}",
+                notes=f"日报计费成本 #{report.id} - 消耗:{real_spend} + 手续费:{fee} | 来源: daily_report",
             )
             self.db.add(cost_entry)
 

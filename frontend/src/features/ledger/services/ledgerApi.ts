@@ -1,12 +1,17 @@
 /**
  * Ledger API Service
  *
- * Aligned with API_SOT.md v9.0 Section 5.7 (Ledger endpoints)
- * CRITICAL: Ledger is READ-ONLY from frontend. Entries are created
- * only through backend workflows (topup completion, daily report confirmation, etc.)
+ * Aligned with API_SOT.md v9.4 Section 5.7 (Ledger endpoints)
+ *
+ * Read Operations: All users with ledger access
+ * Write Operations: admin, finance only
+ *
+ * SoT References:
+ * - LEDGER_SOT.md v1.1 (Double-entry bookkeeping rules)
+ * - BR-FIN.md v1.1 (Financial business rules)
  */
 
-import { apiFetch, apiFetchPaginated } from '@/lib/api';
+import { apiFetch, apiFetchPaginated, apiPost } from '@/lib/api';
 import type { PaginatedResponse } from '@/lib/api';
 import type {
   LedgerEntry,
@@ -17,6 +22,55 @@ import type {
 } from '../types';
 
 const BASE_PATH = '/api/v1/ledger';
+
+// === Transaction Types (for mutations) ===
+
+/**
+ * Transaction types supported by the backend
+ * Aligned with backend/models/ledger.py TransactionType enum
+ */
+export type TransactionType =
+  | 'TOPUP'
+  | 'SPEND'
+  | 'REFUND'
+  | 'FEE'
+  | 'ADJUSTMENT'
+  | 'TRANSFER';
+
+/**
+ * Request payload for creating a transaction
+ */
+export interface CreateTransactionRequest {
+  transaction_type: TransactionType;
+  amount: number;
+  currency?: string;
+  project_id?: string;
+  account_id?: string;
+  topup_id?: string;
+  reference_id?: string;
+  description: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Response from creating a transaction
+ */
+export interface TransactionResponse {
+  id: string;
+  transaction_number: string;
+  transaction_type: TransactionType;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  project_id?: string;
+  account_id?: string;
+  topup_id?: string;
+  reference_id?: string;
+  description?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at?: string;
+}
 
 // === Query Functions (READ-ONLY) ===
 
@@ -46,7 +100,8 @@ export async function getLedgerEntries(
   if (params.sort_order) searchParams.set('sort_order', params.sort_order);
 
   const query = searchParams.toString();
-  const url = query ? `${BASE_PATH}/entries?${query}` : `${BASE_PATH}/entries`;
+  // 后端端点是 /transactions，兼容前端 entries 概念
+  const url = query ? `${BASE_PATH}/transactions?${query}` : `${BASE_PATH}/transactions`;
 
   return apiFetchPaginated<LedgerEntry>(url);
 }
@@ -140,4 +195,52 @@ export async function verifyBalanceIntegrity(tenantId: string): Promise<{
   entries_count: number;
 }> {
   return apiFetch(`${BASE_PATH}/verify/${tenantId}`);
+}
+
+// === Mutation Functions (admin/finance only) ===
+
+/**
+ * Create a new transaction
+ * POST /api/v1/ledger/transactions
+ *
+ * @permission admin, finance
+ * @sot BR-FIN.md v1.1 - Financial transaction rules
+ */
+export async function createTransaction(
+  data: CreateTransactionRequest
+): Promise<TransactionResponse> {
+  return apiPost<TransactionResponse>(`${BASE_PATH}/transactions`, data);
+}
+
+/**
+ * Update transaction status
+ * PATCH /api/v1/ledger/transactions/:id
+ *
+ * @permission admin, finance
+ */
+export async function updateTransactionStatus(
+  id: string,
+  data: { status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'; note?: string }
+): Promise<TransactionResponse> {
+  return apiFetch<TransactionResponse>(`${BASE_PATH}/transactions/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Create a reversal (红冲) for an existing transaction
+ * POST /api/v1/ledger/transactions/:id/reverse
+ *
+ * @permission admin, finance
+ * @sot BR-FIN.md v1.1 §BR-FIN-007 红冲规则
+ */
+export async function createReversal(
+  transactionId: string,
+  data: { reason: string }
+): Promise<TransactionResponse> {
+  return apiPost<TransactionResponse>(
+    `${BASE_PATH}/transactions/${transactionId}/reverse`,
+    data
+  );
 }

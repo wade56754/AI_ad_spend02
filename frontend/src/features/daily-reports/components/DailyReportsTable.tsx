@@ -174,6 +174,9 @@ const STATUS_VISUAL: Record<string, { dot: string; bg: string; text: string }> =
   final_locked:    { dot: 'bg-slate-600',  bg: 'bg-slate-100',  text: 'text-slate-700' },
 };
 
+// FE-P0-3 修复: 默认状态配置，防止未知状态导致崩溃
+const DEFAULT_STATUS_CONFIG = { label: '未知', variant: 'default' as const };
+
 const STATUS_TOOLTIP = `状态流程：
 • 原始提交 → 趋势待审 → 趋势通过/异常
 • 异常已处理 → 终审待审 → 终审确认 → 已锁定`;
@@ -272,7 +275,8 @@ export const DailyReportsTable = memo(function DailyReportsTable({ filters, onFi
                 </TableRow>
               ) : (
                 reports.map((report) => {
-                  const statusConfig = STATUS_CONFIG[report.status];
+                  // FE-P0-3 修复: 使用默认值防止未知状态导致 undefined 崩溃
+                  const statusConfig = STATUS_CONFIG[report.status] || DEFAULT_STATUS_CONFIG;
                   const currency = report.currency || 'USD';
 
                   return (

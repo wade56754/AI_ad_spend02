@@ -138,7 +138,6 @@ class SQLAlchemyMockBuilder:
         entry_type: str = "REVENUE",
         amount: Decimal = None,
         ad_account_id: int = 1,
-        balance_after: Decimal = None,
         **kwargs
     ) -> Mock:
         """
@@ -148,11 +147,19 @@ class SQLAlchemyMockBuilder:
             entry_type: 条目类型 (使用 LedgerEntryType 枚举值)
             amount: 金额
             ad_account_id: 广告账户ID
-            balance_after: 交易后余额
-            **kwargs: 其他字段
+            **kwargs: 其他字段 (reference_id, notes, entity_type, entity_id, etc.)
 
         Returns:
             Mock 对象
+
+        Note:
+            数据库实际字段 (DATA_SCHEMA.md v5.10):
+            - id, ledger_type, project_id, supplier_id, ad_account_id
+            - entry_type, amount, currency, reference_id
+            - occurred_at, created_by, notes, created_at
+            - entity_type, entity_id, event_id, idempotency_key, direction, entry_date
+
+            已移除不存在的字段: balance_after, reference_type
         """
         from backend.models import LedgerEntry
 
@@ -161,12 +168,23 @@ class SQLAlchemyMockBuilder:
         mock.entry_type = entry_type
         mock.amount = amount or Decimal("1000.00")
         mock.ad_account_id = ad_account_id
-        mock.balance_after = balance_after or Decimal("10000.00")
         mock.reference_id = kwargs.get('reference_id', None)
-        mock.reference_type = kwargs.get('reference_type', None)
         mock.notes = kwargs.get('notes', None)
         mock.entry_date = kwargs.get('entry_date', datetime.utcnow())
         mock.created_at = kwargs.get('created_at', datetime.utcnow())
+
+        # 实际数据库字段
+        mock.ledger_type = kwargs.get('ledger_type', None)
+        mock.project_id = kwargs.get('project_id', None)
+        mock.supplier_id = kwargs.get('supplier_id', None)
+        mock.currency = kwargs.get('currency', 'CNY')
+        mock.occurred_at = kwargs.get('occurred_at', None)
+        mock.created_by = kwargs.get('created_by', None)
+        mock.entity_type = kwargs.get('entity_type', None)
+        mock.entity_id = kwargs.get('entity_id', None)
+        mock.event_id = kwargs.get('event_id', None)
+        mock.idempotency_key = kwargs.get('idempotency_key', None)
+        mock.direction = kwargs.get('direction', None)
 
         # 设置其他字段
         for key, value in kwargs.items():

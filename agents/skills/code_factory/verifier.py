@@ -31,8 +31,8 @@ from agents.skills.verifiers import (
     quick_verify,
 )
 
-# v6.0: 使用 stub 实现
-from .stubs import AdaptedFile
+# v7.0: 使用 types 模块
+from .types import AdaptedFile
 
 
 class VerifyDecision(Enum):

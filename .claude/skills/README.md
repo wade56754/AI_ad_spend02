@@ -77,6 +77,19 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6
 | [prompt-engineer-skill](./prompt-engineer-skill/) | 2.1 | ready_for_production | 提示词工程优化 |
 | [superclaude-enhancer](./superclaude-enhancer/) | 1.0 | active | SuperClaude 增强器 |
 
+### Bridge (整合桥接)
+
+| Skill | 版本 | 状态 | 职责 |
+|-------|------|------|------|
+| [superpowers-factory-bridge](./superpowers-factory-bridge/) | 1.0 | active | **Superpowers + AI Factory 统一编排器** |
+
+> 整合 Superpowers 方法论 + AI Code Factory 代码生成 + SuperClaude 质量增强
+>
+> 子代理提示词:
+> - `prompts/implementer-with-factory.md` - TDD 实现者
+> - `prompts/sot-spec-reviewer.md` - SoT 规格审查
+> - `prompts/quality-reviewer-enhanced.md` - 质量审查增强
+
 ### Deprecated (已弃用)
 
 | Skill | 原职责 | 弃用原因 |
@@ -95,6 +108,19 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6
 | `/review <file>` | ai-master-architect + ai-ad-spec-governor | 代码审查 |
 | `/sot-check <file>` | ai-ad-spec-governor | SoT 合规检查 |
 | `/dev-flow <type> <task>` | ai-ad-flow-orchestrator | 开发流程编排 (5 大 Flow) |
+| `/udev <subcommand> <task>` | superpowers-factory-bridge | **统一开发编排** (Superpowers + Factory) |
+
+### /udev 子命令详情
+
+| 子命令 | 描述 | 触发的工作流 |
+|--------|------|-------------|
+| `/udev full <task>` | 完整开发周期 | BRAINSTORM → PLAN → EXECUTE → FINISH |
+| `/udev brainstorm <topic>` | 设计+SoT上下文 | superpowers:brainstorming + /sot-context |
+| `/udev plan <task>` | SoT感知计划 | superpowers:writing-plans + sot-aware-planning |
+| `/udev tdd <feature>` | TDD+工厂测试 | RED → GREEN → REFACTOR + /gen test |
+| `/udev impl <task>` | 子代理实现 | subagent-driven-dev + /gen be/fe |
+| `/udev debug <issue>` | 系统化调试 | systematic-debugging + /sc:troubleshoot |
+| `/udev finish` | 完成分支 | finishing-branch + /sot-check |
 
 ## Skill 元数据标准
 
@@ -137,5 +163,6 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.6
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-01-13 | 1.2 | 新增 superpowers-factory-bridge，统一开发编排器整合 Superpowers + AI Factory |
 | 2025-12-07 | 1.1 | 新增 ai-ad-flow-orchestrator，完善 /dev-flow 命令映射 |
 | 2025-12-07 | 1.0 | 初始版本，完成从 Python Agent 到纯 Skill 架构迁移 |

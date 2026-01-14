@@ -237,11 +237,38 @@ async def get_current_active_user(
 get_current_user = get_current_active_user
 
 
+# 角色别名映射 (PRD v2.2)
+# 数据库存储值 → 业务角色名
+ROLE_ALIAS_MAP = {
+    "media_buyer": "pitcher",  # 数据库存储 media_buyer，业务层使用 pitcher
+    "data_operator": "project_owner",  # 已废弃，映射到 project_owner
+}
+
+# 反向映射：业务角色名 → 数据库存储值
+ROLE_REVERSE_MAP = {v: k for k, v in ROLE_ALIAS_MAP.items()}
+
+
+def normalize_role(role: str) -> str:
+    """标准化角色名称为业务层角色名
+
+    将数据库存储值转换为业务角色名。
+    例如: media_buyer → pitcher
+
+    Args:
+        role: 角色字符串（可能是数据库值或业务名）
+
+    Returns:
+        标准化后的业务角色名
+    """
+    return ROLE_ALIAS_MAP.get(role, role)
+
+
 def require_role(allowed_roles: Union[str, List[str]]):
     """角色权限装饰器 (用于 Depends)
 
     Args:
         allowed_roles: 允许的角色列表，单个角色可以是字符串
+            支持业务角色名（如 pitcher）
 
     Returns:
         依赖函数
@@ -250,14 +277,38 @@ def require_role(allowed_roles: Union[str, List[str]]):
         @router.get("/admin")
         async def admin_endpoint(user: User = Depends(require_role(["admin"]))):
             ...
+
+    Note:
+        自动处理角色别名映射 (PRD v2.2):
+        - pitcher ↔ media_buyer
+        - project_owner ↔ data_operator (已废弃)
     """
     if isinstance(allowed_roles, str):
         allowed_roles = [allowed_roles]
 
+    # 扩展允许角色列表，包含数据库存储值
+    expanded_roles = set(allowed_roles)
+    for role in allowed_roles:
+        # 如果是业务角色名，添加对应的数据库存储值
+        if role in ROLE_REVERSE_MAP:
+            expanded_roles.add(ROLE_REVERSE_MAP[role])
+        # 如果是数据库存储值，添加对应的业务角色名
+        if role in ROLE_ALIAS_MAP:
+            expanded_roles.add(ROLE_ALIAS_MAP[role])
+
     async def role_checker(
         current_user: User = Depends(get_current_active_user)
     ) -> User:
-        if current_user.role not in allowed_roles:
+        # 获取用户角色并标准化
+        user_role = current_user.role
+        if hasattr(user_role, 'value'):
+            user_role = user_role.value
+
+        # DEBUG: 输出角色检查详情
+        logger.debug(f"Role check: user_role={user_role}, expanded_roles={expanded_roles}, allowed={user_role in expanded_roles}")
+
+        if user_role not in expanded_roles:
+            logger.warning(f"Permission denied: user_role={user_role} not in {expanded_roles}")
             raise HTTPException(
                 status_code=AuthErrorCodes.PERMISSION_DENIED.status_code,
                 detail={
@@ -276,6 +327,7 @@ def check_user_role(user: User, allowed_roles: Union[str, List[str]]) -> None:
     Args:
         user: 当前用户对象
         allowed_roles: 允许的角色列表，单个角色可以是字符串
+            支持业务角色名（如 pitcher）
 
     Raises:
         HTTPException: 403 - 权限不足
@@ -284,11 +336,29 @@ def check_user_role(user: User, allowed_roles: Union[str, List[str]]) -> None:
         async def my_endpoint(current_user: User = Depends(get_current_user)):
             check_user_role(current_user, ["admin", "finance"])
             # 继续处理...
+
+    Note:
+        自动处理角色别名映射 (PRD v2.2):
+        - pitcher ↔ media_buyer
+        - project_owner ↔ data_operator (已废弃)
     """
     if isinstance(allowed_roles, str):
         allowed_roles = [allowed_roles]
 
-    if user.role not in allowed_roles:
+    # 扩展允许角色列表，包含数据库存储值
+    expanded_roles = set(allowed_roles)
+    for role in allowed_roles:
+        if role in ROLE_REVERSE_MAP:
+            expanded_roles.add(ROLE_REVERSE_MAP[role])
+        if role in ROLE_ALIAS_MAP:
+            expanded_roles.add(ROLE_ALIAS_MAP[role])
+
+    # 获取用户角色
+    user_role = user.role
+    if hasattr(user_role, 'value'):
+        user_role = user_role.value
+
+    if user_role not in expanded_roles:
         raise HTTPException(
             status_code=AuthErrorCodes.PERMISSION_DENIED.status_code,
             detail={
