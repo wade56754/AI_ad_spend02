@@ -3,9 +3,9 @@
 > **版本**: v3.1
 > **更新日期**: 2025-12-29
 > **适用工具**: Claude Code (Opus 4.5) + Cursor IDE
-> **基准 SoT**: MASTER.md v4.6 | STATE_MACHINE.md v2.6 | DATA_SCHEMA.md v5.2
+> **基准 SoT**: MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.11
 > **核心原则**: SoT 驱动 + 防幻觉 + 小步验证 + 模式复用
-> **变更说明**: v3.1 修复角色定义、版本号、权限矩阵与 MASTER.md v4.6 对齐
+> **变更说明**: v3.1 修复角色定义、版本号、权限矩阵与 MASTER.md v4.9 对齐
 
 ---
 
@@ -429,28 +429,25 @@ export const metadata = {
 ```
 优先级顺序 (高 → 低):
 
-MASTER.md v4.6           ← 系统宪法、架构基准
+MASTER.md v4.9           ← 系统宪法、架构基准
     ↓
-BUSINESS_FLOW_MANAGEMENT.md  ← 业务流程与责任模型
+PRD v5.1                 ← 产品需求文档
     ↓
-MVP_PHASE_DESIGN.md      ← Phase 边界与页面定义
+STATE_MACHINE.md v2.9    ← 状态定义（禁止在其他文档重复）
     ↓
-STATE_MACHINE.md v2.6    ← 状态定义（禁止在其他文档重复）
+DATA_SCHEMA.md v5.11     ← 数据模型、字段类型
     ↓
-DATA_SCHEMA.md v5.2      ← 数据模型、字段类型
+BUSINESS_RULES.md v5.2   ← 业务规则（BR-* 编号具有法律效力）
     ↓
-LEDGER_SOT.md v1.1       ← 账本规则（Phase 2 完整启用）
+API_SOT.md v9.7          ← API 规范、端点定义
     ↓
-BUSINESS_RULES.md v3.2   ← 业务规则（BR-* 编号具有法律效力）
+ERROR_CODES_SOT.md v2.2  ← 错误码定义（禁止自定义）
     ↓
-API_SOT.md v9.0          ← API 规范、端点定义
-    ↓
-ERROR_CODES_SOT.md v2.1  ← 错误码定义（禁止自定义）
-    ↓
-AUTH_SPEC.md v2.0        ← 认证授权、RLS 策略
+AUTH_SPEC.md v2.2        ← 认证授权、RLS 策略
 ```
 
 **裁判规则**: 上游文档优先级高于下游，冲突时以上游为准。
+**归档参考**: docs/archive/BUSINESS_FLOW_MANAGEMENT.md, docs/archive/MVP_PHASE_DESIGN.md
 
 ### 7.2 开发前必查 SoT
 
@@ -462,14 +459,14 @@ AUTH_SPEC.md v2.0        ← 认证授权、RLS 策略
 | 表单字段 | DATA_SCHEMA.md | 字段类型、必填项 |
 | 错误提示 | ERROR_CODES_SOT.md | 错误码、提示文案 |
 | 金额显示 | BUSINESS_RULES.md | 金额格式化规则 |
-| 财务操作 | LEDGER_SOT.md | 账本记账规则 |
+| 财务操作 | DATA_SCHEMA.md §3.4.4 | 账本记账规则（已合并） |
 
 ### 7.3 代码来源标注规范
 
 ```typescript
 // ========== 类型定义 ==========
 
-// SoT: STATE_MACHINE.md v2.6 §2
+// SoT: STATE_MACHINE.md v2.9 §2
 type DailyReportStatus =
   | 'raw_submitted'
   | 'trend_pending'
@@ -480,7 +477,7 @@ type DailyReportStatus =
   | 'final_confirmed'
   | 'final_locked';
 
-// SoT: MASTER.md v4.6 §2.4 + §INV-007
+// SoT: MASTER.md v4.9 §2.4 + §INV-007
 // 业务层角色 (PRD 层面)
 type BusinessRole = 'ceo' | 'project_owner' | 'finance' | 'pitcher' | 'account_manager' | 'admin';
 
@@ -520,24 +517,24 @@ function formatMoney(amount: number): string {
 
 ### 8.2 禁止行为清单
 
-> **v3.1 修正**: 角色禁止清单与 MASTER.md v4.6 §2.4 对齐
+> **v3.1 修正**: 角色禁止清单与 MASTER.md v4.9 §2.4 对齐
 
 ```typescript
 // ❌ F-001: 自创状态值
 type Status = 'pending' | 'draft';  // 不在 STATE_MACHINE.md 中
 
 // ✅ 正确: 使用 SoT 定义的状态
-// SoT: STATE_MACHINE.md v2.6 §2
+// SoT: STATE_MACHINE.md v2.9 §2
 type Status = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
 
 
 // ❌ F-002: 使用废弃/错误角色
-if (user.role === 'supervisor') { ... }     // 已废弃 (PRD v2.2)
+if (user.role === 'supervisor') { ... }     // 已废弃 (PRD v5.1)
 if (user.role === 'data_operator') { ... }  // 非 6 角色白名单
 if (user.role === 'data_clerk') { ... }     // 已废弃
 
 // ✅ 正确: 使用 6 业务角色或 4 技术层角色
-// SoT: MASTER.md v4.6 §2.4 + §INV-007
+// SoT: MASTER.md v4.9 §2.4 + §INV-007
 // 业务层判断
 if (businessRole === 'pitcher') { ... }     // 投手
 if (businessRole === 'project_owner') { ... } // 项目负责人
@@ -564,7 +561,7 @@ if (overBudget) {
 toast.error('操作失败，请重试');
 
 // ✅ 正确: 使用 SoT 错误码
-// SoT: ERROR_CODES_SOT.md v2.1
+// SoT: ERROR_CODES_SOT.md v2.2
 toast.error(getErrorMessage(error.code));
 
 
@@ -605,23 +602,22 @@ grep -rE "<button|<input|<select|<table" frontend/src/ --include="*.tsx"
 **ASDD (AI-Spec-Driven Development)** 是本项目的文档治理框架：
 
 ```
-docs/1.overview/     (系统全局视图 - Freeze v1.0)
+docs/sot/           (单一真相来源)
     ↓ 引用
-docs/sot/           (单一真相来源 - Freeze v2.6)
+docs/guides/        (开发指南)
     ↓ 引用
-docs/3.dev-guides/  (开发指南 - Freeze v2.1)
-    ↓ 引用
-docs/4.architecture/ (架构视图 - Freeze v1.0)
+docs/design/        (设计规范)
 ```
 
 ### 9.2 Freeze Manifest 路径
 
-| Layer | Freeze Manifest | 路径 |
-|-------|-----------------|------|
-| **Overview** | FREEZE_MANIFEST_v1.0.md | `docs/1.overview/FREEZE_MANIFEST_v1.0.md` |
-| **SoT** | SOT_FREEZE_MANIFEST_v2.6.md | `docs/sot/SOT_FREEZE_MANIFEST_v2.6.md` |
-| **Dev-Guides** | DEV_GUIDES_FREEZE_MANIFEST_v2.1.md | `docs/3.dev-guides/DEV_GUIDES_FREEZE_MANIFEST_v2.1.md` |
-| **Architecture** | ARCHITECTURE_FREEZE_MANIFEST_v1.0.md | `docs/4.architecture/ARCHITECTURE_FREEZE_MANIFEST_v1.0.md` |
+| Layer | 目录 | 说明 |
+|-------|------|------|
+| **SoT** | `docs/sot/` | 规范与裁判链 |
+| **Guides** | `docs/guides/` | 开发与协作指南 |
+| **Design** | `docs/design/` | 设计与规范 |
+| **Integration** | `docs/integration/` | 集成与修复记录 |
+| **Analysis/Review** | `docs/analysis/`, `docs/review/` | 分析与评审 |
 
 ### 9.3 代码生成合规性检查
 
@@ -1047,7 +1043,7 @@ export const columns: ColumnDef<{Module}>[] = [
     accessorKey: 'status',
     header: '状态',
     cell: ({ row }) => (
-      // SoT: STATE_MACHINE.md v2.6
+      // SoT: STATE_MACHINE.md v2.9
       <StatusBadge status={row.original.status} />
     ),
   },
@@ -1095,17 +1091,17 @@ export const columns: ColumnDef<{Module}>[] = [
 
 ## 第十二章：RBAC 权限系统
 
-> **v3.1 重大修正**: 本章角色定义与 MASTER.md v4.6 §2.4 及 §INV-007 完全对齐
+> **v3.1 重大修正**: 本章角色定义与 MASTER.md v4.9 §2.4 及 §INV-007 完全对齐
 
 ### 12.1 角色体系（双层架构）
 
-> **SoT: MASTER.md v4.6 §2.4 + §INV-007**
+> **SoT: MASTER.md v4.9 §2.4 + §INV-007**
 
 本系统采用**业务层/技术层双层角色架构**：
 
 | 层级 | 定义来源 | 角色数量 | 说明 |
 |------|---------|---------|------|
-| **业务层** | PRD v2.2 / MASTER.md §2.4 | 6 个 | 面向用户的业务角色 |
+| **业务层** | PRD v5.1 / MASTER.md §2.4 | 6 个 | 面向用户的业务角色 |
 | **技术层** | 数据库 CHECK 约束 | 4 个 | 系统实现的技术角色 |
 
 #### 业务层角色（6 角色）
@@ -1122,7 +1118,7 @@ export const columns: ColumnDef<{Module}>[] = [
 #### 技术层角色（4 角色 - 数据库 CHECK 约束）
 
 ```sql
--- SoT: MASTER.md v4.6 §INV-007
+-- SoT: MASTER.md v4.9 §INV-007
 CHECK (role IN ('admin', 'finance', 'media_buyer', 'account_manager'))
 ```
 
@@ -1136,7 +1132,7 @@ CHECK (role IN ('admin', 'finance', 'media_buyer', 'account_manager'))
 #### 业务→技术层映射代码
 
 ```typescript
-// SoT: MASTER.md v4.6 §INV-007
+// SoT: MASTER.md v4.9 §INV-007
 const ROLE_MAPPING: Record<BusinessRole, TechRole | null> = {
   ceo: 'admin',              // 老板使用 admin 权限
   project_owner: null,       // 通过 is_project_owner 或 project_members 判断
@@ -1164,7 +1160,7 @@ function isProjectOwner(user: User, projectId: number): boolean {
 ```typescript
 // ❌ 禁止使用的角色
 const DEPRECATED_ROLES = [
-  'supervisor',     // PRD v2.2 已移除，职责合并到 project_owner
+  'supervisor',     // PRD v5.1 已移除，职责合并到 project_owner
   'data_operator',  // 不在 6 角色白名单中
   'data_clerk',     // 已废弃
   'manager',        // 已废弃
@@ -1194,7 +1190,7 @@ const DEPRECATED_ROLES = [
 
 ### 12.4 核心权限分工
 
-> **SoT: MASTER.md v4.6 §2.1-§2.5**
+> **SoT: MASTER.md v4.9 §2.1-§2.5**
 
 | 流程 | 发起 | 复核 | 终审 |
 |------|------|------|------|
@@ -1211,7 +1207,7 @@ const DEPRECATED_ROLES = [
 
 ```typescript
 // config/nav-config.ts
-// SoT: MASTER.md v4.6 §2.4
+// SoT: MASTER.md v4.9 §2.4
 
 // 业务层角色枚举
 export type BusinessRole = 
@@ -1276,10 +1272,10 @@ export const mainNavGroups: NavGroup[] = [
 
 ```
 1. 查阅 SoT 文档 (按裁判链优先级)
-   └── API_SOT.md v9.0 确认端点定义
-   └── DATA_SCHEMA.md v5.2 确认数据结构
-   └── STATE_MACHINE.md v2.6 确认状态流转
-   └── BUSINESS_RULES.md v3.2 确认业务规则
+   └── API_SOT.md v9.7 确认端点定义
+   └── DATA_SCHEMA.md v5.11 确认数据结构
+   └── STATE_MACHINE.md v2.9 确认状态流转
+   └── BUSINESS_RULES.md v5.2 确认业务规则
 
 2. 数据库模型 + Alembic 迁移
    └── backend/models/{entity}.py
@@ -1312,7 +1308,7 @@ async def get_item(id: int):
         message="获取成功"
     )
 
-# ✅ 正确的错误处理 (错误码来自 ERROR_CODES_SOT.md v2.1)
+# ✅ 正确的错误处理 (错误码来自 ERROR_CODES_SOT.md v2.2)
 from core.error_codes import BusinessErrorCodes
 from core.exceptions import BusinessError
 
@@ -1358,8 +1354,8 @@ async def get_all_users(current_user: User = Depends(get_current_user)):
 
 ```markdown
 □ 代码是否符合 SoT 规范？(裁判链)
-□ 是否有类型错误？(npm run type-check / mypy)
-□ 是否通过 lint？(npm run lint / ruff)
+□ 是否有类型错误？(pnpm run type-check / mypy)
+□ 是否通过 lint？(pnpm run lint / ruff)
 □ 是否有测试覆盖？
 □ 是否更新了相关文档？
 □ 是否更新了 memory-bank/progress.md？
@@ -1592,14 +1588,14 @@ def get_project_config(project_id: int):
 | 门禁 | 命令 | 通过标准 |
 |------|------|---------|
 | TypeScript | `npx tsc --noEmit` | 0 errors |
-| ESLint | `npm run lint` | 0 errors |
-| 构建 | `npm run build` | 成功 |
+| ESLint | `pnpm run lint` | 0 errors |
+| 构建 | `pnpm run build` | 成功 |
 | Python 类型 | `mypy backend/` | 0 errors |
 | Python Lint | `ruff check backend/` | 0 errors |
 
 ### 18.2 任务完成检查清单
 
-> **v3.1 修正**: 角色检查与 MASTER.md v4.6 对齐
+> **v3.1 修正**: 角色检查与 MASTER.md v4.9 对齐
 
 ```markdown
 ## 代码质量
@@ -1608,9 +1604,9 @@ def get_project_config(project_id: int):
 - [ ] 无 `any` 类型
 
 ## SoT 合规
-- [ ] 状态值在 STATE_MACHINE.md v2.6 中
+- [ ] 状态值在 STATE_MACHINE.md v2.9 中
 - [ ] 角色值在 6 业务角色白名单中
-- [ ] 错误码在 ERROR_CODES_SOT.md v2.1 中
+- [ ] 错误码在 ERROR_CODES_SOT.md v2.2 中
 - [ ] 代码有 SoT 来源标注
 
 ## 组件规范
@@ -1653,7 +1649,7 @@ def get_project_config(project_id: int):
 > **v3.1 修正**: 完整的双层角色定义
 
 ```typescript
-// SoT: MASTER.md v4.6 §2.4 + §INV-007
+// SoT: MASTER.md v4.9 §2.4 + §INV-007
 
 // ===== 业务层角色 (6 角色) =====
 const BUSINESS_ROLES = [
@@ -1685,7 +1681,7 @@ const DEPRECATED_ROLES = ['supervisor', 'data_operator', 'data_clerk', 'manager'
 ### 19.2 日报状态（8 状态机）
 
 ```typescript
-// SoT: STATE_MACHINE.md v2.6 §2
+// SoT: STATE_MACHINE.md v2.9 §2
 const DAILY_REPORT_STATES = [
   'raw_submitted',    // 投手提交原始数据
   'trend_pending',    // 趋势风控检测中
@@ -1718,7 +1714,7 @@ const DAILY_REPORT_STATES = [
 ### 19.3 充值状态（7 个）
 
 ```typescript
-// SoT: STATE_MACHINE.md v2.6
+// SoT: STATE_MACHINE.md v2.9
 const TOPUP_STATES = [
   'draft',            // 草稿
   'pending_review',   // 待复核
@@ -1750,7 +1746,7 @@ const TOPUP_STATES = [
 ### 19.5 核心公式
 
 ```typescript
-// SoT: BUSINESS_RULES.md v3.2
+// SoT: BUSINESS_RULES.md v5.2
 
 // 收入 (per_lead 按粉结算)
 revenue = conversions_final × unit_price;
@@ -1778,13 +1774,13 @@ deposit = Σhistorical_topup - Σhistorical_spend;
 
 ```bash
 # 开发
-npm run dev           # 启动前端开发服务器
+pnpm run dev          # 启动前端开发服务器
 uvicorn main:app --reload  # 启动后端
 
 # 检查
 npx tsc --noEmit      # TypeScript 检查
-npm run lint          # ESLint 检查
-npm run build         # 构建检查
+pnpm run lint         # ESLint 检查
+pnpm run build        # 构建检查
 mypy backend/         # Python 类型检查
 ruff check backend/   # Python lint
 
@@ -1822,12 +1818,12 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"  # 直接 fetch
 - types/{module}.types.ts
 
 ## SoT 约束
-- 状态值：参考 STATE_MACHINE.md v2.6
+- 状态值：参考 STATE_MACHINE.md v2.9
 - 业务角色：6 角色白名单 (ceo, project_owner, finance, pitcher, account_manager, admin)
 - 技术角色：4 角色 (admin, finance, media_buyer, account_manager)
 - 禁止角色：supervisor, data_operator (已废弃)
-- 错误码：参考 ERROR_CODES_SOT.md v2.1
-- API 路径：参考 API_SOT.md v9.0
+- 错误码：参考 ERROR_CODES_SOT.md v2.2
+- API 路径：参考 API_SOT.md v9.7
 
 ## 验收标准
 - [ ] TypeScript 编译通过
@@ -1843,7 +1839,7 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"  # 直接 fetch
 为 [模块] 表格添加 [字段] 列
 
 ## 约束
-- 字段类型：参考 DATA_SCHEMA.md v5.2
+- 字段类型：参考 DATA_SCHEMA.md v5.11
 - 格式化：
   - 金额使用 formatMoney()
   - 日期使用 formatDate()
@@ -1861,7 +1857,7 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"  # 直接 fetch
 
 ## 约束
 - 字段验证：使用 zod schema
-- 必填项：参考 DATA_SCHEMA.md v5.2
+- 必填项：参考 DATA_SCHEMA.md v5.11
 - 组件：使用 FormField + 对应 UI 组件
 
 ## 示例
@@ -1921,14 +1917,14 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"  # 直接 fetch
 
 | 文档 | 版本 | 路径 | 核心内容 |
 |------|------|------|---------|
-| 系统宪法 | v4.6 | `docs/sot/MASTER.md` | 架构基准、6 角色定义 |
-| 状态机 | v2.6 | `docs/sot/STATE_MACHINE.md` | 状态定义 |
-| 数据结构 | v5.2 | `docs/sot/DATA_SCHEMA.md` | 核心表结构 |
-| 业务规则 | v3.2 | `docs/sot/BUSINESS_RULES.md` | BR-* 规则 |
-| API 规范 | v9.0 | `docs/sot/API_SOT.md` | 端点定义 |
-| 错误码 | v2.1 | `docs/sot/ERROR_CODES_SOT.md` | 错误码定义 |
-| 认证授权 | v2.0 | `docs/sot/AUTH_SPEC.md` | RBAC + RLS |
-| 账本规则 | v1.1 | `docs/sot/LEDGER_SOT.md` | 双账本体系 |
+| 系统宪法 | v4.9 | `docs/sot/MASTER.md` | 架构基准、6 角色定义 |
+| 状态机 | v2.9 | `docs/sot/STATE_MACHINE.md` | 状态定义 |
+| 数据结构 | v5.11 | `docs/sot/DATA_SCHEMA.md` | 核心表结构 |
+| 业务规则 | v5.2 | `docs/sot/BUSINESS_RULES.md` | BR-* 规则 |
+| API 规范 | v9.7 | `docs/sot/API_SOT.md` | 端点定义 |
+| 错误码 | v2.2 | `docs/sot/ERROR_CODES_SOT.md` | 错误码定义 |
+| 认证授权 | v2.2 | `docs/sot/AUTH_SPEC.md` | RBAC + RLS |
+| 账本规则 | merged | `docs/sot/DATA_SCHEMA.md` | 账本规则（§3.4.4） |
 
 ### C. 参考项目
 
@@ -1947,7 +1943,7 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"  # 直接 fetch
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
 | v3.0 | 2025-12-29 | 初始版本，合并 FRONTEND_AI_PROGRAMMING_BEST_PRACTICES.md 和 AI_CODING_SOP_v2.1.md | AI 代码工厂 |
-| **v3.1** | **2025-12-29** | **P0 修复：角色定义、版本号、权限矩阵与 MASTER.md v4.6 对齐** | **AI 架构师** |
+| **v3.1** | **2025-12-29** | **P0 修复：角色定义、版本号、权限矩阵与 MASTER.md v4.9 对齐** | **AI 架构师** |
 
 ### v3.1 变更详情
 
@@ -1967,11 +1963,11 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"  # 直接 fetch
    - 删除 `data_operator` 列
 
 4. **SoT 版本号修正** (§7.1, 附录 B)
-   - STATE_MACHINE.md v2.7 → **v2.6**
-   - DATA_SCHEMA.md v5.6 → **v5.2**
-   - BUSINESS_RULES.md v4.6 → **v3.2**
-   - API_SOT.md v9.4 → **v9.0**
-   - ERROR_CODES_SOT.md v2.3 → **v2.1**
+   - STATE_MACHINE.md v2.9 → **v2.6**
+   - DATA_SCHEMA.md v5.11 → **v5.2**
+   - BUSINESS_RULES.md v5.2 → **v3.2**
+   - API_SOT.md v9.7 → **v9.0**
+   - ERROR_CODES_SOT.md v2.2 → **v2.1**
 
 5. **废弃角色列表修正** (§8.2, §8.3)
    - 从废弃列表移除 `ceo` 和 `pitcher`
@@ -1982,4 +1978,4 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"  # 直接 fetch
 **文档版本**: v3.1
 **最后更新**: 2025-12-29
 **维护者**: AI 架构师
-**基准 SoT**: MASTER.md v4.6 | STATE_MACHINE.md v2.6 | DATA_SCHEMA.md v5.2
+**基准 SoT**: MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.11

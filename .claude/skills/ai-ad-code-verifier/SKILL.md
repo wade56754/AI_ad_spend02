@@ -209,7 +209,7 @@ code_sources:
     - SOT-008: 直接修改 balance
     - SOT-009: 跨模块写入 (违反模块边界)
 
-    财务规则 (FIN) - LEDGER_SOT.md v1.1 + STATE_MACHINE.md v2.6:
+    财务规则 (FIN) - DATA_SCHEMA.md v5.11 §3.4.4 + STATE_MACHINE.md v2.6:
     - FIN-001: UPDATE ledger 表 (禁止)
     - FIN-002: DELETE ledger 表 (禁止)
     - FIN-003: CONFIRMED 时缺少 fx_status=LOCKED 检查
@@ -495,9 +495,9 @@ code_sources:
     ])
     ```
 
-    合法角色 (6 业务层 + 4 技术层, 来源: PRD v2.2, MASTER.md v4.6):
+    合法角色 (6 业务层 + 4 技术层, 来源: PRD v5.1, MASTER.md v4.6):
     ```python
-    # 业务层 6 角色 (PRD v2.2)
+    # 业务层 6 角色 (PRD v5.1)
     BUSINESS_ROLES = frozenset([
         'ceo',              # 老板 - 资金安全、公司盈亏、最终决策
         'project_owner',    # 项目负责人 - 日报审核、项目盈亏、资金使用效率
@@ -511,8 +511,8 @@ code_sources:
     TECHNICAL_ROLES = frozenset(['admin', 'finance', 'account_manager', 'media_buyer'])
 
     # 已废弃角色 (会触发 SOT-004):
-    # supervisor → project_owner (PRD v2.2)
-    # data_operator → project_owner/finance (PRD v2.2)
+    # supervisor → project_owner (PRD v5.1)
+    # data_operator → project_owner/finance (PRD v5.1)
     # super_admin → admin
     # accountant → finance
     ```

@@ -41,10 +41,10 @@ balance = Σ充值 - Σ消耗
         = Σ(credit entries) - Σ(debit entries)
 ```
 
-## 押款定义 (PRD v2.2)
+## 押款定义 (PRD v5.1)
 
 ```python
-# SoT: PRD v2.2
+# SoT: PRD v5.1
 押款 = 代理商未消耗余额 = Σ历史充值 - Σ历史消耗
 ```
 

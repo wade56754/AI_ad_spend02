@@ -9,7 +9,7 @@
  *
  * 一句话定义: 用户/投手数据获取和管理服务
  *
- * 6 角色白名单 (MASTER.md v4.6 / PRD v2.2):
+ * 6 角色白名单 (MASTER.md v4.6 / PRD v5.1):
  *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
  * Author: AI 代码工厂 v2.4

@@ -4,8 +4,8 @@
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
-> **父文档**: BUSINESS_RULES.md v5.1
-> **关联 SoT**: STATE_MACHINE.md v2.9 §9, DATA_SCHEMA.md v5.7 §3.4
+> **父文档**: BUSINESS_RULES.md v5.2
+> **关联 SoT**: STATE_MACHINE.md v2.9 §9, DATA_SCHEMA.md v5.11 §3.4
 > **业务参考**: 见本文档 §三本账体系（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
@@ -14,12 +14,12 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v5.0 | §4.5 | 规则索引定义 |
+| BUSINESS_RULES.md | v5.2 | §4.5 | 规则索引定义 |
 | STATE_MACHINE.md | v2.9 | §9, §16.4 | 充值状态机（7 状态）、Phase 边界 |
-| DATA_SCHEMA.md | v5.7 | §3.4 | topup_requests, ledger_entries 表结构 |
+| DATA_SCHEMA.md | v5.11 | §3.4 | topup_requests, ledger_entries 表结构 |
 | ERROR_CODES.md | v2.3 | §3-4 | 错误码映射 |
 | AUTH_SPEC.md | v2.2 | §2.2, §3 | 角色权限、审批流程 |
-| MASTER.md | v4.8 | §2.4, §3 | 角色定义、不变量 |
+| MASTER.md | v4.9 | §2.4, §3 | 角色定义、不变量 |
 
 ---
 
@@ -57,7 +57,7 @@
 #### 前置条件
 - 用户角色: `pitcher`（技术层: `media_buyer`）或 `account_manager`
 - 数据状态: 关联项目状态为 `active`
-- 引用: STATE_MACHINE.md v2.8 §9, DATA_SCHEMA.md v5.6 §3.4.1
+- 引用: STATE_MACHINE.md v2.9 §9, DATA_SCHEMA.md v5.11 §3.4.1
 
 #### 充值状态机（7 状态）
 ```
@@ -114,7 +114,7 @@ draft → pending_review → finance_approve → paid → completed
 #### 前置条件
 - 用户角色: 复核 `project_owner`，终审 `finance`
 - 数据状态: 申请状态为 `pending_review`（复核）或 `finance_approve`（终审）
-- 引用: AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §2.4
+- 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.9 §2.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -152,7 +152,7 @@ draft → pending_review → finance_approve → paid → completed
 #### 前置条件
 - 用户角色: `ceo` 或 `admin`（大额），`finance`（普通）
 - 数据状态: 申请金额超过阈值
-- 引用: MASTER.md v4.8 §2.4（ceo 职责）
+- 引用: MASTER.md v4.9 §2.4（ceo 职责）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -189,7 +189,7 @@ draft → pending_review → finance_approve → paid → completed
 
 #### 前置条件
 - 数据状态: 充值已到账（`topup_requests.status=completed`）
-- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.6 §3.4.4
+- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.11 §3.4.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -226,7 +226,7 @@ draft → pending_review → finance_approve → paid → completed
 
 #### 前置条件
 - 数据状态: 日报录入时
-- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.6 daily_reports 表
+- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.11 daily_reports 表
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -263,7 +263,7 @@ draft → pending_review → finance_approve → paid → completed
 
 #### 前置条件
 - 数据状态: ledger_entries 数据完整
-- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.6 §3.4.4
+- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.11 §3.4.4
 
 #### 可用资金计算逻辑
 ```sql
@@ -313,7 +313,7 @@ WHERE project_id = :project_id AND ledger_type = 'PROJECT';
 
 #### 前置条件
 - 数据状态: `daily_reports.status=final_locked` 或 `ledger_entries.is_locked=true`
-- 引用: CLAUDE.md 不变量, STATE_MACHINE.md v2.8 §8
+- 引用: CLAUDE.md 不变量, STATE_MACHINE.md v2.9 §8
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -351,7 +351,7 @@ WHERE project_id = :project_id AND ledger_type = 'PROJECT';
 #### 前置条件
 - 用户角色: `finance` 或 `admin`
 - 数据状态: 原记录存在且已锁定
-- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.6 §3.4.4
+- 引用: CLAUDE.md 不变量, DATA_SCHEMA.md v5.11 §3.4.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -395,7 +395,7 @@ WHERE project_id = :project_id AND ledger_type = 'PROJECT';
 
 #### 前置条件
 - 数据状态: 创建 ledger_entries 时
-- 引用: DATA_SCHEMA.md v5.6 §3.4.4
+- 引用: DATA_SCHEMA.md v5.11 §3.4.4
 
 #### 账本类型与 entry_type 对应关系
 | ledger_type | 允许的 entry_type | 用途 |
@@ -445,7 +445,7 @@ WHERE project_id = :project_id AND ledger_type = 'PROJECT';
 
 #### 前置条件
 - 数据状态: 任何资金相关操作
-- 引用: DATA_SCHEMA.md v5.6 §3.4
+- 引用: DATA_SCHEMA.md v5.11 §3.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -494,12 +494,12 @@ BR-FIN-010 (资金流水审计)
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.8；BR-FIN-002 充值复核由 supervisor 变更为 project_owner（MASTER v4.6+）；所有错误码对齐 ERROR_CODES.md v2.2 |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v5.2；BR-FIN-002 充值复核由 supervisor 变更为 project_owner（MASTER v4.6+）；所有错误码对齐 ERROR_CODES.md v2.2 |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
-**父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: STATE_MACHINE.md v2.8 §9, DATA_SCHEMA.md v5.6 §3.4
+**父文档**: BUSINESS_RULES.md v5.2
+**关联 SoT**: STATE_MACHINE.md v2.9 §9, DATA_SCHEMA.md v5.11 §3.4
 **版本**: v1.0

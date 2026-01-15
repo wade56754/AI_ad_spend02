@@ -21,7 +21,7 @@
 
 ### P0-001: 废弃角色 `data_operator` 仍在使用
 
-**问题描述**: PRD v2.2 已废弃 `data_operator` 角色，职责合并到 `project_owner/finance`，但代码中仍有 524 处引用。
+**问题描述**: PRD v5.1 已废弃 `data_operator` 角色，职责合并到 `project_owner/finance`，但代码中仍有 524 处引用。
 
 **影响范围**:
 - `backend/deps/local_auth.py`: 3 处

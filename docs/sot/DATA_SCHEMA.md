@@ -8,13 +8,13 @@
 > **维护团队**: 系统架构团队（数据库规范守门人）
 > **定位**: 描述 AI 广告代投系统全部已落地/规划中的数据库表结构、字段、索引与约束，是数据层唯一事实来源。若其他文档与此冲突，以本文件为准。
 > **互锁 SoT**:
-> - 实现规范 → `./MASTER.md` v4.8（系统宪法，最高优先级）
-> - 需求文档 → `PRD_AI_v1.0.md` v1.1（AI 友好格式，与 MASTER 6 角色完全对齐）
-> - 状态机 → `STATE_MACHINE.md` v2.8（任何状态字段必须引用对应状态机）
-> - 业务规则 → `BUSINESS_RULES.md` v5.0（履约状态字段来源，三本账体系）
+> - 实现规范 → `./MASTER.md` v4.9（系统宪法，最高优先级）
+> - 需求文档 → `../PRD_v5.1.md`（产品需求）
+> - AI 需求摘要 → `../PRD_AI_v1.0.md` v1.1（AI 友好格式）
+> - 状态机 → `STATE_MACHINE.md` v2.9（任何状态字段必须引用对应状态机）
+> - 业务规则 → `BUSINESS_RULES.md` v5.2（履约状态字段来源，三本账体系）
 > - 错误码 → `ERROR_CODES_SOT.md` v2.2
-> - 认证授权 → `AUTH_SPEC.md` v2.1（角色权限映射）
-> - 业务需求 → `BRD_chapter1_v3.1.md` (BRD v3.1基线)
+> - 认证授权 → `AUTH_SPEC.md` v2.2（角色权限映射）
 
 ---
 
@@ -28,7 +28,7 @@
 - **时间字段**: 统一使用 `TIMESTAMPTZ`，默认 `NOW()`，应用层使用 UTC  
 - **金额字段**: 一律 `DECIMAL(15,2)`，默认 `0.00`，借方为正、贷方为负值  
 - **角色枚举**:
-  - **业务层角色**（6个，存储在 `users.role` 字段）：`ceo`, `project_owner`, `finance`, `pitcher`, `account_manager`, `admin`（MASTER.md v4.8 §2.4, PRD v5.2 §2.2.1）
+  - **业务层角色**（6个，存储在 `users.role` 字段）：`ceo`, `project_owner`, `finance`, `pitcher`, `account_manager`, `admin`（MASTER.md v4.9 §2.4, PRD v5.1 §2.2.1）
   - **角色职责**（PRD_AI_v1.0.md §2.1）：
     - `ceo`（老板）：资金安全、公司盈亏、最终决策、大额支出、月度锁账
     - `project_owner`（项目负责人）：项目盈亏、日报审核、有效线索确认、定价、争议裁定
@@ -44,9 +44,9 @@
     - `pitcher` → `media_buyer`（业务名→技术名，同一角色的两种称呼）
     - `account_manager` → `account_manager`（直接映射）
     - `admin` → `admin`（直接映射）
-  - 详细映射规则见 AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §INV-007
+  - 详细映射规则见 AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.9 §INV-007
 
-> ⚠️ **废弃角色** (MASTER v4.8, PRD v5.2 已对齐)：以下角色已废弃，新代码禁止使用
+> ⚠️ **废弃角色** (MASTER v4.8, PRD v5.1 已对齐)：以下角色已废弃，新代码禁止使用
 > - `supervisor` → 职责合并到 `project_owner`
 > - `data_operator` → 按场景分配到 `project_owner`（日报审核）或 `finance`（充值/对账）
 
@@ -166,8 +166,8 @@
 | `full_name` | VARCHAR(100) | 可空 | 真实姓名 |
 | `email` | VARCHAR(255) | UNIQUE, NOT NULL | 邮箱地址（与 `auth.users.email` 同步，Supabase Auth 为主数据源） |
 | `password_hash` | VARCHAR(255) | 可空 | 密码哈希(bcrypt)，仅用于本地 JWT 认证场景（开发环境），生产环境使用 Supabase Auth，此字段可为空 |
-| `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 6 个标准角色：`ceo/project_owner/finance/pitcher/account_manager/admin`（MASTER.md v4.8 §2.4）|
-| `is_project_owner` | BOOLEAN | DEFAULT false | 是否为项目负责人，用于 project_owner 身份判断（MASTER.md v4.8 §2.4, STATE_MACHINE.md v2.8 §2.1）|
+| `role` | VARCHAR(20) | NOT NULL, CHECK（合法角色） | 6 个标准角色：`ceo/project_owner/finance/pitcher/account_manager/admin`（MASTER.md v4.9 §2.4）|
+| `is_project_owner` | BOOLEAN | DEFAULT false | 是否为项目负责人，用于 project_owner 身份判断（MASTER.md v4.9 §2.4, STATE_MACHINE.md v2.9 §2.1）|
 | `department` | VARCHAR(100) | 可空 | 部门 |
 | `position` | VARCHAR(100) | 可空 | 职位 |
 | `team_id` | UUID | FK → `teams.id` ON DELETE SET NULL, 可空 | 所属团队ID，投手直接归属团队 |
@@ -214,7 +214,7 @@
 | `description` | TEXT | 可空 | 角色描述 |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | 创建时间 |
 
-> ⚠️ **废弃警告**：此表为 legacy 状态，仅用于迁移兼容。当前系统的角色定义直接存储在 `users.role` 字段中，遵循 MASTER.md v4.8 §2.4 的 6 角色模型。
+> ⚠️ **废弃警告**：此表为 legacy 状态，仅用于迁移兼容。当前系统的角色定义直接存储在 `users.role` 字段中，遵循 MASTER.md v4.9 §2.4 的 6 角色模型。
 
 #### 3.1.4 `user_sessions`（implemented）
 
@@ -264,7 +264,7 @@
 | `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 项目单粉价格(Per Lead),用于计算粉数收入,公式: `revenue = conversions_final × unit_price` |
 | `settlement_type` VARCHAR(20) | DEFAULT 'fixed', CHECK IN ('fixed', 'tiered', 'markup'), 结算类型：fixed使用unit_price，tiered/markup使用settlement_rules |
 | `settlement_rules_id` BIGINT | FK → `settlement_rules.id`, 可空, 非fixed结算时关联的结算规则 |
-| `fulfillment_status` VARCHAR(20) | NOT NULL DEFAULT 'running', CHECK IN ('running', 'fulfilled'), 履约状态 (SoT: BUSINESS_RULES.md v4.7 BR-PROJ-006) |
+| `fulfillment_status` VARCHAR(20) | NOT NULL DEFAULT 'running', CHECK IN ('running', 'fulfilled'), 履约状态 (SoT: BUSINESS_RULES.md v5.2 BR-PROJ-006) |
 | `fulfillment_reason` VARCHAR(30) | 可空, CHECK IN ('spend_exhausted', 'client_stopped'), 履约结束原因 (SoT: BI-06) |
 | `fulfilled_at` TIMESTAMPTZ | 可空, 履约完成时间 (UTC) |
 | `start_date` / `end_date` DATE | | |
@@ -385,7 +385,7 @@
 | `spend_limit` DECIMAL(15,2) | DEFAULT 0.00 |
 | `currency` VARCHAR(10) | DEFAULT 'CNY' |
 | `timezone` VARCHAR(50) | DEFAULT 'Asia/Shanghai' |
-| `deposit` DECIMAL(15,2) | DEFAULT 0.00, CHECK >= 0, 押款金额（代理商未消耗余额，计算公式：押款 = Σ历史充值 - Σ历史消耗，引用 PRD v5.1 §3.3, MASTER.md v4.8 §术语定义） |
+| `deposit` DECIMAL(15,2) | DEFAULT 0.00, CHECK >= 0, 押款金额（代理商未消耗余额，计算公式：押款 = Σ历史充值 - Σ历史消耗，引用 PRD v5.1 §3.3, MASTER.md v4.9 §术语定义） |
 | `deposit_updated_at` TIMESTAMPTZ | 可空, 押款最后更新时间 |
 | `created_by` / `updated_by` UUID | FK → `users.id` |
 | `created_at` / `updated_at` TIMESTAMPTZ | | |
@@ -422,7 +422,7 @@
 #### 3.3.1 `daily_reports`（implemented）
 
 **说明**：
-- 日报表记录每日投放数据，遵循**日报三层数据**架构（BR-RPT.md v1.1, PRD v5.2 §1.3）：
+- 日报表记录每日投放数据，遵循**日报三层数据**架构（BR-RPT.md v1.1, PRD v5.1 §1.3）：
 
 | 数据层 | 来源 | 内容 | 性质 | 字段映射 |
 |--------|------|------|------|----------|
@@ -452,7 +452,7 @@
 | `real_spend` DECIMAL(15,2) | DEFAULT 0.00, 运营录入的真实消耗(T+1 12:00前),成本核算基准,公式: `cost = real_spend + fee`（实际数据层，成本 SoT） |
 | `unit_price` DECIMAL(15,2) | DEFAULT 0.00, 单粉价格,从项目继承(`projects.unit_price`),用于计算收入 |
 | `cpc`, `cpa`, `ctr`, `roi` DECIMAL(12,4) | 可空 |
-| `status` VARCHAR(20) | 日报状态（STATE_MACHINE.md v2.8 §8, PRD_AI_v1.0.md §4.1）。**Phase 1（当前生效）**: 3 状态简化模型 `raw_submitted → trend_ok → final_confirmed`，无自动风控阻断，项目负责人手动审核。**Phase 2（未来启用）**: 8 状态完整模型 `raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved → final_pending → final_confirmed → final_locked`。终态为 `final_locked`（计费锁定）。|
+| `status` VARCHAR(20) | 日报状态（STATE_MACHINE.md v2.9 §8, PRD_AI_v1.0.md §4.1）。**Phase 1（当前生效）**: 3 状态简化模型 `raw_submitted → trend_ok → final_confirmed`，无自动风控阻断，项目负责人手动审核。**Phase 2（未来启用）**: 8 状态完整模型 `raw_submitted → trend_pending → trend_ok/trend_flagged → trend_resolved → final_pending → final_confirmed → final_locked`。终态为 `final_locked`（计费锁定）。|
 | `trend_flag` VARCHAR(20) | DEFAULT 'normal', 趋势异常标记, 固定枚举: `normal/flagged/resolved` |
 | `trend_flag_reason` TEXT | 可空, 风控规则触发原因(如"TF-001: 粉数骤降50%") |
 | `trend_resolution_note` TEXT | 可空, 运营复核说明(`project_owner`填写) |
@@ -498,7 +498,7 @@
 
 索引：`idx_weekly_briefs_project`, `idx_weekly_briefs_week`, `idx_weekly_briefs_submitter`, `idx_weekly_briefs_status`, `idx_weekly_briefs_project_week`.
 
-SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.8 §4（周报状态机）
+SoT Reference: B3-weekly-brief.md §2.2, STATE_MACHINE.md v2.9 §4（周报状态机）
 
 ---
 
@@ -612,7 +612,7 @@ CHECK (
 
 #### 3.4.5 `receivable`（implemented）
 
-> **引用**: MASTER.md v4.8 §4.5.5 —— `receivable.amount WHERE status='received'` 为「已回款」的唯一事实源
+> **引用**: MASTER.md v4.9 §4.5.5 —— `receivable.amount WHERE status='received'` 为「已回款」的唯一事实源
 >
 > ✅ **已实现**: 迁移文件 `20260102_add_receivable_table.py`
 
@@ -684,7 +684,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 #### 3.5.1 `reconciliation_batches`（implemented）
 
-字段：`id`, `batch_no` (UNIQUE), `project_id`, `status`（参考"对账批次状态机"，合法值: `draft/pending_review/approved/needs_adjustment/completed`，具体枚举以 STATE_MACHINE.md v2.8 为准）, `source`, `period_start`, `period_end`, `created_by`, `approved_by`, `created_at`, `updated_at`.
+字段：`id`, `batch_no` (UNIQUE), `project_id`, `status`（参考"对账批次状态机"，合法值: `draft/pending_review/approved/needs_adjustment/completed`，具体枚举以 STATE_MACHINE.md v2.9 为准）, `source`, `period_start`, `period_end`, `created_by`, `approved_by`, `created_at`, `updated_at`.
 
 #### 3.5.2 `reconciliation_details`（implemented）
 
@@ -739,7 +739,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 | `expected_amount` | DECIMAL(15,2) | 可空 | 预期金额 |
 | `actual_amount` | DECIMAL(15,2) | 可空 | 实际金额 |
 | `difference_amount` | DECIMAL(15,2) | GENERATED | 差异金额 = actual - expected |
-| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'open' | 参考"对账差异单状态机"(STATE_MACHINE.md v2.8 §11.4) |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT 'open' | 参考"对账差异单状态机"(STATE_MACHINE.md v2.9 §11.4) |
 | `assigned_to` | UUID | FK → `users.id`, 可空 | 责任人 |
 | `assigned_at` | TIMESTAMPTZ | 可空 | 分配时间 |
 | `resolution_type` | VARCHAR(30) | CHECK, 可空 | 处理类型 |
@@ -776,7 +776,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 **索引**: `idx_rec_issues_status`, `idx_rec_issues_date`, `idx_rec_issues_assigned`, `idx_rec_issues_batch`.
 
-**状态机引用**: STATE_MACHINE.md v2.8 §11.4 对账差异单状态机
+**状态机引用**: STATE_MACHINE.md v2.9 §11.4 对账差异单状态机
 
 #### 3.5.7 `settlement_rules`（implemented）
 
@@ -834,7 +834,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 > **设计来源**: `PROFIT_SOT.md` v1.1
 > **OpenSpec Change**: `finance-profit-v1`
-> **依赖 SoT**: DATA_SCHEMA.md v5.6 §3.4.4（账本规则，双账本模型）, STATE_MACHINE.md v2.8（粉数确认状态机）
+> **依赖 SoT**: DATA_SCHEMA.md v5.11 §3.4.4（账本规则，双账本模型）, STATE_MACHINE.md v2.9（粉数确认状态机）
 
 #### 3.6.1 `profit_aggregates`（implemented）
 
@@ -916,7 +916,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 | `total_revenue` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 | 月收入（粉数 × 单价） |
 | `gross_profit` | DECIMAL(15,2) | NOT NULL, DEFAULT 0 | 月毛利（收入 - 消耗） |
 | `average_cpl` | DECIMAL(10,2) | 可空 | 月均 CPL |
-| `status` | VARCHAR(20) | NOT NULL, CHECK IN ('pending', 'confirmed', 'locked', 'archived'), DEFAULT 'pending' | 状态 (STATE_MACHINE.md v2.8 §13.1) |
+| `status` | VARCHAR(20) | NOT NULL, CHECK IN ('pending', 'confirmed', 'locked', 'archived'), DEFAULT 'pending' | 状态 (STATE_MACHINE.md v2.9 §13.1) |
 | `confirmed_at` | TIMESTAMPTZ | 可空 | 财务确认时间 |
 | `confirmed_by` | UUID | FK → `users.id`, 可空 | 确认人 |
 | `locked_at` | TIMESTAMPTZ | 可空 | 锁定时间 |
@@ -931,7 +931,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 **索引**：`idx_monthly_settlements_project`, `idx_monthly_settlements_month`, `idx_monthly_settlements_status`.
 
-**状态机引用**：STATE_MACHINE.md v2.8 §13.1 月度结算状态机
+**状态机引用**：STATE_MACHINE.md v2.9 §13.1 月度结算状态机
 
 **计算公式**（引用 BUSINESS_RULES.md，遵循三层数据架构）：
 - `total_spend`: SUM(daily_reports.real_spend) WHERE status = 'final_locked' AND 月份匹配（**成本 SoT**，使用实际数据层）
@@ -948,7 +948,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 #### 3.8.1 `company_expenses`（implemented）
 
-**说明**：公司级运营支出记录，不进入项目账本（见 DATA_SCHEMA.md v5.6 §3.4.4 账本规则）。用于记录工资、服务费、汇率损益等非广告业务支出。
+**说明**：公司级运营支出记录，不进入项目账本（见 DATA_SCHEMA.md v5.11 §3.4.4 账本规则）。用于记录工资、服务费、汇率损益等非广告业务支出。
 
 **成本分类**（PRD v5.1 §2.1）：
 - **ad_topup**：广告费充值（含手续费），分摊到项目
@@ -977,7 +977,7 @@ SELECT SUM(amount) FROM receivable WHERE status = 'received' AND project_id = ?
 
 **索引**：`idx_company_expenses_category`, `idx_company_expenses_occurred_at`, `idx_company_expenses_status`, `idx_company_expenses_created_by`.
 
-**SoT Reference**: DATA_SCHEMA.md v5.6 §3.4.4 (不进入账本，见账本规则)
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.4.4 (不进入账本，见账本规则)
 
 ### 3.5 财务与工作流扩展表
 
@@ -1119,7 +1119,7 @@ RAW → PENDING → CONFIRMED → POSTED → REVERSED
 
 **索引**：`idx_commission_rules_effective`, `idx_commission_rules_default`.
 
-**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.4, BUSINESS_RULES.md v5.0
+**SoT Reference**: DATA_SCHEMA.md v5.11 §3.5.4, BUSINESS_RULES.md v5.2
 
 ---
 
@@ -1200,7 +1200,7 @@ pending → cancelled
 
 1. **唯一性**：`request_no`, `account_code`, `(report_date, ad_account_id)` 等必须建唯一索引并在模型层校验。  
 2. **组合索引**：针对高频过滤场景建立，如 `daily_reports(report_date, status)`、`topup_requests(project_id, status)`、`ledger_entries(project_id, occurred_at)`。  
-3. **CHECK 约束**：角色字段仅允许 4 个技术层角色值（admin/finance/account_manager/media_buyer），`project_owner` 通过 `is_project_owner=true` 业务属性判断；业务层角色到技术层的映射见 AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §INV-007；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
+3. **CHECK 约束**：角色字段仅允许 4 个技术层角色值（admin/finance/account_manager/media_buyer），`project_owner` 通过 `is_project_owner=true` 业务属性判断；业务层角色到技术层的映射见 AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.9 §INV-007；状态字段 CHECK 应引用相应状态机；金额字段若允许负值需在说明写明。  
 4. **外键一致性**：外键字段类型必须与被引用主键一致，迁移旧字段时需同步更新 FK 定义与索引。  
 5. **触发器**：`users` 使用 `update_users_updated_at`；其他表如需类似逻辑必须在本文件登记。
 
@@ -1210,7 +1210,7 @@ pending → cancelled
 
 - **`users` 表**：业务层用户资料表，主键为 UUID，外键关联 `auth.users(id)`。`auth.users` 用于认证（Supabase Auth 内置用户表），`users` 用于业务逻辑（角色、权限、扩展信息等）。
 - **历史兼容**：旧代码中可能使用 `user_profiles` 表名，已统一改为 `users`。如发现遗留的 `user_profiles` 引用，请更新为 `users`。所有外键必须指向 `users.id`（UUID），不再使用 `user_profiles`。  
-- **旧角色名**：`manager` = `account_manager`，`data_clerk` = `finance`，`data_operator` = `project_owner`/`finance`（MASTER v4.8 废弃，PRD v5.2 已对齐）。历史数据可读，新增逻辑禁止使用旧名。  
+- **旧角色名**：`manager` = `account_manager`，`data_clerk` = `finance`，`data_operator` = `project_owner`/`finance`（MASTER v4.8 废弃，PRD v5.1 已对齐）。历史数据可读，新增逻辑禁止使用旧名。  
 - **`roles` 表**：标记为 `status: legacy`，仅用于兼容查询。  
 - **RLS**：部分迁移脚本包含 `ENABLE ROW LEVEL SECURITY`，当前版本规划中未启用（`ENABLE_RLS=false`），仅应用层RBAC；若未来启用须同步更新本文件与实现 SoT。  
 - **规划表**：如需新增表/字段，必须先在本文件创建 `status: planned` 条目并描述字段，再提交迁移。未登记的变更不予实施。
@@ -1229,7 +1229,7 @@ pending → cancelled
    - [ ] 主键/外键类型一致
    - [ ] 金额字段使用 `DECIMAL(15,2)` 并说明借贷规则
    - [ ] 状态字段引用 `STATE_MACHINE.md` 对应状态机
-   - [ ] 角色字段只出现 6 个业务层合法值（MASTER.md v4.8 §2.4）或 4 个技术层合法值（admin/finance/account_manager/media_buyer）
+   - [ ] 角色字段只出现 6 个业务层合法值（MASTER.md v4.9 §2.4）或 4 个技术层合法值（admin/finance/account_manager/media_buyer）
    - [ ] 索引/约束在迁移与本文件中都有记录  
 4. **审阅频率**：每次数据库结构变更后立即更新本文件；若长期无变更也需至少每季度审查一次。
 
@@ -1266,13 +1266,13 @@ pending → cancelled
   - 新增迁移文件：`20260102_add_receivable_table.py`
   - 新增模型文件：`backend/models/finance/receivable.py`
   - 表状态：planned → implemented
-  - 引用：MASTER.md v4.8 §4.5.5（已回款公式唯一事实源）
+  - 引用：MASTER.md v4.9 §4.5.5（已回款公式唯一事实源）
 
 ### v5.8 (2026-01-02)
 
 - **对齐 PRD_AI_v1.0.md v1.1**:
-  - 更新互锁 SoT：MASTER.md v4.7 → v4.8（系统宪法），新增 PRD_AI_v1.0.md v1.1
-  - 角色定义：新增角色职责说明表（PRD_AI_v1.0.md §2.1），添加 PRD v5.2 引用
+  - 更新互锁 SoT：MASTER.md v4.9 → v4.8（系统宪法），新增 PRD_AI_v1.0.md v1.1
+  - 角色定义：新增角色职责说明表（PRD_AI_v1.0.md §2.1），添加 PRD v5.1 引用
   - 日报状态机：明确 Phase 1（3状态简化模型）vs Phase 2（8状态完整模型）边界
   - 计费公式：扩展公式定义，添加阶梯定价(BR-REV-002)、服务费收入(BR-REV-003)、押款公式(BR-COST-003)、CPL 公式
   - 修正日报状态字段引用：STATE_MACHINE.md v2.9 → v2.8
@@ -1280,7 +1280,7 @@ pending → cancelled
 ### v5.7 (2026-01-02)
 
 - **对齐 BR-FIN.md v1.1 三本账体系**:
-  - 更新互锁引用：BUSINESS_RULES.md v4.7 → v5.0
+  - 更新互锁引用：BUSINESS_RULES.md v5.2 → v5.0
   - ledger_entries：「双账本模型」→「三本账体系」（预付款账本、充值账本、押款账本）
   - daily_reports：添加「日报三层数据」架构表（申报数据、实际数据、结算数据）
   - daily_reports.status：更新日报状态机描述，引用 Framework v2.1 §6.3
@@ -1288,7 +1288,7 @@ pending → cancelled
 ### v5.6 (2025-12-31)
 
 - 初始 ASDD 元数据规范化
-- 角色枚举对齐 MASTER.md v4.8
+- 角色枚举对齐 MASTER.md v4.9
 
 ---
 

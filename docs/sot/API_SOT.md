@@ -1,6 +1,6 @@
 # API 开发与使用规范（API Single Source of Truth）
 
-> **文档版本**: v9.7 (对齐 PRD v5.2, MASTER.md v4.9, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.1, AUTH_SPEC.md v2.2)
+> **文档版本**: v9.7 (对齐 PRD v5.1, MASTER.md v4.9, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.2, AUTH_SPEC.md v2.2)
 > **status**: frozen
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
@@ -92,7 +92,7 @@
 | **real数据流** | `real_spend` | 项目负责人 (project_owner) | T+1 12:00前 | 成本核算 |
 | **final数据流** | `conversions_final` | 项目负责人 (project_owner) | T+1 14:00前 | 计费基准 |
 
-**引用**: MASTER.md v4.8 §4（三数据流）、BUSINESS_RULES.md v5.0
+**引用**: MASTER.md v4.9 §4（三数据流）、BUSINESS_RULES.md v5.2
 
 #### 三本账体系（BR-FIN.md v1.1 §BR-FIN-009）
 
@@ -102,11 +102,11 @@
 | **充值账本（SUPPLIER）** | 代理商充值 | `supplier_id` | `COST`, `TRANSFER_OUT`, `TRANSFER_IN`, `REVERSAL` | 余额=累计投入多少 |
 | **押款账本（计算值）** | 资金占用 | 计算字段 | — | 充值 - 消耗 = 押在代理商的钱 |
 
-**引用**: BR-FIN.md v1.1 §BR-FIN-009（三本账体系）、DATA_SCHEMA.md v5.7 §3.4.4
+**引用**: BR-FIN.md v1.1 §BR-FIN-009（三本账体系）、DATA_SCHEMA.md v5.11 §3.4.4
 
 ### 1.4 Phase 边界说明（MASTER v4.8 对齐）
 
-> **引用**: MASTER.md v4.8 §2.5、§4.1
+> **引用**: MASTER.md v4.9 §2.5、§4.1
 
 #### 1.4.1 数据流 Phase 适用性
 
@@ -1075,7 +1075,7 @@ final_pending → final_confirmed → final_locked
 - 数据表: DATA_SCHEMA.md 3.3.1节
 - 状态机: STATE_MACHINE.md 第8章（粉数确认状态机）
 - 业务规则: BR-RPT-001, BR-RPT-002, BR-RPT-004, BR-RPT-005
-- 三数据流: MASTER.md v4.8 §4
+- 三数据流: MASTER.md v4.9 §4
 
 ### 9.2 POST `/api/v1/daily-reports` - 提交日报（raw粉数）
 
@@ -1186,7 +1186,7 @@ final_pending → final_confirmed → final_locked
 - 业务规则: BR-RPT-001（提交约束）, BR-RPT-005（粉数确认流程）
 - 数据表: DATA_SCHEMA.md 3.3.1节
 - 状态机: STATE_MACHINE.md 第8章
-- 三数据流: MASTER.md v4.8 §4
+- 三数据流: MASTER.md v4.9 §4
 
 #### 权限
 
@@ -2099,7 +2099,7 @@ with db.begin():
 - **押款账本（计算值）**: 充值 - 消耗 = 押在代理商的钱
 
 **引用**:
-- 数据表: DATA_SCHEMA.md v5.7 §3.4.4
+- 数据表: DATA_SCHEMA.md v5.11 §3.4.4
 - 三本账: BR-FIN.md v1.1 §BR-FIN-009
 - 业务规则: BR-FIN-009（三本账体系）
 
@@ -2120,7 +2120,7 @@ with db.begin():
 
 **错误码**: PROFIT_001 ~ PROFIT_008（详见 ERROR_CODES_SOT.md v2.2）
 
-**计费公式**（来自 BUSINESS_RULES.md v5.0）:
+**计费公式**（来自 BUSINESS_RULES.md v5.2）:
 - `revenue = conversions_final × unit_price`
 - `cost = real_spend + fee`
 - `profit = revenue - cost`
@@ -2128,7 +2128,7 @@ with db.begin():
 
 **引用**:
 - 数据表: DATA_SCHEMA.md 3.3.1节 `daily_reports`, 3.2.1节 `projects`, 3.2.9节 `ad_accounts`
-- 业务规则: BUSINESS_RULES.md v5.0 利润计算公式
+- 业务规则: BUSINESS_RULES.md v5.2 利润计算公式
 - 权限矩阵: AUTH_SPEC.md v2.2
 
 ---
@@ -2542,8 +2542,8 @@ draft → submitted
 - **BR-WB-005**: 提交后状态不可回退 (Phase 1 不强制)
 
 **引用**:
-- 数据表: DATA_SCHEMA.md v5.7 (weekly_briefs 表)
-- 业务规则: BUSINESS_RULES.md v5.0
+- 数据表: DATA_SCHEMA.md v5.11 (weekly_briefs 表)
+- 业务规则: BUSINESS_RULES.md v5.2
 
 ---
 
@@ -2561,7 +2561,7 @@ draft → submitted
 
 ### 13.1 核心常量定义
 
-#### 13.1.1 角色常量（6 角色，来源: PRD v5.1 §1.2, MASTER.md v4.8 §2.4）
+#### 13.1.1 角色常量（6 角色，来源: PRD v5.1 §1.2, MASTER.md v4.9 §2.4）
 
 ```python
 # backend/core/constants.py
@@ -2725,18 +2725,18 @@ try {
 **执行级别**: 🔴 必须严格遵守
 **违规处理**: PR自动拒绝 / 代码回滚
 **最后更新**: 2026-01-02
-**版本**: v9.7 (对齐 PRD v5.2, MASTER.md v4.9, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.1, AUTH_SPEC.md v2.2)
+**版本**: v9.7 (对齐 PRD v5.1, MASTER.md v4.9, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.2, AUTH_SPEC.md v2.2)
 
 **v9.7 更新说明** (2026-01-02):
 - **【SoT 版本对齐】修复互锁引用版本不一致**
-- MASTER.md v4.8 → v4.9（3 处）
-- BUSINESS_RULES.md v5.0 → v5.1（2 处）
-- ERROR_CODES_SOT.md v2.1 → v2.2（4 处）
+- MASTER.md v4.9 → v4.9（3 处）
+- BUSINESS_RULES.md v5.2 → v5.1（2 处）
+- ERROR_CODES_SOT.md v2.2 → v2.2（4 处）
 
 **v9.6 更新说明** (2026-01-02):
 - **【SoT 互锁引用修复】消除断链引用**
-- AUTH_SPEC.md v2.0 → v2.2（4 处）
-- LEDGER_SOT.md（已废弃）→ BR-FIN.md v1.1（6 处）
+- AUTH_SPEC.md v2.2 → v2.2（4 处）
+- 账本规则引用统一到 DATA_SCHEMA.md §3.4.4（6 处）
 - BUSINESS_LOGIC_FRAMEWORK.md（已废弃）→ BR-FIN.md v1.1（3 处）
 - 修复日期不一致：最后更新 2025-12-24 → 2026-01-02
 - 新增 BR-FIN.md v1.1 引用（三本账体系）
@@ -2744,7 +2744,7 @@ try {
 **v9.5 更新说明** (2026-01-02):
 - **【BUSINESS_LOGIC_FRAMEWORK v2.1 对齐】双账本升级为三本账体系**
 - 新增押款账本（计算值）：充值 - 消耗 = 押在代理商的钱
-- 更新 SoT 互锁引用：MASTER.md v4.8, DATA_SCHEMA.md v5.7, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.0
+- 更新 SoT 互锁引用：MASTER.md v4.9, DATA_SCHEMA.md v5.11, STATE_MACHINE.md v2.9, BUSINESS_RULES.md v5.2
 - 新增 BUSINESS_LOGIC_FRAMEWORK.md v2.1 引用【已在 v9.6 替换为 BR-FIN.md】
 - 更新 §1.3 三本账体系说明
 - 更新 §11 Ledger API 三本账体系描述
@@ -2773,7 +2773,7 @@ try {
 - 更新所有 API 端点表格中的角色权限为标准 7 角色名称
 
 **v9.1 更新说明** (2025-12-23):
-- 修复 SYSTEM_OVERVIEW.md 断链引用（已归档），更新为 MASTER.md v4.4
+- 修复 SYSTEM_OVERVIEW.md 断链引用（已归档），更新为 MASTER.md v4.9
 - 统一角色定义为 7 角色（ceo/project_owner/finance/supervisor/pitcher/account_manager/admin）【已在 v9.4 更新为 6 角色】
 - 添加旧角色映射说明（media_buyer→pitcher, data_operator→supervisor）
 - 更新 BUSINESS_RULES.md 版本引用 v3.1 → v3.2
@@ -2787,7 +2787,7 @@ try {
 - 集成三数据流（raw/real/final）和三本账（PROJECT/SUPPLIER/押款）概念
 - 新增8状态粉数确认状态机完整流程
 - 新增红冲修正机制详细说明
-- 所有字段严格对齐 DATA_SCHEMA.md v5.3
+- 所有字段严格对齐 DATA_SCHEMA.md v5.11
 - 所有状态流转严格对齐 STATE_MACHINE.md v2.9
 - 所有错误码严格对齐 ERROR_CODES_SOT.md v2.2
-- 所有业务规则严格对齐 BUSINESS_RULES.md v4.1
+- 所有业务规则严格对齐 BUSINESS_RULES.md v5.2

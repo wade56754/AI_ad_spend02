@@ -3,20 +3,20 @@
 > **任务ID**: TASK-MAINT-001
 > **优先级**: P0
 > **预估范围**: 97 处引用，24 个文件
-> **基准文档**: MASTER.md v4.8 §2.4, PRD.md v2.2
+> **基准文档**: MASTER.md v4.9 §2.4, PRD v5.1
 > **创建日期**: 2026-01-01
 
 ---
 
 ## 背景
 
-根据 PRD v2.2 和 MASTER.md v4.8，`supervisor` 角色已被废弃，其职责合并到 `project_owner`。
+根据 PRD v5.1 和 MASTER.md v4.9，`supervisor` 角色已被废弃，其职责合并到 `project_owner`。
 
 ### 废弃角色映射规则
 
 | 废弃角色 | 替代方案 | 说明 |
 |---------|---------|------|
-| `supervisor` | `project_owner` | PRD v2.2 合并 |
+| `supervisor` | `project_owner` | PRD v5.1 合并 |
 | `data_operator` | `project_owner` 或删除 | 已废弃 |
 | `media_buyer` | `pitcher` | 技术层使用业务层角色 |
 

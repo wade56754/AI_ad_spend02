@@ -143,7 +143,7 @@ ERROR_CODES_SOT.md v2.1
 |----|---------|---------|---------|
 | F-001 | 自定义错误码 | 使用 ERROR_CODES_SOT.md 中定义的错误码 | ERROR_CODES_SOT.md v2.1 |
 | F-002 | 发明新状态 | 使用 STATE_MACHINE.md 中定义的状态 | STATE_MACHINE.md v2.6 |
-| F-003 | 直接修改 balance | 通过 ledger_entries 记录余额变更 | LEDGER_SOT.md v1.1 |
+| F-003 | 直接修改 balance | 通过 ledger_entries 记录余额变更 | DATA_SCHEMA.md v5.11 §3.4.4 |
 | F-004 | 绕过 BFF 直连数据库 | 前端只能通过 API 访问数据 | API_SOT.md v9.0 |
 | F-005 | 使用非标准角色 | 仅使用 7 个标准角色 | MASTER.md v4.4 §2.4 |
 
@@ -217,7 +217,7 @@ REPORT_STATUS = frozenset([
 ### 6.2 用户角色 (6 业务层 + 4 技术层)
 
 ```python
-# SoT: PRD v2.2 业务层 6 角色
+# SoT: PRD v5.1 业务层 6 角色
 BUSINESS_ROLES = frozenset([
     'ceo',              # 老板 - 资金安全、公司盈亏、最终决策
     'project_owner',    # 项目负责人 - 日报审核、项目盈亏、资金使用效率
@@ -230,7 +230,7 @@ BUSINESS_ROLES = frozenset([
 # SoT: MASTER.md v4.6 §INV-007 技术层 4 角色
 TECHNICAL_ROLES = frozenset(['admin', 'finance', 'account_manager', 'media_buyer'])
 
-# 废弃角色 (PRD v2.2)
+# 废弃角色 (PRD v5.1)
 DEPRECATED_ROLES = frozenset(['supervisor', 'data_operator'])
 ```
 

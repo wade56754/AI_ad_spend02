@@ -6,7 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  * 基于: AI_TEST_GUIDE_v2.1.md
  *
  * 运行方式:
- *   1. 先启动前端: cd frontend && npm run dev
+ *   1. 先启动前端: cd frontend && pnpm run dev
  *   2. 再运行测试: npx playwright test
  *
  * 或使用 webServer 自动启动 (需要在 frontend 目录下运行):
@@ -82,7 +82,7 @@ export default defineConfig({
   // 开发服务器（可选，运行测试前启动）
   // 注意: 在开发时建议手动启动 dev server，CI 环境会自动启动
   webServer: process.env.CI ? {
-    command: 'cd frontend && npm run dev',
+    command: 'cd frontend && pnpm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: false,
     timeout: 120000,

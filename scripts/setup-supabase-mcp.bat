@@ -78,7 +78,7 @@ echo ========================================
 :: 创建 MCP 配置文件
 echo 正在配置 .claude\mcp_settings.json...
 
-:: 检查 node 和 npm 是否安装
+:: 检查 node 和 pnpm 是否安装
 where node >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [错误] 未找到 Node.js，请先安装 Node.js
@@ -88,10 +88,19 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo [√] Node.js 已安装
 
+where pnpm >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [错误] 未找到 pnpm，请先安装 pnpm
+    pause
+    exit /b 1
+)
+
+echo [√] pnpm 已安装
+
 :: 安装 Supabase MCP Server
 echo.
 echo 正在安装 @modelcontextprotocol/server-supabase...
-call npm install -g @modelcontextprotocol/server-supabase
+call pnpm add -g @modelcontextprotocol/server-supabase
 
 echo.
 echo ========================================

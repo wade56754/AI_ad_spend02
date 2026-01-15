@@ -3,7 +3,7 @@
  *
  * SoT 对齐: AUTH_SPEC.md v2.0, MASTER.md v4.6 §2.4
  *
- * 6 角色白名单 (PRD v2.2):
+ * 6 角色白名单 (PRD v5.1):
  *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
  * 技术层别名:
@@ -24,11 +24,14 @@ export enum UserRole {
   MEDIA_BUYER = 'media_buyer',
 }
 
-export const USER_ROLE_CONFIG: Record<UserRole, {
-  label: string;
-  description: string;
-  level: number;
-}> = {
+export const USER_ROLE_CONFIG: Record<
+  UserRole,
+  {
+    label: string;
+    description: string;
+    level: number;
+  }
+> = {
   [UserRole.CEO]: {
     label: '老板',
     description: '资金安全、公司盈亏、最终决策',
@@ -70,7 +73,7 @@ export const USER_ROLE_CONFIG: Record<UserRole, {
 // ========== 请求接口 ==========
 
 export interface LoginRequest {
-  identifier: string;  // 用户名或邮箱 (SoT: AUTH_SPEC.md v2.0)
+  identifier: string; // 用户名或邮箱 (SoT: AUTH_SPEC.md v2.0)
   password: string;
   remember_me?: boolean;
 }

@@ -14,16 +14,16 @@
 
 ## [SoT Freeze v2.0] - 2025-12-27
 
-### MASTER.md v4.7
+### MASTER.md v4.9
 
 **变更类型**: Breaking Change
 
-- **移除**: `supervisor` 角色（PRD v2.2 废弃）
+- **移除**: `supervisor` 角色（PRD v5.1 废弃）
 - **更新**: 角色从 7 个调整为 6 个
 - **更新**: 角色权限矩阵重新定义
 - **新增**: Phase 1/Phase 2 行为约束说明
 
-### DATA_SCHEMA.md v5.6
+### DATA_SCHEMA.md v5.11
 
 **变更类型**: Enhancement
 
@@ -31,7 +31,7 @@
 - **移除**: `remaining_funds` 字段
 - **移除**: `available_balance` 字段
 
-### STATE_MACHINE.md v2.8
+### STATE_MACHINE.md v2.9
 
 **变更类型**: Enhancement
 
@@ -39,21 +39,21 @@
 - **新增**: Phase 2 启用条件说明
 - **更新**: 状态转换图增加条件注释
 
-### BUSINESS_RULES.md v4.7
+### BUSINESS_RULES.md v5.2
 
 **变更类型**: Enhancement
 
 - **更新**: 角色相关规则调整（6 角色）
 - **更新**: 财务规则增加 Phase 1 约束
 
-### API_SOT.md v9.4
+### API_SOT.md v9.7
 
 **变更类型**: Enhancement
 
 - **更新**: 权限端点返回 6 角色
 - **移除**: supervisor 相关 API
 
-### AUTH_SPEC.md v2.1
+### AUTH_SPEC.md v2.2
 
 **变更类型**: Enhancement
 

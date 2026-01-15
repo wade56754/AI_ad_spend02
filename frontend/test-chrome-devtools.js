@@ -334,7 +334,7 @@ async function main() {
       console.log('✅ 服务器连接正常\n');
     } catch (error) {
       console.error(`❌ 无法连接到 ${BASE_URL}`);
-      console.error(`请确保开发服务器正在运行: npm run dev\n`);
+      console.error(`请确保开发服务器正在运行: pnpm run dev\n`);
       await testBrowser.close();
       process.exit(1);
     }

@@ -9,7 +9,7 @@ SoT Reference: STATE_MACHINE.md v2.6
 3. transition() - 执行状态转换
 4. 预定义状态机: 日报(8状态), 充值(7状态), 结算(4状态), 转账(5状态)等
 
-角色说明 (PRD v2.2 / MASTER.md v4.9 §2.4):
+角色说明 (PRD v5.1 / MASTER.md v4.9 §2.4):
 - 6 角色白名单: ceo, admin, project_owner, finance, pitcher, account_manager
 - 废弃角色: data_operator → project_owner/finance, media_buyer → pitcher, supervisor → project_owner
 
@@ -165,7 +165,7 @@ class StateMachine:
 
         Note:
             使用 role_in_list() 进行角色检查
-            PRD v2.2: 6 角色白名单 (ceo, admin, project_owner, finance, pitcher, account_manager)
+            PRD v5.1: 6 角色白名单 (ceo, admin, project_owner, finance, pitcher, account_manager)
         """
         key = (from_state, to_state)
         if key not in self._transitions:
@@ -173,7 +173,7 @@ class StateMachine:
 
         t = self._transitions[key]
 
-        # 使用 role_in_list 检查角色权限 (PRD v2.2)
+        # 使用 role_in_list 检查角色权限 (PRD v5.1)
         if t.required_roles and not role_in_list(user_role, t.required_roles):
             # 展开等价角色以便在错误消息中显示
             expanded_roles = expand_role_list(t.required_roles)
@@ -202,33 +202,33 @@ DAILY_REPORT_STATE_MACHINE = StateMachine(
         Transition(
             DailyReportStatus.TREND_OK,
             DailyReportStatus.FINAL_PENDING,
-            required_roles=["project_owner", "admin"],  # PRD v2.2: data_operator → project_owner
+            required_roles=["project_owner", "admin"],  # PRD v5.1: data_operator → project_owner
         ),
         # Phase 1 直接确认: trend_ok → final_confirmed (BR-RPT-008: project_owner/admin)
         Transition(
             DailyReportStatus.TREND_OK,
             DailyReportStatus.FINAL_CONFIRMED,
-            required_roles=["project_owner", "admin"],  # PRD v2.2: data_operator → project_owner
+            required_roles=["project_owner", "admin"],  # PRD v5.1: data_operator → project_owner
         ),
         Transition(
             DailyReportStatus.TREND_FLAGGED,
             DailyReportStatus.TREND_RESOLVED,
-            required_roles=["project_owner", "admin"],  # PRD v2.2: data_operator → project_owner
+            required_roles=["project_owner", "admin"],  # PRD v5.1: data_operator → project_owner
         ),
         Transition(
             DailyReportStatus.TREND_FLAGGED,
             DailyReportStatus.RAW_SUBMITTED,
-            required_roles=["project_owner", "admin"],  # PRD v2.2: data_operator → project_owner
+            required_roles=["project_owner", "admin"],  # PRD v5.1: data_operator → project_owner
         ),
         Transition(
             DailyReportStatus.TREND_RESOLVED,
             DailyReportStatus.FINAL_PENDING,
-            required_roles=["project_owner", "admin"],  # PRD v2.2: data_operator → project_owner
+            required_roles=["project_owner", "admin"],  # PRD v5.1: data_operator → project_owner
         ),
         Transition(
             DailyReportStatus.FINAL_PENDING,
             DailyReportStatus.FINAL_CONFIRMED,
-            required_roles=["project_owner", "admin"],  # PRD v2.2: data_operator → project_owner
+            required_roles=["project_owner", "admin"],  # PRD v5.1: data_operator → project_owner
         ),
         Transition(DailyReportStatus.FINAL_CONFIRMED, DailyReportStatus.FINAL_LOCKED),
     ]
@@ -241,18 +241,18 @@ TOPUP_STATE_MACHINE = StateMachine(
         Transition(
             TopupStatus.DRAFT,
             TopupStatus.PENDING_REVIEW,
-            required_roles=["pitcher", "account_manager"],  # PRD v2.2: media_buyer → pitcher
+            required_roles=["pitcher", "account_manager"],  # PRD v5.1: media_buyer → pitcher
         ),
         Transition(
             TopupStatus.PENDING_REVIEW,
             TopupStatus.FINANCE_APPROVE,
-            # PRD v2.2: 数据审核可由 project_owner, admin 或 data_operator(废弃别名) 执行
+            # PRD v5.1: 数据审核可由 project_owner, admin 或 data_operator(废弃别名) 执行
             required_roles=["project_owner", "admin", "data_operator"],
         ),
         Transition(
             TopupStatus.PENDING_REVIEW,
             TopupStatus.REJECTED,
-            # PRD v2.2: 拒绝审核可由 project_owner, admin 或 data_operator(废弃别名) 执行
+            # PRD v5.1: 拒绝审核可由 project_owner, admin 或 data_operator(废弃别名) 执行
             required_roles=["project_owner", "admin", "data_operator"],
         ),
         Transition(
@@ -276,7 +276,7 @@ TRANSFER_STATE_MACHINE = StateMachine(
         Transition(
             TransferStatus.DRAFT,
             TransferStatus.PENDING_APPROVAL,
-            required_roles=["pitcher", "account_manager"],  # PRD v2.2: media_buyer → pitcher
+            required_roles=["pitcher", "account_manager"],  # PRD v5.1: media_buyer → pitcher
         ),
         Transition(
             TransferStatus.DRAFT,
@@ -308,7 +308,7 @@ RECONCILIATION_BATCH_STATE_MACHINE = StateMachine(
         Transition(
             ReconciliationBatchStatus.DRAFT,
             ReconciliationBatchStatus.PENDING_REVIEW,
-            required_roles=["finance"],  # PRD v2.2: 移除废弃的 data_operator
+            required_roles=["finance"],  # PRD v5.1: 移除废弃的 data_operator
         ),
         Transition(
             ReconciliationBatchStatus.PENDING_REVIEW,
@@ -323,7 +323,7 @@ RECONCILIATION_BATCH_STATE_MACHINE = StateMachine(
         Transition(
             ReconciliationBatchStatus.NEEDS_ADJUSTMENT,
             ReconciliationBatchStatus.PENDING_REVIEW,
-            required_roles=["finance"],  # PRD v2.2: 移除废弃的 data_operator
+            required_roles=["finance"],  # PRD v5.1: 移除废弃的 data_operator
         ),  # 重新提交
         Transition(
             ReconciliationBatchStatus.NEEDS_ADJUSTMENT,
@@ -345,12 +345,12 @@ RECONCILIATION_DETAIL_STATE_MACHINE = StateMachine(
         Transition(
             ReconciliationDetailStatus.PENDING,
             ReconciliationDetailStatus.CONFIRMED,
-            required_roles=["finance"],  # PRD v2.2: 移除废弃的 data_operator
+            required_roles=["finance"],  # PRD v5.1: 移除废弃的 data_operator
         ),
         Transition(
             ReconciliationDetailStatus.PENDING,
             ReconciliationDetailStatus.ADJUSTED,
-            required_roles=["finance"],  # PRD v2.2: 移除废弃的 data_operator
+            required_roles=["finance"],  # PRD v5.1: 移除废弃的 data_operator
         ),
         Transition(
             ReconciliationDetailStatus.CONFIRMED,
@@ -499,7 +499,7 @@ WEEKLY_BRIEF_STATE_MACHINE = StateMachine(
         Transition(
             WeeklyBriefStatus.DRAFT,
             WeeklyBriefStatus.SUBMITTED,
-            required_roles=["project_owner", "pitcher"],  # PRD v2.2: data_operator→project_owner, media_buyer→pitcher
+            required_roles=["project_owner", "pitcher"],  # PRD v5.1: data_operator→project_owner, media_buyer→pitcher
         ),
         Transition(
             WeeklyBriefStatus.SUBMITTED,
@@ -515,7 +515,7 @@ WEEKLY_BRIEF_STATE_MACHINE = StateMachine(
         Transition(
             WeeklyBriefStatus.SUBMITTED,
             WeeklyBriefStatus.DRAFT,
-            required_roles=["project_owner", "account_manager"],  # PRD v2.2: data_operator→project_owner
+            required_roles=["project_owner", "account_manager"],  # PRD v5.1: data_operator→project_owner
         ),
     ]
 )

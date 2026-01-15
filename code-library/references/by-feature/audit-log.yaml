@@ -17,7 +17,7 @@ local_references:
       - "ledger_entries 只增不改"
       - "reference_type + reference_id 关联"
       - "created_at 时间戳"
-    sot_reference: "LEDGER_SOT.md v1.1"
+    sot_reference: "DATA_SCHEMA.md v5.11 §3.4.4"
 
   - name: "状态转换记录"
     description: "日报状态变更追踪"
@@ -98,7 +98,7 @@ recommended_implementation:
 # 项目适配规则
 adaptation_rules:
   - "关键实体必须有审计追踪"
-  - "账务相关使用 ledger_entries (LEDGER_SOT.md)"
+  - "账务相关使用 ledger_entries (DATA_SCHEMA.md §3.4.4)"
   - "状态变更使用 status_history"
   - "通用操作使用 audit_logs 表"
   - "保留期限: 至少 3 年"

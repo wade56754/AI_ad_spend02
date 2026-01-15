@@ -5,9 +5,9 @@
 > **owner**: wade
 > **last_reviewed**: 2026-01-12
 > **父文档**: BUSINESS_RULES.md v5.2
-> **关联 SoT**: DATA_SCHEMA.md v5.7 §3.6, API_SOT.md v9.7
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §3.6, API_SOT.md v9.7
 > **业务参考**: 见本文档 §定价模式（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
-> **v1.3 更新**: 对齐 PRD v5.2，成本公式含开户费，新增公司利润规则
+> **v1.3 更新**: 对齐 PRD v5.1，成本公式含开户费，新增公司利润规则
 
 ---
 
@@ -16,8 +16,8 @@
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
 | BUSINESS_RULES.md | v5.2 | §4.9 | 规则索引定义（含 BR-PROFIT-008） |
-| DATA_SCHEMA.md | v5.7 | §3.6 | profit_aggregates 表结构 |
-| API_SOT.md | v9.0 | §2.3.3 | 账本公式定义 |
+| DATA_SCHEMA.md | v5.11 | §3.6 | profit_aggregates 表结构 |
+| API_SOT.md | v9.7 | §2.3.3 | 账本公式定义 |
 | ERROR_CODES.md | v2.3 | §4.8 | PROFIT_ 错误码 |
 | STATE_MACHINE.md | v2.9 | §5 | 日报 final_locked 状态 |
 
@@ -40,8 +40,8 @@
 
 ## 核心公式定义
 
-> **引用**: DATA_SCHEMA.md v5.7 §3.6, API_SOT.md v9.7 §2.3.3
-> **v1.3 更新**: 对齐 PRD v5.2 财务模块修正
+> **引用**: DATA_SCHEMA.md v5.11 §3.6, API_SOT.md v9.7 §2.3.3
+> **v1.3 更新**: 对齐 PRD v5.1 财务模块修正
 
 ### 利润计算公式链 (v1.3 更新)
 
@@ -103,7 +103,7 @@ revenue = conversions_final × unit_price
 
 #### 前置条件
 - 数据状态: 日报状态为 `final_locked`
-- 引用: DATA_SCHEMA.md v5.6 §3.2.8（daily_reports.conversions_final）
+- 引用: DATA_SCHEMA.md v5.11 §3.2.8（daily_reports.conversions_final）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -150,7 +150,7 @@ revenue = real_spend × service_fee_rate
 
 #### 前置条件
 - 项目配置: settlement_mode = 'fee_rate'
-- 引用: DATA_SCHEMA.md v5.6 §3.2.5（projects.settlement_mode）
+- 引用: DATA_SCHEMA.md v5.11 §3.2.5（projects.settlement_mode）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -213,7 +213,7 @@ revenue = Σ(tier_leads_i × tier_price_i)
 
 #### 前置条件
 - 项目配置: settlement_mode = 'tiered'
-- 引用: DATA_SCHEMA.md v5.6 §3.2.5（projects.settlement_mode, pricing_tiers）
+- 引用: DATA_SCHEMA.md v5.11 §3.2.5（projects.settlement_mode, pricing_tiers）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -241,7 +241,7 @@ revenue = Σ(tier_leads_i × tier_price_i)
 ### BR-PROFIT-004: 项目成本公式 (v1.3 更新)
 
 #### 业务场景
-项目成本（项目总支出）包含广告消耗和代理商手续费。根据 PRD v5.2 修正，成本计算需要明确包含代理商费率和开户费，确保项目毛利计算的准确性。
+项目成本（项目总支出）包含广告消耗和代理商手续费。根据 PRD v5.1 修正，成本计算需要明确包含代理商费率和开户费，确保项目毛利计算的准确性。
 
 #### 详细约束
 - 📌 **强制**: 项目总支出 = `ad_spend × (1 + 代理商费率) + 开户费`
@@ -268,7 +268,7 @@ ad_spend = 10000, 开户费 = 500
 
 #### 前置条件
 - 数据状态: 日报已提交消耗数据
-- 引用: DATA_SCHEMA.md v5.6 §3.2.8（daily_reports.real_spend, fee）
+- 引用: DATA_SCHEMA.md v5.11 §3.2.8（daily_reports.real_spend, fee）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -295,7 +295,7 @@ ad_spend = 10000, 开户费 = 500
 ### BR-PROFIT-005: 项目毛利公式 (v1.3 更新)
 
 #### 业务场景
-项目毛利是衡量项目盈利能力的核心指标，反映收入覆盖项目总支出（含手续费）后的剩余利润。根据 PRD v5.2 修正，手续费已在项目层面扣除，不再在公司层面单独扣除。
+项目毛利是衡量项目盈利能力的核心指标，反映收入覆盖项目总支出（含手续费）后的剩余利润。根据 PRD v5.1 修正，手续费已在项目层面扣除，不再在公司层面单独扣除。
 
 #### 详细约束
 - 📌 **强制**: 项目毛利 = `revenue - 项目总支出（含手续费）`
@@ -325,7 +325,7 @@ revenue = 15000, ad_spend = 10000, 费率 = 8%, 开户费 = 300
 
 #### 前置条件
 - 数据状态: 收入和成本已计算
-- 引用: DATA_SCHEMA.md v5.6 §3.6.1（profit_aggregates.gross_profit）
+- 引用: DATA_SCHEMA.md v5.11 §3.6.1（profit_aggregates.gross_profit）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -373,7 +373,7 @@ cpl = ad_spend / conversions_final
 
 #### 前置条件
 - 数据状态: 日报包含消耗和粉数数据
-- 引用: DATA_SCHEMA.md v5.6 §3.2.8
+- 引用: DATA_SCHEMA.md v5.11 §3.2.8
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -417,7 +417,7 @@ cpl = ad_spend / conversions_final
 
 #### 前置条件
 - 数据状态: CPL 已计算
-- 引用: MASTER.md v4.8 §2.5（Phase 1 软性原则）
+- 引用: MASTER.md v4.9 §2.5（Phase 1 软性原则）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -441,7 +441,7 @@ cpl = ad_spend / conversions_final
 ### BR-PROFIT-008: 公司利润公式 (v1.3 新增)
 
 #### 业务场景
-公司利润是所有项目毛利汇总后，扣除公司层面的运营成本和投手提成后的净收益。根据 PRD v5.2 修正，手续费已在项目毛利中扣除，公司层面不再重复扣除。
+公司利润是所有项目毛利汇总后，扣除公司层面的运营成本和投手提成后的净收益。根据 PRD v5.1 修正，手续费已在项目毛利中扣除，公司层面不再重复扣除。
 
 #### 详细约束
 - 📌 **强制**: 公司利润 = `Σ项目毛利 - 运营成本(含广告配套) - 投手提成`
@@ -470,7 +470,7 @@ cpl = ad_spend / conversions_final
 
 #### 前置条件
 - 数据状态: 所有项目毛利已计算，运营成本和投手提成已录入
-- 引用: DATA_SCHEMA.md v5.7 §3.6（profit_aggregates）
+- 引用: DATA_SCHEMA.md v5.11 §3.6（profit_aggregates）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -512,7 +512,7 @@ BR-PROFIT-005 (项目毛利公式) ←── 依赖收入和项目成本（含�
 
 ## 利润聚合层级
 
-> **引用**: DATA_SCHEMA.md v5.6 §3.6
+> **引用**: DATA_SCHEMA.md v5.11 §3.6
 
 | 层级 | 聚合粒度 | 数据来源 | 存储表 |
 |------|----------|----------|--------|
@@ -527,16 +527,16 @@ BR-PROFIT-005 (项目毛利公式) ←── 依赖收入和项目成本（含�
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.3 | 2026-01-12 | **PRD v5.2 对齐**: BR-PROFIT-004 成本公式含开户费；BR-PROFIT-005 项目毛利公式说明含手续费；新增 BR-PROFIT-008 公司利润公式；更新依赖关系图；对齐 BUSINESS_RULES.md v5.2 |
-| v1.2 | 2026-01-02 | 断链引用修复：移除 BUSINESS_LOGIC_FRAMEWORK.md 引用；更新父文档 BUSINESS_RULES.md v5.1、API_SOT.md v9.7 |
-| v1.1 | 2026-01-02 | 新增 BR-PROFIT-003 阶梯定价规则；规则重新编号（003→004, 004→005, 005→006, 006→007）；对齐 BUSINESS_RULES.md v4.9 |
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.6；错误码对齐 ERROR_CODES.md v2.3（PROFIT_*系列） |
+| v1.3 | 2026-01-12 | **PRD v5.1 对齐**: BR-PROFIT-004 成本公式含开户费；BR-PROFIT-005 项目毛利公式说明含手续费；新增 BR-PROFIT-008 公司利润公式；更新依赖关系图；对齐 BUSINESS_RULES.md v5.2 |
+| v1.2 | 2026-01-02 | 断链引用修复：移除 BUSINESS_LOGIC_FRAMEWORK.md 引用；更新父文档 BUSINESS_RULES.md v5.2、API_SOT.md v9.7 |
+| v1.1 | 2026-01-02 | 新增 BR-PROFIT-003 阶梯定价规则；规则重新编号（003→004, 004→005, 005→006, 006→007）；对齐 BUSINESS_RULES.md v5.2 |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v5.2；错误码对齐 ERROR_CODES.md v2.3（PROFIT_*系列） |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
 **父文档**: BUSINESS_RULES.md v5.2
-**关联 SoT**: DATA_SCHEMA.md v5.7 §3.6, API_SOT.md v9.7
+**关联 SoT**: DATA_SCHEMA.md v5.11 §3.6, API_SOT.md v9.7
 **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.0 已废弃）
 **版本**: v1.3

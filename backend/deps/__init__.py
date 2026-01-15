@@ -1,7 +1,7 @@
 """
 依赖注入模块
 
-PRD v2.2 变更:
+PRD v5.1 变更:
 - 移除 require_data_operator (使用 require_finance 或 require_project_owner)
 - 移除 require_media_buyer (使用 require_role(["pitcher"]))
 """

@@ -36,7 +36,7 @@ class TestUserCRUD:
             id=uuid4(),
             email="test@example.com",
             username="testuser",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
             role="admin",
             is_active=True,
         )
@@ -53,14 +53,16 @@ class TestUserCRUD:
             id=uuid4(),
             email="read@example.com",
             username="readuser",
-            hashed_password=get_password_hash("test123"),
-            role="media_buyer",
+            password_hash=get_password_hash("test123"),
+            role="pitcher",
         )
         db_session.add(user)
         db_session.commit()
 
         # 查询用户
-        found_user = db_session.query(User).filter(User.email == "read@example.com").first()
+        found_user = (
+            db_session.query(User).filter(User.email == "read@example.com").first()
+        )
         assert found_user is not None
         assert found_user.email == "read@example.com"
         assert found_user.username == "readuser"
@@ -71,8 +73,8 @@ class TestUserCRUD:
             id=uuid4(),
             email="update@example.com",
             username="originalname",
-            hashed_password=get_password_hash("test123"),
-            role="media_buyer",
+            password_hash=get_password_hash("test123"),
+            role="pitcher",
         )
         db_session.add(user)
         db_session.commit()
@@ -92,8 +94,8 @@ class TestUserCRUD:
             id=uuid4(),
             email="delete@example.com",
             username="deleteuser",
-            hashed_password=get_password_hash("test123"),
-            role="media_buyer",
+            password_hash=get_password_hash("test123"),
+            role="pitcher",
         )
         db_session.add(user)
         db_session.commit()
@@ -119,7 +121,7 @@ class TestProjectCRUD:
             email="creator@example.com",
             username="creator",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -147,7 +149,7 @@ class TestProjectCRUD:
             email="user1@example.com",
             username="user1",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -164,7 +166,9 @@ class TestProjectCRUD:
         db_session.commit()
 
         # 查询项目
-        found_project = db_session.query(Project).filter(Project.project_code == "READ001").first()
+        found_project = (
+            db_session.query(Project).filter(Project.project_code == "READ001").first()
+        )
         assert found_project is not None
         assert found_project.project_name == "Read Project"
 
@@ -175,7 +179,7 @@ class TestProjectCRUD:
             email="rel@example.com",
             username="reluser",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -207,7 +211,7 @@ class TestAdAccountCRUD:
             email="ad@example.com",
             username="aduser",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -225,29 +229,30 @@ class TestAdAccountCRUD:
         channel = Channel(
             id=uuid4(),
             name="Test Channel",
-            channel_code="FB_TEST",
+            platform="facebook",
             status="active",
         )
         db_session.add(channel)
         db_session.commit()
 
         # 创建广告账户
+        # 字段名对齐 DATA_SCHEMA.md v5.2: name, account_code, owner_id, deposit
         ad_account = AdAccount(
             id=1,  # 明确指定id避免SQLite autoincrement问题
-            account_name="Test Ad Account",
+            name="Test Ad Account",
             account_code="EXT001",
             project_id=project.id,
             channel_id=channel.id,
-            assigned_to=user.id,
+            owner_id=user.id,
             status="active",
-            balance=Decimal("1000.00"),
+            deposit=Decimal("1000.00"),
         )
         db_session.add(ad_account)
         db_session.commit()
 
         assert ad_account.id is not None
-        assert ad_account.account_name == "Test Ad Account"
-        assert ad_account.balance == Decimal("1000.00")
+        assert ad_account.name == "Test Ad Account"
+        assert ad_account.deposit == Decimal("1000.00")
 
     def test_ad_account_relationships(self, db_session):
         """测试广告账户的关系"""
@@ -256,7 +261,7 @@ class TestAdAccountCRUD:
             email="rel2@example.com",
             username="rel2",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -274,7 +279,7 @@ class TestAdAccountCRUD:
         channel = Channel(
             id=uuid4(),
             name="Rel Channel",
-            channel_code="FB_REL",
+            platform="facebook",
             status="active",
         )
         db_session.add(channel)
@@ -311,7 +316,7 @@ class TestTopupRequestCRUD:
             email="topup@example.com",
             username="topupuser",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -329,7 +334,7 @@ class TestTopupRequestCRUD:
         channel = Channel(
             id=uuid4(),
             name="Topup Channel",
-            channel_code="FB_TOPUP",
+            platform="facebook",
             status="active",
         )
         db_session.add(channel)
@@ -369,7 +374,7 @@ class TestTopupRequestCRUD:
             email="read_topup@example.com",
             username="read",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -384,7 +389,9 @@ class TestTopupRequestCRUD:
         db_session.add(project)
         db_session.commit()
 
-        channel = Channel(id=uuid4(), name="Read Channel", channel_code="FB_READ", status="active")
+        channel = Channel(
+            id=uuid4(), name="Read Channel", platform="facebook", status="active"
+        )
         db_session.add(channel)
         db_session.commit()
 
@@ -412,7 +419,9 @@ class TestTopupRequestCRUD:
         topup_id = topup.id
 
         # 查询充值申请
-        found_topup = db_session.query(TopupRequest).filter(TopupRequest.id == topup_id).first()
+        found_topup = (
+            db_session.query(TopupRequest).filter(TopupRequest.id == topup_id).first()
+        )
         assert found_topup is not None
         assert found_topup.amount == Decimal("3000.00")
 
@@ -423,7 +432,7 @@ class TestTopupRequestCRUD:
             email="topup_rel@example.com",
             username="topuprel",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -438,7 +447,12 @@ class TestTopupRequestCRUD:
         db_session.add(project)
         db_session.commit()
 
-        channel = Channel(id=uuid4(), name="Topup Rel Channel", channel_code="FB_TOPUP_REL", status="active")
+        channel = Channel(
+            id=uuid4(),
+            name="Topup Rel Channel",
+            platform="facebook",
+            status="active",
+        )
         db_session.add(channel)
         db_session.commit()
 
@@ -479,7 +493,7 @@ class TestTopupRequestCRUD:
             email="del_topup@example.com",
             username="del",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -494,7 +508,9 @@ class TestTopupRequestCRUD:
         db_session.add(project)
         db_session.commit()
 
-        channel = Channel(id=uuid4(), name="Del Channel", channel_code="FB_DEL", status="active")
+        channel = Channel(
+            id=uuid4(), name="Del Channel", platform="facebook", status="active"
+        )
         db_session.add(channel)
         db_session.commit()
 
@@ -526,7 +542,9 @@ class TestTopupRequestCRUD:
         db_session.commit()
 
         # 验证删除
-        deleted_topup = db_session.query(TopupRequest).filter(TopupRequest.id == topup_id).first()
+        deleted_topup = (
+            db_session.query(TopupRequest).filter(TopupRequest.id == topup_id).first()
+        )
         assert deleted_topup is None
 
 
@@ -539,8 +557,8 @@ class TestDailyReportCRUD:
             id=uuid4(),
             email="report@example.com",
             username="reporter",
-            role="media_buyer",
-            hashed_password=get_password_hash("test123"),
+            role="pitcher",
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()
@@ -555,7 +573,9 @@ class TestDailyReportCRUD:
         db_session.add(project)
         db_session.commit()
 
-        channel = Channel(id=uuid4(), name="Report Channel", channel_code="FB_REPORT", status="active")
+        channel = Channel(
+            id=uuid4(), name="Report Channel", platform="facebook", status="active"
+        )
         db_session.add(channel)
         db_session.commit()
 
@@ -572,24 +592,27 @@ class TestDailyReportCRUD:
         db_session.commit()
 
         # 创建日报（状态必须符合 STATE_MACHINE.md v2.6 第8章的 8 状态机）
+        # 字段名对齐 DATA_SCHEMA.md v5.2: follows_count, raw_spend
         daily_report = DailyReport(
             id=1,  # 明确指定id避免SQLite autoincrement问题
             ad_account_id=ad_account.id,
             submitted_by=user.id,
             report_date=date.today(),
             status="raw_submitted",  # 初始状态必须是 raw_submitted
-            fans_gained=100,
-            spend_amount=Decimal("500.00"),
+            follows_count=100,
+            raw_spend=Decimal("500.00"),
         )
         db_session.add(daily_report)
         db_session.commit()
 
         assert daily_report.id is not None
-        assert daily_report.fans_gained == 100
-        assert daily_report.spend_amount == Decimal("500.00")
+        assert daily_report.follows_count == 100
+        assert daily_report.raw_spend == Decimal("500.00")
 
 
-@pytest.mark.skip(reason="AdSpendDaily model is placeholder - pending DATA_SCHEMA.md v5.2 reimplementation")
+@pytest.mark.skip(
+    reason="AdSpendDaily model is placeholder - pending DATA_SCHEMA.md v5.2 reimplementation"
+)
 class TestAdSpendDailyCRUD:
     """AdSpendDaily 模型 CRUD 测试"""
 
@@ -600,7 +623,7 @@ class TestAdSpendDailyCRUD:
             email="spend@example.com",
             username="spenduser",
             role="admin",
-            hashed_password=get_password_hash("test123"),
+            password_hash=get_password_hash("test123"),
         )
         db_session.add(user)
         db_session.commit()

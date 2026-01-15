@@ -220,7 +220,7 @@ markdown
 阶段：["analyze", "cleanup"]
 目标：
 - analyze: docs/sot/*.md
-- cleanup: ["docs/sot/DAILY_REPORT_SOT.md", "docs/sot/LEDGER_SOT.md"]
+- cleanup: ["docs/sot/DAILY_REPORT_SOT.md", "docs/sot/DATA_SCHEMA.md"]
 约束：
 - cleanup 仅限格式修复，不改业务字段/状态/错误码
 - 不执行 design / implement

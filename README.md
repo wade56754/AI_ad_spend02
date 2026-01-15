@@ -44,18 +44,19 @@ AI广告代投系统是一个专为Facebook广告代理商设计的智能化广�
 
 ## 📚 Documentation Center
 
-Complete ASDD 5-layer documentation (all layers frozen ✅):
-- 📖 **[Documentation Index](./docs/README.md)** - Navigation & Freeze Status
-- 📋 **[MASTER.md](./docs/sot/MASTER.md)** v3.4 - System Constitution
-- 📊 **[Project Rules](./.claude/PROJECT_RULES.md)** v3.2 - AI Collaboration Rules
-- 📑 **[Project Docs Index](./docs/PROJECT_DOCS_INDEX_v1.0.md)** - Complete Inventory
+Complete documentation baseline (SoT in `docs/sot`, PRD v5.1):
+- 📖 **[Documentation Index](./docs/README.md)** - Navigation & Status
+- 📋 **[MASTER.md](./docs/sot/MASTER.md)** v4.9 - System Constitution
+- 🧭 **[PRD v5.1](./docs/PRD_v5.1.md)** - Product Requirements
+- 🧾 **[SoT Version Manifest](./docs/sot/VERSION_MANIFEST.md)** - Version Registry
+- 📊 **[Project Rules](./.claude/PROJECT_RULES.md)** - AI Collaboration Rules
 
-### Quick Links by Layer
-- **Overview** (Freeze v1.0): [MASTER.md v3.4](./docs/sot/MASTER.md), [PROJECT.md](./docs/1.overview/PROJECT.md)
-- **SoT** (Freeze v2.6): [STATE_MACHINE v2.6](./docs/sot/STATE_MACHINE.md), [DATA_SCHEMA v5.2](./docs/sot/DATA_SCHEMA.md), [API_SOT v9.0](./docs/sot/API_SOT.md)
-- **Dev-Guides** (Freeze vFinal): [API_DEVELOPMENT_FLOW](./docs/3.dev-guides/API_DEVELOPMENT_FLOW.md), [FRONTEND_DEVELOPMENT_RULES](./docs/3.dev-guides/FRONTEND_DEVELOPMENT_RULES.md), [TESTING_STRATEGY](./docs/3.dev-guides/TESTING_STRATEGY.md)
-- **Architecture** (Freeze v1.0): [SYSTEM_CONTEXT_VIEW](./docs/4.architecture/SYSTEM_CONTEXT_VIEW.md), [DATA_FLOW_VIEW](./docs/4.architecture/DATA_FLOW_VIEW.md), [SERVICE_COMPONENT_VIEW](./docs/4.architecture/SERVICE_COMPONENT_VIEW.md)
-- **Infrastructure** (Freeze v1.0): [CI_PIPELINE_SPEC](./docs/5.infrastructure/CI_PIPELINE_SPEC.md), [DEPLOYMENT_PIPELINE_SPEC](./docs/5.infrastructure/DEPLOYMENT_PIPELINE_SPEC.md), [OBSERVABILITY_GUIDE](./docs/5.infrastructure/OBSERVABILITY_GUIDE.md)
+### Quick Links
+- **SoT**: [STATE_MACHINE v2.9](./docs/sot/STATE_MACHINE.md), [DATA_SCHEMA v5.11](./docs/sot/DATA_SCHEMA.md), [API_SOT v9.7](./docs/sot/API_SOT.md)
+- **Guides**: [FRONTEND_DEVELOPMENT_GUIDE_v3.0.md](./docs/guides/FRONTEND_DEVELOPMENT_GUIDE_v3.0.md), [AI_PROGRAMMING_BEST_PRACTICES_v3.1.md](./docs/guides/AI_PROGRAMMING_BEST_PRACTICES_v3.1.md)
+- **Design**: [FRONTEND_PAGE_DESIGN_v2.1.md](./docs/design/FRONTEND_PAGE_DESIGN_v2.1.md)
+- **Runbooks**: [deploy.md](./docs/runbooks/deploy.md), [incident-response.md](./docs/runbooks/incident-response.md)
+- **Integration**: [INTEGRATION_SUMMARY.md](./docs/integration/INTEGRATION_SUMMARY.md)
 
 ## 🛠️ 技术栈
 
@@ -64,14 +65,14 @@ Complete ASDD 5-layer documentation (all layers frozen ✅):
 - **数据库**: PostgreSQL (Supabase)
 - **ORM**: SQLAlchemy 2.0
 - **缓存**: Redis
-- **认证**: JWT + OAuth2
+- **认证**: Supabase Auth
 
 ### 前端
-- **框架**: Next.js 15 (App Router)
+- **框架**: Next.js 16 (App Router)
 - **语言**: TypeScript
 - **样式**: Tailwind CSS
 - **组件**: shadcn/ui
-- **状态管理**: Zustand
+- **状态管理**: TanStack Query v5
 
 ### 基础设施
 - **容器化**: Docker + Docker Compose
@@ -109,7 +110,7 @@ cp .env.example .env
 pip install -r requirements.txt
 
 # 前端依赖
-cd frontend && npm install
+cd frontend && pnpm install
 cd ..
 ```
 
@@ -133,7 +134,7 @@ uvicorn main:app --reload --port 8000
 
 # 启动前端 (新终端)
 cd frontend
-npm run dev
+pnpm run dev
 ```
 
 7. **访问应用**
@@ -176,14 +177,13 @@ AI_ad_spend02/
 └── justfile              # 统一命令入口
 ```
 
-## 🎯 角色权限 (7 角色制)
+## 🎯 角色权限 (6 角色制)
 
 | 角色 | 核心职责 | 主要功能 |
 |------|----------|----------|
 | **ceo** | 资金安全、公司盈亏 | 最终决策、全局视图、资金审批 |
 | **project_owner** | 项目盈亏、资金效率 | 项目管理、预算控制、ROI 分析 |
 | **finance** | 资金准确、数据真实 | 财务对账、充值审批、资金核算 |
-| **supervisor** | 团队产出、日常监督 | 团队管理、日报审核、绩效跟踪 |
 | **pitcher** | CPL 达标、日报准确 | 投放执行、日报提交、账户操作 |
 | **account_manager** | 账户分配、状态监控 | 账户管理、分配调度、异常处理 |
 | **admin** | 系统配置（不参与业务） | 用户管理、权限配置、系统维护 |
@@ -195,10 +195,10 @@ AI_ad_spend02/
 pytest
 
 # 运行前端测试
-npm test
+pnpm test
 
 # 运行E2E测试
-npm run test:e2e
+pnpm run test:e2e
 
 # 查看测试覆盖率
 pytest --cov=backend/app
@@ -251,7 +251,7 @@ kubectl get pods -n ai-ad-spend
 - TypeScript严格模式，禁止any类型
 - 优先使用 shadcn/ui 组件
 - 必须通过 ESLint 和 TypeScript 检查
-- 提交前检查: `npm run lint` 和 `npm run type-check` 必须0错误
+- 提交前检查: `pnpm run lint` 和 `pnpm run type-check` 必须0错误
 
 #### AI协作开发
 - 严格遵循 [CLAUDE.md](./CLAUDE.md) 中定义的项目规则

@@ -2,7 +2,7 @@
 
 > **版本**: v1.1
 > **最后更新**: 2026-01-02
-> **来源**: MASTER.md v4.9, DATA_SCHEMA.md v5.7
+> **来源**: MASTER.md v4.9, DATA_SCHEMA.md v5.11
 
 ---
 
@@ -88,7 +88,7 @@
 | **最终已确认** | final_confirmed | 最终粉数已确认 | final_locked |
 | **已锁定** | final_locked | 已进入计费，锁定（终态） | - |
 
-> 来源: STATE_MACHINE.md v2.8 SM-1
+> 来源: STATE_MACHINE.md v2.9 SM-1
 
 ---
 
@@ -110,7 +110,7 @@
 | **已完成** | completed | 充值已完成 |
 | **已取消** | cancelled | 充值已取消 |
 
-> 来源: STATE_MACHINE.md v2.8 SM-2
+> 来源: STATE_MACHINE.md v2.9 SM-2
 
 ---
 
@@ -124,7 +124,7 @@
 | **已调整** | adjusted | 差异已调整 |
 | **已确认** | confirmed | 对账已确认 |
 
-> 来源: STATE_MACHINE.md v2.8 SM-3
+> 来源: STATE_MACHINE.md v2.9 SM-3
 
 ---
 

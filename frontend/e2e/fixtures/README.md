@@ -20,10 +20,10 @@
 在测试中引用这些文件：
 
 ```typescript
-import * as path from 'path'
+import * as path from 'path';
 
-const testFilePath = path.join(__dirname, '../../fixtures/test-proof.jpg')
-await topupPage.uploadProof(testFilePath)
+const testFilePath = path.join(__dirname, '../../fixtures/test-proof.jpg');
+await topupPage.uploadProof(testFilePath);
 ```
 
 ## 文件要求
@@ -59,11 +59,11 @@ await topupPage.uploadProof(testFilePath)
 
 ```bash
 # 生成测试图片
-npm run generate:test-images
+pnpm run generate:test-images
 
 # 生成测试 Excel
-npm run generate:test-excel
+pnpm run generate:test-excel
 
 # 生成测试 CSV
-npm run generate:test-csv
+pnpm run generate:test-csv
 ```

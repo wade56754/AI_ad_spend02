@@ -1,7 +1,7 @@
 # SoT 版本清单
 
-> **版本**: v1.0
-> **最后更新**: 2025-12-31
+> **版本**: v1.1
+> **最后更新**: 2026-01-16
 > **维护者**: 架构组
 
 ---
@@ -10,13 +10,13 @@
 
 | 文件 | 当前版本 | 最后审查 | 负责人 | 状态 |
 |------|----------|----------|--------|------|
-| MASTER.md | v4.8 | 2026-01-01 | 架构组 | active |
-| DATA_SCHEMA.md | v5.6 | 2025-12-31 | 架构组 | active |
-| STATE_MACHINE.md | v2.8 | 2025-12-29 | 架构组 | active |
-| BUSINESS_RULES.md | v4.8 | 2025-12-31 | 业务组 | active |
-| API_SOT.md | v9.4 | 2025-12-27 | 后端组 | active |
-| AUTH_SPEC.md | v2.1 | 2025-12-27 | 后端组 | active |
-| ERROR_CODES_SOT.md | v2.2 | 2025-12-27 | 后端组 | active |
+| MASTER.md | v4.9 | 2026-01-02 | 架构组 | active |
+| DATA_SCHEMA.md | v5.11 | 2026-01-10 | 架构组 | active |
+| STATE_MACHINE.md | v2.9 | 2026-01-02 | 架构组 | active |
+| BUSINESS_RULES.md | v5.2 | 2026-01-12 | 业务组 | active |
+| API_SOT.md | v9.7 | 2026-01-02 | 后端组 | frozen |
+| AUTH_SPEC.md | v2.2 | 2026-01-02 | 后端组 | active |
+| ERROR_CODES_SOT.md | v2.2 | 2025-11-27 | 后端组 | active |
 
 ---
 
@@ -83,27 +83,41 @@ MINOR: 功能增强（新增规则、澄清说明）
 首次冻结的基准版本：
 
 ```
-MASTER.md v4.4
-DATA_SCHEMA.md v5.2
-STATE_MACHINE.md v2.6
-BUSINESS_RULES.md v3.2
-API_SOT.md v9.0
-ERROR_CODES_SOT.md v2.1
-AUTH_SPEC.md v2.0
+MASTER.md v4.9
+DATA_SCHEMA.md v5.11
+STATE_MACHINE.md v2.9
+BUSINESS_RULES.md v5.2
+API_SOT.md v9.7
+ERROR_CODES_SOT.md v2.2
+AUTH_SPEC.md v2.2
 ```
 
 ### SoT Freeze v2.0 (2025-12-27)
 
+历史冻结版本：
+
+```
+MASTER.md v4.9
+DATA_SCHEMA.md v5.11
+STATE_MACHINE.md v2.9
+BUSINESS_RULES.md v5.2
+API_SOT.md v9.7
+ERROR_CODES_SOT.md v2.2
+AUTH_SPEC.md v2.2
+```
+
+### SoT Freeze v2.1 (2026-01-16)
+
 当前冻结版本：
 
 ```
-MASTER.md v4.8
-DATA_SCHEMA.md v5.6
-STATE_MACHINE.md v2.8
-BUSINESS_RULES.md v4.8
-API_SOT.md v9.4
+MASTER.md v4.9
+DATA_SCHEMA.md v5.11
+STATE_MACHINE.md v2.9
+BUSINESS_RULES.md v5.2
+API_SOT.md v9.7
 ERROR_CODES_SOT.md v2.2
-AUTH_SPEC.md v2.1
+AUTH_SPEC.md v2.2
 ```
 
 ---
@@ -114,7 +128,7 @@ AUTH_SPEC.md v2.1
 
 ```python
 # 正确
-# SoT: MASTER.md v4.8 §2.4
+# SoT: MASTER.md v4.9 §2.4
 
 # 错误
 # SoT: MASTER.md §2.4
@@ -122,7 +136,7 @@ AUTH_SPEC.md v2.1
 
 ```markdown
 <!-- 正确 -->
-> 来源: STATE_MACHINE.md v2.8 SM-1
+> 来源: STATE_MACHINE.md v2.9 SM-1
 
 <!-- 错误 -->
 > 来源: STATE_MACHINE.md SM-1

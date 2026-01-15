@@ -15,10 +15,12 @@
 # =============================================================================
 
 metadata:
-  schema_version: "1.1"
-  last_updated: "2025-12-24"
+  schema_version: "1.2"
+  last_updated: "2026-01-16"
   maintainer: "AI 广告代投系统开发团队"
   description: "SoT 文档版本定义 - 单一真相源"
+  baseline_prd: "docs/PRD_v5.1.md"
+  baseline_prd_version: "v5.1"
 
 # -----------------------------------------------------------------------------
 # SoT 裁判链 - 按优先级排序
@@ -27,11 +29,8 @@ sot_chain:
   description: "SoT 裁判链优先级顺序，冲突时高优先级文档胜出"
   priority_order:
     - MASTER.md
-    - BUSINESS_FLOW_MANAGEMENT.md
-    - MVP_PHASE_DESIGN.md
     - STATE_MACHINE.md
     - DATA_SCHEMA.md
-    - LEDGER_SOT.md
     - BUSINESS_RULES.md
     - API_SOT.md
     - ERROR_CODES_SOT.md
@@ -43,144 +42,61 @@ sot_chain:
 sot_documents:
   # === 第一层：系统宪法 ===
   MASTER.md:
-    version: "v4.4"
+    version: "v4.9"
     path: "docs/sot/MASTER.md"
     description: "系统全局规则、角色定义、AI 防幻觉原则"
     priority: 1
-    last_updated: "2025-12-24"
-
-  BUSINESS_FLOW_MANAGEMENT.md:
-    version: "v1.0"
-    path: "docs/1.overview/BUSINESS_FLOW_MANAGEMENT.md"
-    description: "业务流程管理"
-    priority: 2
-    last_updated: "2025-12-22"
-
-  MVP_PHASE_DESIGN.md:
-    version: "v1.0"
-    path: "docs/1.overview/MVP_PHASE_DESIGN.md"
-    description: "MVP 阶段设计"
-    priority: 3
-    last_updated: "2025-12-22"
+    last_updated: "2026-01-02"
 
   # === 第二层：核心规范 ===
   STATE_MACHINE.md:
-    version: "v2.7"
-    path: "docs/2.sot/STATE_MACHINE.md"
+    version: "v2.9"
+    path: "docs/sot/STATE_MACHINE.md"
     description: "状态机规范（日报8状态、充值7状态、月度结算、周报等）"
-    priority: 4
-    last_updated: "2025-12-24"
-    sections:
-      - id: "§8"
-        name: "日报 8 状态机"
-        status: "active"
-      - id: "§9"
-        name: "充值 7 状态机"
-        status: "active"
-      - id: "§13.1"
-        name: "月度结算状态机"
-        status: "active"  # 2025-12-24 新增
-      - id: "§13.2"
-        name: "周报状态机"
-        status: "active"  # 2025-12-24 新增
+    priority: 2
+    last_updated: "2026-01-02"
 
   DATA_SCHEMA.md:
-    version: "v5.3"
-    path: "docs/2.sot/DATA_SCHEMA.md"
+    version: "v5.11"
+    path: "docs/sot/DATA_SCHEMA.md"
     description: "数据库模型、字段定义、外键关系"
-    priority: 5
-    last_updated: "2025-12-24"
-    sections:
-      - id: "§3"
-        name: "核心业务表"
-        status: "active"
-      - id: "§3.7"
-        name: "月度结算模块 (monthly_settlements)"
-        status: "active"  # 2025-12-24 新增
-      - id: "§4"
-        name: "索引与约束策略"
-        status: "active"
-
-  LEDGER_SOT.md:
-    version: "v1.2"
-    path: "docs/2.sot/LEDGER_SOT.md"
-    description: "账本规则、复式记账、分录规则"
-    priority: 6
-    last_updated: "2025-12-24"
+    priority: 3
+    last_updated: "2026-01-10"
 
   # === 第三层：业务规则 ===
   BUSINESS_RULES.md:
-    version: "v4.1"
-    path: "docs/2.sot/BUSINESS_RULES.md"
+    version: "v5.2"
+    path: "docs/sot/BUSINESS_RULES.md"
     description: "业务逻辑、验证规则、计算公式"
-    priority: 7
-    last_updated: "2025-12-24"
+    priority: 4
+    last_updated: "2026-01-12"
 
   API_SOT.md:
-    version: "v9.3"
-    path: "docs/2.sot/API_SOT.md"
+    version: "v9.7"
+    path: "docs/sot/API_SOT.md"
     description: "API 端点规范、请求响应格式"
-    priority: 8
-    last_updated: "2025-12-24"
+    priority: 5
+    last_updated: "2026-01-02"
 
   ERROR_CODES_SOT.md:
-    version: "v2.1"
-    path: "docs/2.sot/ERROR_CODES_SOT.md"
+    version: "v2.2"
+    path: "docs/sot/ERROR_CODES_SOT.md"
     description: "错误码定义、错误前缀规范"
-    priority: 9
-    last_updated: "2025-12-24"
+    priority: 6
+    last_updated: "2025-11-27"
 
   AUTH_SPEC.md:
-    version: "v2.0"
-    path: "docs/2.sot/AUTH_SPEC.md"
+    version: "v2.2"
+    path: "docs/sot/AUTH_SPEC.md"
     description: "认证授权、角色权限矩阵"
-    priority: 10
-    last_updated: "2025-12-24"
+    priority: 7
+    last_updated: "2026-01-02"
 
 # -----------------------------------------------------------------------------
 # SoT 缺口追踪
 # -----------------------------------------------------------------------------
 sot_gaps:
   description: "已识别的 SoT 文档缺口追踪"
-
-  GAP-001:
-    sot_document: "STATE_MACHINE.md"
-    missing_section: "§13.2 周报状态机"
-    actual_section: "§13.2"  # 实际添加位置
-    blocking_modules:
-      - "B3-weekly-brief-backend.md"
-    priority: "P1"
-    status: "closed"  # 2025-12-24 已补充
-    closed_date: "2025-12-24"
-    closed_version: "v2.7"
-    description: |
-      周报模块 2 状态机定义：draft → submitted
-
-  GAP-002:
-    sot_document: "DATA_SCHEMA.md"
-    missing_section: "§3.7 monthly_settlements 表"
-    actual_section: "§3.7.1"  # 实际添加位置
-    blocking_modules:
-      - "E1-monthly-settlement-backend.md"
-    priority: "P1"
-    status: "closed"  # 2025-12-24 已补充
-    closed_date: "2025-12-24"
-    closed_version: "v5.3"
-    description: |
-      月度结算表结构定义，包含项目月度盈亏汇总字段
-
-  GAP-003:
-    sot_document: "STATE_MACHINE.md"
-    missing_section: "§13.1 月度结算状态机"
-    actual_section: "§13.1"  # 实际添加位置
-    blocking_modules:
-      - "E1-monthly-settlement-backend.md"
-    priority: "P1"
-    status: "closed"  # 2025-12-24 已补充
-    closed_date: "2025-12-24"
-    closed_version: "v2.7"
-    description: |
-      月度结算 4 状态机：pending → confirmed → locked → archived
 
 # -----------------------------------------------------------------------------
 # 版本匹配规则（正则表达式）
@@ -205,14 +121,13 @@ scan_directories:
   description: "需要检查 SoT 版本引用的目录列表"
 
   include:
-    - "docs/10.module-specs"
-    - "docs/3.dev-guides"
-    - "docs/4.architecture"
-    - ".claude/skills"
+    - "docs"
+    - ".claude"
 
   exclude:
     - "docs/archive"
     - "docs/proposals"
+    - "docs/sot/CHANGELOG.md"
     - "node_modules"
     - ".git"
 
@@ -220,6 +135,13 @@ scan_directories:
 # 版本历史
 # -----------------------------------------------------------------------------
 version_history:
+  - version: "1.2"
+    date: "2026-01-16"
+    changes:
+      - "对齐 docs/sot 目录结构与 PRD v5.1 基准"
+      - "更新 SoT 文档版本号到现行版本"
+      - "移除已归档的 SoT 引用（BUSINESS_FLOW_MANAGEMENT/MVP_PHASE_DESIGN/账本规则文档）"
+
   - version: "1.1"
     date: "2025-12-24"
     changes:

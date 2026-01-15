@@ -14,7 +14,7 @@ pause > nul
 echo.
 
 echo Running E2E tests with visible browser...
-call npm run test:e2e:headed
+call pnpm run test:e2e:headed
 echo.
 
 echo ========================================

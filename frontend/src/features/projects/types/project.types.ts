@@ -211,7 +211,7 @@ export interface AccountPerformance {
   cpl: number | null;
 }
 
-export interface ProjectDashboard {
+export interface ProjectDashboardData {
   total_spend: number;
   total_follows: number;
   total_conversions: number;

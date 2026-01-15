@@ -134,24 +134,11 @@ class AdAccountService:
             assigned_to=request.assigned_user_id,
             status="new",
             # 注意：以下字段在模型中不存在，已移除
-            # platform=request.platform.value,
-            # platform_account_id=request.platform_account_id,
-            # platform_business_id=request.platform_business_id,
-            # daily_budget=request.daily_budget,
-            # total_budget=request.total_budget,
-            # remaining_budget=request.total_budget,
-            # currency=request.currency,
-            # timezone=request.timezone,
-            # country=request.country,
-            # account_type=request.account_type,
-            # payment_method=request.payment_method,
-            # billing_information=request.billing_information,
-            # auto_monitoring=request.auto_monitoring,
-            # alert_thresholds=request.alert_thresholds,
-            notes=request.notes,
-            # tags=request.tags,
-            # metadata=request.metadata,
-            # created_by=current_user_id
+            # platform, platform_account_id, platform_business_id,
+            # daily_budget, total_budget, remaining_budget,
+            # currency, timezone, country,
+            # account_type, payment_method, billing_information,
+            # auto_monitoring, alert_thresholds, notes, tags, metadata, created_by
         )
 
         self.db.add(account)

@@ -15,7 +15,6 @@ sot_dependencies:
     - docs/sot/API_SOT.md
   optional:
     - docs/sot/ERROR_CODES_SOT.md
-    - docs/sot/LEDGER_SOT.md
 
 sub_skills:
   - ai-ad-spec-governor    # /sot-check

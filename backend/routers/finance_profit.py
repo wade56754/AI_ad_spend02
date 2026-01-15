@@ -631,7 +631,7 @@ async def get_account_profit(
                 )
     elif current_user.role in ("pitcher", "media_buyer"):
         # pitcher: 检查是否有该账户的日报创建记录
-        # PRD v2.2: pitcher ↔ media_buyer 角色别名
+        # PRD v5.1: pitcher ↔ media_buyer 角色别名
         from backend.models import DailyReport
 
         has_report = (

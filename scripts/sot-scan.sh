@@ -46,7 +46,7 @@ else
 fi
 if [ -n "$SUPERVISOR_VIOLATIONS" ]; then
     echo -e "${RED}FAIL${NC}"
-    echo "  发现废弃角色 'supervisor' (PRD v2.2 已移除)"
+    echo "  发现废弃角色 'supervisor' (PRD v5.1 已移除)"
     echo "$SUPERVISOR_VIOLATIONS" | head -5
     ERRORS=$((ERRORS + 1))
 else

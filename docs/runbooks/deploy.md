@@ -80,7 +80,7 @@ git push origin main
 
 # 或手动
 cd frontend
-npm run build
+pnpm run build
 vercel --prod
 ```
 

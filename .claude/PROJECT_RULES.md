@@ -82,9 +82,6 @@ sotChain:
   - name: "AUTH_SPEC.md"
     version: "v2.0"
     role: "认证授权"
-  - name: "LEDGER_SOT.md"
-    version: "v1.1"
-    role: "账本规则"
 ---
 
 # AI 广告代投系统 - 项目规则总纲 (Project Constitution)
@@ -107,7 +104,7 @@ sotChain:
 >   - BUSINESS_RULES.md v3.2
 >   - ERROR_CODES_SOT.md v2.1
 >   - AUTH_SPEC.md v2.0
->   - LEDGER_SOT.md v1.1
+>   - DATA_SCHEMA.md v5.11 §3.4.4
 
 ---
 
@@ -130,7 +127,7 @@ ERROR_CODES_SOT.md v2.1 (错误码) ←─── 🚨 禁止自定义错误码
     ↓ 引用
 AUTH_SPEC.md v2.0 (认证授权)     ←─── 🔐 RLS 策略以此为准
     ↓ 引用
-LEDGER_SOT.md v1.1 (账本规则)    ←─── 💰 财务逻辑禁止绕过账本
+DATA_SCHEMA.md v5.11 §3.4.4 (账本规则)    ←─── 💰 财务逻辑禁止绕过账本
     ↓ 引用
 DAILY_REPORT_SOT.md v1.0 (日报流程)
 RECONCILIATION_SOT.md v1.0 (对账流程)
@@ -157,7 +154,7 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 4. **禁止绕过账本系统**
    - ❌ 错误: 直接修改 `ad_accounts.balance` 字段
    - ✅ 正确: 通过 `ledger_entries` 表记录交易 → 触发余额计算
-   - **强制**: 所有资金流动必须在 LEDGER_SOT.md v1.1 定义的双账本体系中
+   - **强制**: 所有资金流动必须在 DATA_SCHEMA.md v5.11 §3.4.4 定义的双账本体系中
 
 5. **禁止跳过状态机流转**
    - ❌ 错误: `UPDATE daily_reports SET status = 'final_locked' WHERE id = 123`
@@ -185,7 +182,6 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 | API_SOT | v9.0 | `docs/sot/API_SOT.md` | §9 Daily Reports API |
 | ERROR_CODES_SOT | v2.1 | `docs/sot/ERROR_CODES_SOT.md` | SYS/AUTH/VAL/BIZ/RES |
 | AUTH_SPEC | v2.0 | `docs/sot/AUTH_SPEC.md` | §3 RBAC + RLS 策略 |
-| LEDGER_SOT | v1.1 | `docs/sot/LEDGER_SOT.md` | §2 双账本体系 |
 | DAILY_REPORT_SOT | v1.0 | `docs/sot/DAILY_REPORT_SOT.md` | §3 日报全生命周期 |
 | RECONCILIATION_SOT | v1.0 | `docs/sot/RECONCILIATION_SOT.md` | §3 对账流程 |
 | TRANSFER_SOT | v1.0 | `docs/sot/TRANSFER_SOT.md` | §2 调拨规则 |
@@ -217,11 +213,11 @@ TRANSFER_SOT.md v1.0 (调拨流程)
 ✅ 正确: 查找 DATA_SCHEMA.md § 3.4.1，使用 `amount`
 ```
 
-### 2. 角色限定（PRD v2.2 + MASTER.md v4.6）
+### 2. 角色限定（PRD v5.1 + MASTER.md v4.6）
 **规则**: 业务层 6 角色 + 技术层 4 角色，禁止废弃角色
 
 ```python
-# ✅ 业务层 6 角色 (PRD v2.2)
+# ✅ 业务层 6 角色 (PRD v5.1)
 BUSINESS_ROLES = ["ceo", "project_owner", "finance", "pitcher", "account_manager", "admin"]
 
 # ✅ 技术层 4 角色 (MASTER.md v4.6 §INV-007)
@@ -237,8 +233,8 @@ DEPRECATED_ROLES = ["supervisor", "data_operator", "manager", "data_clerk", "tra
 - `ceo` → 技术层为 `admin`
 
 **废弃映射**（仅用于理解旧代码）:
-- `supervisor` → `project_owner` (PRD v2.2)
-- `data_operator` → `project_owner`/`finance` (PRD v2.2)
+- `supervisor` → `project_owner` (PRD v5.1)
+- `data_operator` → `project_owner`/`finance` (PRD v5.1)
 - `manager` → `account_manager`
 - `recharge_requests` → `topup_requests`
 
@@ -304,7 +300,7 @@ return success_response(
 
 ## 👥 四、角色与权限规则
 
-### 业务层 6 角色体系 (PRD v2.2)
+### 业务层 6 角色体系 (PRD v5.1)
 | 角色 | 业务名称 | 职责 | 技术层映射 |
 |------|----------|------|-----------|
 | `ceo` | 老板 | 资金安全、公司盈亏、最终决策 | `admin` |
@@ -713,7 +709,7 @@ AI_AD_SYSTEM_MAIN_DOCUMENT.md > API_DEVELOPMENT_FLOW.md >
 
 ## 📚 十一、快速参考
 
-### 业务层角色（6 个，PRD v2.2）
+### 业务层角色（6 个，PRD v5.1）
 ```python
 BUSINESS_ROLES = [
     "ceo",             # 老板
@@ -837,7 +833,7 @@ raise PermissionError(
 | **添加日报字段** | DATA_SCHEMA.md §3.3.1 | 是否与现有字段冲突？是否需要索引？ |
 | **修改状态流转** | STATE_MACHINE.md §8 | 是否违反单向流转原则？ |
 | **新增 API 端点** | API_SOT.md §9 | 路径是否平面化？响应格式是否统一？ |
-| **计算账户余额** | LEDGER_SOT.md §2.3 | 是否通过账本分录计算？是否绕过双账本？ |
+| **计算账户余额** | DATA_SCHEMA.md §3.4.4 | 是否通过账本分录计算？是否绕过账本规则？ |
 | **用户权限验证** | AUTH_SPEC.md §3.2 | 是否符合 RBAC 矩阵？是否触发 RLS？ |
 
 ### 常见反模式识别
@@ -856,7 +852,7 @@ class DailyReportStatus(str, Enum):
 # ❌ 反模式 2: 直接修改余额
 ad_account.balance -= 100
 db.commit()
-# 违反: LEDGER_SOT.md 要求通过 ledger_entries 记录
+# 违反: DATA_SCHEMA.md §3.4.4 要求通过 ledger_entries 记录
 
 # ❌ 反模式 3: 自定义错误码
 raise HTTPException(400, "Invalid data")
@@ -868,7 +864,7 @@ report.status = "final_locked"
 
 # ❌ 反模式 5: 缺少可追溯性
 ledger_entry = LedgerEntry(amount=100, entry_type="SPEND")
-# 违反: LEDGER_SOT.md 要求 related_entity_type + related_entity_id
+# 违反: DATA_SCHEMA.md §3.4.4 要求 related_entity_type + related_entity_id
 ```
 
 ### 职责声明

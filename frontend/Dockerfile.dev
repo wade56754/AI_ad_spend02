@@ -6,11 +6,14 @@ WORKDIR /app
 # 安装系统依赖
 RUN apk add --no-cache libc6-compat
 
+# 启用 pnpm
+RUN corepack enable
+
 # 复制package文件
 COPY package*.json ./
 
 # 安装依赖
-RUN npm ci
+RUN pnpm install
 
 # 复制应用代码
 COPY . .
@@ -33,4 +36,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/api/health || exit 1
 
 # 启动命令
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]

@@ -250,7 +250,7 @@ class AuditLog(Base):
 
 ### CB-BE-007: LedgerEntry (账本记账)
 
-**基准**: LEDGER_SOT.md v1.1
+**基准**: DATA_SCHEMA.md v5.11 §3.4.4
 
 ```python
 # backend/models/ledger_entry.py

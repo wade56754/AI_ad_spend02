@@ -93,7 +93,7 @@ output_format = "html"。
 | P0 | DATA_SCHEMA.md v5.2 | 数据结构约束 |
 | P1 | API_SOT.md v9.0 | API 端点契约 |
 | P1 | ERROR_CODES_SOT.md v2.1 | 错误码定义 |
-| P1 | LEDGER_SOT.md v1.1 | 账本分录规则 |
+| P1 | DATA_SCHEMA.md v5.11 §3.4.4 | 账本分录规则 |
 | P3 | AUTH_SPEC.md v2.0 | 角色权限矩阵 |
 
 ## 参考资料

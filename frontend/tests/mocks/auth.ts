@@ -4,7 +4,7 @@
  * 提供认证相关的 mock 工具函数
  */
 
-import { UserRole } from '@/features/auth/types/auth.types'
+import { UserRole } from '@/features/auth/types/auth.types';
 
 /**
  * Mock 用户数据
@@ -17,12 +17,12 @@ export const mockUser = {
   is_active: true,
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T00:00:00Z',
-}
+};
 
 /**
  * Mock JWT Token
  */
-export const mockToken = 'mock-jwt-token-for-testing'
+export const mockToken = 'mock-jwt-token-for-testing';
 
 /**
  * Mock 登录响应
@@ -32,33 +32,33 @@ export function mockLoginResponse() {
     access_token: mockToken,
     token_type: 'bearer',
     user: mockUser,
-  }
+  };
 }
 
 /**
  * Mock localStorage for auth
  */
 export function mockAuthStorage(token?: string, user?: any) {
-  const storage: Record<string, string> = {}
+  const storage: Record<string, string> = {};
 
   if (token) {
-    storage['auth-token'] = token
+    storage['auth-token'] = token;
   }
 
   if (user) {
-    storage['auth-user'] = JSON.stringify(user)
+    storage['auth-user'] = JSON.stringify(user);
   }
 
-  const mockGetItem = jest.fn((key: string) => storage[key] || null)
+  const mockGetItem = jest.fn((key: string) => storage[key] || null);
   const mockSetItem = jest.fn((key: string, value: string) => {
-    storage[key] = value
-  })
+    storage[key] = value;
+  });
   const mockRemoveItem = jest.fn((key: string) => {
-    delete storage[key]
-  })
+    delete storage[key];
+  });
   const mockClear = jest.fn(() => {
-    Object.keys(storage).forEach((key) => delete storage[key])
-  })
+    Object.keys(storage).forEach((key) => delete storage[key]);
+  });
 
   Object.defineProperty(window, 'localStorage', {
     value: {
@@ -70,35 +70,35 @@ export function mockAuthStorage(token?: string, user?: any) {
       key: jest.fn((index: number) => Object.keys(storage)[index] || null),
     },
     writable: true,
-  })
+  });
 
   return {
     getItem: mockGetItem,
     setItem: mockSetItem,
     removeItem: mockRemoveItem,
     clear: mockClear,
-  }
+  };
 }
 
 /**
  * Mock 认证状态为已登录
  */
 export function mockAuthenticatedState() {
-  return mockAuthStorage(mockToken, mockUser)
+  return mockAuthStorage(mockToken, mockUser);
 }
 
 /**
  * Mock 认证状态为未登录
  */
 export function mockUnauthenticatedState() {
-  return mockAuthStorage()
+  return mockAuthStorage();
 }
 
 /**
  * 不同角色的 mock 用户
  */
 export const mockUsers: Record<string, typeof mockUser & { role: UserRole }> = {
-  // 6 角色白名单 (MASTER.md v4.6 / PRD v2.2)
+  // 6 角色白名单 (MASTER.md v4.6 / PRD v5.1)
   ceo: {
     ...mockUser,
     id: 'user-ceo-id-001',
@@ -155,12 +155,12 @@ export const mockUsers: Record<string, typeof mockUser & { role: UserRole }> = {
     username: 'pouser',
     role: 'project_owner' as UserRole,
   },
-}
+};
 
 /**
  * Mock 特定角色的认证状态
  */
 export function mockAuthenticatedStateWithRole(role: UserRole) {
-  const user = mockUsers[role] || mockUsers.admin
-  return mockAuthStorage(mockToken, user)
+  const user = mockUsers[role] || mockUsers.admin;
+  return mockAuthStorage(mockToken, user);
 }

@@ -1,7 +1,7 @@
 """
 权限管理模块 (Core Layer)
 
-SoT Reference: MASTER.md v4.4 §2.4 (角色定义)
+SoT Reference: MASTER.md v4.6 §2.4 (角色定义)
 SoT Reference: AUTH_SPEC.md v2.0 (认证授权规范)
 
 本模块是 permission-filter 代码块，提供:
@@ -11,11 +11,22 @@ SoT Reference: AUTH_SPEC.md v2.0 (认证授权规范)
 4. PermissionRule - 权限规则配置
 5. 各类权限检查装饰器和守卫
 
+合法角色 (MASTER.md v4.6 §2.4 - 6个):
+- ceo: 老板 - 资金安全、公司盈亏、最终决策
+- project_owner: 项目负责人 - 项目盈亏、日报审核
+- finance: 财务 - 资金出入准确、对账
+- pitcher: 投手 - CPL 达标、日报准确 (数据库存储为 media_buyer)
+- account_manager: 户管 - 账户分配、状态监控
+- admin: 管理员 - 系统配置
+
+废弃角色:
+- data_operator: 已废弃，不在宪法中
+- supervisor: 已合并到 project_owner
+
 权限过滤规则 (按角色):
 - ceo/admin: 无过滤，看全部数据
 - project_owner: 过滤本项目数据 (通过 project_members 表)
-- supervisor: 过滤本团队数据
-- pitcher: 过滤本人数据 (owner_id/submitted_by/pitcher_id)
+- pitcher/media_buyer: 过滤本人数据 (owner_id/submitted_by/pitcher_id)
 - finance: 财务相关数据
 - account_manager: 账户相关数据
 
@@ -112,7 +123,8 @@ class Permission(str, Enum):
 
 
 # 角色权限映射 - 严格按照系统概述权限矩阵
-# SoT Reference: MASTER.md v4.4 §2.4 (7个合法角色)
+# SoT Reference: MASTER.md v4.6 §2.4 (6个合法角色)
+# 注意: data_operator 已废弃，保留仅为向后兼容
 ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
     UserRole.CEO: [
         # CEO(老板)拥有全部权限 - 资金安全、公司盈亏、最终决策
@@ -217,7 +229,9 @@ ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
         Permission.REPORT_READ,
     ],
     UserRole.DATA_OPERATOR: [
-        # 数据员权限 - 👁 项目管理(只读)、✅ 渠道管理、✅ 账户管理、✅ 日报管理、✅ 充值管理、👁 报表查看
+        # [DEPRECATED] 数据员权限 - 角色已废弃 (MASTER.md v4.6)
+        # 保留此映射仅为向后兼容，不应在新代码中使用
+        # 原设计: 👁 项目管理(只读)、✅ 渠道管理、✅ 账户管理、✅ 日报管理、✅ 充值管理、👁 报表查看
         Permission.PROJECT_READ,
         Permission.CHANNEL_CREATE,
         Permission.CHANNEL_READ,
@@ -256,7 +270,9 @@ ROLE_PERMISSIONS: Dict[UserRole, List[Permission]] = {
         Permission.REPORT_EXPORT,
     ],
     UserRole.MEDIA_BUYER: [
-        # 投手权限 - ✅ 账户管理(只读)、✅ 日报管理、✅ 充值管理、👁 报表查看
+        # 投手权限 (pitcher) - 数据库存储值为 media_buyer
+        # SoT: MASTER.md v4.6 §2.4 - pitcher: CPL 达标、日报准确
+        # 权限: ✅ 账户管理(只读)、✅ 日报管理、✅ 充值管理、👁 报表查看
         Permission.ACCOUNT_READ,
         Permission.DAILY_REPORT_CREATE,
         Permission.DAILY_REPORT_READ,
@@ -507,11 +523,48 @@ def account_manager_required(
     return user
 
 
-# ============================================================================
-# 废弃函数已移除 (PRD v2.2)
-# - data_operator_required: 使用 finance_required 或 project_owner_required
-# - media_buyer_required: 使用 pitcher_required
-# ============================================================================
+def data_operator_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
+    """
+    [DEPRECATED] 要求数据员权限
+
+    ⚠️ data_operator 角色已废弃 (MASTER.md v4.6)
+    保留此函数仅为向后兼容，不应在新代码中使用
+    """
+    if user.role not in [UserRole.ADMIN.value, UserRole.DATA_OPERATOR.value]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要数据员权限"},
+        )
+    return user
+
+
+def media_buyer_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
+    """
+    要求投手权限
+
+    SoT: MASTER.md v4.6 §2.4 - pitcher (数据库存储为 media_buyer)
+    """
+    if user.role not in [UserRole.ADMIN.value, UserRole.MEDIA_BUYER.value]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": ErrorCode.PERMISSION_DENIED, "message": "需要投手权限"},
+        )
+    return user
+
+
+def pitcher_required(
+    user: AuthenticatedUser = Depends(get_current_active_user),
+) -> AuthenticatedUser:
+    """
+    要求投手权限 (media_buyer_required 的别名)
+
+    SoT: MASTER.md v4.6 §2.4 - pitcher: CPL 达标、日报准确
+    """
+    return media_buyer_required(user)
 
 
 # ============================================================================
@@ -936,7 +989,9 @@ __all__ = [
     "admin_required",
     "finance_required",
     "account_manager_required",
-    # data_operator_required 和 media_buyer_required 已废弃 (PRD v2.2)
+    "data_operator_required",  # [DEPRECATED]
+    "media_buyer_required",
+    "pitcher_required",  # media_buyer_required 的别名
     # 项目权限守卫
     "require_project_owner",
     "require_project_member",

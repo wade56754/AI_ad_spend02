@@ -57,13 +57,13 @@ class TestTopupPermissions:
         response = await async_client.get("/api/v1/topups", headers=headers)
         assert response.status_code in [200, 404, 422, 500]
 
-        # 财务可以进行财务审批
-        response = await async_client.put(
+        # 财务可以进行财务审批（使用 POST 方法）
+        response = await async_client.post(
             "/api/v1/topups/1/approve",
             json={"action": "approve", "actual_amount": "1000.00"},
             headers=headers
         )
-        # 可能404（ID不存在）但不能是403（权限不足）
+        # 可能404（ID不存在）但不能是403（权限不足）或405（方法不允许）
         assert response.status_code in [200, 400, 404, 422, 500]
 
         # 财务可以标记为已打款
@@ -91,40 +91,40 @@ class TestTopupPermissions:
         assert response.status_code in [200, 404, 422, 500]
 
     @pytest.mark.asyncio
-    async def test_data_operator_permissions(self, async_client, data_operator_token):
-        """测试数据员权限"""
-        headers = {"Authorization": f"Bearer {data_operator_token}"}
+    async def test_project_owner_permissions(self, async_client, project_owner_token):
+        """测试项目负责人权限（替代已移除的 data_operator）"""
+        headers = {"Authorization": f"Bearer {project_owner_token}"}
 
-        # 数据员不能创建申请
+        # 项目负责人不能创建申请（路由要求 account_manager 或 pitcher）
         create_data = {
             "ad_account_id": 1,
             "requested_amount": "1000.00",
             "reason": "测试申请"
         }
         response = await async_client.post("/api/v1/topups", json=create_data, headers=headers)
-        assert response.status_code in [200, 201, 403, 422, 500]
+        assert response.status_code in [403, 422, 500]  # 应该被拒绝
 
-        # 数据员可以查看所有申请
+        # 项目负责人可以查看所有申请
         response = await async_client.get("/api/v1/topups", headers=headers)
         assert response.status_code in [200, 404, 422, 500]
 
-        # 数据员可以进行数据审核
+        # 项目负责人可以进行数据审核（路由允许 project_owner）
         response = await async_client.put(
             "/api/v1/topups/1/review",
             json={"action": "approve", "notes": "审核通过"},
             headers=headers
         )
-        assert response.status_code in [200, 400, 403, 404, 422, 500]
+        assert response.status_code in [200, 400, 404, 422, 500]  # 可能404（ID不存在）
 
-        # 数据员不能进行财务审批
-        response = await async_client.put(
+        # 项目负责人不能进行财务审批（使用 POST 方法）
+        response = await async_client.post(
             "/api/v1/topups/1/approve",
             json={"action": "approve", "actual_amount": "1000.00"},
             headers=headers
         )
         assert response.status_code in [400, 403, 404, 422, 500]
 
-        # 数据员不能标记为已打款
+        # 项目负责人不能标记为已打款
         response = await async_client.put(
             "/api/v1/topups/1/pay",
             json={},
@@ -132,11 +132,11 @@ class TestTopupPermissions:
         )
         assert response.status_code in [400, 403, 404, 422, 500]
 
-        # 数据员可以查看统计
+        # 项目负责人可以查看统计
         response = await async_client.get("/api/v1/topups/statistics", headers=headers)
         assert response.status_code in [200, 403, 404, 422, 500]
 
-        # 数据员不能导出数据
+        # 项目负责人不能导出数据
         response = await async_client.get("/api/v1/topups/export", headers=headers)
         assert response.status_code in [200, 403, 404, 422, 500]
 
@@ -167,8 +167,8 @@ class TestTopupPermissions:
         )
         assert response.status_code in [400, 403, 404, 422, 500]
 
-        # 账户管理员不能进行财务审批
-        response = await async_client.put(
+        # 账户管理员不能进行财务审批（使用 POST 方法）
+        response = await async_client.post(
             "/api/v1/topups/1/approve",
             json={"action": "approve"},
             headers=headers
@@ -188,25 +188,25 @@ class TestTopupPermissions:
         assert response.status_code in [200, 404, 422, 500]
 
     @pytest.mark.asyncio
-    async def test_media_buyer_permissions(self, async_client, media_buyer_token):
-        """测试媒体买家权限"""
-        headers = {"Authorization": f"Bearer {media_buyer_token}"}
+    async def test_pitcher_permissions(self, async_client, pitcher_token):
+        """测试投手权限（替代已废弃的 media_buyer）"""
+        headers = {"Authorization": f"Bearer {pitcher_token}"}
 
-        # 媒体买家可以创建申请
+        # 投手可以创建申请（路由允许 pitcher）
         create_data = {
             "ad_account_id": 1,
             "requested_amount": "1000.00",
-            "reason": "媒体买家申请"
+            "reason": "投手申请"
         }
         response = await async_client.post("/api/v1/topups", json=create_data, headers=headers)
         # 可能422（参数错误）、404（路由问题）但不能是403（权限不足）
         assert response.status_code in [200, 201, 403, 404, 422, 500]
 
-        # 媒体买家可以查看申请列表（只能看到自己的）
+        # 投手可以查看申请列表（只能看到自己的）
         response = await async_client.get("/api/v1/topups", headers=headers)
         assert response.status_code in [200, 404, 422, 500]
 
-        # 媒体买家不能审核
+        # 投手不能审核
         response = await async_client.put(
             "/api/v1/topups/1/review",
             json={"action": "approve"},
@@ -214,23 +214,23 @@ class TestTopupPermissions:
         )
         assert response.status_code in [400, 403, 404, 422, 500]
 
-        # 媒体买家不能进行财务审批
-        response = await async_client.put(
+        # 投手不能进行财务审批（使用 POST 方法）
+        response = await async_client.post(
             "/api/v1/topups/1/approve",
             json={"action": "approve"},
             headers=headers
         )
         assert response.status_code in [400, 403, 404, 422, 500]
 
-        # 媒体买家不能查看统计
+        # 投手不能查看统计
         response = await async_client.get("/api/v1/topups/statistics", headers=headers)
         assert response.status_code in [200, 403, 404, 422, 500]
 
-        # 媒体买家不能导出数据
+        # 投手不能导出数据
         response = await async_client.get("/api/v1/topups/export", headers=headers)
         assert response.status_code in [200, 403, 404, 422, 500]
 
-        # 媒体买家可以查看仪表板
+        # 投手可以查看仪表板
         response = await async_client.get("/api/v1/topups/dashboard", headers=headers)
         assert response.status_code in [200, 404, 422, 500]
 

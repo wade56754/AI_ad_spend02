@@ -3,7 +3,7 @@
 > **版本**: v2.1
 > **日期**: 2026-01-04
 > **状态**: SoT 合规修复版
-> **SoT 对齐**: MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.7
+> **SoT 对齐**: MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.11
 
 ---
 
@@ -28,12 +28,12 @@
 |--------|------|------|------|
 | 0 | MASTER.md | v4.9 | 架构宪法，最高优先级 |
 | 1 | PRD | v5.2 | 产品需求文档 |
-| 2 | BUSINESS_FLOW_MANAGEMENT.md | - | 业务流程与责任模型 |
-| 3 | MVP_PHASE_DESIGN.md | - | Phase 边界与页面定义 |
+| 2 | docs/archive/BUSINESS_FLOW_MANAGEMENT.md | archived | 业务流程与责任模型（归档参考） |
+| 3 | docs/archive/MVP_PHASE_DESIGN.md | archived | Phase 边界与页面定义（归档参考） |
 | 4 | STATE_MACHINE.md | v2.9 | 状态定义与转换 |
-| 5 | DATA_SCHEMA.md | v5.7 | 表结构与字段 |
-| 6 | BUSINESS_RULES.md | v5.0 | 业务规则 |
-| 7 | API_SOT.md | v9.6 | API 定义 |
+| 5 | DATA_SCHEMA.md | v5.11 | 表结构与字段 |
+| 6 | BUSINESS_RULES.md | v5.2 | 业务规则 |
+| 7 | API_SOT.md | v9.7 | API 定义 |
 | 8 | ERROR_CODES_SOT.md | v2.2 | 错误码 |
 | 9 | AUTH_SPEC.md | v2.2 | 认证授权 |
 
@@ -43,7 +43,7 @@
 
 ### 2.1 技术层角色（4 角色）
 
-> **来源**: STATE_MACHINE.md v2.9 §2, DATA_SCHEMA.md v5.7 §1.1
+> **来源**: STATE_MACHINE.md v2.9 §2, DATA_SCHEMA.md v5.11 §1.1
 
 | 技术角色 | 数据库值 | 说明 |
 |----------|----------|------|
@@ -54,13 +54,13 @@
 
 ### 2.2 业务属性（布尔标记）
 
-> **来源**: DATA_SCHEMA.md v5.7 §3.1.1
+> **来源**: DATA_SCHEMA.md v5.11 §3.1.1
 
 | 属性 | 说明 | 适用场景 |
 |------|------|----------|
 | `is_project_owner` | 是否为项目负责人 | 管理项目、审核日报、团队管理 |
 
-> **重要**: DATA_SCHEMA.md v5.7 中仅定义 `is_project_owner` 布尔字段，未定义 `is_ceo` 字段。CEO 身份通过角色映射规则判断。
+> **重要**: DATA_SCHEMA.md v5.11 中仅定义 `is_project_owner` 布尔字段，未定义 `is_ceo` 字段。CEO 身份通过角色映射规则判断。
 
 ### 2.3 完整用户模型
 
@@ -75,7 +75,7 @@ interface User {
 
 /**
  * CEO 身份判断
- * 来源: DATA_SCHEMA.md v5.7 §1.1 角色映射规则
+ * 来源: DATA_SCHEMA.md v5.11 §1.1 角色映射规则
  * ceo → admin (技术层)，CEO 身份通过应用层业务逻辑判断
  */
 function isCeo(user: User): boolean {
@@ -85,7 +85,7 @@ function isCeo(user: User): boolean {
 
 /**
  * 项目负责人判断
- * 来源: DATA_SCHEMA.md v5.7 §3.1.1
+ * 来源: DATA_SCHEMA.md v5.11 §3.1.1
  */
 function isProjectOwner(user: User): boolean {
   return user.is_project_owner === true
@@ -94,7 +94,7 @@ function isProjectOwner(user: User): boolean {
 
 ### 2.4 技术层到业务层映射
 
-> **来源**: DATA_SCHEMA.md v5.7 §1.1, MASTER.md v4.9 §2.4
+> **来源**: DATA_SCHEMA.md v5.11 §1.1, MASTER.md v4.9 §2.4
 
 | 业务角色 | 技术实现 | 说明 |
 |----------|----------|------|
@@ -269,7 +269,7 @@ const PROJECT_STATUS_CONFIG = {
 
 ### 4.2 充值权限表
 
-> **来源**: MASTER.md v4.9 §2.1, PRD v5.2 §6.1
+> **来源**: MASTER.md v4.9 §2.1, PRD v5.1 §6.1
 
 | 操作 | pitcher | account_manager | finance | ceo | admin |
 |------|---------|-----------------|---------|-----|-------|
@@ -744,7 +744,7 @@ export type TopupStatus = 'draft' | 'pending_review' | 'finance_approve' | 'paid
 // 项目状态 (4 状态)
 export type ProjectStatus = 'draft' | 'active' | 'suspended' | 'archived'
 
-// 用户模型（对齐 DATA_SCHEMA.md v5.7）
+// 用户模型（对齐 DATA_SCHEMA.md v5.11）
 export interface User {
   id: string
   username: string
@@ -763,7 +763,7 @@ export function usePermission() {
 
   /**
    * 获取业务层角色
-   * 映射规则来源: DATA_SCHEMA.md v5.7 §1.1
+   * 映射规则来源: DATA_SCHEMA.md v5.11 §1.1
    */
   const getBusinessRole = (): string => {
     if (isCeo(user)) return 'ceo'
@@ -831,10 +831,10 @@ export function usePermission() {
 | 文档 | 版本 | 路径 |
 |------|------|------|
 | MASTER.md | v4.9 | docs/sot/MASTER.md |
-| DATA_SCHEMA.md | v5.7 | docs/sot/DATA_SCHEMA.md |
+| DATA_SCHEMA.md | v5.11 | docs/sot/DATA_SCHEMA.md |
 | STATE_MACHINE.md | v2.9 | docs/sot/STATE_MACHINE.md |
-| BUSINESS_RULES.md | v5.0 | docs/sot/BUSINESS_RULES.md |
-| API_SOT.md | v9.6 | docs/sot/API_SOT.md |
+| BUSINESS_RULES.md | v5.2 | docs/sot/BUSINESS_RULES.md |
+| API_SOT.md | v9.7 | docs/sot/API_SOT.md |
 | ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md |
 | AUTH_SPEC.md | v2.2 | docs/sot/AUTH_SPEC.md |
 

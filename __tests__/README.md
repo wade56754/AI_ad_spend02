@@ -32,10 +32,10 @@ __tests__/
 
 ```bash
 # 1. 安装依赖
-npm install
+pnpm install
 
 # 2. 启动前端开发服务器 (新终端)
-cd frontend && npm run dev
+cd frontend && pnpm run dev
 
 # 3. 运行测试
 npx playwright test

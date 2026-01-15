@@ -4,8 +4,8 @@
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
-> **父文档**: BUSINESS_RULES.md v5.1
-> **关联 SoT**: STATE_MACHINE.md v2.9 §10, DATA_SCHEMA.md v5.7 §3.5
+> **父文档**: BUSINESS_RULES.md v5.2
+> **关联 SoT**: STATE_MACHINE.md v2.9 §10, DATA_SCHEMA.md v5.11 §3.5
 > **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
@@ -14,12 +14,12 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v5.0 | §4.7 | 规则索引定义 |
+| BUSINESS_RULES.md | v5.2 | §4.7 | 规则索引定义 |
 | STATE_MACHINE.md | v2.9 | §11, §14.4 | 对账批次状态机（5 状态）、对账明细状态机（3 状态） |
-| DATA_SCHEMA.md | v5.7 | §3.5 | reconciliation_batches, reconciliation_details, reconciliation_issues 表结构 |
+| DATA_SCHEMA.md | v5.11 | §3.5 | reconciliation_batches, reconciliation_details, reconciliation_issues 表结构 |
 | ERROR_CODES.md | v2.3 | §3-4 | 错误码映射 |
 | AUTH_SPEC.md | v2.2 | §2.2, §3 | 角色权限、审批流程 |
-| MASTER.md | v4.8 | §2.4, §3 | 角色定义、Phase 边界 |
+| MASTER.md | v4.9 | §2.4, §3 | 角色定义、Phase 边界 |
 
 ---
 
@@ -54,7 +54,7 @@
 #### 前置条件
 - 用户角色: `finance` 或 `admin`
 - 数据状态: 当前日期大于对账月份最后一天
-- 引用: DATA_SCHEMA.md v5.6 §3.5.1
+- 引用: DATA_SCHEMA.md v5.11 §3.5.1
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -91,7 +91,7 @@
 
 #### 前置条件
 - 用户角色: `finance`（技术层: `finance`）或 `admin`
-- 引用: AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §2.4
+- 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.9 §2.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -127,7 +127,7 @@
 
 #### 前置条件
 - 数据状态: 对账明细已生成差异金额
-- 引用: DATA_SCHEMA.md v5.6 §3.5.6
+- 引用: DATA_SCHEMA.md v5.11 §3.5.6
 
 #### Phase 边界
 | Phase | 行为 |
@@ -161,7 +161,7 @@
 对账批次状态机定义了对账从创建到完成的完整生命周期。所有状态变更必须遵循预定义的合法流转路径，确保对账流程的一致性和可追溯性。
 
 #### 详细约束
-- ✅ **允许**: 仅 STATE_MACHINE.md v2.8 §10 定义的合法流转
+- ✅ **允许**: 仅 STATE_MACHINE.md v2.9 §10 定义的合法流转
 - ❌ **禁止**: 直接 UPDATE `reconciliation_batches.status` 字段
 - ❌ **禁止**: 跳过中间状态
 - 📌 **强制**: 状态变更必须通过业务动作触发
@@ -169,7 +169,7 @@
 
 #### 前置条件
 - 数据状态: 当前状态必须在合法流转表中
-- 引用: STATE_MACHINE.md v2.8 §10
+- 引用: STATE_MACHINE.md v2.9 §10
 
 #### 对账批次状态机（5 状态）
 ```
@@ -233,7 +233,7 @@ pending → confirmed
 
 #### 前置条件
 - 数据状态: 对账批次状态为 `completed`
-- 引用: STATE_MACHINE.md v2.8 §14.2
+- 引用: STATE_MACHINE.md v2.9 §14.2
 
 #### 完成前置条件（STATE_MACHINE.md §14.4）
 对账批次从 `approved` 流转至 `completed` 必须满足：
@@ -276,7 +276,7 @@ pending → confirmed
 
 #### 前置条件
 - 数据状态: 对账明细存在差异（`difference_amount ≠ 0`）
-- 引用: DATA_SCHEMA.md v5.6 §3.5.6
+- 引用: DATA_SCHEMA.md v5.11 §3.5.6
 
 #### 差异类型枚举
 | issue_type | 说明 |
@@ -336,7 +336,7 @@ pending → confirmed
 #### 前置条件
 - 用户角色: `finance` 或 `admin`
 - 数据状态: 对账明细状态为 `pending`
-- 引用: AUTH_SPEC.md v2.1 §2.2, DATA_SCHEMA.md v5.6 §3.5.3
+- 引用: AUTH_SPEC.md v2.2 §2.2, DATA_SCHEMA.md v5.11 §3.5.3
 
 #### 调整类型枚举
 | adjustment_type | 说明 |
@@ -385,7 +385,7 @@ BR-RECON-005 (完成不可逆)
 
 ## 对账守恒公式
 
-> **引用**: DATA_SCHEMA.md v5.6 §3.5.5
+> **引用**: DATA_SCHEMA.md v5.11 §3.5.5
 
 对账的核心是验证资金守恒：
 
@@ -408,12 +408,12 @@ balance_snapshots.balance =
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.6；所有错误码对齐 ERROR_CODES.md v2.3 |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v5.2；所有错误码对齐 ERROR_CODES.md v2.3 |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
-**父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: STATE_MACHINE.md v2.8 §10, DATA_SCHEMA.md v5.6 §3.5
+**父文档**: BUSINESS_RULES.md v5.2
+**关联 SoT**: STATE_MACHINE.md v2.9 §10, DATA_SCHEMA.md v5.11 §3.5
 **版本**: v1.0

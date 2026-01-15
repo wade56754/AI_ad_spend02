@@ -1991,7 +1991,7 @@ Week 4: 全量上线
 ## C. 参考资料
 
 - PRD最佳实践指南 (PRD_BEST_PRACTICES.md)
-- 系统SoT文档 (docs/2.sot/)
+- 系统SoT文档 (docs/sot/)
 
 ---
 

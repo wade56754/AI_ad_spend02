@@ -20,7 +20,7 @@ sleep 5
 
 echo "[4/4] 启动前端服务..."
 cd ../frontend
-npm run dev &
+pnpm run dev &
 FRONTEND_PID=$!
 
 echo ""

@@ -35,7 +35,7 @@ class User(Base, TimestampMixin, SerializableMixin):
 
     NOTE:
     - 密码管理可使用本地 JWT 认证（password_hash）或 Supabase Auth
-    - supervisor 角色已废弃 (PRD v2.2)，职责合并到 project_owner
+    - supervisor 角色已废弃 (PRD v5.1)，职责合并到 project_owner
 
     SoT Reference: DATA_SCHEMA.md v5.6 §3.1.1, MASTER.md v4.6 §2.4
     """

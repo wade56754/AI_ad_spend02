@@ -247,24 +247,22 @@ Layer 6: Agent        → 7 agent specifications (Freeze v1.0)
 ### SoT Referee Chain (Priority Order)
 
 When conflicts arise, follow this hierarchy:
-1. MASTER.md v3.5 (System Constitution)
-2. STATE_MACHINE.md v2.6 (State definitions)
-3. DATA_SCHEMA.md v5.2 (Database schema)
-4. API_SOT.md v9.0 (API contracts)
-5. ERROR_CODES_SOT.md v2.1 (Error codes)
-6. BUSINESS_RULES.md v3.1 (Business logic)
-7. AUTH_SPEC.md v2.0 (Permissions)
-8. LEDGER_SOT.md v1.1 (Ledger rules)
+1. MASTER.md v4.9 (System Constitution)
+2. STATE_MACHINE.md v2.9 (State definitions)
+3. DATA_SCHEMA.md v5.11 (Database schema + ledger rules §3.4.4)
+4. API_SOT.md v9.7 (API contracts)
+5. ERROR_CODES_SOT.md v2.2 (Error codes)
+6. BUSINESS_RULES.md v5.2 (Business logic)
+7. AUTH_SPEC.md v2.2 (Permissions)
 
 ### Key SoT Documents
 
 | Document | Version | Purpose |
 |----------|---------|---------|
-| `docs/sot/STATE_MACHINE.md` | v2.6 | 8-state machine definitions |
-| `docs/sot/DATA_SCHEMA.md` | v5.2 | 23 database tables |
-| `docs/sot/API_SOT.md` | v9.0 | 50+ REST API endpoints |
-| `docs/sot/ERROR_CODES_SOT.md` | v2.1 | Error code registry |
-| `docs/sot/LEDGER_SOT.md` | v1.1 | Dual-ledger system |
+| `docs/sot/STATE_MACHINE.md` | v2.9 | 8-state machine definitions |
+| `docs/sot/DATA_SCHEMA.md` | v5.11 | 23 database tables + ledger rules §3.4.4 |
+| `docs/sot/API_SOT.md` | v9.7 | 50+ REST API endpoints |
+| `docs/sot/ERROR_CODES_SOT.md` | v2.2 | Error code registry |
 
 ## OpenSpec Integration Notes
 

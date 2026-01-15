@@ -347,7 +347,7 @@ phases:
 4. API_SOT.md v9.0          (API 规范)
 5. ERROR_CODES_SOT.md v2.1  (错误码)
 6. AUTH_SPEC.md v2.0        (权限)
-7. LEDGER_SOT.md v1.1       (账本)
+7. DATA_SCHEMA.md v5.11 §3.4.4       (账本)
 ```
 
 ## 快速命令组合

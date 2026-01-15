@@ -37,7 +37,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, func, extract
 
-from backend.models import User, Project, DailyReport
+from backend.models import User, Project, DailyReport, AdAccount
 from backend.models.finance.monthly_settlement import MonthlySettlement
 from backend.models.base import DailyReportStatus, ProjectStatus
 from backend.core.state_machine import (
@@ -366,7 +366,7 @@ class MonthlySettlementService:
         else:
             next_month = date(year, month + 1, 1)
 
-        # 聚合查询
+        # 聚合查询 - DailyReport 通过 AdAccount 关联 Project
         result = (
             self.db.query(
                 func.coalesce(func.sum(DailyReport.real_spend), Decimal("0")).label(
@@ -376,8 +376,9 @@ class MonthlySettlementService:
                     "total_conversions"
                 ),
             )
+            .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
             .filter(
-                DailyReport.project_id == project_id,
+                AdAccount.project_id == project_id,
                 DailyReport.report_date >= settlement_month,
                 DailyReport.report_date < next_month,
                 DailyReport.status == DailyReportStatus.FINAL_LOCKED.value,

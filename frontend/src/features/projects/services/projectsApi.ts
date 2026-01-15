@@ -19,7 +19,7 @@ import type {
   ProjectCreateInput,
   ProjectUpdateInput,
   ProjectMemberAssignInput,
-  ProjectDashboard,
+  ProjectDashboardData,
   ProjectDashboardParams,
   PrepaymentEntry,
   PrepaymentBalance,
@@ -100,7 +100,7 @@ export async function getProjectMembers(projectId: number): Promise<{ data: Proj
 export async function getProjectDashboard(
   projectId: number,
   params: ProjectDashboardParams = {}
-): Promise<{ data: ProjectDashboard }> {
+): Promise<{ data: ProjectDashboardData }> {
   const searchParams = new URLSearchParams();
   if (params.days) searchParams.set('days', String(params.days));
   const query = searchParams.toString();
@@ -108,7 +108,7 @@ export async function getProjectDashboard(
     ? `${BASE_PATH}/${projectId}/dashboard?${query}`
     : `${BASE_PATH}/${projectId}/dashboard`;
 
-  const response = await apiFetch<ProjectDashboard>(url);
+  const response = await apiFetch<ProjectDashboardData>(url);
   return { data: response };
 }
 

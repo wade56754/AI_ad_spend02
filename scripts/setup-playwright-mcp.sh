@@ -7,7 +7,7 @@ echo "Playwright MCP 配置助手"
 echo "========================================"
 echo ""
 
-# 检查 node 和 npm 是否安装
+# 检查 node 和 pnpm 是否安装
 if ! command -v node &> /dev/null; then
     echo "[错误] 未找到 Node.js，请先安装 Node.js"
     echo "请从 https://nodejs.org/ 下载并安装 Node.js"
@@ -16,18 +16,18 @@ fi
 
 echo "[√] Node.js 已安装: $(node --version)"
 
-if ! command -v npx &> /dev/null; then
-    echo "[错误] 未找到 npx，请确保 Node.js 正确安装"
+if ! command -v pnpm &> /dev/null; then
+    echo "[错误] 未找到 pnpm，请先安装 pnpm"
     exit 1
 fi
 
-echo "[√] npx 可用: $(npx --version)"
+echo "[√] pnpm 可用: $(pnpm --version)"
 echo ""
 
 # 安装 Playwright 浏览器驱动
 echo "正在安装 Playwright 浏览器驱动..."
 echo "这可能需要几分钟时间，请耐心等待..."
-npx -y playwright install
+pnpm dlx playwright install
 
 if [ $? -ne 0 ]; then
     echo "[错误] Playwright 浏览器驱动安装失败"

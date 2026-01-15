@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 
 export type TrendType = 'up' | 'down' | 'neutral';
 export type MetricColor = 'primary' | 'success' | 'warning' | 'error';
@@ -26,7 +26,7 @@ export const OptimizedMetricCard: React.FC<OptimizedMetricCardProps> = ({
   color = 'primary',
   loading = false,
   description,
-  onClick
+  onClick,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -41,14 +41,36 @@ export const OptimizedMetricCard: React.FC<OptimizedMetricCardProps> = ({
     switch (changeType) {
       case 'up':
         return (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+            />
           </svg>
         );
       case 'down':
         return (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
+            />
           </svg>
         );
       default:
@@ -105,14 +127,12 @@ export const OptimizedMetricCard: React.FC<OptimizedMetricCardProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={onClick}
-      role={onClick ? "button" : "article"}
+      role={onClick ? 'button' : 'article'}
       tabIndex={onClick ? 0 : undefined}
       aria-label={onClick ? `${title}: ${value}` : undefined}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className="p-2 bg-white bg-opacity-10 rounded-lg">
-          {icon}
-        </div>
+        <div className="p-2 bg-white bg-opacity-10 rounded-lg">{icon}</div>
         {change !== undefined && (
           <div
             className={`flex items-center text-sm font-medium ${getChangeColor()}`}
@@ -125,13 +145,9 @@ export const OptimizedMetricCard: React.FC<OptimizedMetricCardProps> = ({
       </div>
 
       <div className="space-y-1">
-        <h3 className="text-2xl font-bold text-white">
-          {formatNumber(value)}
-        </h3>
+        <h3 className="text-2xl font-bold text-white">{formatNumber(value)}</h3>
         <p className="text-sm text-gray-300">{title}</p>
-        {description && (
-          <p className="text-xs text-gray-400 mt-2">{description}</p>
-        )}
+        {description && <p className="text-xs text-gray-400 mt-2">{description}</p>}
       </div>
 
       {/* 装饰性背景效果 */}

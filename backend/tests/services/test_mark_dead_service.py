@@ -24,10 +24,13 @@ class TestMarkDeadSuccess:
 
     @pytest.mark.asyncio
     async def test_mark_dead_from_active_status(
-        self, mock_service, sample_active_account
+        self, mock_service, mock_db, sample_active_account
     ):
         """从 active 状态标记死号成功"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(
             reason="账户被平台封禁，无法继续投放",
@@ -49,9 +52,14 @@ class TestMarkDeadSuccess:
         assert result.marked_at is not None
 
     @pytest.mark.asyncio
-    async def test_mark_dead_from_new_status(self, mock_service, sample_new_account):
+    async def test_mark_dead_from_new_status(
+        self, mock_service, mock_db, sample_new_account
+    ):
         """从 new 状态标记死号成功"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_new_account)
 
         request = MarkDeadRequest(
             reason="开户失败，账户无法激活",
@@ -69,10 +77,13 @@ class TestMarkDeadSuccess:
 
     @pytest.mark.asyncio
     async def test_mark_dead_from_testing_status(
-        self, mock_service, sample_testing_account
+        self, mock_service, mock_db, sample_testing_account
     ):
         """从 testing 状态标记死号成功"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_testing_account)
 
         request = MarkDeadRequest(
             reason="测试期间发现账户异常",
@@ -90,10 +101,13 @@ class TestMarkDeadSuccess:
 
     @pytest.mark.asyncio
     async def test_mark_dead_from_suspended_status(
-        self, mock_service, sample_suspended_account
+        self, mock_service, mock_db, sample_suspended_account
     ):
         """从 suspended 状态标记死号成功"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_suspended_account)
 
         request = MarkDeadRequest(
             reason="暂停账户确认无法恢复，标记为死号",
@@ -114,9 +128,14 @@ class TestMarkDeadPermissions:
     """mark_dead 权限测试"""
 
     @pytest.mark.asyncio
-    async def test_admin_can_mark_dead(self, mock_service, sample_active_account):
+    async def test_admin_can_mark_dead(
+        self, mock_service, mock_db, sample_active_account
+    ):
         """管理员可以标记死号"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(reason="管理员操作测试")
 
@@ -131,10 +150,13 @@ class TestMarkDeadPermissions:
 
     @pytest.mark.asyncio
     async def test_account_manager_can_mark_dead(
-        self, mock_service, sample_active_account
+        self, mock_service, mock_db, sample_active_account
     ):
         """户管可以标记死号"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(reason="户管操作测试")
 
@@ -148,9 +170,14 @@ class TestMarkDeadPermissions:
         assert result.new_status == "dead"
 
     @pytest.mark.asyncio
-    async def test_pitcher_cannot_mark_dead(self, mock_service, sample_active_account):
+    async def test_pitcher_cannot_mark_dead(
+        self, mock_service, mock_db, sample_active_account
+    ):
         """投手不能标记死号"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 注意：权限检查在数据库查询之前，但为了一致性还是配置
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(reason="投手不应该能标记死号")
 
@@ -159,15 +186,20 @@ class TestMarkDeadPermissions:
                 account_id=sample_active_account.id,
                 request=request,
                 current_user_id=uuid4(),
-                user_role="media_buyer",
+                user_role="pitcher",  # 修正：使用正确的角色名
             )
 
         assert exc_info.value.status_code == 403
 
     @pytest.mark.asyncio
-    async def test_finance_cannot_mark_dead(self, mock_service, sample_active_account):
+    async def test_finance_cannot_mark_dead(
+        self, mock_service, mock_db, sample_active_account
+    ):
         """财务不能标记死号"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 注意：权限检查在数据库查询之前，但为了一致性还是配置
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(reason="财务不应该能标记死号")
 
@@ -187,10 +219,13 @@ class TestMarkDeadBusinessRules:
 
     @pytest.mark.asyncio
     async def test_cannot_mark_dead_already_dead(
-        self, mock_service, sample_dead_account
+        self, mock_service, mock_db, sample_dead_account
     ):
         """不能重复标记已死号的账户"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回已死号的账户
+        configure_mock_db(mock_db, sample_dead_account)
 
         request = MarkDeadRequest(reason="尝试重复标记死号")
 
@@ -207,10 +242,13 @@ class TestMarkDeadBusinessRules:
 
     @pytest.mark.asyncio
     async def test_cannot_mark_dead_archived_account(
-        self, mock_service, sample_archived_account
+        self, mock_service, mock_db, sample_archived_account
     ):
         """不能标记已归档的账户"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回已归档的账户
+        configure_mock_db(mock_db, sample_archived_account)
 
         request = MarkDeadRequest(reason="尝试标记已归档账户")
 
@@ -225,9 +263,12 @@ class TestMarkDeadBusinessRules:
         assert exc_info.value.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_account_not_found(self, mock_service):
+    async def test_account_not_found(self, mock_service, mock_db):
         """账户不存在返回 404"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回 None（账户不存在）
+        configure_mock_db(mock_db, None)
 
         request = MarkDeadRequest(reason="账户不存在测试")
 
@@ -248,10 +289,13 @@ class TestMarkDeadResponse:
 
     @pytest.mark.asyncio
     async def test_response_contains_required_fields(
-        self, mock_service, sample_active_account
+        self, mock_service, mock_db, sample_active_account
     ):
         """响应包含所有必需字段"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(
             reason="响应格式测试",
@@ -289,10 +333,13 @@ class TestMarkDeadResponse:
 
     @pytest.mark.asyncio
     async def test_response_balance_transfer_hint(
-        self, mock_service, sample_account_with_balance
+        self, mock_service, mock_db, sample_account_with_balance
     ):
         """有余额时返回余额迁移提示"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回有余额的账户
+        configure_mock_db(mock_db, sample_account_with_balance)
 
         request = MarkDeadRequest(
             reason="账户有余额测试",
@@ -315,9 +362,14 @@ class TestMarkDeadAudit:
     """mark_dead 审计日志测试"""
 
     @pytest.mark.asyncio
-    async def test_creates_status_history(self, mock_service, sample_active_account):
+    async def test_creates_status_history(
+        self, mock_service, mock_db, sample_active_account
+    ):
         """创建状态历史记录"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(reason="状态历史测试")
 
@@ -329,13 +381,18 @@ class TestMarkDeadAudit:
         )
 
         # 验证 _create_status_history 被调用
-        # 这里需要根据实际实现验证
+        mock_service._create_status_history.assert_called_once()
         assert result.new_status == "dead"
 
     @pytest.mark.asyncio
-    async def test_creates_audit_log(self, mock_service, sample_active_account):
+    async def test_creates_audit_log(
+        self, mock_service, mock_db, sample_active_account
+    ):
         """创建审计日志"""
         from backend.schemas.ad_account import MarkDeadRequest
+
+        # 配置 mock_db 返回正确的账户
+        configure_mock_db(mock_db, sample_active_account)
 
         request = MarkDeadRequest(reason="审计日志测试")
 
@@ -353,6 +410,62 @@ class TestMarkDeadAudit:
 # ========== Fixtures ==========
 
 
+def create_mock_user():
+    """创建模拟用户"""
+    user = MagicMock()
+    user.id = 1
+    user.full_name = "测试用户"
+    user.username = "test_user"
+    return user
+
+
+def create_mock_project():
+    """创建模拟项目"""
+    project = MagicMock()
+    project.id = 1
+    project.project_name = "测试项目"
+    return project
+
+
+def configure_mock_db(mock_db, account, user=None, project=None):
+    """配置 mock_db 返回正确的对象
+
+    Args:
+        mock_db: MagicMock 数据库会话
+        account: 要返回的账户对象（或 None 表示账户不存在）
+        user: 要返回的用户对象
+        project: 要返回的项目对象
+    """
+    if user is None:
+        user = create_mock_user()
+    if project is None:
+        project = create_mock_project()
+
+    # 配置查询链
+    def mock_query(model):
+        query_mock = MagicMock()
+        filter_mock = MagicMock()
+
+        # 根据模型类型返回不同的结果
+        model_name = model.__name__ if hasattr(model, "__name__") else str(model)
+
+        if "AdAccount" in model_name:
+            filter_mock.first.return_value = account
+        elif "User" in model_name:
+            filter_mock.first.return_value = user
+        elif "Project" in model_name:
+            filter_mock.first.return_value = project
+        else:
+            filter_mock.first.return_value = None
+
+        query_mock.filter.return_value = filter_mock
+        return query_mock
+
+    mock_db.query.side_effect = mock_query
+    mock_db.commit.return_value = None
+    mock_db.refresh.return_value = None
+
+
 @pytest.fixture
 def mock_db():
     """模拟数据库会话"""
@@ -368,12 +481,26 @@ def mock_audit_service():
 
 
 @pytest.fixture
+def mock_user():
+    """模拟当前用户"""
+    return create_mock_user()
+
+
+@pytest.fixture
+def mock_project():
+    """模拟项目"""
+    return create_mock_project()
+
+
+@pytest.fixture
 def mock_service(mock_db, mock_audit_service):
     """模拟 AdAccountService"""
     from backend.services.ad_account_service import AdAccountService
 
     service = AdAccountService(mock_db)
     service.audit_service = mock_audit_service
+    # 模拟 _create_status_history 方法
+    service._create_status_history = AsyncMock(return_value=None)
     return service
 
 

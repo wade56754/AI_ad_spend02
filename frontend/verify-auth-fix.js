@@ -85,7 +85,7 @@ console.log('  • LoginPage.tsx: Input 字段配置正确 ✓');
 console.log('  • 后端: 期望 identifier 字段 ✓');
 
 console.log('\n🎯 下一步: 手动测试登录流程');
-console.log('  1. 启动开发服务器: npm run dev');
+console.log('  1. 启动开发服务器: pnpm run dev');
 console.log('  2. 访问 http://localhost:3000/login');
 console.log('  3. 输入测试凭据 (用户名或邮箱 + 密码)');
 console.log('  4. 检查 Chrome DevTools Network 标签');

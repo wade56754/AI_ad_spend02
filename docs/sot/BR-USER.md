@@ -4,8 +4,8 @@
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
-> **父文档**: BUSINESS_RULES.md v5.1
-> **关联 SoT**: MASTER.md v4.9 §2.4, AUTH_SPEC.md v2.2 §2.2, DATA_SCHEMA.md v5.7 §3.1.1
+> **父文档**: BUSINESS_RULES.md v5.2
+> **关联 SoT**: MASTER.md v4.9 §2.4, AUTH_SPEC.md v2.2 §2.2, DATA_SCHEMA.md v5.11 §3.1.1
 > **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
@@ -14,10 +14,10 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v5.0 | §4.2 | 规则索引定义 |
-| MASTER.md | v4.8 | §2.4 | 6 业务角色定义 |
+| BUSINESS_RULES.md | v5.2 | §4.2 | 规则索引定义 |
+| MASTER.md | v4.9 | §2.4 | 6 业务角色定义 |
 | AUTH_SPEC.md | v2.2 | §2.2, §5.1 | 角色权限矩阵、SOD 规则 |
-| DATA_SCHEMA.md | v5.7 | §3.1.1 | users 表结构、role 字段 CHECK 约束 |
+| DATA_SCHEMA.md | v5.11 | §3.1.1 | users 表结构、role 字段 CHECK 约束 |
 | ERROR_CODES.md | v2.3 | §4.1, §4.2 | AUTH_*/BIZ_* 错误码 |
 
 ---
@@ -42,7 +42,7 @@
 系统角色是权限控制的基础，必须严格限制在预定义的 6 个业务角色范围内。任何新增、修改角色的需求必须通过 SoT 文档变更流程，禁止代码层面随意添加角色。
 
 #### 详细约束
-- 📌 **强制**: 系统仅允许 6 个业务角色（MASTER v4.8, PRD v5.2 已完全对齐）
+- 📌 **强制**: 系统仅允许 6 个业务角色（MASTER v4.8, PRD v5.1 已完全对齐）
 - ❌ **禁止**: 使用已废弃的 `supervisor` 角色
 - ❌ **禁止**: 在代码中添加白名单外的新角色
 - ❌ **禁止**: 使用角色数组或多角色设计
@@ -72,7 +72,7 @@
 
 #### 前置条件
 - 数据状态: 用户创建或角色变更时
-- 引用: MASTER.md v4.8 §2.4, AUTH_SPEC.md v2.1 §2.2
+- 引用: MASTER.md v4.9 §2.4, AUTH_SPEC.md v2.2 §2.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -110,7 +110,7 @@
 
 #### 前置条件
 - 数据状态: 用户创建或更新时
-- 引用: DATA_SCHEMA.md v5.6 §3.1.1
+- 引用: DATA_SCHEMA.md v5.11 §3.1.1
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -161,7 +161,7 @@
 #### 前置条件
 - 用户角色: 操作人必须是 `admin` 或 `ceo`
 - 数据状态: 被修改用户存在
-- 引用: AUTH_SPEC.md v2.1 §8, DATA_SCHEMA.md v5.6 §3.1.4
+- 引用: AUTH_SPEC.md v2.2 §8, DATA_SCHEMA.md v5.11 §3.1.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -199,7 +199,7 @@
 #### 前置条件
 - 用户角色: 操作人必须是 `admin` 或 `ceo`
 - 数据状态: 操作人 ID ≠ 目标用户 ID
-- 引用: AUTH_SPEC.md v2.1 §5.1.2
+- 引用: AUTH_SPEC.md v2.2 §5.1.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -248,7 +248,7 @@
 
 #### 前置条件
 - 用户角色: `admin`
-- 引用: MASTER.md v4.8 §2.4, AUTH_SPEC.md v2.1 §5.1.1
+- 引用: MASTER.md v4.9 §2.4, AUTH_SPEC.md v2.2 §5.1.1
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -315,12 +315,12 @@ BR-USER-005 (admin 角色限制)
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.8；所有错误码对齐 ERROR_CODES.md v2.2；角色对齐 MASTER.md v4.8（6 业务角色，移除 supervisor） |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v5.2；所有错误码对齐 ERROR_CODES.md v2.2；角色对齐 MASTER.md v4.9（6 业务角色，移除 supervisor） |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
-**父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: MASTER.md v4.8 §2.4, AUTH_SPEC.md v2.1 §2.2
+**父文档**: BUSINESS_RULES.md v5.2
+**关联 SoT**: MASTER.md v4.9 §2.4, AUTH_SPEC.md v2.2 §2.2
 **版本**: v1.0

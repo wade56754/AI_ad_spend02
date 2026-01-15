@@ -10,7 +10,7 @@ SoT Reference: STATE_MACHINE.md v2.6, BUSINESS_RULES.md v3.2
 2. 业务规则校验引用 BUSINESS_RULES.md
 3. 状态转换遵循 STATE_MACHINE.md
 4. 日志记录关键操作
-5. 禁止绕过账本系统 (LEDGER_SOT.md v1.1)
+5. 禁止绕过账本系统 (DATA_SCHEMA.md v5.11 §3.4.4)
 """
 
 import logging
@@ -277,7 +277,7 @@ class ExampleService:
             )
             return item
 
-    # === 账本操作 (LEDGER_SOT.md v1.1) ===
+    # === 账本操作 (DATA_SCHEMA.md v5.11 §3.4.4) ===
 
     def _record_ledger_entry(
         self,
@@ -294,7 +294,7 @@ class ExampleService:
         重要: 禁止直接修改 balance 字段！
         必须通过 ledger_entries 表记录所有资金变动。
 
-        SoT: LEDGER_SOT.md v1.1
+        SoT: DATA_SCHEMA.md v5.11 §3.4.4
         """
         from backend.models.finance.ledger import LedgerEntry
 

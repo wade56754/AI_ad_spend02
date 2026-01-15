@@ -41,7 +41,6 @@ model: inherit
 - `docs/**/ERROR_CODES*.md`
 - `docs/**/RLS_POLICIES*.md`
 - `docs/**/AUTH_SPEC*.md`（认证鉴权规范）
-- `docs/**/LEDGER_SOT*.md`（资金流水 SoT）
 - `docs/**/DAILY_REPORT_SOT*.md`（日报 SoT）
 - `docs/**/RECONCILIATION_SOT*.md`（对账 SoT）
 - `docs/**/TRANSFER_SOT*.md`（划转 SoT）

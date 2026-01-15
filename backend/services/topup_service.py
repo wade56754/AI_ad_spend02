@@ -901,7 +901,7 @@ class TopupService:
 
         # 更新打款信息
         request.paid_at = datetime.utcnow()
-        if paid_data.transaction_id:
+        if paid_data and paid_data.transaction_id:
             request.transaction_id = paid_data.transaction_id
 
         # 记录审批日志
@@ -911,7 +911,7 @@ class TopupService:
             actor=current_user,
             previous_status=TopupStatus.FINANCE_APPROVE.value,
             new_status=TopupStatus.PAID.value,
-            notes=paid_data.notes,
+            notes=paid_data.notes if paid_data else None,
             ip_address=ip_address,
             user_agent=user_agent
         )
@@ -1336,9 +1336,9 @@ class TopupService:
             if ad_account.project and ad_account.project.account_manager_id == current_user.id:
                 return ad_account
 
-        # 媒体买家可以访问分配给自己的账户
-        if current_user.role == UserRole.MEDIA_BUYER.value:
-            if ad_account.assigned_to == current_user.id:
+        # 投手可以访问分配给自己的账户（使用 owner_id 字段）
+        if current_user.role == UserRole.MEDIA_BUYER.value or current_user.role == "pitcher":
+            if ad_account.owner_id == current_user.id:
                 return ad_account
 
         raise PermissionDeniedError("无权限访问该广告账户", error_code="BIZ_206")
@@ -1446,19 +1446,19 @@ class TopupService:
     def _check_request_access(self, request: TopupRequest, current_user: User):
         """检查充值申请访问权限 - MASTER.md v4.6"""
         # 管理员/CEO/财务/项目负责人/户管/数据操作员可以访问所有 (TASK-FIN-006)
-        # PRD v2.2: data_operator 是 project_owner 的废弃别名
+        # PRD v5.1: data_operator 是 project_owner 的废弃别名
         if current_user.role in [
             UserRole.ADMIN.value,
             UserRole.CEO.value,
             UserRole.FINANCE.value,
             UserRole.PROJECT_OWNER.value,
             UserRole.ACCOUNT_MANAGER.value,  # 户管可访问所有充值申请，以便确认到账
-            UserRole.DATA_OPERATOR.value,    # PRD v2.2: 废弃别名，等价于 project_owner
+            UserRole.DATA_OPERATOR.value,    # PRD v5.1: 废弃别名，等价于 project_owner
         ]:
             return
 
-        # 媒体买家查看自己的申请
-        if current_user.role == UserRole.MEDIA_BUYER.value:
+        # 媒体买家/投手查看自己的申请（支持 pitcher 和 media_buyer 两种角色值）
+        if current_user.role in [UserRole.MEDIA_BUYER.value, "pitcher"]:
             if request.requested_by == current_user.id:
                 return
 
@@ -1475,7 +1475,7 @@ class TopupService:
 
         # 验证操作权限 - 使用 UserRole 枚举 (MASTER.md v4.6 §4.5.11)
         # 充值审批流程: pitcher 申请 → 户管收集 → project_owner/admin 审核 → 财务审批
-        # PRD v2.2 角色别名: data_operator → project_owner
+        # PRD v5.1 角色别名: data_operator → project_owner
         user_role = current_user.role
         if hasattr(user_role, 'value'):
             user_role = user_role.value

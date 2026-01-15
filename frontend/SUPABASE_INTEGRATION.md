@@ -25,6 +25,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
 **获取 Anon Key**:
+
 1. 访问 [Supabase Dashboard](https://app.supabase.com/project/jzmcoivxhiyidizncyaq/settings/api)
 2. 进入 **Settings → API**
 3. 复制 **anon / public** key
@@ -33,7 +34,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
 ```bash
 cd frontend
-npm install @supabase/supabase-js --legacy-peer-deps
+pnpm add @supabase/supabase-js
 ```
 
 ---
@@ -62,29 +63,29 @@ frontend/
 ### 方法 1：使用 `useAuth` Hook（推荐）
 
 ```tsx
-'use client'
+'use client';
 
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/use-auth';
 
 export default function LoginPage() {
-  const { signIn, loading, error } = useAuth()
+  const { signIn, loading, error } = useAuth();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
-    const { success, error } = await signIn(email, password)
+    const { success, error } = await signIn(email, password);
 
     if (success) {
       // 登录成功，自动跳转到首页
-      console.log('登录成功')
+      console.log('登录成功');
     } else {
       // 显示错误
-      console.error('登录失败:', error)
+      console.error('登录失败:', error);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleLogin}>
@@ -95,17 +96,17 @@ export default function LoginPage() {
       </button>
       {error && <p className="error">{error}</p>}
     </form>
-  )
+  );
 }
 ```
 
 ### 方法 2：直接使用 Supabase 客户端
 
 ```tsx
-import { supabase, signIn } from '@/lib/supabase'
+import { supabase, signIn } from '@/lib/supabase';
 
 // 登录
-const { data, error } = await signIn('user@example.com', 'password123')
+const { data, error } = await signIn('user@example.com', 'password123');
 
 // 注册
 const { data, error } = await supabase.auth.signUp({
@@ -115,13 +116,13 @@ const { data, error } = await supabase.auth.signUp({
     data: {
       username: 'johndoe',
       full_name: 'John Doe',
-      role: 'media_buyer'
-    }
-  }
-})
+      role: 'media_buyer',
+    },
+  },
+});
 
 // 登出
-await supabase.auth.signOut()
+await supabase.auth.signOut();
 ```
 
 ---
@@ -132,12 +133,12 @@ await supabase.auth.signOut()
 
 ```typescript
 {
-  user: User | null              // Supabase Auth 用户对象
-  profile: UserProfile | null    // 用户业务信息
-  session: Session | null        // 当前会话
-  loading: boolean               // 加载状态
-  error: string | null           // 错误信息
-  isAuthenticated: boolean       // 是否已登录
+  user: User | null; // Supabase Auth 用户对象
+  profile: UserProfile | null; // 用户业务信息
+  session: Session | null; // 当前会话
+  loading: boolean; // 加载状态
+  error: string | null; // 错误信息
+  isAuthenticated: boolean; // 是否已登录
 }
 ```
 
@@ -145,11 +146,11 @@ await supabase.auth.signOut()
 
 ```typescript
 {
-  signIn(email, password)        // 登录
-  signUp(email, password, metadata) // 注册
-  signOut()                      // 登出
-  resetPassword(email)           // 重置密码
-  updatePassword(newPassword)    // 更新密码
+  signIn(email, password); // 登录
+  signUp(email, password, metadata); // 注册
+  signOut(); // 登出
+  resetPassword(email); // 重置密码
+  updatePassword(newPassword); // 更新密码
 }
 ```
 
@@ -160,15 +161,11 @@ await supabase.auth.signOut()
 ### 1. 用户注册
 
 ```typescript
-const { success, error } = await signUp(
-  'user@example.com',
-  'password123',
-  {
-    username: 'johndoe',
-    full_name: 'John Doe',
-    role: 'media_buyer'
-  }
-)
+const { success, error } = await signUp('user@example.com', 'password123', {
+  username: 'johndoe',
+  full_name: 'John Doe',
+  role: 'media_buyer',
+});
 
 if (success) {
   // 注册成功
@@ -181,10 +178,7 @@ if (success) {
 ### 2. 用户登录
 
 ```typescript
-const { success, error } = await signIn(
-  'user@example.com',
-  'password123'
-)
+const { success, error } = await signIn('user@example.com', 'password123');
 
 if (success) {
   // 登录成功
@@ -202,7 +196,7 @@ Hook 会自动检测现有会话：
 useEffect(() => {
   // 页面加载时自动检查是否已登录
   // 如果有有效 session，自动登录
-}, [])
+}, []);
 ```
 
 ### 4. 会话刷新
@@ -214,7 +208,7 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'TOKEN_REFRESHED') {
     // Token 已自动刷新
   }
-})
+});
 ```
 
 ---
@@ -223,26 +217,26 @@ supabase.auth.onAuthStateChange((event, session) => {
 
 ```typescript
 interface UserProfile {
-  id: string                     // UUID (与 auth.users.id 一致)
-  username: string | null        // 用户名
-  full_name: string | null       // 全名
-  phone: string | null           // 电话
-  avatar_url: string | null      // 头像 URL
-  role: 'admin' | 'finance' | 'data_operator' | 'account_manager' | 'media_buyer'
-  department: string | null      // 部门
-  position: string | null        // 职位
-  account_manager_id: string | null // 上级经理 ID
-  is_active: boolean             // 是否激活
-  is_verified: boolean           // 是否已验证
-  last_login_at: string | null   // 最后登录时间
-  last_login_ip: string | null   // 最后登录 IP
-  preferences: Record<string, any> // 用户偏好
-  timezone: string               // 时区
-  language: string               // 语言
-  notification_settings: Record<string, any> // 通知设置
-  profile_metadata: Record<string, any> // 元数据
-  created_at: string            // 创建时间
-  updated_at: string            // 更新时间
+  id: string; // UUID (与 auth.users.id 一致)
+  username: string | null; // 用户名
+  full_name: string | null; // 全名
+  phone: string | null; // 电话
+  avatar_url: string | null; // 头像 URL
+  role: 'admin' | 'finance' | 'data_operator' | 'account_manager' | 'media_buyer';
+  department: string | null; // 部门
+  position: string | null; // 职位
+  account_manager_id: string | null; // 上级经理 ID
+  is_active: boolean; // 是否激活
+  is_verified: boolean; // 是否已验证
+  last_login_at: string | null; // 最后登录时间
+  last_login_ip: string | null; // 最后登录 IP
+  preferences: Record<string, any>; // 用户偏好
+  timezone: string; // 时区
+  language: string; // 语言
+  notification_settings: Record<string, any>; // 通知设置
+  profile_metadata: Record<string, any>; // 元数据
+  created_at: string; // 创建时间
+  updated_at: string; // 更新时间
 }
 ```
 
@@ -264,7 +258,7 @@ Supabase 已配置 6 条 RLS 策略：
 ### 客户端检查
 
 ```typescript
-const { profile } = useAuth()
+const { profile } = useAuth();
 
 // 检查角色
 if (profile?.role === 'admin') {
@@ -283,11 +277,11 @@ if (['admin', 'finance'].includes(profile?.role)) {
 
 系统已创建 3 个测试用户：
 
-| 邮箱 | 密码 | 角色 | 用途 |
-|------|------|------|------|
-| admin@test.com | Test123456! | admin | 测试管理员功能 |
+| 邮箱             | 密码        | 角色            | 用途             |
+| ---------------- | ----------- | --------------- | ---------------- |
+| admin@test.com   | Test123456! | admin           | 测试管理员功能   |
 | manager@test.com | Test123456! | account_manager | 测试客户经理功能 |
-| buyer@test.com | Test123456! | media_buyer | 测试投手功能 |
+| buyer@test.com   | Test123456! | media_buyer     | 测试投手功能     |
 
 ---
 
@@ -296,19 +290,19 @@ if (['admin', 'finance'].includes(profile?.role)) {
 ### 查看当前会话
 
 ```typescript
-import { getSession } from '@/lib/supabase'
+import { getSession } from '@/lib/supabase';
 
-const session = await getSession()
-console.log('Current session:', session)
+const session = await getSession();
+console.log('Current session:', session);
 ```
 
 ### 监听认证事件
 
 ```typescript
 supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Auth event:', event)
-  console.log('Session:', session)
-})
+  console.log('Auth event:', event);
+  console.log('Session:', session);
+});
 ```
 
 ### 常见事件
@@ -340,9 +334,7 @@ WHERE trigger_name = 'on_auth_user_created';
 ```typescript
 // Supabase 客户端会自动处理
 // 确保在登录后查询
-const { data } = await supabase
-  .from('user_profiles')
-  .select('*')
+const { data } = await supabase.from('user_profiles').select('*');
 ```
 
 ### Q3: 如何在服务端获取用户信息？
@@ -350,11 +342,11 @@ const { data } = await supabase
 **A**: 使用 Server Components：
 
 ```typescript
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function getUser() {
-  const cookieStore = cookies()
+  const cookieStore = cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -362,14 +354,16 @@ export async function getUser() {
     {
       cookies: {
         get(name: string) {
-          return cookieStore.get(name)?.value
+          return cookieStore.get(name)?.value;
         },
       },
     }
-  )
+  );
 
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
 }
 ```
 

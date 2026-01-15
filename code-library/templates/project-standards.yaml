@@ -28,22 +28,20 @@ project:
 # ========== SoT 文档引用 ==========
 sot_documents:
   priority_order:
-    - STATE_MACHINE.md    # v2.6 - 状态机定义
-    - DATA_SCHEMA.md      # v5.2 - 数据模式
-    - BUSINESS_RULES.md   # v3.1 - 业务规则
-    - API_SOT.md          # v9.0 - API 规范
-    - ERROR_CODES_SOT.md  # v2.1 - 错误码
-    - AUTH_SPEC.md        # v2.0 - 认证规范
-    - LEDGER_SOT.md       # v1.1 - 账本规范
+    - STATE_MACHINE.md    # v2.9 - 状态机定义
+    - DATA_SCHEMA.md      # v5.11 - 数据模式
+    - BUSINESS_RULES.md   # v5.2 - 业务规则
+    - API_SOT.md          # v9.7 - API 规范
+    - ERROR_CODES_SOT.md  # v2.2 - 错误码
+    - AUTH_SPEC.md        # v2.2 - 认证规范
 
   paths:
-    STATE_MACHINE: "docs/2.sot/STATE_MACHINE.md"
-    DATA_SCHEMA: "docs/2.sot/DATA_SCHEMA.md"
-    BUSINESS_RULES: "docs/2.sot/BUSINESS_RULES.md"
-    API_SOT: "docs/2.sot/API_SOT.md"
-    ERROR_CODES: "docs/2.sot/ERROR_CODES_SOT.md"
-    AUTH_SPEC: "docs/2.sot/AUTH_SPEC.md"
-    LEDGER_SOT: "docs/2.sot/LEDGER_SOT.md"
+    STATE_MACHINE: "docs/sot/STATE_MACHINE.md"
+    DATA_SCHEMA: "docs/sot/DATA_SCHEMA.md"
+    BUSINESS_RULES: "docs/sot/BUSINESS_RULES.md"
+    API_SOT: "docs/sot/API_SOT.md"
+    ERROR_CODES: "docs/sot/ERROR_CODES_SOT.md"
+    AUTH_SPEC: "docs/sot/AUTH_SPEC.md"
 
 # ========== 后端规范 ==========
 backend:

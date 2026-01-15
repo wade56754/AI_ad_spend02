@@ -47,9 +47,9 @@
 
 | 领域 | 唯一真相源 | 仲裁规则 | 示例 |
 |-----|-----------|---------|------|
-| **数据库字段** | DATA_SCHEMA.md v5.7 | 字段名/类型/约束以DATA_SCHEMA为准 | `users.role`的CHECK约束 |
-| **业务规则** | BUSINESS_RULES.md v5.0 | 权限/SOD规则以BUSINESS_RULES为准 | BR-USER-002（职责分离） |
-| **错误码** | ERROR_CODES_SOT.md v2.1 | 错误码/HTTP状态以ERROR_CODES为准 | `AUTH_500`权限不足 |
+| **数据库字段** | DATA_SCHEMA.md v5.11 | 字段名/类型/约束以DATA_SCHEMA为准 | `users.role`的CHECK约束 |
+| **业务规则** | BUSINESS_RULES.md v5.2 | 权限/SOD规则以BUSINESS_RULES为准 | BR-USER-002（职责分离） |
+| **错误码** | ERROR_CODES_SOT.md v2.2 | 错误码/HTTP状态以ERROR_CODES为准 | `AUTH_500`权限不足 |
 | **状态流转** | STATE_MACHINE.md v2.9 | 业务状态以STATE_MACHINE为准 | 项目/日报状态机 |
 | **Token生命周期** | AUTH_SPEC.md v2.2 (本文档) | Token TTL/刷新策略以本文档为准 | Access Token 1小时 |
 | **认证流程** | AUTH_SPEC.md v2.2 (本文档) | Token验证/权限校验链路以本文档为准 | JWT验证逻辑 |
@@ -76,7 +76,7 @@
 
 ### 2.1 users表完整定义
 
-**引用**: DATA_SCHEMA.md v5.7 §1.1.1
+**引用**: DATA_SCHEMA.md v5.11 §1.1.1
 
 ```sql
 CREATE TABLE users (
@@ -88,7 +88,7 @@ CREATE TABLE users (
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(255),  -- 冗余字段，从auth.users同步
 
-    -- ===== 角色与权限（4 技术层角色, 对齐 MASTER.md v4.6 §INV-007） =====
+    -- ===== 角色与权限（4 技术层角色, 对齐 MASTER.md v4.9 §INV-007） =====
     role VARCHAR(20) NOT NULL CHECK (role IN (
         'admin',           -- 系统管理员/老板 (L6)
         'finance',         -- 财务 (L4)
@@ -136,11 +136,11 @@ CREATE INDEX idx_users_last_login ON users(last_login_at);
 CREATE INDEX idx_users_email ON users(email);
 ```
 
-### 2.2 role 六角色固定定义（MASTER.md v4.8 对齐）
+### 2.2 role 六角色固定定义（MASTER.md v4.9 对齐）
 
-**引用**: MASTER.md v4.8 §2.4, BUSINESS_RULES.md v4.8 - BR-AUTH-001, BR-USER-001
+**引用**: MASTER.md v4.9 §2.4, BUSINESS_RULES.md v5.2 - BR-AUTH-001, BR-USER-001
 
-> **v2.1 更新 (2025-12-24)**: 技术层 4 角色 + 业务层 6 角色，与 MASTER.md v4.8 完全对齐。
+> **v2.1 更新 (2025-12-24)**: 技术层 4 角色 + 业务层 6 角色，与 MASTER.md v4.9 完全对齐。
 
 | 角色代码 | 业务名称 | 权限级别 | 主要职责 | 可见范围 |
 |---------|---------|---------|---------|---------|
@@ -150,16 +150,16 @@ CREATE INDEX idx_users_email ON users(email);
 | `media_buyer` | 投手 | L1 (最低) | CPL 达标、日报准确、执行投放 | 仅自己提交的日报和分配的账户 |
 | `project_owner` | 项目负责人 | (业务属性) | 项目盈亏、资金使用效率、日报审核、统计实际消耗 | 自己项目，申请充值，审核日报 |
 
-> **PRD v2.2 变更说明**:
+> **PRD v5.1 变更说明**:
 > - 技术层角色精简为 4 个：`admin`, `finance`, `account_manager`, `media_buyer`
 > - `project_owner` 通过 `is_project_owner` 字段或 `project_members` 表判断（业务属性）
 > - `ceo` 业务角色对应技术层 `admin`
 > - `pitcher` 业务角色对应技术层 `media_buyer`
 > - `supervisor` 和 `data_operator` 已废弃，职责合并到 `project_owner`
 
-**技术层角色映射（对齐 MASTER.md v4.8 §INV-007）**:
+**技术层角色映射（对齐 MASTER.md v4.9 §INV-007）**:
 
-| 业务角色 (PRD v2.2) | 技术层枚举 | 映射方式 | 说明 |
+| 业务角色 (PRD v5.1) | 技术层枚举 | 映射方式 | 说明 |
 |---------|-----------|---------|------|
 | ceo | `admin` | 直接映射 | 老板使用 admin 权限 |
 | project_owner | (业务属性) | `is_project_owner=true` 或 `project_members` | 项目级角色 |
@@ -172,8 +172,8 @@ CREATE INDEX idx_users_email ON users(email);
 
 | 废弃角色 | 替代方案 | 说明 |
 |---------|---------|------|
-| supervisor | `project_owner` (业务属性) | PRD v2.2 移除，职责合并到 project_owner |
-| data_operator | `project_owner`/`finance` | PRD v2.2 移除，日报→project_owner，对账→finance |
+| supervisor | `project_owner` (业务属性) | PRD v5.1 移除，职责合并到 project_owner |
+| data_operator | `project_owner`/`finance` | PRD v5.1 移除，日报→project_owner，对账→finance |
 
 **强制约束**:
 - ❌ **禁止**添加白名单外的新角色
@@ -730,7 +730,7 @@ class AuthService:
 
 #### 5.1.1 五个角色完整定义
 
-**引用**: MASTER.md v4.8 §2.4, BUSINESS_RULES.md v5.0 - BR-USER-001
+**引用**: MASTER.md v4.9 §2.4, BUSINESS_RULES.md v5.2 - BR-USER-001
 
 ##### 角色1: admin（系统管理员）
 
@@ -788,7 +788,7 @@ class AuthService:
 
 ##### 角色3: project_owner（项目负责人 - 业务属性）
 
-> **PRD v2.2 说明**: project_owner 不是技术层角色枚举，而是通过 `users.is_project_owner=true` 或 `project_members` 表判断的业务属性。
+> **PRD v5.1 说明**: project_owner 不是技术层角色枚举，而是通过 `users.is_project_owner=true` 或 `project_members` 表判断的业务属性。
 
 **权限级别**: L5 (业务属性叠加)
 
@@ -870,7 +870,7 @@ class AuthService:
 
 **定义**: Separation of Duties - 防止内部欺诈和数据篡改
 
-**引用**: BUSINESS_RULES.md v5.0 - BR-FIN-002, BR-USER-002
+**引用**: BUSINESS_RULES.md v5.2 - BR-FIN-002, BR-USER-002
 
 **SOD规则矩阵**:
 
@@ -1004,7 +1004,7 @@ def admin_force_approve(self, report_id: int, user: Dict, reason: str):
 
 ### 5.3 数据权限过滤（Data Access Filtering）
 
-**引用**: MASTER.md v4.8 §2.4
+**引用**: MASTER.md v4.9 §2.4
 
 #### 5.3.1 过滤规则矩阵
 
@@ -1113,7 +1113,7 @@ def list_reports_for_account_manager(self, user_id: str, filters: Dict):
 
 ### 5.X Phase 权限边界（MASTER v4.8 对齐）
 
-> **引用**: MASTER.md v4.8 §2.5（Phase 1/Phase 2 执行边界）
+> **引用**: MASTER.md v4.9 §2.5（Phase 1/Phase 2 执行边界）
 
 #### 5.X.1 Phase 1 权限行为
 
@@ -1502,7 +1502,7 @@ async def logout(
 
 ## 7. 错误码（Auth错误码SoT）
 
-**引用**: ERROR_CODES_SOT.md v2.1 - §4.1
+**引用**: ERROR_CODES_SOT.md v2.2 - §4.1
 
 ### 7.1 认证错误码（AUTH_*）
 
@@ -1615,7 +1615,7 @@ export async function apiFetch<T>(endpoint: string, options?: RequestInit): Prom
 
 ### 8.1 必须记录审计日志的操作
 
-**引用**: DATA_SCHEMA.md v5.7 - §1.1.4（audit_logs表）
+**引用**: DATA_SCHEMA.md v5.11 - §1.1.4（audit_logs表）
 
 | 操作类型 | 触发场景 | 必填字段 |
 |---------|---------|---------|
@@ -1966,7 +1966,7 @@ def update_report(
 |------|------|---------|------|
 | v1.0 | 2025-01-22 | 初始版本 | 系统架构团队 |
 | v2.0 | 2025-01-22 | **正式SoT**<br>- 补全Auth状态机定义<br>- 补全4个Auth API端点完整规范<br>- 补全SOD规则矩阵与实现<br>- 补全数据隔离Service层实现<br>- 补全Token生命周期（TTL、Rotation、失效策略）<br>- 补全安全策略（Zero Trust、CSRF、重放攻击防护）<br>- 补全测试矩阵（7大类测试场景）<br>- 补全审计日志规范 | 系统架构团队 |
-| v2.2 | 2026-01-02 | **SoT互锁对齐**<br>- 修复字符编码问题<br>- 更新SoT版本引用（DATA_SCHEMA v5.7, BUSINESS_RULES v5.0, STATE_MACHINE v2.9, API_SOT v9.5）<br>- 移除SYSTEM_OVERVIEW断链引用，替换为MASTER.md v4.8<br>- 统一版本号和变更历史 | Claude Opus 4.5 |
+| v2.2 | 2026-01-02 | **SoT互锁对齐**<br>- 修复字符编码问题<br>- 更新SoT版本引用（DATA_SCHEMA v5.7, BUSINESS_RULES v5.0, STATE_MACHINE v2.9, API_SOT v9.5）<br>- 移除SYSTEM_OVERVIEW断链引用，替换为MASTER.md v4.9<br>- 统一版本号和变更历史 | Claude Opus 4.5 |
 
 ---
 

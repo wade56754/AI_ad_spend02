@@ -6,7 +6,7 @@ version: "1.0"
 sot_refs:
   - MASTER.md v4.8 §2.4
   - AUTH_SPEC.md v2.1
-  - PRD v2.2
+  - PRD v5.1
 
 # 技术层角色 (数据库 CHECK 约束)
 technical_roles:

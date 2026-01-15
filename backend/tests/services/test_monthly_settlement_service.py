@@ -384,3 +384,284 @@ class TestMonthlySettlementBusinessRules:
         """从 final_locked 日报聚合数据"""
         # 业务规则: 只聚合 status='final_locked' 的日报
         pass
+
+
+# ========== 集成测试 (使用真实数据库 fixtures) ==========
+
+
+class TestMonthlySettlementIntegration:
+    """
+    月度结算集成测试
+
+    使用 conftest.py 中定义的真实数据库 fixtures
+    """
+
+    @pytest.fixture
+    def service(self, db_session):
+        return MonthlySettlementService(db_session)
+
+    def test_generate_and_confirm_settlement(
+        self,
+        service,
+        db_session,
+        test_project,
+        test_ad_account,
+        admin_user,
+        finance_user,
+    ):
+        """测试完整的生成和确认流程"""
+        from backend.models import DailyReport
+        from backend.models.finance.monthly_settlement import MonthlySettlement
+
+        # 设置项目单价
+        test_project.unit_price = Decimal("50.00")
+        db_session.commit()
+
+        # 创建锁定状态的日报 (注: DailyReport 不含 project_id，通过 ad_account 关联)
+        report = DailyReport(
+            ad_account_id=test_ad_account.id,
+            report_date=date(2025, 12, 15),
+            conversions_final=100,
+            real_spend=Decimal("2000.00"),
+            status="final_locked",
+            created_by=admin_user.id,
+        )
+        db_session.add(report)
+        db_session.commit()
+
+        # 1. 生成结算
+        generate_request = MonthlySettlementGenerateRequest(
+            project_id=test_project.id,
+            settlement_month=date(2025, 12, 1),
+            notes="集成测试",
+        )
+        settlement = service.generate_settlement(generate_request, finance_user)
+
+        assert settlement.status == "pending"
+        assert settlement.total_spend == Decimal("2000.00")
+        assert settlement.total_conversions == 100
+
+        # 2. 确认结算
+        confirm_request = MonthlySettlementConfirmRequest(notes="数据确认")
+        confirmed = service.confirm_settlement(
+            settlement.id, confirm_request, finance_user
+        )
+
+        assert confirmed.status == "confirmed"
+        assert confirmed.confirmed_by == finance_user.id
+
+    def test_full_state_flow(
+        self,
+        service,
+        db_session,
+        test_project,
+        test_ad_account,
+        admin_user,
+        finance_user,
+        ceo_user,
+    ):
+        """测试完整状态流转: pending → confirmed → locked → archived"""
+        from backend.models import DailyReport
+        from backend.models.finance.monthly_settlement import MonthlySettlement
+
+        test_project.unit_price = Decimal("100.00")
+        db_session.commit()
+
+        # 创建日报数据 (通过 ad_account 关联项目)
+        report = DailyReport(
+            ad_account_id=test_ad_account.id,
+            report_date=date(2025, 11, 10),
+            conversions_final=50,
+            real_spend=Decimal("1000.00"),
+            status="final_locked",
+            created_by=admin_user.id,
+        )
+        db_session.add(report)
+        db_session.commit()
+
+        # 1. 生成 (pending)
+        settlement = service.generate_settlement(
+            MonthlySettlementGenerateRequest(
+                project_id=test_project.id,
+                settlement_month=date(2025, 11, 1),
+            ),
+            finance_user,
+        )
+        assert settlement.status == "pending"
+
+        # 2. 确认 (confirmed)
+        settlement = service.confirm_settlement(
+            settlement.id,
+            MonthlySettlementConfirmRequest(notes="确认"),
+            finance_user,
+        )
+        assert settlement.status == "confirmed"
+
+        # 3. 锁定 (locked)
+        settlement = service.lock_settlement(
+            settlement.id,
+            MonthlySettlementLockRequest(notes="月度锁账"),
+            ceo_user,
+        )
+        assert settlement.status == "locked"
+
+        # 4. 归档 (archived)
+        settlement = service.archive_settlement(settlement.id, admin_user)
+        assert settlement.status == "archived"
+
+    def test_reject_flow(
+        self,
+        service,
+        db_session,
+        test_project,
+        test_ad_account,
+        admin_user,
+        finance_user,
+    ):
+        """测试退回流程: pending → confirmed → pending"""
+        from backend.models import DailyReport
+        from backend.models.finance.monthly_settlement import MonthlySettlement
+
+        test_project.unit_price = Decimal("80.00")
+        db_session.commit()
+
+        report = DailyReport(
+            ad_account_id=test_ad_account.id,
+            report_date=date(2025, 10, 20),
+            conversions_final=30,
+            real_spend=Decimal("600.00"),
+            status="final_locked",
+            created_by=admin_user.id,
+        )
+        db_session.add(report)
+        db_session.commit()
+
+        # 生成并确认
+        settlement = service.generate_settlement(
+            MonthlySettlementGenerateRequest(
+                project_id=test_project.id,
+                settlement_month=date(2025, 10, 1),
+            ),
+            finance_user,
+        )
+        service.confirm_settlement(
+            settlement.id,
+            MonthlySettlementConfirmRequest(notes="确认"),
+            finance_user,
+        )
+
+        # 退回
+        settlement = service.reject_settlement(
+            settlement.id,
+            MonthlySettlementRejectRequest(reason="数据需要修正"),
+            finance_user,
+        )
+
+        assert settlement.status == "pending"
+        assert "退回" in settlement.notes
+
+    def test_permission_control(
+        self,
+        service,
+        db_session,
+        test_project,
+        test_ad_account,
+        admin_user,
+        finance_user,
+        media_buyer_user,
+    ):
+        """测试权限控制"""
+        from backend.models import DailyReport
+        from backend.models.finance.monthly_settlement import MonthlySettlement
+
+        report = DailyReport(
+            ad_account_id=test_ad_account.id,
+            report_date=date(2025, 9, 15),
+            conversions_final=20,
+            real_spend=Decimal("400.00"),
+            status="final_locked",
+            created_by=admin_user.id,
+        )
+        db_session.add(report)
+        db_session.commit()
+
+        # 生成结算
+        settlement = service.generate_settlement(
+            MonthlySettlementGenerateRequest(
+                project_id=test_project.id,
+                settlement_month=date(2025, 9, 1),
+            ),
+            finance_user,
+        )
+
+        # 投手尝试确认 - 应该失败
+        with pytest.raises(PermissionDeniedError):
+            service.confirm_settlement(
+                settlement.id,
+                MonthlySettlementConfirmRequest(notes="测试"),
+                media_buyer_user,
+            )
+
+    def test_aggregate_only_final_locked(
+        self, service, db_session, test_project, test_ad_account, admin_user
+    ):
+        """测试只聚合 final_locked 状态的日报"""
+        from backend.models import DailyReport
+
+        # 创建多条日报，状态不同 (通过 ad_account 关联项目)
+        # final_locked 日报
+        locked_report = DailyReport(
+            ad_account_id=test_ad_account.id,
+            report_date=date(2025, 8, 10),
+            conversions_final=50,
+            real_spend=Decimal("1000.00"),
+            status="final_locked",
+            created_by=admin_user.id,
+        )
+        # raw_submitted 日报 (不应被聚合)
+        raw_report = DailyReport(
+            ad_account_id=test_ad_account.id,
+            report_date=date(2025, 8, 15),
+            conversions_final=100,
+            real_spend=Decimal("2000.00"),
+            status="raw_submitted",
+            created_by=admin_user.id,
+        )
+        db_session.add_all([locked_report, raw_report])
+        db_session.commit()
+
+        # 聚合数据
+        result = service._aggregate_daily_reports(test_project.id, date(2025, 8, 1))
+
+        # 应该只包含 final_locked 的数据
+        assert result["total_conversions"] == 50
+        assert result["total_spend"] == Decimal("1000.00")
+
+    def test_duplicate_settlement_prevention(
+        self, service, db_session, test_project, finance_user
+    ):
+        """测试防止重复生成结算"""
+        from backend.models.finance.monthly_settlement import MonthlySettlement
+
+        # 手动创建一个结算
+        existing = MonthlySettlement(
+            project_id=test_project.id,
+            settlement_month=date(2025, 7, 1),
+            total_spend=Decimal("500.00"),
+            total_conversions=25,
+            status="pending",
+        )
+        db_session.add(existing)
+        db_session.commit()
+
+        # 尝试生成相同月份的结算
+        with pytest.raises(ResourceConflictError) as exc_info:
+            service.generate_settlement(
+                MonthlySettlementGenerateRequest(
+                    project_id=test_project.id,
+                    settlement_month=date(2025, 7, 1),
+                ),
+                finance_user,
+            )
+
+        assert "已存在" in str(exc_info.value)

@@ -111,7 +111,7 @@ def get_sot_versions() -> Dict[str, str]:
 
 
 # =============================================================================
-# 角色定义 (PRD v2.2 / MASTER.md v4.6)
+# 角色定义 (PRD v5.1 / MASTER.md v4.6)
 # =============================================================================
 
 # 业务层合法角色列表 - 6 个核心角色
@@ -132,7 +132,7 @@ TECHNICAL_ROLES: Set[str] = {
     "media_buyer",  # 技术层别名，映射到 pitcher
 }
 
-# 废弃角色列表 (PRD v2.2 移除)
+# 废弃角色列表 (PRD v5.1 移除)
 DEPRECATED_ROLES: Set[str] = {
     "supervisor",  # 已废弃 → 使用 project_owner
     "data_operator",  # 已废弃 → 使用 finance

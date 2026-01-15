@@ -51,14 +51,15 @@ export function ProfitTrendChart({
     }).format(value);
   };
 
-  const chartData = data?.items.map((item) => ({
-    period: item.period,
-    profit: item.total_profit,
-    revenue: item.total_revenue,
-    cost: item.total_cost,
-    margin: item.profit_margin,
-    changeRate: item.profit_change_rate,
-  })) || [];
+  const chartData =
+    data?.items.map((item) => ({
+      period: item.period,
+      profit: item.total_profit,
+      revenue: item.total_revenue,
+      cost: item.total_cost,
+      margin: item.profit_margin,
+      changeRate: item.profit_change_rate,
+    })) || [];
 
   if (loading) {
     return (
@@ -138,11 +139,7 @@ export function ProfitTrendChart({
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="period"
-                tick={{ fontSize: 12 }}
-                tickLine={false}
-              />
+              <XAxis dataKey="period" tick={{ fontSize: 12 }} tickLine={false} />
               <YAxis
                 tickFormatter={formatCurrency}
                 tick={{ fontSize: 12 }}
@@ -150,8 +147,8 @@ export function ProfitTrendChart({
                 axisLine={false}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  formatTooltipValue(value),
+                formatter={(value: number | undefined, name: string | undefined) => [
+                  formatTooltipValue(value ?? 0),
                   name === 'profit' ? '利润' : name === 'revenue' ? '收入' : '成本',
                 ]}
                 contentStyle={{
@@ -184,19 +181,11 @@ export function ProfitTrendChart({
                 fill="url(#profitGradient)"
                 strokeWidth={2}
               />
-              <Line
-                type="monotone"
-                dataKey="cost"
-                stroke="#ef4444"
-                strokeWidth={2}
-                dot={false}
-              />
+              <Line type="monotone" dataKey="cost" stroke="#ef4444" strokeWidth={2} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-500">
-            暂无趋势数据
-          </div>
+          <div className="h-full flex items-center justify-center text-gray-500">暂无趋势数据</div>
         )}
       </div>
     </div>

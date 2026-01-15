@@ -28,12 +28,12 @@ echo.
 echo [2/4] Check dependencies / 检查依赖包...
 echo.
 
-call npm list clsx tailwind-merge 2>nul | findstr /C:"clsx" /C:"tailwind-merge"
+call pnpm list clsx tailwind-merge 2>nul | findstr /C:"clsx" /C:"tailwind-merge"
 if %ERRORLEVEL% EQU 0 (
     echo [OK] Required dependencies are installed
 ) else (
     echo [WARNING] Some dependencies may not be installed
-    echo Run: npm install clsx tailwind-merge
+    echo Run: pnpm add clsx tailwind-merge
 )
 
 echo.
@@ -78,9 +78,9 @@ echo [SUCCESS] All fixes completed!
 echo ========================================
 echo.
 echo Next steps:
-echo 1. Start dev server: npm run dev
+echo 1. Start dev server: pnpm run dev
 echo 2. Visit http://localhost:3000 to check pages
-echo 3. Run tests: npm test
+echo 3. Run tests: pnpm test
 echo 4. View fix details: BUG_FIXES.md
 echo.
 goto :end

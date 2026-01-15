@@ -26,7 +26,7 @@
 ## 2. 合法角色（6 角色）
 
 > **来源**: MASTER.md v4.9 §2.4（宪法）
-> **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
+> **PRD v5.1 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |
 |--------|--------|----------|----------|
@@ -41,7 +41,7 @@
 
 | 角色 | 状态 | 替代方案 |
 |------|------|---------|
-| `supervisor` | ❌ 已废弃 (PRD v2.2) | 合并到 project_owner |
+| `supervisor` | ❌ 已废弃 (PRD v5.1) | 合并到 project_owner |
 | `data_operator` | ❌ 不在宪法中 | 移除 |
 | `media_buyer` | ❌ 非标准术语 | 使用 pitcher |
 

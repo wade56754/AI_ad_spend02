@@ -2,9 +2,10 @@
 
 > **文档版本**: v2.0
 > **生成日期**: 2025-12-27
-> **基准文档**: AI_PROGRAMMING_SOP.md v1.0, MASTER.md v4.6, BUSINESS_RULES.md v4.7, STATE_MACHINE.md v2.8, DATA_SCHEMA.md v5.6, PRD.md v2.2
+> **基准文档**: MASTER.md v4.9, BUSINESS_RULES.md v5.2, STATE_MACHINE.md v2.9, DATA_SCHEMA.md v5.11, PRD v5.1
 > **用途**: AI 编程开发任务分解与跟踪
 > **变更说明**: 修复 P0-P2 缺陷，增加 Phase 分组、模块依赖图、测试要求
+> **归档说明**: 文中历史引用统一以 PRD v5.1 与 DATA_SCHEMA.md §3.4.4 为准
 
 ---
 
@@ -31,21 +32,23 @@
 
 | 文档 | 版本 | 路径 | 状态 |
 |------|------|------|------|
-| MASTER.md | v4.6 | docs/sot/MASTER.md | Frozen |
-| STATE_MACHINE.md | v2.8 | docs/sot/STATE_MACHINE.md | Frozen |
-| DATA_SCHEMA.md | v5.6 | docs/sot/DATA_SCHEMA.md | Frozen |
-| BUSINESS_RULES.md | v4.7 | docs/sot/BUSINESS_RULES.md | Frozen |
+| MASTER.md | v4.9 | docs/sot/MASTER.md | Frozen |
+| STATE_MACHINE.md | v2.9 | docs/sot/STATE_MACHINE.md | Frozen |
+| DATA_SCHEMA.md | v5.11 | docs/sot/DATA_SCHEMA.md | Frozen |
+| BUSINESS_RULES.md | v5.2 | docs/sot/BUSINESS_RULES.md | Frozen |
 | ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md | Frozen |
-| AUTH_SPEC.md | v2.1 | docs/sot/AUTH_SPEC.md | Frozen |
-| LEDGER_SOT.md | v1.2 | docs/sot/LEDGER_SOT.md | Frozen |
-| API_SOT.md | v9.4 | docs/sot/API_SOT.md | Frozen |
-| PRD.md | v2.2 | docs/1.overview/PRD.md | Frozen |
+| AUTH_SPEC.md | v2.2 | docs/sot/AUTH_SPEC.md | Frozen |
+| 账本规则 | merged | docs/sot/DATA_SCHEMA.md §3.4.4 | Frozen |
+| API_SOT.md | v9.7 | docs/sot/API_SOT.md | Frozen |
+| PRD_v5.1.md | v5.1 | docs/PRD_v5.1.md | Frozen |
+
+> 说明：账本规则以 DATA_SCHEMA.md §3.4.4 为唯一来源。
 
 ---
 
 ## 角色白名单（6 角色）
 
-> **来源**: MASTER.md v4.6 §2.4, PRD.md v2.2 §1.2
+> **来源**: MASTER.md v4.9 §2.4, PRD v5.1 §2.2
 
 | 角色ID | 中文名 | 职责范围 |
 |--------|--------|----------|
@@ -151,7 +154,7 @@
 # M1 认证模块 (AUTH)
 
 > **规则模块**: BR-AUTH (6 条规则)
-> **关联 SoT**: AUTH_SPEC.md v2.1, ERROR_CODES_SOT.md v2.2
+> **关联 SoT**: AUTH_SPEC.md v2.2, ERROR_CODES_SOT.md v2.2
 > **优先级**: P0
 > **Phase**: Phase 1
 
@@ -159,7 +162,7 @@
 
 ### 关联文档
 - BUSINESS_RULES.md BR-AUTH-001（登录必须验证）
-- AUTH_SPEC.md v2.1 §3（JWT Token 规范）
+- AUTH_SPEC.md v2.2 §3（JWT Token 规范）
 - ERROR_CODES_SOT.md v2.2（AUTH_400/AUTH_401）
 
 ### 输入
@@ -185,7 +188,7 @@
 ## TASK-AUTH-002: 用户登出 API
 
 ### 关联文档
-- AUTH_SPEC.md v2.1 §4（Token 失效）
+- AUTH_SPEC.md v2.2 §4（Token 失效）
 - ERROR_CODES_SOT.md v2.2（AUTH_401）
 
 ### 输入
@@ -206,7 +209,7 @@
 ## TASK-AUTH-003: Token 刷新 API
 
 ### 关联文档
-- AUTH_SPEC.md v2.1 §5（Token 刷新）
+- AUTH_SPEC.md v2.2 §5（Token 刷新）
 - BUSINESS_RULES.md BR-AUTH-002（Token 有效期）
 
 ### 输入
@@ -229,7 +232,7 @@
 ### 关联文档
 - BUSINESS_RULES.md BR-AUTH-003（角色唯一性）
 - BUSINESS_RULES.md BR-AUTH-004（权限继承禁止）
-- MASTER.md v4.6 §2.4（6 角色定义）
+- MASTER.md v4.9 §2.4（6 角色定义）
 
 ### 输入
 - TASK-AUTH-001 已完成
@@ -253,7 +256,7 @@
 
 ### 关联文档
 - BUSINESS_RULES.md BR-AUTH-006（职责分离）
-- MASTER.md v4.6 §9 INV-004（职责分离）
+- MASTER.md v4.9 §9 INV-004（职责分离）
 
 ### 输入
 - TASK-AUTH-004 已完成
@@ -272,7 +275,7 @@
 # M2 用户模块 (USER)
 
 > **规则模块**: BR-USER (5 条规则)
-> **关联 SoT**: MASTER.md v4.6 §2.4, DATA_SCHEMA.md v5.6 §users
+> **关联 SoT**: MASTER.md v4.9 §2.4, DATA_SCHEMA.md v5.11 §users
 > **优先级**: P0
 > **Phase**: Phase 1
 
@@ -280,7 +283,7 @@
 
 ### 关联文档
 - BUSINESS_RULES.md BR-USER-001（角色枚举固定）
-- DATA_SCHEMA.md v5.6 §users 表
+- DATA_SCHEMA.md v5.11 §users 表
 
 ### 输入
 - 认证模块已完成
@@ -302,7 +305,7 @@
 ## TASK-USER-002: 用户详情 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §users 表
+- DATA_SCHEMA.md v5.11 §users 表
 - ERROR_CODES_SOT.md v2.2（BIZ_002）
 
 ### 输入
@@ -325,7 +328,7 @@
 ### 关联文档
 - BUSINESS_RULES.md BR-USER-002（角色不可为空）
 - BUSINESS_RULES.md BR-USER-003（角色变更审计）
-- AUTH_SPEC.md v2.1（密码规范）
+- AUTH_SPEC.md v2.2（密码规范）
 
 ### 输入
 - TASK-USER-001 已完成
@@ -371,7 +374,7 @@
 ## TASK-USER-005: 用户停用/启用 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §users 表（is_active 字段）
+- DATA_SCHEMA.md v5.11 §users 表（is_active 字段）
 - BUSINESS_RULES.md BR-USER-005（admin 角色限制）
 
 ### 输入
@@ -393,15 +396,15 @@
 # M3 项目模块 (PROJ)
 
 > **规则模块**: BR-PROJ (8 条规则)
-> **关联 SoT**: STATE_MACHINE.md v2.8 §5, DATA_SCHEMA.md v5.6 §projects
+> **关联 SoT**: STATE_MACHINE.md v2.9 §5, DATA_SCHEMA.md v5.11 §projects
 > **优先级**: P0
 > **Phase**: Phase 1
 
 ## TASK-PROJ-001: 项目列表 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §projects 表
-- STATE_MACHINE.md v2.8 §5（项目状态机）
+- DATA_SCHEMA.md v5.11 §projects 表
+- STATE_MACHINE.md v2.9 §5（项目状态机）
 
 ### 输入
 - 用户模块已完成
@@ -423,7 +426,7 @@
 ## TASK-PROJ-002: 项目详情 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §projects 表
+- DATA_SCHEMA.md v5.11 §projects 表
 - BUSINESS_RULES.md BR-PROJ-001（项目必须有负责人）
 
 ### 输入
@@ -448,7 +451,7 @@
 - BUSINESS_RULES.md BR-PROJ-001（项目必须有负责人）
 - BUSINESS_RULES.md BR-PROJ-002（结算模式不可变）
 - BUSINESS_RULES.md BR-PROJ-006（预算必须大于零）
-- STATE_MACHINE.md v2.8 §5（初始状态 draft）
+- STATE_MACHINE.md v2.9 §5（初始状态 draft）
 
 ### 输入
 - TASK-PROJ-001 已完成
@@ -476,7 +479,7 @@
 
 ### 关联文档
 - BUSINESS_RULES.md BR-PROJ-002（结算模式不可变）
-- STATE_MACHINE.md v2.8 §5（状态流转）
+- STATE_MACHINE.md v2.9 §5（状态流转）
 
 ### 输入
 - TASK-PROJ-003 已完成
@@ -498,7 +501,7 @@
 ## TASK-PROJ-005: 项目状态流转 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §5（项目状态机）
+- STATE_MACHINE.md v2.9 §5（项目状态机）
 - BUSINESS_RULES.md BR-PROJ-003（状态流转合法性）
 - BUSINESS_RULES.md BR-PROJ-004（归档不可逆）
 
@@ -523,7 +526,7 @@
 ## TASK-PROJ-006: 项目成员管理 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §project_members 表
+- DATA_SCHEMA.md v5.11 §project_members 表
 - BUSINESS_RULES.md BR-PROJ-001（项目必须有负责人）
 
 ### 输入
@@ -548,15 +551,15 @@
 # M4 渠道模块 (CHANNEL)
 
 > **规则模块**: BR-ACCT 扩展（渠道属于账户管理范畴）
-> **关联 SoT**: STATE_MACHINE.md v2.8 §6, DATA_SCHEMA.md v5.6 §channels
+> **关联 SoT**: STATE_MACHINE.md v2.9 §6, DATA_SCHEMA.md v5.11 §channels
 > **优先级**: P1
 > **Phase**: Phase 1
 
 ## TASK-CHAN-001: 渠道列表 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §6.1（渠道状态机）
-- DATA_SCHEMA.md v5.6 §channels 表
+- STATE_MACHINE.md v2.9 §6.1（渠道状态机）
+- DATA_SCHEMA.md v5.11 §channels 表
 
 ### 输入
 - 认证模块已完成
@@ -577,8 +580,8 @@
 ## TASK-CHAN-002: 创建渠道 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §6.1（初始状态 active）
-- DATA_SCHEMA.md v5.6 §channels 表
+- STATE_MACHINE.md v2.9 §6.1（初始状态 active）
+- DATA_SCHEMA.md v5.11 §channels 表
 
 ### 输入
 - TASK-CHAN-001 已完成
@@ -600,7 +603,7 @@
 ## TASK-CHAN-003: 渠道评审 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §6.2（渠道评审状态机）
+- STATE_MACHINE.md v2.9 §6.2（渠道评审状态机）
 
 ### 输入
 - TASK-CHAN-002 已完成
@@ -622,7 +625,7 @@
 ## TASK-CHAN-004: 渠道开户申请 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §6.3（开户申请状态机）
+- STATE_MACHINE.md v2.9 §6.3（开户申请状态机）
 
 ### 输入
 - TASK-CHAN-002 已完成
@@ -644,7 +647,7 @@
 # M5 广告账户模块 (ACCT)
 
 > **规则模块**: BR-ACCT (6 条规则)
-> **关联 SoT**: STATE_MACHINE.md v2.8 §7, DATA_SCHEMA.md v5.6 §ad_accounts
+> **关联 SoT**: STATE_MACHINE.md v2.9 §7, DATA_SCHEMA.md v5.11 §ad_accounts
 > **优先级**: P0
 > **Phase**: Phase 1
 
@@ -652,8 +655,8 @@
 
 ### 关联文档
 - BUSINESS_RULES.md BR-ACCT-001（账户必须归属渠道）
-- STATE_MACHINE.md v2.8 §7.1（账户状态机）
-- DATA_SCHEMA.md v5.6 §ad_accounts 表
+- STATE_MACHINE.md v2.9 §7.1（账户状态机）
+- DATA_SCHEMA.md v5.11 §ad_accounts 表
 
 ### 输入
 - 渠道模块已完成
@@ -676,7 +679,7 @@
 ## TASK-ACCT-002: 账户详情 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §ad_accounts 表
+- DATA_SCHEMA.md v5.11 §ad_accounts 表
 - BUSINESS_RULES.md BR-ACCT-004（余额不可为负）
 
 ### 输入
@@ -698,7 +701,7 @@
 
 ### 关联文档
 - BUSINESS_RULES.md BR-ACCT-001（账户必须归属渠道）
-- STATE_MACHINE.md v2.8 §7.1（初始状态 new）
+- STATE_MACHINE.md v2.9 §7.1（初始状态 new）
 
 ### 输入
 - TASK-ACCT-001 已完成
@@ -748,7 +751,7 @@
 ## TASK-ACCT-005: 账户状态流转 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §7.1（账户状态机）
+- STATE_MACHINE.md v2.9 §7.1（账户状态机）
 - BUSINESS_RULES.md BR-ACCT-006（停用账户禁止操作）
 
 ### 输入
@@ -770,7 +773,7 @@
 ## TASK-ACCT-006: 账户预警 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §7.3（账户预警状态机）
+- STATE_MACHINE.md v2.9 §7.3（账户预警状态机）
 
 ### 输入
 - TASK-ACCT-003 已完成
@@ -792,7 +795,7 @@
 # M6 日报模块 (RPT)
 
 > **规则模块**: BR-RPT (9 条规则)
-> **关联 SoT**: STATE_MACHINE.md v2.8 §8, DATA_SCHEMA.md v5.6 §daily_reports
+> **关联 SoT**: STATE_MACHINE.md v2.9 §8, DATA_SCHEMA.md v5.11 §daily_reports
 > **优先级**: P0
 > **Phase**: Phase 1 (简化版) + Phase 2 (完整版)
 
@@ -823,8 +826,8 @@ PHASE2_DAILY_REPORT_STATUS = [
 > **Phase**: Phase 1
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §8（日报状态机）
-- DATA_SCHEMA.md v5.6 §daily_reports 表
+- STATE_MACHINE.md v2.9 §8（日报状态机）
+- DATA_SCHEMA.md v5.11 §daily_reports 表
 
 ### 输入
 - 账户模块已完成
@@ -849,7 +852,7 @@ PHASE2_DAILY_REPORT_STATUS = [
 > **Phase**: Phase 1
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §daily_reports 表
+- DATA_SCHEMA.md v5.11 §daily_reports 表
 - BUSINESS_RULES.md BR-RPT-005（三数据流定义）
 
 ### 输入
@@ -875,7 +878,7 @@ PHASE2_DAILY_REPORT_STATUS = [
 ### 关联文档
 - BUSINESS_RULES.md BR-RPT-001（日报提交人）
 - BUSINESS_RULES.md BR-RPT-006（raw 数据提交者）
-- STATE_MACHINE.md v2.8 §8（初始状态 raw_submitted）
+- STATE_MACHINE.md v2.9 §8（初始状态 raw_submitted）
 
 ### 输入
 - TASK-RPT-001 已完成
@@ -903,7 +906,7 @@ PHASE2_DAILY_REPORT_STATUS = [
 > **启用条件**: Feature Flag `ENABLE_FULL_DAILY_REPORT_SM=true`
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §8.2（Phase 2 完整版）
+- STATE_MACHINE.md v2.9 §8.2（Phase 2 完整版）
 - BUSINESS_RULES.md BR-RPT-004（状态流转合法性）
 
 ### 输入
@@ -929,7 +932,7 @@ PHASE2_DAILY_REPORT_STATUS = [
 > **启用条件**: Feature Flag `ENABLE_FULL_DAILY_REPORT_SM=true`
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §8.2（trend_flagged → trend_resolved）
+- STATE_MACHINE.md v2.9 §8.2（trend_flagged → trend_resolved）
 - BUSINESS_RULES.md BR-RPT-002（日报审核人）
 
 ### 输入
@@ -958,7 +961,7 @@ PHASE2_DAILY_REPORT_STATUS = [
 
 ### 关联文档
 - BUSINESS_RULES.md BR-RPT-007（real 数据提交者）
-- STATE_MACHINE.md v2.8 §8.4（real_spend 字段）
+- STATE_MACHINE.md v2.9 §8.4（real_spend 字段）
 
 ### 输入
 - TASK-RPT-003 已完成
@@ -983,7 +986,7 @@ PHASE2_DAILY_REPORT_STATUS = [
 
 ### 关联文档
 - BUSINESS_RULES.md BR-RPT-008（final 数据提交者）
-- STATE_MACHINE.md v2.8 §8（final_pending → final_confirmed）
+- STATE_MACHINE.md v2.9 §8（final_pending → final_confirmed）
 
 ### 输入
 - TASK-RPT-003 已完成
@@ -1009,7 +1012,7 @@ PHASE2_DAILY_REPORT_STATUS = [
 > **启用条件**: Feature Flag `ENABLE_FULL_DAILY_REPORT_SM=true`
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §8（final_confirmed → final_locked）
+- STATE_MACHINE.md v2.9 §8（final_confirmed → final_locked）
 - BUSINESS_RULES.md BR-RPT-009（final 数据不可改）
 
 ### 输入
@@ -1037,8 +1040,8 @@ PHASE2_DAILY_REPORT_STATUS = [
 > **启用条件**: Feature Flag `ENABLE_FULL_DAILY_REPORT_SM=true`
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §8.8（红冲修正机制）
-- LEDGER_SOT.md v1.2（REVERSAL 类型）
+- STATE_MACHINE.md v2.9 §8.8（红冲修正机制）
+- DATA_SCHEMA.md v5.11 §3.4.4（REVERSAL 类型）
 
 ### 输入
 - TASK-RPT-008 已完成
@@ -1064,18 +1067,18 @@ PHASE2_DAILY_REPORT_STATUS = [
 # M7 充值模块 (FIN)
 
 > **规则模块**: BR-FIN (10 条规则)
-> **关联 SoT**: STATE_MACHINE.md v2.8 §9, LEDGER_SOT.md v1.2, PRD.md v2.2 §6.1
+> **关联 SoT**: STATE_MACHINE.md v2.9 §9, DATA_SCHEMA.md v5.11 §3.4.4, PRD v5.1 §6.1
 > **优先级**: P1
 > **Phase**: Phase 1
 
 ## 充值状态机
 
 ```python
-# 充值状态（来源: PRD.md v2.2 §4.2）
+# 充值状态（来源: PRD v5.1 §4.2）
 TOPUP_STATUS = [
     "draft",            # 草稿（投手创建）
     "pending_review",   # 待审核（户管已提交）
-    "approved",         # 已审批（财务通过）← 注意：不是 finance_approve
+    "finance_approve",  # 财务已批准
     "paid",             # 已转账
     "completed",        # 已完成（代理商已充值）
     "rejected",         # 已拒绝
@@ -1091,8 +1094,8 @@ TOPUP_STATUS = [
 ## TASK-FIN-001: 充值申请列表 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §9（充值状态机）
-- DATA_SCHEMA.md v5.6 §topup_requests 表
+- STATE_MACHINE.md v2.9 §9（充值状态机）
+- DATA_SCHEMA.md v5.11 §topup_requests 表
 
 ### 输入
 - 账户模块已完成
@@ -1115,7 +1118,7 @@ TOPUP_STATUS = [
 
 ### 关联文档
 - BUSINESS_RULES.md BR-FIN-001（充值必须申请）
-- STATE_MACHINE.md v2.8 §9（初始状态 draft）
+- STATE_MACHINE.md v2.9 §9（初始状态 draft）
 
 ### 输入
 - TASK-FIN-001 已完成
@@ -1139,7 +1142,7 @@ TOPUP_STATUS = [
 ## TASK-FIN-003: 提交充值申请 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §9（draft → pending_review）
+- STATE_MACHINE.md v2.9 §9（draft → pending_review）
 
 ### 输入
 - TASK-FIN-002 已完成
@@ -1161,7 +1164,7 @@ TOPUP_STATUS = [
 
 ### 关联文档
 - BUSINESS_RULES.md BR-FIN-002（充值审批人）
-- STATE_MACHINE.md v2.8 §9（pending_review → approved/rejected）
+- STATE_MACHINE.md v2.9 §9（pending_review → finance_approve/rejected）
 
 ### 输入
 - TASK-FIN-003 已完成
@@ -1175,7 +1178,7 @@ TOPUP_STATUS = [
 ### 验收标准
 - □ POST /api/v1/topup-requests/{id}/approve 审批通过
 - □ POST /api/v1/topup-requests/{id}/reject 审批拒绝
-- □ 状态流转：pending_review → approved（通过）
+- □ 状态流转：pending_review → finance_approve（通过）
 - □ 状态流转：pending_review → rejected（拒绝）
 - □ 必须由 finance 执行（BR-FIN-002）
 - □ 拒绝必须填写原因
@@ -1186,7 +1189,7 @@ TOPUP_STATUS = [
 ## TASK-FIN-005: 确认转账 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §9（approved → paid）
+- STATE_MACHINE.md v2.9 §9（finance_approve → paid）
 - BUSINESS_RULES.md BR-FIN-010（资金流水审计）
 
 ### 输入
@@ -1200,7 +1203,7 @@ TOPUP_STATUS = [
 
 ### 验收标准
 - □ POST /api/v1/topup-requests/{id}/mark-paid 确认转账
-- □ 状态流转：approved → paid
+- □ 状态流转：finance_approve → paid
 - □ 必须由 finance 执行
 - □ 记录转账凭证/时间
 - □ 记录审计日志 [AUDIT]
@@ -1210,8 +1213,8 @@ TOPUP_STATUS = [
 ## TASK-FIN-006: 确认到账 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §9（paid → completed）
-- LEDGER_SOT.md v1.2（账本记录）
+- STATE_MACHINE.md v2.9 §9（paid → completed）
+- DATA_SCHEMA.md v5.11 §3.4.4（账本记录）
 
 ### 输入
 - TASK-FIN-005 已完成
@@ -1235,7 +1238,7 @@ TOPUP_STATUS = [
 ## TASK-FIN-007: 取消充值申请 API
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §9（→ cancelled）
+- STATE_MACHINE.md v2.9 §9（→ cancelled）
 
 ### 输入
 - TASK-FIN-002 已完成
@@ -1256,15 +1259,15 @@ TOPUP_STATUS = [
 # M8 账本模块 (LEDGER)
 
 > **规则模块**: BR-FIN 扩展（账本属于财务范畴）
-> **关联 SoT**: LEDGER_SOT.md v1.2, DATA_SCHEMA.md v5.6 §ledger_entries
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §3.4.4, DATA_SCHEMA.md v5.11 §ledger_entries
 > **优先级**: P2
 > **Phase**: Phase 1
 
 ## TASK-LEDGER-001: 账本记录列表 API
 
 ### 关联文档
-- LEDGER_SOT.md v1.2（双账本架构）
-- DATA_SCHEMA.md v5.6 §ledger_entries 表
+- DATA_SCHEMA.md v5.11 §3.4.4（双账本架构）
+- DATA_SCHEMA.md v5.11 §ledger_entries 表
 
 ### 输入
 - 认证模块已完成
@@ -1286,7 +1289,7 @@ TOPUP_STATUS = [
 ## TASK-LEDGER-002: 创建账本记录 Service
 
 ### 关联文档
-- LEDGER_SOT.md v1.2（账本类型定义）
+- DATA_SCHEMA.md v5.11 §3.4.4（账本类型定义）
 - BUSINESS_RULES.md BR-FIN-009（双账本原则）
 - BUSINESS_RULES.md BR-FIN-007（锁定后不可改）
 
@@ -1309,7 +1312,7 @@ TOPUP_STATUS = [
 ## TASK-LEDGER-003: 红冲记录 Service
 
 ### 关联文档
-- LEDGER_SOT.md v1.2（REVERSAL 类型）
+- DATA_SCHEMA.md v5.11 §3.4.4（REVERSAL 类型）
 - BUSINESS_RULES.md BR-FIN-008（红冲必须有理由）
 
 ### 输入
@@ -1330,7 +1333,7 @@ TOPUP_STATUS = [
 ## TASK-LEDGER-004: 余额计算 Service
 
 ### 关联文档
-- LEDGER_SOT.md v1.2 §3.2（余额公式）
+- DATA_SCHEMA.md v5.11 §3.4.4（余额公式）
 - BUSINESS_RULES.md BR-FIN-006（可用资金公式）
 
 ### 输入
@@ -1343,15 +1346,15 @@ TOPUP_STATUS = [
 ### 验收标准
 - □ 项目余额 = Σ(REVENUE) - Σ(COST_ALLOCATION) - Σ(REVERSAL)
 - □ 供应商余额 = Σ(COST) - Σ(TRANSFER_OUT) + Σ(TRANSFER_IN) - Σ(REVERSAL)
-- □ 可用资金公式参考 LEDGER_SOT.md v1.2 §3.2
-- □ 押款 = 历史充值 - 历史消耗（PRD.md v2.2）
+- □ 可用资金公式参考 DATA_SCHEMA.md v5.11 §3.4.4
+- □ 押款 = 历史充值 - 历史消耗（PRD v5.1）
 
 ---
 
 # M9 对账模块 (RECON)
 
 > **规则模块**: BR-RECON (7 条规则)
-> **关联 SoT**: STATE_MACHINE.md v2.8 §11, DATA_SCHEMA.md v5.6 §reconciliation_batches
+> **关联 SoT**: STATE_MACHINE.md v2.9 §11, DATA_SCHEMA.md v5.11 §reconciliation_batches
 > **优先级**: P2
 > **Phase**: Phase 2
 
@@ -1360,8 +1363,8 @@ TOPUP_STATUS = [
 > **Phase**: Phase 2
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §11.1（对账批次状态机）
-- DATA_SCHEMA.md v5.6 §reconciliation_batches 表
+- STATE_MACHINE.md v2.9 §11.1（对账批次状态机）
+- DATA_SCHEMA.md v5.11 §reconciliation_batches 表
 
 ### 输入
 - 账本模块已完成
@@ -1387,7 +1390,7 @@ TOPUP_STATUS = [
 ### 关联文档
 - BUSINESS_RULES.md BR-RECON-001（对账周期）
 - BUSINESS_RULES.md BR-RECON-002（对账发起人）
-- STATE_MACHINE.md v2.8 §11.1（初始状态 draft）
+- STATE_MACHINE.md v2.9 §11.1（初始状态 draft）
 
 ### 输入
 - TASK-RECON-001 已完成
@@ -1413,7 +1416,7 @@ TOPUP_STATUS = [
 > **Phase**: Phase 2
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §11.1（对账批次状态机）
+- STATE_MACHINE.md v2.9 §11.1（对账批次状态机）
 - BUSINESS_RULES.md BR-RECON-004（对账状态流转）
 - BUSINESS_RULES.md BR-RECON-005（完成后不可逆）
 
@@ -1441,7 +1444,7 @@ TOPUP_STATUS = [
 > **Phase**: Phase 2
 
 ### 关联文档
-- STATE_MACHINE.md v2.8 §11.2（对账明细状态机）
+- STATE_MACHINE.md v2.9 §11.2（对账明细状态机）
 - BUSINESS_RULES.md BR-RECON-003（差异阈值）
 - BUSINESS_RULES.md BR-RECON-006（差异必须记录）
 
@@ -1467,7 +1470,7 @@ TOPUP_STATUS = [
 # M10 利润模块 (PROFIT)
 
 > **规则模块**: BR-PROFIT (6 条规则)
-> **关联 SoT**: LEDGER_SOT.md v1.2, DATA_SCHEMA.md v5.6 §3.6, PRD.md v2.2 §2
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §3.4.4, DATA_SCHEMA.md v5.11 §3.6, PRD v5.1 §2
 > **优先级**: P2
 > **Phase**: Phase 1
 
@@ -1477,7 +1480,7 @@ TOPUP_STATUS = [
 - BUSINESS_RULES.md BR-PROFIT-001（收入公式 per_lead）
 - BUSINESS_RULES.md BR-PROFIT-002（收入公式 fee_rate）
 - BUSINESS_RULES.md BR-PROFIT-004（毛利公式）
-- PRD.md v2.2 附录B（利润公式）
+- PRD v5.1 附录B（利润公式）
 
 ### 输入
 - 日报模块已完成
@@ -1504,7 +1507,7 @@ TOPUP_STATUS = [
 ### 关联文档
 - BUSINESS_RULES.md BR-PROFIT-005（CPL 公式）
 - BUSINESS_RULES.md BR-PROFIT-006（低量标记）
-- MASTER.md v4.6 §4.5.2（边界场景）
+- MASTER.md v4.9 §4.5.2（边界场景）
 
 ### 输入
 - 日报模块已完成
@@ -1525,8 +1528,8 @@ TOPUP_STATUS = [
 
 ### 关联文档
 - BUSINESS_RULES.md BR-PROFIT-003（成本公式）
-- MASTER.md v4.6 §4.5.9（成本分类口径）
-- PRD.md v2.2 §2.2（支出类型枚举）
+- MASTER.md v4.9 §4.5.9（成本分类口径）
+- PRD v5.1 §2.2（支出类型枚举）
 
 ### 输入
 - 账本模块已完成
@@ -1537,7 +1540,7 @@ TOPUP_STATUS = [
 
 ### 验收标准
 - □ 项目成本 = ad_topup（广告费充值，已含手续费）
-- □ 成本分类（PRD.md v2.2 §2.2）：
+- □ 成本分类（PRD v5.1 §2.2）：
   - ad_topup：广告费充值（含手续费），归属项目
   - ad_support：广告配套（公司统一，不分摊到项目）
   - overhead：后勤支出（公司统一，不分摊到项目）
@@ -1548,8 +1551,8 @@ TOPUP_STATUS = [
 ## TASK-PROFIT-004: 公司利润汇总 API
 
 ### 关联文档
-- MASTER.md v4.6 §4.5.10（公司利润公式）
-- PRD.md v2.2 附录B（利润公式）
+- MASTER.md v4.9 §4.5.10（公司利润公式）
+- PRD v5.1 附录B（利润公式）
 
 ### 输入
 - TASK-PROFIT-001 已完成
@@ -1563,7 +1566,7 @@ TOPUP_STATUS = [
 
 ### 验收标准
 - □ GET /api/v1/profit/company 返回公司利润汇总
-- □ 公司利润 = 总收入 - 总支出（PRD.md v2.2）
+- □ 公司利润 = 总收入 - 总支出（PRD v5.1）
 - □ 总支出 = ad_topup + ad_support + overhead
 - □ 支持日期范围筛选
 - □ 仅 ceo/admin 可查看
@@ -1573,14 +1576,14 @@ TOPUP_STATUS = [
 # M11 周报模块 (WEEKLY)
 
 > **规则模块**: 无独立规则模块
-> **关联 SoT**: DATA_SCHEMA.md v5.6 §weekly_reports, MASTER.md v4.6 附录C
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §weekly_reports, MASTER.md v4.9 附录C
 > **优先级**: P3
 > **Phase**: Phase 1（可选提交）+ Phase 2（必须提交）
 
 ## TASK-WEEKLY-001: 周报列表 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §weekly_reports 表
+- DATA_SCHEMA.md v5.11 §weekly_reports 表
 
 ### 输入
 - 项目模块已完成
@@ -1600,7 +1603,7 @@ TOPUP_STATUS = [
 ## TASK-WEEKLY-002: 创建周报 API
 
 ### 关联文档
-- DATA_SCHEMA.md v5.6 §weekly_reports 表
+- DATA_SCHEMA.md v5.11 §weekly_reports 表
 
 ### 输入
 - TASK-WEEKLY-001 已完成
@@ -1622,7 +1625,7 @@ TOPUP_STATUS = [
 ## TASK-WEEKLY-003: 提交周报 API
 
 ### 关联文档
-- MASTER.md v4.6 附录 C（Phase 2 周报必须提交）
+- MASTER.md v4.9 附录 C（Phase 2 周报必须提交）
 
 ### 输入
 - TASK-WEEKLY-002 已完成
@@ -1672,21 +1675,21 @@ TOPUP_STATUS = [
 
 | 文档 | 路径 | 用途 |
 |------|------|------|
-| MASTER.md | docs/2.sot/MASTER.md | 架构宪法，角色定义 |
-| STATE_MACHINE.md | docs/2.sot/STATE_MACHINE.md | 状态机定义 |
-| DATA_SCHEMA.md | docs/2.sot/DATA_SCHEMA.md | 数据库表结构 |
-| BUSINESS_RULES.md | docs/2.sot/BUSINESS_RULES.md | 业务规则索引 |
-| ERROR_CODES.md | docs/2.sot/ERROR_CODES.md | 错误码定义 |
-| AUTH_SPEC.md | docs/2.sot/AUTH_SPEC.md | 认证授权规范 |
-| LEDGER_SOT.md | docs/2.sot/LEDGER_SOT.md | 账本规则 |
-| API_SOT.md | docs/2.sot/API_SOT.md | API 端点定义 |
-| PRD.md | docs/1.overview/PRD.md | 产品需求文档 |
+| MASTER.md | docs/sot/MASTER.md | 架构宪法，角色定义 |
+| STATE_MACHINE.md | docs/sot/STATE_MACHINE.md | 状态机定义 |
+| DATA_SCHEMA.md | docs/sot/DATA_SCHEMA.md | 数据库表结构 |
+| BUSINESS_RULES.md | docs/sot/BUSINESS_RULES.md | 业务规则索引 |
+| ERROR_CODES_SOT.md | docs/sot/ERROR_CODES_SOT.md | 错误码定义 |
+| AUTH_SPEC.md | docs/sot/AUTH_SPEC.md | 认证授权规范 |
+| DATA_SCHEMA.md §3.4.4 | docs/sot/DATA_SCHEMA.md | 账本规则（已合并） |
+| API_SOT.md | docs/sot/API_SOT.md | API 端点定义 |
+| PRD_v5.1.md | docs/PRD_v5.1.md | 产品需求文档 |
 
 ---
 
 ## 附录 C：角色权限速查表
 
-> **来源**: MASTER.md v4.6 §2.4, PRD.md v2.2 §1.2
+> **来源**: MASTER.md v4.9 §2.4, PRD v5.1 §2.2
 
 | 操作 | ceo | project_owner | finance | pitcher | account_manager | admin |
 |------|-----|---------------|---------|---------|-----------------|-------|
@@ -1737,7 +1740,7 @@ TOPUP_STATUS = [
 **P0 修复**:
 - 修复 `data_operator` → `project_owner`（TASK-CHAN-003）
 - 修复 `media_buyer` → `pitcher`（TASK-CHAN-003/004, TASK-FIN-003）
-- 修复 `finance_approve` → `approved`（TASK-FIN-004）
+- 修复 `approved` → `finance_approve`（TASK-FIN-004）
 - 标注 Phase 2 任务卡（TASK-RPT-004/005/006/008/009, TASK-RECON-001~004）
 
 **P1 修复**:

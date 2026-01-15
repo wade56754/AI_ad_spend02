@@ -23,7 +23,7 @@ if errorlevel 1 (
     echo 请先运行: scripts\start-dev-servers.bat
     echo 或手动启动:
     echo   cd frontend
-    echo   npm run dev
+    echo   pnpm run dev
     pause
     exit /b 1
 )

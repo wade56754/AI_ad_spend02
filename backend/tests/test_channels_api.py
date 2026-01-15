@@ -18,7 +18,7 @@ class TestChannelsList:
 
     def test_list_channels_success(self, client, auth_headers, test_channel):
         """测试获取渠道列表 - 成功"""
-        response = client.get("/api/v1/channels/", headers=auth_headers)
+        response = client.get("/api/v1/channels", headers=auth_headers)
 
         assert response.status_code == 200
         data = response.json()
@@ -39,9 +39,9 @@ class TestChannelsList:
     def test_list_channels_with_pagination(self, client, auth_headers, test_channel):
         """测试获取渠道列表 - 分页"""
         response = client.get(
-            "/api/v1/channels/",
+            "/api/v1/channels",
             params={"page": 1, "page_size": 10},
-            headers=auth_headers
+            headers=auth_headers,
         )
 
         assert response.status_code == 200
@@ -53,23 +53,19 @@ class TestChannelsList:
     def test_list_channels_filter_by_active(self, client, auth_headers, test_channel):
         """测试获取渠道列表 - 按激活状态过滤"""
         response = client.get(
-            "/api/v1/channels/",
-            params={"is_active": True},
-            headers=auth_headers
+            "/api/v1/channels", params={"is_active": True}, headers=auth_headers
         )
 
         assert response.status_code == 200
         data = response.json()
-        # 所有返回的渠道应该都是激活状态
+        # 所有返回的渠道应该都是激活状态 (status == "active")
         for channel in data["data"]["items"]:
-            assert channel.get("is_active", True) is True
+            assert channel.get("status", "active") == "active"
 
     def test_list_channels_search(self, client, auth_headers, test_channel):
         """测试获取渠道列表 - 搜索"""
         response = client.get(
-            "/api/v1/channels/",
-            params={"search": "Facebook"},
-            headers=auth_headers
+            "/api/v1/channels", params={"search": "Facebook"}, headers=auth_headers
         )
 
         assert response.status_code == 200
@@ -79,7 +75,7 @@ class TestChannelsList:
 
     def test_list_channels_unauthorized(self, client):
         """测试获取渠道列表 - 未授权"""
-        response = client.get("/api/v1/channels/")
+        response = client.get("/api/v1/channels")
 
         assert response.status_code == 401
 
@@ -90,8 +86,7 @@ class TestChannelGet:
     def test_get_channel_success(self, client, auth_headers, test_channel):
         """测试获取渠道详情 - 成功"""
         response = client.get(
-            f"/api/v1/channels/{test_channel.id}",
-            headers=auth_headers
+            f"/api/v1/channels/{test_channel.id}", headers=auth_headers
         )
 
         assert response.status_code == 200
@@ -106,10 +101,7 @@ class TestChannelGet:
     def test_get_channel_not_found(self, client, auth_headers):
         """测试获取渠道详情 - 不存在"""
         fake_id = uuid4()
-        response = client.get(
-            f"/api/v1/channels/{fake_id}",
-            headers=auth_headers
-        )
+        response = client.get(f"/api/v1/channels/{fake_id}", headers=auth_headers)
 
         assert response.status_code == 404
 
@@ -127,16 +119,13 @@ class TestChannelCreate:
         """测试创建渠道 - 成功"""
         channel_data = {
             "name": "TikTok Ads",
-            "service_fee_type": "percent",
-            "service_fee_value": "5.00",
-            "is_active": True,
-            "created_by": str(admin_user.id)
+            "platform": "tiktok",
+            "status": "active",
+            "created_by": str(admin_user.id),
         }
 
         response = client.post(
-            "/api/v1/channels/",
-            json=channel_data,
-            headers=admin_headers
+            "/api/v1/channels", json=channel_data, headers=admin_headers
         )
 
         assert response.status_code == 201
@@ -146,26 +135,19 @@ class TestChannelCreate:
 
     def test_create_channel_missing_name(self, client, admin_headers, admin_user):
         """测试创建渠道 - 缺少名称"""
-        channel_data = {
-            "service_fee_type": "percent",
-            "created_by": str(admin_user.id)
-        }
+        channel_data = {"service_fee_type": "percent", "created_by": str(admin_user.id)}
 
         response = client.post(
-            "/api/v1/channels/",
-            json=channel_data,
-            headers=admin_headers
+            "/api/v1/channels", json=channel_data, headers=admin_headers
         )
 
         assert response.status_code == 422  # Validation error
 
     def test_create_channel_unauthorized(self, client):
         """测试创建渠道 - 未授权"""
-        channel_data = {
-            "name": "Test Channel"
-        }
+        channel_data = {"name": "Test Channel"}
 
-        response = client.post("/api/v1/channels/", json=channel_data)
+        response = client.post("/api/v1/channels", json=channel_data)
 
         assert response.status_code == 401
 
@@ -173,17 +155,16 @@ class TestChannelCreate:
 class TestChannelUpdate:
     """渠道更新 API 测试"""
 
-    def test_update_channel_success(self, client, admin_headers, test_channel, admin_user):
+    def test_update_channel_success(
+        self, client, admin_headers, test_channel, admin_user
+    ):
         """测试更新渠道 - 成功"""
-        update_data = {
-            "name": "Facebook Ads Updated",
-            "updated_by": str(admin_user.id)
-        }
+        update_data = {"name": "Facebook Ads Updated", "updated_by": str(admin_user.id)}
 
         response = client.put(
             f"/api/v1/channels/{test_channel.id}",
             json=update_data,
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         assert response.status_code == 200
@@ -191,35 +172,30 @@ class TestChannelUpdate:
         assert data["success"] is True
         assert data["data"]["name"] == "Facebook Ads Updated"
 
-    def test_update_channel_partial(self, client, admin_headers, test_channel, admin_user):
+    def test_update_channel_partial(
+        self, client, admin_headers, test_channel, admin_user
+    ):
         """测试更新渠道 - 部分更新"""
-        update_data = {
-            "is_active": False,
-            "updated_by": str(admin_user.id)
-        }
+        # 使用 status 字段 (active/inactive)，而非 is_active
+        update_data = {"status": "inactive", "updated_by": str(admin_user.id)}
 
         response = client.put(
             f"/api/v1/channels/{test_channel.id}",
             json=update_data,
-            headers=admin_headers
+            headers=admin_headers,
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["data"]["is_active"] is False
+        assert data["data"]["status"] == "inactive"
 
     def test_update_channel_not_found(self, client, admin_headers, admin_user):
         """测试更新渠道 - 不存在"""
         fake_id = uuid4()
-        update_data = {
-            "name": "Updated Name",
-            "updated_by": str(admin_user.id)
-        }
+        update_data = {"name": "Updated Name", "updated_by": str(admin_user.id)}
 
         response = client.put(
-            f"/api/v1/channels/{fake_id}",
-            json=update_data,
-            headers=admin_headers
+            f"/api/v1/channels/{fake_id}", json=update_data, headers=admin_headers
         )
 
         assert response.status_code == 404
@@ -228,9 +204,6 @@ class TestChannelUpdate:
         """测试更新渠道 - 未授权"""
         update_data = {"name": "Updated Name"}
 
-        response = client.put(
-            f"/api/v1/channels/{test_channel.id}",
-            json=update_data
-        )
+        response = client.put(f"/api/v1/channels/{test_channel.id}", json=update_data)
 
         assert response.status_code == 401

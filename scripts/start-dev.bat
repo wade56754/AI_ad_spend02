@@ -18,7 +18,7 @@ timeout /t 5 /nobreak > nul
 
 echo [4/4] 启动前端服务...
 cd /d "%~dp0frontend"
-start "Next.js Frontend" cmd /k "npm run dev"
+start "Next.js Frontend" cmd /k "pnpm run dev"
 
 echo.
 echo ====================================

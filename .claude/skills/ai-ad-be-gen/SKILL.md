@@ -14,7 +14,6 @@ sot_dependencies:
     - docs/sot/BUSINESS_RULES.md
     - docs/sot/ERROR_CODES_SOT.md
   optional:
-    - docs/sot/LEDGER_SOT.md
     - docs/sot/AUTH_SPEC.md
 
 output_boundaries:
@@ -215,10 +214,6 @@ PRE_ANALYSIS_CONTEXT:
 {{ERROR_CODES}}
 </DOC>
 
-<DOC name="LEDGER_SOT" optional="true">
-{{LEDGER_SOT}}
-</DOC>
-
 <DOC name="AUTH_SPEC" optional="true">
 {{AUTH_SPEC}}
 </DOC>
@@ -263,7 +258,7 @@ PRE_ANALYSIS_CONTEXT:
 **Step -1: 常量验证** (AH-01, AH-02)
 - □ 状态值 → STATE_MACHINE.md 8 状态白名单
   (raw_submitted, trend_pending, trend_ok, trend_flagged, trend_resolved, final_pending, final_confirmed, final_locked)
-- □ 角色值 → 6 业务层角色 (PRD v2.2) + 4 技术层角色 (MASTER.md v4.6)
+- □ 角色值 → 6 业务层角色 (PRD v5.1) + 4 技术层角色 (MASTER.md v4.6)
   业务层: (ceo, project_owner, finance, pitcher, account_manager, admin)
   技术层: (admin, finance, account_manager, media_buyer)
 - □ 错误码前缀 → 16 前缀白名单
@@ -423,7 +418,7 @@ POST_REVIEW_RESULT:
 | 字段类型匹配 | 对比 DATA_SCHEMA.md | P0 |
 | 禁区检查 | 不生成 models/migrations | P0 |
 | 权限检查 | 对比 AUTH_SPEC.md | P1 |
-| 账本规则 | 对比 LEDGER_SOT.md | P1 |
+| 账本规则 | 对比 DATA_SCHEMA.md §3.4.4 | P1 |
 
 **财务模块额外检查** (module=finance 时必须):
 

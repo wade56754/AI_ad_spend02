@@ -4,8 +4,8 @@
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
-> **父文档**: BUSINESS_RULES.md v5.1
-> **关联 SoT**: DATA_SCHEMA.md v5.7 §1-2
+> **父文档**: BUSINESS_RULES.md v5.2
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §1-2
 > **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
@@ -14,8 +14,8 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v5.0 | §4.8 | 规则索引定义 |
-| DATA_SCHEMA.md | v5.7 | §1-2 | 数据模型通用约束 |
+| BUSINESS_RULES.md | v5.2 | §4.8 | 规则索引定义 |
+| DATA_SCHEMA.md | v5.11 | §1-2 | 数据模型通用约束 |
 | ERROR_CODES.md | v2.3 | §4.4, §4.5 | 错误码映射 |
 | STATE_MACHINE.md | v2.9 | §3 | 枚举值定义 |
 
@@ -58,7 +58,7 @@
 
 #### 前置条件
 - 数据状态: 被引用记录已存在
-- 引用: DATA_SCHEMA.md v5.6 §1.2
+- 引用: DATA_SCHEMA.md v5.11 §1.2
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -102,7 +102,7 @@
 
 #### 前置条件
 - 系统环境: 数据库时区设置为 UTC
-- 引用: DATA_SCHEMA.md v5.6 §1.1
+- 引用: DATA_SCHEMA.md v5.11 §1.1
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -147,7 +147,7 @@
 
 #### 前置条件
 - 数据模型: 遵循 DATA_SCHEMA.md 金额规范
-- 引用: DATA_SCHEMA.md v5.6 §1.1
+- 引用: DATA_SCHEMA.md v5.11 §1.1
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -193,7 +193,7 @@
 
 #### 前置条件
 - 数据模型: 表包含 `deleted_at` 字段
-- 引用: DATA_SCHEMA.md v5.6 §1.1
+- 引用: DATA_SCHEMA.md v5.11 §1.1
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -232,14 +232,14 @@
 #### 核心枚举定义
 | 枚举类型 | 合法取值 | 引用 |
 |----------|----------|------|
-| 技术角色 | admin, finance, account_manager, media_buyer | STATE_MACHINE.md §2, MASTER.md v4.8 §INV-007 |
+| 技术角色 | admin, finance, account_manager, media_buyer | STATE_MACHINE.md §2, MASTER.md v4.9 §INV-007 |
 | 账户状态 | new, testing, active, suspended, dead, archived | STATE_MACHINE.md §6 |
 | 日报状态 | raw_submitted, trend_pending, trend_ok, ... | STATE_MACHINE.md §5 |
 | 项目状态 | draft, active, suspended, archived | STATE_MACHINE.md §4 |
 
 #### 前置条件
 - 数据模型: 枚举定义在 STATE_MACHINE.md
-- 引用: STATE_MACHINE.md v2.8 §4
+- 引用: STATE_MACHINE.md v2.9 §4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -295,12 +295,12 @@ BR-DATA-005 (枚举值校验) ←── 状态/角色字段依赖
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.6；错误码对齐 ERROR_CODES.md v2.3 |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v5.2；错误码对齐 ERROR_CODES.md v2.3 |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
-**父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: DATA_SCHEMA.md v5.6 §1-2
+**父文档**: BUSINESS_RULES.md v5.2
+**关联 SoT**: DATA_SCHEMA.md v5.11 §1-2
 **版本**: v1.0

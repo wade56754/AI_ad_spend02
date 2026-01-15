@@ -149,7 +149,7 @@ REFACTOR (重构)   → /sc:improve → /sot-check → commit
 | 关键词 | 模块 | 注入的 SoT 章节 |
 |--------|------|----------------|
 | 日报, 投放, CPL, 投手 | pitcher | STATE_MACHINE#daily_report, BR-RPT-* |
-| 充值, 流水, 账本, 资金 | finance | LEDGER_SOT, BR-FIN-*, STATE_MACHINE#topup |
+| 充值, 流水, 账本, 资金 | finance | DATA_SCHEMA.md §3.4.4, BR-FIN-*, STATE_MACHINE#topup |
 | 账户, 开户, 授权 | ad_account | BR-ACCT-*, STATE_MACHINE#ad_account |
 | 项目, 成员, 盈亏 | project | BR-PROJ-*, DATA_SCHEMA#projects |
 | 对账, 差异, 调整 | reconciliation | BR-RECON-*, STATE_MACHINE#reconciliation |

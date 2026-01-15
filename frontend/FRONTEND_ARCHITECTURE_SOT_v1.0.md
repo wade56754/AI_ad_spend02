@@ -44,12 +44,12 @@ frontend/
 
 ### 1.2 关键问题清单
 
-| 问题 | 严重程度 | 影响 |
-|------|----------|------|
-| 双入口 (app/ + src/app/) | 🔴 高 | 路由冲突、构建不稳定 |
-| 业务组件散落在 components/ | 🟡 中 | 模块边界模糊 |
-| 路由组未完整使用 | 🟡 中 | Layout 复用受限 |
-| @/components/* 指向旧目录 | 🟡 中 | 迁移后 import 断裂 |
+| 问题                       | 严重程度 | 影响                 |
+| -------------------------- | -------- | -------------------- |
+| 双入口 (app/ + src/app/)   | 🔴 高    | 路由冲突、构建不稳定 |
+| 业务组件散落在 components/ | 🟡 中    | 模块边界模糊         |
+| 路由组未完整使用           | 🟡 中    | Layout 复用受限      |
+| @/components/\* 指向旧目录 | 🟡 中    | 迁移后 import 断裂   |
 
 ### 1.3 目标结构 (对齐 Kiranism 模板)
 
@@ -116,12 +116,12 @@ frontend/
 
 #### 步骤 0.1: 统一 app 入口
 
-| 操作 | 旧路径 | 新路径 |
-|------|--------|--------|
-| 移动根布局 | `app/layout.tsx` | `src/app/layout.tsx` (已存在，合并) |
-| 移动全局样式 | `app/globals.css` | `src/app/globals.css` (已存在) |
-| 移动 providers | `app/providers.tsx` | `src/app/providers.tsx` (已存在) |
-| 删除旧入口 | `app/layout.tsx` | 删除 |
+| 操作           | 旧路径              | 新路径                              |
+| -------------- | ------------------- | ----------------------------------- |
+| 移动根布局     | `app/layout.tsx`    | `src/app/layout.tsx` (已存在，合并) |
+| 移动全局样式   | `app/globals.css`   | `src/app/globals.css` (已存在)      |
+| 移动 providers | `app/providers.tsx` | `src/app/providers.tsx` (已存在)    |
+| 删除旧入口     | `app/layout.tsx`    | 删除                                |
 
 **注意**: Next.js 14+ 默认查找 `app/` 目录，需要在 `next.config.js` 中配置:
 
@@ -156,14 +156,14 @@ src/app/
 
 #### 步骤 0.3: 迁移全局组件到 src/components/
 
-| 操作 | 旧路径 | 新路径 |
-|------|--------|--------|
-| ui 组件 | `components/ui/*` | `src/components/ui/*` |
-| 布局组件 | `components/layout/*` | `src/components/layout/*` |
-| 共享组件 | `components/shared/*` | `src/components/shared/*` |
+| 操作           | 旧路径                               | 新路径                                |
+| -------------- | ------------------------------------ | ------------------------------------- |
+| ui 组件        | `components/ui/*`                    | `src/components/ui/*`                 |
+| 布局组件       | `components/layout/*`                | `src/components/layout/*`             |
+| 共享组件       | `components/shared/*`                | `src/components/shared/*`             |
 | Dashboard 布局 | `components/dashboard/AppLayout.tsx` | `src/components/layout/AppLayout.tsx` |
-| Dashboard 布局 | `components/dashboard/sidebar.tsx` | `src/components/layout/Sidebar.tsx` |
-| Dashboard 布局 | `components/dashboard/header.tsx` | `src/components/layout/Header.tsx` |
+| Dashboard 布局 | `components/dashboard/sidebar.tsx`   | `src/components/layout/Sidebar.tsx`   |
+| Dashboard 布局 | `components/dashboard/header.tsx`    | `src/components/layout/Header.tsx`    |
 
 #### 步骤 0.4: 更新 tsconfig.json paths
 
@@ -185,6 +185,7 @@ src/app/
 ```
 
 **删除的别名**:
+
 - ~~`@/modules/*`~~ → 统一使用 `@/features/*`
 
 #### 步骤 0.5: 创建缺失的目录骨架
@@ -197,10 +198,10 @@ src/stores/
 
 #### Phase 0 验收标准
 
-- [ ] `npm run dev` 正常启动
+- [ ] `pnpm run dev` 正常启动
 - [ ] 访问 `/login` 页面正常渲染
 - [ ] 访问 `/projects` 页面正常渲染 (Dashboard 布局生效)
-- [ ] `npm run build` 无 TypeScript 错误
+- [ ] `pnpm run build` 无 TypeScript 错误
 - [ ] 旧 `app/` 目录已删除或标记废弃
 
 ---
@@ -211,25 +212,26 @@ src/stores/
 
 #### 模块清单与优先级
 
-| 模块 | 当前状态 | 迁移优先级 | 依赖 |
-|------|----------|------------|------|
-| projects | 部分在 features/ | P0 | - |
-| channels | 部分在 features/ | P0 | - |
-| suppliers | 已在 features/ | ✅ 完成 | - |
-| transfers | 已在 features/ | ✅ 完成 | - |
-| settlements | 已在 features/ | ✅ 完成 | - |
-| daily-reports | 部分在 features/ | P1 | - |
-| reconciliation | 部分在 features/ | P1 | - |
-| topups | 部分在 features/ | P1 | - |
-| ledger | 部分在 features/ | P1 | - |
-| ad-accounts | 在 components/ | P1 | - |
-| finance-profit | 部分在 features/ | P2 | - |
-| import-jobs | 部分在 features/ | P2 | - |
-| reports | 部分在 features/ | P2 | - |
+| 模块           | 当前状态         | 迁移优先级 | 依赖 |
+| -------------- | ---------------- | ---------- | ---- |
+| projects       | 部分在 features/ | P0         | -    |
+| channels       | 部分在 features/ | P0         | -    |
+| suppliers      | 已在 features/   | ✅ 完成    | -    |
+| transfers      | 已在 features/   | ✅ 完成    | -    |
+| settlements    | 已在 features/   | ✅ 完成    | -    |
+| daily-reports  | 部分在 features/ | P1         | -    |
+| reconciliation | 部分在 features/ | P1         | -    |
+| topups         | 部分在 features/ | P1         | -    |
+| ledger         | 部分在 features/ | P1         | -    |
+| ad-accounts    | 在 components/   | P1         | -    |
+| finance-profit | 部分在 features/ | P2         | -    |
+| import-jobs    | 部分在 features/ | P2         | -    |
+| reports        | 部分在 features/ | P2         | -    |
 
 #### 步骤 1.1: 迁移 projects 模块 (示例)
 
 **旧文件分布**:
+
 ```
 components/projects/
 ├── project-form.tsx
@@ -258,15 +260,16 @@ src/features/projects/          # 已存在部分
 
 **迁移映射表**:
 
-| 旧路径 | 新路径 | 操作 |
-|--------|--------|------|
-| `components/projects/project-form.tsx` | `src/features/projects/components/ProjectForm.tsx` | 合并或替换 |
-| `components/projects/project-kanban.tsx` | `src/features/projects/components/ProjectKanban.tsx` | 移动 |
+| 旧路径                                          | 新路径                                               | 操作         |
+| ----------------------------------------------- | ---------------------------------------------------- | ------------ |
+| `components/projects/project-form.tsx`          | `src/features/projects/components/ProjectForm.tsx`   | 合并或替换   |
+| `components/projects/project-kanban.tsx`        | `src/features/projects/components/ProjectKanban.tsx` | 移动         |
 | `components/projects/modern-project-detail.tsx` | `src/features/projects/components/ProjectDetail.tsx` | 移动并重命名 |
-| `app/(dashboard)/projects/types.ts` | `src/features/projects/types/project.types.ts` | 合并 |
-| `app/(dashboard)/projects/components/*` | `src/features/projects/components/*` | 合并 |
+| `app/(dashboard)/projects/types.ts`             | `src/features/projects/types/project.types.ts`       | 合并         |
+| `app/(dashboard)/projects/components/*`         | `src/features/projects/components/*`                 | 合并         |
 
 **最终 projects 模块结构**:
+
 ```
 src/features/projects/
 ├── components/
@@ -318,32 +321,32 @@ export default function Page({ params }: { params: { id: string } }) {
 
 #### 步骤 1.3: 迁移 ad-accounts 模块
 
-| 旧路径 | 新路径 |
-|--------|--------|
-| `components/ad-accounts/ad-account-form.tsx` | `src/features/ad-accounts/components/AdAccountForm.tsx` |
+| 旧路径                                        | 新路径                                                    |
+| --------------------------------------------- | --------------------------------------------------------- |
+| `components/ad-accounts/ad-account-form.tsx`  | `src/features/ad-accounts/components/AdAccountForm.tsx`   |
 | `components/ad-accounts/batch-operations.tsx` | `src/features/ad-accounts/components/BatchOperations.tsx` |
-| `app/(dashboard)/ad-accounts/components/*` | `src/features/ad-accounts/components/*` |
-| `app/(dashboard)/ad-accounts/types.ts` | `src/features/ad-accounts/types/` |
+| `app/(dashboard)/ad-accounts/components/*`    | `src/features/ad-accounts/components/*`                   |
+| `app/(dashboard)/ad-accounts/types.ts`        | `src/features/ad-accounts/types/`                         |
 
 #### 步骤 1.4: 迁移 daily-reports 模块
 
-| 旧路径 | 新路径 |
-|--------|--------|
-| `components/daily-reports/*` | `src/features/daily-reports/components/*` |
+| 旧路径                                       | 新路径                                    |
+| -------------------------------------------- | ----------------------------------------- |
+| `components/daily-reports/*`                 | `src/features/daily-reports/components/*` |
 | `app/(dashboard)/daily-reports/components/*` | `src/features/daily-reports/components/*` |
-| `app/(dashboard)/daily-reports/types.ts` | `src/features/daily-reports/types/` |
+| `app/(dashboard)/daily-reports/types.ts`     | `src/features/daily-reports/types/`       |
 
 #### 步骤 1.5: 迁移 reconciliation 模块
 
-| 旧路径 | 新路径 |
-|--------|--------|
-| `components/reconciliation/*` | `src/features/reconciliation/components/*` |
+| 旧路径                                        | 新路径                                     |
+| --------------------------------------------- | ------------------------------------------ |
+| `components/reconciliation/*`                 | `src/features/reconciliation/components/*` |
 | `app/(dashboard)/reconciliation/components/*` | `src/features/reconciliation/components/*` |
 
 #### 步骤 1.6: 迁移 finance 模块
 
-| 旧路径 | 新路径 |
-|--------|--------|
+| 旧路径                                      | 新路径                                                |
+| ------------------------------------------- | ----------------------------------------------------- |
 | `components/finance/topup-request-form.tsx` | `src/features/topups/components/TopupRequestForm.tsx` |
 
 #### Phase 1 验收标准
@@ -363,10 +366,11 @@ export default function Page({ params }: { params: { id: string } }) {
 #### 步骤 2.1: 安装 nuqs 并创建 URL 状态管理 hook
 
 ```bash
-npm install nuqs
+pnpm add nuqs
 ```
 
 创建 `src/hooks/use-table-params.ts`:
+
 ```tsx
 // 封装分页、筛选、排序的 URL 状态管理
 import { parseAsInteger, parseAsString, useQueryStates } from 'nuqs';
@@ -387,6 +391,7 @@ export function useTableParams() {
 创建 `src/components/shared/GlobalErrorBoundary.tsx`
 
 在 `src/app/layout.tsx` 中包裹:
+
 ```tsx
 <GlobalErrorBoundary>
   <Providers>{children}</Providers>
@@ -396,6 +401,7 @@ export function useTableParams() {
 #### 步骤 2.3: 配置 React Query 全局错误处理
 
 在 `src/app/providers.tsx` 中:
+
 ```tsx
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -415,6 +421,7 @@ const queryClient = new QueryClient({
 #### 步骤 2.4: 创建通用 DataTable 组件
 
 位置: `src/components/ui/data-table/`
+
 ```
 src/components/ui/data-table/
 ├── DataTable.tsx           # 主组件
@@ -437,29 +444,29 @@ src/components/ui/data-table/
 
 ### 3.1 文件生成位置规则
 
-| 类型 | 路径前缀 | 示例 |
-|------|----------|------|
-| 新页面路由 | `src/app/(dashboard)/` | `src/app/(dashboard)/invoices/page.tsx` |
-| 认证页面 | `src/app/(auth)/` | `src/app/(auth)/reset-password/page.tsx` |
-| 业务组件 | `src/features/{module}/components/` | `src/features/invoices/components/InvoiceForm.tsx` |
-| 业务 Hook | `src/features/{module}/hooks/` | `src/features/invoices/hooks/useInvoice.ts` |
-| 业务 API | `src/features/{module}/services/` | `src/features/invoices/services/invoicesApi.ts` |
-| 业务类型 | `src/features/{module}/types/` | `src/features/invoices/types/invoice.types.ts` |
-| Zod Schema | `src/features/{module}/schemas/` | `src/features/invoices/schemas/invoice.schema.ts` |
-| 全局 UI 组件 | `src/components/ui/` | `src/components/ui/date-range-picker.tsx` |
-| 全局 Hook | `src/hooks/` | `src/hooks/use-debounce.ts` |
-| 工具函数 | `src/lib/` | `src/lib/currency.ts` |
-| 全局类型 | `src/types/` | `src/types/pagination.ts` |
-| Zustand Store | `src/stores/` | `src/stores/filter-store.ts` |
+| 类型          | 路径前缀                            | 示例                                               |
+| ------------- | ----------------------------------- | -------------------------------------------------- |
+| 新页面路由    | `src/app/(dashboard)/`              | `src/app/(dashboard)/invoices/page.tsx`            |
+| 认证页面      | `src/app/(auth)/`                   | `src/app/(auth)/reset-password/page.tsx`           |
+| 业务组件      | `src/features/{module}/components/` | `src/features/invoices/components/InvoiceForm.tsx` |
+| 业务 Hook     | `src/features/{module}/hooks/`      | `src/features/invoices/hooks/useInvoice.ts`        |
+| 业务 API      | `src/features/{module}/services/`   | `src/features/invoices/services/invoicesApi.ts`    |
+| 业务类型      | `src/features/{module}/types/`      | `src/features/invoices/types/invoice.types.ts`     |
+| Zod Schema    | `src/features/{module}/schemas/`    | `src/features/invoices/schemas/invoice.schema.ts`  |
+| 全局 UI 组件  | `src/components/ui/`                | `src/components/ui/date-range-picker.tsx`          |
+| 全局 Hook     | `src/hooks/`                        | `src/hooks/use-debounce.ts`                        |
+| 工具函数      | `src/lib/`                          | `src/lib/currency.ts`                              |
+| 全局类型      | `src/types/`                        | `src/types/pagination.ts`                          |
+| Zustand Store | `src/stores/`                       | `src/stores/filter-store.ts`                       |
 
 ### 3.2 禁止写入的位置
 
-| 禁止路径 | 原因 |
-|----------|------|
-| ~~`app/`~~ (根目录下) | 已废弃，统一用 src/app/ |
-| ~~`src/app/**/components/`~~ | 页面目录不放组件 |
+| 禁止路径                     | 原因                           |
+| ---------------------------- | ------------------------------ |
+| ~~`app/`~~ (根目录下)        | 已废弃，统一用 src/app/        |
+| ~~`src/app/**/components/`~~ | 页面目录不放组件               |
 | ~~`components/`~~ (根目录下) | 已废弃，统一用 src/components/ |
-| ~~`src/modules/`~~ | 已废弃，统一用 src/features/ |
+| ~~`src/modules/`~~           | 已废弃，统一用 src/features/   |
 
 ### 3.3 新模块脚手架模板
 
@@ -500,9 +507,9 @@ import { useTableParams } from '@/hooks/use-table-params';
 import type { Project } from '@/features/projects/types';
 
 // ❌ 错误
-import { ProjectsPage } from '@/modules/projects';  // 旧别名
-import { Button } from '../../../components/ui/button';  // 相对路径
-import { cn } from '../../lib/utils';  // 相对路径
+import { ProjectsPage } from '@/modules/projects'; // 旧别名
+import { Button } from '../../../components/ui/button'; // 相对路径
+import { cn } from '../../lib/utils'; // 相对路径
 ```
 
 ---
@@ -515,12 +522,12 @@ import { cn } from '../../lib/utils';  // 相对路径
 - [ ] 0.2 删除旧 app/ 目录 (保留 app/(auth) 和 app/(dashboard) 布局临时)
 - [ ] 0.3 创建 src/app/(auth)/ 路由组
 - [ ] 0.4 创建 src/app/(dashboard)/ 路由组
-- [ ] 0.5 迁移 components/ui/* → src/components/ui/*
-- [ ] 0.6 迁移 components/layout/* → src/components/layout/*
-- [ ] 0.7 迁移 components/shared/* → src/components/shared/*
+- [ ] 0.5 迁移 components/ui/_ → src/components/ui/_
+- [ ] 0.6 迁移 components/layout/_ → src/components/layout/_
+- [ ] 0.7 迁移 components/shared/_ → src/components/shared/_
 - [ ] 0.8 更新 tsconfig.json paths
-- [ ] 0.9 验证 npm run dev 正常
-- [ ] 0.10 验证 npm run build 通过
+- [ ] 0.9 验证 pnpm run dev 正常
+- [ ] 0.10 验证 pnpm run build 通过
 
 ### Phase 1 Checklist
 
@@ -531,7 +538,7 @@ import { cn } from '../../lib/utils';  // 相对路径
 - [ ] 1.5 迁移 topups 模块
 - [ ] 1.6 壳化所有页面 (page.tsx 只 import feature 组件)
 - [ ] 1.7 删除 components/ 下的业务模块目录
-- [ ] 1.8 删除 app/(dashboard)/*/components/ 目录
+- [ ] 1.8 删除 app/(dashboard)/\*/components/ 目录
 - [ ] 1.9 验证所有页面功能正常
 
 ### Phase 2 Checklist
@@ -549,15 +556,16 @@ import { cn } from '../../lib/utils';  // 相对路径
 
 ### 风险点
 
-| 风险 | 概率 | 影响 | 缓解措施 |
-|------|------|------|----------|
-| Import 路径断裂 | 高 | 中 | 分批迁移，每步验证 |
-| 路由冲突 | 中 | 高 | 先删旧再建新 |
-| 样式丢失 | 低 | 中 | globals.css 统一管理 |
+| 风险            | 概率 | 影响 | 缓解措施             |
+| --------------- | ---- | ---- | -------------------- |
+| Import 路径断裂 | 高   | 中   | 分批迁移，每步验证   |
+| 路由冲突        | 中   | 高   | 先删旧再建新         |
+| 样式丢失        | 低   | 中   | globals.css 统一管理 |
 
 ### 回滚策略
 
 每个 Phase 完成后创建 Git tag:
+
 ```bash
 git tag -a frontend-phase0-done -m "Phase 0 完成"
 git tag -a frontend-phase1-done -m "Phase 1 完成"
@@ -568,21 +576,21 @@ git tag -a frontend-phase2-done -m "Phase 2 完成"
 
 ## 附录 A: 完整模块清单
 
-| 模块名 | 路由 | features/ 路径 | 状态 |
-|--------|------|----------------|------|
-| projects | /projects | src/features/projects | 待完善 |
-| channels | /channels | src/features/channels | 待迁移 |
-| suppliers | /suppliers | src/features/suppliers | ✅ |
-| transfers | /transfers | src/features/transfers | ✅ |
-| settlements | /settlements | src/features/settlements | ✅ |
-| daily-reports | /daily-reports | src/features/daily-reports | 待完善 |
+| 模块名         | 路由            | features/ 路径              | 状态   |
+| -------------- | --------------- | --------------------------- | ------ |
+| projects       | /projects       | src/features/projects       | 待完善 |
+| channels       | /channels       | src/features/channels       | 待迁移 |
+| suppliers      | /suppliers      | src/features/suppliers      | ✅     |
+| transfers      | /transfers      | src/features/transfers      | ✅     |
+| settlements    | /settlements    | src/features/settlements    | ✅     |
+| daily-reports  | /daily-reports  | src/features/daily-reports  | 待完善 |
 | reconciliation | /reconciliation | src/features/reconciliation | 待完善 |
-| topups | /topups | src/features/topups | 待完善 |
-| ledger | /ledger | src/features/ledger | 待完善 |
-| ad-accounts | /ad-accounts | src/features/ad-accounts | 待迁移 |
+| topups         | /topups         | src/features/topups         | 待完善 |
+| ledger         | /ledger         | src/features/ledger         | 待完善 |
+| ad-accounts    | /ad-accounts    | src/features/ad-accounts    | 待迁移 |
 | finance-profit | /finance/profit | src/features/finance-profit | 待完善 |
-| import-jobs | /import-jobs | src/features/import-jobs | 待完善 |
-| reports | /reports | src/features/reports | 待完善 |
+| import-jobs    | /import-jobs    | src/features/import-jobs    | 待完善 |
+| reports        | /reports        | src/features/reports        | 待完善 |
 
 ---
 

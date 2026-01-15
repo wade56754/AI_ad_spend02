@@ -26,7 +26,7 @@ def main():
     print("  3. docs/1.overview/MVP_PHASE_DESIGN.md - MVP 阶段设计")
     print("  4. docs/sot/STATE_MACHINE.md v2.6 - 状态机规范")
     print("  5. docs/sot/DATA_SCHEMA.md v5.2 - 数据模型")
-    print("  6. docs/sot/LEDGER_SOT.md v1.1 - 账本规则")
+    print("  6. docs/sot/DATA_SCHEMA.md v5.11 §3.4.4 - 账本规则")
     print("  7. docs/sot/BUSINESS_RULES.md v3.2 - 业务规则")
     print("  8. docs/sot/API_SOT.md v9.0 - API 规范")
     print("  9. docs/sot/ERROR_CODES_SOT.md v2.1 - 错误码")
@@ -41,7 +41,7 @@ def main():
     print("  ✅ 允许：高亮警告、数据统计、趋势分析")
     print()
 
-    print("👥 业务层角色（6 个，PRD v2.2）：")
+    print("👥 业务层角色（6 个，PRD v5.1）：")
     print("  • ceo - 老板：资金安全、公司盈亏、最终决策")
     print("  • project_owner - 项目负责人：日报审核、项目盈亏、资金使用效率")
     print("  • finance - 财务：资金出入准确、数据真实、对账")

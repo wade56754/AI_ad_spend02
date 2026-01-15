@@ -66,7 +66,7 @@
 2. 检查前端构建日志
 
 **解决方案**：
-- 运行 `npm run build` 检查构建错误
+- 运行 `pnpm run build` 检查构建错误
 - 修复所有 TypeScript 错误
 
 ## 诊断步骤
@@ -157,4 +157,3 @@ UPDATE users SET role = 'admin' WHERE email = 'your-email@example.com';
 ## 更新日期
 
 2026-01-12
-

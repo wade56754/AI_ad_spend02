@@ -6,7 +6,7 @@
 > **last_reviewed**: 2026-01-12
 > **文档类型**: 业务规则唯一真相源索引（SoT Index）
 > **规范级别**: 强制执行
-> **基准**: PRD v5.2, MASTER.md v4.9（PRD v5.2 已与 MASTER 6 角色模型完全对齐）
+> **基准**: PRD v5.1, MASTER.md v4.9（PRD v5.1 已与 MASTER 6 角色模型完全对齐）
 > **业务参考**: 各 BR-*.md 子模块（业务逻辑框架已拆分到各规则子模块）
 
 ---
@@ -20,10 +20,10 @@
 |----------|------|------|----------|
 | MASTER.md | v4.9 | 架构宪法 | 本文档的上游约束 |
 | STATE_MACHINE.md | v2.9 | 状态机规范 | BR-RPT/BR-FIN/BR-RECON 依赖 |
-| DATA_SCHEMA.md | v5.7 | 数据模型 | 所有 BR-* 字段定义依赖，账本规则见 §3.4.4 |
+| DATA_SCHEMA.md | v5.11 | 数据模型 | 所有 BR-* 字段定义依赖，账本规则见 §3.4.4 |
 | ERROR_CODES_SOT.md | v2.2 | 错误码规范 | 规则违反时的错误码映射 |
 | AUTH_SPEC.md | v2.2 | 权限规范 | BR-AUTH/BR-USER 依赖 |
-| API_SOT.md | v9.6 | API 规范 | 规则的 API 层实现 |
+| API_SOT.md | v9.7 | API 规范 | 规则的 API 层实现 |
 
 ---
 
@@ -184,7 +184,7 @@ modules:
 
 ### 2.4 技术层角色映射
 
-> **引用**: AUTH_SPEC.md v2.2 §2.2, DATA_SCHEMA.md v5.7
+> **引用**: AUTH_SPEC.md v2.2 §2.2, DATA_SCHEMA.md v5.11
 
 | 技术层角色 | 业务层角色 | 说明 |
 |-----------|-----------|------|
@@ -212,12 +212,12 @@ modules:
 | BR-AUTH | 认证授权 | 6 | [BR-AUTH.md](BR-AUTH.md) | AUTH_SPEC.md v2.2 | active |
 | BR-USER | 用户角色 | 5 | [BR-USER.md](BR-USER.md) | MASTER.md v4.9 §2.4 | active |
 | BR-PROJ | 项目管理 | 8 | [BR-PROJ.md](BR-PROJ.md) | STATE_MACHINE.md v2.9 §5 | active |
-| BR-ACCT | 广告账户 | 6 | [BR-ACCT.md](BR-ACCT.md) | DATA_SCHEMA.md v5.7 | active |
-| BR-FIN | 财务流程 | 10 | [BR-FIN.md](BR-FIN.md) | DATA_SCHEMA.md v5.7 §3.4.4 | active |
+| BR-ACCT | 广告账户 | 6 | [BR-ACCT.md](BR-ACCT.md) | DATA_SCHEMA.md v5.11 | active |
+| BR-FIN | 财务流程 | 10 | [BR-FIN.md](BR-FIN.md) | DATA_SCHEMA.md v5.11 §3.4.4 | active |
 | BR-RPT | 日报管理 | 9 | [BR-RPT.md](BR-RPT.md) | STATE_MACHINE.md v2.9 §8 | active |
 | BR-RECON | 对账流程 | 7 | [BR-RECON.md](BR-RECON.md) | STATE_MACHINE.md v2.9 §10 | active |
-| BR-DATA | 数据完整性 | 5 | [BR-DATA.md](BR-DATA.md) | DATA_SCHEMA.md v5.7 | active |
-| BR-PROFIT | 利润统计 | 7 | [BR-PROFIT.md](BR-PROFIT.md) | DATA_SCHEMA.md v5.7 §3.4.4, §3.6 | active |
+| BR-DATA | 数据完整性 | 5 | [BR-DATA.md](BR-DATA.md) | DATA_SCHEMA.md v5.11 | active |
+| BR-PROFIT | 利润统计 | 7 | [BR-PROFIT.md](BR-PROFIT.md) | DATA_SCHEMA.md v5.11 §3.4.4, §3.6 | active |
 
 > **子模块文档说明**: 每个 BR-*.md 子模块包含该模块的完整规则定义，包括：
 > - 业务场景、详细约束、前置条件
@@ -231,7 +231,7 @@ modules:
 
 ### 4.1 BR-AUTH（认证授权） → [详细规则](BR-AUTH.md)
 
-> **关联 SoT**: AUTH_SPEC.md v2.1
+> **关联 SoT**: AUTH_SPEC.md v2.2
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
@@ -271,7 +271,7 @@ modules:
 
 ### 4.4 BR-ACCT（广告账户） → [详细规则](BR-ACCT.md)
 
-> **关联 SoT**: DATA_SCHEMA.md v5.7
+> **关联 SoT**: DATA_SCHEMA.md v5.11
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
@@ -284,7 +284,7 @@ modules:
 
 ### 4.5 BR-FIN（财务流程） → [详细规则](BR-FIN.md)
 
-> **关联 SoT**: DATA_SCHEMA.md v5.7 §3.4.4（账本规则）, STATE_MACHINE.md v2.9 §9
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §3.4.4（账本规则）, STATE_MACHINE.md v2.9 §9
 > **业务参考**: BR-FIN.md v1.1（三本账体系）
 
 **三本账体系**（来源: BR-FIN.md v1.1）：
@@ -359,7 +359,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ### 4.8 BR-DATA（数据完整性） → [详细规则](BR-DATA.md)
 
-> **关联 SoT**: DATA_SCHEMA.md v5.7
+> **关联 SoT**: DATA_SCHEMA.md v5.11
 
 | 规则ID | 规则名称 | 约束描述 | 违反错误码 |
 |--------|----------|----------|-----------|
@@ -371,7 +371,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ### 4.9 BR-PROFIT（利润统计） → [详细规则](BR-PROFIT.md)
 
-> **关联 SoT**: DATA_SCHEMA.md v5.7 §3.4.4（账本规则）, §3.6（利润统计表）
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §3.4.4（账本规则）, §3.6（利润统计表）
 > **业务参考**: BR-PROFIT.md v1.2（三种定价模式）
 > **v5.2 更新**: 成本公式新增开户费，新增公司利润规则
 
@@ -456,7 +456,7 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ### v5.2 (2026-01-12)
 
-- **BR-PROFIT 利润计算规则更新**（对齐 PRD v5.2 财务模块修正）：
+- **BR-PROFIT 利润计算规则更新**（对齐 PRD v5.1 财务模块修正）：
   - BR-PROFIT-004: 成本公式 → 项目成本公式（含开户费）
     - 旧: `成本 = ad_spend + 手续费`
     - 新: `项目总支出 = ad_spend × (1+代理商费率) + 开户费`
@@ -471,11 +471,11 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 ### v5.1 (2026-01-02)
 
 - **SoT 版本对齐**: 修复所有互锁引用版本不一致
-  - MASTER.md v4.8 → v4.9
-  - STATE_MACHINE.md v2.8 → v2.9
-  - DATA_SCHEMA.md v5.6 → v5.7
-  - AUTH_SPEC.md v2.1 → v2.2
-  - API_SOT.md v9.4 → v9.6
+  - MASTER.md v4.9 → v4.9
+  - STATE_MACHINE.md v2.9 → v2.9
+  - DATA_SCHEMA.md v5.11 → v5.7
+  - AUTH_SPEC.md v2.2 → v2.2
+  - API_SOT.md v9.7 → v9.6
 - **断链引用修复**: 移除不存在的 BUSINESS_LOGIC_FRAMEWORK.md 引用
   - §2.1-2.3 角色章节：Framework → MASTER.md v4.9 / AUTH_SPEC.md v2.2
   - §4.5 BR-FIN：Framework §5.2 → BR-FIN.md v1.1
@@ -512,11 +512,11 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 ### v4.8 (2025-12-31)
 
 - **SoT 版本对齐**: 修复所有互锁引用版本不一致问题
-  - STATE_MACHINE.md v2.7 → v2.8
-  - DATA_SCHEMA.md v5.6（保持，未升级到 v5.7）
+  - STATE_MACHINE.md v2.9 → v2.8
+  - DATA_SCHEMA.md v5.11（保持，未升级到 v5.7）
   - AUTH_SPEC.md v2.2 → v2.1
-  - ERROR_CODES_SOT.md v2.3 → v2.2（并统一文件名）
-- **移除 LEDGER_SOT.md 引用**: 账本规则已整合到 DATA_SCHEMA.md v5.6 §3.4.4
+  - ERROR_CODES_SOT.md v2.2 → v2.2（并统一文件名）
+- **账本规则统一**: 账本规则已整合到 DATA_SCHEMA.md v5.11 §3.4.4
 - **错误码对齐 ERROR_CODES_SOT.md v2.2**:
   - `STATE_001`/`STATE_002` → `BIZ_301`/`BIZ_302`（状态转换错误）
   - `BIZ_101`（语义冲突）→ `BIZ_001`/`BIZ_003`/`BIZ_100`（按场景区分）
@@ -574,4 +574,4 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 **执行级别**: 强制执行
 **违规处理**: PR 拒绝 / 代码回滚
 **最后更新**: 2026-01-12
-**版本**: v5.2 (BR-PROFIT 利润公式更新，对齐 PRD v5.2)
+**版本**: v5.2 (BR-PROFIT 利润公式更新，对齐 PRD v5.1)

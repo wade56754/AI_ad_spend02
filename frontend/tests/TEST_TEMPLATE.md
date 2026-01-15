@@ -170,38 +170,38 @@ describe('useCustomHook', () => {
 ### API 服务函数测试
 
 ```typescript
-import { mockFetchSuccess, mockFetchError, setupFetchMock, resetFetchMock } from '@/tests/mocks'
-import { apiService } from './apiService'
+import { mockFetchSuccess, mockFetchError, setupFetchMock, resetFetchMock } from '@/tests/mocks';
+import { apiService } from './apiService';
 
 describe('API Service', () => {
   beforeEach(() => {
-    setupFetchMock()
-  })
+    setupFetchMock();
+  });
 
   afterEach(() => {
-    resetFetchMock()
-  })
+    resetFetchMock();
+  });
 
   it('should fetch data successfully', async () => {
-    const mockData = { id: 1, name: 'Test' }
-    mockFetchSuccess(mockData)
+    const mockData = { id: 1, name: 'Test' };
+    mockFetchSuccess(mockData);
 
-    const result = await apiService.getData()
+    const result = await apiService.getData();
 
-    expect(result).toEqual(mockData)
-    expect(global.fetch).toHaveBeenCalledTimes(1)
-  })
+    expect(result).toEqual(mockData);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
 
   it('should handle API error', async () => {
-    mockFetchError('API-001', 'API Error')
+    mockFetchError('API-001', 'API Error');
 
-    await expect(apiService.getData()).rejects.toThrow('API Error')
-  })
+    await expect(apiService.getData()).rejects.toThrow('API Error');
+  });
 
   it('should send correct request parameters', async () => {
-    mockFetchSuccess({ success: true })
+    mockFetchSuccess({ success: true });
 
-    await apiService.postData({ name: 'Test' })
+    await apiService.postData({ name: 'Test' });
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/endpoint'),
@@ -209,9 +209,9 @@ describe('API Service', () => {
         method: 'POST',
         body: JSON.stringify({ name: 'Test' }),
       })
-    )
-  })
-})
+    );
+  });
+});
 ```
 
 ---
@@ -222,14 +222,14 @@ describe('API Service', () => {
 
 ```typescript
 // ✅ 好的命名
-it('should render login form with email and password fields', () => {})
-it('should show error message when validation fails', () => {})
-it('should call onSubmit with form data when form is valid', () => {})
+it('should render login form with email and password fields', () => {});
+it('should show error message when validation fails', () => {});
+it('should call onSubmit with form data when form is valid', () => {});
 
 // ❌ 不好的命名
-it('test 1', () => {})
-it('renders', () => {})
-it('works', () => {})
+it('test 1', () => {});
+it('renders', () => {});
+it('works', () => {});
 ```
 
 ### 2. AAA 模式（Arrange, Act, Assert）
@@ -252,12 +252,12 @@ it('should update counter on button click', async () => {
 
 ```typescript
 // ✅ 推荐：使用语义化查询
-const button = screen.getByRole('button', { name: /submit/i })
-const heading = screen.getByRole('heading', { name: /dashboard/i })
-const input = screen.getByLabelText(/email/i)
+const button = screen.getByRole('button', { name: /submit/i });
+const heading = screen.getByRole('heading', { name: /dashboard/i });
+const input = screen.getByLabelText(/email/i);
 
 // ❌ 避免：使用 testId（除非必要）
-const element = screen.getByTestId('submit-button')
+const element = screen.getByTestId('submit-button');
 ```
 
 ### 4. 异步测试
@@ -265,14 +265,14 @@ const element = screen.getByTestId('submit-button')
 ```typescript
 // ✅ 使用 waitFor
 await waitFor(() => {
-  expect(screen.getByText('Loaded')).toBeInTheDocument()
-})
+  expect(screen.getByText('Loaded')).toBeInTheDocument();
+});
 
 // ✅ 使用 findBy（自动等待）
-const element = await screen.findByText('Loaded')
+const element = await screen.findByText('Loaded');
 
 // ❌ 避免：不等待异步操作
-expect(screen.getByText('Loaded')).toBeInTheDocument() // 可能失败
+expect(screen.getByText('Loaded')).toBeInTheDocument(); // 可能失败
 ```
 
 ### 5. Mock 管理
@@ -281,26 +281,27 @@ expect(screen.getByText('Loaded')).toBeInTheDocument() // 可能失败
 describe('Component', () => {
   beforeEach(() => {
     // 每个测试前设置 mock
-    setupFetchMock()
-    mockAuthenticatedState()
-  })
+    setupFetchMock();
+    mockAuthenticatedState();
+  });
 
   afterEach(() => {
     // 每个测试后清理 mock
-    resetFetchMock()
-    jest.clearAllMocks()
-    localStorage.clear()
-  })
+    resetFetchMock();
+    jest.clearAllMocks();
+    localStorage.clear();
+  });
 
   it('test case', () => {
     // 测试逻辑
-  })
-})
+  });
+});
 ```
 
 ### 6. 测试覆盖建议
 
 每个组件/页面应该测试：
+
 - ✅ 基本渲染（快照或关键元素）
 - ✅ 用户交互（点击、输入等）
 - ✅ 边界情况（空数据、错误状态）
@@ -315,28 +316,32 @@ describe('Component', () => {
 按优先级从高到低：
 
 1. **getByRole** - 最推荐，符合无障碍标准
+
    ```typescript
-   screen.getByRole('button', { name: /submit/i })
+   screen.getByRole('button', { name: /submit/i });
    ```
 
 2. **getByLabelText** - 表单元素
+
    ```typescript
-   screen.getByLabelText(/email/i)
+   screen.getByLabelText(/email/i);
    ```
 
 3. **getByPlaceholderText** - 占位符
+
    ```typescript
-   screen.getByPlaceholderText(/enter email/i)
+   screen.getByPlaceholderText(/enter email/i);
    ```
 
 4. **getByText** - 文本内容
+
    ```typescript
-   screen.getByText(/welcome/i)
+   screen.getByText(/welcome/i);
    ```
 
 5. **getByTestId** - 最后选择
    ```typescript
-   screen.getByTestId('custom-element')
+   screen.getByTestId('custom-element');
    ```
 
 ---
@@ -345,14 +350,14 @@ describe('Component', () => {
 
 ```bash
 # 运行所有测试
-npm test
+pnpm test
 
 # 监听模式
-npm run test:watch
+pnpm run test:watch
 
 # 生成覆盖率报告
-npm run test:coverage
+pnpm run test:coverage
 
 # 运行特定测试文件
-npm test -- path/to/test.spec.tsx
+pnpm test -- path/to/test.spec.tsx
 ```

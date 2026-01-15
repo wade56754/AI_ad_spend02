@@ -80,7 +80,7 @@ MASTER.md > DATA_SCHEMA.md > STATE_MACHINE.md > BUSINESS_RULES.md > API_SOT.md
 
 ### Q6: supervisor 角色去哪了？
 
-**A**: `supervisor` 角色已在 PRD v2.2 中废弃，其职责合并到 `project_owner`。
+**A**: `supervisor` 角色已在 PRD v5.1 中废弃，其职责合并到 `project_owner`。
 
 如果在代码中看到 `supervisor`，应替换为 `project_owner`。
 

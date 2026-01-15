@@ -12,7 +12,7 @@ class UserRole(str, Enum):
     用户角色枚举
 
     必须与 MASTER.md v4.6 §2.4 和 AUTH_SPEC.md v2.1 §2.2 保持严格一致。
-    6 个业务角色（PRD v2.2 移除了 supervisor）:
+    6 个业务角色（PRD v5.1 移除了 supervisor）:
 
     | 业务角色 | 技术枚举 | 权限级别 |
     |---------|----------|---------|
@@ -23,7 +23,7 @@ class UserRole(str, Enum):
     | account_manager | ACCOUNT_MANAGER | L2 |
     | pitcher | MEDIA_BUYER | L1 (最低) |
 
-    废弃说明 (PRD v2.2):
+    废弃说明 (PRD v5.1):
     - supervisor → 职责合并到 project_owner
     - data_operator → 职责合并到 project_owner/finance
 
@@ -37,7 +37,7 @@ class UserRole(str, Enum):
     MEDIA_BUYER = "media_buyer"          # 投手(pitcher) - CPL达标、日报准确
 
     # 废弃角色 - 仅用于向后兼容，新代码禁止使用
-    # @deprecated PRD v2.2: 使用 PROJECT_OWNER 替代
+    # @deprecated PRD v5.1: 使用 PROJECT_OWNER 替代
     DATA_OPERATOR = "data_operator"      # [废弃] 原主管角色，已合并到 project_owner
 
 

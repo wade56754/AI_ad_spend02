@@ -15,17 +15,17 @@ if %ERRORLEVEL% NEQ 0 (
 echo OK: Node.js installed
 echo.
 
-echo [2/7] Checking npm...
-npm --version
+echo [2/7] Checking pnpm...
+pnpm --version
 if %ERRORLEVEL% NEQ 0 (
-    echo ERROR: npm not found!
+    echo ERROR: pnpm not found!
     goto :error
 )
-echo OK: npm installed
+echo OK: pnpm installed
 echo.
 
 echo [3/7] Checking Jest...
-call npx jest --version
+call pnpm exec jest --version
 if %ERRORLEVEL% NEQ 0 (
     echo WARNING: Jest may not be installed correctly
 ) else (
@@ -34,7 +34,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 
 echo [4/7] Checking Puppeteer...
-call npx puppeteer --version
+call pnpm exec puppeteer --version
 if %ERRORLEVEL% NEQ 0 (
     echo WARNING: Puppeteer may not be installed correctly
 ) else (
@@ -87,8 +87,8 @@ echo Test Environment Verification Complete!
 echo ========================================
 echo.
 echo You can now run:
-echo   - npm test (unit tests)
-echo   - npm run test:e2e (E2E tests)
+echo   - pnpm test (unit tests)
+echo   - pnpm run test:e2e (E2E tests)
 echo.
 goto :end
 
@@ -98,7 +98,7 @@ echo ========================================
 echo ERROR: Test environment verification failed!
 echo ========================================
 echo.
-echo Please run: npm install
+echo Please run: pnpm install
 echo.
 
 :end

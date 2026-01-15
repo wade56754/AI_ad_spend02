@@ -599,7 +599,8 @@ class TestReconciliationService:
         mock_query = Mock()
         mock_query.join.return_value = mock_query
         mock_query.filter.return_value = mock_query
-        mock_query.all.return_value = [mock_detail]
+        mock_query.options.return_value = mock_query  # 添加 options 支持
+        mock_query.all.return_value = [mock_detail]  # 返回列表，不是 Mock 对象
         mock_db.query.return_value = mock_query
 
         # 执行

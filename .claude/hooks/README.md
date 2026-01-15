@@ -239,7 +239,7 @@ echo '{"session_id":"test","start_time":"2025-12-24T20:00:00"}' | python .claude
 - 记录事实、展示状态
 - 高亮警告、数据统计
 
-### 业务层角色 (6 个，PRD v2.2)
+### 业务层角色 (6 个，PRD v5.1)
 | 角色 | 英文 | 职责 | 技术层映射 |
 |------|------|------|-----------|
 | 老板 | ceo | 资金安全、最终决策 | admin |
@@ -249,7 +249,7 @@ echo '{"session_id":"test","start_time":"2025-12-24T20:00:00"}' | python .claude
 | 户管 | account_manager | 账户分配 | account_manager |
 | 管理员 | admin | 系统配置 | admin |
 
-> **注**: supervisor 和 data_operator 已废弃 (PRD v2.2)
+> **注**: supervisor 和 data_operator 已废弃 (PRD v5.1)
 
 ### AI 防幻觉原则
 - AH-01: 禁止假设数据一致

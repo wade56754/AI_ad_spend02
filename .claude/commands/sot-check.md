@@ -23,7 +23,7 @@ argument-hint: "[file_or_dir]"
 3. BUSINESS_RULES.md v3.1 - 业务规则编号
 4. API_SOT.md v9.0        - API 端点、请求响应
 5. ERROR_CODES_SOT.md v2.1 - 错误码格式
-6. LEDGER_SOT.md v1.1     - 账本操作规则
+6. DATA_SCHEMA.md v5.11 §3.4.4     - 账本操作规则
 ```
 
 ## 检查项

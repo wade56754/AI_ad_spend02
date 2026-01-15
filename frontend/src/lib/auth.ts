@@ -1,18 +1,13 @@
 /**
  * Authentication utilities
- * SoT: AUTH_SPEC.md v2.0
- *
- * Note: 此文件使用原生 fetch 而非 apiFetch，因为：
- * 1. Token 刷新不需要 access token（使用 refresh token）
- * 2. 避免与 api.ts 的循环依赖（api.ts 需要读取 auth token）
+ * SoT: AUTH_SPEC.md v2.2
  */
+
+import { apiPost } from './api';
 
 const TOKEN_KEY = 'auth-token';
 const REFRESH_TOKEN_KEY = 'refresh-token';
 const TOKEN_EXPIRY_KEY = 'token-expiry';
-
-// API URL 配置（与 api.ts 保持一致）
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 /**
  * 检查是否在浏览器环境
@@ -25,6 +20,12 @@ export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
+}
+
+interface RefreshTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in?: number;
 }
 
 export function saveTokens(tokens: AuthTokens): void {
@@ -66,30 +67,16 @@ export async function refreshAccessToken(): Promise<boolean> {
   }
 
   try {
-    // 使用原生 fetch 进行 token 刷新（见文件顶部注释说明原因）
-    const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
+    const tokenInfo = await apiPost<RefreshTokenResponse>('/api/v1/auth/refresh', {
+      refresh_token: refreshToken,
     });
 
-    if (!response.ok) {
-      clearTokens();
-      return false;
-    }
-
-    const data = await response.json();
-    if (data.success && data.data) {
-      saveTokens({
-        accessToken: data.data.access_token,
-        refreshToken: data.data.refresh_token,
-        expiresAt: Date.now() + (data.data.expires_in || 3600) * 1000,
-      });
-      return true;
-    }
-
-    clearTokens();
-    return false;
+    saveTokens({
+      accessToken: tokenInfo.access_token,
+      refreshToken: tokenInfo.refresh_token,
+      expiresAt: Date.now() + (tokenInfo.expires_in || 3600) * 1000,
+    });
+    return true;
   } catch (error) {
     console.error('Token refresh failed:', error);
     clearTokens();

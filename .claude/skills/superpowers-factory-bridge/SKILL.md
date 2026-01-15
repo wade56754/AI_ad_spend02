@@ -94,7 +94,7 @@ keywords_to_sot:
     - STATE_MACHINE.md#daily_report
     - BR-RPT-*
   充值|流水|账本|资金:
-    - LEDGER_SOT.md
+    - DATA_SCHEMA.md §3.4.4
     - BR-FIN-*
     - STATE_MACHINE.md#topup
   账户|开户|授权:
@@ -314,7 +314,6 @@ sot_documents:
   - docs/sot/BUSINESS_RULES.md
   - docs/sot/API_SOT.md
   - docs/sot/ERROR_CODES_SOT.md
-  - docs/sot/LEDGER_SOT.md
 ```
 
 ## 9. 使用示例

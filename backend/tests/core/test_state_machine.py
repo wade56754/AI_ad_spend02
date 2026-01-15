@@ -189,7 +189,7 @@ class TestStateMachineRoles:
             Transition(TopupStatus.DRAFT, TopupStatus.PENDING_REVIEW,
                       required_roles=["pitcher", "account_manager"]),
             Transition(TopupStatus.PENDING_REVIEW, TopupStatus.FINANCE_APPROVE,
-                      required_roles=["account_manager"]),  # PRD v2.2: data_operator → account_manager
+                      required_roles=["account_manager"]),  # PRD v5.1: data_operator → account_manager
         ])
 
     def test_transition_with_valid_role(self, role_machine):
@@ -320,7 +320,7 @@ class TestTopupStateMachine:
         assert entity.status == "pending_review"
 
     def test_pending_review_to_finance_approve(self):
-        """测试 pending_review → finance_approve 需要 account_manager (PRD v2.2)"""
+        """测试 pending_review → finance_approve 需要 account_manager (PRD v5.1)"""
         entity = MockEntity(status="pending_review")
         TOPUP_STATE_MACHINE.transition(entity, "pending_review", "finance_approve", user_role="account_manager")
         assert entity.status == "finance_approve"
@@ -338,7 +338,7 @@ class TestTopupStateMachine:
         assert entity.status == "cancelled"
 
     def test_pending_review_can_reject(self):
-        """测试 pending_review 可以拒绝 (account_manager, PRD v2.2)"""
+        """测试 pending_review 可以拒绝 (account_manager, PRD v5.1)"""
         entity = MockEntity(status="pending_review")
         TOPUP_STATE_MACHINE.transition(entity, "pending_review", "rejected", user_role="account_manager")
         assert entity.status == "rejected"

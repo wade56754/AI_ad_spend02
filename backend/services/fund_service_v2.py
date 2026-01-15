@@ -27,9 +27,6 @@ from sqlalchemy import func, and_, case, or_
 from sqlalchemy.orm import Session
 
 from backend.models import Project, DailyReport, AdAccount
-from backend.models.workflow.topup_request import TopupRequest
-from backend.models.finance.supplier import Supplier
-from backend.models.finance.financial_event import FinancialEvent, EventType
 from backend.schemas.finance_v2 import (
     FundOverviewData,
     FundSummary,
@@ -52,7 +49,9 @@ class FundServiceV2:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_overview(self, period: Optional[str] = None, date_str: Optional[str] = None) -> FundOverviewData:
+    def get_overview(
+        self, period: Optional[str] = None, date_str: Optional[str] = None
+    ) -> FundOverviewData:
         """
         获取资金概览
 
@@ -92,7 +91,11 @@ class FundServiceV2:
 
         # 上期余额用于计算余额变化
         prev_balance = prev_income - prev_expense
-        balance_change = self._calculate_change_pct(available_balance, prev_balance) if prev_balance else None
+        balance_change = (
+            self._calculate_change_pct(available_balance, prev_balance)
+            if prev_balance
+            else None
+        )
 
         return FundOverviewData(
             period=period_str,
@@ -130,9 +133,11 @@ class FundServiceV2:
             ReceivablesData
         """
         # 获取所有活跃项目
-        projects = self.db.query(Project).filter(
-            Project.status.in_(["active", "completed", "refunded", "closed"])
-        ).all()
+        projects = (
+            self.db.query(Project)
+            .filter(Project.status.in_(["active", "completed", "refunded", "closed"]))
+            .all()
+        )
 
         items = []
         total_topup = Decimal("0.00")
@@ -257,143 +262,80 @@ class FundServiceV2:
         """
         获取总收款
 
-        数据源优先级:
-        1. financial_events 表 (TOPUP + PAYMENT + ADJUSTMENT + REFUND)
-        2. topup_requests 表 (status=completed)
-        3. daily_reports 计算理论收入
-
-        SoT: BR-FIN.md v1.1 - 收款来源于财务事件或充值申请
+        基于日报数据的已确认收入（因为没有 LedgerEntry 模型）
+        收入 = SUM(conversions_final × unit_price) for final_locked reports
         """
-        # 方式1: 从 financial_events 获取收款 (优先)
-        # 收款类型: TOPUP, PAYMENT, ADJUSTMENT, REFUND
-        income_types = [EventType.TOPUP.value, EventType.PAYMENT.value,
-                       EventType.ADJUSTMENT.value, EventType.REFUND.value]
-        fin_income = self.db.query(
-            func.coalesce(func.sum(FinancialEvent.amount), 0)
-        ).filter(
-            FinancialEvent.event_type.in_(income_types),
-            FinancialEvent.event_date >= start,
-            FinancialEvent.event_date <= end,
-        ).scalar()
-
-        if fin_income and Decimal(str(fin_income)) > 0:
-            return Decimal(str(fin_income))
-
-        # 方式2: 从已完成的充值申请获取实际充值金额
-        topup_income = self.db.query(
-            func.coalesce(func.sum(TopupRequest.amount), 0)
-        ).filter(
-            TopupRequest.status == "completed",
-            TopupRequest.completed_at >= start,
-            TopupRequest.completed_at <= end,
-        ).scalar()
-
-        if topup_income and Decimal(str(topup_income)) > 0:
-            return Decimal(str(topup_income))
-
-        # 方式3: 从日报计算理论收入 (conversions × unit_price)
-        result = self.db.query(
-            func.coalesce(
-                func.sum(DailyReport.conversions_final * Project.unit_price),
-                0
+        result = (
+            self.db.query(
+                func.coalesce(
+                    func.sum(DailyReport.conversions_final * Project.unit_price), 0
+                )
             )
-        ).join(
-            AdAccount, DailyReport.ad_account_id == AdAccount.id
-        ).join(
-            Project, AdAccount.project_id == Project.id
-        ).filter(
-            DailyReport.report_date >= start,
-            DailyReport.report_date <= end,
-            DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-        ).scalar()
+            .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+            .join(Project, AdAccount.project_id == Project.id)
+            .filter(
+                DailyReport.report_date >= start,
+                DailyReport.report_date <= end,
+                DailyReport.status == "final_locked",
+            )
+            .scalar()
+        )
 
         return Decimal(str(result or 0))
 
     def _get_total_expense(self, start: date, end: date) -> Decimal:
         """
-        获取总支出 - 数据源优先级:
-        1. financial_events 表 (SPEND + FEE)
-        2. daily_reports 表 (real_spend)
-        3. suppliers.total_spend 统计
+        获取总支出
 
-        SoT: BR-FIN.md v1.1 - 支出来源于财务事件或日报消耗
+        支出 = SUM(real_spend) for final_locked reports
         """
-        # 方式1: 从 financial_events 获取支出 (优先)
-        expense_types = [EventType.SPEND.value, EventType.FEE.value]
-        fin_expense = self.db.query(
-            func.coalesce(func.sum(FinancialEvent.amount), 0)
-        ).filter(
-            FinancialEvent.event_type.in_(expense_types),
-            FinancialEvent.event_date >= start,
-            FinancialEvent.event_date <= end,
-        ).scalar()
+        result = (
+            self.db.query(func.coalesce(func.sum(DailyReport.real_spend), 0))
+            .filter(
+                DailyReport.report_date >= start,
+                DailyReport.report_date <= end,
+                DailyReport.status == "final_locked",
+            )
+            .scalar()
+        )
 
-        if fin_expense and Decimal(str(fin_expense)) > 0:
-            return Decimal(str(fin_expense))
-
-        # 方式2: 从日报获取消耗 (放宽状态限制)
-        result = self.db.query(
-            func.coalesce(func.sum(DailyReport.real_spend), 0)
-        ).filter(
-            DailyReport.report_date >= start,
-            DailyReport.report_date <= end,
-            DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-        ).scalar()
-
-        if result and Decimal(str(result)) > 0:
-            return Decimal(str(result))
-
-        # 方式3: 从供应商统计获取总支出 (不按时间范围，返回累计值)
-        supplier_spend = self.db.query(
-            func.coalesce(func.sum(Supplier.total_spend), 0)
-        ).filter(
-            Supplier.status == "active"
-        ).scalar()
-
-        return Decimal(str(supplier_spend or 0))
+        return Decimal(str(result or 0))
 
     def _calculate_receivables_summary(self) -> Dict[str, Any]:
         """计算应收账款汇总"""
         # 获取所有项目的应收情况
-        projects = self.db.query(Project).filter(
-            Project.status.in_(["active", "completed"])
-        ).all()
+        projects = (
+            self.db.query(Project)
+            .filter(Project.status.in_(["active", "completed"]))
+            .all()
+        )
 
         total_receivable = Decimal("0.00")
         total_received = Decimal("0.00")
         outstanding_count = 0
 
         for project in projects:
-            # 应收 = SUM(conversions_final × unit_price) - 放宽状态限制
+            # 应收 = SUM(conversions_final × unit_price)
+            # 通过 AdAccount 关联 DailyReport 到 Project
             receivable = self.db.query(
                 func.coalesce(
-                    func.sum(DailyReport.conversions_final * project.unit_price),
-                    0
+                    func.sum(DailyReport.conversions_final * project.unit_price), 0
                 )
-            ).join(
-                AdAccount, DailyReport.ad_account_id == AdAccount.id
-            ).filter(
+            ).join(AdAccount, DailyReport.ad_account_id == AdAccount.id).filter(
                 AdAccount.project_id == project.id,
-                DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-            ).scalar() or Decimal("0")
+                DailyReport.status == "final_locked",
+            ).scalar() or Decimal(
+                "0"
+            )
 
-            # 已收 = 从已完成的充值申请获取
-            received_from_topup = self.db.query(
-                func.coalesce(func.sum(TopupRequest.amount), 0)
-            ).join(
-                AdAccount, TopupRequest.ad_account_id == AdAccount.id
-            ).filter(
-                AdAccount.project_id == project.id,
-                TopupRequest.status == "completed",
-            ).scalar() or Decimal("0")
-
-            # 如果没有充值记录，假设已收 = 应收
-            received = Decimal(str(received_from_topup)) if received_from_topup else Decimal(str(receivable))
+            # 简化：已收 = 应收（假设所有已确认日报的收入都已收到）
+            # 真实场景应该从 ledger_entries 获取
+            received = receivable
 
             total_receivable += Decimal(str(receivable))
-            total_received += received
+            total_received += Decimal(str(received))
 
-            if Decimal(str(receivable)) > received:
+            if receivable > received:
                 outstanding_count += 1
 
         outstanding = total_receivable - total_received
@@ -406,67 +348,37 @@ class FundServiceV2:
         }
 
     def _get_opening_balance(self, start: date) -> Decimal:
-        """获取期初余额 - 数据源优先级:
-        1. financial_events 表
-        2. topup_requests + daily_reports
-        """
+        """获取期初余额"""
+        # 简化：计算该日期之前的累计收入 - 累计支出
         prev_date = start - timedelta(days=1)
 
-        # 方式1: 从 financial_events 计算期初余额
-        income_types = [EventType.TOPUP.value, EventType.PAYMENT.value,
-                        EventType.ADJUSTMENT.value, EventType.REFUND.value]
-        expense_types = [EventType.SPEND.value, EventType.FEE.value]
-
-        fin_income = self.db.query(
-            func.coalesce(func.sum(FinancialEvent.amount), 0)
-        ).filter(
-            FinancialEvent.event_type.in_(income_types),
-            FinancialEvent.event_date <= prev_date,
-        ).scalar() or 0
-
-        fin_expense = self.db.query(
-            func.coalesce(func.sum(FinancialEvent.amount), 0)
-        ).filter(
-            FinancialEvent.event_type.in_(expense_types),
-            FinancialEvent.event_date <= prev_date,
-        ).scalar() or 0
-
-        if (Decimal(str(fin_income)) > 0 or Decimal(str(fin_expense)) > 0):
-            return Decimal(str(fin_income)) - Decimal(str(fin_expense))
-
-        # 方式2: 从已完成充值获取历史收入
-        topup_income = self.db.query(
-            func.coalesce(func.sum(TopupRequest.amount), 0)
-        ).filter(
-            TopupRequest.status == "completed",
-            TopupRequest.completed_at <= prev_date,
-        ).scalar() or 0
-
-        # 如果没有充值记录，从日报计算
-        if not topup_income or Decimal(str(topup_income)) == 0:
-            topup_income = self.db.query(
+        income = (
+            self.db.query(
                 func.coalesce(
-                    func.sum(DailyReport.conversions_final * Project.unit_price),
-                    0
+                    func.sum(DailyReport.conversions_final * Project.unit_price), 0
                 )
-            ).join(
-                AdAccount, DailyReport.ad_account_id == AdAccount.id
-            ).join(
-                Project, AdAccount.project_id == Project.id
-            ).filter(
+            )
+            .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+            .join(Project, AdAccount.project_id == Project.id)
+            .filter(
                 DailyReport.report_date <= prev_date,
-                DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-            ).scalar() or 0
+                DailyReport.status == "final_locked",
+            )
+            .scalar()
+            or 0
+        )
 
-        # 从日报获取历史支出
-        expense = self.db.query(
-            func.coalesce(func.sum(DailyReport.real_spend), 0)
-        ).filter(
-            DailyReport.report_date <= prev_date,
-            DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-        ).scalar() or 0
+        expense = (
+            self.db.query(func.coalesce(func.sum(DailyReport.real_spend), 0))
+            .filter(
+                DailyReport.report_date <= prev_date,
+                DailyReport.status == "final_locked",
+            )
+            .scalar()
+            or 0
+        )
 
-        return Decimal(str(topup_income)) - Decimal(str(expense))
+        return Decimal(str(income)) - Decimal(str(expense))
 
     def _calculate_change_pct(
         self,
@@ -481,30 +393,28 @@ class FundServiceV2:
 
     def _calculate_project_receivable(self, project: Project) -> ReceivableItem:
         """计算单个项目的应收情况"""
-        # 应收 = SUM(conversions_final × unit_price) - 放宽状态限制
+        # 应收 = SUM(conversions_final × unit_price)
+        # 通过 AdAccount 关联 DailyReport 到 Project
         unit_price = project.unit_price or Decimal("0")
 
         receivable = self.db.query(
-            func.coalesce(
-                func.sum(DailyReport.conversions_final * unit_price),
-                0
-            )
-        ).join(
-            AdAccount, DailyReport.ad_account_id == AdAccount.id
-        ).filter(
+            func.coalesce(func.sum(DailyReport.conversions_final * unit_price), 0)
+        ).join(AdAccount, DailyReport.ad_account_id == AdAccount.id).filter(
             AdAccount.project_id == project.id,
-            DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-        ).scalar() or Decimal("0")
+            DailyReport.status == "final_locked",
+        ).scalar() or Decimal(
+            "0"
+        )
 
-        # 总消耗 - 放宽状态限制
+        # 总消耗
         total_spend = self.db.query(
             func.coalesce(func.sum(DailyReport.real_spend), 0)
-        ).join(
-            AdAccount, DailyReport.ad_account_id == AdAccount.id
-        ).filter(
+        ).join(AdAccount, DailyReport.ad_account_id == AdAccount.id).filter(
             AdAccount.project_id == project.id,
-            DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-        ).scalar() or Decimal("0")
+            DailyReport.status == "final_locked",
+        ).scalar() or Decimal(
+            "0"
+        )
 
         # 简化逻辑
         total_topup = Decimal(str(receivable))  # 假设打款 = 应收
@@ -536,45 +446,55 @@ class FundServiceV2:
 
     def _get_distribution_by_project(self) -> Tuple[List[DistributionItem], Decimal]:
         """按项目获取资金分布"""
-        projects = self.db.query(Project).filter(
-            Project.status.in_(["active", "completed"])
-        ).all()
+        projects = (
+            self.db.query(Project)
+            .filter(Project.status.in_(["active", "completed"]))
+            .all()
+        )
 
         items = []
         total = Decimal("0.00")
 
         for project in projects:
-            # 余额 = 收入 - 支出 (放宽状态限制)
-            income = self.db.query(
-                func.coalesce(
-                    func.sum(DailyReport.conversions_final * project.unit_price),
-                    0
+            # 余额 = 收入 - 支出
+            # 通过 AdAccount 关联 DailyReport 到 Project
+            income = (
+                self.db.query(
+                    func.coalesce(
+                        func.sum(DailyReport.conversions_final * project.unit_price), 0
+                    )
                 )
-            ).join(
-                AdAccount, DailyReport.ad_account_id == AdAccount.id
-            ).filter(
-                AdAccount.project_id == project.id,
-                DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-            ).scalar() or 0
+                .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+                .filter(
+                    AdAccount.project_id == project.id,
+                    DailyReport.status == "final_locked",
+                )
+                .scalar()
+                or 0
+            )
 
-            expense = self.db.query(
-                func.coalesce(func.sum(DailyReport.real_spend), 0)
-            ).join(
-                AdAccount, DailyReport.ad_account_id == AdAccount.id
-            ).filter(
-                AdAccount.project_id == project.id,
-                DailyReport.status.in_(["raw_submitted", "trend_ok", "final_confirmed", "final_locked"]),
-            ).scalar() or 0
+            expense = (
+                self.db.query(func.coalesce(func.sum(DailyReport.real_spend), 0))
+                .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+                .filter(
+                    AdAccount.project_id == project.id,
+                    DailyReport.status == "final_locked",
+                )
+                .scalar()
+                or 0
+            )
 
             balance = Decimal(str(income)) - Decimal(str(expense))
 
             if balance > 0:
-                items.append(DistributionItem(
-                    id=project.id,
-                    name=project.name,
-                    balance=balance,
-                    percentage=0.0,
-                ))
+                items.append(
+                    DistributionItem(
+                        id=project.id,
+                        name=project.name,
+                        balance=balance,
+                        percentage=0.0,
+                    )
+                )
                 total += balance
 
         # 按余额排序

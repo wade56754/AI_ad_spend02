@@ -22,16 +22,24 @@ from uuid import UUID as PyUUID, uuid4
 from dotenv import load_dotenv
 
 # 加载测试环境配置
-env_path = os.path.join(os.path.dirname(__file__), '..', '.env.test')
+env_path = os.path.join(os.path.dirname(__file__), "..", ".env.test")
 load_dotenv(env_path, override=True)
 
-from sqlalchemy import create_engine, TypeDecorator, CHAR, event, Text, JSON, Integer, BigInteger, text
+from sqlalchemy import (
+    create_engine,
+    TypeDecorator,
+    CHAR,
+    event,
+    Text,
+    JSON,
+    Integer,
+    BigInteger,
+)
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB as PG_JSONB
 from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.elements import TextClause
 
 
 # ============================================================================
@@ -40,7 +48,8 @@ from sqlalchemy.sql.elements import TextClause
 # SQLite 只支持 INTEGER PRIMARY KEY AUTOINCREMENT，不支持 BIGINT
 # ============================================================================
 
-@compiles(BigInteger, 'sqlite')
+
+@compiles(BigInteger, "sqlite")
 def compile_biginteger_sqlite(element, compiler, **kw):
     """
     在 SQLite 中将 BigInteger 编译为 INTEGER
@@ -50,37 +59,16 @@ def compile_biginteger_sqlite(element, compiler, **kw):
 
 
 # ============================================================================
-# SQLite gen_random_uuid() 函数编译器
-# 解决 PostgreSQL 特有的 gen_random_uuid() 在 SQLite 中不存在的问题
-# ============================================================================
-
-@compiles(TextClause, 'sqlite')
-def compile_text_sqlite(element, compiler, **kw):
-    """
-    在 SQLite 中将 gen_random_uuid() 编译为兼容格式
-    SQLite 使用 hex() + randomblob() 生成 UUID 格式字符串
-    """
-    text_value = str(element.text) if hasattr(element, 'text') else str(element)
-    if 'gen_random_uuid()' in text_value:
-        # 使用 SQLite 兼容的 UUID 生成方式
-        # 格式: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-        return """(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' ||
-                substr(lower(hex(randomblob(2))),2) || '-' ||
-                substr('89ab',abs(random()) % 4 + 1, 1) ||
-                substr(lower(hex(randomblob(2))),2) || '-' ||
-                lower(hex(randomblob(6))))"""
-    return compiler.visit_textclause(element, **kw)
-
-
-# ============================================================================
 # SQLite UUID 类型适配器（必须在导入模型之前定义）
 # ============================================================================
+
 
 class GUID(TypeDecorator):
     """
     Platform-independent GUID type.
     Uses PostgreSQL's UUID type, otherwise uses CHAR(36), storing as stringified hex values.
     """
+
     impl = CHAR
     cache_ok = True
 
@@ -90,7 +78,7 @@ class GUID(TypeDecorator):
         super().__init__(*args, **kwargs)
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(PG_UUID(as_uuid=self.as_uuid))
         else:
             return dialect.type_descriptor(CHAR(36))
@@ -98,7 +86,7 @@ class GUID(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return value
-        elif dialect.name == 'postgresql':
+        elif dialect.name == "postgresql":
             return str(value) if not self.as_uuid else value
         else:
             if isinstance(value, PyUUID):
@@ -120,11 +108,12 @@ class JSONBCompat(TypeDecorator):
     Platform-independent JSONB type.
     Uses PostgreSQL's JSONB type, otherwise uses JSON (SQLite compatible).
     """
+
     impl = JSON
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(PG_JSONB())
         else:
             # SQLite 和其他数据库使用 JSON 类型
@@ -151,6 +140,7 @@ postgresql.JSONB = JSONBCompat
 
 # 同时替换 sqlalchemy.dialects.postgresql 模块中的引用
 import sqlalchemy.dialects.postgresql as pg_module
+
 pg_module.UUID = GUID
 pg_module.JSONB = JSONBCompat
 
@@ -158,7 +148,7 @@ pg_module.JSONB = JSONBCompat
 # ============================================================================
 # 设置测试环境
 # ============================================================================
-os.environ['TESTING'] = 'true'
+os.environ["TESTING"] = "true"
 
 
 # ============================================================================
@@ -180,6 +170,12 @@ from backend.models.finance.reconciliation import (
     ReconciliationBatch,
     ReconciliationDetail,
 )
+from backend.models.ledger import (
+    LedgerTransaction,
+    AccountBalance,
+    BudgetAllocation,
+)
+from backend.core.audit import CoreAuditLog, SecurityEvent
 from backend.models.base import (
     UserRole,
     DailyReportStatus,
@@ -194,6 +190,7 @@ from backend.core.security import jwt_manager
 # ============================================================================
 # 辅助函数
 # ============================================================================
+
 
 def get_password_hash(password: str) -> str:
     """
@@ -211,60 +208,24 @@ def create_access_token(data: dict) -> str:
 # ============================================================================
 # 测试数据库配置
 # ============================================================================
-#
-# ⚠️  WARNING: Known Limitation (根因分析报告 - 致命伤 #2)
-# ============================================================================
-# 当前测试使用 SQLite 内存数据库，绕过 Alembic Migration。
-# 这与生产环境 (PostgreSQL + Alembic) 存在显著差异：
-#
-# | 特性            | 测试 (SQLite)     | 生产 (PostgreSQL) | 后果                    |
-# |-----------------|-------------------|-------------------|-------------------------|
-# | 外键约束        | 默认关闭          | 强制执行          | 关联错误测试发现不了    |
-# | UUID 类型       | CHAR(36)          | 原生 UUID         | 类型比较可能出错        |
-# | CHECK 约束      | 不执行            | 强制执行          | 枚举值错误测试发现不了  |
-# | NOT NULL        | 宽松              | 严格              | 空值错误测试发现不了    |
-# | Migration       | **完全绕过**      | 必须执行          | 迁移脚本bug测试发现不了 |
-#
-# 解决方案：
-# 1. 运行 CI 集成测试时使用真实 PostgreSQL (设置 TEST_DATABASE_URL 环境变量)
-# 2. 运行 `python backend/scripts/check_schema.py` 检测 ORM vs DB 不匹配
-# 3. 本地开发快速测试仍使用 SQLite
-#
-# 要使用真实 PostgreSQL 测试:
-#   export TEST_DATABASE_URL="postgresql://user:pass@localhost:5432/test_db"
-#   pytest --run-integration
-#
-# ============================================================================
 
-# 支持通过环境变量切换到真实数据库
-_test_db_url = os.environ.get("TEST_DATABASE_URL")
-if _test_db_url:
-    SQLALCHEMY_DATABASE_URL = _test_db_url
-    print(f"[INFO] Using real database for testing: {_test_db_url.split('@')[-1] if '@' in _test_db_url else 'configured'}")
-else:
-    SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-# 根据数据库类型配置 engine
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(
-        SQLALCHEMY_DATABASE_URL,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-else:
-    # PostgreSQL 或其他数据库
-    engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={
+        "check_same_thread": False,
+    },
+    poolclass=StaticPool,
+)
 
-# 启用 SQLite 外键约束 & 注册 PostgreSQL 兼容函数 (仅 SQLite)
-if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
-    @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_conn, connection_record):
-        cursor = dbapi_conn.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
 
-        # 注册 gen_random_uuid() 函数 - 模拟 PostgreSQL 的 UUID 生成
-        import uuid
-        dbapi_conn.create_function("gen_random_uuid", 0, lambda: str(uuid.uuid4()))
+# 启用 SQLite 外键约束
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_conn, connection_record):
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -272,6 +233,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 # ============================================================================
 # Pytest Fixtures - 数据库会话
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def db_session():
@@ -297,6 +259,7 @@ def db_session():
 # Pytest Fixtures - 测试客户端
 # ============================================================================
 
+
 @pytest.fixture(scope="function")
 def client(db_session):
     """
@@ -304,6 +267,7 @@ def client(db_session):
 
     用于同步测试，不使用 await。
     """
+
     def override_get_db():
         try:
             yield db_session
@@ -313,6 +277,7 @@ def client(db_session):
     app.dependency_overrides[get_db] = override_get_db
 
     from fastapi.testclient import TestClient
+
     with TestClient(app) as test_client:
         yield test_client
 
@@ -338,7 +303,9 @@ async def async_client(db_session) -> AsyncIterator:
     app.dependency_overrides[get_db] = override_get_db
 
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as ac:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver"
+    ) as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -348,13 +315,15 @@ async def async_client(db_session) -> AsyncIterator:
 # 用户 Fixtures
 # ============================================================================
 
+
 @pytest.fixture(scope="function")
 def test_user(db_session):
     """
     创建测试用户
 
-    注意: role 必须使用 UserRole 枚举，与 AUTH_SPEC.md v2.0 保持一致。
-    合法角色: admin, finance, data_operator, account_manager, media_buyer
+    注意: role 必须符合 MASTER.md v4.6 §2.4 宪法定义。
+    合法角色（6个）: ceo, project_owner, finance, pitcher, account_manager, admin
+    废弃角色: media_buyer → pitcher, data_operator → 移除, supervisor → project_owner
     """
     user = User(
         id=uuid4(),
@@ -388,6 +357,23 @@ def admin_user(db_session):
 
 
 @pytest.fixture(scope="function")
+def ceo_user(db_session):
+    """创建 CEO 用户 (最高权限)"""
+    user = User(
+        id=uuid4(),
+        email="ceo@example.com",
+        username="ceo_user",
+        password_hash="$2b$12$test_hashed_password_placeholder",
+        role=UserRole.CEO,
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
 def finance_user(db_session):
     """创建财务用户"""
     user = User(
@@ -405,80 +391,20 @@ def finance_user(db_session):
 
 
 @pytest.fixture(scope="function")
-def ceo_user(db_session):
-    """
-    创建 CEO 用户
-
-    SoT Reference: MASTER.md v4.9 §2.4 - ceo 角色
-    权限级别: L6 (最高)
-    职责: 资金安全、公司盈亏、最终决策
-    """
-    user = User(
-        id=uuid4(),
-        email="ceo@example.com",
-        username="ceo_user",
-        password_hash="$2b$12$test_hashed_password_placeholder",
-        role=UserRole.CEO,
-        is_active=True,
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
-
-
-@pytest.fixture(scope="function")
-def project_owner_user(db_session):
-    """
-    创建项目负责人用户
-
-    SoT Reference: MASTER.md v4.9 §2.4 - project_owner 角色
-    权限级别: L4
-    职责: 项目盈亏、资金使用效率、日报审核
-    """
-    user = User(
-        id=uuid4(),
-        email="po@example.com",
-        username="project_owner_user",
-        password_hash="$2b$12$test_hashed_password_placeholder",
-        role=UserRole.PROJECT_OWNER,
-        is_active=True,
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
-
-
-# ============================================================================
-# Deprecated Role Fixtures (向后兼容，新代码禁止使用)
-# ============================================================================
-
-@pytest.fixture(scope="function")
 def data_operator_user(db_session):
     """
     [DEPRECATED] 创建数据操作员用户
 
-    WARNING: data_operator 角色已在 PRD v2.2 中废弃。
-    新测试应使用 project_owner_user 或 finance_user。
-    保留此 fixture 仅用于向后兼容。
-
-    替代方案:
-    - 如果测试数据审核权限 -> 使用 project_owner_user
-    - 如果测试财务操作权限 -> 使用 finance_user
+    警告: data_operator 角色已废弃 (MASTER.md v4.6)
+    此 fixture 仅为向后兼容而保留，新测试不应使用此角色。
+    使用此角色的 API 测试将返回 403 Forbidden。
     """
-    import warnings
-    warnings.warn(
-        "data_operator_user is deprecated. Use project_owner_user or finance_user instead.",
-        DeprecationWarning,
-        stacklevel=2
-    )
     user = User(
         id=uuid4(),
         email="data_op@example.com",
         username="data_operator_user",
         password_hash="$2b$12$test_hashed_password_placeholder",
-        role=UserRole.DATA_OPERATOR,
+        role="data_operator",  # 废弃角色，仅用于向后兼容
         is_active=True,
     )
     db_session.add(user)
@@ -505,22 +431,18 @@ def account_manager_user(db_session):
 
 
 @pytest.fixture(scope="function")
-def media_buyer_user(db_session):
+def project_owner_user(db_session):
     """
-    创建投手用户 (pitcher)
+    创建项目负责人用户
 
-    NOTE: MEDIA_BUYER 是投手(pitcher)角色的技术枚举名。
-    业务上称为"投手"，对应 SoT 中的 pitcher 角色。
-    保留此命名以保持向后兼容。
-
-    SoT Reference: MASTER.md v4.9 §2.4 - pitcher 角色
+    SoT: MASTER.md v4.6 §2.4 - project_owner 是合法角色
     """
     user = User(
         id=uuid4(),
-        email="buyer@example.com",
-        username="media_buyer_user",
+        email="project_owner@example.com",
+        username="project_owner_user",
         password_hash="$2b$12$test_hashed_password_placeholder",
-        role=UserRole.MEDIA_BUYER,
+        role="project_owner",  # 直接使用字符串以匹配 API 路由权限检查
         is_active=True,
     )
     db_session.add(user)
@@ -530,38 +452,41 @@ def media_buyer_user(db_session):
 
 
 @pytest.fixture(scope="function")
-def pitcher_user(media_buyer_user):
+def pitcher_user(db_session):
     """
-    投手用户别名 (推荐使用)
+    创建投手用户
 
-    这是 media_buyer_user 的标准业务名称别名。
-    新测试推荐使用此 fixture 名称。
-
-    SoT Reference: MASTER.md v4.9 §2.4 - pitcher 角色
+    SoT: MASTER.md v4.6 §2.4 - pitcher 是合法角色
+    注意: 使用字符串 "pitcher" 而非枚举，因为 UserRole.MEDIA_BUYER 的值是 "media_buyer"
     """
-    return media_buyer_user
+    user = User(
+        id=uuid4(),
+        email="pitcher@example.com",
+        username="pitcher_user",
+        password_hash="$2b$12$test_hashed_password_placeholder",
+        role="pitcher",  # 直接使用字符串以匹配 API 路由权限检查
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
 
 @pytest.fixture(scope="function")
-def pitcher_token(pitcher_user):
-    """投手 token (pitcher_user 的 token)"""
-    token_data = {
-        "sub": str(pitcher_user.id),
-        "email": pitcher_user.email,
-        "role": pitcher_user.role.value if hasattr(pitcher_user.role, 'value') else str(pitcher_user.role),
-    }
-    return create_access_token(token_data)
+def media_buyer_user(pitcher_user):
+    """
+    [向后兼容别名] 请使用 pitcher_user
 
-
-@pytest.fixture(scope="function")
-def pitcher_headers(pitcher_token):
-    """投手请求头"""
-    return {"Authorization": f"Bearer {pitcher_token}"}
+    DEPRECATED: media_buyer 已重命名为 pitcher (MASTER.md v4.6)
+    """
+    return pitcher_user
 
 
 # ============================================================================
 # Token Fixtures
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def auth_token(test_user):
@@ -569,7 +494,9 @@ def auth_token(test_user):
     token_data = {
         "sub": str(test_user.id),
         "email": test_user.email,
-        "role": test_user.role.value if hasattr(test_user.role, 'value') else str(test_user.role),
+        "role": test_user.role.value
+        if hasattr(test_user.role, "value")
+        else str(test_user.role),
     }
     return create_access_token(token_data)
 
@@ -586,7 +513,9 @@ def admin_token(admin_user):
     token_data = {
         "sub": str(admin_user.id),
         "email": admin_user.email,
-        "role": admin_user.role.value if hasattr(admin_user.role, 'value') else str(admin_user.role),
+        "role": admin_user.role.value
+        if hasattr(admin_user.role, "value")
+        else str(admin_user.role),
     }
     return create_access_token(token_data)
 
@@ -603,7 +532,9 @@ def finance_token(finance_user):
     token_data = {
         "sub": str(finance_user.id),
         "email": finance_user.email,
-        "role": finance_user.role.value if hasattr(finance_user.role, 'value') else str(finance_user.role),
+        "role": finance_user.role.value
+        if hasattr(finance_user.role, "value")
+        else str(finance_user.role),
     }
     return create_access_token(token_data)
 
@@ -615,85 +546,66 @@ def finance_headers(finance_token):
 
 
 @pytest.fixture(scope="function")
-def ceo_token(ceo_user):
-    """CEO token"""
-    token_data = {
-        "sub": str(ceo_user.id),
-        "email": ceo_user.email,
-        "role": ceo_user.role.value if hasattr(ceo_user.role, 'value') else str(ceo_user.role),
-    }
-    return create_access_token(token_data)
-
-
-@pytest.fixture(scope="function")
-def ceo_headers(ceo_token):
-    """CEO 请求头"""
-    return {"Authorization": f"Bearer {ceo_token}"}
-
-
-@pytest.fixture(scope="function")
-def project_owner_token(project_owner_user):
-    """项目负责人 token"""
-    token_data = {
-        "sub": str(project_owner_user.id),
-        "email": project_owner_user.email,
-        "role": project_owner_user.role.value if hasattr(project_owner_user.role, 'value') else str(project_owner_user.role),
-    }
-    return create_access_token(token_data)
-
-
-@pytest.fixture(scope="function")
-def project_owner_headers(project_owner_token):
-    """项目负责人请求头"""
-    return {"Authorization": f"Bearer {project_owner_token}"}
-
-
-# ============================================================================
-# Deprecated Token Fixtures (向后兼容，新代码禁止使用)
-# ============================================================================
-
-@pytest.fixture(scope="function")
 def data_operator_token(data_operator_user):
-    """
-    [DEPRECATED] 数据操作员 token
-
-    WARNING: data_operator 角色已废弃。
-    新测试应使用 project_owner_token 或 finance_token。
-    """
+    """数据操作员 token"""
     token_data = {
         "sub": str(data_operator_user.id),
         "email": data_operator_user.email,
-        "role": data_operator_user.role.value if hasattr(data_operator_user.role, 'value') else str(data_operator_user.role),
+        "role": data_operator_user.role.value
+        if hasattr(data_operator_user.role, "value")
+        else str(data_operator_user.role),
     }
     return create_access_token(token_data)
 
 
 @pytest.fixture(scope="function")
 def data_operator_headers(data_operator_token):
-    """
-    [DEPRECATED] 数据操作员请求头
-
-    WARNING: data_operator 角色已废弃。
-    新测试应使用 project_owner_headers 或 finance_headers。
-    """
+    """数据操作员请求头"""
     return {"Authorization": f"Bearer {data_operator_token}"}
 
 
 @pytest.fixture(scope="function")
-def media_buyer_token(media_buyer_user):
-    """投手 token"""
+def project_owner_token(project_owner_user):
+    """项目负责人 token (SoT: MASTER.md v4.6)"""
     token_data = {
-        "sub": str(media_buyer_user.id),
-        "email": media_buyer_user.email,
-        "role": media_buyer_user.role.value if hasattr(media_buyer_user.role, 'value') else str(media_buyer_user.role),
+        "sub": str(project_owner_user.id),
+        "email": project_owner_user.email,
+        "role": project_owner_user.role.value
+        if hasattr(project_owner_user.role, "value")
+        else str(project_owner_user.role),
     }
     return create_access_token(token_data)
 
 
 @pytest.fixture(scope="function")
-def media_buyer_headers(media_buyer_token):
-    """投手请求头"""
-    return {"Authorization": f"Bearer {media_buyer_token}"}
+def pitcher_token(pitcher_user):
+    """投手 token (SoT: MASTER.md v4.6)"""
+    token_data = {
+        "sub": str(pitcher_user.id),
+        "email": pitcher_user.email,
+        "role": pitcher_user.role.value
+        if hasattr(pitcher_user.role, "value")
+        else str(pitcher_user.role),
+    }
+    return create_access_token(token_data)
+
+
+@pytest.fixture(scope="function")
+def pitcher_headers(pitcher_token):
+    """投手请求头 (SoT: MASTER.md v4.6)"""
+    return {"Authorization": f"Bearer {pitcher_token}"}
+
+
+@pytest.fixture(scope="function")
+def media_buyer_token(pitcher_token):
+    """[向后兼容别名] 请使用 pitcher_token"""
+    return pitcher_token
+
+
+@pytest.fixture(scope="function")
+def media_buyer_headers(pitcher_headers):
+    """[向后兼容别名] 请使用 pitcher_headers"""
+    return pitcher_headers
 
 
 @pytest.fixture(scope="function")
@@ -702,7 +614,9 @@ def account_manager_token(account_manager_user):
     token_data = {
         "sub": str(account_manager_user.id),
         "email": account_manager_user.email,
-        "role": account_manager_user.role.value if hasattr(account_manager_user.role, 'value') else str(account_manager_user.role),
+        "role": account_manager_user.role.value
+        if hasattr(account_manager_user.role, "value")
+        else str(account_manager_user.role),
     }
     return create_access_token(token_data)
 
@@ -716,6 +630,7 @@ def account_manager_headers(account_manager_token):
 # ============================================================================
 # 业务数据 Fixtures
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def test_project(db_session, test_user):
@@ -815,32 +730,33 @@ def test_ad_account_2(db_session, test_project, test_channel, media_buyer_user):
 def funded_ad_account(db_session, test_ad_account):
     """
     创建有余额的测试广告账户（用于转账测试）
-    
+
     为 test_ad_account 设置初始余额 10000.00，确保转账测试可以正常进行。
     """
     from decimal import Decimal
     from backend.models.finance.ledger import LedgerEntry
     from backend.models.enums import LedgerEntryType
     from datetime import datetime
-    
-    # 设置账户余额
+
+    # 设置账户余额 (使用 balance 字段 - 服务层检查此字段)
     test_ad_account.balance = Decimal("10000.00")
+    test_ad_account.deposit = Decimal("10000.00")  # 保持一致
     db_session.add(test_ad_account)
-    
+
     # 创建对应的 LedgerEntry 记录（保持数据一致性）
     ledger_entry = LedgerEntry(
         ad_account_id=test_ad_account.id,
         entry_type=LedgerEntryType.TOPUP.value,
         amount=Decimal("10000.00"),
-        balance_after=Decimal("10000.00"),
-        reference_type="test_fixture",
+        currency="USD",
         notes="测试 fixture 初始化余额",
+        occurred_at=datetime.utcnow(),
         entry_date=datetime.utcnow(),
     )
     db_session.add(ledger_entry)
     db_session.commit()
     db_session.refresh(test_ad_account)
-    
+
     return test_ad_account
 
 
@@ -848,18 +764,19 @@ def funded_ad_account(db_session, test_ad_account):
 def funded_ad_account_2(db_session, test_ad_account_2):
     """
     创建有余额的第二个测试广告账户（用于转账测试）
-    
+
     为 test_ad_account_2 设置初始余额 10000.00。
     """
     from decimal import Decimal
     from backend.models.finance.ledger import LedgerEntry
     from backend.models.enums import LedgerEntryType
     from datetime import datetime
-    
-    # 设置账户余额
+
+    # 设置账户余额 (使用 balance 字段 - 服务层检查此字段)
     test_ad_account_2.balance = Decimal("10000.00")
+    test_ad_account_2.deposit = Decimal("10000.00")  # 保持一致
     db_session.add(test_ad_account_2)
-    
+
     # 创建对应的 LedgerEntry 记录
     ledger_entry = LedgerEntry(
         ad_account_id=test_ad_account_2.id,
@@ -873,8 +790,266 @@ def funded_ad_account_2(db_session, test_ad_account_2):
     db_session.add(ledger_entry)
     db_session.commit()
     db_session.refresh(test_ad_account_2)
-    
+
     return test_ad_account_2
+
+
+# ============================================================================
+# 账户转移/死号测试 Fixtures
+# ============================================================================
+
+
+@pytest.fixture(scope="function")
+def sample_pitcher(db_session):
+    """
+    创建独立的投手用户 (用于账户转移测试的目标投手)
+
+    SoT: MASTER.md v4.6 §2.4 - pitcher 是合法角色
+    用于: test_account_transfer_api.py - 账户转移目标
+    """
+    user = User(
+        id=uuid4(),
+        email="sample_pitcher@example.com",
+        username="sample_pitcher",
+        password_hash="$2b$12$test_hashed_password_placeholder",
+        role="pitcher",
+        is_active=True,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture(scope="function")
+def sample_account_with_owner(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建有 owner 的测试广告账户 (用于账户转移测试)
+
+    用于: test_account_transfer_api.py - 账户转移源账户
+    """
+    account = AdAccount(
+        id=100,
+        account_code="ACT_TRANSFER_001",
+        name="转移测试广告账户",
+        status="active",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,  # 有 owner
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_active_account(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建活跃状态的测试广告账户 (用于死号处理测试)
+
+    用于: test_mark_dead_api.py - 标记死号源账户
+    状态: active (非 dead, 非 archived)
+    """
+    account = AdAccount(
+        id=101,
+        account_code="ACT_DEAD_001",
+        name="死号测试广告账户",
+        status="active",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_account_without_owner(db_session, test_project, test_channel):
+    """
+    创建无 owner 的测试广告账户 (用于账户转移测试)
+
+    用于: test_account_transfer_api.py - 测试转移未分配账户
+    """
+    account = AdAccount(
+        id=102,
+        account_code="ACT_NO_OWNER_001",
+        name="无负责人账户",
+        status="active",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=None,  # 无 owner
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_finance_user(finance_user):
+    """
+    [别名] 财务用户 - 用于账户转移测试
+
+    用于: test_account_transfer_api.py - 测试转移目标必须是投手
+    """
+    return finance_user
+
+
+@pytest.fixture(scope="function")
+def sample_dead_account(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建已死号状态的测试广告账户
+
+    用于: test_mark_dead_api.py - 测试不能重复标记
+    """
+    account = AdAccount(
+        id=103,
+        account_code="ACT_DEAD_002",
+        name="已死号账户",
+        status="dead",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_archived_account(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建已归档状态的测试广告账户
+
+    用于: test_mark_dead_api.py - 测试不能标记已归档账户
+    """
+    account = AdAccount(
+        id=104,
+        account_code="ACT_ARCHIVED_001",
+        name="已归档账户",
+        status="archived",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_new_account(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建新建状态的测试广告账户
+
+    用于: test_mark_dead_api.py - 测试从 new 状态标记死号
+    """
+    account = AdAccount(
+        id=105,
+        account_code="ACT_NEW_001",
+        name="新建账户",
+        status="new",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_testing_account(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建测试中状态的测试广告账户
+
+    用于: test_mark_dead_api.py - 测试从 testing 状态标记死号
+    """
+    account = AdAccount(
+        id=106,
+        account_code="ACT_TESTING_001",
+        name="测试中账户",
+        status="testing",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_suspended_account(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建暂停状态的测试广告账户
+
+    用于: test_mark_dead_api.py - 测试从 suspended 状态标记死号
+    """
+    account = AdAccount(
+        id=107,
+        account_code="ACT_SUSPENDED_001",
+        name="已暂停账户",
+        status="suspended",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+    return account
+
+
+@pytest.fixture(scope="function")
+def sample_account_with_balance(db_session, test_project, test_channel, pitcher_user):
+    """
+    创建有余额的测试广告账户
+
+    用于: test_mark_dead_api.py - 测试余额转移提示
+    注意: AdAccount 使用 deposit 字段存储余额
+    """
+    from decimal import Decimal
+    from backend.models.finance.ledger import LedgerEntry
+    from backend.models.enums import LedgerEntryType
+    from datetime import datetime
+
+    account = AdAccount(
+        id=108,
+        account_code="ACT_BALANCE_001",
+        name="有余额账户",
+        status="active",
+        project_id=test_project.id,
+        channel_id=test_channel.id,
+        owner_id=pitcher_user.id,
+        deposit=Decimal("5000.00"),  # 使用 deposit 而非 balance
+    )
+    db_session.add(account)
+    db_session.commit()
+    db_session.refresh(account)
+
+    # 创建对应的 LedgerEntry 记录
+    ledger_entry = LedgerEntry(
+        ad_account_id=account.id,
+        entry_type=LedgerEntryType.TOPUP.value,
+        amount=Decimal("5000.00"),
+        balance_after=Decimal("5000.00"),
+        reference_type="test_fixture",
+        notes="测试 fixture 初始化余额",
+        entry_date=datetime.utcnow(),
+    )
+    db_session.add(ledger_entry)
+    db_session.commit()
+    db_session.refresh(account)
+
+    return account
 
 
 @pytest.fixture(scope="function")
@@ -910,12 +1085,12 @@ def test_daily_report(db_session, test_ad_account, test_user):
 def test_reconciliation_batch(db_session, test_user, admin_user):
     """
     创建测试对账批次
-    
+
     状态: draft (初始状态，符合 STATE_MACHINE.md v2.6)
     引用: STATE_MACHINE.md v2.6 第 11.1 章
     """
     from datetime import date, timedelta
-    
+
     batch = ReconciliationBatch(
         batch_code=f"REC{datetime.now().strftime('%Y%m%d%H%M%S')}",
         period_start=date.today() - timedelta(days=7),
@@ -939,7 +1114,7 @@ def test_reconciliation_batch(db_session, test_user, admin_user):
 def test_reconciliation_detail(db_session, test_reconciliation_batch, test_ad_account):
     """
     创建测试对账明细
-    
+
     状态: pending (初始状态，符合 STATE_MACHINE.md v2.6)
     引用: STATE_MACHINE.md v2.6 第 11.2 章
     """
@@ -974,6 +1149,7 @@ def sample_reconciliation_detail_id(test_reconciliation_detail):
 # ============================================================================
 # Topup 相关 Fixtures
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def managed_ad_account_id(test_ad_account):
@@ -1039,14 +1215,21 @@ def sample_topup(db_session, test_ad_account, media_buyer_user):
 # 状态机测试辅助类
 # ============================================================================
 
+
 class DailyReportStateHelper:
     """日报8状态机测试辅助类"""
 
     VALID_TRANSITIONS = {
         DailyReportStatus.RAW_SUBMITTED: [DailyReportStatus.TREND_PENDING],
-        DailyReportStatus.TREND_PENDING: [DailyReportStatus.TREND_OK, DailyReportStatus.TREND_FLAGGED],
+        DailyReportStatus.TREND_PENDING: [
+            DailyReportStatus.TREND_OK,
+            DailyReportStatus.TREND_FLAGGED,
+        ],
         DailyReportStatus.TREND_OK: [DailyReportStatus.FINAL_PENDING],
-        DailyReportStatus.TREND_FLAGGED: [DailyReportStatus.TREND_RESOLVED, DailyReportStatus.RAW_SUBMITTED],
+        DailyReportStatus.TREND_FLAGGED: [
+            DailyReportStatus.TREND_RESOLVED,
+            DailyReportStatus.RAW_SUBMITTED,
+        ],
         DailyReportStatus.TREND_RESOLVED: [DailyReportStatus.FINAL_PENDING],
         DailyReportStatus.FINAL_PENDING: [DailyReportStatus.FINAL_CONFIRMED],
         DailyReportStatus.FINAL_CONFIRMED: [DailyReportStatus.FINAL_LOCKED],
@@ -1056,7 +1239,9 @@ class DailyReportStateHelper:
     TERMINAL_STATES = [DailyReportStatus.FINAL_LOCKED]
 
     @classmethod
-    def is_valid_transition(cls, from_status: DailyReportStatus, to_status: DailyReportStatus) -> bool:
+    def is_valid_transition(
+        cls, from_status: DailyReportStatus, to_status: DailyReportStatus
+    ) -> bool:
         return to_status in cls.VALID_TRANSITIONS.get(from_status, [])
 
     @classmethod
@@ -1122,16 +1307,25 @@ class ReconciliationStateHelper:
 
     VALID_TRANSITIONS = {
         ReconciliationBatchStatus.DRAFT: [ReconciliationBatchStatus.PENDING_REVIEW],
-        ReconciliationBatchStatus.PENDING_REVIEW: [ReconciliationBatchStatus.APPROVED, ReconciliationBatchStatus.NEEDS_ADJUSTMENT],
+        ReconciliationBatchStatus.PENDING_REVIEW: [
+            ReconciliationBatchStatus.APPROVED,
+            ReconciliationBatchStatus.NEEDS_ADJUSTMENT,
+        ],
         ReconciliationBatchStatus.APPROVED: [ReconciliationBatchStatus.COMPLETED],
-        ReconciliationBatchStatus.NEEDS_ADJUSTMENT: [ReconciliationBatchStatus.APPROVED],  # 修复：needs_adjustment → approved（不是 pending_review）
+        ReconciliationBatchStatus.NEEDS_ADJUSTMENT: [
+            ReconciliationBatchStatus.APPROVED
+        ],  # 修复：needs_adjustment → approved（不是 pending_review）
         ReconciliationBatchStatus.COMPLETED: [],
     }
 
     TERMINAL_STATES = [ReconciliationBatchStatus.COMPLETED]
 
     @classmethod
-    def is_valid_transition(cls, from_status: ReconciliationBatchStatus, to_status: ReconciliationBatchStatus) -> bool:
+    def is_valid_transition(
+        cls,
+        from_status: ReconciliationBatchStatus,
+        to_status: ReconciliationBatchStatus,
+    ) -> bool:
         return to_status in cls.VALID_TRANSITIONS.get(from_status, [])
 
     @classmethod
@@ -1181,11 +1375,21 @@ class ReconciliationStateHelper:
 class LedgerInvariantHelper:
     """账本不可变量检查辅助类"""
 
-    POSITIVE_TYPES = [LedgerEntryType.REVENUE, LedgerEntryType.TOPUP, LedgerEntryType.TRANSFER_IN]
-    NEGATIVE_TYPES = [LedgerEntryType.COST, LedgerEntryType.TRANSFER_OUT, LedgerEntryType.REVERSAL]
+    POSITIVE_TYPES = [
+        LedgerEntryType.REVENUE,
+        LedgerEntryType.TOPUP,
+        LedgerEntryType.TRANSFER_IN,
+    ]
+    NEGATIVE_TYPES = [
+        LedgerEntryType.COST,
+        LedgerEntryType.TRANSFER_OUT,
+        LedgerEntryType.REVERSAL,
+    ]
 
     @classmethod
-    def validate_amount_direction(cls, entry_type: LedgerEntryType, amount: Decimal) -> bool:
+    def validate_amount_direction(
+        cls, entry_type: LedgerEntryType, amount: Decimal
+    ) -> bool:
         if entry_type in cls.POSITIVE_TYPES:
             return amount >= 0
         elif entry_type in cls.NEGATIVE_TYPES:
@@ -1194,12 +1398,21 @@ class LedgerInvariantHelper:
 
     @classmethod
     def get_project_ledger_types(cls) -> list:
-        return [LedgerEntryType.REVENUE, LedgerEntryType.TOPUP, LedgerEntryType.REVERSAL]
+        return [
+            LedgerEntryType.REVENUE,
+            LedgerEntryType.TOPUP,
+            LedgerEntryType.REVERSAL,
+        ]
 
     @classmethod
     def get_supplier_ledger_types(cls) -> list:
-        return [LedgerEntryType.COST, LedgerEntryType.TOPUP, LedgerEntryType.TRANSFER_OUT,
-                LedgerEntryType.TRANSFER_IN, LedgerEntryType.REVERSAL]
+        return [
+            LedgerEntryType.COST,
+            LedgerEntryType.TOPUP,
+            LedgerEntryType.TRANSFER_OUT,
+            LedgerEntryType.TRANSFER_IN,
+            LedgerEntryType.REVERSAL,
+        ]
 
 
 @pytest.fixture(scope="session")
@@ -1211,6 +1424,7 @@ def daily_report_state_helper():
 # ============================================================================
 # Daily Report 测试数据 Fixtures
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def sample_daily_report_data(test_ad_account):
@@ -1243,6 +1457,7 @@ def sample_batch_import_data(test_ad_account):
     对齐 API_SOT.md v9.0 DailyReportBatchImportRequest
     """
     from datetime import timedelta
+
     return {
         "reports": [
             {
@@ -1298,10 +1513,16 @@ class TopupStateHelper:
         TopupStatus.CANCELLED: [],
     }
 
-    TERMINAL_STATES = [TopupStatus.COMPLETED, TopupStatus.REJECTED, TopupStatus.CANCELLED]
+    TERMINAL_STATES = [
+        TopupStatus.COMPLETED,
+        TopupStatus.REJECTED,
+        TopupStatus.CANCELLED,
+    ]
 
     @classmethod
-    def is_valid_transition(cls, from_status: TopupStatus, to_status: TopupStatus) -> bool:
+    def is_valid_transition(
+        cls, from_status: TopupStatus, to_status: TopupStatus
+    ) -> bool:
         return to_status in cls.VALID_TRANSITIONS.get(from_status, [])
 
     @classmethod
@@ -1379,6 +1600,7 @@ def ledger_invariant_helper():
 # Projects 模块测试 Fixtures
 # ============================================================================
 
+
 @pytest.fixture(scope="function")
 def sample_project_id(test_project):
     """返回示例项目 ID"""
@@ -1415,7 +1637,7 @@ def account_manager_project(db_session, account_manager_user):
     if isinstance(account_manager_id_value, UUID):
         # 使用 UUID 的整数表示（取绝对值以避免负数）
         account_manager_id_value = abs(account_manager_id_value.int) % (2**63)
-    
+
     project = Project(
         name="Account Manager Project",  # 使用 name 而非 project_name
         client_name="AM Client",
@@ -1459,12 +1681,8 @@ def media_buyer_project(db_session, test_user, media_buyer_user):
     db_session.add(project)
     db_session.flush()
 
-    # 添加投手为项目成员
-    member = ProjectMember(
-        project_id=project.id,
-        user_id=user_id_value,
-        role="media_buyer"
-    )
+    # 添加投手为项目成员 (SoT: MASTER.md v4.6 - pitcher 是合法角色)
+    member = ProjectMember(project_id=project.id, user_id=user_id_value, role="pitcher")
     db_session.add(member)
     db_session.commit()
     db_session.refresh(project)
@@ -1480,6 +1698,7 @@ def media_buyer_project_id(media_buyer_project):
 # ============================================================================
 # 别名 Fixtures（向后兼容）
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def test_admin_user(admin_user):
@@ -1529,206 +1748,10 @@ def auth_headers_operator(data_operator_headers):
     return data_operator_headers
 
 
-
-@pytest.fixture(scope="function")
-def sample_active_account(test_ad_account):
-    """
-    活跃状态的广告账户 (test_ad_account 的别名)
-
-    用于 mark_dead API 测试等需要活跃账户的场景
-    """
-    return test_ad_account
-
-
-@pytest.fixture(scope="function")
-def sample_account_with_owner(test_ad_account):
-    """
-    有 owner 的广告账户 (test_ad_account 的别名)
-
-    test_ad_account 默认设置了 owner_id = media_buyer_user.id
-    """
-    return test_ad_account
-
-
-@pytest.fixture(scope="function")
-def sample_account_without_owner(db_session, test_project, test_channel):
-    """
-    无 owner 的广告账户
-
-    owner_id = None，用于测试账户分配场景
-    """
-    account = AdAccount(
-        account_code="ACT_NO_OWNER_001",
-        name="无主账户",
-        status="active",
-        project_id=test_project.id,
-        channel_id=test_channel.id,
-        owner_id=None,  # 无主
-    )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
-    return account
-
-
-@pytest.fixture(scope="function")
-def sample_dead_account(db_session, test_project, test_channel, media_buyer_user):
-    """
-    死号状态的广告账户
-
-    status = "dead"，用于测试死号迁移等场景
-    """
-    account = AdAccount(
-        account_code="ACT_DEAD_001",
-        name="死号账户",
-        status="dead",
-        project_id=test_project.id,
-        channel_id=test_channel.id,
-        owner_id=media_buyer_user.id,
-    )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
-    return account
-
-
-@pytest.fixture(scope="function")
-def sample_archived_account(db_session, test_project, test_channel, media_buyer_user):
-    """
-    已归档状态的广告账户
-
-    status = "archived"，终态账户
-    """
-    account = AdAccount(
-        account_code="ACT_ARCHIVED_001",
-        name="归档账户",
-        status="archived",
-        project_id=test_project.id,
-        channel_id=test_channel.id,
-        owner_id=media_buyer_user.id,
-    )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
-    return account
-
-
-@pytest.fixture(scope="function")
-def sample_new_account(db_session, test_project, test_channel, media_buyer_user):
-    """
-    新建状态的广告账户
-
-    status = "new"，初始状态账户
-    """
-    account = AdAccount(
-        account_code="ACT_NEW_001",
-        name="新建账户",
-        status="new",
-        project_id=test_project.id,
-        channel_id=test_channel.id,
-        owner_id=media_buyer_user.id,
-    )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
-    return account
-
-
-@pytest.fixture(scope="function")
-def sample_testing_account(db_session, test_project, test_channel, media_buyer_user):
-    """
-    测试中状态的广告账户
-
-    status = "testing"
-    """
-    account = AdAccount(
-        account_code="ACT_TESTING_001",
-        name="测试中账户",
-        status="testing",
-        project_id=test_project.id,
-        channel_id=test_channel.id,
-        owner_id=media_buyer_user.id,
-    )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
-    return account
-
-
-@pytest.fixture(scope="function")
-def sample_suspended_account(db_session, test_project, test_channel, media_buyer_user):
-    """
-    暂停状态的广告账户
-
-    status = "suspended"
-    """
-    account = AdAccount(
-        account_code="ACT_SUSPENDED_001",
-        name="暂停账户",
-        status="suspended",
-        project_id=test_project.id,
-        channel_id=test_channel.id,
-        owner_id=media_buyer_user.id,
-    )
-    db_session.add(account)
-    db_session.commit()
-    db_session.refresh(account)
-    return account
-
-
-@pytest.fixture(scope="function")
-def sample_account_with_balance(funded_ad_account):
-    """
-    有余额的广告账户 (funded_ad_account 的别名)
-
-    balance = 10000.00
-    """
-    return funded_ad_account
-
-
-@pytest.fixture(scope="function")
-def sample_pitcher(media_buyer_user):
-    """
-    投手用户 (media_buyer_user 的别名)
-
-    技术角色映射: pitcher → media_buyer
-    """
-    return media_buyer_user
-
-
-@pytest.fixture(scope="function")
-def pitcher_token(media_buyer_token):
-    """
-    投手 token (media_buyer_token 的别名)
-
-    技术角色映射: pitcher → media_buyer
-    参考: MASTER.md v4.6 技术层角色定义
-    """
-    return media_buyer_token
-
-
-@pytest.fixture(scope="function")
-def pitcher_headers(media_buyer_headers):
-    """
-    投手 headers (media_buyer_headers 的别名)
-
-    技术角色映射: pitcher → media_buyer
-    """
-    return media_buyer_headers
-
-
-@pytest.fixture(scope="function")
-def pitcher_user(media_buyer_user):
-    """
-    投手用户 (media_buyer_user 的别名)
-
-    技术角色映射: pitcher → media_buyer
-    """
-    return media_buyer_user
-
 # ============================================================================
 # 日报测试数据 Fixtures
 # ============================================================================
+
 
 @pytest.fixture(scope="function")
 def sample_daily_report_data(test_ad_account, test_user):

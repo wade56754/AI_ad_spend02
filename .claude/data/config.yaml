@@ -6,17 +6,16 @@
 # SoT 文档版本映射
 # =============================================================================
 sot_versions:
-  MASTER.md: "v4.6"
-  API_SOT.md: "v9.4"
-  BUSINESS_RULES.md: "v4.6"
-  ERROR_CODES_SOT.md: "v2.3"
-  DATA_SCHEMA.md: "v5.6"
-  STATE_MACHINE.md: "v2.8"
-  LEDGER_SOT.md: "v1.1"
+  MASTER.md: "v4.9"
+  API_SOT.md: "v9.7"
+  BUSINESS_RULES.md: "v5.2"
+  ERROR_CODES_SOT.md: "v2.2"
+  DATA_SCHEMA.md: "v5.11"
+  STATE_MACHINE.md: "v2.9"
   AUTH_SPEC.md: "v2.2"
 
 # =============================================================================
-# 业务层角色列表 (来源: PRD v2.2)
+# 业务层角色列表 (来源: PRD v5.1)
 # =============================================================================
 business_roles:
   - ceo              # 老板 - 资金安全、公司盈亏、最终决策
@@ -27,7 +26,7 @@ business_roles:
   - admin            # 管理员 - 系统配置（不参与业务）
 
 # =============================================================================
-# 技术层角色列表 (来源: MASTER.md v4.6 §INV-007)
+# 技术层角色列表 (来源: MASTER.md v4.9 §2.4)
 # =============================================================================
 technical_roles:
   - admin            # 系统管理权限
@@ -36,7 +35,7 @@ technical_roles:
   - media_buyer      # 投放执行权限
 
 # =============================================================================
-# 废弃角色 (PRD v2.2 移除)
+# 废弃角色 (PRD v5.1 移除)
 # =============================================================================
 deprecated_roles:
   - supervisor       # → project_owner
@@ -52,15 +51,15 @@ forbidden_patterns:
       \.(balance|current_balance)\s*[+\-*/]?=
     message: "Direct balance modification forbidden, must use ledger_entries"
     severity: error
-    rule_ref: "LEDGER_SOT.md S2"
+    rule_ref: "DATA_SCHEMA.md §3.4.4"
 
   # F-002: Legacy status names forbidden
   old_status_names:
     pattern: >-
       status\s*[=!]=\s*['"]?(draft|submitted|approved|rejected)['"]?
-    message: "Legacy status name detected, use 8-state machine from STATE_MACHINE.md v2.6"
+    message: "Legacy status name detected, use 8-state machine from STATE_MACHINE.md v2.9"
     severity: error
-    rule_ref: "STATE_MACHINE.md v2.6"
+    rule_ref: "STATE_MACHINE.md v2.9"
 
   # F-003: Custom error codes forbidden
   custom_error_code:
@@ -90,9 +89,9 @@ forbidden_patterns:
   old_role_names:
     pattern: >-
       role\s*[=!]=\s*['"]?(operator|manager|owner|viewer|editor|supervisor|data_operator)['"]?
-    message: "Legacy role name detected, use 6 business roles (PRD v2.2) or 4 technical roles (MASTER.md v4.6)"
+    message: "Legacy role name detected, use 6 business roles (PRD v5.1) or 4 technical roles (MASTER.md v4.9)"
     severity: error
-    rule_ref: "MASTER.md v4.6 §INV-007, PRD v2.2"
+    rule_ref: "MASTER.md v4.9 §2.4, PRD v5.1"
 
   # F-007: Pydantic v1 syntax forbidden
   pydantic_v1_syntax:

@@ -21,7 +21,7 @@ pause > nul
 echo.
 
 echo Running E2E tests (headless mode)...
-call npm run test:e2e
+call pnpm run test:e2e
 echo.
 
 echo ========================================

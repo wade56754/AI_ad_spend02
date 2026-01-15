@@ -247,7 +247,7 @@ code_sources:
 
     **常量白名单**:
     - 日报状态: 8 个 (raw_submitted...final_locked)
-    - 业务层角色: 6 个 (ceo, project_owner, finance, pitcher, account_manager, admin) - PRD v2.2
+    - 业务层角色: 6 个 (ceo, project_owner, finance, pitcher, account_manager, admin) - PRD v5.1
     - 技术层角色: 4 个 (admin, finance, account_manager, media_buyer) - MASTER.md v4.6
     - 错误码前缀: 16 个 (VAL, AUTH, BIZ, DB, INT, SYS, FIN, RPT, ACC, PRJ, PIT, TOP, IMP, EXP, REC, SET)
 

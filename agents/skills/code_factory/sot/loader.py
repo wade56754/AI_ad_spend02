@@ -108,9 +108,9 @@ class SotLoader:
         master_path = self.sot_dir / "MASTER.md"
         if master_path.exists():
             data.roles = self._extract_roles(master_path)
-            # 废弃角色映射 (PRD v2.2)
+            # 废弃角色映射 (PRD v5.1)
             data.legacy_mapping = {
-                "supervisor": "project_owner",  # PRD v2.2 合并
+                "supervisor": "project_owner",  # PRD v5.1 合并
                 "data_operator": None,  # 已删除
                 "media_buyer": "pitcher",  # 使用标准角色
             }

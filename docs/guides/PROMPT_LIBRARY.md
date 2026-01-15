@@ -30,8 +30,8 @@
 
 <context>
 【SoT 版本】
-MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.10
-BUSINESS_RULES.md v5.1 | ERROR_CODES.md v2.2 | AUTH_SPEC.md v2.2
+MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.11
+BUSINESS_RULES.md v5.2 | ERROR_CODES.md v2.2 | AUTH_SPEC.md v2.2
 </context>
 
 <constraints>
@@ -402,7 +402,7 @@ pytest backend/tests/test_auth_api.py -v
 - get_current_user 依赖可用
 
 **SoT 引用**:
-- DATA_SCHEMA.md v5.10 §users
+- DATA_SCHEMA.md v5.11 §users
 - BR-USER-001: 角色枚举固定 6 个值
 - MASTER.md v4.9 §2.4: 角色定义
 

@@ -7,8 +7,8 @@ echo   前端测试框架验证
 echo ==================================================
 echo.
 
-REM 检查 Node.js 和 npm
-echo 1. 检查 Node.js 和 npm...
+REM 检查 Node.js 和 pnpm
+echo 1. 检查 Node.js 和 pnpm...
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo [X] Node.js 未安装
@@ -17,12 +17,12 @@ if %errorlevel% neq 0 (
     echo [OK] Node.js 已安装
 )
 
-npm --version >nul 2>&1
+pnpm --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [X] npm 未安装
+    echo [X] pnpm 未安装
     exit /b 1
 ) else (
-    echo [OK] npm 已安装
+    echo [OK] pnpm 已安装
 )
 
 echo.
@@ -54,7 +54,7 @@ echo.
 
 REM 运行框架验证测试
 echo 3. 运行框架验证测试...
-call npm test -- __tests__/setup.test.ts --silent
+call pnpm test -- __tests__/setup.test.ts --silent
 if %errorlevel% neq 0 (
     echo [X] 框架验证测试失败
     exit /b 1
@@ -66,7 +66,7 @@ echo.
 
 REM 运行示例测试
 echo 4. 运行示例测试...
-call npm test -- __tests__/example/ --silent
+call pnpm test -- __tests__/example/ --silent
 if %errorlevel% neq 0 (
     echo [X] 示例测试失败
     exit /b 1
@@ -82,9 +82,9 @@ echo.
 echo 下一步:
 echo   1. 查看测试模板: type tests\TEST_TEMPLATE.md
 echo   2. 查看使用文档: type tests\README.md
-echo   3. 运行所有测试: npm test
-echo   4. 监听模式: npm run test:watch
-echo   5. 生成覆盖率: npm run test:coverage
+echo   3. 运行所有测试: pnpm test
+echo   4. 监听模式: pnpm run test:watch
+echo   5. 生成覆盖率: pnpm run test:coverage
 echo.
 
 exit /b 0

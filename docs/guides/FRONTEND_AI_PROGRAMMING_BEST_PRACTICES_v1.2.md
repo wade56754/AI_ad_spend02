@@ -3,7 +3,7 @@
 > **版本**: v1.3 (修复版)
 > **更新日期**: 2025-12-30
 > **变更记录**: 
-> - v1.3: 版本对齐修复 - Next.js 15→16，STATE_MACHINE v2.7→v2.8，AUTH_SPEC v2.2→v2.1，ERROR_CODES v2.3→v2.2，移除不存在的 LEDGER_SOT
+> - v1.3: 版本对齐修复 - Next.js 15→16，STATE_MACHINE v2.7→v2.8，AUTH_SPEC v2.2→v2.1，ERROR_CODES v2.3→v2.2，账本规则统一到 DATA_SCHEMA.md §3.4.4
 > - v1.2: P0 修复 - 技术层角色改为 4 个，删除 data_operator，project_owner 改为业务属性
 > - v1.1: 修复角色定义与 auth.types.ts 对齐，统一术语
 > **适用范围**: `frontend/` 目录下所有代码的 AI 辅助开发
@@ -17,13 +17,13 @@
 
 | 文档 | 版本 | 来源验证 |
 |------|------|---------|
-| MASTER.md | v4.6 | 项目文件确认 |
-| STATE_MACHINE.md | v2.8 | 项目文件确认 |
-| DATA_SCHEMA.md | v5.6 | 项目文件确认 |
-| BUSINESS_RULES.md | v4.7 | 项目文件确认 |
+| MASTER.md | v4.9 | 项目文件确认 |
+| STATE_MACHINE.md | v2.9 | 项目文件确认 |
+| DATA_SCHEMA.md | v5.11 | 项目文件确认 |
+| BUSINESS_RULES.md | v5.2 | 项目文件确认 |
 | ERROR_CODES_SOT.md | v2.2 | 项目文件确认 |
-| API_SOT.md | v9.4 | 项目文件确认 |
-| AUTH_SPEC.md | v2.1 | 项目文件确认 |
+| API_SOT.md | v9.7 | 项目文件确认 |
+| AUTH_SPEC.md | v2.2 | 项目文件确认 |
 
 ---
 
@@ -304,15 +304,15 @@ export const metadata = {
 ```
 优先级顺序 (高 → 低):
 
-MASTER.md v4.6           ← 架构宪法、角色定义
+MASTER.md v4.9           ← 架构宪法、角色定义
     ↓
-DATA_SCHEMA.md v5.6      ← 数据模型、字段类型
+DATA_SCHEMA.md v5.11      ← 数据模型、字段类型
     ↓
-STATE_MACHINE.md v2.8    ← 状态机定义、状态流转
+STATE_MACHINE.md v2.9    ← 状态机定义、状态流转
     ↓
-BUSINESS_RULES.md v4.7   ← 业务规则
+BUSINESS_RULES.md v5.2   ← 业务规则
     ↓
-API_SOT.md v9.4          ← API 规范
+API_SOT.md v9.7          ← API 规范
     ↓
 ERROR_CODES_SOT.md v2.2  ← 错误码定义
 ```
@@ -321,19 +321,19 @@ ERROR_CODES_SOT.md v2.2  ← 错误码定义
 
 | 开发场景 | 必查文档 | 查询内容 |
 |----------|---------|---------|
-| 显示状态标签 | STATE_MACHINE.md v2.8 | 状态枚举值、颜色定义 |
-| 权限控制 | MASTER.md v4.6 §INV-007 | 4 技术层角色 + 业务属性判断 |
-| API 调用 | API_SOT.md v9.4 | 端点路径、请求/响应格式 |
-| 表单字段 | DATA_SCHEMA.md v5.6 | 字段类型、必填项 |
+| 显示状态标签 | STATE_MACHINE.md v2.9 | 状态枚举值、颜色定义 |
+| 权限控制 | MASTER.md v4.9 §INV-007 | 4 技术层角色 + 业务属性判断 |
+| API 调用 | API_SOT.md v9.7 | 端点路径、请求/响应格式 |
+| 表单字段 | DATA_SCHEMA.md v5.11 | 字段类型、必填项 |
 | 错误提示 | ERROR_CODES_SOT.md v2.2 | 错误码、提示文案 |
-| 金额显示 | BUSINESS_RULES.md v4.7 | 金额格式化规则 |
+| 金额显示 | BUSINESS_RULES.md v5.2 | 金额格式化规则 |
 
 ### 4.3 代码来源标注规范
 
 ```typescript
 // ========== 类型定义 ==========
 
-// SoT: STATE_MACHINE.md v2.8 §2
+// SoT: STATE_MACHINE.md v2.9 §2
 type DailyReportStatus =
   | 'raw_submitted'
   | 'trend_pending'
@@ -344,7 +344,7 @@ type DailyReportStatus =
   | 'final_confirmed'
   | 'final_locked';
 
-// SoT: MASTER.md v4.6 §INV-007 - 技术层角色 (4 个)
+// SoT: MASTER.md v4.9 §INV-007 - 技术层角色 (4 个)
 enum TechRole {
   ADMIN = 'admin',
   FINANCE = 'finance',
@@ -354,13 +354,13 @@ enum TechRole {
 
 // ========== 业务逻辑 ==========
 
-// SoT: BUSINESS_RULES.md v4.7 #BR-RPT-001
+// SoT: BUSINESS_RULES.md v5.2 #BR-RPT-001
 function validateReportDate(date: Date): boolean {
   // 日报日期不能是未来
   return date <= new Date();
 }
 
-// SoT: BUSINESS_RULES.md v4.7 #BR-FIN-003
+// SoT: BUSINESS_RULES.md v5.2 #BR-FIN-003
 function formatMoney(amount: number): string {
   // 金额格式化：保留 2 位小数，千分位分隔
   return new Intl.NumberFormat('zh-CN', {
@@ -391,7 +391,7 @@ function formatMoney(amount: number): string {
 type Status = 'pending' | 'draft';  // 不在 STATE_MACHINE.md 中
 
 // ✅ 正确: 使用 SoT 定义的状态
-// SoT: STATE_MACHINE.md v2.8 §2
+// SoT: STATE_MACHINE.md v2.9 §2
 type Status = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
 
 
@@ -401,7 +401,7 @@ if (user.role === 'data_operator') { ... }  // MASTER.md 未定义！
 if (user.role === 'project_owner') { ... }  // 业务属性，非技术层角色！
 
 // ✅ 正确: 使用 4 技术层角色 + 业务属性判断
-// SoT: MASTER.md v4.6 §INV-007
+// SoT: MASTER.md v4.9 §INV-007
 if (user.role === 'media_buyer') { ... }           // 投手
 if (user.role === 'account_manager') { ... }       // 户管
 if (user.is_project_owner === true) { ... }        // 项目负责人（业务属性）
@@ -428,19 +428,19 @@ toast.error('操作失败，请重试');
 toast.error(getErrorMessage(error.code));
 
 
-// ❌ F-009: 充值流程强制老板审批 (PRD v2.2 禁止)
+// ❌ F-009: 充值流程强制老板审批 (PRD v5.1 禁止)
 const approvers = ['account_manager', 'finance', 'ceo']; // 错误！
 
 // ✅ 正确: 日常充值不需要老板逐笔审批
-// SoT: MASTER.md v4.6 §4.5.11
+// SoT: MASTER.md v4.9 §4.5.11
 const approvers = ['account_manager', 'finance'];
 
 
-// ❌ F-011: 广告配套分摊到项目 (PRD v2.2 禁止)
+// ❌ F-011: 广告配套分摊到项目 (PRD v5.1 禁止)
 const projectCost = adSpend + adSupport; // 错误！
 
 // ✅ 正确: 广告配套公司统一记账
-// SoT: MASTER.md v4.6 §4.5.9
+// SoT: MASTER.md v4.9 §4.5.9
 const projectCost = adSpend; // 仅广告费
 // ad_support 由财务在公司级记账
 ```
@@ -469,7 +469,7 @@ grep -rE "<button|<input|<select|<table" frontend/src/ --include="*.tsx"
 # ✅ is_project_owner = true (通过 users 表或 project_members 表)
 ```
 
-### 5.4 PRD v2.2 禁止行为汇总
+### 5.4 PRD v5.1 禁止行为汇总
 
 | 编号 | 禁止行为 | PRD 来源 | 前端影响 |
 |------|---------|---------|---------|
@@ -703,7 +703,7 @@ export const columns: ColumnDef<{Module}>[] = [
     accessorKey: 'status',
     header: '状态',
     cell: ({ row }) => (
-      // SoT: STATE_MACHINE.md v2.8
+      // SoT: STATE_MACHINE.md v2.9
       <StatusBadge status={row.original.status} />
     ),
   },
@@ -711,7 +711,7 @@ export const columns: ColumnDef<{Module}>[] = [
     accessorKey: 'amount',
     header: '金额',
     cell: ({ row }) => (
-      // SoT: BUSINESS_RULES.md v4.7 #BR-FIN-003
+      // SoT: BUSINESS_RULES.md v5.2 #BR-FIN-003
       <span className="font-mono">{formatMoney(row.original.amount)}</span>
     ),
   },
@@ -753,11 +753,11 @@ export const columns: ColumnDef<{Module}>[] = [
 
 ### 7.1 角色定义（v1.2 重大修复）
 
-> **SoT: MASTER.md v4.6 §INV-007**
+> **SoT: MASTER.md v4.9 §INV-007**
 
 ```typescript
 // ===== 技术层角色 (4 个) - 数据库 CHECK 约束 =====
-// SoT: MASTER.md v4.6 §INV-007
+// SoT: MASTER.md v4.9 §INV-007
 // CHECK (role IN ('admin', 'finance', 'media_buyer', 'account_manager'))
 export enum TechRole {
   ADMIN = 'admin',              // 管理员/老板 - 系统配置 + 最高权限
@@ -767,7 +767,7 @@ export enum TechRole {
 }
 
 // ===== 业务层角色 (6 个) - 仅用于 UI 显示 =====
-// SoT: MASTER.md v4.6 §2.4
+// SoT: MASTER.md v4.9 §2.4
 export type BusinessRole = 
   | 'ceo'              // 老板 → 技术层 admin
   | 'project_owner'    // 项目负责人 → 业务属性判断
@@ -785,7 +785,7 @@ export const TECH_TO_BUSINESS: Record<TechRole, BusinessRole> = {
 };
 
 // ===== 业务层→技术层映射 =====
-// SoT: MASTER.md v4.6 §INV-007
+// SoT: MASTER.md v4.9 §INV-007
 export const BUSINESS_TO_TECH: Record<BusinessRole, TechRole | null> = {
   'ceo': TechRole.ADMIN,
   'project_owner': null,  // 通过 is_project_owner 或 project_members 判断
@@ -802,7 +802,7 @@ export function isProjectOwner(user: User): boolean {
 
 // ===== 禁止使用的"角色" =====
 // ❌ supervisor (已废弃，合并到 project_owner)
-// ❌ data_operator (MASTER.md v4.6 未定义)
+// ❌ data_operator (MASTER.md v4.9 未定义)
 // ❌ pitcher 作为 role 值 (业务术语，技术层用 media_buyer)
 // ❌ ceo 作为 role 值 (业务术语，技术层用 admin)
 // ❌ project_owner 作为 role 值 (业务属性，通过 is_project_owner 判断)
@@ -931,7 +931,7 @@ export function useFilteredNavGroups(groups: NavGroup[]) {
 
 ### 7.5 权限矩阵
 
-> **SoT: MASTER.md v4.6 §INV-007**
+> **SoT: MASTER.md v4.9 §INV-007**
 
 #### 技术层角色权限
 
@@ -1033,8 +1033,8 @@ import { formatMoney } from '@/lib/format';
 | 门禁 | 命令 | 通过标准 |
 |------|------|---------|
 | TypeScript | `npx tsc --noEmit` | 0 errors |
-| ESLint | `npm run lint` | 0 errors |
-| 构建 | `npm run build` | 成功 |
+| ESLint | `pnpm run lint` | 0 errors |
+| 构建 | `pnpm run build` | 成功 |
 
 ### 9.2 任务完成检查清单
 
@@ -1045,7 +1045,7 @@ import { formatMoney } from '@/lib/format';
 - [ ] 无 `any` 类型
 
 ## SoT 合规
-- [ ] 状态值在 STATE_MACHINE.md v2.8 中
+- [ ] 状态值在 STATE_MACHINE.md v2.9 中
 - [ ] 角色值在 4 技术层角色中 (admin/finance/media_buyer/account_manager)
 - [ ] 错误码在 ERROR_CODES_SOT.md v2.2 中
 - [ ] 代码有 SoT 来源标注
@@ -1107,12 +1107,12 @@ import { formatMoney } from '@/lib/format';
 - types/{module}.types.ts
 
 ## SoT 约束
-- 状态值：参考 STATE_MACHINE.md v2.8
+- 状态值：参考 STATE_MACHINE.md v2.9
 - 技术层角色：4 个 (admin, finance, media_buyer, account_manager)
 - 业务属性：project_owner 通过 is_project_owner 判断
 - 禁止角色：supervisor, data_operator, pitcher(作为role), project_owner(作为role)
 - 错误码：参考 ERROR_CODES_SOT.md v2.2
-- API 路径：参考 API_SOT.md v9.4
+- API 路径：参考 API_SOT.md v9.7
 
 ## 验收标准
 - [ ] TypeScript 编译通过
@@ -1130,7 +1130,7 @@ import { formatMoney } from '@/lib/format';
 ## 约束
 - 技术层角色检查：user.role in ('admin', 'finance', 'media_buyer', 'account_manager')
 - 业务属性检查：user.is_project_owner === true
-- 参考：MASTER.md v4.6 §INV-007
+- 参考：MASTER.md v4.9 §INV-007
 
 ## 注意
 - project_owner 不是 role 字段的合法值
@@ -1168,12 +1168,12 @@ import { formatMoney } from '@/lib/format';
 
 ```bash
 # 开发
-npm run dev           # 启动开发服务器
+pnpm run dev          # 启动开发服务器
 
 # 检查
 npx tsc --noEmit      # TypeScript 检查
-npm run lint          # ESLint 检查
-npm run build         # 构建检查
+pnpm run lint         # ESLint 检查
+pnpm run build        # 构建检查
 
 # 搜索违规
 grep -r "supervisor" frontend/src/
@@ -1186,13 +1186,13 @@ grep -r "fetch\(" frontend/src/ | grep -v "lib/api"
 ```markdown
 | 文档 | 版本 |
 |------|------|
-| MASTER.md | v4.6 |
-| STATE_MACHINE.md | v2.8 |
-| DATA_SCHEMA.md | v5.6 |
-| BUSINESS_RULES.md | v4.7 |
+| MASTER.md | v4.9 |
+| STATE_MACHINE.md | v2.9 |
+| DATA_SCHEMA.md | v5.11 |
+| BUSINESS_RULES.md | v5.2 |
 | ERROR_CODES_SOT.md | v2.2 |
-| API_SOT.md | v9.4 |
-| AUTH_SPEC.md | v2.1 |
+| API_SOT.md | v9.7 |
+| AUTH_SPEC.md | v2.2 |
 ```
 
 ### C. 角色快速参考

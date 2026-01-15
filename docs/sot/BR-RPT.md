@@ -4,7 +4,7 @@
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
-> **父文档**: BUSINESS_RULES.md v5.1
+> **父文档**: BUSINESS_RULES.md v5.2
 > **关联 SoT**: STATE_MACHINE.md v2.9 §8, §16.3
 > **业务参考**: 见本文档 §日报三层数据（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
@@ -14,12 +14,12 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v5.0 | §4.6 | 规则索引定义 |
+| BUSINESS_RULES.md | v5.2 | §4.6 | 规则索引定义 |
 | STATE_MACHINE.md | v2.9 | §7, §7.5, §16.3 | 日报状态机（8 状态）、Phase 边界 |
-| DATA_SCHEMA.md | v5.7 | daily_reports 表 | 字段定义、外键约束 |
+| DATA_SCHEMA.md | v5.11 | daily_reports 表 | 字段定义、外键约束 |
 | ERROR_CODES.md | v2.3 | §3-4 | 错误码映射 |
 | AUTH_SPEC.md | v2.2 | §2.2, §3 | 角色权限、职责分离 |
-| MASTER.md | v4.8 | §2.4, §3 | 角色定义、Phase 边界 |
+| MASTER.md | v4.9 | §2.4, §3 | 角色定义、Phase 边界 |
 
 ---
 
@@ -55,7 +55,7 @@
 #### 前置条件
 - 用户角色: `pitcher`（技术层: `media_buyer`）
 - 数据状态: 日报创建时，关联账户状态不得为 `dead` 或 `archived`
-- 引用: AUTH_SPEC.md v2.1 §3, STATE_MACHINE.md v2.8 §8
+- 引用: AUTH_SPEC.md v2.2 §3, STATE_MACHINE.md v2.9 §8
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -95,7 +95,7 @@
 #### 前置条件
 - 用户角色: `project_owner`（技术层: `users.is_project_owner=true` 或 `project_members` 表关联）
 - 数据状态: 日报状态必须为待审核状态（`trend_pending`, `final_pending`）
-- 引用: AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §2.4
+- 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.9 §2.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -131,7 +131,7 @@
 #### 前置条件
 - 用户角色: 审核操作触发时
 - 数据状态: 日报已有 `submitted_by` 记录
-- 引用: AUTH_SPEC.md v2.1 §3.2（SOD 规则）, MASTER.md v4.8 §2.4
+- 引用: AUTH_SPEC.md v2.2 §3.2（SOD 规则）, MASTER.md v4.9 §2.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -157,7 +157,7 @@
 日报状态机定义了日报从创建到锁定的完整生命周期。所有状态变更必须遵循预定义的合法流转路径，确保业务流程的一致性和可追溯性。
 
 #### 详细约束
-- ✅ **允许**: 仅 STATE_MACHINE.md v2.8 §8 定义的合法流转
+- ✅ **允许**: 仅 STATE_MACHINE.md v2.9 §8 定义的合法流转
 - ❌ **禁止**: 直接 UPDATE `daily_reports.status` 字段
 - ❌ **禁止**: 跳过中间状态（Phase 2）
 - 📌 **强制**: 状态变更必须通过业务动作触发
@@ -165,7 +165,7 @@
 
 #### 前置条件
 - 数据状态: 当前状态必须在合法流转表中
-- 引用: STATE_MACHINE.md v2.8 §8, §8.5
+- 引用: STATE_MACHINE.md v2.9 §8, §8.5
 
 #### 日报状态机（8 状态，Phase 2 完整版）
 ```
@@ -229,7 +229,7 @@ raw_submitted → trend_pending → trend_ok → final_pending → final_confirm
 - ❌ **禁止**: 使用非定义字段存储数据流
 
 #### 前置条件
-- 引用: DATA_SCHEMA.md v5.6 daily_reports 表, API_SOT.md v9.4 §6
+- 引用: DATA_SCHEMA.md v5.11 daily_reports 表, API_SOT.md v9.7 §6
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -263,7 +263,7 @@ raw 数据（`conversions_raw`）是投手每日上报的进粉数，反映投�
 #### 前置条件
 - 用户角色: `pitcher`（技术层: `media_buyer`）
 - 数据状态: 日报状态为 `raw_submitted` 或创建中
-- 引用: AUTH_SPEC.md v2.1 §3, DATA_SCHEMA.md v5.6
+- 引用: AUTH_SPEC.md v2.2 §3, DATA_SCHEMA.md v5.11
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -301,7 +301,7 @@ real 数据（`real_spend`）是项目负责人核算的实际广告消耗，用
 #### 前置条件
 - 用户角色: `project_owner`（技术层: `users.is_project_owner=true`）
 - 数据状态: 日报状态为 `trend_ok` 或 `trend_resolved`
-- 引用: AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §2.4
+- 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.9 §2.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -342,7 +342,7 @@ final 数据（`conversions_final`）是甲方确认的有效进粉数，是计�
 #### 前置条件
 - 用户角色: `project_owner`（技术层: `users.is_project_owner=true`）
 - 数据状态: 日报状态为 `final_pending`（Phase 2）或 `trend_ok`（Phase 1）
-- 引用: AUTH_SPEC.md v2.1 §2.2, MASTER.md v4.8 §2.4
+- 引用: AUTH_SPEC.md v2.2 §2.2, MASTER.md v4.9 §2.4
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -379,7 +379,7 @@ final 数据是计费依据，一旦锁定不得修改，确保财务结算的�
 
 #### 前置条件
 - 数据状态: 日报状态为 `final_locked`
-- 引用: STATE_MACHINE.md v2.8 §8, DATA_SCHEMA.md v5.6 §3.4.4（红冲机制，见账本规则）
+- 引用: STATE_MACHINE.md v2.9 §8, DATA_SCHEMA.md v5.11 §3.4.4（红冲机制，见账本规则）
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -425,12 +425,12 @@ BR-RPT-009 (final 不可改)
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.8；BR-RPT-002/007/008 角色由 supervisor 变更为 project_owner（MASTER v4.6+） |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v5.2；BR-RPT-002/007/008 角色由 supervisor 变更为 project_owner（MASTER v4.6+） |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
-**父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: STATE_MACHINE.md v2.8
+**父文档**: BUSINESS_RULES.md v5.2
+**关联 SoT**: STATE_MACHINE.md v2.9
 **版本**: v1.0

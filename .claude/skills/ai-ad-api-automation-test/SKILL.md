@@ -43,7 +43,6 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.8, SUPERCLAUDE_INTEGRATI
     | P0 | DATA_SCHEMA.md | v5.6 | Data structures, field constraints |
     | P1 | API_SOT.md | v9.4 | API endpoints, request/response contracts |
     | P1 | ERROR_CODES_SOT.md | v2.2 | Error code definitions |
-    | P1 | LEDGER_SOT.md | v1.2 | Ledger entry types, balance rules |
     | P2 | DAILY_REPORT_SOT.md | v1.0 | Daily report 8-state machine |
     | P2 | BUSINESS_RULES.md | v4.7 | Business constraints |
     | P3 | AUTH_SPEC.md | v2.1 | Role permission matrix |
@@ -722,10 +721,10 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.8, SUPERCLAUDE_INTEGRATI
     | daily_report | backend/routers/daily_reports.py | backend/services/daily_report_service.py | docs/sot/DAILY_REPORT_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.8 Section 8 | STATE_MACHINE.md v2.8 Section 8 (8-state machine) | backend/tests/api/test_daily_report_flow_generated.py |
     | topup_request | backend/routers/topup.py | backend/services/topup_service.py | docs/sot/TOPUP_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.8 Section 9 | STATE_MACHINE.md v2.8 Section 9 (7-state machine) | backend/tests/api/test_topup_request_flow_generated.py |
     | reconciliation | backend/routers/reconciliation.py | backend/services/reconciliation_service.py | docs/sot/RECONCILIATION_SOT.md v1.0, docs/sot/STATE_MACHINE.md v2.8 Section 11 | STATE_MACHINE.md v2.8 Section 11 (5-state machine) | backend/tests/api/test_reconciliation_flow_generated.py |
-    | ledger | backend/routers/ledger.py | backend/services/ledger_service.py | docs/sot/LEDGER_SOT.md v1.2, docs/sot/DATA_SCHEMA.md v5.6 | N/A (no state machine) | backend/tests/api/test_ledger_flow_generated.py |
+    | ledger | backend/routers/ledger.py | backend/services/ledger_service.py | docs/sot/DATA_SCHEMA.md v5.11 §3.4.4, docs/sot/DATA_SCHEMA.md v5.6 | N/A (no state machine) | backend/tests/api/test_ledger_flow_generated.py |
     | ad_accounts | backend/routers/ad_accounts.py | backend/services/ad_account_service.py | docs/sot/API_SOT.md v9.4 Section 7, docs/sot/STATE_MACHINE.md v2.8 Section 7.1 | STATE_MACHINE.md v2.8 Section 7.1 (ad_accounts.status) | backend/tests/api/test_ad_accounts_flow_generated.py |
     | suppliers | backend/routers/suppliers.py | backend/services/supplier_service.py | docs/sot/API_SOT.md v9.4, docs/sot/DATA_SCHEMA.md v5.6 | N/A (no state machine) | backend/tests/api/test_suppliers_flow_generated.py |
-    | settlements | backend/routers/settlements.py | backend/services/settlement_service.py | docs/sot/API_SOT.md v9.4, docs/sot/LEDGER_SOT.md v1.2 | N/A (no state machine) | backend/tests/api/test_settlements_flow_generated.py |
+    | settlements | backend/routers/settlements.py | backend/services/settlement_service.py | docs/sot/API_SOT.md v9.4, docs/sot/DATA_SCHEMA.md v5.11 §3.4.4 | N/A (no state machine) | backend/tests/api/test_settlements_flow_generated.py |
     | projects | backend/routers/projects.py | backend/services/project_service.py | docs/sot/API_SOT.md v9.4 Section 6, docs/sot/STATE_MACHINE.md v2.8 Section 5 | STATE_MACHINE.md v2.8 Section 5 (projects.status) | backend/tests/api/test_projects_flow_generated.py |
     | auth | backend/routers/authentication.py | backend/services/supabase_auth_service.py | docs/sot/AUTH_SPEC.md v2.1, docs/sot/API_SOT.md v9.4 | N/A (no state machine) | backend/tests/api/test_auth_flow_generated.py |
   </supported_modules>
@@ -774,7 +773,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.8, SUPERCLAUDE_INTEGRATI
       <router>backend/routers/ledger.py</router>
       <service>backend/services/ledger_service.py</service>
       <sot_documents>
-        - docs/sot/LEDGER_SOT.md v1.2
+        - docs/sot/DATA_SCHEMA.md v5.11 §3.4.4
         - docs/sot/DATA_SCHEMA.md v5.6
         - docs/sot/ERROR_CODES_SOT.md v2.2
         - docs/sot/API_SOT.md v9.4
@@ -805,7 +804,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.8, SUPERCLAUDE_INTEGRATI
         - docs/sot/DATA_SCHEMA.md v5.6
         - docs/sot/ERROR_CODES_SOT.md v2.2
         - docs/sot/AUTH_SPEC.md v2.1
-        - docs/sot/LEDGER_SOT.md v1.2 (SUPPLIER ledger)
+        - docs/sot/DATA_SCHEMA.md v5.11 §3.4.4 (SUPPLIER ledger)
       </sot_documents>
       <state_machine>N/A (no state machine, suppliers.status is simple active/inactive)</state_machine>
       <test_path>backend/tests/api/test_suppliers_flow_generated.py</test_path>
@@ -816,7 +815,7 @@ baseline: AI_CODE_FACTORY_DEV_GUIDE_v2.4, SoT Freeze v2.8, SUPERCLAUDE_INTEGRATI
       <service>backend/services/settlement_service.py</service>
       <sot_documents>
         - docs/sot/API_SOT.md v9.4
-        - docs/sot/LEDGER_SOT.md v1.2 (ledger integration)
+        - docs/sot/DATA_SCHEMA.md v5.11 §3.4.4 (ledger integration)
         - docs/sot/DATA_SCHEMA.md v5.6
         - docs/sot/ERROR_CODES_SOT.md v2.2
         - docs/sot/AUTH_SPEC.md v2.1

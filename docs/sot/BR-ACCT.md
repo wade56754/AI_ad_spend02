@@ -4,8 +4,8 @@
 > **status**: active
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
-> **父文档**: BUSINESS_RULES.md v5.1
-> **关联 SoT**: DATA_SCHEMA.md v5.7 §3.2.9, STATE_MACHINE.md v2.9 §6
+> **父文档**: BUSINESS_RULES.md v5.2
+> **关联 SoT**: DATA_SCHEMA.md v5.11 §3.2.9, STATE_MACHINE.md v2.9 §6
 > **业务参考**: 见本文档（历史参考: BUSINESS_LOGIC_FRAMEWORK v2.1 已废弃）
 
 ---
@@ -14,8 +14,8 @@
 
 | SoT 文档 | 版本 | 引用章节 | 引用内容 |
 |----------|------|----------|----------|
-| BUSINESS_RULES.md | v5.0 | §4.4 | 规则索引定义 |
-| DATA_SCHEMA.md | v5.7 | §3.2.9 | ad_accounts 表结构 |
+| BUSINESS_RULES.md | v5.2 | §4.4 | 规则索引定义 |
+| DATA_SCHEMA.md | v5.11 | §3.2.9 | ad_accounts 表结构 |
 | STATE_MACHINE.md | v2.9 | §6 | 账户状态机（6 状态） |
 | ERROR_CODES.md | v2.3 | §4.1, §4.2, §4.6 | 错误码映射 |
 | AUTH_SPEC.md | v2.2 | §5.2 | 数据权限过滤 |
@@ -51,7 +51,7 @@
 
 #### 前置条件
 - 数据状态: 渠道已存在且状态为 active
-- 引用: DATA_SCHEMA.md v5.6 §3.2.9
+- 引用: DATA_SCHEMA.md v5.11 §3.2.9
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -89,7 +89,7 @@
 #### 前置条件
 - 用户角色: `account_manager` 或 `admin` 执行分配
 - 数据状态: 目标投手存在且角色为 `pitcher`
-- 引用: AUTH_SPEC.md v2.1 §5.1.5
+- 引用: AUTH_SPEC.md v2.2 §5.1.5
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -136,7 +136,7 @@
 
 #### 前置条件
 - 数据状态: 账户已创建
-- 引用: STATE_MACHINE.md v2.8 §6
+- 引用: STATE_MACHINE.md v2.9 §6
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -177,7 +177,7 @@
 
 #### 前置条件
 - 数据状态: 账本记录完整
-- 引用: LEDGER_SOT.md v1.2, BR-FIN-003
+- 引用: DATA_SCHEMA.md v5.11 §3.4.4, BR-FIN-003
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -225,7 +225,7 @@
 
 #### 前置条件
 - 用户角色: `account_manager` 或 `admin`
-- 引用: AUTH_SPEC.md v2.1 §8
+- 引用: AUTH_SPEC.md v2.2 §8
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -271,7 +271,7 @@
 
 #### 前置条件
 - 数据状态: 账户状态非活跃
-- 引用: STATE_MACHINE.md v2.8 §6
+- 引用: STATE_MACHINE.md v2.9 §6
 
 #### 错误码映射
 | 违反场景 | 错误码 | HTTP | 错误消息 |
@@ -343,12 +343,12 @@ BR-ACCT-006 (停用账户禁止操作)
 
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
-| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v4.8；所有错误码对齐 ERROR_CODES.md v2.2；账户状态对齐 STATE_MACHINE.md v2.8 §6 |
+| v1.0 | 2025-12-27 | 初始版本，对齐 BUSINESS_RULES.md v5.2；所有错误码对齐 ERROR_CODES.md v2.2；账户状态对齐 STATE_MACHINE.md v2.9 §6 |
 
 ---
 
 **文档性质**: 业务规则子模块
 **执行级别**: 强制执行
-**父文档**: BUSINESS_RULES.md v4.6
-**关联 SoT**: DATA_SCHEMA.md v5.6 §3.2.9, STATE_MACHINE.md v2.8 §6
+**父文档**: BUSINESS_RULES.md v5.2
+**关联 SoT**: DATA_SCHEMA.md v5.11 §3.2.9, STATE_MACHINE.md v2.9 §6
 **版本**: v1.0

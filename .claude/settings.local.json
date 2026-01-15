@@ -146,8 +146,7 @@
       "Bash(gh pr create:*)",
       "Bash(git fetch:*)",
       "Bash(git pull:*)",
-      "Bash(claude mcp add:*)",
-      "Bash(npx:*)"
+      "Bash(claude mcp add:*)"
     ],
     "deny": [],
     "ask": []
@@ -163,19 +162,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/hooks/inject_timestamp.py\"",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/inject_timestamp.py\"",
             "timeout": 5000,
             "statusMessage": "Loading time context..."
           },
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/hooks/session_start.py\"",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/session_start.py\"",
             "timeout": 5000,
             "statusMessage": "Loading SoT context..."
           },
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/hooks/load_context.py\"",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/load_context.py\"",
             "timeout": 10000,
             "statusMessage": "Loading document context..."
           }
@@ -188,7 +187,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/hooks/pre_tool_use.py\"",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/pre_tool_use.py\"",
             "timeout": 10000,
             "statusMessage": "Checking compliance..."
           }
@@ -199,7 +198,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/hooks/pre_tool_use.py\"",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/pre_tool_use.py\"",
             "timeout": 10000,
             "statusMessage": "Checking command safety..."
           }
@@ -212,9 +211,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/hooks/post_tool_use.py\"",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/post_tool_use.py\"",
             "timeout": 5000,
             "statusMessage": "Recording changes..."
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__taskmaster-ai__set_task_status|mcp__taskmaster-ai__parse_prd|mcp__taskmaster-ai__expand_task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/post_tool_use.py\"",
+            "timeout": 10000,
+            "statusMessage": "Syncing progress..."
           }
         ]
       }
@@ -224,7 +234,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/hooks/stop.py\"",
+            "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/hooks/stop.py\"",
             "timeout": 30000,
             "statusMessage": "Generating session report..."
           }
@@ -234,7 +244,8 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "python \"$CLAUDE_PROJECT_ROOT/.claude/statusline.py\"",
+    "command": "python3 \"/Users/wade/Desktop/AI_Ads/.claude/statusline.py\"",
     "padding": 0
   }
 }
+

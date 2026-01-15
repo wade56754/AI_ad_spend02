@@ -38,7 +38,7 @@ import type {
   Project,
   ProjectMember,
   ProjectStatistics,
-  ProjectDashboard,
+  ProjectDashboardData,
   ProjectListParams,
   ProjectCreateInput,
   ProjectUpdateInput,
@@ -111,7 +111,7 @@ export function useProjectMembers(
 export function useProjectDashboard(
   projectId: number,
   params: ProjectDashboardParams = {},
-  options?: Omit<UseQueryOptions<{ data: ProjectDashboard }>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<{ data: ProjectDashboardData }>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
     queryKey: [...queryKeys.projects.detail(projectId), 'dashboard', params],

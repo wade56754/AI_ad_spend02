@@ -324,11 +324,11 @@ async def reject_topup(
 )
 async def complete_topup(
     topup_id: int = Path(..., gt=0),
-    transaction_id: Optional[str] = Query(None, description="交易流水号"),
-    notes: Optional[str] = Query(None, description="备注"),
+    transaction_id: Optional[str] = Query(None, description="交易流水号（Query参数）"),
+    notes: Optional[str] = Query(None, description="备注（Query参数）"),
     req: Request = None,
     service: TopupService = Depends(get_topup_service),
-    current_user: User = Depends(require_role(["finance", "admin"])),
+    current_user: User = Depends(require_role(["finance", "admin", "account_manager"])),
 ):
     """
     确认充值完成
@@ -338,15 +338,32 @@ async def complete_topup(
 
     业务规则 (LEDGER_SOT.md v1.1):
     - BR-FIN-005: 必须同时创建 ledger_entry
+    
+    支持两种参数传递方式：
+    - Query 参数: transaction_id, notes
+    - JSON body: 如果请求包含 JSON body，优先使用 body 中的值
     """
     try:
         client_ip, user_agent = get_client_info(req) if req else (None, None)
+        
+        # 尝试从 JSON body 获取参数（如果存在）
+        final_transaction_id = transaction_id
+        final_notes = notes
+        try:
+            if req:
+                # FastAPI Request 对象使用 json() 方法
+                body = await req.json()
+                if isinstance(body, dict):
+                    final_transaction_id = body.get("transaction_id") or transaction_id
+                    final_notes = body.get("notes") or notes
+        except Exception:
+            pass  # 如果没有 JSON body，使用 Query 参数
 
         topup = service.confirm_paid(
             topup_id,
             current_user,
-            transaction_id=transaction_id,
-            notes=notes,
+            transaction_id=final_transaction_id,
+            notes=final_notes,
             ip_address=client_ip,
             user_agent=user_agent,
         )
@@ -400,6 +417,38 @@ async def review_topup(
         return error_response(code="PERM-001", message=str(e), status_code=403)
 
 
+@router.post(
+    "/{topup_id}/submit",
+    summary="提交充值申请",
+    description="提交充值申请。状态流转: draft → pending_review。仅创建者可操作。",
+)
+async def submit_topup(
+    topup_id: int = Path(..., gt=0),
+    req: Request = None,
+    service: TopupService = Depends(get_topup_service),
+    current_user: User = Depends(get_current_user),
+):
+    """提交充值申请"""
+    try:
+        client_ip, user_agent = get_client_info(req) if req else (None, None)
+
+        topup = service.submit_request(
+            topup_id,
+            current_user,
+            ip_address=client_ip,
+            user_agent=user_agent,
+        )
+
+        return success_response(data=build_topup_response(topup), message="充值申请已提交")
+
+    except NotFoundError as e:
+        return error_response(code="RES-001", message=str(e), status_code=404)
+    except BusinessError as e:
+        return error_response(code="STATE-400", message=str(e), status_code=400)
+    except PermissionError as e:
+        return error_response(code="PERM-001", message=str(e), status_code=403)
+
+
 @router.post("/{topup_id}/cancel", summary="取消充值申请", description="取消充值申请。仅申请人或管理员可操作。")
 async def cancel_topup(
     topup_id: int = Path(..., gt=0),
@@ -433,7 +482,7 @@ async def cancel_topup(
 )
 async def mark_paid(
     topup_id: int = Path(..., gt=0),
-    paid_data: TopupMarkPaidRequest = None,
+    paid_data: Optional[TopupMarkPaidRequest] = None,
     req: Request = None,
     service: TopupService = Depends(get_topup_service),
     current_user: User = Depends(require_role(["finance"])),
@@ -441,6 +490,10 @@ async def mark_paid(
     """标记已打款"""
     try:
         client_ip, user_agent = get_client_info(req) if req else (None, None)
+
+        # 如果 paid_data 为 None，创建默认值
+        if paid_data is None:
+            paid_data = TopupMarkPaidRequest(transaction_id=None, notes=None)
 
         topup = service.mark_as_paid(
             topup_id,

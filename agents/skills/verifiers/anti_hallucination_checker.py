@@ -93,7 +93,7 @@ class AntiHallucinationChecker:
                 line=self._find_line(code, r'\.balance\s*[-+*/]='),
                 suggestion=(
                     "应通过 ledger_entries 表记录流水，由触发器/视图自动计算 balance。"
-                    "参考 LEDGER_SOT.md v1.1"
+                    "参考 DATA_SCHEMA.md v5.11 §3.4.4"
                 )
             ))
 

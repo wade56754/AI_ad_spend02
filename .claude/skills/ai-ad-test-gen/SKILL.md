@@ -13,7 +13,6 @@ sot_dependencies:
     - docs/sot/BUSINESS_RULES.md
     - docs/sot/ERROR_CODES_SOT.md
   optional:
-    - docs/sot/LEDGER_SOT.md
     - docs/sot/API_SOT.md
     - docs/3.dev-guides/TESTING_STRATEGY.md
 
@@ -126,7 +125,7 @@ def test_approve_topup_no_permission():  # 权限
 1. 测试必须覆盖正向路径、边界条件、错误状态
 2. 状态机测试必须验证 STATE_MACHINE.md 中的转换规则
 3. 错误码必须与 ERROR_CODES_SOT.md 一致
-4. 账本测试必须验证 LEDGER_SOT.md 中的不变量
+4. 账本测试必须验证 DATA_SCHEMA.md §3.4.4 中的不变量
 5. 使用 pytest 标准结构，支持 async
 
 技术栈假设：
@@ -151,10 +150,6 @@ def test_approve_topup_no_permission():  # 权限
 
 <DOC name="ERROR_CODES">
 {{ERROR_CODES}}
-</DOC>
-
-<DOC name="LEDGER_SOT" optional="true">
-{{LEDGER_SOT}}
 </DOC>
 
 <DOC name="TESTING_STRATEGY" optional="true">

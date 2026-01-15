@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "ai-ad-spend-daily-report-api",
     "name": "AI Ad Spend - Daily Report API Tests",
-    "description": "API contract tests for Daily Report module\n\nSoT References:\n- docs/2.sot/STATE_MACHINE.md v2.6 Section 8 (DailyReport 8-state machine)\n- docs/2.sot/API_SOT.md v9.0 (API endpoints)\n- docs/2.sot/ERROR_CODES_SOT.md v2.1 (error codes)\n- docs/2.sot/AUTH_SPEC.md v2.0 (permissions)",
+    "description": "API contract tests for Daily Report module\n\nSoT References:\n- docs/sot/STATE_MACHINE.md v2.9 Section 8 (DailyReport 8-state machine)\n- docs/sot/API_SOT.md v9.7 (API endpoints)\n- docs/sot/ERROR_CODES_SOT.md v2.2 (error codes)\n- docs/sot/AUTH_SPEC.md v2.2 (permissions)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

@@ -14,7 +14,7 @@
 1. **代码质量** - 代码规范、错误处理、输入验证、依赖注入、日志记录
 2. **安全性** - 权限检查、输入验证、SQL 注入风险、敏感信息泄露、认证授权
 3. **性能** - N+1 查询问题、数据库查询优化、响应序列化优化、缓存使用
-4. **SoT 合规性** - API_SOT.md v9.4、ERROR_CODES_SOT.md v2.2、STATE_MACHINE.md v2.8、AUTH_SPEC.md v2.1
+4. **SoT 合规性** - API_SOT.md v9.7、ERROR_CODES_SOT.md v2.2、STATE_MACHINE.md v2.9、AUTH_SPEC.md v2.2
 
 ---
 
@@ -98,10 +98,10 @@
 #### SoT 合规性审查
 
 **✅ 优点**:
-- 符合 API_SOT.md v9.4 规范
+- 符合 API_SOT.md v9.7 规范
 - 错误码来自 ERROR_CODES_SOT.md v2.2
 - 响应格式符合 Envelope 规范
-- 权限检查符合 AUTH_SPEC.md v2.1
+- 权限检查符合 AUTH_SPEC.md v2.2
 
 **✅ 完全合规**
 
@@ -142,9 +142,9 @@
 #### SoT 合规性审查
 
 **✅ 优点**:
-- 状态机符合 STATE_MACHINE.md v2.8（8 状态）
+- 状态机符合 STATE_MACHINE.md v2.9（8 状态）
 - 错误码来自 ERROR_CODES_SOT.md v2.2
-- API 端点符合 API_SOT.md v9.4
+- API 端点符合 API_SOT.md v9.7
 
 **✅ 完全合规**
 
@@ -182,9 +182,9 @@
 #### SoT 合规性审查
 
 **✅ 优点**:
-- 状态机符合 STATE_MACHINE.md v2.8（7 状态）
+- 状态机符合 STATE_MACHINE.md v2.9（7 状态）
 - 错误码符合规范
-- API 端点符合 API_SOT.md v9.4
+- API 端点符合 API_SOT.md v9.7
 
 **✅ 完全合规**
 
@@ -239,7 +239,7 @@ details = db.query(ReconciliationDetail).options(
 
 **✅ 优点**:
 - 错误码符合规范
-- API 端点符合 API_SOT.md v9.4
+- API 端点符合 API_SOT.md v9.7
 
 **✅ 完全合规**
 
@@ -289,7 +289,7 @@ else:
 
 **✅ 优点**:
 - 错误码符合规范
-- API 端点符合 API_SOT.md v9.4
+- API 端点符合 API_SOT.md v9.7
 
 **✅ 完全合规**
 
@@ -327,7 +327,7 @@ else:
 
 **✅ 优点**:
 - 错误码符合规范
-- API 端点符合 API_SOT.md v9.4
+- API 端点符合 API_SOT.md v9.7
 
 **✅ 完全合规**
 
@@ -366,7 +366,7 @@ else:
 
 **✅ 优点**:
 - 错误码符合规范
-- API 端点符合 API_SOT.md v9.4
+- API 端点符合 API_SOT.md v9.7
 
 **✅ 完全合规**
 
@@ -397,10 +397,10 @@ else:
 
 ### SoT 合规性: ✅ 完全合规
 
-- 所有 API 都符合 API_SOT.md v9.4
+- 所有 API 都符合 API_SOT.md v9.7
 - 错误码都来自 ERROR_CODES_SOT.md v2.2
-- 状态机符合 STATE_MACHINE.md v2.8
-- 角色定义符合 AUTH_SPEC.md v2.1
+- 状态机符合 STATE_MACHINE.md v2.9
+- 角色定义符合 AUTH_SPEC.md v2.2
 
 ---
 

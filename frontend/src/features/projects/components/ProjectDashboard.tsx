@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useProjectDashboard } from '../hooks';
-import type { ProjectDashboard as DashboardData, AccountPerformance } from '../types';
+import type { ProjectDashboardData as DashboardData, AccountPerformance } from '../types';
 
 interface ProjectDashboardProps {
   projectId: number;
@@ -259,7 +259,10 @@ export function ProjectDashboard({ projectId, budget }: ProjectDashboardProps) {
                   <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip
-                    formatter={(value: number) => [`¥${value.toFixed(2)}`, '消耗']}
+                    formatter={(value: number | undefined) => [
+                      `¥${(value ?? 0).toFixed(2)}`,
+                      '消耗',
+                    ]}
                     labelFormatter={(label) => `日期: ${label}`}
                   />
                   <Line

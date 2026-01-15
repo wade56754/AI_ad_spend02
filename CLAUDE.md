@@ -116,7 +116,7 @@ PRD 文档 → [Task Master] parse_prd → 任务列表
 ## 合法角色（仅 6 个）
 
 > **来源**: MASTER.md v4.9 §2.4
-> **PRD v2.2 变更**: 移除 supervisor 角色，其职责合并到 project_owner
+> **PRD v5.1 变更**: 移除 supervisor 角色，其职责合并到 project_owner
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |
 |--------|--------|----------|----------|
@@ -131,7 +131,7 @@ PRD 文档 → [Task Master] parse_prd → 任务列表
 
 | 角色 | 状态 | 替代方案 |
 |------|------|---------|
-| `supervisor` | ❌ 已废弃 (PRD v2.2) | 合并到 project_owner |
+| `supervisor` | ❌ 已废弃 (PRD v5.1) | 合并到 project_owner |
 | `data_operator` | ❌ 已废弃 | 不在宪法中 |
 | `media_buyer` | ❌ 非标准 | 使用 pitcher |
 

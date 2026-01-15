@@ -21,7 +21,7 @@ echo [2/2] 等待2秒后启动前端服务...
 timeout /t 2 /nobreak >nul
 
 echo [2/2] 启动前端服务 (端口 3000)...
-start "Frontend Server" cmd /k "cd frontend && npm run dev"
+start "Frontend Server" cmd /k "cd frontend && pnpm run dev"
 
 echo.
 echo ========================================

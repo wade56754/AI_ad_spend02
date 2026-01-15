@@ -21,8 +21,8 @@ scripts/newman/
 ### 安装 Newman
 
 ```bash
-npm install -g newman
-npm install -g newman-reporter-htmlextra
+pnpm add -g newman
+pnpm add -g newman-reporter-htmlextra
 ```
 
 ### 运行测试

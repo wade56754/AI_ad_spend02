@@ -18,10 +18,9 @@ SoT References:
 - 🔴 danger: profit_rate < 5%
 - ⚫ inactive: refunded/closed
 
-Version: 1.1
+Version: 1.0
 Author: Claude Code
 Created: 2025-12-25
-Updated: 2026-01-12 - Fixed Supplier.name query in get_supplier_costs
 """
 
 from datetime import date, timedelta
@@ -32,8 +31,7 @@ from calendar import monthrange
 from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 
-from backend.models import Project, DailyReport, AdAccount
-from backend.models.finance.supplier import Supplier
+from backend.models import Project, DailyReport, AdAccount, Supplier
 from backend.schemas.finance_v2 import (
     ProfitOverviewData,
     ProfitSummary,
@@ -147,27 +145,35 @@ class ProfitServiceV2:
         if status == "active":
             query = query.filter(Project.status.in_(["active", "completed"]))
         elif status == "inactive":
-            query = query.filter(Project.status.in_(["refunded", "closed", "cancelled"]))
+            query = query.filter(
+                Project.status.in_(["refunded", "closed", "cancelled"])
+            )
 
         projects = query.all()
         project_ids = [p.id for p in projects]
 
         # ===== N+1 优化: 批量预取所有项目的日报聚合数据 =====
-        # DailyReport 通过 AdAccount 关联到 Project
+        # DailyReport 通过 AdAccount.project_id 关联项目
         daily_report_aggs = {}
         if project_ids:
-            agg_results = self.db.query(
-                AdAccount.project_id,
-                func.coalesce(func.sum(DailyReport.conversions_final), 0).label("conversions"),
-                func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
-            ).join(
-                AdAccount, DailyReport.ad_account_id == AdAccount.id
-            ).filter(
-                AdAccount.project_id.in_(project_ids),
-                DailyReport.report_date >= start_date,
-                DailyReport.report_date <= end_date,
-                DailyReport.status == "final_locked",
-            ).group_by(AdAccount.project_id).all()
+            agg_results = (
+                self.db.query(
+                    AdAccount.project_id,
+                    func.coalesce(func.sum(DailyReport.conversions_final), 0).label(
+                        "conversions"
+                    ),
+                    func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
+                )
+                .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+                .filter(
+                    AdAccount.project_id.in_(project_ids),
+                    DailyReport.report_date >= start_date,
+                    DailyReport.report_date <= end_date,
+                    DailyReport.status == "final_locked",
+                )
+                .group_by(AdAccount.project_id)
+                .all()
+            )
 
             for row in agg_results:
                 daily_report_aggs[row.project_id] = {
@@ -183,7 +189,9 @@ class ProfitServiceV2:
 
         for project in projects:
             # 使用预取的数据代替单独查询
-            agg_data = daily_report_aggs.get(project.id, {"conversions": 0, "spend": Decimal("0")})
+            agg_data = daily_report_aggs.get(
+                project.id, {"conversions": 0, "spend": Decimal("0")}
+            )
             item = self._calculate_project_profit_from_agg(project, agg_data)
             items.append(item)
 
@@ -193,7 +201,9 @@ class ProfitServiceV2:
             total_profit += item.profit
 
         # 计算平均利润率
-        avg_profit_rate = float(total_profit / total_revenue) if total_revenue > 0 else 0.0
+        avg_profit_rate = (
+            float(total_profit / total_revenue) if total_revenue > 0 else 0.0
+        )
 
         # 排序
         sort_key = {
@@ -215,9 +225,9 @@ class ProfitServiceV2:
             ),
         )
 
-    def get_supplier_costs(self, period: Optional[str] = None) -> SupplierCostsData:  # v1.2 - Supplier.name JOIN
+    def get_supplier_costs(self, period: Optional[str] = None) -> SupplierCostsData:
         """
-        获取渠道成本分析 (Updated 2026-01-12)
+        获取渠道成本分析
 
         Args:
             period: 时间范围
@@ -228,27 +238,31 @@ class ProfitServiceV2:
         start_date, end_date, _ = self._parse_period(period)
 
         # 按渠道/供应商聚合
-        # 通过 AdAccount.supplier_id 关联 Supplier 表获取供应商名称和平台
-        # 注意: platform 在 Supplier 表上，不在 AdAccount 表上
-        results = self.db.query(
-            AdAccount.supplier_id,
-            Supplier.name.label("supplier_name"),
-            Supplier.platform.label("platform"),  # 从 Supplier 获取 platform
-            func.sum(DailyReport.real_spend).label("total_spend"),
-            func.count(func.distinct(AdAccount.id)).label("account_count"),
-        ).join(
-            DailyReport, DailyReport.ad_account_id == AdAccount.id
-        ).outerjoin(
-            Supplier, AdAccount.supplier_id == Supplier.id
-        ).filter(
-            DailyReport.report_date >= start_date,
-            DailyReport.report_date <= end_date,
-            DailyReport.status == "final_locked",
-        ).group_by(
-            AdAccount.supplier_id,
-            Supplier.name,
-            Supplier.platform,  # 从 Supplier 获取 platform
-        ).all()
+        # 通过 AdAccount.supplier_id 关联 Supplier 表获取供应商信息
+        results = (
+            self.db.query(
+                Supplier.id.label("supplier_id"),
+                Supplier.name.label("supplier_name"),
+                Supplier.platform,
+                Supplier.fee_rate,
+                func.sum(DailyReport.real_spend).label("total_spend"),
+                func.count(func.distinct(AdAccount.id)).label("account_count"),
+            )
+            .join(DailyReport, DailyReport.ad_account_id == AdAccount.id)
+            .join(Supplier, AdAccount.supplier_id == Supplier.id)
+            .filter(
+                DailyReport.report_date >= start_date,
+                DailyReport.report_date <= end_date,
+                DailyReport.status == "final_locked",
+            )
+            .group_by(
+                Supplier.id,
+                Supplier.name,
+                Supplier.platform,
+                Supplier.fee_rate,
+            )
+            .all()
+        )
 
         items = []
         total_spend = Decimal("0.00")
@@ -257,28 +271,32 @@ class ProfitServiceV2:
 
         for r in results:
             spend = Decimal(str(r.total_spend or 0))
-            # 假设费率 8%（实际应从 supplier 或 ad_account 获取）
-            fee_rate = 0.08
+            # 使用 Supplier 的实际费率，默认 8%
+            fee_rate = float(r.fee_rate) if r.fee_rate else 0.08
             fee = spend * Decimal(str(fee_rate))
             cost = spend + fee
 
-            items.append(SupplierCostItem(
-                supplier_id=str(r.supplier_id) if r.supplier_id else "unknown",
-                supplier_name=r.supplier_name or "未知渠道",
-                platform=r.platform,
-                fee_rate=fee_rate,
-                total_spend=spend,
-                total_fee=fee,
-                total_cost=cost,
-                account_count=r.account_count or 0,
-            ))
+            items.append(
+                SupplierCostItem(
+                    supplier_id=str(r.supplier_id) if r.supplier_id else "unknown",
+                    supplier_name=r.supplier_name or "未知渠道",
+                    platform=r.platform,
+                    fee_rate=fee_rate,
+                    total_spend=spend,
+                    total_fee=fee,
+                    total_cost=cost,
+                    account_count=r.account_count or 0,
+                )
+            )
 
             total_spend += spend
             total_fee += fee
             weighted_fee_rate += spend * Decimal(str(fee_rate))
 
         # 计算平均费率
-        avg_fee_rate = float(weighted_fee_rate / total_spend) if total_spend > 0 else 0.0
+        avg_fee_rate = (
+            float(weighted_fee_rate / total_spend) if total_spend > 0 else 0.0
+        )
 
         # 按消耗排序
         items.sort(key=lambda x: x.total_spend, reverse=True)
@@ -316,12 +334,14 @@ class ProfitServiceV2:
         for period_start, period_end, period_label in periods:
             summary = self._calculate_period_summary(period_start, period_end)
 
-            series.append(TrendSeriesItem(
-                period=period_label,
-                revenue=summary["revenue"],
-                cost=summary["cost"],
-                profit=summary["profit"],
-            ))
+            series.append(
+                TrendSeriesItem(
+                    period=period_label,
+                    revenue=summary["revenue"],
+                    cost=summary["cost"],
+                    profit=summary["profit"],
+                )
+            )
 
         return ProfitTrendData(
             granularity=granularity,
@@ -364,34 +384,41 @@ class ProfitServiceV2:
     ) -> Dict[str, Any]:
         """计算时间段内的汇总数据"""
         # 聚合日报数据
-        result = self.db.query(
-            func.coalesce(func.sum(DailyReport.conversions_final), 0).label("conversions"),
-            func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
-        ).filter(
-            DailyReport.report_date >= start,
-            DailyReport.report_date <= end,
-            DailyReport.status == "final_locked",
-        ).first()
+        result = (
+            self.db.query(
+                func.coalesce(func.sum(DailyReport.conversions_final), 0).label(
+                    "conversions"
+                ),
+                func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
+            )
+            .filter(
+                DailyReport.report_date >= start,
+                DailyReport.report_date <= end,
+                DailyReport.status == "final_locked",
+            )
+            .first()
+        )
 
         conversions = int(result.conversions or 0)
         spend = Decimal(str(result.spend or 0))
 
         # 计算收入：需要按项目的 unit_price 计算
         # DailyReport -> AdAccount -> Project
-        revenue_result = self.db.query(
-            func.coalesce(
-                func.sum(DailyReport.conversions_final * Project.unit_price),
-                0
+        revenue_result = (
+            self.db.query(
+                func.coalesce(
+                    func.sum(DailyReport.conversions_final * Project.unit_price), 0
+                )
             )
-        ).join(
-            AdAccount, DailyReport.ad_account_id == AdAccount.id
-        ).join(
-            Project, AdAccount.project_id == Project.id
-        ).filter(
-            DailyReport.report_date >= start,
-            DailyReport.report_date <= end,
-            DailyReport.status == "final_locked",
-        ).scalar()
+            .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+            .join(Project, AdAccount.project_id == Project.id)
+            .filter(
+                DailyReport.report_date >= start,
+                DailyReport.report_date <= end,
+                DailyReport.status == "final_locked",
+            )
+            .scalar()
+        )
 
         revenue = Decimal(str(revenue_result or 0))
 
@@ -437,18 +464,23 @@ class ProfitServiceV2:
         """计算单个项目的利润"""
         unit_price = project.unit_price or Decimal("0")
 
-        # 聚合日报数据 - DailyReport 通过 AdAccount 关联到 Project
-        result = self.db.query(
-            func.coalesce(func.sum(DailyReport.conversions_final), 0).label("conversions"),
-            func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
-        ).join(
-            AdAccount, DailyReport.ad_account_id == AdAccount.id
-        ).filter(
-            AdAccount.project_id == project.id,
-            DailyReport.report_date >= start,
-            DailyReport.report_date <= end,
-            DailyReport.status == "final_locked",
-        ).first()
+        # 聚合日报数据 (通过 AdAccount 关联 project)
+        result = (
+            self.db.query(
+                func.coalesce(func.sum(DailyReport.conversions_final), 0).label(
+                    "conversions"
+                ),
+                func.coalesce(func.sum(DailyReport.real_spend), 0).label("spend"),
+            )
+            .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
+            .filter(
+                AdAccount.project_id == project.id,
+                DailyReport.report_date >= start,
+                DailyReport.report_date <= end,
+                DailyReport.status == "final_locked",
+            )
+            .first()
+        )
 
         conversions = int(result.conversions or 0)
         spend = Decimal(str(result.spend or 0))
@@ -661,11 +693,13 @@ class ProfitServiceV2:
         if granularity == "day":
             current = start
             while current <= end:
-                periods.append((
-                    current,
-                    current,
-                    current.strftime("%Y-%m-%d"),
-                ))
+                periods.append(
+                    (
+                        current,
+                        current,
+                        current.strftime("%Y-%m-%d"),
+                    )
+                )
                 current += timedelta(days=1)
 
         elif granularity == "week":
@@ -681,11 +715,13 @@ class ProfitServiceV2:
                 actual_end = min(week_end, end)
 
                 iso_year, iso_week, _ = current.isocalendar()
-                periods.append((
-                    actual_start,
-                    actual_end,
-                    f"{iso_year}-W{iso_week:02d}",
-                ))
+                periods.append(
+                    (
+                        actual_start,
+                        actual_end,
+                        f"{iso_year}-W{iso_week:02d}",
+                    )
+                )
 
                 current = week_end + timedelta(days=1)
 
@@ -698,11 +734,13 @@ class ProfitServiceV2:
                 actual_start = max(current, start)
                 actual_end = min(month_end, end)
 
-                periods.append((
-                    actual_start,
-                    actual_end,
-                    current.strftime("%Y-%m"),
-                ))
+                periods.append(
+                    (
+                        actual_start,
+                        actual_end,
+                        current.strftime("%Y-%m"),
+                    )
+                )
 
                 # 下个月
                 if current.month == 12:

@@ -22,7 +22,7 @@ cancelled   rejected        rejected
 | `rejected` | 已拒绝 | account_manager, finance |
 | `cancelled` | 已取消 | pitcher (仅 draft 状态可取消) |
 
-## 审批链 (PRD v2.2)
+## 审批链 (PRD v5.1)
 
 ```
 投手申请 → 户管收集 → 财务审批 → 转账

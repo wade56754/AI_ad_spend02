@@ -197,7 +197,7 @@ async def get_current_user(
 
 ```bash
 # 1. 安装 Supabase CLI
-npm install -g supabase
+pnpm add -g supabase
 
 # 2. 登录 Supabase
 supabase login

@@ -2,7 +2,7 @@
 
 > AI 广告代投系统 - AI Coding Agent 专属指南
 >
-> 版本: v1.2 | 基准: MASTER.md v4.7, PRD v2.2 | 基于 [agents.md](https://agents.md) 开放格式
+> 版本: v1.2 | 基准: MASTER.md v4.9, PRD v5.1 | 基于 [agents.md](https://agents.md) 开放格式
 
 <!-- OPENSPEC:START -->
 ## OpenSpec Instructions
@@ -180,13 +180,13 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 ### 6.1 SoT 裁判链 (优先级从高到低)
 
 ```
-MASTER.md v4.7                     → 架构宪法，最高优先级
-STATE_MACHINE.md v2.8              → 状态机定义 (8 状态)
-DATA_SCHEMA.md v5.7                → 数据模型 (23 表) + 账本规则 §3.4.4
-API_SOT.md v9.4                    → API 契约 (50+ 端点)
+MASTER.md v4.9                     → 架构宪法，最高优先级
+STATE_MACHINE.md v2.9              → 状态机定义 (8 状态)
+DATA_SCHEMA.md v5.11                → 数据模型 (23 表) + 账本规则 §3.4.4
+API_SOT.md v9.7                    → API 契约 (50+ 端点)
 ERROR_CODES_SOT.md v2.2            → 错误码注册表
 BUSINESS_RULES.md v4.8             → 业务规则
-AUTH_SPEC.md v2.1                  → 认证授权 (6 角色)
+AUTH_SPEC.md v2.2                  → 认证授权 (6 角色)
 ```
 
 **规则**: 高层文档覆盖低层文档。遇到冲突时，先查 MASTER.md。
@@ -199,7 +199,7 @@ AUTH_SPEC.md v2.1                  → 认证授权 (6 角色)
 - **谁对结果负责**: 项目负责人对项目盈亏 + 团队产出负责
 - **谁能纠偏**: 日级项目负责人、周级项目负责人、月级老板
 
-**责任链简化 (PRD v2.2)**:
+**责任链简化 (PRD v5.1)**:
 ```
 投手执行 → 项目负责人监督+盈亏负责 → 老板最终决策
 ```
@@ -216,7 +216,7 @@ AUTH_SPEC.md v2.1                  → 认证授权 (6 角色)
 - 系统可高亮异常，但不触发处罚逻辑
 - 项目负责人使用 CPL 发现问题 → 沟通调整 → 记录过程
 
-### 6.4 充值审批链（PRD v2.2）
+### 6.4 充值审批链（PRD v5.1）
 
 ```
 投手申请 → 户管收集 → 财务审批 → 转账
@@ -227,7 +227,7 @@ AUTH_SPEC.md v2.1                  → 认证授权 (6 角色)
 
 **禁止**: F-009 禁止充值流程强制添加老板逐笔审批
 
-### 6.5 数据 SoT 三层架构（PRD v2.2）
+### 6.5 数据 SoT 三层架构（PRD v5.1）
 
 | 层级 | 数据来源 | 字段 | 用途 |
 |------|---------|------|------|
@@ -265,20 +265,20 @@ EXPENSE_CATEGORY = frozenset([
 
 **禁止**: F-011 禁止将广告配套分摊到项目
 
-### 6.7 公司利润公式（PRD v2.2）
+### 6.7 公司利润公式（PRD v5.1）
 
 ```python
 公司利润 = 总收入 - 总支出
         = Σ项目收款 - (Σ广告费充值 + Σ广告配套 + Σ后勤支出)
 ```
 
-### 6.8 押款定义（PRD v2.2）
+### 6.8 押款定义（PRD v5.1）
 
 ```python
 押款 = 代理商未消耗余额 = Σ历史充值 - Σ历史消耗
 ```
 
-### 6.9 日报 8 状态机 (STATE_MACHINE.md v2.8)
+### 6.9 日报 8 状态机 (STATE_MACHINE.md v2.9)
 
 ```
 raw_submitted → trend_pending → trend_ok/trend_flagged
@@ -289,9 +289,9 @@ raw_submitted → trend_pending → trend_ok/trend_flagged
 
 ### 6.10 角色定义（6 角色 + 技术映射）
 
-> **PRD v2.2 变更**：移除 supervisor 角色，其职责合并到 project_owner
+> **PRD v5.1 变更**：移除 supervisor 角色，其职责合并到 project_owner
 
-#### 业务层角色（PRD v2.2 / MASTER v4.6 §2.4）
+#### 业务层角色（PRD v5.1 / MASTER v4.6 §2.4）
 
 ```python
 BUSINESS_ROLES = {
@@ -317,7 +317,7 @@ ROLE_MAPPING = {
 }
 ```
 
-| 业务角色(PRD v2.2) | 技术层角色 | 映射方式 |
+| 业务角色(PRD v5.1) | 技术层角色 | 映射方式 |
 |-------------------|-----------|---------|
 | ceo | admin | 直接使用 |
 | project_owner | (业务属性) | users.is_project_owner=true 或 project_members |
@@ -425,16 +425,16 @@ python scripts/run_tests.py --type regression
 | ID | 禁止行为 | 正确做法 | 来源 |
 |----|---------|---------|------|
 | F-001 | 自定义错误码 | 使用 ERROR_CODES_SOT.md | MASTER §9 |
-| F-002 | 发明新状态 | 使用 STATE_MACHINE.md v2.8 | MASTER §9 |
+| F-002 | 发明新状态 | 使用 STATE_MACHINE.md v2.9 | MASTER §9 |
 | F-003 | 直接修改 balance | 通过 ledger_entries 记录 | MASTER §9 |
 | F-004 | 绕过 BFF 直连数据库 | 使用 apiFetch | 安全规范 |
 | F-005 | 硬编码 API 密钥 | 使用环境变量 | 安全规范 |
 | F-006 | 直接 SQL 拼接 | 使用 SQLAlchemy ORM | 安全规范 |
 | F-007 | 绕过认证 | 使用 Supabase Auth | 安全规范 |
 | F-008 | 使用旧 Pydantic/SQLAlchemy 语法 | 使用 v2 语法 | 技术栈规范 |
-| F-009 | 充值流程强制老板逐笔审批 | 日常充值由财务审批 | PRD v2.2 |
-| F-010 | 使用已移除角色(supervisor) | 使用 6 角色定义 | PRD v2.2 |
-| F-011 | 广告配套分摊到项目 | 公司统一记账 | PRD v2.2 |
+| F-009 | 充值流程强制老板逐笔审批 | 日常充值由财务审批 | PRD v5.1 |
+| F-010 | 使用已移除角色(supervisor) | 使用 6 角色定义 | PRD v5.1 |
+| F-011 | 广告配套分摊到项目 | 公司统一记账 | PRD v5.1 |
 
 ---
 
@@ -493,13 +493,13 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 
 | 文档 | 路径 | 版本 |
 |------|------|------|
-| 架构宪法 | `docs/sot/MASTER.md` | v4.7 |
-| 状态机 | `docs/sot/STATE_MACHINE.md` | v2.8 |
-| 数据模型 | `docs/sot/DATA_SCHEMA.md` | v5.7 |
-| API 契约 | `docs/sot/API_SOT.md` | v9.4 |
+| 架构宪法 | `docs/sot/MASTER.md` | v4.9 |
+| 状态机 | `docs/sot/STATE_MACHINE.md` | v2.9 |
+| 数据模型 | `docs/sot/DATA_SCHEMA.md` | v5.11 |
+| API 契约 | `docs/sot/API_SOT.md` | v9.7 |
 | 错误码 | `docs/sot/ERROR_CODES_SOT.md` | v2.2 |
-| 认证授权 | `docs/sot/AUTH_SPEC.md` | v2.1 |
-| 开发指南 | `docs/2.dev-guides/` | - |
+| 认证授权 | `docs/sot/AUTH_SPEC.md` | v2.2 |
+| 开发指南 | `docs/guides/` | - |
 | Claude 规则 | `CLAUDE.md` | - |
 
 ---
@@ -541,8 +541,8 @@ alembic revision --autogenerate -m "desc"  # 创建迁移
 ## 版本同步
 
 本文档基于：
-- **MASTER.md v4.7**
-- **PRD v2.2**
+- **MASTER.md v4.9**
+- **PRD v5.1**
 
 当上游文档更新时，需同步更新：
 - 角色定义

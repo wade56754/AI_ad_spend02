@@ -1,17 +1,17 @@
 ---
-version: v2.0
+version: v2.1
 status: ready_for_production
 layer: documentation-index
 owner: wade
-last_reviewed: 2025-12-27
-baseline: MASTER.md v4.4, SoT Core v2.6
+last_reviewed: 2026-01-16
+baseline: MASTER.md v4.9, PRD v5.1
 ---
 
 # AI广告代投系统 - Documentation Center
 
 > **Documentation Framework**: ASDD (AI-Spec-Driven Development) 5-Layer Architecture
-> **Last Updated**: 2025-12-27
-> **Baseline**: MASTER v4.4, SoT Core v2.6
+> **Last Updated**: 2026-01-16
+> **Baseline**: MASTER v4.9, PRD v5.1
 
 ---
 
@@ -19,12 +19,13 @@ baseline: MASTER.md v4.4, SoT Core v2.6
 
 ```
 docs/
-├── sot/                    # Layer 1: SoT 真相源 (9 核心文档)
-├── 1.overview/             # Layer 2: 项目概览
-├── 2.dev-guides/           # Layer 3: 开发指南
-├── 3.architecture/         # Layer 4: 架构视图
-├── 4.testing/              # Layer 5: 测试文档
-├── 5.module-specs/         # 模块规格 (按需扩展)
+├── sot/                    # Layer 1: SoT 真相源 (核心文档)
+├── guides/                 # Layer 2: 开发与协作指南
+├── design/                 # Layer 3: 设计与规范
+├── architecture/           # 架构视图
+├── integration/            # Layer 4: 集成/修复记录
+├── analysis/               # Layer 5: 分析报告
+├── review/                 # 评审与缺陷报告
 ├── adr/                    # 架构决策记录
 ├── runbooks/               # 运维手册
 └── archive/                # 归档
@@ -45,70 +46,69 @@ docs/
 
 | Document | Version | Purpose |
 |----------|---------|---------|
-| [MASTER.md](./sot/MASTER.md) | v4.4 | 系统宪法，三大不可变量 |
+| [MASTER.md](./sot/MASTER.md) | v4.9 | 系统宪法，三大不可变量 |
 | [INDEX.md](./sot/INDEX.md) | v1.0 | SoT 文档索引 |
-| [STATE_MACHINE.md](./sot/STATE_MACHINE.md) | v2.7 | 8-state machine flow |
-| [DATA_SCHEMA.md](./sot/DATA_SCHEMA.md) | v5.3 | Database schema, 23 tables |
-| [API_SOT.md](./sot/API_SOT.md) | v9.3 | REST API contracts, 50+ endpoints |
-| [ERROR_CODES_SOT.md](./sot/ERROR_CODES_SOT.md) | v2.1 | Global error code registry |
-| [BUSINESS_RULES.md](./sot/BUSINESS_RULES.md) | v4.1 | Business logic rules |
-| [AUTH_SPEC.md](./sot/AUTH_SPEC.md) | v2.0 | 7 user roles, RBAC permissions |
-| [LEDGER_SOT.md](./sot/LEDGER_SOT.md) | v1.2 | Dual-ledger system |
+| [STATE_MACHINE.md](./sot/STATE_MACHINE.md) | v2.9 | 8-state machine flow |
+| [DATA_SCHEMA.md](./sot/DATA_SCHEMA.md) | v5.11 | Database schema, 23 tables |
+| [API_SOT.md](./sot/API_SOT.md) | v9.7 | REST API contracts, 50+ endpoints |
+| [ERROR_CODES_SOT.md](./sot/ERROR_CODES_SOT.md) | v2.2 | Global error code registry |
+| [BUSINESS_RULES.md](./sot/BUSINESS_RULES.md) | v5.2 | Business logic rules |
+| [AUTH_SPEC.md](./sot/AUTH_SPEC.md) | v2.2 | 6 user roles, RBAC permissions |
 
 ---
 
-### Layer 2: Overview 项目概览 🟢
+### Layer 2: Guides 开发与协作指南 🟢
 
 | Document | Purpose |
 |----------|---------|
-| [PROJECT.md](./1.overview/PROJECT.md) | Project scope, capability boundaries |
-| [DOMAIN.md](./1.overview/DOMAIN.md) | Domain model and business context |
-| [ARCHITECTURE.md](./1.overview/ARCHITECTURE.md) | High-level architecture overview |
+| [FRONTEND_DEVELOPMENT_GUIDE_v3.0.md](./guides/FRONTEND_DEVELOPMENT_GUIDE_v3.0.md) | 前端开发规范 |
+| [AI_PROGRAMMING_BEST_PRACTICES_v3.1.md](./guides/AI_PROGRAMMING_BEST_PRACTICES_v3.1.md) | AI 编程规范 |
+| [AI_CODING_BEST_PRACTICES.md](./guides/AI_CODING_BEST_PRACTICES.md) | 代码生产规范 |
+| [TASK_COMPLEXITY.md](./guides/TASK_COMPLEXITY.md) | 任务复杂度量化 |
 
 ---
 
-### Layer 3: Dev-Guides 开发指南 🟢
+### Layer 3: Design 设计与规范 🟢
 
 | Document | Purpose |
 |----------|---------|
-| [API_DEVELOPMENT_FLOW.md](./2.dev-guides/API_DEVELOPMENT_FLOW.md) | 三层架构 API 开发流程 |
-| [FRONTEND_DEVELOPMENT_RULES.md](./2.dev-guides/FRONTEND_DEVELOPMENT_RULES.md) | Next.js + React 前端开发规范 |
-| [UI_FLOW_SPEC.md](./2.dev-guides/UI_FLOW_SPEC.md) | 用户交互流程规范 |
-| [TESTING_STRATEGY.md](./2.dev-guides/TESTING_STRATEGY.md) | 测试策略 |
-| [DEPLOYMENT_GUIDE.md](./2.dev-guides/DEPLOYMENT_GUIDE.md) | 部署指南 |
-| [DEV_ONBOARDING_CHECKLIST.md](./2.dev-guides/DEV_ONBOARDING_CHECKLIST.md) | 新成员上手检查清单 |
-| [DDD_API_ARCHITECTURE.md](./2.dev-guides/DDD_API_ARCHITECTURE.md) | DDD 架构最佳实践 |
+| [FRONTEND_PAGE_DESIGN_v2.1.md](./design/FRONTEND_PAGE_DESIGN_v2.1.md) | 前端页面设计规范 |
 
 ---
 
-### Layer 4: Architecture 架构视图 🟢
+### Architecture 架构视图 🟢
 
 | Document | Purpose |
 |----------|---------|
-| [ARCH_LAYER_OVERVIEW.md](./3.architecture/ARCH_LAYER_OVERVIEW.md) | Architecture Layer 总览 |
-| [SYSTEM_CONTEXT_VIEW.md](./3.architecture/SYSTEM_CONTEXT_VIEW.md) | 系统上下文视图 (C4 Level 1) |
-| [BOUNDED_CONTEXT_MAP.md](./3.architecture/BOUNDED_CONTEXT_MAP.md) | DDD 限界上下文映射 |
-| [SERVICE_COMPONENT_VIEW.md](./3.architecture/SERVICE_COMPONENT_VIEW.md) | 服务组件视图 (C4 Level 2/3) |
-| [DATA_FLOW_VIEW.md](./3.architecture/DATA_FLOW_VIEW.md) | 数据流视图 |
-| [ERROR_HANDLING_STRATEGY.md](./3.architecture/ERROR_HANDLING_STRATEGY.md) | 错误处理策略 |
+| [ARCHITECTURE_OVERVIEW_v1.0.md](./architecture/ARCHITECTURE_OVERVIEW_v1.0.md) | 系统上下文、组件、数据流、部署形态 |
 
 ---
 
-### Layer 5: Testing 测试文档 🟢
+### Layer 4: Integration 集成与修复记录 🟢
 
 | Document | Purpose |
 |----------|---------|
-| [AUTOMATION_TEST_SPEC_v1.5.1.md](./4.testing/AUTOMATION_TEST_SPEC_v1.5.1.md) | API 自动化测试规范 |
-| [BACKEND_TEST_FREEZE_REPORT_v1.4.md](./4.testing/BACKEND_TEST_FREEZE_REPORT_v1.4.md) | 后端测试冻结报告 |
+| [INTEGRATION_SUMMARY.md](./integration/INTEGRATION_SUMMARY.md) | 集成总结 |
+| [BUG_FIXES_SUMMARY.md](./integration/BUG_FIXES_SUMMARY.md) | 修复摘要 |
 
 ---
 
-### Module Specs 模块规格
+### Layer 5: Analysis & Review 🟢
 
 | Document | Purpose |
 |----------|---------|
-| [5.module-specs/](./5.module-specs/) | 模块规格目录 (A1-E3) |
-| [README.md](./5.module-specs/README.md) | 模块规格索引 |
+| [SKILLS_AUDIT_REPORT.md](./analysis/SKILLS_AUDIT_REPORT.md) | 技能审计报告 |
+| [PROJECT_DEFECTS_REPORT.md](./review/PROJECT_DEFECTS_REPORT.md) | 项目缺陷报告 |
+
+---
+
+### ADR / Runbooks / Archive
+
+| Document | Purpose |
+|----------|---------|
+| [adr/](./adr/) | 架构决策记录 |
+| [runbooks/](./runbooks/) | 运维手册 |
+| [archive/](./archive/) | 归档文档 |
 
 ---
 
@@ -117,26 +117,25 @@ docs/
 When technical conflicts arise, follow this priority order:
 
 ```
-MASTER.md v4.4 (System Constitution)
+MASTER.md v4.9 (System Constitution)
   ↓
 SoT Layer (Technical Truth)
-  ├── STATE_MACHINE.md v2.7 (State transitions)
-  ├── DATA_SCHEMA.md v5.3 (Database schema)
-  ├── API_SOT.md v9.3 (API contracts)
-  ├── ERROR_CODES_SOT.md v2.1 (Error codes)
-  ├── BUSINESS_RULES.md v4.1 (Business logic)
-  ├── AUTH_SPEC.md v2.0 (Authentication)
-  └── LEDGER_SOT.md v1.2 (Ledger system)
+  ├── STATE_MACHINE.md v2.9 (State transitions)
+  ├── DATA_SCHEMA.md v5.11 (Database schema)
+  ├── API_SOT.md v9.7 (API contracts)
+  ├── ERROR_CODES_SOT.md v2.2 (Error codes)
+  ├── BUSINESS_RULES.md v5.2 (Business logic)
+  └── AUTH_SPEC.md v2.2 (Authentication)
   ↓
-Dev-Guides Layer (Workflows)
-  ├── API_DEVELOPMENT_FLOW.md
-  ├── FRONTEND_DEVELOPMENT_RULES.md
-  └── TESTING_STRATEGY.md
+Guides Layer (Workflows)
+  ├── FRONTEND_DEVELOPMENT_GUIDE_v3.0.md
+  ├── AI_PROGRAMMING_BEST_PRACTICES_v3.1.md
+  └── AI_CODING_BEST_PRACTICES.md
   ↓
-Architecture Layer (Design Views)
-  ├── SYSTEM_CONTEXT_VIEW.md
-  ├── SERVICE_COMPONENT_VIEW.md
-  └── DATA_FLOW_VIEW.md
+Design/Integration/Runbooks
+  ├── design/
+  ├── integration/
+  └── runbooks/
 ```
 
 **Rule**: Higher layers override lower layers. When in doubt, consult MASTER.md first.
@@ -149,9 +148,9 @@ Architecture Layer (Design Views)
 
 **Start here** (in order):
 1. Read [MASTER.md](./sot/MASTER.md) - Understand system philosophy and invariants
-2. Read [PROJECT.md](./1.overview/PROJECT.md) - Understand project scope
-3. Read [DEV_ONBOARDING_CHECKLIST.md](./2.dev-guides/DEV_ONBOARDING_CHECKLIST.md) - Follow onboarding steps
-4. Read [API_DEVELOPMENT_FLOW.md](./2.dev-guides/API_DEVELOPMENT_FLOW.md) - Learn development workflow
+2. Read [PRD_v5.1.md](./PRD_v5.1.md) - Understand product goals and scope
+3. Read [FRONTEND_DEVELOPMENT_GUIDE_v3.0.md](./guides/FRONTEND_DEVELOPMENT_GUIDE_v3.0.md) - Frontend workflow
+4. Read [AI_PROGRAMMING_BEST_PRACTICES_v3.1.md](./guides/AI_PROGRAMMING_BEST_PRACTICES_v3.1.md) - AI coding norms
 5. Browse [SoT Layer](./sot/) - Reference technical specifications as needed
 
 ### For AI Agents (Claude, Cursor, etc.)
@@ -169,19 +168,20 @@ Architecture Layer (Design Views)
 
 ### By Role
 
-- **投手 (Media Buyer)**: [UI_FLOW_SPEC.md](./2.dev-guides/UI_FLOW_SPEC.md) → daily report submission
-- **数据运营 (Data Operator)**: [STATE_MACHINE.md](./sot/STATE_MACHINE.md) → 8-state machine flow
-- **财务 (Finance)**: [LEDGER_SOT.md](./sot/LEDGER_SOT.md) → dual-ledger system
-- **项目经理 (Account Manager)**: [BUSINESS_RULES.md](./sot/BUSINESS_RULES.md) → pricing rules
-- **系统管理员 (Admin)**: [AUTH_SPEC.md](./sot/AUTH_SPEC.md) → user roles & permissions
+- **老板 (CEO)**: [PRD_v5.1.md](./PRD_v5.1.md) → goals & scope
+- **项目负责人**: [BUSINESS_RULES.md](./sot/BUSINESS_RULES.md) → pricing & profit rules
+- **财务**: [DATA_SCHEMA.md](./sot/DATA_SCHEMA.md) → ledger & reconciliation fields
+- **投手**: [STATE_MACHINE.md](./sot/STATE_MACHINE.md) → daily report flow
+- **户管**: [STATE_MACHINE.md](./sot/STATE_MACHINE.md) → topup & transfer flows
+- **管理员**: [AUTH_SPEC.md](./sot/AUTH_SPEC.md) → roles & permissions
 
 ### By Technical Topic
 
-- **Database**: [DATA_SCHEMA.md](./sot/DATA_SCHEMA.md) v5.3
-- **API**: [API_SOT.md](./sot/API_SOT.md) v9.3
-- **State Machine**: [STATE_MACHINE.md](./sot/STATE_MACHINE.md) v2.7
-- **Error Handling**: [ERROR_CODES_SOT.md](./sot/ERROR_CODES_SOT.md) v2.1
-- **Testing**: [TESTING_STRATEGY.md](./2.dev-guides/TESTING_STRATEGY.md)
+- **Database**: [DATA_SCHEMA.md](./sot/DATA_SCHEMA.md) v5.11
+- **API**: [API_SOT.md](./sot/API_SOT.md) v9.7
+- **State Machine**: [STATE_MACHINE.md](./sot/STATE_MACHINE.md) v2.9
+- **Error Handling**: [ERROR_CODES_SOT.md](./sot/ERROR_CODES_SOT.md) v2.2
+- **Auth**: [AUTH_SPEC.md](./sot/AUTH_SPEC.md) v2.2
 
 ---
 

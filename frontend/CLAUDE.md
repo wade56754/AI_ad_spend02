@@ -9,17 +9,17 @@
 
 ```typescript
 const STACK = {
-  framework: "Next.js 16 (App Router)",
-  language: "TypeScript (strict: true)",
-  ui: "shadcn/ui + Tailwind CSS",
-  state: "TanStack Query v5",
-  form: "react-hook-form + zod",
-  http: "apiFetch (lib/api.ts)",
-  icons: "lucide-react",
-  charts: "recharts",
-  theme: "next-themes",
-  toast: "sonner",
-}
+  framework: 'Next.js 16 (App Router)',
+  language: 'TypeScript (strict: true)',
+  ui: 'shadcn/ui + Tailwind CSS',
+  state: 'TanStack Query v5',
+  form: 'react-hook-form + zod',
+  http: 'apiFetch (lib/api.ts)',
+  icons: 'lucide-react',
+  charts: 'recharts',
+  theme: 'next-themes',
+  toast: 'sonner',
+};
 ```
 
 ---
@@ -74,18 +74,20 @@ frontend/src/
 ## API 调用规范
 
 ### 禁止直接 fetch
+
 ```typescript
 // ❌ 禁止
-fetch('/api/...')
-axios.get('/api/...')
-supabase.from('...').select('*')
+fetch('/api/...');
+axios.get('/api/...');
+supabase.from('...').select('*');
 
 // ✅ 正确
-import { apiGet, apiPost } from '@/lib/api'
-const data = await apiGet<User>('/api/v1/users')
+import { apiGet, apiPost } from '@/lib/api';
+const data = await apiGet<User>('/api/v1/users');
 ```
 
 ### Query Hook 模式
+
 ```typescript
 // features/{module}/hooks/use{Module}.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -116,6 +118,7 @@ export function useCreate{Module}() {
 ```
 
 ### Service 层模式
+
 ```typescript
 // features/{module}/services/{module}Api.ts
 import { apiGet, apiPost, apiFetchPaginated } from '@/lib/api'
@@ -147,6 +150,7 @@ export async function create{Module}(
 ## 组件规范
 
 ### 页面组件结构
+
 ```typescript
 'use client'
 
@@ -199,6 +203,7 @@ export function {Module}Page() {
 ```
 
 ### 弹窗组件模式
+
 ```typescript
 'use client'
 
@@ -294,20 +299,20 @@ export function {Module}Dialog({ open, onOpenChange, data }: Props) {
 
 ## 必须使用的组件
 
-| 场景 | 组件 | 来源 |
-|------|------|------|
-| 按钮 | `Button` | `@/components/ui/button` |
-| 输入框 | `Input` | `@/components/ui/input` |
-| 选择器 | `Select` | `@/components/ui/select` |
-| 复选框 | `Checkbox` | `@/components/ui/checkbox` |
-| 表格 | `DataTable` | `@/components/ui/data-table` |
-| 弹窗 | `Dialog` | `@/components/ui/dialog` |
-| 确认框 | `AlertDialog` | `@/components/ui/alert-dialog` |
-| 表单 | `Form` + `FormField` | `@/components/ui/form` |
-| 卡片 | `Card` | `@/components/ui/card` |
-| 骨架屏 | `Skeleton` | `@/components/ui/skeleton` |
-| 状态标签 | `StatusBadge` | `@/components/ui/status-badge` |
-| 通知 | `toast` | `sonner` |
+| 场景     | 组件                 | 来源                           |
+| -------- | -------------------- | ------------------------------ |
+| 按钮     | `Button`             | `@/components/ui/button`       |
+| 输入框   | `Input`              | `@/components/ui/input`        |
+| 选择器   | `Select`             | `@/components/ui/select`       |
+| 复选框   | `Checkbox`           | `@/components/ui/checkbox`     |
+| 表格     | `DataTable`          | `@/components/ui/data-table`   |
+| 弹窗     | `Dialog`             | `@/components/ui/dialog`       |
+| 确认框   | `AlertDialog`        | `@/components/ui/alert-dialog` |
+| 表单     | `Form` + `FormField` | `@/components/ui/form`         |
+| 卡片     | `Card`               | `@/components/ui/card`         |
+| 骨架屏   | `Skeleton`           | `@/components/ui/skeleton`     |
+| 状态标签 | `StatusBadge`        | `@/components/ui/status-badge` |
+| 通知     | `toast`              | `sonner`                       |
 
 ---
 
@@ -329,33 +334,33 @@ export function {Module}Dialog({ open, onOpenChange, data }: Props) {
 
 ```typescript
 // ❌ 使用 any
-const data: any = response
+const data: any = response;
 function handler(e: any) {}
 
 // ✅ 定义具体类型
-const data: UserResponse = response
+const data: UserResponse = response;
 function handler(e: React.MouseEvent<HTMLButtonElement>) {}
 ```
 
 ```typescript
 // ❌ 直接 fetch
-const res = await fetch('/api/users')
+const res = await fetch('/api/users');
 
 // ✅ 使用 apiFetch
-const data = await apiGet<User[]>('/api/v1/users')
+const data = await apiGet<User[]>('/api/v1/users');
 ```
 
 ```typescript
 // ❌ 缺少 'use client'
 export default function Page() {
-  const [state, setState] = useState()  // 错误！
+  const [state, setState] = useState(); // 错误！
 }
 
 // ✅ 添加 'use client'
-'use client'
+('use client');
 
 export default function Page() {
-  const [state, setState] = useState()
+  const [state, setState] = useState();
 }
 ```
 
@@ -364,41 +369,42 @@ export default function Page() {
 ## 状态约束
 
 ### 日报状态 (8 状态机)
+
 > 来源: STATE_MACHINE.md v2.8 §4
 
 ```typescript
 type DailyReportStatus =
-  | 'raw_submitted'    // 投手提交原始数据
-  | 'trend_pending'    // 趋势风控检测中
-  | 'trend_ok'         // 趋势正常
-  | 'trend_flagged'    // 趋势异常待审核
-  | 'trend_resolved'   // 趋势异常已解决
-  | 'final_pending'    // 等待最终确认
-  | 'final_confirmed'  // 运营确认最终粉数
-  | 'final_locked'     // 计费锁定 (终态)
+  | 'raw_submitted' // 投手提交原始数据
+  | 'trend_pending' // 趋势风控检测中
+  | 'trend_ok' // 趋势正常
+  | 'trend_flagged' // 趋势异常待审核
+  | 'trend_resolved' // 趋势异常已解决
+  | 'final_pending' // 等待最终确认
+  | 'final_confirmed' // 运营确认最终粉数
+  | 'final_locked'; // 计费锁定 (终态)
 ```
 
 ### 合法角色（6 角色）
 
 > **来源**: MASTER.md v4.6 §2.4（宪法）
-> **PRD v2.2 变更**: 移除 supervisor 角色
+> **PRD v5.1 变更**: 移除 supervisor 角色
 
 ```typescript
 // SoT: MASTER.md v4.6 §2.4
 enum UserRole {
-  CEO = 'ceo',                    // 老板 - 资金安全、公司盈亏、最终决策
+  CEO = 'ceo', // 老板 - 资金安全、公司盈亏、最终决策
   PROJECT_OWNER = 'project_owner', // 项目负责人 - 项目盈亏、日报审核
-  FINANCE = 'finance',            // 财务 - 资金出入准确、对账
-  PITCHER = 'pitcher',            // 投手 - CPL 达标、日报准确
+  FINANCE = 'finance', // 财务 - 资金出入准确、对账
+  PITCHER = 'pitcher', // 投手 - CPL 达标、日报准确
   ACCOUNT_MANAGER = 'account_manager', // 户管 - 账户分配、状态监控
-  ADMIN = 'admin',                // 管理员 - 系统配置
+  ADMIN = 'admin', // 管理员 - 系统配置
 }
 ```
 
 **废弃角色（禁止使用）**:
 | 角色 | 状态 | 替代方案 |
 |------|------|---------|
-| `supervisor` | ❌ 已废弃 (PRD v2.2) | 合并到 project_owner |
+| `supervisor` | ❌ 已废弃 (PRD v5.1) | 合并到 project_owner |
 | `data_operator` | ❌ 不在宪法中 | 移除 |
 | `media_buyer` | ❌ 非标准术语 | 使用 pitcher |
 
@@ -409,33 +415,36 @@ enum UserRole {
 ## 类型定义规范
 
 ### 全局类型
+
 ```typescript
 // types/common.ts
-export type UUID = string
-export type ISODateString = string
-export type DateString = string  // YYYY-MM-DD
+export type UUID = string;
+export type ISODateString = string;
+export type DateString = string; // YYYY-MM-DD
 
 export interface Money {
-  amount: number      // 分为单位
-  currency: 'CNY' | 'USD'
+  amount: number; // 分为单位
+  currency: 'CNY' | 'USD';
 }
 
 export interface PaginationParams {
-  page?: number
-  page_size?: number
+  page?: number;
+  page_size?: number;
 }
 
 export interface SortParams {
-  sort_by?: string
-  sort_order?: 'asc' | 'desc'
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
 
-export type ListParams = PaginationParams & SortParams & {
-  search?: string
-}
+export type ListParams = PaginationParams &
+  SortParams & {
+    search?: string;
+  };
 ```
 
 ### 模块类型
+
 ```typescript
 // features/{module}/types/{module}.types.ts
 export interface {Module} {
@@ -461,14 +470,14 @@ export interface {Module}ListParams extends ListParams {
 
 ## 命名规范
 
-| 类型 | 规范 | 示例 |
-|------|------|------|
-| 组件文件 | PascalCase | `DailyReportTable.tsx` |
-| Hook 文件 | camelCase + use | `useDailyReports.ts` |
-| 服务文件 | camelCase + Api | `dailyReportsApi.ts` |
-| 类型文件 | camelCase + .types | `dailyReport.types.ts` |
-| 页面组件 | PascalCase + Page | `DailyReportsPage.tsx` |
-| 弹窗组件 | PascalCase + Dialog | `CreateReportDialog.tsx` |
+| 类型      | 规范                | 示例                     |
+| --------- | ------------------- | ------------------------ |
+| 组件文件  | PascalCase          | `DailyReportTable.tsx`   |
+| Hook 文件 | camelCase + use     | `useDailyReports.ts`     |
+| 服务文件  | camelCase + Api     | `dailyReportsApi.ts`     |
+| 类型文件  | camelCase + .types  | `dailyReport.types.ts`   |
+| 页面组件  | PascalCase + Page   | `DailyReportsPage.tsx`   |
+| 弹窗组件  | PascalCase + Dialog | `CreateReportDialog.tsx` |
 
 ---
 
@@ -476,26 +485,26 @@ export interface {Module}ListParams extends ListParams {
 
 ```typescript
 // 1. React/Next.js
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 // 2. 第三方库
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { z } from 'zod'
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { z } from 'zod';
 
 // 3. UI 组件
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // 4. 本地 hooks/services
-import { useDailyReports } from '../hooks'
-import { getDailyReports } from '../services'
+import { useDailyReports } from '../hooks';
+import { getDailyReports } from '../services';
 
 // 5. 类型
-import type { DailyReport } from '../types'
+import type { DailyReport } from '../types';
 
 // 6. 样式/常量
-import { STATUS_CONFIG } from '../constants'
+import { STATUS_CONFIG } from '../constants';
 ```
 
 ---
@@ -507,17 +516,17 @@ import { STATUS_CONFIG } from '../constants'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 2 * 60 * 1000,     // 2 分钟新鲜
-      gcTime: 10 * 60 * 1000,       // 10 分钟缓存
-      refetchOnWindowFocus: false,  // 窗口聚焦不刷新
-      retry: 3,                      // 重试 3 次
+      staleTime: 2 * 60 * 1000, // 2 分钟新鲜
+      gcTime: 10 * 60 * 1000, // 10 分钟缓存
+      refetchOnWindowFocus: false, // 窗口聚焦不刷新
+      retry: 3, // 重试 3 次
       retryDelay: (i) => Math.min(1000 * 2 ** i, 30000),
     },
     mutations: {
       retry: 1,
     },
   },
-})
+});
 ```
 
 ---
@@ -527,22 +536,22 @@ const queryClient = new QueryClient({
 ```typescript
 // API 错误
 interface ApiError {
-  code: string       // 来自 ERROR_CODES.md v2.2
-  message: string
-  status: number
+  code: string; // 来自 ERROR_CODES.md v2.2
+  message: string;
+  status: number;
 }
 
 // Mutation 错误处理
 const mutation = useMutation({
   mutationFn: createItem,
   onSuccess: () => {
-    toast.success('创建成功')
-    onOpenChange(false)
+    toast.success('创建成功');
+    onOpenChange(false);
   },
   onError: (error: ApiError) => {
-    toast.error(error.message || '操作失败')
+    toast.error(error.message || '操作失败');
   },
-})
+});
 ```
 
 ---

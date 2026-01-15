@@ -23,7 +23,7 @@ from backend.core.dependencies import (
     require_finance_access,
     require_report_access,
     check_user_role,
-    # PRD v2.2: 已移除 require_data_operator 和 require_media_buyer
+    # PRD v5.1: 已移除 require_data_operator 和 require_media_buyer
     # 使用 require_finance 或 require_project_owner 替代 require_data_operator
     # 使用 require_pitcher 替代 require_media_buyer
 )
@@ -42,7 +42,7 @@ __all__ = [
     "require_admin",
     "require_finance",
     "require_account_manager",
-    # PRD v2.2: 已移除 require_data_operator 和 require_media_buyer
+    # PRD v5.1: 已移除 require_data_operator 和 require_media_buyer
     "require_project_access",
     "require_account_access",
     "require_finance_access",

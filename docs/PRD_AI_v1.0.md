@@ -1,6 +1,6 @@
 # AI 广告代投管理系统 - AI 友好 PRD
 
-> **版本**: v1.1 (基于 PRD v5.2 优化)
+> **版本**: v1.1 (基于 PRD v5.1 优化)
 > **状态**: ACTIVE
 > **last_reviewed**: 2026-01-01
 > **兼容性**: Claude Code, Cursor, Windsurf, Copilot
@@ -14,14 +14,14 @@
 ### 0.1 SoT 裁判链（优先级从高到低）
 
 ```
-1. MASTER.md v4.8          → 系统宪法，最高优先级
-2. PRD v5.2                → 需求文档（已与 MASTER 6 角色完全对齐）
-3. STATE_MACHINE.md v2.8   → 状态机定义
-4. DATA_SCHEMA.md v5.7     → 数据模型 + 账本规则
-5. BUSINESS_RULES.md v4.8  → 业务规则
-6. API_SOT.md v2.1         → API 契约
+1. MASTER.md v4.9          → 系统宪法，最高优先级
+2. PRD v5.1                → 需求文档（已与 MASTER 6 角色完全对齐）
+3. STATE_MACHINE.md v2.9   → 状态机定义
+4. DATA_SCHEMA.md v5.11     → 数据模型 + 账本规则
+5. BUSINESS_RULES.md v5.2  → 业务规则
+6. API_SOT.md v9.7         → API 契约
 7. ERROR_CODES_SOT.md v2.2 → 错误码
-8. AUTH_SPEC.md v2.1       → 认证授权
+8. AUTH_SPEC.md v2.2       → 认证授权
 9. PRD_AI_v1.0.md          → 本文档（AI 友好格式）
 ```
 
@@ -114,8 +114,8 @@ pitcher.can_see(account) == (account.pitcher_id == pitcher.id)
 
 ### 2.1 角色定义（6 角色）
 
-> **来源**: MASTER.md v4.8 §2.4, PRD v5.2 §2.2.1
-> **对齐状态**: PRD v5.2 已与 MASTER 6 角色模型完全对齐（删除 Supervisor，合并到 project_owner）
+> **来源**: MASTER.md v4.9 §2.4, PRD v5.1 §2.2.1
+> **对齐状态**: PRD v5.1 已与 MASTER 6 角色模型完全对齐（删除 Supervisor，合并到 project_owner）
 
 | 角色 ID | 中文名 | 核心职责 | 关键决策 |
 |---------|--------|---------|---------|
@@ -128,7 +128,7 @@ pitcher.can_see(account) == (account.pitcher_id == pitcher.id)
 
 ### 2.1.1 技术层角色映射
 
-> **来源**: MASTER.md v4.8 §2.4, PRD v5.2 §2.2.2
+> **来源**: MASTER.md v4.9 §2.4, PRD v5.1 §2.2.2
 
 | 业务角色 | `user.role` 字段值 | 说明 |
 |----------|-------------------|------|
@@ -143,11 +143,11 @@ pitcher.can_see(account) == (account.pitcher_id == pitcher.id)
 
 ### 2.2 废弃角色（禁止使用）
 
-> **来源**: MASTER.md v4.8 INV-007, PRD v5.2 §2.2.1
+> **来源**: MASTER.md v4.9 INV-007, PRD v5.1 §2.2.1
 
 | 角色 | 状态 | 替代方案 | 废弃原因 |
 |------|------|---------|---------|
-| `supervisor` | ❌ 废弃 | `project_owner` | PRD v2.2 架构决策，职责合并 |
+| `supervisor` | ❌ 废弃 | `project_owner` | PRD v5.1 架构决策，职责合并 |
 | `data_operator` | ❌ 废弃 | `project_owner`/`finance` | 不在宪法定义中 |
 | `media_buyer` | ⚠️ 技术别名 | `pitcher` | 非规范名称，应使用 pitcher |
 
@@ -250,7 +250,7 @@ commission = 50 * 1.0 + 50 * 1.5 + 20 * 2.0
 
 ### 4.1 日报状态机
 
-> **来源**: STATE_MACHINE.md v2.8 §8
+> **来源**: STATE_MACHINE.md v2.9 §8
 > **重要**: Phase 1 使用 3 状态简化模型，Phase 2 启用完整 8 状态
 
 #### Phase 1 日报状态机（3 状态）- 当前生效
@@ -302,7 +302,7 @@ report.transition("raw_submitted", "trend_pending")  # Phase 1 不存在 trend_p
 
 ### 4.2 充值状态机（7 状态）
 
-> **来源**: STATE_MACHINE.md v2.8 §10, PRD v5.2 §2.3.3
+> **来源**: STATE_MACHINE.md v2.9 §10, PRD v5.1 §2.3.3
 
 ```
 draft → pending_review → finance_approve → paid → completed
@@ -548,13 +548,13 @@ Content-Type: application/json
 
 | 版本 | 日期 | 变更内容 | 作者 |
 |------|------|---------|------|
-| v1.1 | 2026-01-01 | 与 PRD v5.2 / MASTER v4.8 对齐 | Claude |
+| v1.1 | 2026-01-01 | 与 PRD v5.1 / MASTER v4.8 对齐 | Claude |
 | v1.0 | 2025-12-31 | 基于 PRD_v5.1 重构为 AI 友好格式 | Claude |
 
 ### v1.1 主要变更（2026-01-01）
 
-1. **SoT 裁判链更新**: 添加 PRD v5.2 到优先级 2，更新各文档版本号
-2. **角色定义完善**: 确认 PRD v5.2 已与 MASTER 6 角色完全对齐
+1. **SoT 裁判链更新**: 添加 PRD v5.1 到优先级 2，更新各文档版本号
+2. **角色定义完善**: 确认 PRD v5.1 已与 MASTER 6 角色完全对齐
 3. **技术层角色映射**: 新增 §2.1.1 技术层角色映射表
 4. **日报状态机澄清**: 明确 Phase 1 使用 3 状态，Phase 2 使用 8 状态
 5. **充值审批链**: 新增日常/大额/紧急充值审批流程说明
@@ -601,7 +601,7 @@ Content-Type: application/json
 │                                                              │
 │  Phase 1: 只提示、不阻断、不问责                            │
 │                                                              │
-│  SoT 版本: MASTER v4.8, PRD v5.2, DATA_SCHEMA v5.7          │
+│  SoT 版本: MASTER v4.8, PRD v5.1, DATA_SCHEMA v5.7          │
 │                                                              │
 └─────────────────────────────────────────────────────────────┘
 ```

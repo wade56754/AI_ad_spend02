@@ -430,7 +430,7 @@ class PromptStructurer:
             "API_SOT.md v9.0",
             "ERROR_CODES_SOT.md v2.1",
             "AUTH_SPEC.md v2.0",
-            "LEDGER_SOT.md v1.1",
+            "DATA_SCHEMA.md v5.11 §3.4.4",
         ]
         self.default_paths = {
             "repo_root": "D:\\project\\AI_ad_spend02",

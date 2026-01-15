@@ -59,7 +59,7 @@ validation_rules:
 
     # 废弃角色映射
     deprecated_mapping:
-      supervisor: project_owner    # PRD v2.2 废弃
+      supervisor: project_owner    # PRD v5.1 废弃
       data_operator: null          # 完全移除
       media_buyer: pitcher         # 重命名
 

@@ -149,14 +149,14 @@ ROLE_RULES = [
         pattern=r"['\"]supervisor['\"]",
         message="Deprecated role 'supervisor' detected",
         severity=Severity.WARNING,
-        suggestion="Use 'project_owner' instead (PRD v2.2)",
+        suggestion="Use 'project_owner' instead (PRD v5.1)",
     ),
     Rule(
         id="ROLE-002",
         pattern=r"['\"]data_operator['\"]",
         message="Deprecated role 'data_operator' detected",
         severity=Severity.WARNING,
-        suggestion="Use 'finance' instead (PRD v2.2)",
+        suggestion="Use 'finance' instead (PRD v5.1)",
     ),
     Rule(
         id="ROLE-003",

@@ -109,7 +109,7 @@ FRONTEND_URL=https://your-domain.com
 cd /www/wwwroot/ai-ad-system/frontend
 
 # 安装依赖
-npm install
+pnpm install
 
 # 配置环境变量
 cat > .env.production << 'EOF'
@@ -119,7 +119,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 EOF
 
 # 构建
-npm run build
+pnpm run build
 ```
 
 ### 3.3 PM2 配置
@@ -142,7 +142,7 @@ module.exports = {
     {
       name: 'ai-ad-frontend',
       cwd: '/www/wwwroot/ai-ad-system/frontend',
-      script: 'npm',
+      script: 'pnpm',
       args: 'start -- -p 3000',
       interpreter: 'none'
     }
@@ -291,8 +291,8 @@ pip install -r requirements.txt
 
 # 更新前端
 cd frontend
-npm install
-npm run build
+pnpm install
+pnpm run build
 
 # 重启服务
 pm2 restart all
@@ -347,7 +347,7 @@ pm2 logs ai-ad-backend
 **解决**:
 ```bash
 cd /www/wwwroot/ai-ad-system/frontend
-npm run build
+pnpm run build
 pm2 logs ai-ad-frontend
 ```
 
@@ -399,7 +399,7 @@ client_max_body_size 50m;
 | | DEBUG=false | ☐ |
 | | CORS 配置正确 | ☐ |
 | **前端** | .env.production 已配置 | ☐ |
-| | npm run build 成功 | ☐ |
+| | pnpm run build 成功 | ☐ |
 | **服务** | 后端已启动 (端口 8000) | ☐ |
 | | 前端已启动 (端口 3000) | ☐ |
 | | /healthz 返回正常 | ☐ |

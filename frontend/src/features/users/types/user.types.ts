@@ -4,7 +4,7 @@
  * SoT: MASTER.md v4.6 §2.4 (6 角色定义)
  * SoT: AUTH_SPEC.md v2.0
  *
- * 6 角色白名单 (MASTER.md v4.6 / PRD v2.2):
+ * 6 角色白名单 (MASTER.md v4.6 / PRD v5.1):
  *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
  * 技术层别名 (兼容性保留):
@@ -16,7 +16,7 @@
  */
 
 export enum UserRole {
-  // 6 角色白名单 (MASTER.md v4.6 §2.4 / PRD v2.2)
+  // 6 角色白名单 (MASTER.md v4.6 §2.4 / PRD v5.1)
   CEO = 'ceo',
   PROJECT_OWNER = 'project_owner',
   FINANCE = 'finance',
@@ -91,7 +91,7 @@ export interface UserListResponse {
 }
 
 /**
- * 6 角色选项 (MASTER.md v4.6 §2.4 / PRD v2.2)
+ * 6 角色选项 (MASTER.md v4.6 §2.4 / PRD v5.1)
  */
 export const USER_ROLE_OPTIONS = [
   { value: UserRole.CEO, label: '老板', color: 'purple' },

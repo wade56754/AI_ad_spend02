@@ -125,17 +125,16 @@ python -m pytest tests/test_supervisor.py -v
 ```yaml
 # SoT 文档版本
 sot_versions:
-  MASTER.md: "v4.6"
-  API_SOT.md: "v9.4"
-  DATA_SCHEMA.md: "v5.6"
-  STATE_MACHINE.md: "v2.8"
-  BUSINESS_RULES.md: "v4.7"
+  MASTER.md: "v4.9"
+  API_SOT.md: "v9.7"
+  DATA_SCHEMA.md: "v5.11"
+  STATE_MACHINE.md: "v2.9"
+  BUSINESS_RULES.md: "v5.2"
   ERROR_CODES_SOT.md: "v2.2"
-  AUTH_SPEC.md: "v2.1"
-  LEDGER_SOT.md: "v1.2"
+  AUTH_SPEC.md: "v2.2"
 
-# 合法角色（6 个）- MASTER.md v4.6 §2.4
-# 注意: supervisor 已废弃 (PRD v2.2)，职责合并到 project_owner
+# 合法角色（6 个）- MASTER.md v4.9 §2.4
+# 注意: supervisor 已废弃 (PRD v5.1)，职责合并到 project_owner
 valid_roles:
   - ceo
   - project_owner

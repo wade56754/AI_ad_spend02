@@ -564,7 +564,7 @@ routers:
     prefix: /ledger
     tags: ["ledger"]
     file: backend/routers/ledger.py
-    sot_ref: "LEDGER_SOT.md v1.1"
+    sot_ref: "DATA_SCHEMA.md v5.11 §3.4.4"
     endpoints:
       - method: POST
         path: /ledger/transactions
@@ -674,7 +674,7 @@ routers:
     tags: ["Settlements"]
     file: backend/routers/settlements.py
     state_machine: "DRAFT → PENDING → APPROVED/REJECTED → PROCESSING → COMPLETED / CANCELLED"
-    sot_ref: "LEDGER_SOT.md v1.1"
+    sot_ref: "DATA_SCHEMA.md v5.11 §3.4.4"
     endpoints:
       - method: POST
         path: /settlements

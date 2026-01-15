@@ -22,7 +22,7 @@ dev-backend:
 
 # 仅启动前端
 dev-frontend:
-    cd frontend && npm run dev
+    cd frontend && pnpm run dev
 
 # 停止所有服务
 stop:

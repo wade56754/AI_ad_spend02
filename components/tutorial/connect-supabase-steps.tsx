@@ -45,7 +45,7 @@ export function ConnectSupabaseSteps() {
         <p>
           You may need to quit your Next.js development server and run{" "}
           <span className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs font-medium text-secondary-foreground border">
-            npm run dev
+            pnpm run dev
           </span>{" "}
           again to load the new environment variables.
         </p>

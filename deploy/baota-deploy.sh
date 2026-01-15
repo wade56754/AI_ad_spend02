@@ -164,7 +164,7 @@ setup_frontend() {
     fi
 
     # 安装依赖
-    npm install
+    pnpm install
 
     # 创建生产环境配置
     cat > .env.production << EOF
@@ -176,7 +176,7 @@ EOF
     print_warning "请编辑前端环境配置: $PROJECT_DIR/frontend/.env.production"
 
     # 构建
-    npm run build
+    pnpm run build
 
     print_success "前端配置完成"
 }
@@ -186,7 +186,7 @@ setup_pm2() {
     print_info "配置 PM2..."
 
     if ! command -v pm2 &> /dev/null; then
-        npm install -g pm2
+        pnpm add -g pm2
     fi
 
     # 创建 PM2 配置
@@ -206,7 +206,7 @@ module.exports = {
     {
       name: 'ai-ad-frontend',
       cwd: '${PROJECT_DIR}/frontend',
-      script: 'npm',
+      script: 'pnpm',
       args: 'start -- -p ${FRONTEND_PORT}',
       interpreter: 'none'
     }

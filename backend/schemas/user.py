@@ -16,7 +16,7 @@ Version: 2.2
 Author: Claude Code
 
 v2.2 更新 (2025-12):
-- 移除 supervisor 角色 (PRD v2.2 废弃，职责合并到 project_owner)
+- 移除 supervisor 角色 (PRD v5.1 废弃，职责合并到 project_owner)
 - 更新 SoT 引用到 MASTER.md v4.6
 
 v2.1 更新 (2025-12):
@@ -30,7 +30,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 
 # 角色枚举 - 严格对应 MASTER.md v4.6 §2.4 (6角色模型)
-# PRD v2.2: supervisor 已废弃，职责合并到 project_owner
+# PRD v5.1: supervisor 已废弃，职责合并到 project_owner
 RoleType = Literal[
     "ceo",             # 老板 - 资金安全、公司盈亏、最终决策
     "project_owner",   # 项目负责人 - 项目盈亏、资金使用效率、日报审核
@@ -41,7 +41,7 @@ RoleType = Literal[
 ]
 
 # 合法角色列表 (MASTER.md v4.6 §2.4) - 6角色模型
-# 注意: supervisor 已废弃 (PRD v2.2)，请勿添加
+# 注意: supervisor 已废弃 (PRD v5.1)，请勿添加
 VALID_ROLES = ["ceo", "project_owner", "finance", "pitcher", "account_manager", "admin"]
 
 

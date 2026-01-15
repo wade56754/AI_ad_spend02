@@ -14,7 +14,7 @@ import logging
 from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
-from typing import List, Optional, Tuple, Iterator
+from typing import List, Optional, Tuple
 from uuid import uuid4
 
 from sqlalchemy import and_, or_, func
@@ -25,7 +25,7 @@ from backend.exceptions.custom_exceptions import (
     BusinessLogicError,
     ResourceNotFoundError,
     PermissionDeniedError,
-    ResourceConflictError
+    ResourceConflictError,
 )
 from backend.core.state_machine import (
     TRANSFER_STATE_MACHINE,
@@ -52,7 +52,7 @@ class TransferService:
         self.db = db
 
     @contextmanager
-    def transaction(self) -> Iterator[None]:
+    def transaction(self):
         """事务上下文管理器"""
         try:
             yield
@@ -68,7 +68,7 @@ class TransferService:
         transfer: TransferRequest,
         target_status: str,
         user_role: str,
-        action_name: str
+        action_name: str,
     ) -> None:
         """
         使用状态机验证状态转换
@@ -90,7 +90,7 @@ class TransferService:
             raise BusinessLogicError(
                 f"当前状态({current_status})不能执行{action_name}操作，"
                 f"允许的目标状态: {allowed or '无'}",
-                error_code="STATE_400"
+                error_code="STATE_400",
             )
 
         # 使用状态机执行转换 (会验证角色权限)
@@ -115,15 +115,17 @@ class TransferService:
             request_no=transfer.request_no,
             source_ad_account_id=transfer.source_ad_account_id,
             source_ad_account_name=(
-                transfer.source_ad_account.account_name or
-                transfer.source_ad_account.account_code
-                if transfer.source_ad_account else None
+                transfer.source_ad_account.account_name
+                or transfer.source_ad_account.account_code
+                if transfer.source_ad_account
+                else None
             ),
             target_ad_account_id=transfer.target_ad_account_id,
             target_ad_account_name=(
-                transfer.target_ad_account.account_name or
-                transfer.target_ad_account.account_code
-                if transfer.target_ad_account else None
+                transfer.target_ad_account.account_name
+                or transfer.target_ad_account.account_code
+                if transfer.target_ad_account
+                else None
             ),
             transfer_amount=str(transfer.transfer_amount),
             status=transfer.status,
@@ -141,9 +143,7 @@ class TransferService:
         )
 
     def create_transfer(
-        self,
-        request: TransferRequestCreate,
-        current_user: User
+        self, request: TransferRequestCreate, current_user: User
     ) -> TransferRequest:
         """
         创建迁移申请
@@ -161,57 +161,63 @@ class TransferService:
 
         # 权限检查
         if current_user.role not in [
-            UserRole.ADMIN.value, UserRole.ACCOUNT_MANAGER.value, UserRole.FINANCE.value
+            UserRole.ADMIN.value,
+            UserRole.ACCOUNT_MANAGER.value,
+            UserRole.FINANCE.value,
         ]:
             raise PermissionDeniedError(
-                "无权限创建迁移申请，仅 admin/account_manager/finance 可操作",
-                error_code="AUTH-500"
+                "无权限创建迁移申请，仅 admin/account_manager/finance 可操作", error_code="AUTH-500"
             )
 
         # 验证源账户存在
-        source_account = self.db.query(AdAccount).filter(
-            AdAccount.id == request.source_ad_account_id
-        ).first()
+        source_account = (
+            self.db.query(AdAccount)
+            .filter(AdAccount.id == request.source_ad_account_id)
+            .first()
+        )
         if not source_account:
             raise ResourceNotFoundError(
-                f"源账户 {request.source_ad_account_id} 不存在",
-                error_code="BIZ_002"
+                f"源账户 {request.source_ad_account_id} 不存在", error_code="BIZ-002"
             )
 
         # 验证目标账户存在
-        target_account = self.db.query(AdAccount).filter(
-            AdAccount.id == request.target_ad_account_id
-        ).first()
+        target_account = (
+            self.db.query(AdAccount)
+            .filter(AdAccount.id == request.target_ad_account_id)
+            .first()
+        )
         if not target_account:
             raise ResourceNotFoundError(
-                f"目标账户 {request.target_ad_account_id} 不存在",
-                error_code="BIZ_002"
+                f"目标账户 {request.target_ad_account_id} 不存在", error_code="BIZ-002"
             )
 
         # 业务校验: 源账户和目标账户不能相同 (已在 schema 中校验，此处双重保险)
         if request.source_ad_account_id == request.target_ad_account_id:
-            raise BusinessLogicError(
-                "源账户和目标账户不能相同",
-                error_code="BIZ_001"
-            )
+            raise BusinessLogicError("源账户和目标账户不能相同", error_code="BIZ-001")
 
         # 业务校验: 同供应商约束 (DATA_SCHEMA.md v5.2 §3.2.5)
         # 如果两个账户都有 supplier_id，则必须相同；否则跳过校验
-        source_supplier_id = getattr(source_account, 'supplier_id', None)
-        target_supplier_id = getattr(target_account, 'supplier_id', None)
-        if source_supplier_id and target_supplier_id and source_supplier_id != target_supplier_id:
+        source_supplier_id = getattr(source_account, "supplier_id", None)
+        target_supplier_id = getattr(target_account, "supplier_id", None)
+        if (
+            source_supplier_id
+            and target_supplier_id
+            and source_supplier_id != target_supplier_id
+        ):
             raise BusinessLogicError(
                 f"禁止跨供应商迁移余额。源账户供应商={source_supplier_id}，"
                 f"目标账户供应商={target_supplier_id}。请拆分为退款 + 充值操作",
-                error_code="E-TRANS-004"  # 跨供应商迁移不允许
+                error_code="E-TRANS-004",  # 跨供应商迁移不允许
             )
 
         # 业务校验: 迁移金额不能超过源账户余额
-        source_balance = getattr(source_account, 'balance', Decimal('0.00')) or Decimal('0.00')
+        source_balance = getattr(source_account, "balance", Decimal("0.00")) or Decimal(
+            "0.00"
+        )
         if request.transfer_amount > source_balance:
             raise BusinessLogicError(
                 f"迁移金额 {request.transfer_amount} 超过源账户余额 {source_balance}",
-                error_code="BIZ_001"
+                error_code="BIZ-001",
             )
 
         with self.transaction():
@@ -227,29 +233,29 @@ class TransferService:
             self.db.add(transfer)
             self.db.flush()  # 获取 ID
 
-            logger.info(f"Transfer created: id={transfer.id}, request_no={transfer.request_no}")
+            logger.info(
+                f"Transfer created: id={transfer.id}, request_no={transfer.request_no}"
+            )
             return transfer
 
     def get_transfer_by_id(
-        self,
-        transfer_id: int,
-        current_user: User
+        self, transfer_id: int, current_user: User
     ) -> TransferRequest:
         """获取迁移申请详情"""
-        transfer = self.db.query(TransferRequest).options(
-            joinedload(TransferRequest.source_ad_account),
-            joinedload(TransferRequest.target_ad_account),
-            joinedload(TransferRequest.creator),
-            joinedload(TransferRequest.approver),
-        ).filter(
-            TransferRequest.id == transfer_id
-        ).first()
+        transfer = (
+            self.db.query(TransferRequest)
+            .options(
+                joinedload(TransferRequest.source_ad_account),
+                joinedload(TransferRequest.target_ad_account),
+                joinedload(TransferRequest.creator),
+                joinedload(TransferRequest.approver),
+            )
+            .filter(TransferRequest.id == transfer_id)
+            .first()
+        )
 
         if not transfer:
-            raise ResourceNotFoundError(
-                f"迁移申请 {transfer_id} 不存在",
-                error_code="BIZ_002"
-            )
+            raise ResourceNotFoundError(f"迁移申请 {transfer_id} 不存在", error_code="BIZ-002")
 
         return transfer
 
@@ -278,11 +284,7 @@ class TransferService:
 
         return transfers, total
 
-    def submit_transfer(
-        self,
-        transfer_id: int,
-        current_user: User
-    ) -> TransferRequest:
+    def submit_transfer(self, transfer_id: int, current_user: User) -> TransferRequest:
         """
         提交迁移申请 (draft → pending_approval)
 
@@ -291,19 +293,18 @@ class TransferService:
         transfer = self.get_transfer_by_id(transfer_id, current_user)
 
         # 权限检查
-        if (str(transfer.created_by) != str(current_user.id) and
-            current_user.role != UserRole.ADMIN.value):
-            raise PermissionDeniedError(
-                "只有申请人或管理员可以提交",
-                error_code="AUTH-500"
-            )
+        if (
+            str(transfer.created_by) != str(current_user.id)
+            and current_user.role != UserRole.ADMIN.value
+        ):
+            raise PermissionDeniedError("只有申请人或管理员可以提交", error_code="AUTH-500")
 
         # 使用状态机验证并执行转换
         self._validate_transition(
             transfer,
             TransferRequestStatus.PENDING_APPROVAL.value,
             current_user.role,
-            "提交审批"
+            "提交审批",
         )
 
         with self.transaction():
@@ -312,10 +313,7 @@ class TransferService:
             return transfer
 
     def approve_transfer(
-        self,
-        transfer_id: int,
-        approval: TransferRequestApprove,
-        current_user: User
+        self, transfer_id: int, approval: TransferRequestApprove, current_user: User
     ) -> TransferRequest:
         """
         审批迁移申请 (pending_approval → approved)
@@ -326,10 +324,7 @@ class TransferService:
 
         # 使用状态机验证并执行转换 (状态机会验证 finance/admin 角色)
         self._validate_transition(
-            transfer,
-            TransferRequestStatus.APPROVED.value,
-            current_user.role,
-            "审批通过"
+            transfer, TransferRequestStatus.APPROVED.value, current_user.role, "审批通过"
         )
 
         with self.transaction():
@@ -341,10 +336,7 @@ class TransferService:
             return transfer
 
     def reject_transfer(
-        self,
-        transfer_id: int,
-        rejection: TransferRequestReject,
-        current_user: User
+        self, transfer_id: int, rejection: TransferRequestReject, current_user: User
     ) -> TransferRequest:
         """
         拒绝迁移申请 (draft/pending_approval → rejected)
@@ -355,10 +347,7 @@ class TransferService:
 
         # 使用状态机验证并执行转换 (状态机会验证 finance/admin 角色)
         self._validate_transition(
-            transfer,
-            TransferRequestStatus.REJECTED.value,
-            current_user.role,
-            "拒绝"
+            transfer, TransferRequestStatus.REJECTED.value, current_user.role, "拒绝"
         )
 
         with self.transaction():
@@ -370,9 +359,7 @@ class TransferService:
             return transfer
 
     def complete_transfer(
-        self,
-        transfer_id: int,
-        current_user: User
+        self, transfer_id: int, current_user: User
     ) -> TransferRequest:
         """
         完成迁移 (approved → completed)
@@ -386,40 +373,44 @@ class TransferService:
 
         # 使用状态机验证并执行转换 (状态机会验证 finance/admin 角色)
         self._validate_transition(
-            transfer,
-            TransferRequestStatus.COMPLETED.value,
-            current_user.role,
-            "完成迁移"
+            transfer, TransferRequestStatus.COMPLETED.value, current_user.role, "完成迁移"
         )
 
         with self.transaction():
             # ====== LEDGER_SOT.md v1.1: TRANSFER_OUT/TRANSFER_IN 双条目生成 ======
 
             # 1. 获取源账户和目标账户（带行锁）
-            source_account = self.db.query(AdAccount).filter(
-                AdAccount.id == transfer.source_ad_account_id
-            ).with_for_update().first()
+            source_account = (
+                self.db.query(AdAccount)
+                .filter(AdAccount.id == transfer.source_ad_account_id)
+                .with_for_update()
+                .first()
+            )
 
-            target_account = self.db.query(AdAccount).filter(
-                AdAccount.id == transfer.target_ad_account_id
-            ).with_for_update().first()
+            target_account = (
+                self.db.query(AdAccount)
+                .filter(AdAccount.id == transfer.target_ad_account_id)
+                .with_for_update()
+                .first()
+            )
 
             if not source_account or not target_account:
-                raise BusinessLogicError(
-                    "源账户或目标账户不存在",
-                    error_code="BIZ_002"
-                )
+                raise BusinessLogicError("源账户或目标账户不存在", error_code="BIZ-002")
 
             # 2. 获取当前余额
-            source_balance = LedgerEntry.get_account_balance(self.db, transfer.source_ad_account_id)
-            target_balance = LedgerEntry.get_account_balance(self.db, transfer.target_ad_account_id)
+            source_balance = LedgerEntry.get_account_balance(
+                self.db, transfer.source_ad_account_id
+            )
+            target_balance = LedgerEntry.get_account_balance(
+                self.db, transfer.target_ad_account_id
+            )
             transfer_amount = transfer.transfer_amount
 
             # 3. 验证余额充足
             if source_balance < transfer_amount:
                 raise BusinessLogicError(
                     f"源账户余额不足: 当前余额 {source_balance}, 迁移金额 {transfer_amount}",
-                    error_code="BIZ_616"
+                    error_code="BIZ-616",
                 )
 
             # 4. 创建 TRANSFER_OUT 分录（源账户，负数）
@@ -427,8 +418,10 @@ class TransferService:
                 ad_account_id=transfer.source_ad_account_id,
                 entry_type=LedgerEntryType.TRANSFER_OUT.value,
                 amount=-transfer_amount,  # 负数表示转出
+                balance_after=source_balance - transfer_amount,
+                reference_type="transfer_request",
                 reference_id=transfer.id,
-                notes=f"余额迁移转出 #{transfer.request_no} 至账户 {transfer.target_ad_account_id} | 来源: transfer_request"
+                notes=f"余额迁移转出 #{transfer.request_no} 至账户 {transfer.target_ad_account_id}",
             )
             self.db.add(transfer_out_entry)
 
@@ -437,14 +430,24 @@ class TransferService:
                 ad_account_id=transfer.target_ad_account_id,
                 entry_type=LedgerEntryType.TRANSFER_IN.value,
                 amount=transfer_amount,  # 正数表示转入
+                balance_after=target_balance + transfer_amount,
+                reference_type="transfer_request",
                 reference_id=transfer.id,
-                notes=f"余额迁移转入 #{transfer.request_no} 从账户 {transfer.source_ad_account_id} | 来源: transfer_request"
+                notes=f"余额迁移转入 #{transfer.request_no} 从账户 {transfer.source_ad_account_id}",
             )
             self.db.add(transfer_in_entry)
 
             # 6. 更新广告账户余额 (LEDGER_SOT.md v1.1 §3.2 余额真相源)
-            source_account.balance = (source_account.balance or Decimal('0.00')) - transfer_amount
-            target_account.balance = (target_account.balance or Decimal('0.00')) + transfer_amount
+            # 使用 deposit 字段存储余额，同时设置动态属性 balance 以便查询
+            source_account.deposit = (
+                source_account.deposit or Decimal("0.00")
+            ) - transfer_amount
+            target_account.deposit = (
+                target_account.deposit or Decimal("0.00")
+            ) + transfer_amount
+            # 更新动态 balance 属性（用于服务层读取）
+            source_account.balance = source_account.deposit
+            target_account.balance = target_account.deposit
 
             # 7. 更新迁移申请状态
             transfer.status = TransferRequestStatus.COMPLETED.value

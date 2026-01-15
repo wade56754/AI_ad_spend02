@@ -219,7 +219,7 @@ argument-hint: "<flow-type> <task-description>"
 ```
 STATE_MACHINE.md v2.6 → DATA_SCHEMA.md v5.2 → BUSINESS_RULES.md v3.2
 → API_SOT.md v9.0 → ERROR_CODES_SOT.md v2.1 → AUTH_SPEC.md v2.0
-→ LEDGER_SOT.md v1.1
+→ DATA_SCHEMA.md v5.11 §3.4.4
 ```
 
 ## 使用示例

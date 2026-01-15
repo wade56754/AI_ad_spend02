@@ -13,7 +13,7 @@ pitcher              →  pitcher (v5.0: 废弃 media_buyer)
 account_manager      →  account_manager
 admin                →  admin
 
-废弃角色（PRD v2.2）：
+废弃角色（PRD v5.1）：
 - supervisor → 自动迁移到 project_owner
 - data_operator → 自动迁移到 finance
 - media_buyer → 使用 pitcher
@@ -40,7 +40,7 @@ MASTER_TO_CODE: dict[str, str] = {
     "account_manager": "account_manager",
     "admin": "admin",
     # 废弃角色自动迁移（向后兼容）
-    "supervisor": "project_owner",  # PRD v2.2: 合并到 project_owner
+    "supervisor": "project_owner",  # PRD v5.1: 合并到 project_owner
 }
 
 # 代码技术角色 → MASTER.md 业务角色（用于前端展示）

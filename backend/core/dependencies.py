@@ -237,7 +237,7 @@ async def get_current_active_user(
 get_current_user = get_current_active_user
 
 
-# 角色别名映射 (PRD v2.2)
+# 角色别名映射 (PRD v5.1)
 # 数据库存储值 → 业务角色名
 ROLE_ALIAS_MAP = {
     "media_buyer": "pitcher",  # 数据库存储 media_buyer，业务层使用 pitcher
@@ -279,7 +279,7 @@ def require_role(allowed_roles: Union[str, List[str]]):
             ...
 
     Note:
-        自动处理角色别名映射 (PRD v2.2):
+        自动处理角色别名映射 (PRD v5.1):
         - pitcher ↔ media_buyer
         - project_owner ↔ data_operator (已废弃)
     """
@@ -338,7 +338,7 @@ def check_user_role(user: User, allowed_roles: Union[str, List[str]]) -> None:
             # 继续处理...
 
     Note:
-        自动处理角色别名映射 (PRD v2.2):
+        自动处理角色别名映射 (PRD v5.1):
         - pitcher ↔ media_buyer
         - project_owner ↔ data_operator (已废弃)
     """

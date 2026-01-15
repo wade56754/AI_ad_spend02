@@ -5,8 +5,9 @@
 > **约束级别**: 强制执行，违反本文档定义的不变量视为 P0 缺陷
 > **版本**: v4.9
 > **status**: active
-> **基准**: PRD v5.2, BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
-> **PRD对齐**: PRD v5.2 已与 MASTER 6 角色模型完全对齐（删除 Supervisor，合并到 project_owner）
+> **基准**: PRD v5.1
+> **归档参考**: docs/archive/BUSINESS_FLOW_MANAGEMENT.md, docs/archive/MVP_PHASE_DESIGN.md
+> **PRD对齐**: PRD v5.1 已与 MASTER 6 角色模型完全对齐（删除 Supervisor，合并到 project_owner）
 > **owner**: wade
 > **last_reviewed**: 2026-01-02
 
@@ -168,7 +169,7 @@
 
 ### 2.4 角色定义（6 角色）
 
-> **架构决策（MASTER v4.6+, PRD v5.2 已对齐）**：系统只有 6 个角色，supervisor 角色已移除，其职责（日报审核、数据统计、团队管理）合并到 project_owner。PRD v5.2 已完成角色对齐。
+> **架构决策（MASTER v4.6+, PRD v5.1 已对齐）**：系统只有 6 个角色，supervisor 角色已移除，其职责（日报审核、数据统计、团队管理）合并到 project_owner。PRD v5.1 已完成角色对齐。
 
 | 角色ID | 中文名 | 职责范围 | 系统权限 |
 |--------|-------|---------|---------|
@@ -179,7 +180,7 @@
 | account_manager | 户管 | 账户管理、环境分配、代理商对接、实际消耗录入 | 管理账户分配，收集投手充值需求 |
 | admin | 管理员 | 系统配置、用户管理 | 系统设置（不参与业务） |
 
-**技术层角色映射（PRD v5.2 §2.2.2）**：
+**技术层角色映射（PRD v5.1 §2.2.2）**：
 
 | 业务角色 | 系统角色值（user.role） | 说明 |
 |----------|------------------------|------|
@@ -913,7 +914,7 @@ EXPENSE_CATEGORY = frozenset([
 | 异常标记 | 计算 | §4.5.2 规则 | ○ |
 
 > ✓ = 必须字段，○ = 可选字段
-> 其他页面字段集参见 MVP_PHASE_DESIGN.md
+> 其他页面字段集参见 docs/archive/MVP_PHASE_DESIGN.md（归档参考）
 
 ---
 
@@ -947,7 +948,7 @@ EXPENSE_CATEGORY = frozenset([
 
 **禁止**：
 - AI 不得创建 DATA_SCHEMA 未定义的字段
-- AI 不得创建 MVP_PHASE_DESIGN 未定义的页面
+- AI 不得创建 PRD v5.1 未定义的页面（归档参考：docs/archive/MVP_PHASE_DESIGN.md）
 - AI 不得创建 ERROR_CODES_SOT 未定义的错误码
 
 **必须**：
@@ -989,35 +990,37 @@ EXPENSE_CATEGORY = frozenset([
 
 ```
 0. MASTER.md (本文档) v4.9              → 架构宪法，最高优先级
-1. PRD v5.2                             → 产品需求文档（与 MASTER 6 角色模型已对齐）
-2. BUSINESS_FLOW_MANAGEMENT.md          → 业务流程与责任模型
-3. MVP_PHASE_DESIGN.md                  → Phase 边界与页面定义
-4. STATE_MACHINE.md v2.9                → 状态定义与转换
-5. DATA_SCHEMA.md v5.7                  → 表结构与字段，含账本规则（§3.4.4）
-6. BUSINESS_RULES.md v5.0               → 业务规则
-7. API_SOT.md v9.6                      → API 定义
-8. ERROR_CODES_SOT.md v2.2              → 错误码
-9. AUTH_SPEC.md v2.2                    → 认证授权
+1. PRD v5.1                             → 产品需求文档（与 MASTER 6 角色模型已对齐）
+2. STATE_MACHINE.md v2.9                → 状态定义与转换
+3. DATA_SCHEMA.md v5.11                 → 表结构与字段，含账本规则（§3.4.4）
+4. BUSINESS_RULES.md v5.2               → 业务规则
+5. API_SOT.md v9.7                      → API 定义
+6. ERROR_CODES_SOT.md v2.2              → 错误码
+7. AUTH_SPEC.md v2.2                    → 认证授权
 ```
+
+归档参考（非 SoT）：docs/archive/BUSINESS_FLOW_MANAGEMENT.md, docs/archive/MVP_PHASE_DESIGN.md
 
 ### 8.2 文档索引
 
 **Tier 1: 架构宪法**
 - **docs/sot/MASTER.md** v4.9 - 系统唯一入口（本文档）
-- **docs/PRD_v5.2.md** - 产品需求文档（6 角色模型已对齐）
-- **dataset/out/BUSINESS_FLOW_MANAGEMENT.md** - 业务流程优化方案
-- **dataset/out/MVP_PHASE_DESIGN.md** - MVP 分阶段执行方案
+- **docs/PRD_v5.1.md** - 产品需求文档（6 角色模型已对齐）
+- **docs/archive/BUSINESS_FLOW_MANAGEMENT.md** - 业务流程优化方案（归档参考）
+- **docs/archive/MVP_PHASE_DESIGN.md** - MVP 分阶段执行方案（归档参考）
 
 **Tier 2: 单源真相 (docs/sot/)**
 - **STATE_MACHINE.md** v2.9 - 状态定义与转换规则
-- **DATA_SCHEMA.md** v5.7 - 数据库表结构与字段定义，含账本规则（§3.4.4 ledger_entries）
-- **BUSINESS_RULES.md** v5.0 - 业务规则与约束
-- **API_SOT.md** v9.6 - API 端点定义与规范
+- **DATA_SCHEMA.md** v5.11 - 数据库表结构与字段定义，含账本规则（§3.4.4 ledger_entries）
+- **BUSINESS_RULES.md** v5.2 - 业务规则与约束
+- **API_SOT.md** v9.7 - API 端点定义与规范
 - **ERROR_CODES_SOT.md** v2.2 - 错误码定义
 - **AUTH_SPEC.md** v2.2 - 认证授权规范
 
-**Tier 3: 实施指南 (docs/2.dev-guides/)**
-- **BACKEND_DEV_GUIDE.md** - 后端开发指南
+**Tier 3: 实施指南 (docs/guides/)**
+- **FRONTEND_DEVELOPMENT_GUIDE_v3.0.md** - 前端开发规范
+- **AI_PROGRAMMING_BEST_PRACTICES_v3.1.md** - AI 编程规范
+- **AI_CODING_BEST_PRACTICES.md** - 代码生产规范
 - **FRONTEND_RULES.md** - 前端开发规则
 - **TESTING_GUIDE.md** - 测试指南
 
@@ -1164,12 +1167,12 @@ raw_submitted → trend_pending → trend_ok → final_pending
 | F-007 | 替代人做裁决 | 人工裁决优先 | BI-03 |
 | F-008 | 强制必填字段 | 允许数据不完整（Phase 1） | §4.3 |
 | **F-009** | 充值流程强制添加老板逐笔审批 | 日常充值由财务审批即可 | §4.5.11 |
-| **F-010** | 使用已移除的角色（supervisor） | MASTER v4.6+ 已移除，PRD v5.2 已完成对齐 | §2.4 |
+| **F-010** | 使用已移除的角色（supervisor） | MASTER v4.6+ 已移除，PRD v5.1 已完成对齐 | §2.4 |
 | **F-011** | 广告配套分摊到项目 | 应公司统一记账 | §4.5.9 |
 
 ### INV-007: 角色映射表（技术层↔业务层）
 
-> **PRD v5.2 对齐**：业务角色与 user.role 字段的标准映射关系。
+> **PRD v5.1 对齐**：业务角色与 user.role 字段的标准映射关系。
 
 | 业务角色 | 系统角色值（user.role） | 说明 |
 |----------|------------------------|------|
@@ -1189,7 +1192,7 @@ CHECK (role IN ('ceo', 'project_owner', 'finance', 'pitcher', 'account_manager',
 
 | 角色 | 状态 | 替代方案 |
 |------|------|---------|
-| `supervisor` | ❌ 已废弃 (PRD v5.2) | 合并到 project_owner |
+| `supervisor` | ❌ 已废弃 (PRD v5.1) | 合并到 project_owner |
 | `data_operator` | ❌ 已废弃 | 不在宪法中 |
 | `media_buyer` | ❌ 非标准 | 使用 pitcher |
 
@@ -1222,8 +1225,8 @@ CHECK (role IN ('ceo', 'project_owner', 'finance', 'pitcher', 'account_manager',
 | v4.4 | 2025-12-22 | P0 最终修复：Phase 1 隐性问责消除、日报消耗与平台消耗 SoT 消歧、已回款 SoT 明确 | Master Architect |
 | v4.5 | 2025-12-25 | 业务模型完善：新增双结算模式、进粉数据流、甲方核对机制 | Master Architect |
 | v4.6 | 2025-12-27 | PRD v5.1 对齐：角色精简 7→6、数据 SoT 三层架构、成本分类、充值审批链 | Master Architect |
-| v4.7 | 2025-12-31 | SoT 审计修复：移除 LEDGER_SOT.md 引用（账本规则已整合到 DATA_SCHEMA.md §3.4.4）、裁判链版本号对齐 | Claude Opus 4.5 |
-| v4.8 | 2026-01-01 | PRD v5.2 完全对齐：PRD 已删除 supervisor 角色与 MASTER 一致；更新技术层角色映射表；添加废弃角色列表；裁判链添加 PRD v5.2；DATA_SCHEMA 版本更新为 v5.7 | Claude Opus 4.5 |
+| v4.7 | 2025-12-31 | SoT 审计修复：账本规则引用统一到 DATA_SCHEMA.md §3.4.4、裁判链版本号对齐 | Claude Opus 4.5 |
+| v4.8 | 2026-01-01 | PRD v5.1 完全对齐：PRD 已删除 supervisor 角色与 MASTER 一致；更新技术层角色映射表；添加废弃角色列表；裁判链添加 PRD v5.1；DATA_SCHEMA 版本更新为 v5.7 | Claude Opus 4.5 |
 | v4.9 | 2026-01-02 | SoT 互锁版本对齐：更新裁判链和文档索引中的所有 SoT 版本引用（STATE_MACHINE v2.9, BUSINESS_RULES v5.0, API_SOT v9.6, AUTH_SPEC v2.2） | Claude Opus 4.5 |
 
 **v4.9 SoT 互锁版本对齐**：
@@ -1231,21 +1234,21 @@ CHECK (role IN ('ceo', 'project_owner', 'finance', 'pitcher', 'account_manager',
 - §8.2 文档索引 Tier 2：同步更新版本引用
 - 本版本由 AI 代码工厂 SoT 合规检查器自动生成
 
-**v4.8 PRD v5.2 完全对齐**：
-- 更新基准文档为 PRD v5.2（PRD 已删除 supervisor 角色，与 MASTER 6 角色模型一致）
+**v4.8 PRD v5.1 完全对齐**：
+- 更新基准文档为 PRD v5.1（PRD 已删除 supervisor 角色，与 MASTER 6 角色模型一致）
 - §2.4 角色定义：新增「技术层角色映射」表，明确 user.role 字段的标准值
-- §9 INV-007：重构角色映射表，使用 PRD v5.2 标准格式；新增「废弃角色」列表
-- §9 INV-006 F-010：更新说明为「PRD v5.2 已完成对齐」
-- §8.1 裁判链：添加 PRD v5.2 为优先级 1
-- §8.2 文档索引：添加 PRD_v5.2.md；DATA_SCHEMA 版本更新为 v5.7；API_SOT 版本更正为 v2.1
+- §9 INV-007：重构角色映射表，使用 PRD v5.1 标准格式；新增「废弃角色」列表
+- §9 INV-006 F-010：更新说明为「PRD v5.1 已完成对齐」
+- §8.1 裁判链：添加 PRD v5.1 为优先级 1
+- §8.2 文档索引：添加 PRD_v5.1.md；DATA_SCHEMA 版本更新为 v5.7；API_SOT 版本更正为 v2.1
 - 移除旧的「PRD v5.1 仍包含 7 角色」警告，PRD 和 MASTER 现已完全一致
 
 **v4.7 SoT 审计修复**：
-- §8.1 裁判链优先级：移除 LEDGER_SOT.md（不存在），账本规则见 DATA_SCHEMA.md v5.6 §3.4.4
+- §8.1 裁判链优先级：账本规则见 DATA_SCHEMA.md v5.11 §3.4.4
 - §8.1 裁判链：添加所有 SoT 文档版本号（STATE_MACHINE v2.8, DATA_SCHEMA v5.6, BUSINESS_RULES v4.8, API_SOT v9.4, ERROR_CODES_SOT v2.2, AUTH_SPEC v2.1）
-- §8.2 文档索引 Tier 1：MASTER.md v4.0 → v4.7
-- §8.2 文档索引 Tier 2：移除 LEDGER_SOT.md，添加账本规则引用说明
-- 修复 P0 问题：LEDGER_SOT.md 引用断裂
+- §8.2 文档索引 Tier 1：MASTER.md v4.9 → v4.7
+- §8.2 文档索引 Tier 2：添加账本规则引用说明
+- 修复 P0 问题：账本规则引用断裂
 - 修复 P1 问题：4 处版本号缺失/过时
 
 **v4.6 PRD v5.1 对齐**：
@@ -1303,7 +1306,7 @@ CHECK (role IN ('ceo', 'project_owner', 'finance', 'pitcher', 'account_manager',
 - 新增「项目负责人」角色
 - 新增「AI 编码防幻觉原则」章节（第七章）
 - 原 INV 章节下沉为「Phase 2 完整启用」
-- 裁判链新增 BUSINESS_FLOW_MANAGEMENT.md 和 MVP_PHASE_DESIGN.md
+- 裁判链新增 BUSINESS_FLOW_MANAGEMENT.md 和 MVP_PHASE_DESIGN.md（现已归档）
 
 ---
 
@@ -1341,6 +1344,6 @@ CHECK (role IN ('ceo', 'project_owner', 'finance', 'pitcher', 'account_manager',
 
 **文档版本**: v4.9
 **最后更新**: 2026-01-02
-**基准文档**: PRD v5.2, BUSINESS_FLOW_MANAGEMENT.md, MVP_PHASE_DESIGN.md
+**基准文档**: PRD v5.1（归档参考：docs/archive/BUSINESS_FLOW_MANAGEMENT.md, docs/archive/MVP_PHASE_DESIGN.md）
 **维护者**: 系统架构师
 **变更审批**: 重大修改需经老板确认

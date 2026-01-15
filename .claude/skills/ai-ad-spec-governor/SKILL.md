@@ -962,7 +962,7 @@ interface SpecGovernorInput {
         - ERROR_CODES_SOT.md v2.1
         - BUSINESS_RULES.md v3.1
         - AUTH_SPEC.md v2.0
-        - LEDGER_SOT.md v1.1
+        - DATA_SCHEMA.md v5.11 §3.4.4
         - DAILY_REPORT_SOT.md v4.1
         - RECONCILIATION_SOT.md v2.1
         - TRANSFER_SOT.md v1.0

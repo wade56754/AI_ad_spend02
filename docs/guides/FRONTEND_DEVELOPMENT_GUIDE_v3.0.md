@@ -1,7 +1,7 @@
 # AI 广告代投系统 - 前端开发指南 v3.0
 
 > **技术栈**: Next.js 16 + TanStack Query v5 + shadcn/ui + TypeScript
-> **基准文档**: MASTER.md v4.9 + PRD v5.2 + STATE_MACHINE.md v2.9
+> **基准文档**: MASTER.md v4.9 + PRD v5.1 + STATE_MACHINE.md v2.9
 > **后端状态**: ✅ 已完成 (57/57 任务)
 > **文档版本**: v3.0 (AI 编程友好版 - 铁律前置 + Phase 边界明确)
 
@@ -152,10 +152,10 @@ npx create-next-app@14 frontend --typescript --tailwind --app
 cd frontend
 
 # 核心依赖
-npm install @tanstack/react-query@5
-npm install react-hook-form zod @hookform/resolvers
-npm install date-fns lucide-react
-npm install clsx tailwind-merge
+pnpm add @tanstack/react-query@5
+pnpm add react-hook-form zod @hookform/resolvers
+pnpm add date-fns lucide-react
+pnpm add clsx tailwind-merge
 
 # shadcn/ui
 npx shadcn-ui@latest init
@@ -417,10 +417,10 @@ export type TopupStatus =
   | 'cancelled';      // 已取消
 
 // ============ 项目状态 ============
-export type ProjectStatus = 'draft' | 'active' | 'paused' | 'completed';
+export type ProjectStatus = 'draft' | 'active' | 'suspended' | 'archived';
 
 // ============ 账户状态 ============
-export type AccountStatus = 'active' | 'disabled' | 'frozen';
+export type AccountStatus = 'new' | 'testing' | 'active' | 'suspended' | 'dead' | 'archived';
 
 // ============ 实体类型 ============
 export interface User {
@@ -514,8 +514,8 @@ export const TOPUP_STATUS_LABELS: Record<TopupStatus, string> = {
 export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   draft: '草稿',
   active: '进行中',
-  paused: '已暂停',
-  completed: '已完成',
+  suspended: '已暂停',
+  archived: '已归档',
 };
 ```
 
@@ -1030,7 +1030,7 @@ export default function DailyReportsPage() {
 ```
 □ 确认当前是 Phase 1（日报只用 3 状态）
 □ 确认角色在 6 角色白名单内（无 supervisor）
-□ 确认状态值来源（日报 3 状态 / 充值 6 状态）
+□ 确认状态值来源（日报 3 状态 / 充值 7 状态）
 □ 确认 API 端点存在
 □ 确认使用必须组件（DataTable, StatusBadge, PageHeader）
 ```
@@ -1063,10 +1063,17 @@ type Phase1ReportStatus = 'raw_submitted' | 'trend_ok' | 'final_confirmed';
 // 流转: raw_submitted → trend_ok → final_confirmed
 ```
 
-### 充值状态（6 个）
+### 充值状态（7 个）
 
 ```typescript
-type TopupStatus = 'draft' | 'pending_review' | 'approved' | 'rejected' | 'paid' | 'completed';
+type TopupStatus =
+  | 'draft'
+  | 'pending_review'
+  | 'finance_approve'
+  | 'paid'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled';
 ```
 
 ### 关键文件路径
@@ -1118,4 +1125,4 @@ src/
 - ✅ 组件强制使用规则
 - ✅ 完整页面示例（Phase 1 版本）
 
-**基准文档**: MASTER.md v4.9 + PRD v5.2 + STATE_MACHINE.md v2.9
+**基准文档**: MASTER.md v4.9 + PRD v5.1 + STATE_MACHINE.md v2.9

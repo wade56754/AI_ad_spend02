@@ -118,7 +118,7 @@ def list_ad_accounts(
 
     elif user_role in ("pitcher", "media_buyer"):
         # 仅可见分配给自己的账户 (owner_id 对齐 init_schema.sql)
-        # PRD v2.2: pitcher ↔ media_buyer 角色别名
+        # PRD v5.1: pitcher ↔ media_buyer 角色别名
         query = query.filter(AdAccount.owner_id == user_id)
 
     elif user_role == "finance":
@@ -213,7 +213,7 @@ def get_ad_account(
 
     elif user_role in ("pitcher", "media_buyer"):
         # 仅可访问分配给自己的账户
-        # PRD v2.2: pitcher ↔ media_buyer 角色别名
+        # PRD v5.1: pitcher ↔ media_buyer 角色别名
         if account.assigned_to != user_id:
             return error_response(
                 code="AUTH_500", message="权限不足，无法访问未分配给您的账户", status_code=403

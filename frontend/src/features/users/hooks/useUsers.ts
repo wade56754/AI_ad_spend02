@@ -8,7 +8,7 @@
  *
  * 一句话定义: 管理用户/投手的数据获取和状态变更
  *
- * 6 角色白名单 (MASTER.md v4.6 / PRD v2.2):
+ * 6 角色白名单 (MASTER.md v4.6 / PRD v5.1):
  *   ceo, project_owner, finance, pitcher, account_manager, admin
  *
  * Author: AI 代码工厂 v2.4
@@ -31,12 +31,7 @@ import {
   deleteUser,
   toggleUserStatus,
 } from '../services';
-import type {
-  User,
-  UserListParams,
-  CreateUserRequest,
-  UpdateUserRequest,
-} from '../types';
+import type { User, UserListParams, CreateUserRequest, UpdateUserRequest } from '../types';
 
 // === Query Keys ===
 export const userKeys = {
@@ -67,10 +62,7 @@ export function useUsers(
 /**
  * Fetch single user by ID
  */
-export function useUser(
-  id: string,
-  options?: Omit<UseQueryOptions<User>, 'queryKey' | 'queryFn'>
-) {
+export function useUser(id: string, options?: Omit<UseQueryOptions<User>, 'queryKey' | 'queryFn'>) {
   return useQuery({
     queryKey: userKeys.detail(id),
     queryFn: () => getUser(id),
@@ -83,12 +75,15 @@ export function useUser(
  * Fetch user statistics
  */
 export function useUserStatistics(
-  options?: Omit<UseQueryOptions<{
-    total: number;
-    active: number;
-    inactive: number;
-    by_role: Record<string, number>;
-  }>, 'queryKey' | 'queryFn'>
+  options?: Omit<
+    UseQueryOptions<{
+      total: number;
+      active: number;
+      inactive: number;
+      by_role: Record<string, number>;
+    }>,
+    'queryKey' | 'queryFn'
+  >
 ) {
   return useQuery({
     queryKey: userKeys.statistics(),
@@ -102,9 +97,7 @@ export function useUserStatistics(
 /**
  * Create user mutation
  */
-export function useCreateUser(
-  options?: UseMutationOptions<User, Error, CreateUserRequest>
-) {
+export function useCreateUser(options?: UseMutationOptions<User, Error, CreateUserRequest>) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -139,9 +132,7 @@ export function useUpdateUser(
 /**
  * Delete user mutation
  */
-export function useDeleteUser(
-  options?: UseMutationOptions<{ user_id: string }, Error, string>
-) {
+export function useDeleteUser(options?: UseMutationOptions<{ user_id: string }, Error, string>) {
   const queryClient = useQueryClient();
 
   return useMutation({

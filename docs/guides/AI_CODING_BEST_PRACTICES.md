@@ -2,7 +2,7 @@
 
 > **版本**: v1.0
 > **更新日期**: 2026-01-12
-> **基准**: MASTER.md v4.7, wshobson/agents 对比分析
+> **基准**: MASTER.md v4.9, wshobson/agents 对比分析
 > **核心原则**: 搜索优先 + SoT 驱动 + 防幻觉验证 + 渐进式披露
 
 ---
@@ -121,13 +121,13 @@ class Skill:
 
 # Step 1: 查询 SoT 裁判链
 SOT_PRECEDENCE = [
-    "MASTER.md v4.7",       # 最高权威
-    "STATE_MACHINE.md v2.8", # 状态规范
-    "DATA_SCHEMA.md v5.7",  # 数据模型
-    "BUSINESS_RULES.md v4.8", # 业务规则
-    "API_SOT.md v9.4",      # 接口规范
+    "MASTER.md v4.9",       # 最高权威
+    "STATE_MACHINE.md v2.9", # 状态规范
+    "DATA_SCHEMA.md v5.11",  # 数据模型
+    "BUSINESS_RULES.md v5.2", # 业务规则
+    "API_SOT.md v9.7",      # 接口规范
     "ERROR_CODES_SOT.md v2.2", # 错误码
-    "AUTH_SPEC.md v2.1",    # 认证授权
+    "AUTH_SPEC.md v2.2",    # 认证授权
 ]
 
 # Step 2: 提取白名单

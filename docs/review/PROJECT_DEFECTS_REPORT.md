@@ -2,7 +2,7 @@
 
 > **审查日期**: 2026-01-10  
 > **审查范围**: 架构设计、数据库设计、代码质量、技术债务  
-> **审查基准**: MASTER.md v4.9, DATA_SCHEMA.md v5.10, STATE_MACHINE.md v2.9, API_SOT.md v9.7  
+> **审查基准**: MASTER.md v4.9, DATA_SCHEMA.md v5.11, STATE_MACHINE.md v2.9, API_SOT.md v9.7  
 > **审查状态**: ✅ 已完成
 
 ---
@@ -36,7 +36,7 @@
 2. 将 `can_access_all_projects()` 中的 `UserRole.DATA_OPERATOR` 替换为 `UserRole.PROJECT_OWNER`
 3. 检查所有使用 `data_operator` 角色的代码
 
-**SoT 引用**: MASTER.md v4.9 §2.4, PRD v5.2 §2.2.1
+**SoT 引用**: MASTER.md v4.9 §2.4, PRD v5.1 §2.2.1
 
 ---
 
@@ -127,7 +127,7 @@
 2. 添加复合索引优化多字段查询
 3. 参考 `backend/create_reconciliation_indexes.sql` 的模式
 
-**SoT 引用**: DATA_SCHEMA.md v5.10 §1.3
+**SoT 引用**: DATA_SCHEMA.md v5.11 §1.3
 
 ---
 
@@ -145,7 +145,7 @@
 2. 添加缺失的外键约束
 3. 更新 Alembic 迁移脚本
 
-**SoT 引用**: DATA_SCHEMA.md v5.10 §1.1
+**SoT 引用**: DATA_SCHEMA.md v5.11 §1.1
 
 ---
 

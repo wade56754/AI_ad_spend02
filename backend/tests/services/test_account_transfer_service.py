@@ -495,7 +495,10 @@ class TestTransferAccountExceptions:
                 user_role="admin",
             )
 
-        assert "用户" in str(exc.value) and "不存在" in str(exc.value)
+        # 服务层错误消息可能是 "目标投手 ... 不存在" 或 "用户 ... 不存在"
+        assert "不存在" in str(exc.value) and (
+            "用户" in str(exc.value) or "投手" in str(exc.value)
+        )
 
     async def test_transfer_reason_required(self, ad_account_service, mock_db):
         """测试转移原因为必填字段"""

@@ -191,7 +191,7 @@ Total: 2 Errors, 0 Warnings
 [AH-01] - 1 issue(s)
 ------------------------------------------------------------
   Line 4 [ERROR]: 禁止直接修改 balance 字段
-    建议: 应通过 ledger_entries 表记录流水，由触发器/视图自动计算 balance。参考 LEDGER_SOT.md v1.1
+    建议: 应通过 ledger_entries 表记录流水，由触发器/视图自动计算 balance。参考 DATA_SCHEMA.md v5.11 §3.4.4
 
 [AH-02] - 1 issue(s)
 ------------------------------------------------------------
@@ -291,7 +291,7 @@ export PHASE2_TOPUP_ENFORCEMENT=true
 - MASTER.md v4.4 - 宪法文档（§7 防幻觉规则，§8 Phase 定义）
 - STATE_MACHINE.md v2.6 - 状态机规范
 - DATA_SCHEMA.md v5.2 - 数据模式定义
-- LEDGER_SOT.md v1.1 - 账本规则
+- DATA_SCHEMA.md v5.11 §3.4.4 - 账本规则
 - ERROR_CODES_SOT.md v2.1 - 错误码规范
 
 ---

@@ -17,7 +17,7 @@
     "test:e2e:headed": "cross-env HEADLESS=false jest --config e2e/jest.config.js",
     "test:e2e:debug": "cross-env HEADLESS=false SLOWMO=100 DEVTOOLS=true jest --config e2e/jest.config.js",
     "test:performance": "jest --config e2e/jest.config.js e2e/tests/performance",
-    "test:all": "npm test && npm run test:e2e",
+    "test:all": "pnpm test && pnpm run test:e2e",
     "prepare": "cd .. && husky frontend/.husky"
   },
   "lint-staged": {

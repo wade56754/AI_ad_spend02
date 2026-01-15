@@ -55,7 +55,7 @@ async def get_example(
 - 业务规则校验引用 `BUSINESS_RULES.md`
 - 状态转换遵循 `STATE_MACHINE.md`
 - 日志记录关键操作
-- 禁止绕过账本系统 (`LEDGER_SOT.md v1.1`)
+- 禁止绕过账本系统 (`DATA_SCHEMA.md v5.11 §3.4.4`)
 
 ```python
 # 事务管理模式
@@ -214,7 +214,7 @@ export function ExampleForm({ open, onClose, onSuccess }) {
 | BUSINESS_RULES.md | v3.2 | 业务规则 |
 | API_SOT.md | v9.0 | API 规范 |
 | ERROR_CODES_SOT.md | v2.1 | 错误码 |
-| LEDGER_SOT.md | v1.1 | 账本系统 |
+| DATA_SCHEMA.md | v5.11 §3.4.4 | 账本规则 |
 
 ## 使用方式
 

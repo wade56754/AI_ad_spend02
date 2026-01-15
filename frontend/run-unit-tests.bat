@@ -15,7 +15,7 @@ call npx jest --version
 echo.
 
 echo Running tests...
-call npm test -- --passWithNoTests --verbose
+call pnpm test -- --passWithNoTests --verbose
 echo.
 
 echo ========================================

@@ -3,7 +3,7 @@
 > **文档版本**: v1.0
 > **生成日期**: 2026-01-04
 > **基准文档**: FRONTEND_PAGE_DESIGN_v2.1.md, TASK_CARDS_v2.md
-> **SoT 对齐**: MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.10 | BUSINESS_RULES.md v5.1 | API_SOT.md v9.7
+> **SoT 对齐**: MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.11 | BUSINESS_RULES.md v5.2 | API_SOT.md v9.7
 > **用途**: 前端开发任务分解与跟踪
 
 ---
@@ -30,15 +30,15 @@
 
 ## SoT 版本对齐表（任务卡基准）
 
-> **注意**: STATE_MACHINE.md v2.9 内部引用 MASTER.md v4.8，本任务卡使用 MASTER.md v4.9。
+> **注意**: STATE_MACHINE.md v2.9 内部引用 MASTER.md v4.9，本任务卡使用 MASTER.md v4.9。
 > 差异点：v4.9 新增 isCeo() 判断规则说明，其他内容无变化。
 
 | 文档 | 版本 | 路径 | 状态 |
 |------|------|------|------|
 | MASTER.md | v4.9 | docs/sot/MASTER.md | Frozen |
 | STATE_MACHINE.md | v2.9 | docs/sot/STATE_MACHINE.md | Frozen |
-| DATA_SCHEMA.md | v5.10 | docs/sot/DATA_SCHEMA.md | Frozen |
-| BUSINESS_RULES.md | v5.1 | docs/sot/BUSINESS_RULES.md | Frozen |
+| DATA_SCHEMA.md | v5.11 | docs/sot/DATA_SCHEMA.md | Frozen |
+| BUSINESS_RULES.md | v5.2 | docs/sot/BUSINESS_RULES.md | Frozen |
 | API_SOT.md | v9.7 | docs/sot/API_SOT.md | Frozen |
 | ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md | Frozen |
 | AUTH_SPEC.md | v2.2 | docs/sot/AUTH_SPEC.md | Frozen |
@@ -48,7 +48,7 @@
 
 ## 角色白名单（6 角色）
 
-> **来源**: MASTER.md v4.9 §2.4, DATA_SCHEMA.md v5.10 §1.1
+> **来源**: MASTER.md v4.9 §2.4, DATA_SCHEMA.md v5.11 §1.1
 
 ### 技术层角色（4 角色）
 
@@ -193,7 +193,7 @@ draft → active → suspended → archived
 - FRONTEND_PAGE_DESIGN_v2.1.md §3 (状态机定义)
 - FRONTEND_PAGE_DESIGN_v2.1.md §10 (技术实现清单)
 - STATE_MACHINE.md v2.9 §7 (状态定义)
-- DATA_SCHEMA.md v5.7 §1.1 (角色映射)
+- DATA_SCHEMA.md v5.11 §1.1 (角色映射)
 
 ### 输入
 - 无前置依赖
@@ -223,7 +223,7 @@ frontend/src/lib/constants/
 - □ User 接口不包含 is_ceo 字段
 
 ### SoT 对齐验证
-- □ 角色枚举与 DATA_SCHEMA.md v5.7 §1.1 一致
+- □ 角色枚举与 DATA_SCHEMA.md v5.11 §1.1 一致
 - □ 状态枚举与 STATE_MACHINE.md v2.9 §7 一致
 - □ 无废弃角色 (supervisor, data_operator)
 - □ 无 Phase 2 日报状态 (trend_pending, trend_flagged, final_pending, final_locked)
@@ -243,7 +243,7 @@ frontend/src/lib/constants/
 ### 关联文档
 - FRONTEND_PAGE_DESIGN_v2.1.md §10.2 (权限检查 Hook)
 - MASTER.md v4.9 §2.4 (权限矩阵)
-- DATA_SCHEMA.md v5.10 §1.1 (角色映射规则)
+- DATA_SCHEMA.md v5.11 §1.1 (角色映射规则)
 - AUTH_SPEC.md v2.2 (认证授权规范)
 
 ### 输入
@@ -2324,7 +2324,7 @@ frontend/src/features/users/hooks/
 
 ### SoT 对齐验证
 - □ 权限检查符合 MASTER.md v4.9 §2.4
-- □ 角色选项与 DATA_SCHEMA.md v5.7 一致
+- □ 角色选项与 DATA_SCHEMA.md v5.11 一致
 
 ### 优先级与依赖
 - Priority: P2
@@ -2357,7 +2357,7 @@ frontend/src/features/users/components/
 - □ 角色变更需确认
 
 ### SoT 对齐验证
-- □ 角色值与 DATA_SCHEMA.md v5.7 一致
+- □ 角色值与 DATA_SCHEMA.md v5.11 一致
 - □ 无废弃角色选项
 
 ### 优先级与依赖
@@ -2557,8 +2557,8 @@ frontend/src/features/settings/components/
 |------|------|------|------|
 | MASTER.md | v4.9 | docs/sot/MASTER.md | 角色权限定义 |
 | STATE_MACHINE.md | v2.9 | docs/sot/STATE_MACHINE.md | 状态机定义 |
-| DATA_SCHEMA.md | v5.10 | docs/sot/DATA_SCHEMA.md | 数据模型定义 |
-| BUSINESS_RULES.md | v5.1 | docs/sot/BUSINESS_RULES.md | 业务规则 |
+| DATA_SCHEMA.md | v5.11 | docs/sot/DATA_SCHEMA.md | 数据模型定义 |
+| BUSINESS_RULES.md | v5.2 | docs/sot/BUSINESS_RULES.md | 业务规则 |
 | API_SOT.md | v9.7 | docs/sot/API_SOT.md | API 定义 |
 | ERROR_CODES_SOT.md | v2.2 | docs/sot/ERROR_CODES_SOT.md | 错误码定义 |
 | FRONTEND_PAGE_DESIGN_v2.1.md | v2.1 | docs/design/FRONTEND_PAGE_DESIGN_v2.1.md | 页面设计规范 |

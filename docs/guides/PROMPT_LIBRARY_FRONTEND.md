@@ -25,7 +25,7 @@
 │  └─────┘        └─────┘        └─────┘        └─────┘             │
 │     │              │              │              │                  │
 │     ▼              ▼              ▼              ▼                  │
-│  Part 2         Part 4         等待响应      npm run build         │
+│  Part 2         Part 4         等待响应      pnpm run build         │
 │                                                                     │
 │  ※ 系统约束每次对话只需复制一次                                        │
 │  ※ 任务提示词按需选择对应模块                                          │
@@ -44,7 +44,7 @@
 将系统约束 + 任务提示词粘贴到 Claude，发送。
 
 ### Step 4: 验证输出
-运行 `npm run build` 确认无编译错误。
+运行 `pnpm run build` 确认无编译错误。
 
 ## 提示词复制清单
 
@@ -72,7 +72,7 @@
 - 始终考虑：权限控制、错误处理、加载状态、空状态
 
 【SoT 版本锁定】
-MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.10
+MASTER.md v4.9 | STATE_MACHINE.md v2.9 | DATA_SCHEMA.md v5.11
 FRONTEND_PAGE_DESIGN_v2.1.md | API_SOT.md v9.7 | ERROR_CODES_SOT.md v2.2
 
 ═══════════════════════════════════════════════════════════════════════
@@ -114,7 +114,7 @@ ceo | project_owner | finance | pitcher | account_manager | admin
 - is_project_owner = true → project_owner (业务)
 
 【禁止使用的角色】
-❌ supervisor (已废弃 PRD v2.2)
+❌ supervisor (已废弃 PRD v5.1)
 ❌ data_operator (不在宪法中)
 ❌ operator (非标准)
 
@@ -350,7 +350,7 @@ raw_submitted (已提交) → trend_ok (已审核) → final_confirmed (已确�
 **SoT 引用**:
 - FRONTEND_PAGE_DESIGN_v2.1.md §2 (双层角色架构)
 - STATE_MACHINE.md v2.9 §7 (状态定义)
-- DATA_SCHEMA.md v5.10 §1.1 (角色映射)
+- DATA_SCHEMA.md v5.11 §1.1 (角色映射)
 
 #### 任务
 
@@ -402,7 +402,7 @@ raw_submitted (已提交) → trend_ok (已审核) → final_confirmed (已确�
 ```typescript
 /**
  * 角色类型定义
- * SoT: MASTER.md v4.9 §2.4, DATA_SCHEMA.md v5.10 §1.1
+ * SoT: MASTER.md v4.9 §2.4, DATA_SCHEMA.md v5.11 §1.1
  */
 
 // ═══════════════════════════════════════════════════════════════
@@ -529,7 +529,7 @@ export const PROJECT_STATUSES: ProjectStatus[] = [
 ```typescript
 /**
  * 用户模型
- * SoT: DATA_SCHEMA.md v5.10 §users
+ * SoT: DATA_SCHEMA.md v5.11 §users
  */
 import type { TechRole } from './roles';
 
@@ -1244,7 +1244,7 @@ export default DailyReportsPage;
 - [ ] 支持分页、筛选、排序
 - [ ] 有加载/错误/空状态处理
 - [ ] 权限检查正确
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -1403,7 +1403,7 @@ export default DashboardPage;
 - [ ] 根据用户角色显示不同数据
 - [ ] 响应式布局（桌面/平板）
 - [ ] 有加载状态处理
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -1617,7 +1617,7 @@ interface DashboardKPI {
 - [ ] 投手视图显示 4 个 KPI
 - [ ] 支持加载状态
 - [ ] 金额格式化正确
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -1831,7 +1831,7 @@ export default ProjectsPage;
 - [ ] 状态筛选包含 4 个状态
 - [ ] 权限检查正确
 - [ ] 有加载/错误/空状态处理
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -1978,7 +1978,7 @@ export function ProjectsFilters({ value, onChange }: ProjectsFiltersProps) {
 - [ ] 状态筛选包含 4 个状态 + 全部
 - [ ] 负责人筛选仅 CEO/Admin 可见
 - [ ] 筛选条件同步到 URL
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -2187,7 +2187,7 @@ export function ProjectsTable({
 - [ ] 使用 StatusBadge 显示状态
 - [ ] 显示所有必需字段
 - [ ] 操作按钮权限控制正确
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -2493,7 +2493,7 @@ export function ProjectForm({ open, onOpenChange, project }: ProjectFormProps) {
 - [ ] 必填字段验证正确
 - [ ] 新建/编辑模式切换正确
 - [ ] toast 通知完整
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -2745,7 +2745,7 @@ export function ProjectInfo({ project }: ProjectInfoProps) {
 - [ ] 显示关联账户
 - [ ] 显示项目成员
 - [ ] 编辑/状态操作正确
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -3002,7 +3002,7 @@ export function ProjectMembers({ projectId }: ProjectMembersProps) {
 - [ ] 不能移除项目负责人
 - [ ] 添加/移除操作正确
 - [ ] toast 通知完整
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -3258,7 +3258,7 @@ export function ProjectStatusActions({ project }: ProjectStatusActionsProps) {
 - [ ] 仅授权角色可操作
 - [ ] 确认弹窗正确显示
 - [ ] 归档操作有警告
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -3540,7 +3540,7 @@ export default AdAccountsPage;
 - [ ] 状态筛选包含 6 个状态
 - [ ] 权限检查正确
 - [ ] 有加载/错误/空状态处理
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -3686,7 +3686,7 @@ export function AccountStatusBoard({
 - [ ] 显示 6 个状态 + 全部
 - [ ] 颜色与 SoT 一致
 - [ ] 点击交互正确
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -3862,7 +3862,7 @@ export function AdAccountsFilters({ value, onChange }: AdAccountsFiltersProps) {
 - [ ] 渠道/项目/投手筛选
 - [ ] 投手筛选权限控制
 - [ ] 筛选条件同步 URL
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -4082,7 +4082,7 @@ export function AdAccountsTable({
 - [ ] 使用 StatusBadge 显示状态
 - [ ] 显示所有必需字段
 - [ ] 金额格式化正确
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -4443,7 +4443,7 @@ export function AdAccountForm({ open, onOpenChange, account }: AdAccountFormProp
 - [ ] 必填字段验证正确
 - [ ] 编辑模式禁用关键字段
 - [ ] toast 通知完整
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -4642,7 +4642,7 @@ export function AccountAssignDialog({
 - [ ] 选择项目/投手
 - [ ] 分配成功刷新列表
 - [ ] toast 通知完整
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -4910,7 +4910,7 @@ export function AccountStatusActions({ account }: AccountStatusActionsProps) {
 - [ ] 仅授权角色可操作
 - [ ] 确认弹窗正确显示
 - [ ] dead/archived 有警告
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -5155,7 +5155,7 @@ export function AdAccountDetailDialog({
 - [ ] 显示资金统计
 - [ ] 显示状态历史
 - [ ] 操作按钮权限控制
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -5373,7 +5373,7 @@ export function ChannelsPage() {
 - [ ] 加载中显示骨架屏
 - [ ] 空数据显示提示
 - [ ] 新建按钮打开表单弹窗
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -5551,7 +5551,7 @@ export function ChannelsTable({
 - [ ] 状态使用 StatusBadge 组件
 - [ ] 行操作按钮（编辑、启用/禁用）
 - [ ] 空列表显示提示
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -5840,7 +5840,7 @@ export function ChannelFormDialog({ open, onOpenChange, channel }: Props) {
 - [ ] 创建成功显示 toast 通知
 - [ ] 编辑模式预填现有数据
 - [ ] 提交中按钮禁用
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -5988,7 +5988,7 @@ export function ChannelStatusToggle({ channel, open, onOpenChange }: Props) {
 - [ ] 状态变更需确认
 - [ ] 变更成功显示 toast
 - [ ] 变更后刷新列表
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -6229,7 +6229,7 @@ export function TopupsPage() {
 - [ ] 显示：申请日期、账户、金额、申请人、状态
 - [ ] 状态使用 StatusBadge（7 状态）
 - [ ] 加载中显示骨架屏
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -6429,7 +6429,7 @@ export function TopupsFilters({ filters, onFiltersChange }: Props) {
 - [ ] 账户筛选
 - [ ] 重置按钮清空所有筛选
 - [ ] 筛选条件变化自动查询
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -6649,7 +6649,7 @@ export function TopupsTable({
 - [ ] 金额格式化（¥1,234.56）
 - [ ] 行操作按钮（根据角色和状态）
 - [ ] 空列表显示提示
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -6975,7 +6975,7 @@ export default TopupRequestForm;
 - [ ] 提交成功显示 toast
 - [ ] 提交中按钮禁用
 - [ ] 提交成功关闭弹窗并刷新列表
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -7352,7 +7352,7 @@ export function TopupRejectDialog({ topup, open, onOpenChange }: Props) {
 - [ ] 任意非终态 → cancelled：取消
 - [ ] 终态记录隐藏操作按钮
 - [ ] 操作需二次确认
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -7594,7 +7594,7 @@ export function TopupDetailDialog({ topupId, open, onOpenChange }: Props) {
 - [ ] 显示审批流程历史
 - [ ] 显示操作按钮（根据权限和状态）
 - [ ] 加载中显示骨架屏
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -7834,7 +7834,7 @@ export function TopupStatusFlow({ topup, className }: Props) {
 - [ ] 显示每个状态的时间
 - [ ] 终态显示完成/拒绝/取消标记
 - [ ] 已完成步骤显示勾选
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -8037,7 +8037,7 @@ export interface ProfitDetail {
 - [ ] 三个子页面：账本、对账、利润
 - [ ] Tab 布局切换
 - [ ] URL 与 Tab 同步
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -8246,7 +8246,7 @@ export function LedgerTable({ data, isLoading }: Props) {
 - [ ] 支持类型筛选
 - [ ] 显示余额变化
 - [ ] 红冲记录红色显示
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -8404,7 +8404,7 @@ export function ReconciliationTable({ data, isLoading }: Props) {
 - [ ] 支持日期范围筛选
 - [ ] 高亮差异数据
 - [ ] 状态使用 Badge
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -8611,7 +8611,7 @@ export function ProfitTable({ data, isLoading }: Props) {
 - [ ] 显示毛利、收入、成本
 - [ ] 支持按项目/时间维度查看
 - [ ] 毛利为负红色显示
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -8681,7 +8681,7 @@ export function FinanceGuard({ children, redirectOnDeny = false }: Props) {
 - [ ] 封装财务模块权限检查
 - [ ] 无权限显示 AccessDenied 组件
 - [ ] 支持重定向到首页
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -8861,7 +8861,7 @@ export function UsersPage() {
 - [ ] 使用 DataTable 组件
 - [ ] 显示：用户名、角色、项目负责人标记、状态
 - [ ] 新建按钮打开表单
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -8998,7 +8998,7 @@ export function UsersTable({ data, isLoading, error, onEdit, onToggleStatus }: P
 - [ ] 使用 DataTable 组件
 - [ ] 显示：用户名、角色、项目负责人标记、状态
 - [ ] 行操作按钮
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -9274,7 +9274,7 @@ export function UserFormDialog({ open, onOpenChange, user }: Props) {
 - [ ] 必填：用户名、密码、角色
 - [ ] 角色选项仅 4 个技术层角色
 - [ ] 项目负责人切换开关
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -9314,7 +9314,7 @@ export function UserFormDialog({ open, onOpenChange, user }: Props) {
 - [ ] 技术层角色下拉选择（4 个选项）
 - [ ] 项目负责人切换开关
 - [ ] 角色变更需确认
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -9426,7 +9426,7 @@ export function UserStatusToggle({ user, open, onOpenChange }: Props) {
 - [ ] 仅 ceo 和 admin 可操作
 - [ ] 停用用户需确认弹窗
 - [ ] 停用后用户无法登录
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -9513,7 +9513,7 @@ export function SettingsPage() {
 
 - [ ] 仅 admin 可访问
 - [ ] Tab 式布局支持多个配置区域
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -9550,7 +9550,7 @@ export function SettingsPage() {
 - [ ] 系统名称配置
 - [ ] 日期格式配置
 - [ ] 保存成功显示 toast
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
@@ -9695,7 +9695,7 @@ export function TopupThresholdSettings() {
 - [ ] 大额充值阈值配置（默认 ¥50,000）
 - [ ] 配置变更需确认
 - [ ] 保存成功显示 toast
-- [ ] `npm run build` 无错误
+- [ ] `pnpm run build` 无错误
 
 ---
 
