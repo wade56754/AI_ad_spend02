@@ -21,11 +21,17 @@ import {
 } from 'lucide-react';
 import { LoadingSpinner } from '@/modules/shared/components/feedback/LoadingSpinner';
 import { ErrorDisplay } from '@/modules/shared/components/feedback/ErrorDisplay';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
-  useDashboard,
-  usePerformanceReport,
-  useProfitReport,
-} from '../hooks';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useDashboard, usePerformanceReport, useProfitReport } from '../hooks';
 import { TrendMetric } from '../types';
 import { DashboardCards } from './DashboardCards';
 import { TrendChart } from './TrendChart';
@@ -117,19 +123,14 @@ export function ReportsPage() {
               <BarChart2 className="h-8 w-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">报表中心</h1>
-                <p className="text-sm text-gray-500">
-                  查看仪表盘、效果报表、利润报表
-                </p>
+                <p className="text-sm text-gray-500">查看仪表盘、效果报表、利润报表</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={handleRefresh}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-              >
+              <Button onClick={handleRefresh} variant="secondary" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
                 刷新
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -143,10 +144,11 @@ export function ReportsPage() {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
-                <button
+                <Button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  variant="ghost"
+                  className={`h-auto flex items-center gap-2 px-4 py-4 text-sm font-medium border-b-2 transition-colors ${
                     isActive
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -154,7 +156,7 @@ export function ReportsPage() {
                 >
                   <Icon className="h-4 w-4" />
                   {tab.label}
-                </button>
+                </Button>
               );
             })}
           </nav>
@@ -168,29 +170,31 @@ export function ReportsPage() {
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-400" />
-                <input
+                <Input
                   type="date"
                   name="start_date"
                   value={dateRange.start_date || ''}
                   onChange={handleDateChange}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-[160px] border-gray-300 focus-visible:ring-blue-500"
                 />
                 <span className="text-gray-400">-</span>
-                <input
+                <Input
                   type="date"
                   name="end_date"
                   value={dateRange.end_date || ''}
                   onChange={handleDateChange}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-[160px] border-gray-300 focus-visible:ring-blue-500"
                 />
               </div>
               {(dateRange.start_date || dateRange.end_date) && (
-                <button
+                <Button
                   onClick={handleClearFilters}
-                  className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-600 hover:text-gray-900"
                 >
                   清除筛选
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -210,9 +214,7 @@ export function ReportsPage() {
 
                 {/* Trend Charts */}
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-3">
-                    近7天趋势
-                  </h3>
+                  <h3 className="text-sm font-medium text-gray-500 mb-3">近7天趋势</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <TrendChart
                       data={dashboardData.spend_trend}
@@ -295,68 +297,65 @@ export function ReportsPage() {
 
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <Table>
+                    <TableHeader className="bg-gray-50 border-b">
+                      <TableRow>
+                        <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           项目
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           渠道
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           消耗
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           线索
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           CPA
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-200">
                       {performanceData.items.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                        <TableRow key={index} className="hover:bg-gray-50">
+                          <TableCell className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-gray-900">
                               {item.project_name || '-'}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm text-gray-500">
                               {item.channel_name || '-'}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                             <span className="text-sm font-medium text-gray-900">
                               {formatCurrency(item.total_spend)}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                             <span className="text-sm text-gray-900">
                               {item.total_leads.toLocaleString()}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                             <span className="text-sm text-gray-900">
                               {item.cpa ? formatCurrency(item.cpa) : '-'}
                             </span>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
                       {performanceData.items.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="px-6 py-12 text-center text-gray-500"
-                          >
+                        <TableRow>
+                          <TableCell colSpan={5} className="px-6 py-12 text-center text-gray-500">
                             暂无数据
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </>
             ) : null}
@@ -431,45 +430,45 @@ export function ReportsPage() {
 
                 {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <Table>
+                    <TableHeader className="bg-gray-50 border-b">
+                      <TableRow>
+                        <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                           项目
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           收入
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           成本
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           利润
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        </TableHead>
+                        <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                           利润率
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-200">
                       {profitData.items.map((item, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                        <TableRow key={index} className="hover:bg-gray-50">
+                          <TableCell className="px-6 py-4 whitespace-nowrap">
                             <span className="text-sm font-medium text-gray-900">
                               {item.project_name || '-'}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                             <span className="text-sm font-medium text-green-600">
                               {formatCurrency(item.revenue)}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                             <span className="text-sm font-medium text-red-600">
                               {formatCurrency(item.cost)}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                             <span
                               className={`text-sm font-medium ${
                                 item.profit >= 0 ? 'text-green-600' : 'text-red-600'
@@ -477,34 +476,27 @@ export function ReportsPage() {
                             >
                               {formatCurrency(item.profit)}
                             </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right">
+                          </TableCell>
+                          <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                             <span
                               className={`text-sm ${
-                                (item.profit_rate || 0) >= 0
-                                  ? 'text-green-600'
-                                  : 'text-red-600'
+                                (item.profit_rate || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                               }`}
                             >
-                              {item.profit_rate
-                                ? `${item.profit_rate.toFixed(1)}%`
-                                : '-'}
+                              {item.profit_rate ? `${item.profit_rate.toFixed(1)}%` : '-'}
                             </span>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
                       {profitData.items.length === 0 && (
-                        <tr>
-                          <td
-                            colSpan={5}
-                            className="px-6 py-12 text-center text-gray-500"
-                          >
+                        <TableRow>
+                          <TableCell colSpan={5} className="px-6 py-12 text-center text-gray-500">
                             暂无数据
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </>
             ) : null}

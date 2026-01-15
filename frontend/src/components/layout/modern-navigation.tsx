@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import {
   BarChart3,
   Target,
@@ -19,33 +20,73 @@ import {
   Home,
   TrendingUp,
   Shield,
-  Bell
-} from "lucide-react";
+  Bell,
+} from 'lucide-react';
 
 const navigationItems = [
   {
-    category: "主要功能",
+    category: '主要功能',
     items: [
-      { name: "仪表板", href: "/dashboard", icon: <Home className="w-5 h-5" />, color: "from-blue-500 to-cyan-400" },
-      { name: "项目管理", href: "/projects", icon: <Target className="w-5 h-5" />, color: "from-purple-500 to-pink-400" },
-      { name: "广告账户", href: "/ad-accounts", icon: <Users className="w-5 h-5" />, color: "from-emerald-500 to-teal-400" },
-      { name: "日报管理", href: "/daily-reports", icon: <FileText className="w-5 h-5" />, color: "from-orange-500 to-red-400" }
-    ]
+      {
+        name: '仪表板',
+        href: '/dashboard',
+        icon: <Home className="w-5 h-5" />,
+        color: 'from-blue-500 to-cyan-400',
+      },
+      {
+        name: '项目管理',
+        href: '/projects',
+        icon: <Target className="w-5 h-5" />,
+        color: 'from-purple-500 to-pink-400',
+      },
+      {
+        name: '广告账户',
+        href: '/ad-accounts',
+        icon: <Users className="w-5 h-5" />,
+        color: 'from-emerald-500 to-teal-400',
+      },
+      {
+        name: '日报管理',
+        href: '/daily-reports',
+        icon: <FileText className="w-5 h-5" />,
+        color: 'from-orange-500 to-red-400',
+      },
+    ],
   },
   {
-    category: "财务分析",
+    category: '财务分析',
     items: [
-      { name: "充值管理", href: "/topup", icon: <DollarSign className="w-5 h-5" />, color: "from-yellow-500 to-orange-400" },
-      { name: "财务对账", href: "/reconciliation", icon: <BarChart3 className="w-5 h-5" />, color: "from-green-500 to-emerald-400" }
-    ]
+      {
+        name: '充值管理',
+        href: '/topup',
+        icon: <DollarSign className="w-5 h-5" />,
+        color: 'from-yellow-500 to-orange-400',
+      },
+      {
+        name: '财务对账',
+        href: '/reconciliation',
+        icon: <BarChart3 className="w-5 h-5" />,
+        color: 'from-green-500 to-emerald-400',
+      },
+    ],
   },
   {
-    category: "智能工具",
+    category: '智能工具',
     items: [
-      { name: "AI分析", href: "/ai-analytics", icon: <Brain className="w-5 h-5" />, color: "from-purple-500 to-indigo-400" },
-      { name: "性能监控", href: "/monitoring", icon: <TrendingUp className="w-5 h-5" />, color: "from-blue-500 to-purple-400" }
-    ]
-  }
+      {
+        name: 'AI分析',
+        href: '/ai-analytics',
+        icon: <Brain className="w-5 h-5" />,
+        color: 'from-purple-500 to-indigo-400',
+      },
+      {
+        name: '性能监控',
+        href: '/monitoring',
+        icon: <TrendingUp className="w-5 h-5" />,
+        color: 'from-blue-500 to-purple-400',
+      },
+    ],
+  },
 ];
 
 interface ModernNavigationProps {
@@ -64,7 +105,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({ children }) 
   const pathname = usePathname();
 
   const NavItem = ({ item }: { item: NavItemData }) => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
 
     return (
       <Link href={item.href}>
@@ -73,8 +114,8 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({ children }) 
           whileTap={{ scale: 0.98 }}
           className={`relative group flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer ${
             isActive
-              ? "bg-gradient-to-r " + item.color + " text-white shadow-lg"
-              : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+              ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-lg'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
           }`}
         >
           {/* 背景光效 */}
@@ -83,12 +124,12 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({ children }) 
               layoutId="activeTab"
               className={`absolute inset-0 bg-gradient-to-r ${item.color} rounded-xl opacity-20`}
               initial={false}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             />
           )}
 
           <div className={`relative z-10 flex items-center space-x-3`}>
-            <div className={`p-2 rounded-lg ${isActive ? "bg-white/20" : "bg-slate-700/50"}`}>
+            <div className={`p-2 rounded-lg ${isActive ? 'bg-white/20' : 'bg-slate-700/50'}`}>
               {item.icon}
             </div>
             <span className="font-medium">{item.name}</span>
@@ -125,7 +166,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({ children }) 
         initial={false}
         animate={{ width: sidebarOpen ? 280 : 0 }}
         className={`fixed lg:relative lg:flex flex-col bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/50 z-50 overflow-hidden ${
-          sidebarOpen ? "w-280" : "w-0 lg:w-64"
+          sidebarOpen ? 'w-280' : 'w-0 lg:w-64'
         }`}
       >
         <div className="flex flex-col h-full">
@@ -198,12 +239,14 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({ children }) 
           <div className="px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* 移动端菜单按钮 */}
-              <button
+              <Button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-lg text-slate-300 hover:text-white transition-colors"
+                variant="ghost"
+                size="icon"
+                className="lg:hidden bg-slate-800/50 hover:bg-slate-700/50 text-slate-300 hover:text-white"
               >
                 {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
+              </Button>
 
               {/* 面包屑导航 */}
               <nav className="hidden md:flex items-center space-x-2 text-sm">
@@ -246,9 +289,7 @@ export const ModernNavigation: React.FC<ModernNavigationProps> = ({ children }) 
         </motion.header>
 
         {/* 页面内容 */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );

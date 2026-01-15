@@ -15,6 +15,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import type { DailyReportStatus, Phase1Status } from '../types';
 import { PHASE1_STATUS_MAP } from '../types';
 
@@ -81,9 +82,10 @@ export function DailyReportsStatusTabs({
         data-testid="status-tabs"
       >
         {tabs.map((tab) => (
-          <button
+          <Button
             key={tab.key}
             onClick={() => onChange(tab.key)}
+            variant="ghost"
             className={cn(
               'px-4 py-2 text-sm font-medium rounded-md transition-all',
               value === tab.key
@@ -106,7 +108,7 @@ export function DailyReportsStatusTabs({
                 {tab.count}
               </span>
             )}
-          </button>
+          </Button>
         ))}
       </div>
     );
@@ -136,9 +138,10 @@ export function DailyReportsStatusTabs({
       data-testid="status-tabs"
     >
       {tabs.map((tab) => (
-        <button
+        <Button
           key={tab.key}
           onClick={() => onChange(tab.key)}
+          variant="ghost"
           className={cn(
             'px-4 py-2 text-sm font-medium rounded-md transition-all',
             value === tab.key
@@ -161,7 +164,7 @@ export function DailyReportsStatusTabs({
               {tab.count}
             </span>
           )}
-        </button>
+        </Button>
       ))}
     </div>
   );

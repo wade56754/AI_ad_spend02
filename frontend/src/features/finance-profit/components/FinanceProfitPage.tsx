@@ -19,6 +19,8 @@
 import React from 'react';
 import { DollarSign, RefreshCw, Calendar } from 'lucide-react';
 import { ErrorDisplay } from '@/modules/shared/components/feedback/ErrorDisplay';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   useProfitOverview,
   useProfitByProject,
@@ -65,31 +67,19 @@ export function FinanceProfitPage() {
     error: overviewErrorObj,
   } = useProfitOverview();
 
-  const {
-    data: projectData,
-    isLoading: projectLoading,
-  } = useProfitByProject(dimensionParams, {
+  const { data: projectData, isLoading: projectLoading } = useProfitByProject(dimensionParams, {
     enabled: dimension === ProfitDimension.PROJECT,
   });
 
-  const {
-    data: accountData,
-    isLoading: accountLoading,
-  } = useProfitByAccount(dimensionParams, {
+  const { data: accountData, isLoading: accountLoading } = useProfitByAccount(dimensionParams, {
     enabled: dimension === ProfitDimension.ACCOUNT,
   });
 
-  const {
-    data: channelData,
-    isLoading: channelLoading,
-  } = useProfitByChannel(dimensionParams, {
+  const { data: channelData, isLoading: channelLoading } = useProfitByChannel(dimensionParams, {
     enabled: dimension === ProfitDimension.CHANNEL,
   });
 
-  const {
-    data: trendData,
-    isLoading: trendLoading,
-  } = useProfitTrend(trendParams);
+  const { data: trendData, isLoading: trendLoading } = useProfitTrend(trendParams);
 
   // 刷新 hook - SoT: A3-project-pnl.md §2.4 数据刷新策略
   const { refreshAll } = useRefreshProfit();
@@ -161,13 +151,10 @@ export function FinanceProfitPage() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleRefreshAll}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-            >
+            <Button onClick={handleRefreshAll} variant="secondary" className="gap-2">
               <RefreshCw className="h-4 w-4" />
               刷新
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -178,39 +165,44 @@ export function FinanceProfitPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2" data-testid="date-filter">
               <Calendar className="h-4 w-4 text-gray-400" />
-              <input
+              <Input
                 type="date"
                 name="start_date"
                 value={dateRange.start_date || ''}
                 onChange={handleDateRangeChange}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-[160px] border-gray-300 focus-visible:ring-blue-500"
                 placeholder="开始日期"
               />
               <span className="text-gray-400">-</span>
-              <input
+              <Input
                 type="date"
                 name="end_date"
                 value={dateRange.end_date || ''}
                 onChange={handleDateRangeChange}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-[160px] border-gray-300 focus-visible:ring-blue-500"
                 placeholder="结束日期"
               />
             </div>
 
             {(dateRange.start_date || dateRange.end_date) && (
-              <button
+              <Button
                 onClick={handleClearFilters}
-                className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+                variant="ghost"
+                size="sm"
+                className="text-gray-600 hover:text-gray-900"
               >
                 清除筛选
-              </button>
+              </Button>
             )}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-6" data-testid="pnl-summary">
+      <div
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-6"
+        data-testid="pnl-summary"
+      >
         {/* Overview Cards - SoT: A3-project-pnl.md §3.2 组件清单 */}
         {overviewError ? (
           <ErrorDisplay error={overviewErrorObj} onRetry={refreshAll} />
@@ -254,20 +246,17 @@ export function FinanceProfitPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">TOP 利润项目</h3>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               {overviewData.top_profit_projects.slice(0, 5).map((project, index) => (
-                <div
-                  key={project.project_id}
-                  className="p-4 bg-gray-50 rounded-lg"
-                >
+                <div key={project.project_id} className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold ${
                         index === 0
                           ? 'bg-yellow-500'
                           : index === 1
-                          ? 'bg-gray-400'
-                          : index === 2
-                          ? 'bg-amber-600'
-                          : 'bg-gray-300'
+                            ? 'bg-gray-400'
+                            : index === 2
+                              ? 'bg-amber-600'
+                              : 'bg-gray-300'
                       }`}
                     >
                       {index + 1}

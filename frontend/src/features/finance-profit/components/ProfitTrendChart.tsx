@@ -20,6 +20,7 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
+import { Button } from '@/components/ui/button';
 import type { ProfitTrendResponse, TrendGranularity } from '../types';
 import { TREND_GRANULARITY_CONFIG } from '../types';
 
@@ -77,17 +78,19 @@ export function ProfitTrendChart({
         {onGranularityChange && (
           <div className="flex gap-2">
             {Object.entries(TREND_GRANULARITY_CONFIG).map(([key, config]) => (
-              <button
+              <Button
                 key={key}
                 onClick={() => onGranularityChange(key as TrendGranularity)}
-                className={`px-3 py-1 text-sm rounded-md ${
+                variant="ghost"
+                size="sm"
+                className={
                   granularity === key
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                }
               >
                 {config.label}
-              </button>
+              </Button>
             ))}
           </div>
         )}

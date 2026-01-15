@@ -11,6 +11,15 @@ import React from 'react';
 import { Building2, Plus, Search, Filter, RefreshCw } from 'lucide-react';
 import { LoadingSpinner } from '@/modules/shared/components/feedback/LoadingSpinner';
 import { ErrorDisplay } from '@/modules/shared/components/feedback/ErrorDisplay';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   useSuppliers,
   useSupplierStatistics,
@@ -44,13 +53,7 @@ export function SuppliersPage() {
   const [deleteConfirm, setDeleteConfirm] = React.useState<Supplier | null>(null);
 
   // Queries
-  const {
-    data: suppliersData,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useSuppliers(params);
+  const { data: suppliersData, isLoading, isError, error, refetch } = useSuppliers(params);
 
   const { data: statistics } = useSupplierStatistics();
 
@@ -162,13 +165,10 @@ export function SuppliersPage() {
                 <p className="text-sm text-gray-500">管理户商信息、账户关联和财务数据</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
+            <Button onClick={() => setShowForm(true)} variant="primary" className="gap-2">
               <Plus className="h-4 w-4" />
               新增供应商
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -180,8 +180,12 @@ export function SuppliersPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">供应商总数</p>
-                  <p className="text-3xl font-bold text-gray-900 tabular-nums">{statistics.total_suppliers}</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    供应商总数
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 tabular-nums">
+                    {statistics.total_suppliers}
+                  </p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-slate-600" />
@@ -191,8 +195,12 @@ export function SuppliersPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">活跃供应商</p>
-                  <p className="text-3xl font-bold text-green-600 tabular-nums">{statistics.active_suppliers}</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    活跃供应商
+                  </p>
+                  <p className="text-3xl font-bold text-green-600 tabular-nums">
+                    {statistics.active_suppliers}
+                  </p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-green-600" />
@@ -202,8 +210,12 @@ export function SuppliersPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">管理账户数</p>
-                  <p className="text-3xl font-bold text-blue-600 tabular-nums">{statistics.total_accounts_managed}</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    管理账户数
+                  </p>
+                  <p className="text-3xl font-bold text-blue-600 tabular-nums">
+                    {statistics.total_accounts_managed}
+                  </p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
                   <Building2 className="h-5 w-5 text-blue-600" />
@@ -213,7 +225,9 @@ export function SuppliersPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">总消耗</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    总消耗
+                  </p>
                   <p className="text-3xl font-bold text-gray-900 tabular-nums">
                     ${statistics.total_spend?.toLocaleString() || 0}
                   </p>
@@ -234,54 +248,50 @@ export function SuppliersPage() {
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
+                <Input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   placeholder="搜索供应商名称..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="pl-10 pr-4"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-gray-400" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as SupplierStatus | '')}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <Select
+                value={filterStatus || 'all'}
+                onValueChange={(value) =>
+                  setFilterStatus(value === 'all' ? '' : (value as SupplierStatus))
+                }
               >
-                <option value="">全部状态</option>
-                {Object.entries(SUPPLIER_STATUS_CONFIG).map(([value, config]) => (
-                  <option key={value} value={value}>
-                    {config.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="全部状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  {Object.entries(SUPPLIER_STATUS_CONFIG).map(([value, config]) => (
+                    <SelectItem key={value} value={value}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
+            <Button onClick={handleSearch} variant="primary">
               搜索
-            </button>
+            </Button>
 
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
+            <Button onClick={handleReset} variant="outline">
               重置
-            </button>
+            </Button>
 
-            <button
-              onClick={() => refetch()}
-              className="p-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              title="刷新"
-            >
+            <Button onClick={() => refetch()} variant="outline" size="icon" title="刷新">
               <RefreshCw className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -295,10 +305,7 @@ export function SuppliersPage() {
             </div>
           ) : isError ? (
             <div className="p-4">
-              <ErrorDisplay
-                error={error}
-                onRetry={() => refetch()}
-              />
+              <ErrorDisplay error={error} onRetry={() => refetch()} />
             </div>
           ) : (
             <>
@@ -317,20 +324,22 @@ export function SuppliersPage() {
                     共 {totalCount} 条记录，第 {params.page} / {totalPages} 页
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
                       onClick={() => handlePageChange(params.page! - 1)}
                       disabled={params.page === 1}
-                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      variant="outline"
+                      size="sm"
                     >
                       上一页
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handlePageChange(params.page! + 1)}
                       disabled={params.page === totalPages}
-                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      variant="outline"
+                      size="sm"
                     >
                       下一页
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -357,22 +366,20 @@ export function SuppliersPage() {
             <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">确认删除</h3>
               <p className="text-gray-500 mb-4">
-                确定要删除供应商 <span className="font-medium">{deleteConfirm.name}</span> 吗？此操作不可撤销。
+                确定要删除供应商 <span className="font-medium">{deleteConfirm.name}</span>{' '}
+                吗？此操作不可撤销。
               </p>
               <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setDeleteConfirm(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                >
+                <Button onClick={() => setDeleteConfirm(null)} variant="outline">
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleConfirmDelete}
                   disabled={deleteMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+                  variant="destructive"
                 >
                   {deleteMutation.isPending ? '删除中...' : '确认删除'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

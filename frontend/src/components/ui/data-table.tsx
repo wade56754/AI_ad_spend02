@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { ChevronUpIcon, ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
+import { Checkbox } from './checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
 
 interface Column<T> {
   key: keyof T;
@@ -43,7 +46,7 @@ function DataTable<T extends Record<string, any>>({
   onRowClick,
   rowSelection,
   className = '',
-  emptyText = '暂无数据'
+  emptyText = '暂无数据',
 }: DataTableProps<T>) {
   const [sortField, setSortField] = useState<keyof T | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -68,9 +71,7 @@ function DataTable<T extends Record<string, any>>({
       if (bValue === null || bValue === undefined) return -1;
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }
 
       if (typeof aValue === 'number' && typeof bValue === 'number') {
@@ -101,69 +102,82 @@ function DataTable<T extends Record<string, any>>({
     : sortedData;
 
   return (
-    <div className={cn('bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700', className)}>
+    <div
+      className={cn(
+        'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700',
+        className
+      )}
+    >
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <Table className="w-full">
           {/* Table Header */}
-          <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-            <tr>
+          <TableHeader className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+            <TableRow>
               {/* Selection Column */}
               {rowSelection && (
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                    checked={paginatedData.length > 0 && paginatedData.every(item =>
-                      rowSelection.selectedRowKeys.includes(item.id || item.key)
-                    )}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        const newSelectedKeys = paginatedData.map(item => item.id || item.key);
+                <TableHead className="px-6 py-3 text-left">
+                  <Checkbox
+                    className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 dark:border-gray-600 dark:bg-gray-700"
+                    checked={
+                      paginatedData.length > 0 &&
+                      paginatedData.every((item) =>
+                        rowSelection.selectedRowKeys.includes(item.id || item.key)
+                      )
+                    }
+                    onCheckedChange={(checked) => {
+                      if (checked === true) {
+                        const newSelectedKeys = paginatedData.map((item) => item.id || item.key);
                         const newSelectedRows = paginatedData;
-                        rowSelection.onChange([...rowSelection.selectedRowKeys, ...newSelectedKeys], newSelectedRows);
+                        rowSelection.onChange(
+                          [...rowSelection.selectedRowKeys, ...newSelectedKeys],
+                          newSelectedRows
+                        );
                       } else {
-                        const keysToRemove = paginatedData.map(item => item.id || item.key);
-                        const newSelectedKeys = rowSelection.selectedRowKeys.filter(key => !keysToRemove.includes(key));
+                        const keysToRemove = paginatedData.map((item) => item.id || item.key);
+                        const newSelectedKeys = rowSelection.selectedRowKeys.filter(
+                          (key) => !keysToRemove.includes(key)
+                        );
                         rowSelection.onChange(newSelectedKeys, []);
                       }
                     }}
                   />
-                </th>
+                </TableHead>
               )}
 
               {/* Data Columns */}
               {columns.map((column) => (
-                <th
+                <TableHead
                   key={String(column.key)}
                   className={cn(
                     'px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider',
                     getAlignClass(column.align),
-                    column.sortable && 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors'
+                    column.sortable &&
+                      'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors'
                   )}
                   style={{ width: column.width }}
                   onClick={() => column.sortable && handleSort(column.key)}
                 >
                   <div className="flex items-center space-x-1">
                     <span>{column.title}</span>
-                    {column.sortable && sortField === column.key && (
-                      sortOrder === 'asc' ? (
+                    {column.sortable &&
+                      sortField === column.key &&
+                      (sortOrder === 'asc' ? (
                         <ChevronUpIcon className="w-4 h-4" />
                       ) : (
                         <ChevronDownIcon className="w-4 h-4" />
-                      )
-                    )}
+                      ))}
                   </div>
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
+            </TableRow>
+          </TableHeader>
 
           {/* Table Body */}
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <TableBody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {loading ? (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
                   className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
                 >
@@ -171,20 +185,20 @@ function DataTable<T extends Record<string, any>>({
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                     <span className="ml-2">加载中...</span>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : paginatedData.length === 0 ? (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={columns.length + (rowSelection ? 1 : 0)}
                   className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
                 >
                   {emptyText}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               paginatedData.map((record, index) => (
-                <tr
+                <TableRow
                   key={record.id || record.key || index}
                   className={cn(
                     'hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors',
@@ -194,36 +208,41 @@ function DataTable<T extends Record<string, any>>({
                 >
                   {/* Selection Cell */}
                   {rowSelection && (
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                    <TableCell className="px-6 py-4">
+                      <Checkbox
+                        className="border-gray-300 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 dark:border-gray-600 dark:bg-gray-700"
                         checked={rowSelection.selectedRowKeys.includes(record.id || record.key)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          if (e.target.checked) {
+                        onClick={(event) => event.stopPropagation()}
+                        onCheckedChange={(checked) => {
+                          if (checked === true) {
                             const selectedRows = rowSelection.selectedRowKeys
-                              .map(key => data.find(item => item.id === key || item.key === key))
+                              .map((key) =>
+                                data.find((item) => item.id === key || item.key === key)
+                              )
                               .filter((item): item is T => item !== undefined);
                             rowSelection.onChange(
                               [...rowSelection.selectedRowKeys, record.id || record.key],
                               [...selectedRows, record]
                             );
                           } else {
-                            const newKeys = rowSelection.selectedRowKeys.filter(key => key !== (record.id || record.key));
+                            const newKeys = rowSelection.selectedRowKeys.filter(
+                              (key) => key !== (record.id || record.key)
+                            );
                             const selectedRows = newKeys
-                              .map(key => data.find(item => item.id === key || item.key === key))
+                              .map((key) =>
+                                data.find((item) => item.id === key || item.key === key)
+                              )
                               .filter((item): item is T => item !== undefined);
                             rowSelection.onChange(newKeys, selectedRows);
                           }
                         }}
                       />
-                    </td>
+                    </TableCell>
                   )}
 
                   {/* Data Cells */}
                   {columns.map((column) => (
-                    <td
+                    <TableCell
                       key={String(column.key)}
                       className={cn(
                         'px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100',
@@ -233,13 +252,13 @@ function DataTable<T extends Record<string, any>>({
                       {column.render
                         ? column.render(record[column.key], record, index)
                         : record[column.key]}
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination */}
@@ -248,27 +267,31 @@ function DataTable<T extends Record<string, any>>({
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700 dark:text-gray-300">
               显示第 {(pagination.current - 1) * pagination.pageSize + 1} 至{' '}
-              {Math.min(pagination.current * pagination.pageSize, pagination.total)} 条，
-              共 {pagination.total} 条记录
+              {Math.min(pagination.current * pagination.pageSize, pagination.total)} 条， 共{' '}
+              {pagination.total} 条记录
             </div>
 
             <div className="flex items-center space-x-2">
               {/* Page Size Selector */}
               {pagination.showSizeChanger && (
-                <select
-                  value={pagination.pageSize}
-                  onChange={(e) => {
-                    const newPageSize = Number(e.target.value);
+                <Select
+                  value={String(pagination.pageSize)}
+                  onValueChange={(value) => {
+                    const newPageSize = Number(value);
                     pagination.onChange(1, newPageSize);
                   }}
-                  className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 text-sm"
                 >
-                  {(pagination.pageSizeOptions || [10, 20, 50, 100]).map(size => (
-                    <option key={size} value={size}>
-                      {size} 条/页
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-9 w-[120px] border-gray-300 shadow-sm focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(pagination.pageSizeOptions || [10, 20, 50, 100]).map((size) => (
+                      <SelectItem key={size} value={String(size)}>
+                        {size} 条/页
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
 
               {/* Page Navigation */}
@@ -284,8 +307,11 @@ function DataTable<T extends Record<string, any>>({
 
                 {/* Page Numbers */}
                 <div className="flex space-x-1">
-                  {Array.from({ length: Math.ceil(pagination.total / pagination.pageSize) }, (_, i) => i + 1)
-                    .filter(page => {
+                  {Array.from(
+                    { length: Math.ceil(pagination.total / pagination.pageSize) },
+                    (_, i) => i + 1
+                  )
+                    .filter((page) => {
                       const totalPages = Math.ceil(pagination.total / pagination.pageSize);
                       const current = pagination.current;
 
@@ -302,11 +328,9 @@ function DataTable<T extends Record<string, any>>({
 
                       return (
                         <div key={page} className="flex items-center space-x-1">
-                          {showEllipsis && (
-                            <span className="px-2 text-gray-500">...</span>
-                          )}
+                          {showEllipsis && <span className="px-2 text-gray-500">...</span>}
                           <Button
-                            variant={page === pagination.current ? "default" : "outline"}
+                            variant={page === pagination.current ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => pagination.onChange(page, pagination.pageSize)}
                           >

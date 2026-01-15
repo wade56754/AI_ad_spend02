@@ -8,6 +8,14 @@
 
 import React from 'react';
 import { LoadingSpinner } from '@/modules/shared/components/feedback/LoadingSpinner';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { formatCurrency, formatPercent } from '../utils/reportsHelpers';
 import type { ProfitReportResponse } from '../types';
 
@@ -52,9 +60,7 @@ export function ReportsProfitTab({ data, isLoading }: ReportsProfitTabProps) {
               <div className="text-sm text-gray-500">总利润</div>
               <div
                 className={`text-lg font-bold ${
-                  parseFloat(data.summary.total_profit) >= 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                  parseFloat(data.summary.total_profit) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}
               >
                 {formatCurrency(parseFloat(data.summary.total_profit))}
@@ -64,9 +70,7 @@ export function ReportsProfitTab({ data, isLoading }: ReportsProfitTabProps) {
               <div className="text-sm text-gray-500">利润率</div>
               <div
                 className={`text-lg font-bold ${
-                  (data.summary.profit_rate || 0) >= 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
+                  (data.summary.profit_rate || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                 }`}
               >
                 {formatPercent(data.summary.profit_rate)}
@@ -74,53 +78,51 @@ export function ReportsProfitTab({ data, isLoading }: ReportsProfitTabProps) {
             </div>
             <div>
               <div className="text-sm text-gray-500">项目数</div>
-              <div className="text-lg font-bold text-gray-900">
-                {data.summary.project_count}
-              </div>
+              <div className="text-lg font-bold text-gray-900">{data.summary.project_count}</div>
             </div>
           </div>
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+            <Table>
+              <TableHeader className="bg-gray-50 border-b">
+                <TableRow>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     项目
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                     收入
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                     成本
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                     利润
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                  </TableHead>
+                  <TableHead className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                     利润率
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-gray-200">
                 {data.items.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                  <TableRow key={index} className="hover:bg-gray-50">
+                    <TableCell className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-medium text-gray-900">
                         {item.project_name || '-'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-green-600">
                         {formatCurrency(item.revenue)}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                       <span className="text-sm font-medium text-red-600">
                         {formatCurrency(item.cost)}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                       <span
                         className={`text-sm font-medium ${
                           item.profit >= 0 ? 'text-green-600' : 'text-red-600'
@@ -128,32 +130,27 @@ export function ReportsProfitTab({ data, isLoading }: ReportsProfitTabProps) {
                       >
                         {formatCurrency(item.profit)}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    </TableCell>
+                    <TableCell className="px-6 py-4 whitespace-nowrap text-right">
                       <span
                         className={`text-sm ${
-                          (item.profit_rate || 0) >= 0
-                            ? 'text-green-600'
-                            : 'text-red-600'
+                          (item.profit_rate || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
                         {formatPercent(item.profit_rate)}
                       </span>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
                 {data.items.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-6 py-12 text-center text-gray-500"
-                    >
+                  <TableRow>
+                    <TableCell colSpan={5} className="px-6 py-12 text-center text-gray-500">
                       暂无数据
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </>
       ) : null}

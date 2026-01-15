@@ -9,6 +9,16 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import type { Supplier, SupplierCreateInput, SupplierUpdateInput } from '../types';
 import { PaymentMethod, PAYMENT_METHOD_CONFIG } from '../types';
 
@@ -43,9 +53,7 @@ export function SupplierForm({
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     // Clear error when field is modified
@@ -53,6 +61,18 @@ export function SupplierForm({
       setErrors((prev) => {
         const next = { ...prev };
         delete next[name];
+        return next;
+      });
+    }
+  };
+
+  const handleSelectChange = (name: keyof SupplierCreateInput, value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    const errorKey = name as string;
+    if (errors[errorKey]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[errorKey];
         return next;
       });
     }
@@ -95,12 +115,9 @@ export function SupplierForm({
             <h2 className="text-lg font-semibold text-gray-900">
               {isEdit ? '编辑供应商' : '新增供应商'}
             </h2>
-            <button
-              onClick={onCancel}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
+            <Button onClick={onCancel} variant="ghost" size="icon" className="rounded-full">
               <X className="h-5 w-5 text-gray-500" />
-            </button>
+            </Button>
           </div>
 
           {/* Form */}
@@ -111,61 +128,57 @@ export function SupplierForm({
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   供应商名称 <span className="text-red-500">*</span>
                 </label>
-                <input
+                <Input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={
+                    errors.name
+                      ? 'border-red-500 focus-visible:ring-red-500'
+                      : 'border-gray-300 focus-visible:ring-blue-500'
+                  }
                   placeholder="输入供应商名称"
                 />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-500">{errors.name}</p>
-                )}
+                {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  联系人姓名
-                </label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">联系人姓名</label>
+                <Input
                   type="text"
                   name="contact_name"
                   value={formData.contact_name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border-gray-300 focus-visible:ring-blue-500"
                   placeholder="输入联系人姓名"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  联系人电话
-                </label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">联系人电话</label>
+                <Input
                   type="text"
                   name="contact_phone"
                   value={formData.contact_phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border-gray-300 focus-visible:ring-blue-500"
                   placeholder="输入联系人电话"
                 />
               </div>
 
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  联系人邮箱
-                </label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">联系人邮箱</label>
+                <Input
                   type="email"
                   name="contact_email"
                   value={formData.contact_email}
                   onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.contact_email ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={
+                    errors.contact_email
+                      ? 'border-red-500 focus-visible:ring-red-500'
+                      : 'border-gray-300 focus-visible:ring-blue-500'
+                  }
                   placeholder="输入联系人邮箱"
                 />
                 {errors.contact_email && (
@@ -177,99 +190,95 @@ export function SupplierForm({
             {/* Financial Info */}
             <div className="grid grid-cols-2 gap-4 pt-4 border-t">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  基础货币
-                </label>
-                <select
-                  name="base_currency"
+                <label className="block text-sm font-medium text-gray-700 mb-1">基础货币</label>
+                <Select
                   value={formData.base_currency}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onValueChange={(value) => handleSelectChange('base_currency', value)}
                 >
-                  <option value="USD">USD - 美元</option>
-                  <option value="CNY">CNY - 人民币</option>
-                  <option value="EUR">EUR - 欧元</option>
-                  <option value="GBP">GBP - 英镑</option>
-                  <option value="JPY">JPY - 日元</option>
-                </select>
+                  <SelectTrigger className="border-gray-300 focus:ring-blue-500">
+                    <SelectValue placeholder="选择基础货币" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD - 美元</SelectItem>
+                    <SelectItem value="CNY">CNY - 人民币</SelectItem>
+                    <SelectItem value="EUR">EUR - 欧元</SelectItem>
+                    <SelectItem value="GBP">GBP - 英镑</SelectItem>
+                    <SelectItem value="JPY">JPY - 日元</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  支付方式
-                </label>
-                <select
-                  name="payment_method"
+                <label className="block text-sm font-medium text-gray-700 mb-1">支付方式</label>
+                <Select
                   value={formData.payment_method}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onValueChange={(value) =>
+                    handleSelectChange('payment_method', value as PaymentMethod)
+                  }
                 >
-                  {Object.entries(PAYMENT_METHOD_CONFIG).map(([value, config]) => (
-                    <option key={value} value={value}>
-                      {config.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="border-gray-300 focus:ring-blue-500">
+                    <SelectValue placeholder="选择支付方式" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PAYMENT_METHOD_CONFIG).map(([value, config]) => (
+                      <SelectItem key={value} value={value}>
+                        {config.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  税务ID
-                </label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">税务ID</label>
+                <Input
                   type="text"
                   name="tax_id"
                   value={formData.tax_id}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border-gray-300 focus-visible:ring-blue-500"
                   placeholder="输入税务ID"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  国家代码
-                </label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">国家代码</label>
+                <Input
                   type="text"
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
                   maxLength={2}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.country ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  className={
+                    errors.country
+                      ? 'border-red-500 focus-visible:ring-red-500'
+                      : 'border-gray-300 focus-visible:ring-blue-500'
+                  }
                   placeholder="如 CN, US"
                 />
-                {errors.country && (
-                  <p className="mt-1 text-sm text-red-500">{errors.country}</p>
-                )}
+                {errors.country && <p className="mt-1 text-sm text-red-500">{errors.country}</p>}
               </div>
 
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  支付条款
-                </label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">支付条款</label>
+                <Input
                   type="text"
                   name="payment_terms"
                   value={formData.payment_terms}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border-gray-300 focus-visible:ring-blue-500"
                   placeholder="如: Net 30"
                 />
               </div>
 
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  地址
-                </label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-1">地址</label>
+                <Input
                   type="text"
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border-gray-300 focus-visible:ring-blue-500"
                   placeholder="输入地址"
                 />
               </div>
@@ -277,35 +286,25 @@ export function SupplierForm({
 
             {/* Notes */}
             <div className="pt-4 border-t">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                备注
-              </label>
-              <textarea
+              <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
+              <Textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border-gray-300 focus-visible:ring-blue-500"
                 placeholder="输入备注信息"
               />
             </div>
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4 border-t">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-              >
+              <Button type="button" onClick={onCancel} variant="outline">
                 取消
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              </Button>
+              <Button type="submit" disabled={isLoading} variant="primary">
                 {isLoading ? '提交中...' : isEdit ? '保存' : '创建'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

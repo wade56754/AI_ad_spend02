@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 
 export default function GlobalError({
   error,
@@ -16,30 +17,22 @@ export default function GlobalError({
   return (
     <html>
       <body>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          gap: '1rem',
-          fontFamily: 'system-ui, sans-serif',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            gap: '1rem',
+            fontFamily: 'system-ui, sans-serif',
+          }}
+        >
           <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>应用程序错误</h2>
           <p style={{ color: '#666' }}>{error.message || '发生了一个错误'}</p>
-          <button
-            onClick={reset}
-            style={{
-              padding: '0.5rem 1rem',
-              backgroundColor: '#000',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-            }}
-          >
+          <Button onClick={reset} className="bg-black text-white hover:bg-black/90">
             重试
-          </button>
+          </Button>
         </div>
       </body>
     </html>

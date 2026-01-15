@@ -27,7 +27,7 @@ import {
   CreditCard,
   BarChart2,
   Users,
-  Settings
+  Settings,
 } from 'lucide-react';
 
 // Help categories
@@ -105,27 +105,32 @@ const faqs = [
   {
     id: 1,
     question: '如何重置密码？',
-    answer: '您可以在登录页面点击"忘记密码"链接，系统会发送重置密码的邮件到您的注册邮箱。按照邮件中的指引即可完成密码重置。',
+    answer:
+      '您可以在登录页面点击"忘记密码"链接，系统会发送重置密码的邮件到您的注册邮箱。按照邮件中的指引即可完成密码重置。',
   },
   {
     id: 2,
     question: '日报提交后可以修改吗？',
-    answer: '日报在"待审核"状态下可以撤回修改。一旦进入"已审核"或"已锁定"状态，则无法修改。如需修改已锁定的数据，请联系管理员。',
+    answer:
+      '日报在"待审核"状态下可以撤回修改。一旦进入"已审核"或"已锁定"状态，则无法修改。如需修改已锁定的数据，请联系管理员。',
   },
   {
     id: 3,
     question: '充值审批需要多长时间？',
-    answer: '正常情况下，充值申请会在提交后的2个工作日内完成审批。如有特殊情况，财务人员会通过系统消息通知您。',
+    answer:
+      '正常情况下，充值申请会在提交后的2个工作日内完成审批。如有特殊情况，财务人员会通过系统消息通知您。',
   },
   {
     id: 4,
     question: '如何查看账户余额？',
-    answer: '您可以在"广告账号管理"页面查看每个广告账户的余额信息。账户余额通过系统自动计算，基于充值金额和消耗数据。',
+    answer:
+      '您可以在"广告账号管理"页面查看每个广告账户的余额信息。账户余额通过系统自动计算，基于充值金额和消耗数据。',
   },
   {
     id: 5,
     question: '数据报表可以导出吗？',
-    answer: '是的，系统支持数据导出功能。在各个报表页面，您可以点击"导出"按钮，选择需要的格式（Excel或CSV）进行导出。',
+    answer:
+      '是的，系统支持数据导出功能。在各个报表页面，您可以点击"导出"按钮，选择需要的格式（Excel或CSV）进行导出。',
   },
 ];
 
@@ -209,9 +214,10 @@ export function HelpPage() {
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t space-y-2">
                       {category.articles.map((article) => (
-                        <button
+                        <Button
                           key={article.id}
-                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 text-left"
+                          variant="ghost"
+                          className="w-full justify-start gap-3 rounded-lg px-2 py-2 text-left hover:bg-gray-50"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <FileText className="h-4 w-4 text-gray-400" />
@@ -219,7 +225,7 @@ export function HelpPage() {
                             <p className="text-sm font-medium text-gray-900">{article.title}</p>
                             <p className="text-xs text-gray-500">{article.description}</p>
                           </div>
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -242,13 +248,11 @@ export function HelpPage() {
         <CardContent>
           <div className="space-y-4">
             {faqs.map((faq) => (
-              <div
-                key={faq.id}
-                className="border rounded-lg overflow-hidden"
-              >
-                <button
+              <div key={faq.id} className="border rounded-lg overflow-hidden">
+                <Button
                   onClick={() => toggleFaq(faq.id)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50"
+                  variant="ghost"
+                  className="w-full justify-between rounded-none p-4 text-left hover:bg-gray-50"
                 >
                   <span className="font-medium text-gray-900">{faq.question}</span>
                   <ChevronDown
@@ -256,11 +260,9 @@ export function HelpPage() {
                       expandedFaq === faq.id ? 'rotate-180' : ''
                     }`}
                   />
-                </button>
+                </Button>
                 {expandedFaq === faq.id && (
-                  <div className="px-4 pb-4 text-gray-600">
-                    {faq.answer}
-                  </div>
+                  <div className="px-4 pb-4 text-gray-600">{faq.answer}</div>
                 )}
               </div>
             ))}
@@ -300,7 +302,10 @@ export function HelpPage() {
               </div>
               <div>
                 <p className="font-medium text-gray-900">在线文档</p>
-                <a href="#" className="text-sm text-purple-600 hover:underline flex items-center gap-1">
+                <a
+                  href="#"
+                  className="text-sm text-purple-600 hover:underline flex items-center gap-1"
+                >
                   查看完整文档 <ExternalLink className="h-3 w-3" />
                 </a>
               </div>

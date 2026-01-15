@@ -1,15 +1,37 @@
-"use client";
+'use client';
 
-import React, { useState, useCallback } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState, useCallback } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Upload,
   FileSpreadsheet,
@@ -22,10 +44,10 @@ import {
   Trash2,
   Clock,
   Zap,
-} from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { apiUpload, apiDownload } from "@/lib/api";
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { apiUpload, apiDownload } from '@/lib/api';
 
 // 类型定义
 interface UploadedFile {
@@ -35,7 +57,7 @@ interface UploadedFile {
   platform: string;
   file_size: number;
   upload_time: string;
-  status: "uploading" | "processing" | "completed" | "failed";
+  status: 'uploading' | 'processing' | 'completed' | 'failed';
   records_count?: number;
   valid_records?: number;
   invalid_records?: number;
@@ -59,32 +81,32 @@ interface PlatformBillUploadProps {
 // 平台配置
 const platformConfigs = {
   facebook: {
-    name: "Facebook",
-    file_types: [".csv", ".xlsx", ".xls"],
-    template_url: "/templates/facebook-bill-template.xlsx",
-    required_fields: ["account_id", "account_name", "platform_spend", "currency", "date"],
-    description: "支持Facebook广告管理器导出的账单文件",
+    name: 'Facebook',
+    file_types: ['.csv', '.xlsx', '.xls'],
+    template_url: '/templates/facebook-bill-template.xlsx',
+    required_fields: ['account_id', 'account_name', 'platform_spend', 'currency', 'date'],
+    description: '支持Facebook广告管理器导出的账单文件',
   },
   tiktok: {
-    name: "TikTok",
-    file_types: [".csv", ".xlsx", ".xls"],
-    template_url: "/templates/tiktok-bill-template.xlsx",
-    required_fields: ["account_id", "account_name", "platform_spend", "currency", "date"],
-    description: "支持TikTok广告平台导出的账单文件",
+    name: 'TikTok',
+    file_types: ['.csv', '.xlsx', '.xls'],
+    template_url: '/templates/tiktok-bill-template.xlsx',
+    required_fields: ['account_id', 'account_name', 'platform_spend', 'currency', 'date'],
+    description: '支持TikTok广告平台导出的账单文件',
   },
   google: {
-    name: "Google Ads",
-    file_types: [".csv", ".xlsx", ".xls"],
-    template_url: "/templates/google-ads-bill-template.xlsx",
-    required_fields: ["account_id", "account_name", "platform_spend", "currency", "date"],
-    description: "支持Google Ads导出的账单文件",
+    name: 'Google Ads',
+    file_types: ['.csv', '.xlsx', '.xls'],
+    template_url: '/templates/google-ads-bill-template.xlsx',
+    required_fields: ['account_id', 'account_name', 'platform_spend', 'currency', 'date'],
+    description: '支持Google Ads导出的账单文件',
   },
   twitter: {
-    name: "Twitter Ads",
-    file_types: [".csv", ".xlsx", ".xls"],
-    template_url: "/templates/twitter-ads-bill-template.xlsx",
-    required_fields: ["account_id", "account_name", "platform_spend", "currency", "date"],
-    description: "支持Twitter Ads导出的账单文件",
+    name: 'Twitter Ads',
+    file_types: ['.csv', '.xlsx', '.xls'],
+    template_url: '/templates/twitter-ads-bill-template.xlsx',
+    required_fields: ['account_id', 'account_name', 'platform_spend', 'currency', 'date'],
+    description: '支持Twitter Ads导出的账单文件',
   },
 };
 
@@ -94,42 +116,47 @@ export function PlatformBillUpload({
   batchId,
   onUploadSuccess,
 }: PlatformBillUploadProps) {
-  const [selectedPlatform, setSelectedPlatform] = useState<string>("");
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
   // 处理文件选择
-  const handleFileSelect = useCallback(async (files: FileList) => {
-    if (!selectedPlatform) {
-      toast.error("请先选择平台");
-      return;
-    }
-
-    const platformConfig = platformConfigs[selectedPlatform as keyof typeof platformConfigs];
-
-    // 验证文件类型
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const fileExtension = "." + file.name.split('.').pop()?.toLowerCase();
-
-      if (!platformConfig.file_types.includes(fileExtension)) {
-        toast.error(`文件 ${file.name} 格式不支持，请上传 ${platformConfig.file_types.join(", ")} 格式的文件`);
+  const handleFileSelect = useCallback(
+    async (files: FileList) => {
+      if (!selectedPlatform) {
+        toast.error('请先选择平台');
         return;
       }
 
-      // 文件大小限制 (10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error(`文件 ${file.name} 大小超过10MB限制`);
-        return;
-      }
-    }
+      const platformConfig = platformConfigs[selectedPlatform as keyof typeof platformConfigs];
 
-    // 开始上传
-    for (let i = 0; i < files.length; i++) {
-      await uploadFile(files[i]);
-    }
-  }, [selectedPlatform]);
+      // 验证文件类型
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+
+        if (!platformConfig.file_types.includes(fileExtension)) {
+          toast.error(
+            `文件 ${file.name} 格式不支持，请上传 ${platformConfig.file_types.join(', ')} 格式的文件`
+          );
+          return;
+        }
+
+        // 文件大小限制 (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`文件 ${file.name} 大小超过10MB限制`);
+          return;
+        }
+      }
+
+      // 开始上传
+      for (let i = 0; i < files.length; i++) {
+        await uploadFile(files[i]);
+      }
+    },
+    [selectedPlatform]
+  );
 
   // 上传单个文件
   const uploadFile = async (file: File) => {
@@ -143,10 +170,10 @@ export function PlatformBillUpload({
       platform: selectedPlatform,
       file_size: file.size,
       upload_time: new Date().toISOString(),
-      status: "uploading",
+      status: 'uploading',
     };
 
-    setUploadedFiles(prev => [...prev, fileRecord]);
+    setUploadedFiles((prev) => [...prev, fileRecord]);
 
     try {
       // 使用 apiUpload 上传文件，自动添加认证 header
@@ -154,36 +181,44 @@ export function PlatformBillUpload({
         records_count: number;
         valid_records: number;
         invalid_records: number;
-        preview_data: UploadedFile["preview_data"];
-      }>("/api/v1/reconciliation/upload-platform-bill", file, {
+        preview_data: UploadedFile['preview_data'];
+      }>('/api/v1/reconciliation/upload-platform-bill', file, {
         additionalData: {
           platform: selectedPlatform,
           batch_id: batchId.toString(),
-        }
+        },
       });
 
       // 更新文件记录
-      setUploadedFiles(prev => prev.map(f =>
-        f.id === fileId
-          ? {
-              ...f,
-              status: "completed",
-              records_count: result.records_count,
-              valid_records: result.valid_records,
-              invalid_records: result.invalid_records,
-              preview_data: result.preview_data,
-            }
-          : f
-      ));
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: 'completed',
+                records_count: result.records_count,
+                valid_records: result.valid_records,
+                invalid_records: result.invalid_records,
+                preview_data: result.preview_data,
+              }
+            : f
+        )
+      );
 
       toast.success(`文件 ${file.name} 上传成功`);
     } catch (error) {
-      console.error("文件上传错误:", error);
-      setUploadedFiles(prev => prev.map(f =>
-        f.id === fileId
-          ? { ...f, status: "failed", error_message: error instanceof Error ? error.message : "上传失败" }
-          : f
-      ));
+      console.error('文件上传错误:', error);
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.id === fileId
+            ? {
+                ...f,
+                status: 'failed',
+                error_message: error instanceof Error ? error.message : '上传失败',
+              }
+            : f
+        )
+      );
       toast.error(`文件 ${file.name} 上传失败`);
     }
   };
@@ -192,33 +227,36 @@ export function PlatformBillUpload({
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files);
-    }
-  }, [handleFileSelect]);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files);
+      }
+    },
+    [handleFileSelect]
+  );
 
   // 删除文件
   const handleDeleteFile = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
-    toast.success("文件已移除");
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+    toast.success('文件已移除');
   };
 
   // 下载模板
   const handleDownloadTemplate = async () => {
     if (!selectedPlatform) {
-      toast.error("请先选择平台");
+      toast.error('请先选择平台');
       return;
     }
 
@@ -226,25 +264,26 @@ export function PlatformBillUpload({
       // 使用 apiDownload 下载文件，自动添加认证 header
       const blob = await apiDownload(`/api/v1/reconciliation/templates/${selectedPlatform}`);
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = `${selectedPlatform}-bill-template.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success("模板下载成功");
+      toast.success('模板下载成功');
     } catch (error) {
-      toast.error("模板下载失败");
+      toast.error('模板下载失败');
     }
   };
 
   // 重新上传
   const handleReupload = async (file: UploadedFile) => {
     // 这里需要重新选择文件，简化处理
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = platformConfigs[file.platform as keyof typeof platformConfigs].file_types.join(",");
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept =
+      platformConfigs[file.platform as keyof typeof platformConfigs].file_types.join(',');
     input.onchange = async (e) => {
       const files = (e.target as HTMLInputElement).files;
       if (files && files.length > 0) {
@@ -257,23 +296,23 @@ export function PlatformBillUpload({
 
   // 格式化文件大小
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
+    if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   // 获取状态图标
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "uploading":
+      case 'uploading':
         return <RefreshCw className="w-4 h-4 animate-spin text-blue-500" />;
-      case "processing":
+      case 'processing':
         return <Clock className="w-4 h-4 text-yellow-500" />;
-      case "completed":
+      case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case "failed":
+      case 'failed':
         return <AlertTriangle className="w-4 h-4 text-red-500" />;
       default:
         return <Clock className="w-4 h-4 text-gray-500" />;
@@ -283,21 +322,26 @@ export function PlatformBillUpload({
   // 获取状态文本
   const getStatusText = (status: string) => {
     switch (status) {
-      case "uploading": return "上传中";
-      case "processing": return "处理中";
-      case "completed": return "已完成";
-      case "failed": return "失败";
-      default: return "未知";
+      case 'uploading':
+        return '上传中';
+      case 'processing':
+        return '处理中';
+      case 'completed':
+        return '已完成';
+      case 'failed':
+        return '失败';
+      default:
+        return '未知';
     }
   };
 
   // 重置状态
   const handleClose = () => {
-    setSelectedPlatform("");
+    setSelectedPlatform('');
     setUploadedFiles([]);
     setDragActive(false);
     onClose();
-    if (onUploadSuccess && uploadedFiles.some(f => f.status === "completed")) {
+    if (onUploadSuccess && uploadedFiles.some((f) => f.status === 'completed')) {
       onUploadSuccess();
     }
   };
@@ -310,9 +354,7 @@ export function PlatformBillUpload({
             <Upload className="w-5 h-5" />
             上传平台账单
           </DialogTitle>
-          <DialogDescription>
-            上传各广告平台的账单文件，用于对账分析
-          </DialogDescription>
+          <DialogDescription>上传各广告平台的账单文件，用于对账分析</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
@@ -329,15 +371,13 @@ export function PlatformBillUpload({
                     key={key}
                     className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
                       selectedPlatform === key
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => setSelectedPlatform(key)}
                   >
                     <div className="font-medium">{config.name}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {config.file_types.join(", ")}
-                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{config.file_types.join(', ')}</div>
                   </div>
                 ))}
               </div>
@@ -364,16 +404,14 @@ export function PlatformBillUpload({
                     下载模板
                   </Button>
                 </CardTitle>
-                <CardDescription>
-                  拖拽文件到此处或点击选择文件上传
-                </CardDescription>
+                <CardDescription>拖拽文件到此处或点击选择文件上传</CardDescription>
               </CardHeader>
               <CardContent>
                 <div
                   className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
                     dragActive
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-300 hover:border-gray-400"
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:border-gray-400'
                   }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
@@ -385,15 +423,20 @@ export function PlatformBillUpload({
                     拖拽文件到此处或点击上传
                   </div>
                   <p className="text-sm text-gray-500 mb-4">
-                    支持格式: {platformConfigs[selectedPlatform as keyof typeof platformConfigs].file_types.join(", ")}
+                    支持格式:{' '}
+                    {platformConfigs[
+                      selectedPlatform as keyof typeof platformConfigs
+                    ].file_types.join(', ')}
                   </p>
                   <Button asChild>
                     <label className="cursor-pointer">
-                      <input
+                      <Input
                         type="file"
                         className="hidden"
                         multiple
-                        accept={platformConfigs[selectedPlatform as keyof typeof platformConfigs].file_types.join(",")}
+                        accept={platformConfigs[
+                          selectedPlatform as keyof typeof platformConfigs
+                        ].file_types.join(',')}
                         onChange={(e) => e.target.files && handleFileSelect(e.target.files)}
                       />
                       选择文件
@@ -416,7 +459,8 @@ export function PlatformBillUpload({
                                 <Badge variant="outline">{file.platform}</Badge>
                               </div>
                               <div className="text-sm text-gray-500 mt-1">
-                                {formatFileSize(file.file_size)} • {format(new Date(file.upload_time), "MM/dd HH:mm")}
+                                {formatFileSize(file.file_size)} •{' '}
+                                {format(new Date(file.upload_time), 'MM/dd HH:mm')}
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -435,12 +479,10 @@ export function PlatformBillUpload({
                           </div>
 
                           {/* 进度条 */}
-                          {file.status === "uploading" && (
-                            <Progress value={50} className="mb-2" />
-                          )}
+                          {file.status === 'uploading' && <Progress value={50} className="mb-2" />}
 
                           {/* 错误信息 */}
-                          {file.status === "failed" && file.error_message && (
+                          {file.status === 'failed' && file.error_message && (
                             <Alert className="mt-2">
                               <AlertTriangle className="h-4 w-4" />
                               <AlertDescription>{file.error_message}</AlertDescription>
@@ -448,16 +490,15 @@ export function PlatformBillUpload({
                           )}
 
                           {/* 处理结果 */}
-                          {file.status === "completed" && file.records_count && (
+                          {file.status === 'completed' && file.records_count && (
                             <div className="mt-2 text-sm text-gray-600">
-                              共 {file.records_count} 条记录，
-                              有效 {file.valid_records} 条，
-                              无效 {file.invalid_records} 条
+                              共 {file.records_count} 条记录， 有效 {file.valid_records} 条， 无效{' '}
+                              {file.invalid_records} 条
                             </div>
                           )}
 
                           {/* 操作按钮 */}
-                          {file.status === "completed" && (
+                          {file.status === 'completed' && (
                             <div className="flex gap-2 mt-3">
                               <Button variant="outline" size="sm">
                                 <Eye className="w-4 h-4 mr-2" />
@@ -483,13 +524,11 @@ export function PlatformBillUpload({
           )}
 
           {/* 数据预览 */}
-          {uploadedFiles.some(f => f.status === "completed" && f.preview_data) && (
+          {uploadedFiles.some((f) => f.status === 'completed' && f.preview_data) && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">数据预览</CardTitle>
-                <CardDescription>
-                  上传文件的预览数据，请确认格式是否正确
-                </CardDescription>
+                <CardDescription>上传文件的预览数据，请确认格式是否正确</CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="preview">
@@ -500,63 +539,78 @@ export function PlatformBillUpload({
 
                   <TabsContent value="preview" className="mt-4">
                     <div className="overflow-x-auto">
-                      <table className="w-full border-collapse border border-gray-200">
-                        <thead>
-                          <tr className="bg-gray-50">
-                            <th className="border border-gray-200 p-2 text-left">账户ID</th>
-                            <th className="border border-gray-200 p-2 text-left">账户名称</th>
-                            <th className="border border-gray-200 p-2 text-left">平台消耗</th>
-                            <th className="border border-gray-200 p-2 text-left">货币</th>
-                            <th className="border border-gray-200 p-2 text-left">日期</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <Table className="border border-gray-200">
+                        <TableHeader>
+                          <TableRow className="bg-gray-50">
+                            <TableHead className="border border-gray-200">账户ID</TableHead>
+                            <TableHead className="border border-gray-200">账户名称</TableHead>
+                            <TableHead className="border border-gray-200">平台消耗</TableHead>
+                            <TableHead className="border border-gray-200">货币</TableHead>
+                            <TableHead className="border border-gray-200">日期</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {uploadedFiles
-                            .filter(f => f.preview_data)
-                            .flatMap(f => f.preview_data || [])
+                            .filter((f) => f.preview_data)
+                            .flatMap((f) => f.preview_data || [])
                             .slice(0, 5)
                             .map((row, index) => (
-                              <tr key={index}>
-                                <td className="border border-gray-200 p-2">{row.account_id}</td>
-                                <td className="border border-gray-200 p-2">{row.account_name}</td>
-                                <td className="border border-gray-200 p-2">¥{row.platform_spend.toLocaleString()}</td>
-                                <td className="border border-gray-200 p-2">{row.currency}</td>
-                                <td className="border border-gray-200 p-2">{row.date}</td>
-                              </tr>
+                              <TableRow key={index}>
+                                <TableCell className="border border-gray-200">
+                                  {row.account_id}
+                                </TableCell>
+                                <TableCell className="border border-gray-200">
+                                  {row.account_name}
+                                </TableCell>
+                                <TableCell className="border border-gray-200">
+                                  ¥{row.platform_spend.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="border border-gray-200">
+                                  {row.currency}
+                                </TableCell>
+                                <TableCell className="border border-gray-200">{row.date}</TableCell>
+                              </TableRow>
                             ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   </TabsContent>
 
                   <TabsContent value="validation" className="mt-4">
                     <div className="space-y-4">
-                      {uploadedFiles.map((file) => (
-                        file.status === "completed" && (
-                          <div key={file.id} className="border rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-medium">{file.original_name}</span>
-                              <Badge variant={file.invalid_records === 0 ? "default" : "destructive"}>
-                                {file.invalid_records === 0 ? "验证通过" : "需要处理"}
-                              </Badge>
+                      {uploadedFiles.map(
+                        (file) =>
+                          file.status === 'completed' && (
+                            <div key={file.id} className="border rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-medium">{file.original_name}</span>
+                                <Badge
+                                  variant={file.invalid_records === 0 ? 'default' : 'destructive'}
+                                >
+                                  {file.invalid_records === 0 ? '验证通过' : '需要处理'}
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div>
+                                  <span className="text-gray-600">总记录数:</span>
+                                  <span className="ml-2 font-medium">{file.records_count}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">有效记录:</span>
+                                  <span className="ml-2 font-medium text-green-600">
+                                    {file.valid_records}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-600">无效记录:</span>
+                                  <span className="ml-2 font-medium text-red-600">
+                                    {file.invalid_records}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-600">总记录数:</span>
-                                <span className="ml-2 font-medium">{file.records_count}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">有效记录:</span>
-                                <span className="ml-2 font-medium text-green-600">{file.valid_records}</span>
-                              </div>
-                              <div>
-                                <span className="text-gray-600">无效记录:</span>
-                                <span className="ml-2 font-medium text-red-600">{file.invalid_records}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      ))}
+                          )
+                      )}
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -571,7 +625,7 @@ export function PlatformBillUpload({
           </Button>
           <Button
             onClick={handleClose}
-            disabled={!uploadedFiles.some(f => f.status === "completed")}
+            disabled={!uploadedFiles.some((f) => f.status === 'completed')}
           >
             <CheckCircle className="w-4 h-4 mr-2" />
             确认上传

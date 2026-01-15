@@ -655,7 +655,7 @@ export function TopupRequestForm({
                       <span className="text-blue-600 hover:text-blue-500">选择文件</span>
                       <span className="text-gray-500"> 或拖拽文件到此处</span>
                     </label>
-                    <input
+                    <Input
                       id="file-upload"
                       type="file"
                       className="hidden"

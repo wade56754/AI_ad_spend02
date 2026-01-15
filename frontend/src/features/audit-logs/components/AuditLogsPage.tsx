@@ -12,6 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   Search,
   FileText,
   User,
@@ -22,7 +30,7 @@ import {
   Download,
   RefreshCw,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from 'lucide-react';
 
 // Mock data
@@ -109,10 +117,11 @@ export function AuditLogsPage() {
     setTimeout(() => setIsLoading(false), 1000);
   };
 
-  const filteredLogs = mockLogs.filter(log =>
-    log.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.resource_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.action.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredLogs = mockLogs.filter(
+    (log) =>
+      log.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.resource_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.action.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -216,69 +225,63 @@ export function AuditLogsPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">时间</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">用户</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">操作</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">资源</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">IP地址</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-gray-600">时间</TableHead>
+                  <TableHead className="text-gray-600">用户</TableHead>
+                  <TableHead className="text-gray-600">操作</TableHead>
+                  <TableHead className="text-gray-600">资源</TableHead>
+                  <TableHead className="text-gray-600">IP地址</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {filteredLogs.map((log) => (
-                  <tr key={log.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
+                  <TableRow key={log.id} className="hover:bg-gray-50">
+                    <TableCell>
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Clock className="h-4 w-4" />
                         {log.created_at}
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell>
                       <div>
                         <p className="font-medium text-gray-900">{log.user_name}</p>
                         <p className="text-xs text-gray-500">{log.user_role}</p>
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${actionColors[log.action] || 'bg-gray-100 text-gray-800'}`}>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${actionColors[log.action] || 'bg-gray-100 text-gray-800'}`}
+                      >
                         {actionLabels[log.action] || log.action}
                       </span>
-                    </td>
-                    <td className="py-3 px-4">
+                    </TableCell>
+                    <TableCell>
                       <p className="text-sm text-gray-900">{log.resource_name}</p>
                       <p className="text-xs text-gray-500">{log.resource_type}</p>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {log.ip_address}
-                    </td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">{log.ip_address}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t">
-            <p className="text-sm text-gray-500">
-              显示 1-5 条，共 156 条记录
-            </p>
+            <p className="text-sm text-gray-500">显示 1-5 条，共 156 条记录</p>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => p - 1)}
+                onClick={() => setCurrentPage((p) => p - 1)}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <span className="text-sm text-gray-600">第 {currentPage} 页</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(p => p + 1)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => p + 1)}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>

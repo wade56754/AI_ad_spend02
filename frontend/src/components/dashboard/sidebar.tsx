@@ -16,6 +16,7 @@ import {
   Target,
   type LucideIcon,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface MenuItem {
   id: string;
@@ -99,10 +100,11 @@ export function Sidebar({
               const Icon = item.icon;
               const isActive = activeMenu === item.id;
               return (
-                <button
+                <Button
                   key={item.id}
                   onClick={() => onMenuChange(item.id)}
-                  className={`relative flex w-full items-center justify-between px-4 py-3 text-left transition-all rounded-xl mb-1 ${
+                  variant="ghost"
+                  className={`relative w-full justify-between px-4 py-3 text-left transition-all rounded-xl mb-1 ${
                     isActive
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-400 hover:bg-gray-700/30 hover:text-white'
@@ -117,7 +119,7 @@ export function Sidebar({
                       {item.badge}
                     </div>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -128,9 +130,10 @@ export function Sidebar({
       <div className="border-t border-gray-700/30 px-4 py-4">
         {/* Theme Toggle */}
         {onThemeToggle && (
-          <button
+          <Button
             onClick={onThemeToggle}
-            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-gray-400 transition-all hover:bg-gray-700/30 hover:text-white mb-1"
+            variant="ghost"
+            className="w-full justify-start gap-3 rounded-xl px-4 py-3 text-left text-gray-400 transition-all hover:bg-gray-700/30 hover:text-white mb-1"
           >
             {theme === 'dark' ? (
               <Sun className="h-5 w-5 text-gray-500" />
@@ -140,17 +143,18 @@ export function Sidebar({
             <span className="text-sm font-medium">
               {theme === 'dark' ? '浅色模式' : '深色模式'}
             </span>
-          </button>
+          </Button>
         )}
 
         {/* Other Bottom Items */}
         {bottomMenuItems.map((item) => {
           const Icon = item.icon;
           return (
-            <button
+            <Button
               key={item.id}
               onClick={() => onMenuChange(item.id)}
-              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-all mb-1 ${
+              variant="ghost"
+              className={`w-full justify-start gap-3 rounded-xl px-4 py-3 text-left transition-all mb-1 ${
                 item.highlight
                   ? 'text-amber-500 hover:bg-amber-500/10'
                   : 'text-gray-400 hover:bg-gray-700/30 hover:text-white'
@@ -158,7 +162,7 @@ export function Sidebar({
             >
               <Icon className={`h-5 w-5 ${item.highlight ? 'text-amber-500' : 'text-gray-500'}`} />
               <span className="text-sm font-medium">{item.label}</span>
-            </button>
+            </Button>
           );
         })}
       </div>

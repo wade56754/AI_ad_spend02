@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Button } from '@/components/ui/button';
 import { useDataState, DataStatus } from './DataStateProvider';
 import { LoadingState, MetricCardSkeleton } from './LoadingState';
 import { EmptyState } from './EmptyState';
@@ -68,7 +69,7 @@ export function DataStateManager<T = any>({
   overlay = false,
   isEmpty,
   progress,
-  showProgressPercentage = false
+  showProgressPercentage = false,
 }: DataStateManagerProps<T>) {
   // 优先使用传入的status，其次从context获取，最后基于props推断
   const { state: contextState } = useDataState();
@@ -112,7 +113,7 @@ export function DataStateManager<T = any>({
 
   const containerStyle: React.CSSProperties = {
     minHeight: typeof minHeight === 'number' ? `${minHeight}px` : minHeight,
-    position: overlay ? 'relative' : undefined
+    position: overlay ? 'relative' : undefined,
   };
 
   // 渲染加载状态
@@ -125,7 +126,7 @@ export function DataStateManager<T = any>({
       type: loadingType,
       overlay,
       progress,
-      showPercentage: showProgressPercentage
+      showPercentage: showProgressPercentage,
     };
 
     if (loadingType === 'skeleton' && typeof children === 'function') {
@@ -150,13 +151,10 @@ export function DataStateManager<T = any>({
     const emptyProps = {
       type: emptyType,
       actions: onRefresh && (
-        <button
-          onClick={onRefresh}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
+        <Button onClick={onRefresh} className="bg-blue-600 text-white hover:bg-blue-700">
           刷新数据
-        </button>
-      )
+        </Button>
+      ),
     };
 
     return <EmptyState {...emptyProps} />;
@@ -172,7 +170,7 @@ export function DataStateManager<T = any>({
       type: errorType,
       error: actualError,
       onRetry,
-      showDetails: true
+      showDetails: true,
     };
 
     return <ErrorState {...errorProps} />;
@@ -187,10 +185,7 @@ export function DataStateManager<T = any>({
   };
 
   return (
-    <div
-      className={cn('relative w-full', className)}
-      style={containerStyle}
-    >
+    <div className={cn('relative w-full', className)} style={containerStyle}>
       {isLoading && renderLoading()}
 
       {!isLoading && hasError && renderError()}
@@ -276,7 +271,7 @@ export function useDataWithState<T = any>(
       // 自动重试逻辑
       if (options?.retryCount && retryCount < options.retryCount) {
         setTimeout(() => {
-          setRetryCount(prev => prev + 1);
+          setRetryCount((prev) => prev + 1);
           execute();
         }, options.retryDelay || 1000);
         return;
@@ -311,7 +306,7 @@ export function useDataWithState<T = any>(
     execute,
     retry,
     reset,
-    retryCount
+    retryCount,
   };
 }
 
@@ -329,7 +324,7 @@ export function ListStateManager<T = any>({
   errorComponent,
   className,
   itemClassName,
-  containerClassName
+  containerClassName,
 }: {
   items?: T[];
   loading?: boolean;
@@ -352,9 +347,7 @@ export function ListStateManager<T = any>({
       loadingContent={loadingComponent}
       emptyContent={
         <div className={cn('text-center py-8', containerClassName)}>
-          <p className="text-gray-500 dark:text-gray-400">
-            {emptyMessage || '列表中没有数据'}
-          </p>
+          <p className="text-gray-500 dark:text-gray-400">{emptyMessage || '列表中没有数据'}</p>
         </div>
       }
       errorContent={errorComponent}

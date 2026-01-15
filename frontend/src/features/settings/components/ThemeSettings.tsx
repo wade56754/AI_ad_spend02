@@ -8,17 +8,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Sun,
-  Moon,
-  Monitor,
-  Globe,
-  Clock,
-  LayoutGrid,
-  Check,
-} from 'lucide-react';
+import { Sun, Moon, Monitor, Globe, Clock, LayoutGrid, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 
 // ============================================================
 // Types
@@ -106,7 +107,7 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
   // Apply theme to document
   useEffect(() => {
     const root = document.documentElement;
-    
+
     if (preferences.theme === 'system') {
       // Check system preference
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -118,13 +119,13 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
 
   // Handle theme change
   const handleThemeChange = (theme: ThemeMode) => {
-    setPreferences(prev => ({ ...prev, theme }));
+    setPreferences((prev) => ({ ...prev, theme }));
     onChange?.();
   };
 
   // Handle preference change
   const handlePreferenceChange = (key: keyof PreferencesState, value: string | boolean) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
+    setPreferences((prev) => ({ ...prev, [key]: value }));
     onChange?.();
   };
 
@@ -139,15 +140,18 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
 
         <div className="grid gap-4 md:grid-cols-3">
           {THEME_OPTIONS.map((option) => (
-            <button
+            <Button
               key={option.value}
+              type="button"
+              variant="outline"
               onClick={() => handleThemeChange(option.value)}
               className={`
-                relative p-4 rounded-lg border-2 text-left transition-all
+                relative h-auto w-full whitespace-normal items-start justify-start border-2 p-4 text-left transition-all
                 hover:border-primary/50
-                ${preferences.theme === option.value
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border'
+                ${
+                  preferences.theme === option.value
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border'
                 }
               `}
             >
@@ -156,20 +160,21 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
                   <Check className="h-4 w-4 text-primary" />
                 </div>
               )}
-              <div className={`
+              <div
+                className={`
                 mb-3 p-2 rounded-md w-fit
-                ${preferences.theme === option.value
-                  ? 'bg-primary/10 text-primary'
-                  : 'bg-muted text-muted-foreground'
+                ${
+                  preferences.theme === option.value
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-muted text-muted-foreground'
                 }
-              `}>
+              `}
+              >
                 {option.icon}
               </div>
               <p className="font-medium text-sm">{option.label}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {option.description}
-              </p>
-            </button>
+              <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
+            </Button>
           ))}
         </div>
       </div>
@@ -190,18 +195,21 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
               <Globe className="h-4 w-4 text-muted-foreground" />
               显示语言
             </Label>
-            <select
-              id="language"
+            <Select
               value={preferences.language}
-              onChange={(e) => handlePreferenceChange('language', e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onValueChange={(value) => handlePreferenceChange('language', value)}
             >
-              {LANGUAGES.map((lang) => (
-                <option key={lang.value} value={lang.value}>
-                  {lang.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="language">
+                <SelectValue placeholder="选择语言" />
+              </SelectTrigger>
+              <SelectContent>
+                {LANGUAGES.map((lang) => (
+                  <SelectItem key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Timezone */}
@@ -210,18 +218,21 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
               <Clock className="h-4 w-4 text-muted-foreground" />
               时区
             </Label>
-            <select
-              id="timezone"
+            <Select
               value={preferences.timezone}
-              onChange={(e) => handlePreferenceChange('timezone', e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onValueChange={(value) => handlePreferenceChange('timezone', value)}
             >
-              {TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>
-                  {tz.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="timezone">
+                <SelectValue placeholder="选择时区" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIMEZONES.map((tz) => (
+                  <SelectItem key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Date Format */}
@@ -230,18 +241,21 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
               <Clock className="h-4 w-4 text-muted-foreground" />
               日期格式
             </Label>
-            <select
-              id="date_format"
+            <Select
               value={preferences.date_format}
-              onChange={(e) => handlePreferenceChange('date_format', e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              onValueChange={(value) => handlePreferenceChange('date_format', value)}
             >
-              {DATE_FORMATS.map((fmt) => (
-                <option key={fmt.value} value={fmt.value}>
-                  {fmt.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="date_format">
+                <SelectValue placeholder="选择日期格式" />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_FORMATS.map((fmt) => (
+                  <SelectItem key={fmt.value} value={fmt.value}>
+                    {fmt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -262,37 +276,33 @@ export function ThemeSettings({ onChange }: ThemeSettingsProps) {
               <Label htmlFor="compact_mode" className="text-sm font-medium">
                 紧凑模式
               </Label>
-              <p className="text-xs text-muted-foreground">
-                减少界面间距，在同一屏幕显示更多内容
-              </p>
+              <p className="text-xs text-muted-foreground">减少界面间距，在同一屏幕显示更多内容</p>
             </div>
-            <button
+            <Switch
               id="compact_mode"
-              onClick={() => handlePreferenceChange('compact_mode', !preferences.compact_mode)}
-              className={`
-                relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                ${preferences.compact_mode ? 'bg-primary' : 'bg-input'}
-              `}
-            >
-              <span
-                className={`
-                  inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition-transform
-                  ${preferences.compact_mode ? 'translate-x-6' : 'translate-x-1'}
-                `}
-              />
-            </button>
+              checked={preferences.compact_mode}
+              onCheckedChange={(checked) => handlePreferenceChange('compact_mode', checked)}
+            />
           </div>
 
           {/* Preview */}
           <div className="p-4 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground mb-2">预览</p>
-            <div className={`
+            <div
+              className={`
               border rounded-md bg-background p-3
               ${preferences.compact_mode ? 'space-y-2' : 'space-y-4'}
-            `}>
-              <div className={`h-2 bg-muted rounded ${preferences.compact_mode ? 'w-3/4' : 'w-full'}`} />
-              <div className={`h-2 bg-muted rounded ${preferences.compact_mode ? 'w-1/2' : 'w-3/4'}`} />
-              <div className={`h-2 bg-muted rounded ${preferences.compact_mode ? 'w-2/3' : 'w-5/6'}`} />
+            `}
+            >
+              <div
+                className={`h-2 bg-muted rounded ${preferences.compact_mode ? 'w-3/4' : 'w-full'}`}
+              />
+              <div
+                className={`h-2 bg-muted rounded ${preferences.compact_mode ? 'w-1/2' : 'w-3/4'}`}
+              />
+              <div
+                className={`h-2 bg-muted rounded ${preferences.compact_mode ? 'w-2/3' : 'w-5/6'}`}
+              />
             </div>
           </div>
         </div>

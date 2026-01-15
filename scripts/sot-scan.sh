@@ -107,7 +107,11 @@ fi
 # 4. 手写 HTML 标签检查 (WARNING)
 echo -n "检查手写 HTML 标签... "
 # 检查 <button>, <input>, <select>, <table> 但排除组件引用
-HTML_VIOLATIONS=$(grep -rn "<button\|<input\|<select\|<table" frontend/src/ --include="*.tsx" 2>/dev/null | grep -v "Button\|Input\|Select\|Table\|DataTable" | grep -v "//" || true)
+HTML_VIOLATIONS=$(grep -rn "<button\|<input\|<select\|<table" frontend/src/ --include="*.tsx" 2>/dev/null \
+    | grep -v "frontend/src/components/ui/" \
+    | grep -v "Button\|Input\|Select\|Table\|DataTable" \
+    | grep -v "//" \
+    || true)
 if [ -n "$HTML_VIOLATIONS" ]; then
     echo -e "${YELLOW}WARN${NC}"
     echo "  发现手写 HTML 标签，建议使用 shadcn/ui 组件"

@@ -43,6 +43,15 @@ import React from 'react';
 import { FileText, Plus, Filter, RefreshCw, AlertTriangle } from 'lucide-react';
 import { LoadingSpinner } from '@/modules/shared/components/feedback/LoadingSpinner';
 import { ErrorDisplay } from '@/modules/shared/components/feedback/ErrorDisplay';
+import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   useSettlements,
   useSettlementStatistics,
@@ -50,12 +59,7 @@ import {
   useApproveSettlement,
   useCancelSettlement,
 } from '../hooks';
-import type {
-  Settlement,
-  SettlementListParams,
-  SettlementStatus,
-  SettlementType,
-} from '../types';
+import type { Settlement, SettlementListParams, SettlementStatus, SettlementType } from '../types';
 import { SETTLEMENT_STATUS_CONFIG, SETTLEMENT_TYPE_CONFIG } from '../types';
 import { SettlementsTable } from './SettlementsTable';
 
@@ -76,13 +80,7 @@ export function SettlementsPage() {
   const [rejectReason, setRejectReason] = React.useState('');
 
   // Queries
-  const {
-    data: settlementsData,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useSettlements(params);
+  const { data: settlementsData, isLoading, isError, error, refetch } = useSettlements(params);
 
   const { data: statistics } = useSettlementStatistics({});
 
@@ -191,14 +189,17 @@ export function SettlementsPage() {
                 <p className="text-sm text-gray-500">管理供应商和客户结算</p>
               </div>
             </div>
-            <button
-              onClick={() => { /* TODO: 实现新增结算表单 */ }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            <Button
+              onClick={() => {
+                /* TODO: 实现新增结算表单 */
+              }}
+              variant="primary"
+              className="gap-2"
               data-testid="create-btn"
             >
               <Plus className="h-4 w-4" />
               新增结算
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -210,8 +211,12 @@ export function SettlementsPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">结算总数</p>
-                  <p className="text-3xl font-bold text-gray-900 tabular-nums">{statistics.total_settlements}</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    结算总数
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 tabular-nums">
+                    {statistics.total_settlements}
+                  </p>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
                   <FileText className="h-5 w-5 text-slate-600" />
@@ -221,7 +226,9 @@ export function SettlementsPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">总金额</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    总金额
+                  </p>
                   <p className="text-3xl font-bold text-gray-900 tabular-nums">
                     ¥{statistics.total_amount?.toLocaleString() || 0}
                   </p>
@@ -234,7 +241,9 @@ export function SettlementsPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">待结算金额</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    待结算金额
+                  </p>
                   <p className="text-3xl font-bold text-amber-600 tabular-nums">
                     ¥{statistics.pending_amount?.toLocaleString() || 0}
                   </p>
@@ -247,7 +256,9 @@ export function SettlementsPage() {
             <div className="bg-white rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">已支付金额</p>
+                  <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    已支付金额
+                  </p>
                   <p className="text-3xl font-bold text-green-600 tabular-nums">
                     ¥{statistics.paid_amount?.toLocaleString() || 0}
                   </p>
@@ -261,7 +272,9 @@ export function SettlementsPage() {
               <div className="flex items-start justify-between">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">逾期</p>
+                    <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                      逾期
+                    </p>
                     {(statistics.overdue_count || 0) > 0 && (
                       <AlertTriangle className="h-4 w-4 text-red-500" />
                     )}
@@ -285,73 +298,75 @@ export function SettlementsPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2" data-testid="type-filter">
               <Filter className="h-4 w-4 text-gray-400" />
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as SettlementType | '')}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <Select
+                value={filterType || 'all'}
+                onValueChange={(value) =>
+                  setFilterType(value === 'all' ? '' : (value as SettlementType))
+                }
               >
-                <option value="">全部类型</option>
-                {Object.entries(SETTLEMENT_TYPE_CONFIG).map(([value, config]) => (
-                  <option key={value} value={value}>
-                    {config.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-[160px] border-gray-300 focus:ring-blue-500">
+                  <SelectValue placeholder="全部类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部类型</SelectItem>
+                  {Object.entries(SETTLEMENT_TYPE_CONFIG).map(([value, config]) => (
+                    <SelectItem key={value} value={value}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-center gap-2" data-testid="status-filter">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as SettlementStatus | '')}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <Select
+                value={filterStatus || 'all'}
+                onValueChange={(value) =>
+                  setFilterStatus(value === 'all' ? '' : (value as SettlementStatus))
+                }
               >
-                <option value="">全部状态</option>
-                {Object.entries(SETTLEMENT_STATUS_CONFIG).map(([value, config]) => (
-                  <option key={value} value={value}>
-                    {config.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-[160px] border-gray-300 focus:ring-blue-500">
+                  <SelectValue placeholder="全部状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  {Object.entries(SETTLEMENT_STATUS_CONFIG).map(([value, config]) => (
+                    <SelectItem key={value} value={value}>
+                      {config.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
+            <Button onClick={handleSearch} variant="primary">
               搜索
-            </button>
+            </Button>
 
-            <button
-              onClick={handleReset}
-              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
+            <Button onClick={handleReset} variant="outline">
               重置
-            </button>
+            </Button>
 
-            <button
-              onClick={() => refetch()}
-              className="p-2 border border-gray-300 rounded-md hover:bg-gray-50"
-              title="刷新"
-            >
+            <Button onClick={() => refetch()} variant="outline" size="icon" title="刷新">
               <RefreshCw className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Content - v3.0 */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden" data-testid="settlement-table">
+        <div
+          className="bg-white rounded-xl shadow-sm overflow-hidden"
+          data-testid="settlement-table"
+        >
           {isLoading ? (
             <div className="flex items-center justify-center py-12" data-testid="loading-skeleton">
               <LoadingSpinner size="lg" label="加载中..." />
             </div>
           ) : isError ? (
             <div className="p-4">
-              <ErrorDisplay
-                error={error}
-                onRetry={() => refetch()}
-              />
+              <ErrorDisplay error={error} onRetry={() => refetch()} />
             </div>
           ) : (
             <>
@@ -372,20 +387,22 @@ export function SettlementsPage() {
                     共 {totalCount} 条记录，第 {params.page} / {totalPages} 页
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
                       onClick={() => handlePageChange(params.page! - 1)}
                       disabled={params.page === 1}
-                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      variant="outline"
+                      size="sm"
                     >
                       上一页
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handlePageChange(params.page! + 1)}
                       disabled={params.page === totalPages}
-                      className="px-3 py-1 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                      variant="outline"
+                      size="sm"
                     >
                       下一页
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -402,37 +419,38 @@ export function SettlementsPage() {
             <div className="relative w-full max-w-md bg-white rounded-lg shadow-xl p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">确认取消</h3>
               <p className="text-gray-500 mb-4">
-                确定要取消结算单 <span className="font-medium">{cancelConfirm.settlement_no}</span> 吗？
+                确定要取消结算单 <span className="font-medium">{cancelConfirm.settlement_no}</span>{' '}
+                吗？
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   取消原因（可选）
                 </label>
-                <textarea
+                <Textarea
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border-gray-300 focus-visible:ring-blue-500"
                   rows={3}
                   placeholder="请输入取消原因..."
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <button
+                <Button
                   onClick={() => {
                     setCancelConfirm(null);
                     setCancelReason('');
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  variant="outline"
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleConfirmCancel}
                   disabled={cancelMutation.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+                  variant="destructive"
                 >
                   {cancelMutation.isPending ? '处理中...' : '确认取消'}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -455,13 +473,11 @@ export function SettlementsPage() {
               </p>
               {approveConfirm.action === 'reject' && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    拒绝原因
-                  </label>
-                  <textarea
+                  <label className="block text-sm font-medium text-gray-700 mb-1">拒绝原因</label>
+                  <Textarea
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border-gray-300 focus-visible:ring-blue-500"
                     rows={3}
                     placeholder="请输入拒绝原因..."
                     required
@@ -469,29 +485,33 @@ export function SettlementsPage() {
                 </div>
               )}
               <div className="flex justify-end gap-3">
-                <button
+                <Button
                   onClick={() => {
                     setApproveConfirm(null);
                     setRejectReason('');
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                  variant="outline"
                 >
                   取消
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleConfirmApprove}
-                  disabled={approveMutation.isPending || (approveConfirm.action === 'reject' && !rejectReason)}
-                  className={'px-4 py-2 text-sm font-medium text-white rounded-md disabled:opacity-50 ' +
-                    (approveConfirm.action === 'approve'
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-red-600 hover:bg-red-700')}
+                  disabled={
+                    approveMutation.isPending ||
+                    (approveConfirm.action === 'reject' && !rejectReason)
+                  }
+                  className={
+                    approveConfirm.action === 'approve'
+                      ? 'bg-green-600 text-white hover:bg-green-700'
+                      : 'bg-red-600 text-white hover:bg-red-700'
+                  }
                 >
                   {approveMutation.isPending
                     ? '处理中...'
                     : approveConfirm.action === 'approve'
-                    ? '确认通过'
-                    : '确认拒绝'}
-                </button>
+                      ? '确认通过'
+                      : '确认拒绝'}
+                </Button>
               </div>
             </div>
           </div>

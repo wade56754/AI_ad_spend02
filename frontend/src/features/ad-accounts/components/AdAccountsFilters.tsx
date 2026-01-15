@@ -43,21 +43,27 @@ export function AdAccountsFilters({
   className,
 }: AdAccountsFiltersProps) {
   // 提取唯一值用于筛选
-  const uniqueValues = useMemo(() => ({
-    buyers: [...new Set(accounts.map(a => a.buyer))],
-    suppliers: [...new Set(accounts.map(a => a.supplier))],
-    accountTypes: [...new Set(accounts.map(a => a.accountType))],
-    regions: [...new Set(accounts.map(a => a.region))],
-  }), [accounts]);
+  const uniqueValues = useMemo(
+    () => ({
+      buyers: [...new Set(accounts.map((a) => a.buyer))],
+      suppliers: [...new Set(accounts.map((a) => a.supplier))],
+      accountTypes: [...new Set(accounts.map((a) => a.accountType))],
+      regions: [...new Set(accounts.map((a) => a.region))],
+    }),
+    [accounts]
+  );
 
   const handleClearFilters = () => {
-    Object.keys(filters).forEach(key => onFilterChange(key, ''));
+    Object.keys(filters).forEach((key) => onFilterChange(key, ''));
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v);
+  const hasActiveFilters = Object.values(filters).some((v) => v);
 
   return (
-    <div className={cn('flex items-center gap-3 flex-wrap', className)} data-testid="ad-accounts-filters">
+    <div
+      className={cn('flex items-center gap-3 flex-wrap', className)}
+      data-testid="ad-accounts-filters"
+    >
       {/* 搜索框 - 支持模糊搜索 */}
       <div className="relative flex-1 min-w-[240px] max-w-[320px]">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -72,9 +78,10 @@ export function AdAccountsFilters({
       {/* 快捷状态筛选 - Tab 式切换 */}
       <div className="flex items-center bg-gray-100 rounded-lg p-1">
         {['all', 'active', 'testing', 'suspended', 'dead'].map((status) => (
-          <button
+          <Button
             key={status}
             onClick={() => onFilterChange('status', status === 'all' ? '' : status)}
+            variant="ghost"
             className={cn(
               'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
               (filters.status || '') === (status === 'all' ? '' : status)
@@ -83,7 +90,7 @@ export function AdAccountsFilters({
             )}
           >
             {status === 'all' ? '全部' : getStatusConfig(status).label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -97,8 +104,10 @@ export function AdAccountsFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">全部投手</SelectItem>
-          {uniqueValues.buyers.map(buyer => (
-            <SelectItem key={buyer} value={buyer}>{buyer}</SelectItem>
+          {uniqueValues.buyers.map((buyer) => (
+            <SelectItem key={buyer} value={buyer}>
+              {buyer}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -113,8 +122,10 @@ export function AdAccountsFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">全部代理商</SelectItem>
-          {uniqueValues.suppliers.map(supplier => (
-            <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
+          {uniqueValues.suppliers.map((supplier) => (
+            <SelectItem key={supplier} value={supplier}>
+              {supplier}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -144,7 +155,7 @@ export function AdAccountsFilters({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
           <DropdownMenuLabel>账户类型</DropdownMenuLabel>
-          {uniqueValues.accountTypes.map(type => (
+          {uniqueValues.accountTypes.map((type) => (
             <DropdownMenuCheckboxItem
               key={type}
               checked={filters.accountType === type}
@@ -155,7 +166,7 @@ export function AdAccountsFilters({
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuLabel>地区</DropdownMenuLabel>
-          {uniqueValues.regions.map(region => (
+          {uniqueValues.regions.map((region) => (
             <DropdownMenuCheckboxItem
               key={region}
               checked={filters.region === region}

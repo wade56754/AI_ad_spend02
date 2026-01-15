@@ -69,12 +69,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 // ============ Types ============
@@ -110,8 +105,8 @@ const mockAccounts: AdAccount[] = [
     status: 'active',
     todaySpend: 245.32,
     yesterdaySpend: 198.45,
-    monthSpend: 4521.80,
-    feeRate: 0.10,
+    monthSpend: 4521.8,
+    feeRate: 0.1,
     lastUpdated: '2025-12-22 14:30',
     trend: 23.6,
   },
@@ -176,8 +171,8 @@ const mockAccounts: AdAccount[] = [
     buyer: 'HY',
     region: '加拿大',
     status: 'active',
-    todaySpend: 89.50,
-    yesterdaySpend: 76.30,
+    todaySpend: 89.5,
+    yesterdaySpend: 76.3,
     monthSpend: 1285.82,
     feeRate: 0.05,
     lastUpdated: '2025-12-22 14:28',
@@ -200,9 +195,24 @@ const formatPercent = (value: number) => {
 
 const getStatusConfig = (status: AdAccount['status']) => {
   const configs = {
-    active: { label: '投放中', color: 'bg-green-500', textColor: 'text-green-700', bgColor: 'bg-green-50' },
-    testing: { label: '测试中', color: 'bg-blue-500', textColor: 'text-blue-700', bgColor: 'bg-blue-50' },
-    suspended: { label: '已暂停', color: 'bg-yellow-500', textColor: 'text-yellow-700', bgColor: 'bg-yellow-50' },
+    active: {
+      label: '投放中',
+      color: 'bg-green-500',
+      textColor: 'text-green-700',
+      bgColor: 'bg-green-50',
+    },
+    testing: {
+      label: '测试中',
+      color: 'bg-blue-500',
+      textColor: 'text-blue-700',
+      bgColor: 'bg-blue-50',
+    },
+    suspended: {
+      label: '已暂停',
+      color: 'bg-yellow-500',
+      textColor: 'text-yellow-700',
+      bgColor: 'bg-yellow-50',
+    },
     dead: { label: '死号', color: 'bg-red-500', textColor: 'text-red-700', bgColor: 'bg-red-50' },
     new: { label: '新建', color: 'bg-gray-400', textColor: 'text-gray-700', bgColor: 'bg-gray-50' },
   };
@@ -220,7 +230,7 @@ const getPlatformConfig = (platform: 'FB' | 'TK') => {
 // 顶部统计卡片 - 关键指标一眼可见
 const StatsCards = ({ accounts }: { accounts: AdAccount[] }) => {
   const stats = useMemo(() => {
-    const active = accounts.filter(a => a.status === 'active').length;
+    const active = accounts.filter((a) => a.status === 'active').length;
     const todayTotal = accounts.reduce((sum, a) => sum + a.todaySpend, 0);
     const yesterdayTotal = accounts.reduce((sum, a) => sum + a.yesterdaySpend, 0);
     const monthTotal = accounts.reduce((sum, a) => sum + a.monthSpend, 0);
@@ -280,7 +290,10 @@ const StatsCards = ({ accounts }: { accounts: AdAccount[] }) => {
               <p className="text-purple-100 text-xs font-medium">本月消耗</p>
               <p className="text-2xl font-bold mt-1">{formatCurrency(stats.monthTotal)}</p>
               <p className="text-purple-100 text-xs mt-1">
-                日均 <span className="text-white font-medium">{formatCurrency(stats.monthTotal / 22)}</span>
+                日均{' '}
+                <span className="text-white font-medium">
+                  {formatCurrency(stats.monthTotal / 22)}
+                </span>
               </p>
             </div>
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -297,7 +310,10 @@ const StatsCards = ({ accounts }: { accounts: AdAccount[] }) => {
               <p className="text-orange-100 text-xs font-medium">平均费率</p>
               <p className="text-2xl font-bold mt-1">9.2%</p>
               <p className="text-orange-100 text-xs mt-1">
-                手续费 <span className="text-white font-medium">{formatCurrency(stats.todayTotal * 0.092)}</span>
+                手续费{' '}
+                <span className="text-white font-medium">
+                  {formatCurrency(stats.todayTotal * 0.092)}
+                </span>
               </p>
             </div>
             <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -321,12 +337,15 @@ const FilterBar = ({
   accounts: AdAccount[];
 }) => {
   // 提取唯一值用于筛选
-  const uniqueValues = useMemo(() => ({
-    buyers: [...new Set(accounts.map(a => a.buyer))],
-    suppliers: [...new Set(accounts.map(a => a.supplier))],
-    accountTypes: [...new Set(accounts.map(a => a.accountType))],
-    regions: [...new Set(accounts.map(a => a.region))],
-  }), [accounts]);
+  const uniqueValues = useMemo(
+    () => ({
+      buyers: [...new Set(accounts.map((a) => a.buyer))],
+      suppliers: [...new Set(accounts.map((a) => a.supplier))],
+      accountTypes: [...new Set(accounts.map((a) => a.accountType))],
+      regions: [...new Set(accounts.map((a) => a.region))],
+    }),
+    [accounts]
+  );
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -344,9 +363,10 @@ const FilterBar = ({
       {/* 快捷状态筛选 - Tab 式切换 */}
       <div className="flex items-center bg-gray-100 rounded-lg p-1">
         {['all', 'active', 'testing', 'suspended', 'dead'].map((status) => (
-          <button
+          <Button
             key={status}
             onClick={() => onFilterChange('status', status === 'all' ? '' : status)}
+            variant="ghost"
             className={cn(
               'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
               (filters.status || '') === (status === 'all' ? '' : status)
@@ -355,38 +375,51 @@ const FilterBar = ({
             )}
           >
             {status === 'all' ? '全部' : getStatusConfig(status as AdAccount['status']).label}
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* 投手筛选 */}
-      <Select value={filters.buyer || '__all__'} onValueChange={(v) => onFilterChange('buyer', v === '__all__' ? '' : v)}>
+      <Select
+        value={filters.buyer || '__all__'}
+        onValueChange={(v) => onFilterChange('buyer', v === '__all__' ? '' : v)}
+      >
         <SelectTrigger className="w-[120px] h-9 bg-white">
           <SelectValue placeholder="投手" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">全部投手</SelectItem>
-          {uniqueValues.buyers.map(buyer => (
-            <SelectItem key={buyer} value={buyer}>{buyer}</SelectItem>
+          {uniqueValues.buyers.map((buyer) => (
+            <SelectItem key={buyer} value={buyer}>
+              {buyer}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
       {/* 代理商筛选 */}
-      <Select value={filters.supplier || '__all__'} onValueChange={(v) => onFilterChange('supplier', v === '__all__' ? '' : v)}>
+      <Select
+        value={filters.supplier || '__all__'}
+        onValueChange={(v) => onFilterChange('supplier', v === '__all__' ? '' : v)}
+      >
         <SelectTrigger className="w-[160px] h-9 bg-white">
           <SelectValue placeholder="代理商" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">全部代理商</SelectItem>
-          {uniqueValues.suppliers.map(supplier => (
-            <SelectItem key={supplier} value={supplier}>{supplier}</SelectItem>
+          {uniqueValues.suppliers.map((supplier) => (
+            <SelectItem key={supplier} value={supplier}>
+              {supplier}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
       {/* 平台筛选 */}
-      <Select value={filters.platform || '__all__'} onValueChange={(v) => onFilterChange('platform', v === '__all__' ? '' : v)}>
+      <Select
+        value={filters.platform || '__all__'}
+        onValueChange={(v) => onFilterChange('platform', v === '__all__' ? '' : v)}
+      >
         <SelectTrigger className="w-[100px] h-9 bg-white">
           <SelectValue placeholder="平台" />
         </SelectTrigger>
@@ -407,7 +440,7 @@ const FilterBar = ({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">
           <DropdownMenuLabel>账户类型</DropdownMenuLabel>
-          {uniqueValues.accountTypes.map(type => (
+          {uniqueValues.accountTypes.map((type) => (
             <DropdownMenuCheckboxItem
               key={type}
               checked={filters.accountType === type}
@@ -418,7 +451,7 @@ const FilterBar = ({
           ))}
           <DropdownMenuSeparator />
           <DropdownMenuLabel>地区</DropdownMenuLabel>
-          {uniqueValues.regions.map(region => (
+          {uniqueValues.regions.map((region) => (
             <DropdownMenuCheckboxItem
               key={region}
               checked={filters.region === region}
@@ -431,13 +464,13 @@ const FilterBar = ({
       </DropdownMenu>
 
       {/* 清除筛选 */}
-      {Object.values(filters).some(v => v) && (
+      {Object.values(filters).some((v) => v) && (
         <Button
           variant="ghost"
           size="sm"
           className="h-9 text-gray-500"
           onClick={() => {
-            Object.keys(filters).forEach(key => onFilterChange(key, ''));
+            Object.keys(filters).forEach((key) => onFilterChange(key, ''));
           }}
         >
           清除筛选
@@ -481,9 +514,7 @@ const ActionBar = ({
             </Button>
           </>
         ) : (
-          <span className="text-sm text-gray-500">
-            提示：勾选账户可进行批量操作
-          </span>
+          <span className="text-sm text-gray-500">提示：勾选账户可进行批量操作</span>
         )}
       </div>
 
@@ -544,8 +575,8 @@ const AccountTable = ({
   onSelectChange: (id: number, checked: boolean) => void;
   onSelectAll: (checked: boolean) => void;
 }) => {
-  const allSelected = accounts.length > 0 && accounts.every(a => selectedIds.has(a.id));
-  const someSelected = accounts.some(a => selectedIds.has(a.id));
+  const allSelected = accounts.length > 0 && accounts.every((a) => selectedIds.has(a.id));
+  const someSelected = accounts.some((a) => selectedIds.has(a.id));
 
   return (
     <div className="border rounded-lg overflow-hidden bg-white">
@@ -553,11 +584,7 @@ const AccountTable = ({
         <TableHeader>
           <TableRow className="bg-gray-50/80">
             <TableHead className="w-[40px]">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={onSelectAll}
-                aria-label="全选"
-              />
+              <Checkbox checked={allSelected} onCheckedChange={onSelectAll} aria-label="全选" />
             </TableHead>
             <TableHead className="min-w-[280px]">账户信息</TableHead>
             <TableHead className="w-[80px]">投手</TableHead>
@@ -592,10 +619,12 @@ const AccountTable = ({
                 <TableCell>
                   <div className="flex items-start gap-3">
                     {/* 平台标识 */}
-                    <div className={cn(
-                      'w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0',
-                      platformConfig.color
-                    )}>
+                    <div
+                      className={cn(
+                        'w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0',
+                        platformConfig.color
+                      )}
+                    >
                       {account.platform}
                     </div>
 
@@ -613,7 +642,10 @@ const AccountTable = ({
                                 tabIndex={0}
                                 className="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                 onClick={() => navigator.clipboard.writeText(account.platformId)}
-                                onKeyDown={(e) => e.key === 'Enter' && navigator.clipboard.writeText(account.platformId)}
+                                onKeyDown={(e) =>
+                                  e.key === 'Enter' &&
+                                  navigator.clipboard.writeText(account.platformId)
+                                }
                               >
                                 <Copy className="w-3 h-3 text-gray-400 hover:text-gray-600" />
                               </span>
@@ -649,10 +681,15 @@ const AccountTable = ({
 
                 {/* 代理商 */}
                 <TableCell>
-                  <span className="text-sm text-gray-600 truncate block max-w-[140px]" title={account.supplier}>
+                  <span
+                    className="text-sm text-gray-600 truncate block max-w-[140px]"
+                    title={account.supplier}
+                  >
                     {account.supplier}
                   </span>
-                  <span className="text-xs text-gray-400">费率 {(account.feeRate * 100).toFixed(0)}%</span>
+                  <span className="text-xs text-gray-400">
+                    费率 {(account.feeRate * 100).toFixed(0)}%
+                  </span>
                 </TableCell>
 
                 {/* 今日消耗 - 带趋势 */}
@@ -661,10 +698,16 @@ const AccountTable = ({
                     <span className="font-medium tabular-nums">
                       {formatCurrency(account.todaySpend)}
                     </span>
-                    <div className={cn(
-                      'flex items-center gap-0.5 text-xs',
-                      account.trend > 0 ? 'text-green-600' : account.trend < 0 ? 'text-red-500' : 'text-gray-400'
-                    )}>
+                    <div
+                      className={cn(
+                        'flex items-center gap-0.5 text-xs',
+                        account.trend > 0
+                          ? 'text-green-600'
+                          : account.trend < 0
+                            ? 'text-red-500'
+                            : 'text-gray-400'
+                      )}
+                    >
                       {account.trend > 0 ? (
                         <TrendingUp className="w-3 h-3" />
                       ) : account.trend < 0 ? (
@@ -686,11 +729,7 @@ const AccountTable = ({
                 <TableCell className="text-center">
                   <Badge
                     variant="secondary"
-                    className={cn(
-                      'text-xs',
-                      statusConfig.bgColor,
-                      statusConfig.textColor
-                    )}
+                    className={cn('text-xs', statusConfig.bgColor, statusConfig.textColor)}
                   >
                     <span className={cn('w-1.5 h-1.5 rounded-full mr-1.5', statusConfig.color)} />
                     {statusConfig.label}
@@ -750,9 +789,7 @@ const AccountTable = ({
 
       {/* 表格底部 */}
       <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50/50">
-        <span className="text-sm text-gray-500">
-          共 {accounts.length} 个账户
-        </span>
+        <span className="text-sm text-gray-500">共 {accounts.length} 个账户</span>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">每页</span>
           <Select defaultValue="20">
@@ -782,12 +819,12 @@ export function AdAccountsPageV2() {
 
   // Filter handlers
   const handleFilterChange = useCallback((key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   }, []);
 
   // Filtered accounts - must be defined before handleSelectAll
   const filteredAccounts = useMemo(() => {
-    return accounts.filter(account => {
+    return accounts.filter((account) => {
       if (filters.search) {
         const search = filters.search.toLowerCase();
         if (
@@ -810,7 +847,7 @@ export function AdAccountsPageV2() {
 
   // Selection handlers
   const handleSelectChange = useCallback((id: number, checked: boolean) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       if (checked) {
         next.add(id);
@@ -821,13 +858,16 @@ export function AdAccountsPageV2() {
     });
   }, []);
 
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedIds(new Set(filteredAccounts.map(a => a.id)));
-    } else {
-      setSelectedIds(new Set());
-    }
-  }, [filteredAccounts]);
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        setSelectedIds(new Set(filteredAccounts.map((a) => a.id)));
+      } else {
+        setSelectedIds(new Set());
+      }
+    },
+    [filteredAccounts]
+  );
 
   // Action handlers
   const handleRefresh = useCallback(() => {
@@ -848,9 +888,7 @@ export function AdAccountsPageV2() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">广告账号管理</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            管理所有广告投放账户，监控消耗数据
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">管理所有广告投放账户，监控消耗数据</p>
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <Clock className="w-3.5 h-3.5" />
@@ -865,11 +903,7 @@ export function AdAccountsPageV2() {
       <Card>
         <CardContent className="p-4 space-y-4">
           {/* 筛选栏 */}
-          <FilterBar
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            accounts={accounts}
-          />
+          <FilterBar filters={filters} onFilterChange={handleFilterChange} accounts={accounts} />
 
           {/* 操作栏 */}
           <ActionBar

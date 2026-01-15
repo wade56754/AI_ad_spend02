@@ -8,6 +8,8 @@
 
 import React from 'react';
 import { Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { type DateRange } from '../utils/reportsHelpers';
 
 interface ReportsFiltersProps {
@@ -26,34 +28,39 @@ export function ReportsFilters({
   const hasFilters = dateRange.start_date || dateRange.end_date;
 
   return (
-    <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 ${className || ''}`} data-testid="reports-filters">
+    <div
+      className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 ${className || ''}`}
+      data-testid="reports-filters"
+    >
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-gray-400" />
-            <input
+            <Input
               type="date"
               name="start_date"
               value={dateRange.start_date || ''}
               onChange={onDateChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-[160px] border-gray-300 focus-visible:ring-blue-500"
             />
             <span className="text-gray-400">-</span>
-            <input
+            <Input
               type="date"
               name="end_date"
               value={dateRange.end_date || ''}
               onChange={onDateChange}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-[160px] border-gray-300 focus-visible:ring-blue-500"
             />
           </div>
           {hasFilters && (
-            <button
+            <Button
               onClick={onClearFilters}
-              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900"
             >
               清除筛选
-            </button>
+            </Button>
           )}
         </div>
       </div>

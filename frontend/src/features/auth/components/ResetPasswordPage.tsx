@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { resetPassword } from '../services/authApi';
 
 export function ResetPasswordPage() {
@@ -102,16 +104,22 @@ export function ResetPasswordPage() {
         <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                className="h-6 w-6 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </div>
-            <h2 className="mt-6 text-2xl font-bold text-gray-900">
-              无效的链接
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              重置密码链接无效或已过期，请重新申请。
-            </p>
+            <h2 className="mt-6 text-2xl font-bold text-gray-900">无效的链接</h2>
+            <p className="mt-2 text-sm text-gray-600">重置密码链接无效或已过期，请重新申请。</p>
             <div className="mt-6">
               <Link
                 href="/forgot-password"
@@ -132,16 +140,22 @@ export function ResetPasswordPage() {
         <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             </div>
-            <h2 className="mt-6 text-2xl font-bold text-gray-900">
-              密码重置成功
-            </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              您的密码已成功重置，请使用新密码登录。
-            </p>
+            <h2 className="mt-6 text-2xl font-bold text-gray-900">密码重置成功</h2>
+            <p className="mt-2 text-sm text-gray-600">您的密码已成功重置，请使用新密码登录。</p>
             <div className="mt-6">
               <Link
                 href="/login"
@@ -160,12 +174,8 @@ export function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
-            重置密码
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            请输入您的新密码
-          </p>
+          <h2 className="text-center text-3xl font-bold text-gray-900">重置密码</h2>
+          <p className="mt-2 text-center text-sm text-gray-600">请输入您的新密码</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -174,12 +184,12 @@ export function ResetPasswordPage() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 新密码
               </label>
-              <input
+              <Input
                 id="password"
                 name="password"
                 type="password"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 border-gray-300 shadow-sm focus-visible:ring-blue-500 focus-visible:border-blue-500"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 disabled={isSubmitting}
@@ -192,12 +202,12 @@ export function ResetPasswordPage() {
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 确认新密码
               </label>
-              <input
+              <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 border-gray-300 shadow-sm focus-visible:ring-blue-500 focus-visible:border-blue-500"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 disabled={isSubmitting}
@@ -207,20 +217,13 @@ export function ResetPasswordPage() {
           </div>
 
           <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button type="submit" disabled={isSubmitting} variant="primary" className="w-full">
               {isSubmitting ? '重置中...' : '重置密码'}
-            </button>
+            </Button>
           </div>
 
           <div className="text-center text-sm">
-            <Link
-              href="/login"
-              className="text-blue-600 hover:text-blue-500"
-            >
+            <Link href="/login" className="text-blue-600 hover:text-blue-500">
               返回登录
             </Link>
           </div>

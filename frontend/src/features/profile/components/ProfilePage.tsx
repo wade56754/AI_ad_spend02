@@ -12,6 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useAuth } from '@/features/auth';
 import {
   User,
@@ -25,16 +33,46 @@ import {
   Save,
   X,
   Camera,
-  Activity
+  Activity,
 } from 'lucide-react';
 
 // Mock activity data
 const mockActivities = [
-  { id: 1, action: '登录系统', resource: '系统', created_at: '2024-12-21 10:30:00', ip_address: '192.168.1.100' },
-  { id: 2, action: '查看日报', resource: '日报 #1234', created_at: '2024-12-21 10:25:00', ip_address: '192.168.1.100' },
-  { id: 3, action: '审批充值', resource: '充值申请 #5678', created_at: '2024-12-21 10:20:00', ip_address: '192.168.1.100' },
-  { id: 4, action: '导出报表', resource: '月度报表', created_at: '2024-12-21 10:15:00', ip_address: '192.168.1.100' },
-  { id: 5, action: '修改设置', resource: '通知设置', created_at: '2024-12-21 10:10:00', ip_address: '192.168.1.100' },
+  {
+    id: 1,
+    action: '登录系统',
+    resource: '系统',
+    created_at: '2024-12-21 10:30:00',
+    ip_address: '192.168.1.100',
+  },
+  {
+    id: 2,
+    action: '查看日报',
+    resource: '日报 #1234',
+    created_at: '2024-12-21 10:25:00',
+    ip_address: '192.168.1.100',
+  },
+  {
+    id: 3,
+    action: '审批充值',
+    resource: '充值申请 #5678',
+    created_at: '2024-12-21 10:20:00',
+    ip_address: '192.168.1.100',
+  },
+  {
+    id: 4,
+    action: '导出报表',
+    resource: '月度报表',
+    created_at: '2024-12-21 10:15:00',
+    ip_address: '192.168.1.100',
+  },
+  {
+    id: 5,
+    action: '修改设置',
+    resource: '通知设置',
+    created_at: '2024-12-21 10:10:00',
+    ip_address: '192.168.1.100',
+  },
 ];
 
 /**
@@ -104,9 +142,13 @@ export function ProfilePage() {
                   <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
                     {(user?.full_name || user?.username || user?.email || 'U')[0].toUpperCase()}
                   </div>
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-white rounded-full border shadow-sm flex items-center justify-center hover:bg-gray-50">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full border bg-white shadow-sm hover:bg-gray-50"
+                  >
                     <Camera className="h-4 w-4 text-gray-600" />
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Name & Role */}
@@ -170,11 +212,7 @@ export function ProfilePage() {
                     <Mail className="h-4 w-4" />
                     邮箱地址
                   </Label>
-                  <Input
-                    value={user?.email || ''}
-                    disabled
-                    className="bg-gray-50"
-                  />
+                  <Input value={user?.email || ''} disabled className="bg-gray-50" />
                   <p className="text-xs text-gray-500">邮箱地址不可修改</p>
                 </div>
 
@@ -186,7 +224,7 @@ export function ProfilePage() {
                   </Label>
                   <Input
                     value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     disabled={!isEditing}
                     className={!isEditing ? 'bg-gray-50' : ''}
                   />
@@ -200,7 +238,7 @@ export function ProfilePage() {
                   </Label>
                   <Input
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                     disabled={!isEditing}
                     placeholder="请输入手机号码"
                     className={!isEditing ? 'bg-gray-50' : ''}
@@ -215,7 +253,9 @@ export function ProfilePage() {
                   </Label>
                   <Input
                     value={formData.department}
-                    onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, department: e.target.value }))
+                    }
                     disabled={!isEditing}
                     placeholder="请输入所属部门"
                     className={!isEditing ? 'bg-gray-50' : ''}
@@ -243,22 +283,14 @@ export function ProfilePage() {
                       <Calendar className="h-4 w-4" />
                       注册时间
                     </Label>
-                    <Input
-                      value="2024-01-15 09:30:00"
-                      disabled
-                      className="bg-gray-50"
-                    />
+                    <Input value="2024-01-15 09:30:00" disabled className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2 text-gray-600">
                       <Clock className="h-4 w-4" />
                       最后登录
                     </Label>
-                    <Input
-                      value="2024-12-21 10:30:00"
-                      disabled
-                      className="bg-gray-50"
-                    />
+                    <Input value="2024-12-21 10:30:00" disabled className="bg-gray-50" />
                   </div>
                 </div>
               </div>
@@ -278,37 +310,37 @@ export function ProfilePage() {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">时间</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">操作</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">资源</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">IP 地址</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b">
+                      <TableHead className="py-3 px-4 font-medium text-gray-600">时间</TableHead>
+                      <TableHead className="py-3 px-4 font-medium text-gray-600">操作</TableHead>
+                      <TableHead className="py-3 px-4 font-medium text-gray-600">资源</TableHead>
+                      <TableHead className="py-3 px-4 font-medium text-gray-600">IP 地址</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {mockActivities.map((activity) => (
-                      <tr key={activity.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4 text-sm text-gray-600">
+                      <TableRow key={activity.id} className="border-b hover:bg-gray-50">
+                        <TableCell className="py-3 px-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             {activity.created_at}
                           </div>
-                        </td>
-                        <td className="py-3 px-4 text-sm font-medium text-gray-900">
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-sm font-medium text-gray-900">
                           {activity.action}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-gray-600">
                           {activity.resource}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-500">
+                        </TableCell>
+                        <TableCell className="py-3 px-4 text-sm text-gray-500">
                           {activity.ip_address}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>

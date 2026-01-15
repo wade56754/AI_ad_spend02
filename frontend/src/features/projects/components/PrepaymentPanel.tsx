@@ -558,8 +558,7 @@ export function PrepaymentPanel({ projectId, projectName }: PrepaymentPanelProps
                         control={reversalForm.control}
                         name="reference_id"
                         render={({ field }) => (
-                          // eslint-disable-next-line react/forbid-elements -- hidden inputs don't need UI styling
-                          <input type="hidden" {...field} />
+                          <Input type="hidden" className="hidden" {...field} />
                         )}
                       />
                       <FormField
