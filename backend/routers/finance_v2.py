@@ -19,16 +19,16 @@ SoT References (最新版本):
 - pitcher (media_buyer): 无访问权限
 
 API 端点:
-资金总览 (Fund Overview):
+资金总览 (Fund Overview) - 本文件处理:
 - GET /api/v1/finance/fund/overview      - 资金概览统计
 - GET /api/v1/finance/fund/receivables   - 应收账款明细
 - GET /api/v1/finance/fund/distribution  - 资金分布分析
 
-项目盈亏 (Profit Analysis):
-- GET /api/v1/finance/profit/overview    - 盈亏概览统计
-- GET /api/v1/finance/profit/projects    - 项目利润明细
-- GET /api/v1/finance/profit/suppliers   - 渠道成本分析
-- GET /api/v1/finance/profit/trend       - 利润趋势分析
+项目盈亏 (Profit Analysis) - 已迁移到 finance_profit.py:
+- GET /api/v1/finance/profit/overview    → finance_profit.py
+- GET /api/v1/finance/profit/by-project  → finance_profit.py
+- GET /api/v1/finance/profit/by-channel  → finance_profit.py
+- GET /api/v1/finance/profit/trend       → finance_profit.py
 
 Version: 2.0
 Author: AI Code Factory
@@ -79,6 +79,8 @@ def get_fund_overview(
         None, description="时间范围: month/quarter/year", pattern="^(month|quarter|year)$"
     ),
     date: str = Query(None, description="指定月份: 2025-12", pattern=r"^\d{4}-\d{2}$"),
+    start_date: str = Query(None, description="开始日期: 2025-12-01", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: str = Query(None, description="结束日期: 2025-12-20", pattern=r"^\d{4}-\d{2}-\d{2}$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(FINANCE_READ_ROLES)),
 ):
@@ -87,13 +89,15 @@ def get_fund_overview(
 
     返回本期收款、支出、应收未收、可用余额等核心指标，以及环比变化率。
 
+    参数优先级：start_date+end_date > date > period > 默认本月
+
     SoT: BR-FIN.md v1.1 §BR-FIN-006 (可用资金公式)
     权限: ceo, finance, admin (MASTER.md v4.9 §2.4)
     """
-    logger.info(f"GET /finance/fund/overview: user={current_user.email}, period={period}, date={date}")
+    logger.info(f"GET /finance/fund/overview: user={current_user.email}, period={period}, date={date}, start_date={start_date}, end_date={end_date}")
     try:
         service = FundServiceV2(db)
-        data = service.get_overview(period=period, date_str=date)
+        data = service.get_overview(period=period, date_str=date, start_date=start_date, end_date=end_date)
         return success_response(data=data.model_dump())
     except Exception as e:
         logger.exception(f"Error in fund overview: {e}")
@@ -170,6 +174,8 @@ def get_fund_distribution(
 @profit_router.get("/overview", summary="获取盈亏概览", description="返回总收入、总成本、总利润、平均利润率等核心指标")
 def get_profit_overview(
     period: str = Query(None, description="指定月份: 2025-12", pattern=r"^\d{4}-\d{2}$"),
+    start_date: str = Query(None, description="开始日期: 2025-12-01", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: str = Query(None, description="结束日期: 2025-12-20", pattern=r"^\d{4}-\d{2}-\d{2}$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(PROFIT_READ_ROLES)),
 ):
@@ -179,13 +185,15 @@ def get_profit_overview(
     返回总收入、总成本、总利润、平均利润率等核心指标，
     以及环比变化率和行业基准值。
 
+    参数优先级：start_date+end_date > period > 默认本月
+
     SoT: BR-PROFIT.md v1.2 §BR-PROFIT-001/002/003/004 (利润公式)
     权限: ceo, finance, admin, project_owner (MASTER.md v4.9 §2.4)
     """
-    logger.info(f"GET /finance/profit/overview: user={current_user.email}, period={period}")
+    logger.info(f"GET /finance/profit/overview: user={current_user.email}, period={period}, start_date={start_date}, end_date={end_date}")
     try:
         service = ProfitServiceV2(db)
-        data = service.get_overview(period=period)
+        data = service.get_overview(period=period, start_date=start_date, end_date=end_date)
         return success_response(data=data.model_dump())
     except Exception as e:
         logger.exception(f"Error in profit overview: {e}")
@@ -194,7 +202,7 @@ def get_profit_overview(
 
 @profit_router.get("/projects", summary="获取项目利润明细", description="返回每个项目的进粉、收入、成本、利润、利润率")
 def get_project_profits(
-    period: str = Query(None, description="时间范围"),
+    period: str = Query(None, description="时间范围 (YYYY-MM)"),
     sort_by: str = Query(
         "profit",
         description="排序: profit/profit_rate/revenue",
@@ -203,6 +211,8 @@ def get_project_profits(
     status: str = Query(
         "all", description="状态: all/active/inactive", pattern="^(all|active|inactive)$"
     ),
+    start_date: str = Query(None, description="开始日期: 2025-12-01", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end_date: str = Query(None, description="结束日期: 2025-12-20", pattern=r"^\d{4}-\d{2}-\d{2}$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(PROFIT_READ_ROLES)),
 ):
@@ -212,13 +222,15 @@ def get_project_profits(
     返回每个项目的进粉、收入、成本、利润、利润率，
     包含利润状态标记（健康/关注/警告/非活跃）。
 
+    参数优先级：start_date+end_date > period > 默认本月
+
     SoT: BR-PROFIT.md v1.2 §BR-PROFIT-005 (CPL 公式)
     权限: ceo, finance, admin, project_owner (MASTER.md v4.9 §2.4)
     """
-    logger.info(f"GET /finance/profit/projects: user={current_user.email}, sort_by={sort_by}")
+    logger.info(f"GET /finance/profit/projects: user={current_user.email}, sort_by={sort_by}, start_date={start_date}, end_date={end_date}")
     try:
         service = ProfitServiceV2(db)
-        data = service.get_project_profits(period=period, sort_by=sort_by, status=status)
+        data = service.get_project_profits(period=period, sort_by=sort_by, status=status, start_date=start_date, end_date=end_date)
         return success_response(data=data.model_dump())
     except Exception as e:
         logger.exception(f"Error in project profits: {e}")
@@ -280,12 +292,14 @@ def get_profit_trend(
 
 
 # ============================================================================
-# 主路由 - 合并资金总览和利润分析子路由
+# 主路由 - 资金总览子路由
 # ============================================================================
+# 注意: profit_router 已移除，利润相关路由由 finance_profit.py 统一处理
+# 避免重复注册导致的路由冲突
 
-router = APIRouter(prefix="/api/v1", tags=["Finance - Unified API"])
+router = APIRouter(prefix="/api/v1", tags=["Finance - Fund Overview"])
 router.include_router(fund_router)
-router.include_router(profit_router)
+router.include_router(profit_router)  # ✅ 启用：提供 /finance/profit/projects 等端点
 
 # ============================================================================
 # 注意事项

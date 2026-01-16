@@ -65,24 +65,31 @@ class ProfitServiceV2:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_overview(self, period: Optional[str] = None) -> ProfitOverviewData:
+    def get_overview(
+        self,
+        period: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+    ) -> ProfitOverviewData:
         """
         获取盈亏概览
 
         Args:
             period: 指定月份 2025-12
+            start_date: 开始日期 2025-12-01 (优先级最高)
+            end_date: 结束日期 2025-12-20 (优先级最高)
 
         Returns:
             ProfitOverviewData
         """
         # 解析时间范围
-        start_date, end_date, period_str = self._parse_period(period)
+        start_date_parsed, end_date_parsed, period_str = self._parse_period(period, start_date, end_date)
 
         # 计算本期和上期
-        prev_start, prev_end = self._get_previous_period(start_date, end_date)
+        prev_start, prev_end = self._get_previous_period(start_date_parsed, end_date_parsed)
 
         # 获取本期汇总
-        current = self._calculate_period_summary(start_date, end_date)
+        current = self._calculate_period_summary(start_date_parsed, end_date_parsed)
 
         # 获取上期汇总（用于计算环比）
         previous = self._calculate_period_summary(prev_start, prev_end)
@@ -121,14 +128,18 @@ class ProfitServiceV2:
         period: Optional[str] = None,
         sort_by: str = "profit",
         status: str = "all",
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> ProjectProfitsData:
         """
         获取项目利润明细
 
         Args:
-            period: 时间范围
+            period: 时间范围 (YYYY-MM)
             sort_by: profit/profit_rate/revenue
             status: all/active/inactive
+            start_date: 开始日期 (YYYY-MM-DD)，优先级最高
+            end_date: 结束日期 (YYYY-MM-DD)，优先级最高
 
         Returns:
             ProjectProfitsData
@@ -137,7 +148,7 @@ class ProfitServiceV2:
         - 使用批量查询预取所有项目的日报聚合数据
         - 避免在循环中对每个项目单独查询
         """
-        start_date, end_date, _ = self._parse_period(period)
+        start_date_parsed, end_date_parsed, _ = self._parse_period(period, start_date, end_date)
 
         # 获取项目列表
         query = self.db.query(Project)
@@ -167,8 +178,8 @@ class ProfitServiceV2:
                 .join(AdAccount, DailyReport.ad_account_id == AdAccount.id)
                 .filter(
                     AdAccount.project_id.in_(project_ids),
-                    DailyReport.report_date >= start_date,
-                    DailyReport.report_date <= end_date,
+                    DailyReport.report_date >= start_date_parsed,
+                    DailyReport.report_date <= end_date_parsed,
                     DailyReport.status == "final_locked",
                 )
                 .group_by(AdAccount.project_id)
@@ -350,9 +361,27 @@ class ProfitServiceV2:
 
     # ========== Private Methods ==========
 
-    def _parse_period(self, period: Optional[str]) -> Tuple[date, date, str]:
-        """解析时间范围"""
+    def _parse_period(
+        self,
+        period: Optional[str],
+        start_date_str: Optional[str] = None,
+        end_date_str: Optional[str] = None,
+    ) -> Tuple[date, date, str]:
+        """解析时间范围
+
+        优先级：
+        1. start_date_str + end_date_str (精确日期范围)
+        2. period (YYYY-MM 格式月份)
+        3. 默认本月
+        """
         today = date.today()
+
+        # 优先使用精确日期范围
+        if start_date_str and end_date_str:
+            start = date.fromisoformat(start_date_str)
+            end = date.fromisoformat(end_date_str)
+            period_str = f"{start_date_str} ~ {end_date_str}"
+            return start, end, period_str
 
         if period:
             # 解析 "2025-12" 格式

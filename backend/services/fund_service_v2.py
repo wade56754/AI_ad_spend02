@@ -50,7 +50,11 @@ class FundServiceV2:
         self.db = db
 
     def get_overview(
-        self, period: Optional[str] = None, date_str: Optional[str] = None
+        self,
+        period: Optional[str] = None,
+        date_str: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> FundOverviewData:
         """
         获取资金概览
@@ -58,19 +62,23 @@ class FundServiceV2:
         Args:
             period: 时间范围 month/quarter/year
             date_str: 指定月份 2025-12
+            start_date: 开始日期 2025-12-01 (优先级最高)
+            end_date: 结束日期 2025-12-20 (优先级最高)
 
         Returns:
             FundOverviewData
         """
         # 解析时间范围
-        start_date, end_date, period_str = self._parse_period(period, date_str)
+        start_date_parsed, end_date_parsed, period_str = self._parse_period(
+            period, date_str, start_date, end_date
+        )
 
         # 计算本期和上期
-        prev_start, prev_end = self._get_previous_period(start_date, end_date)
+        prev_start, prev_end = self._get_previous_period(start_date_parsed, end_date_parsed)
 
         # 获取本期数据
-        current_income = self._get_total_income(start_date, end_date)
-        current_expense = self._get_total_expense(start_date, end_date)
+        current_income = self._get_total_income(start_date_parsed, end_date_parsed)
+        current_expense = self._get_total_expense(start_date_parsed, end_date_parsed)
 
         # 获取上期数据（用于计算环比）
         prev_income = self._get_total_income(prev_start, prev_end)
@@ -80,7 +88,7 @@ class FundServiceV2:
         receivable_data = self._calculate_receivables_summary()
 
         # 获取期初余额（简化：使用上期末余额）
-        opening_balance = self._get_opening_balance(start_date)
+        opening_balance = self._get_opening_balance(start_date_parsed)
 
         # 计算可用余额
         available_balance = current_income - current_expense + opening_balance
@@ -214,9 +222,25 @@ class FundServiceV2:
         self,
         period: Optional[str],
         date_str: Optional[str],
+        start_date_str: Optional[str] = None,
+        end_date_str: Optional[str] = None,
     ) -> Tuple[date, date, str]:
-        """解析时间范围，返回 (start_date, end_date, period_str)"""
+        """解析时间范围，返回 (start_date, end_date, period_str)
+
+        优先级：
+        1. start_date_str + end_date_str (精确日期范围)
+        2. date_str (YYYY-MM 格式月份)
+        3. period (month/quarter/year)
+        4. 默认本月
+        """
         today = date.today()
+
+        # 优先使用精确日期范围
+        if start_date_str and end_date_str:
+            start = date.fromisoformat(start_date_str)
+            end = date.fromisoformat(end_date_str)
+            period_str = f"{start_date_str} ~ {end_date_str}"
+            return start, end, period_str
 
         if date_str:
             # 解析 "2025-12" 格式
